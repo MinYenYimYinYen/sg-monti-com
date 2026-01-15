@@ -1,0 +1,86 @@
+import {
+  createAsyncThunk,
+  createSelector,
+  createSlice,
+} from "@reduxjs/toolkit";
+import { WithConfig } from "@/store/reduxUtil/reduxTypes"; // Your new shared type
+import { Employee } from "@/app/realGreen/employee/Employee";
+import { EmployeeContract } from "@/app/realGreen/employee/api/EmployeeContract";
+import { api } from "@/lib/api/api";
+import { handleError } from "@/lib/errors/errorHandler";
+import { OpMap } from "@/lib/api/types/rpcUtils";
+import { AppState } from "@/store";
+import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
+
+// 1. STATE: Thin. No loading flags.
+type EmployeeState = {
+  employees: Employee[];
+};
+
+const initialState: EmployeeState = {
+  employees: [],
+};
+
+// 3. SLICE
+export const employeeSlice = createSlice({
+  name: "employee",
+  initialState,
+  reducers: {
+    // Optional: Useful for logout
+    clearEmployees: (state) => {
+      state.employees = [];
+    },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(getEmployees.fulfilled, (state, action) => {
+      state.employees = action.payload.items;
+    });
+  },
+  selectors: {
+    allEmployees: (state) => state.employees,
+    // Memoized selector example:
+    activeEmployees: createSelector(
+      [(state: EmployeeState) => state.employees],
+      (employees) => employees.filter((employee) => employee.active),
+    ),
+  },
+});
+
+// 2. THUNK
+const getEmployees = createAsyncThunk<
+  EmployeeContract["getAll"]["result"], // Return Type
+  WithConfig<EmployeeContract["getAll"]["params"]>, // Input: API Params + ThunkConfig
+  { rejectValue: string; state: AppState }
+>(
+  "employee/getEmployees",
+  async (params, { rejectWithValue }) => {
+    try {
+      // 1. Separate Config from API Params
+      // We strip out 'force', 'cacheDuration', etc. so they don't get sent to the server
+      const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
+        params;
+
+      const body: OpMap<EmployeeContract> = {
+        op: "getAll",
+        ...apiParams,
+      };
+
+      console.log("executing getEmployees");
+      return await api<EmployeeContract["getAll"]["result"]>(
+        "/realGreen/employee/api",
+        {
+          method: "POST",
+          body,
+        },
+      );
+    } catch (e) {
+      const error = handleError(e);
+      return rejectWithValue(error.message);
+    }
+  },
+  smartThunkOptions({ typePrefix: "employee/getEmployees" }),
+);
+export default employeeSlice.reducer;
+// Exporting the thunk as part of the actions object is a nice convention
+export const employeeActions = { ...employeeSlice.actions, getEmployees };
+export const employeeSelect = { ...employeeSlice.selectors };

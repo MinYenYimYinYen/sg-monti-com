@@ -1,0 +1,36 @@
+@font-face {
+  font-family: 'Inter';
+  src: url('../../../next-sg/public/fonts/Inter.ttf') format('truetype');
+  font-display: swap;
+  font-weight: 100 900;
+}
+
+/* 2. The Adjusted Fallback (Matches Inter's metrics) */
+@font-face {
+  font-family: 'Inter-Fallback';
+  src: local('Arial');
+  size-adjust: 107.40%;
+  ascent-override: 90.20%;
+  descent-override: 22.48%;
+  line-gap-override: 0.00%;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900; /* Variable font weight range */
+  src: url('../../../next-sg/public/fonts/Inter-Italic.ttf') format('truetype');
+  font-display: swap;
+}
+
+/* The Italic Fallback */
+@font-face {
+  font-family: 'Inter-Fallback';
+  font-style: italic;
+  /* Tries to find the actual Italic version of Arial */
+  src: local('Arial Italic'), local('Arial-Italic');
+  size-adjust: 107.40%;
+  ascent-override: 90.20%;
+  descent-override: 22.48%;
+  line-gap-override: 0.00%;
+}

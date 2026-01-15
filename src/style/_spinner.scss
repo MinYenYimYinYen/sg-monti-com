@@ -1,0 +1,50 @@
+@use "colors" as c;
+
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+
+  // Default hidden state (GSAP will handle the toggle)
+  opacity: 0;
+  pointer-events: none;
+
+  // Visuals
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid c.$justOffWhite;
+  border-top: 5px solid c.$sgBlue; // Brand Color
+  border-radius: 50%;
+
+  // Continuous rotation is best handled by CSS (cheaper for the browser)
+  animation: spin 1s linear infinite;
+}
+
+.loader-message {
+  font-family: 'Inter', sans-serif;
+  color: c.$basementGray;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

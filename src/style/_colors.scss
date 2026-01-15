@@ -1,0 +1,27 @@
+@use "sass:color";
+
+$sgBlue: #597C91;
+$sgGreen: #4DA43A;
+$sgOrange: #EE7F4B;
+$basementGray: #5e5e5e;
+$justOffWhite: #e1e1e1;
+
+:root {
+  --sgBlue: #{$sgBlue};
+  --sgGreen: #{$sgGreen};
+  --sgOrange: #{$sgOrange};
+  --outOfBounds: #{$basementGray};
+  --background: #{$justOffWhite};
+}
+
+.bgBlue {
+  background-color: color.mix($sgBlue, white, 30%);
+}
+
+.bgGreen {
+  background-color: color.mix($sgGreen, white, 30%);
+}
+
+.bgOrange {
+  background-color: color.mix($sgOrange, white, 30%);
+}

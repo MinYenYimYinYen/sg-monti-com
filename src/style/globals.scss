@@ -1,0 +1,148 @@
+@use "fonts";
+@use "colors";
+@use "spinner";
+@import "tailwindcss";
+
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: var(--outOfBounds);
+  font-size: 16px; /* 16px at 1024px */
+  @media (max-width: 960px) {
+    font-size: 14px; /* 17px at 960px */
+  }
+  @media (max-width: 768px) {
+    font-size: 13px; /* 13px at 768px */
+  }
+
+}
+
+body {
+  //min-width: 1024px; 
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Inter', 'Inter-Fallback', sans-serif;
+  background-color: var(--background);
+  color: black;
+  font-size: 1rem; /* 16px */
+
+  //overscroll-behavior: none; /* Disable pull-to-refresh effect */
+
+  @media (min-width: 1024px) {
+    width: 1024px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 1440px) {
+    width: 1440px;
+  }
+  
+  @media (max-width: 1023px) {
+    width: 100%;
+    max-width: 1024px;
+    margin: 0;
+    padding: 0 1rem;
+  }
+
+  @media print {
+    //font-size: 0.875rem; /* 14px */
+    body, div {
+      font-size: 0.875rem; /* 14px */;
+    }
+
+    h1 {
+      font-size: 1.75rem; /* 28px */
+    }
+
+    h2 {
+      font-size: 1.5rem; /* 24px */
+    }
+
+    h3 {
+      font-size: 1.25rem; /* 20px */
+    }
+
+    h4 {
+      font-size: 1rem; /* 16px */
+    }
+  }
+}
+
+ul {
+  list-style-type: none;
+}
+
+div, h1, h2, h3, h4 {
+  font-size: 1rem; /* 16px */
+}
+
+h1 {
+  font-size: 2rem; /* 32px */
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.75rem; /* 28px */
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h3 {
+  font-size: 1.5rem; /* 24px */
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h4 {
+  font-size: 1.25rem; /* 20px */
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+@media (max-width: 768px) {
+  div, h1, h2, h3, h4 {
+    font-size: 1.125rem; /* 18px */
+  }
+
+  h1 {
+    font-size: 2.25rem; /* 36px */
+  }
+
+  h2 {
+    font-size: 2rem; /* 32px */
+  }
+
+  h3 {
+    font-size: 1.75rem; /* 28px */
+  }
+
+  h4 {
+    font-size: 1.5rem; /* 24px */
+  }
+}
+
+input, textarea {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+input[type="checkbox"] {
+  margin-right: 0.25rem;
+}
+
+.mono {
+  font-family: monospace;
+}
+
+.singleSpace {
+  line-height: 1;
+}
+
+.checkBoxDiv {
+
+}
