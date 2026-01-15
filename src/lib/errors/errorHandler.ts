@@ -1,0 +1,50 @@
+import { toast } from "react-toastify";
+import { AppError } from "./AppError";
+
+export function normalizeError(error: unknown): AppError {
+  if (error instanceof AppError) return error;
+  if (error instanceof Error)
+    return new AppError({
+      message: error.message,
+      type: "UNKNOWN_ERROR",
+      statusCode: 500,
+      isOperational: false
+    });
+  return new AppError({
+    message: "An unknown error occurred",
+    type: "UNKNOWN_ERROR",
+    statusCode: 500,
+    isOperational: false
+  });
+}
+
+export function handleError(error: unknown) {
+  const appError = normalizeError(error);
+  const isServer = typeof window === "undefined";
+
+  // LOGGING
+  if (isServer) {
+    console.error(`[${appError.type}] ${appError.message}`, {
+      data: appError.data,
+      stack: appError.stack,
+    });
+  } else {
+    if (!appError.silent) {
+      console.error(`[${appError.type}]`, appError.message);
+    }
+  }
+
+  // TOASTING (Client Only)
+  if (!isServer && !appError.silent) {
+    // Don't toast 404s usually
+    if (appError.statusCode !== 404) {
+      const userMessage = appError.isOperational
+        ? appError.message
+        : "An unexpected error occurred. Please run this up the chain of " +
+          "command so it can be fixed.";
+      toast.error(userMessage);
+    }
+  }
+
+  return appError;
+}
