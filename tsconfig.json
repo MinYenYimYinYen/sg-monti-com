@@ -5,6 +5,11 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -13,6 +18,8 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "sourceMap": true,
+    "baseUrl": ".",
     "plugins": [
       {
         "name": "next"
