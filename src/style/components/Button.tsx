@@ -15,6 +15,7 @@ const buttonVariants = cva(
           "border border-sg-blue-brdr bg-transparent text-sg-blue-brdr hover:bg-sg-blue-bg hover:text-sg-blue-brdr",
         secondary: "bg-sg-green-brdr text-white hover:bg-sg-green-brdr/80",
         ghost: "hover:bg-sg-blue-bg hover:text-sg-blue-brdr text-sg-blue-brdr",
+        "ghost-neutral": "hover:bg-sg-gray-bg text-sg-subtle",
         link: "text-sg-blue-brdr underline-offset-4 hover:underline",
         loading:
           "bg-sg-green-brdr/20 text-transparent animate-pulse pointer-events-none select-none",

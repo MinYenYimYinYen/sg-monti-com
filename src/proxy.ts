@@ -2,102 +2,115 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify, JWTPayload } from "jose";
 import { AUTH_CONST } from "@/app/auth/_lib/authConst";
+import { TokenPayload } from "@/app/auth/_types/authTypes";
 
 // -----------------------------------------------------------------------------
-// Configuration
+// Configuration & Helpers
 // -----------------------------------------------------------------------------
 
-// Use the ACCESS secret for lightweight verification at the edge
 const SECRET_KEY = process.env.ACCESS_SECRET;
 const ENCODED_SECRET = new TextEncoder().encode(SECRET_KEY);
 
-// Define our custom payload type for better type safety
-interface CustomJwtPayload extends JWTPayload {
-  userId?: string;
-  role?: string;
-  saId?: string;
+interface CustomJwtPayload extends JWTPayload, TokenPayload {}
+
+async function verifyToken(
+  token: string | undefined,
+): Promise<CustomJwtPayload | null> {
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, ENCODED_SECRET);
+    return payload as CustomJwtPayload;
+  } catch {
+    return null;
+  }
+}
+
+function nextWithHeaders(request: NextRequest, user: CustomJwtPayload | null) {
+  const requestHeaders = new Headers(request.headers);
+  if (user) {
+    if (user.saId) requestHeaders.set("x-user-id", user.saId);
+    if (user.role) requestHeaders.set("x-user-role", user.role);
+  }
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 // -----------------------------------------------------------------------------
-// Proxy Handler
+// Main Proxy Logic
 // -----------------------------------------------------------------------------
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Check if the current path is public
-  // We use Array.from because AUTH_CONST.PUBLIC_PATHS is readonly
+  // 1. GATHER CONTEXT
+  const token = request.cookies.get(AUTH_CONST.COOKIE.ACCESS_TOKEN)?.value;
+  const user = await verifyToken(token);
+
   const isPublic = Array.from(AUTH_CONST.PUBLIC_PATHS).some((path) =>
     pathname.startsWith(path),
   );
+  const isApi = pathname.startsWith("/auth/api");
+  const isStatic = pathname.startsWith("/_next") || pathname === "/favicon.ico";
+  const isAppliedPage = pathname === "/auth/applied";
+  const isChangePasswordPage = pathname === "/auth/changePassword";
 
-  // 2. Token Retrieval
-  // Matches the cookie name set in your Auth system
-  const token = request.cookies.get(AUTH_CONST.COOKIE.ACCESS_TOKEN)?.value;
+  const isAuthenticated = !!user;
+  const isAppliedUser = user?.role === "applied";
+  const mustChangePassword = user?.mustChangePassword;
 
-  // 3. Optimistic Token Verification
-  let verifiedTokenPayload: CustomJwtPayload | null = null;
+  // 2. LOGIC GATES (Order Matters!)
 
-  if (token) {
-    try {
-      // jose works on Edge; jsonwebtoken does not.
-      const { payload } = await jwtVerify(token, ENCODED_SECRET);
-      verifiedTokenPayload = payload as CustomJwtPayload;
-    } catch (error) {
-      // Token expired or invalid. Proceed as unauthenticated.
-    }
+  // GATE A: Infrastructure (Always Allow)
+  if (isApi || isStatic) {
+    return nextWithHeaders(request, user);
   }
 
-  // 4. Scenario A: Unauthenticated User on Protected Route
-  if (!isPublic && !verifiedTokenPayload) {
-    const loginUrl = new URL("auth/login", request.url);
+  // GATE B: The "Applied" Sandbox
+  // If user is "applied", they are confined to the applied page.
+  if (isAppliedUser) {
+    if (isAppliedPage) return nextWithHeaders(request, user);
+    return NextResponse.redirect(new URL("/auth/applied", request.url));
+  }
 
-    // Save the original path so we can redirect them back after login
-    // e.g., /login?from=/dashboard/settings
+  // GATE B.1: Force Password Change
+  // If user must change password, they are confined to the change-password page.
+  if (mustChangePassword) {
+    if (isChangePasswordPage) return nextWithHeaders(request, user);
+    return NextResponse.redirect(new URL("/auth/changePassword", request.url));
+  }
+
+  // GATE C: Protect the "Applied" Page
+  // If user is NOT "applied" (Active or Guest), they cannot see this page.
+  if (isAppliedPage) {
+    const dest = isAuthenticated ? "/" : "/auth/login";
+    return NextResponse.redirect(new URL(dest, request.url));
+  }
+
+  // GATE C.1: Protect the "Change Password" Page
+  // If user does NOT need to change password, they shouldn't be here (unless we allow voluntary changes later)
+  // For now, let's redirect them home if they try to access it manually but don't need to.
+  if (isChangePasswordPage && !mustChangePassword) {
+    const dest = isAuthenticated ? "/" : "/auth/login";
+    return NextResponse.redirect(new URL(dest, request.url));
+  }
+
+  // GATE D: Standard Auth Protection
+  // Guest trying to access a protected route -> Login
+  if (!isAuthenticated && !isPublic) {
+    const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("from", pathname);
-
     return NextResponse.redirect(loginUrl);
   }
 
-  // 5. Scenario B: Authenticated User on Public Route (Login/Register)
-  if (isPublic && verifiedTokenPayload && pathname !== "/auth/api") {
-    // If they are already logged in, kick them to the dashboard/home
+  // GATE E: Already Logged In
+  // Active user trying to access a public route (Login/Register) -> Home
+  if (isAuthenticated && isPublic) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 6. Header Mutation (Optional but recommended)
-  // Pass the user ID to the backend so Server Components don't have to re-verify immediately
-  const requestHeaders = new Headers(request.headers);
-
-  if (verifiedTokenPayload) {
-    if (verifiedTokenPayload.userId) {
-      requestHeaders.set("x-user-id", verifiedTokenPayload.userId);
-    }
-    if (verifiedTokenPayload.role) {
-      requestHeaders.set("x-user-role", verifiedTokenPayload.role);
-    }
-  }
-
-  // 7. Allow request to proceed
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  // GATE F: Default Pass-through
+  return nextWithHeaders(request, user);
 }
 
-// -----------------------------------------------------------------------------
-// Matcher Configuration
-// -----------------------------------------------------------------------------
-
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for:
-     * 1. _next/static (static files)
-     * 2. _next/image (image optimization files)
-     * 3. favicon.ico (favicon file)
-     */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

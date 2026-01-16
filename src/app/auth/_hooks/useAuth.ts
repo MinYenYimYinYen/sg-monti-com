@@ -35,8 +35,46 @@ export const useAuth = () => {
     return dispatch(authActions.checkAuth(params));
   };
 
+  const requestPasswordReset = (
+    params: WithConfig<AuthContract["requestPasswordReset"]["params"]>,
+  ) => {
+    return dispatch(authActions.requestPasswordReset(params));
+  };
+
+  const getPendingActions = (
+    params: WithConfig<AuthContract["getPendingActions"]["params"]> = {},
+  ) => {
+    return dispatch(authActions.getPendingActions(params));
+  };
+
+  const approveUser = (
+    params: WithConfig<AuthContract["approveUser"]["params"]>,
+  ) => {
+    return dispatch(authActions.approveUser(params));
+  };
+
+  const resolvePasswordReset = (
+    params: WithConfig<AuthContract["resolvePasswordReset"]["params"]>,
+  ) => {
+    return dispatch(authActions.resolvePasswordReset(params));
+  };
+
+  const changePassword = (
+    params: WithConfig<AuthContract["changePassword"]["params"]>,
+  ) => {
+    return dispatch(authActions.changePassword(params));
+  };
+
   const resetEligibility = () => {
     dispatch(authActions.resetEligibility());
+  };
+
+  const setInvalidCredentials = (invalid: boolean) => {
+    dispatch(authActions.setInvalidCredentials(invalid));
+  };
+
+  const resetPasswordResetStatus = () => {
+    dispatch(authActions.resetPasswordResetStatus());
   };
 
   return {
@@ -45,6 +83,13 @@ export const useAuth = () => {
     register,
     checkEligibility,
     checkAuth,
+    requestPasswordReset,
+    getPendingActions,
+    approveUser,
+    resolvePasswordReset,
+    changePassword,
     resetEligibility,
+    setInvalidCredentials,
+    resetPasswordResetStatus,
   };
 };

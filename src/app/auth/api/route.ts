@@ -9,7 +9,10 @@ import UserModel from "@/app/auth/_models/UserModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { AppError } from "@/lib/errors/AppError";
 import bcrypt from "bcrypt";
-import { cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
+import {
+  cleanMongoArray,
+  cleanMongoObject,
+} from "@/lib/mongoose/cleanMongoObj";
 import { User, UserWithPW } from "@/app/auth/_types/User";
 import { cookies } from "next/headers";
 import {
@@ -21,6 +24,8 @@ import {
 import { AUTH_CONST } from "@/app/auth/_lib/authConst";
 import { TokenPayload } from "@/app/auth/_types/authTypes";
 import PasswordResetRequestModel from "@/app/auth/_models/PasswordResetRequestModel";
+import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
+import { ROLES } from "@/lib/api/types/roles";
 
 /**
  * 1. DEFINE HANDLERS
@@ -87,13 +92,13 @@ const handlers: HandlerMap<AuthContract> = {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // 3. Create User
-      // We force the role to 'public' (or 'tech'/'office' if you prefer) for new registrations
+      // We force the role to "applied", pending manager approval
       // to prevent someone from POSTing role: 'admin'
       const newUser = await UserModel.create({
         ...rest,
         saId,
         password: hashedPassword,
-        role: "public", // Default role
+        role: "applied", // Default role
       });
 
       // 4. Return Safe User (No Password)
@@ -137,6 +142,7 @@ const handlers: HandlerMap<AuthContract> = {
       const payload: TokenPayload = {
         role: user.role,
         saId: user.saId,
+        mustChangePassword: user.mustChangePassword,
       };
       const accessToken = signAccessToken(payload);
       const refreshToken = signRefreshToken(payload);
@@ -199,9 +205,10 @@ const handlers: HandlerMap<AuthContract> = {
       // We reuse the payload from the refresh token (userId, role, saId)
       // Ideally, we should check if the user still exists/is active in DB here
       // but for speed, we can trust the signed refresh token for now.
-      const newPayload = {
+      const newPayload: TokenPayload = {
         role: payload.role,
         saId: payload.saId,
+        mustChangePassword: payload.mustChangePassword,
       };
       const newAccessToken = signAccessToken(newPayload);
 
@@ -317,6 +324,129 @@ const handlers: HandlerMap<AuthContract> = {
       // 5. Resolve Request
       request.status = "resolved";
       await request.save();
+
+      return { success: true };
+    },
+  },
+  getPendingActions: {
+    roles: ["admin"],
+    handler: async () => {
+      await connectToMongoDB();
+
+      // 1. Get Applied Users
+      const appliedUsersDocs = await UserModel.find({ role: "applied" }).lean();
+      // Remove passwords from the result
+      const appliedUsers = cleanMongoArray(appliedUsersDocs).map((u) => {
+        const { password, ...rest } = u as any;
+        return rest as User;
+      });
+
+      // 2. Get Pending Password Resets
+      const pendingResetsDocs = await PasswordResetRequestModel.find({
+        status: "pending",
+      }).lean();
+      const pendingResets = cleanMongoArray(
+        pendingResetsDocs,
+      ) as PasswordResetRequest[];
+
+      return {
+        success: true,
+        item: {
+          appliedUsers,
+          pendingResets,
+        },
+      };
+    },
+  },
+  approveUser: {
+    roles: ["admin"],
+    handler: async ({ userName, role }) => {
+      await connectToMongoDB();
+
+      const user = await UserModel.findOne({ userName });
+      if (!user) {
+        throw new AppError({
+          message: "User not found",
+          type: "VALIDATION_ERROR",
+          statusCode: 404,
+        });
+      }
+
+      if (user.role !== "applied") {
+        throw new AppError({
+          message: "User is not in 'applied' status",
+          type: "VALIDATION_ERROR",
+          statusCode: 400,
+        });
+      }
+
+      user.role = role;
+      await user.save();
+
+      return { success: true };
+    },
+  },
+  changePassword: {
+    // Allow any authenticated role to change their password
+    roles: [...ROLES, "applied"],
+    handler: async ({ newPassword }) => {
+      const cookieStore = await cookies();
+      const token = cookieStore.get(AUTH_CONST.COOKIE.ACCESS_TOKEN);
+
+      if (!token) {
+        throw new AppError({
+          message: "No token",
+          type: "AUTH_ERROR",
+          statusCode: 401,
+        });
+      }
+
+      // 1. Verify Token to get User ID
+      const payload = verifyAccessToken(token.value);
+
+      await connectToMongoDB();
+      const user = await UserModel.findOne({ saId: payload.saId });
+
+      if (!user) {
+        throw new AppError({
+          message: "User not found",
+          type: "AUTH_ERROR",
+          statusCode: 401,
+        });
+      }
+
+      // 2. Hash New Password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // 3. Update User
+      user.password = hashedPassword;
+      user.mustChangePassword = false; // Clear the flag
+      await user.save();
+
+      // 4. Issue New Tokens (without the flag)
+      const newPayload: TokenPayload = {
+        role: user.role,
+        saId: user.saId,
+        mustChangePassword: false,
+      };
+      const accessToken = signAccessToken(newPayload);
+      const refreshToken = signRefreshToken(newPayload);
+
+      cookieStore.set(AUTH_CONST.COOKIE.ACCESS_TOKEN, accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: AUTH_CONST.EXPIRATION.COOKIE.ACCESS,
+      });
+
+      cookieStore.set(AUTH_CONST.COOKIE.REFRESH_TOKEN, refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: AUTH_CONST.EXPIRATION.COOKIE.REFRESH,
+      });
 
       return { success: true };
     },

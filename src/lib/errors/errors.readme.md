@@ -59,6 +59,13 @@ This is where `isOperational` is critical.
 * **If `isOperational: true`:** The user sees the actual message (e.g., "Email is required").
 * **If `isOperational: false`:** The user sees a sanitized generic message ("An unexpected error occurred") to prevent leaking technical details or confusing non-technical users.
 
+### D. Silent Handling
+You can suppress the toast notification for expected errors (e.g., 401 on initial load) by passing an options object.
+
+```typescript
+handleError(error, { silent: true });
+```
+
 ---
 
 ## 4. Usage Patterns
@@ -81,12 +88,27 @@ const handleSave = async () => {
 ### B. Redux Async Thunks
 Catch the error, handle side effects, and reject with a clean string.
 
+**Standard Pattern (Toasts on Error):**
 ```typescript
 const getEmployees = createAsyncThunk(..., async (params, { rejectWithValue }) => {
   try {
     return await api("/employee", ...);
   } catch (e) {
     const error = handleError(e);
+    return rejectWithValue(error.message);
+  }
+});
+```
+
+**Silent Pattern (No Toast):**
+Use this when failure is expected (e.g., checking auth status on load).
+```typescript
+const checkAuth = createAsyncThunk(..., async (params, { rejectWithValue }) => {
+  try {
+    return await api("/auth/check", ...);
+  } catch (e) {
+    // Pass silent: true to suppress the toast
+    const error = handleError(e, { silent: true });
     return rejectWithValue(error.message);
   }
 });

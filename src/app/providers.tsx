@@ -11,8 +11,8 @@ export function Providers({ children }: { children: ReactNode }) {
   if (!storeRef.current) {
     storeRef.current = makeStore();
   }
-  // eslint-disable-next-line react-hooks/refs
   return (
+  // eslint-disable-next-line react-hooks/refs
     <Provider store={storeRef.current}>
       <AuthInitializer>{children}</AuthInitializer>
     </Provider>

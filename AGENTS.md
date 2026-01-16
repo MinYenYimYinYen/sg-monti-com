@@ -29,6 +29,11 @@
     - Hooks should only expose **Actions** (dispatchers).
     - Components must select data directly using `useSelector(authSelect.role)`.
     - This prevents unnecessary re-renders when a hook is used only for dispatching but the data it selects changes.
+- **Async UI Feedback**: Use the **Explicit Status Pattern**.
+    - Do not rely on `thunk.fulfilled.match(result)` in components.
+    - Add specific status fields to the slice (e.g., `passwordResetStatus: 'idle' | 'pending' | 'success' | 'error'`).
+    - Update status in `extraReducers`.
+    - Reset status via actions (e.g., `resetPasswordResetStatus`) on component unmount.
 
 ## Error Handling
 
@@ -54,6 +59,7 @@
 - **Coding Style**:
     - **Function Parameters**: Prefer object-style parameters (destructuring) for functions with more than one
       argument (e.g., `constructor({ a, b }: Params)`). Single arguments can be passed directly.
+    - **File Naming**: Use `camelCase` for directories and files (e.g., `src/app/auth/changePassword/page.tsx`), except for Next.js special files (`page.tsx`, `layout.tsx`) and React Components (`Button.tsx`).
 
 ## Key Dependencies
 - `eslint`: For linting
@@ -67,3 +73,10 @@
 - **Data Sanitization**: API Routes **must never** return raw Mongoose documents.
     - Use `cleanMongoObject(doc)` or `cleanMongoArray(docs)` from `@/lib/mongoose/cleanMongoObj` to strip `_id` and `__v`.
     - Ensure sensitive fields are removed before returning.
+
+## Session Learnings (Key Conventions)
+*   **Silent Error Handling**: Use `handleError(e, { silent: true })` to suppress toasts for expected errors.
+*   **Admin-Assisted Auth**: Password resets are handled via admin approval, not email.
+*   **"Applied" Role**: New users are gated with an "applied" role until approved.
+*   **Modal Architecture**: Use `Modal` (Portal + GSAP) and `TabControl` for complex dialogs.
+*   **File Structure**: Prefer `camelCase` for route folders (e.g., `changePassword`).

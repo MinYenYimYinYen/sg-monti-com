@@ -25,6 +25,9 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const { login } = useAuth();
   const isAuthenticated = useSelector(authSelect.isAuthenticated);
+  const invalidCredentialsEntered = useSelector(
+    authSelect.invalidCredentialsEntered,
+  );
 
   const [form, setForm] = useState<LoginForm>({
     userName: "",
@@ -94,7 +97,7 @@ function LoginContent() {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="justify-center">
+        <CardFooter className="flex-col gap-2 justify-center">
           <p className="text-sm text-slate-600">
             Don&#39;t have an account?{" "}
             <Link
@@ -104,6 +107,15 @@ function LoginContent() {
               Register here
             </Link>
           </p>
+
+          {invalidCredentialsEntered && (
+            <Link
+              href="/auth/forgotPassword"
+              className="text-sm font-medium text-sg-warn-fg hover:underline"
+            >
+              Forgot Password?
+            </Link>
+          )}
         </CardFooter>
       </Card>
     </CenteredContainer>

@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/style/components/Card";
 import { CenteredContainer } from "@/style/components/Containers";
+import {toast} from "react-toastify";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -66,14 +67,13 @@ export default function RegisterPage() {
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     if (form.password !== form.confirmPassword) {
-      // Ideally use a toast here, but for now we rely on the API or simple validation
-      alert("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
     register({
       ...form,
-      role: "public", // Default role, API will enforce
+      role: "applied", // Default role, API will move this to "applied" no matter what we put here
       loadingMsg: "Creating account...",
     });
   };
