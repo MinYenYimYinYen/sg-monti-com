@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth/_hooks/useAuth";
 import { LoginForm } from "@/app/auth/_types/authTypes";
@@ -20,7 +20,7 @@ import {
 } from "@/style/components/Card";
 import { CenteredContainer } from "@/style/components/Containers";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
@@ -107,5 +107,13 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </CenteredContainer>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
