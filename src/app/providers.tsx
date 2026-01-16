@@ -3,6 +3,7 @@
 import { Provider } from "react-redux";
 import { ReactNode, useRef } from "react";
 import { AppStore, makeStore } from "@/store";
+import AuthInitializer from "@/app/auth/_components/AuthInitializer";
 
 export function Providers({ children }: { children: ReactNode }) {
   const storeRef = useRef<AppStore>(null);
@@ -11,5 +12,9 @@ export function Providers({ children }: { children: ReactNode }) {
     storeRef.current = makeStore();
   }
   // eslint-disable-next-line react-hooks/refs
-  return <Provider store={storeRef.current}>{children}</Provider>;
+  return (
+    <Provider store={storeRef.current}>
+      <AuthInitializer>{children}</AuthInitializer>
+    </Provider>
+  );
 }

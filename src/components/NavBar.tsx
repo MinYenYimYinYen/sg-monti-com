@@ -10,6 +10,7 @@ export default function NavBar() {
   const { logout } = useAuth();
   const user = useSelector(authSelect.user);
   const isAuthenticated = useSelector(authSelect.isAuthenticated);
+  const isInitialized = useSelector(authSelect.isInitialized);
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-sg-green-brdr bg-sg-green-bg px-4 py-3 shadow-sm">
@@ -24,7 +25,12 @@ export default function NavBar() {
 
         {/* Actions */}
         <div className="flex items-center gap-4">
-          {isAuthenticated ? (
+          {!isInitialized ? (
+            // Loading Skeleton
+            <Button variant="loading" size="sm" className="w-20">
+              Loading
+            </Button>
+          ) : isAuthenticated ? (
             <>
               <span className="hidden text-sm font-medium text-sg-green-brdr md:block">
                 Hello, {user?.firstName}

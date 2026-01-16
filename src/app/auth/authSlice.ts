@@ -13,6 +13,7 @@ import { CheckedId } from "@/app/auth/_types/authTypes";
 type AuthState = {
   user: User | null;
   isAuthenticated: boolean;
+  isInitialized: boolean;
 
   // Transient state for the Registration Flow
   registrationEligibility: CheckedId;
@@ -23,6 +24,7 @@ type AuthState = {
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
+  isInitialized: false,
   registrationEligibility: null,
   checkedIds: {},
 };
@@ -140,6 +142,31 @@ const logout = createAsyncThunk<
   smartThunkOptions({ typePrefix: "auth/logout" }),
 );
 
+// E. Check Auth (Session Restoration)
+const checkAuth = createAsyncThunk<
+  AuthContract["checkAuth"]["result"],
+  WithConfig<AuthContract["checkAuth"]["params"]>,
+  { rejectValue: string; state: AppState }
+>(
+  "auth/checkAuth",
+  async (params, { rejectWithValue }) => {
+    try {
+      const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
+        params;
+      const body: OpMap<AuthContract> = { op: "checkAuth", ...apiParams };
+
+      return await api<AuthContract["checkAuth"]["result"]>("/auth/api", {
+        method: "POST",
+        body,
+      });
+    } catch (e) {
+      const error = handleError(e);
+      return rejectWithValue(error.message);
+    }
+  },
+  smartThunkOptions({ typePrefix: "auth/checkAuth" }),
+);
+
 // 3. SLICE
 const authSlice = createSlice({
   name: "auth",
@@ -190,10 +217,26 @@ const authSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
     });
+
+    // Check Auth
+    builder.addCase(checkAuth.pending, (state) => {
+      state.isInitialized = false;
+    });
+    builder.addCase(checkAuth.fulfilled, (state, action) => {
+      state.user = action.payload.item;
+      state.isAuthenticated = true;
+      state.isInitialized = true;
+    });
+    builder.addCase(checkAuth.rejected, (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.isInitialized = true;
+    });
   },
   selectors: {
     user: (state) => state.user,
     isAuthenticated: (state) => state.isAuthenticated,
+    isInitialized: (state) => state.isInitialized,
     registrationEligibility: (state) => state.registrationEligibility,
     checkedIds: (state) => state.checkedIds,
   },
@@ -205,6 +248,7 @@ export const authActions = {
   register,
   login,
   logout,
+  checkAuth,
 };
 export const authSelect = { ...authSlice.selectors };
 export default authSlice.reducer;

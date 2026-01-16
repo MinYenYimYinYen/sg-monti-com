@@ -15,6 +15,7 @@ import { cookies } from "next/headers";
 import {
   signAccessToken,
   signRefreshToken,
+  verifyAccessToken,
   verifyRefreshToken,
 } from "@/app/auth/_lib/tokenUtils";
 import { AUTH_CONST } from "@/app/auth/_lib/authConst";
@@ -215,6 +216,46 @@ const handlers: HandlerMap<AuthContract> = {
       });
 
       return { success: true };
+    },
+  },
+  checkAuth: {
+    roles: ["public"],
+    handler: async () => {
+      const cookieStore = await cookies();
+      const token = cookieStore.get(AUTH_CONST.COOKIE.ACCESS_TOKEN);
+
+      if (!token) {
+        throw new AppError({
+          message: "No token found",
+          type: "AUTH_ERROR",
+          statusCode: 401,
+        });
+      }
+
+      // 1. Verify Token
+      const payload = verifyAccessToken(token.value);
+
+      // 2. Get User from DB
+      await connectToMongoDB();
+      const user = await UserModel.findById(payload.userId);
+
+      if (!user) {
+        throw new AppError({
+          message: "User not found",
+          type: "AUTH_ERROR",
+          statusCode: 401,
+        });
+      }
+
+      // 3. Return Safe User
+      const userObject = user.toObject();
+      const { password: _, ...safeUser } = userObject;
+      const cleanUser: User = cleanMongoObject(safeUser);
+
+      return {
+        success: true,
+        item: cleanUser,
+      };
     },
   },
 };

@@ -29,6 +29,12 @@ export const useAuth = () => {
     return dispatch(authActions.checkEligibility(params));
   };
 
+  const checkAuth = (
+    params: WithConfig<AuthContract["checkAuth"]["params"]> = {},
+  ) => {
+    return dispatch(authActions.checkAuth(params));
+  };
+
   const resetEligibility = () => {
     dispatch(authActions.resetEligibility());
   };
@@ -38,6 +44,7 @@ export const useAuth = () => {
     logout,
     register,
     checkEligibility,
+    checkAuth,
     resetEligibility,
   };
 };

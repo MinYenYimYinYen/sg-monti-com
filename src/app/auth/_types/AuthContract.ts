@@ -38,4 +38,10 @@ export interface AuthContract {
     params: {};
     result: SuccessResponse;
   };
+
+  // 6. Check Auth (Session Restoration)
+  checkAuth: {
+    params: {};
+    result: ObjResponse<User>;
+  };
 }
