@@ -2,21 +2,20 @@ import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/style/utils";
+import { clsx } from "clsx";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sg-blue-brdr focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        default: clsx("bg-sg-blue-brdr text-white hover:bg-sg-blue-brdr/90"),
+        destructive: "bg-sg-warn-fg text-white hover:bg-sg-warn-fg/90",
         outline:
-          "border border-input bg-surface hover:bg-accent hover:text-accent-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "border border-sg-blue-brdr bg-transparent text-sg-blue-brdr hover:bg-sg-blue-bg hover:text-sg-blue-brdr",
+        secondary: "bg-sg-green-brdr text-white hover:bg-sg-green-brdr/80",
+        ghost: "hover:bg-sg-blue-bg hover:text-sg-blue-brdr text-sg-blue-brdr",
+        link: "text-sg-blue-brdr underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -8,7 +8,7 @@ import { AUTH_CONST } from "@/app/auth/_lib/authConst";
 // -----------------------------------------------------------------------------
 
 // Use the ACCESS secret for lightweight verification at the edge
-const SECRET_KEY = process.env.AUTH_ACCESS_SECRET;
+const SECRET_KEY = process.env.ACCESS_SECRET;
 const ENCODED_SECRET = new TextEncoder().encode(SECRET_KEY);
 
 // Define our custom payload type for better type safety

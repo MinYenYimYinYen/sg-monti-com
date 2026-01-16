@@ -1,5 +1,3 @@
-@use "colors" as c;
-
 .loader-overlay {
   position: fixed;
   top: 0;
@@ -25,8 +23,8 @@
 .spinner {
   width: 48px;
   height: 48px;
-  border: 5px solid c.$just-off-white;
-  border-top: 5px solid c.$sg-blue; // Brand Color
+  border: 5px solid var(--sg-just-off-white);
+  border-top: 5px solid var(--sg-blue-50); // Brand Color
   border-radius: 50%;
 
   // Continuous rotation is best handled by CSS (cheaper for the browser)
@@ -35,7 +33,7 @@
 
 .loader-message {
   font-family: 'Inter', sans-serif;
-  color: c.$basement-gray;
+  color: var(--sg-gray-50);
   font-size: 1.125rem;
   font-weight: 600;
 }

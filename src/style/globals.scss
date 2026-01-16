@@ -4,64 +4,67 @@
 @import "tailwindcss";
 
 @theme {
+  /* Blue Surface (Primary / Info) */
+  --color-sg-blue-bg: var(--sg-blue-10);
+  --color-sg-blue-brdr: var(--sg-blue-50);
+
+  /* Green Surface (Success / Secondary) */
+  --color-sg-green-bg: var(--sg-green-10);
+  --color-sg-green-brdr: var(--sg-green-50);
+
+  /* Orange Surface (Emphasis / Tertiary) */
+  --color-sg-orange-bg: var(--sg-orange-10);
+  --color-sg-orange-brdr: var(--sg-orange-50); /* Also for dividers/rings */
+
+  /* Neutral Surface (disabled / muted) */
+  --color-sg-gray-bg: var(--sg-gray-10);
+  --color-sg-gray-brdr: var(--sg-gray-50);
+
+  /* Red Surface (Error / Danger) */
+  --color-sg-warn-bg: #ffcccc;
+  --color-sg-warn-fg: red;
+
+  /* Text */
+  --color-sg-text: black;
+  --color-sg-subtle: #303030;
+
+  /* Selection */
+  --color-sg-selectable-bg: var(--sg-just-off-white);
+  --color-sg-hovered-bg: var(--sg-blue-10); /* Very light blue hover */
+  --color-sg-selected-bg: var(--sg-blue-35);
+
+
+
+
   /* -------------------------------------------------------------------------- */
-  /* 1. BRAND PALETTE (Raw Colors)                                              */
+  /* 3. COMPONENT MAPPINGS (Standard Names for Shadcn/UI)                       */
   /* -------------------------------------------------------------------------- */
-  --color-sg-blue: var(--sg-blue);
-  --color-sg-green: var(--sg-green);
-  --color-sg-orange: var(--sg-orange);
-  --color-sg-gray: var(--sg-basement-gray);
-  --color-sg-off-white: var(--sg-just-off-white);
+  /* These ensure Button.tsx, Card.tsx, etc. continue to work.                  */
 
-  --color-sg-blue-light: var(--sg-blue-light);
-  --color-sg-green-light: var(--sg-green-light);
-  --color-sg-orange-light: var(--sg-orange-light);
-
-  /* -------------------------------------------------------------------------- */
-  /* 2. SEMANTIC THEME (Usage)                                                  */
-  /* -------------------------------------------------------------------------- */
-
-  /* PRIMARY: The main action color. Used for "Submit" buttons, active states,  */
-  /* and key branding elements.                                                 */
-  --color-primary: var(--sg-blue);
-  --color-primary-foreground: white; /* Text on top of primary */
-
-  /* SECONDARY: Alternative actions. Used for "Cancel" or "Back" buttons,       */
-  /* or less important highlights.                                              */
-  --color-secondary: var(--sg-green);
-  --color-secondary-foreground: white;
-
-  /* DESTRUCTIVE: Dangerous actions. Used for "Delete", "Remove", or Error      */
-  /* states. Usually Red, but we map it to your Orange for branding.            */
-  --color-destructive: var(--sg-orange);
-  --color-destructive-foreground: white;
-
-  /* MUTED: Subdued content. Used for secondary text (captions), disabled       */
-  /* states, or subtle backgrounds (like a table row hover).                    */
-  --color-muted: #f1f5f9; /* Standard Slate-100 */
-  --color-muted-foreground: #64748b; /* Standard Slate-500 */
-
-  /* ACCENT: Interactive elements. Used for dropdown items, hover states,       */
-  /* or selected items in a list.                                               */
-  --color-accent: var(--sg-blue-light);
-  --color-accent-foreground: var(--sg-blue);
-
-  /* BACKGROUND: The underlying page color.                                     */
-  --color-background: var(--sg-just-off-white);
-  --color-foreground: black; /* Main text color */
-
-  /* SURFACE (Card): Used for Cards, Modals, and elevated containers.           */
-  --color-surface: white;
-  --color-surface-foreground: black;
-
-  /* BORDER: Used for hair-lines, inputs, and dividers.                         */
-  --color-border: #e2e8f0; /* Standard Slate-200 */
-
-  /* INPUT: Specific border color for form inputs (often same as border).       */
-  --color-input: #e2e8f0;
-
-  /* RING: The focus ring color when tabbing through inputs.                    */
-  --color-ring: var(--sg-blue);
+  //--color-primary: var(--sg-blue-50);
+  //--color-primary-foreground: white;
+  //
+  //--color-secondary: var(--sg-green-50);
+  //--color-secondary-foreground: white;
+  //
+  //--color-destructive: var(--sg-orange-50);
+  //--color-destructive-foreground: white;
+  //
+  //--color-muted: var(--sg-gray-10);
+  //--color-muted-foreground: var(--sg-gray-50);
+  //
+  //--color-accent: var(--sg-blue-10);
+  //--color-accent-foreground: var(--sg-blue-50);
+  //
+  //--color-background: var(--sg-just-off-white);
+  //--color-foreground: black;
+  //
+  //--color-surface: white;
+  //--color-surface-foreground: black;
+  //
+  //--color-border: var(--sg-gray-20);
+  //--color-input: var(--sg-gray-20);
+  //--color-ring: var(--sg-blue-50);
 }
 
 *, *::before, *::after {

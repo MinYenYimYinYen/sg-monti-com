@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 import { UserWithPW } from "@/app/auth/_types/User";
 import { ROLES } from "@/lib/api/types/roles";
-import { rgApi } from "@/app/realGreen/employee/api/rgApi";
-import { RawEmployee } from "@/app/realGreen/employee/Employee";
 
 export interface UserDoc extends UserWithPW, mongoose.Document {}
 
@@ -54,27 +52,12 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: null,
       unique: true,
-      validate: {
-        validator: validateSAId,
-        message: (props: { value: string }) =>
-          `${props.value} is not a valid SA ID!`,
-      },
     },
   },
   {
     timestamps: true,
   },
 );
-
-async function validateSAId(saId: string): Promise<boolean> {
-  const response = await rgApi<RawEmployee[]>({
-    path: "/Employee/Active/true",
-    method: "GET",
-  });
-
-  const saIds = response.map((employee) => employee.id.trim().toLowerCase());
-  return saIds.includes(saId.toLowerCase());
-}
 
 const UserModel =
   (mongoose.models?.User as mongoose.Model<UserDoc>) ||

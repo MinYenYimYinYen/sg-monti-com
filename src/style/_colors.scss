@@ -1,4 +1,4 @@
-@use "sass:color";
+@use "lib/palette" as *;
 
 $sg-blue: #597C91;
 $sg-green: #4DA43A;
@@ -6,31 +6,21 @@ $sg-orange: #EE7F4B;
 $basement-gray: #5e5e5e;
 $just-off-white: #dddddd;
 
-// Light variants (30% mix with white)
-$sg-blue-light: color.mix($sg-blue, white, 30%);
-$sg-green-light: color.mix($sg-green, white, 30%);
-$sg-orange-light: color.mix($sg-orange, white, 30%);
-
 :root {
+  // Generate Palettes (5, 10, ... 50 ... 90, 95)
+  @include generate-palette("sg-blue", $sg-blue);
+  @include generate-palette("sg-green", $sg-green);
+  @include generate-palette("sg-orange", $sg-orange);
+  @include generate-palette("sg-gray", $basement-gray);
+
+  // Base Variables (Aliases for convenience, usually mapped to -50)
   --sg-blue: #{$sg-blue};
   --sg-green: #{$sg-green};
   --sg-orange: #{$sg-orange};
   --sg-basement-gray: #{$basement-gray};
   --sg-just-off-white: #{$just-off-white};
 
-  --sg-blue-light: #{$sg-blue-light};
-  --sg-green-light: #{$sg-green-light};
-  --sg-orange-light: #{$sg-orange-light};
-}
-
-.sg-blue-light-30 {
-  background-color: var(--sg-blue-light);
-}
-
-.sg-green-light-30 {
-  background-color: var(--sg-green-light);
-}
-
-.sg-orange-light-30 {
-  background-color: var(--sg-orange-light);
+  // Legacy/Specific Light Variants (Optional, if you still need specific 30% mixes)
+  // Note: The palette generator covers these roughly around step 15-20.
+  // --sg-blue-light: ...
 }

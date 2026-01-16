@@ -23,10 +23,10 @@ export const AUTH_CONST = {
   },
   SECRET: {
     get ACCESS() {
-      const secret = process.env.AUTH_ACCESS_SECRET;
+      const secret = process.env.ACCESS_SECRET;
       if (!secret) {
         throw new AppError({
-          message: "Missing Environment Variable: AUTH_ACCESS_SECRET",
+          message: "Missing Environment Variable: ACCESS_SECRET",
           type: "SERVER_ERROR",
           isOperational: false,
         });
@@ -34,10 +34,10 @@ export const AUTH_CONST = {
       return secret;
     },
     get REFRESH() {
-      const secret = process.env.AUTH_REFRESH_SECRET;
+      const secret = process.env.REFRESH_SECRET;
       if (!secret) {
         throw new AppError({
-          message: "Missing Environment Variable: AUTH_REFRESH_SECRET",
+          message: "Missing Environment Variable: REFRESH_SECRET",
           type: "SERVER_ERROR",
           isOperational: false,
         });
