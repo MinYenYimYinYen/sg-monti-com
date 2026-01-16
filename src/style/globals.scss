@@ -33,38 +33,12 @@
   --color-sg-hovered-bg: var(--sg-blue-10); /* Very light blue hover */
   --color-sg-selected-bg: var(--sg-blue-35);
 
+  /* Global Layout */
+  --color-sg-body-bg: var(--sg-just-off-white);
+  --color-sg-outOfBounds: var(--sg-basement-gray);
 
 
 
-  /* -------------------------------------------------------------------------- */
-  /* 3. COMPONENT MAPPINGS (Standard Names for Shadcn/UI)                       */
-  /* -------------------------------------------------------------------------- */
-  /* These ensure Button.tsx, Card.tsx, etc. continue to work.                  */
-
-  //--color-primary: var(--sg-blue-50);
-  //--color-primary-foreground: white;
-  //
-  //--color-secondary: var(--sg-green-50);
-  //--color-secondary-foreground: white;
-  //
-  //--color-destructive: var(--sg-orange-50);
-  //--color-destructive-foreground: white;
-  //
-  //--color-muted: var(--sg-gray-10);
-  //--color-muted-foreground: var(--sg-gray-50);
-  //
-  //--color-accent: var(--sg-blue-10);
-  //--color-accent-foreground: var(--sg-blue-50);
-  //
-  //--color-background: var(--sg-just-off-white);
-  //--color-foreground: black;
-  //
-  //--color-surface: white;
-  //--color-surface-foreground: black;
-  //
-  //--color-border: var(--sg-gray-20);
-  //--color-input: var(--sg-gray-20);
-  //--color-ring: var(--sg-blue-50);
 }
 
 *, *::before, *::after {
@@ -72,7 +46,7 @@
 }
 
 html {
-  background-color: var(--sg-basement-gray);
+  background-color: var(--color-sg-outOfBounds);
   font-size: 16px; /* 16px at 1024px */
   @media (max-width: 960px) {
     font-size: 14px; /* 17px at 960px */
@@ -89,8 +63,8 @@ body {
   padding: 0;
   min-height: 100vh;
   font-family: 'Inter', 'Inter-Fallback', sans-serif;
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--color-sg-body-bg);
+  color: var(--color-sg-text);
   font-size: 1rem; /* 16px */
 
   //overscroll-behavior: none; /* Disable pull-to-refresh effect */
