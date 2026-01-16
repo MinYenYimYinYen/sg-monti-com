@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import { ReactNode } from "react";
 import NavBar from "@/components/NavBar";
 import { ToastContainer } from "react-toastify";
+import {GlobalLoader} from "@/components/globalLoader/GlobalLoader";
 
 export const metadata: Metadata = {
   title: "SG Monti",
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body>
         <Providers>
           <NavBar />
+          <GlobalLoader />
           {children}
         </Providers>
         <ToastContainer />

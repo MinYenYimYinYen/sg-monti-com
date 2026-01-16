@@ -1,4 +1,5 @@
 @use "sass:color";
+@use "sass:math";
 
 /// Generates a full color palette (0-100) where 50 is the base color.
 /// 0-49: Mix with White (Lighter)
@@ -10,7 +11,10 @@
 /// @param {Number} $step-size - The increment step (default: 5)
 @mixin generate-palette($name, $base-color, $step-size: 5) {
   // Loop from $step-size to 100 (exclusive of 0 and 100 usually, but let's go 5-95)
-  @for $i from 1 through (100 / $step-size) - 1 {
+  // Fix: Use math.div for division
+  $steps: math.div(100, $step-size) - 1;
+
+  @for $i from 1 through $steps {
     $step: $i * $step-size;
     $value: null;
 
