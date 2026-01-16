@@ -8,18 +8,28 @@ export function normalizeError(error: unknown): AppError {
       message: error.message,
       type: "UNKNOWN_ERROR",
       statusCode: 500,
-      isOperational: false
+      isOperational: false,
     });
   return new AppError({
     message: "An unknown error occurred",
     type: "UNKNOWN_ERROR",
     statusCode: 500,
-    isOperational: false
+    isOperational: false,
   });
 }
 
-export function handleError(error: unknown) {
+type HandleErrorOptions = {
+  silent?: boolean;
+};
+
+export function handleError(error: unknown, options?: HandleErrorOptions) {
   const appError = normalizeError(error);
+
+  // Apply overrides
+  if (options?.silent !== undefined) {
+    appError.silent = options.silent;
+  }
+
   const isServer = typeof window === "undefined";
 
   // LOGGING

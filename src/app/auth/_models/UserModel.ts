@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 import { UserWithPW } from "@/app/auth/_types/User";
 import { ROLES } from "@/lib/api/types/roles";
 
-export interface UserDoc extends UserWithPW, mongoose.Document {}
+export interface UserDoc extends UserWithPW, mongoose.Document {
+}
 
 const UserSchema = new mongoose.Schema(
   {
@@ -46,12 +47,16 @@ const UserSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: Object.values(ROLES),
     },
     saId: {
       type: String,
       default: null,
       unique: true,
+      index: true,
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
     },
   },
   {

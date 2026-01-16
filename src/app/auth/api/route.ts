@@ -10,7 +10,7 @@ import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { AppError } from "@/lib/errors/AppError";
 import bcrypt from "bcrypt";
 import { cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
-import { User } from "@/app/auth/_types/User";
+import { User, UserWithPW } from "@/app/auth/_types/User";
 import { cookies } from "next/headers";
 import {
   signAccessToken,
@@ -19,6 +19,8 @@ import {
   verifyRefreshToken,
 } from "@/app/auth/_lib/tokenUtils";
 import { AUTH_CONST } from "@/app/auth/_lib/authConst";
+import { TokenPayload } from "@/app/auth/_types/authTypes";
+import PasswordResetRequestModel from "@/app/auth/_models/PasswordResetRequestModel";
 
 /**
  * 1. DEFINE HANDLERS
@@ -111,14 +113,15 @@ const handlers: HandlerMap<AuthContract> = {
       await connectToMongoDB();
 
       // 1. Find User
-      const user = await UserModel.findOne({ userName });
-      if (!user) {
+      const userDoc = await UserModel.findOne({ userName }).lean();
+      if (!userDoc) {
         throw new AppError({
           message: "Invalid credentials",
           type: "AUTH_ERROR",
           statusCode: 401,
         });
       }
+      const user = cleanMongoObject(userDoc) as UserWithPW;
 
       // 2. Verify Password
       const isMatch = await bcrypt.compare(password, user.password);
@@ -131,8 +134,7 @@ const handlers: HandlerMap<AuthContract> = {
       }
 
       // 3. Generate Tokens
-      const payload = {
-        userId: user._id.toString(),
+      const payload: TokenPayload = {
         role: user.role,
         saId: user.saId,
       };
@@ -159,9 +161,7 @@ const handlers: HandlerMap<AuthContract> = {
       });
 
       // 5. Return Safe User
-      const userObject = user.toObject();
-      const { password: _, ...safeUser } = userObject;
-      const cleanUser: User = cleanMongoObject(safeUser);
+      const { password: _, ...cleanUser } = user;
 
       return {
         success: true,
@@ -200,7 +200,6 @@ const handlers: HandlerMap<AuthContract> = {
       // Ideally, we should check if the user still exists/is active in DB here
       // but for speed, we can trust the signed refresh token for now.
       const newPayload = {
-        userId: payload.userId,
         role: payload.role,
         saId: payload.saId,
       };
@@ -219,25 +218,23 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   checkAuth: {
-    roles: ["public"],
+    roles: ["public"], // We verify manually
     handler: async () => {
       const cookieStore = await cookies();
       const token = cookieStore.get(AUTH_CONST.COOKIE.ACCESS_TOKEN);
 
       if (!token) {
         throw new AppError({
-          message: "No token found",
+          message: "No token",
           type: "AUTH_ERROR",
           statusCode: 401,
         });
       }
 
-      // 1. Verify Token
+      // Verify & Get User
       const payload = verifyAccessToken(token.value);
-
-      // 2. Get User from DB
       await connectToMongoDB();
-      const user = await UserModel.findById(payload.userId);
+      const user = await UserModel.findOne({ saId: payload.saId });
 
       if (!user) {
         throw new AppError({
@@ -247,15 +244,81 @@ const handlers: HandlerMap<AuthContract> = {
         });
       }
 
-      // 3. Return Safe User
-      const userObject = user.toObject();
-      const { password: _, ...safeUser } = userObject;
-      const cleanUser: User = cleanMongoObject(safeUser);
+      return { success: true, item: cleanMongoObject(user.toObject()) };
+    },
+  },
+  requestPasswordReset: {
+    roles: ["public"],
+    handler: async ({ userName }) => {
+      await connectToMongoDB();
 
-      return {
-        success: true,
-        item: cleanUser,
-      };
+      // 1. Find User
+      const user = await UserModel.findOne({ userName });
+
+      // Security: Always return success to prevent username enumeration
+      if (!user) {
+        return { success: true };
+      }
+
+      // 2. Create Request (Upsert to handle duplicates gracefully)
+      // We use findOneAndUpdate with upsert to ensure we don't create duplicates
+      // if one is already pending.
+      await PasswordResetRequestModel.findOneAndUpdate(
+        { userName: user.userName, status: "pending" },
+        {
+          userName: user.userName,
+          saId: user.saId,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          status: "pending",
+        },
+        { upsert: true, new: true },
+      );
+
+      return { success: true };
+    },
+  },
+  resolvePasswordReset: {
+    roles: ["admin"],
+    handler: async ({ userName, tempPassword }) => {
+      await connectToMongoDB();
+
+      // 1. Find Request
+      const request = await PasswordResetRequestModel.findOne({
+        userName,
+        status: "pending",
+      });
+      if (!request) {
+        throw new AppError({
+          message: "No pending request found for this user",
+          type: "VALIDATION_ERROR",
+          statusCode: 404,
+        });
+      }
+
+      // 2. Find User
+      const user = await UserModel.findOne({ userName });
+      if (!user) {
+        throw new AppError({
+          message: "User not found",
+          type: "SERVER_ERROR",
+          statusCode: 500,
+        });
+      }
+
+      // 3. Hash New Password
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+      // 4. Update User
+      user.password = hashedPassword;
+      user.mustChangePassword = true;
+      await user.save();
+
+      // 5. Resolve Request
+      request.status = "resolved";
+      await request.save();
+
+      return { success: true };
     },
   },
 };

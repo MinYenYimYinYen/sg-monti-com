@@ -1,15 +1,15 @@
-import { Role } from "@/lib/api/types/roles";
-import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import {Role} from "@/lib/api/types/roles";
 
-export type User = CreatedUpdated & {
+export interface User {
   email: string;
   firstName: string;
   lastName: string;
   userName: string;
   role: Role;
   saId: string;
-};
+  mustChangePassword?: boolean;
+}
 
-export type UserWithPW = User & {
+export interface UserWithPW extends User {
   password: string;
-};
+}

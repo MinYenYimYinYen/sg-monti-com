@@ -35,6 +35,14 @@
 - **Reference**: See `src/lib/errors/errors.readme.md`.
 - **Summary**: Uses a **Unified Error Class** (`AppError`) and functional handler (`handleError`). Distinguishes between **Operational errors** (safe to show user) and **Non-Operational bugs** (sanitized).
 
+## Data Modeling (Mongoose)
+
+- **Reference**: See `src/lib/mongoose/mongo.readme.md`.
+- **Key Rules**:
+    - **Type-Driven**: Models must implement a separate TypeScript interface.
+    - **No IDs**: Use Natural Keys (e.g., `userName`) instead of `_id` in app logic.
+    - **String Dates**: All dates must be strings (ISO 8601).
+
 ## Development Rules
 
 - **React Compiler**: Code must strictly adhere to the Rules of React.

@@ -1,12 +1,8 @@
 import jwt from "jsonwebtoken";
 import { AUTH_CONST } from "@/app/auth/_lib/authConst";
 import { AppError } from "@/lib/errors/AppError";
+import {TokenPayload} from "@/app/auth/_types/authTypes";
 
-type TokenPayload = {
-  userId: string;
-  role: string;
-  saId: string;
-};
 
 export function signAccessToken(payload: TokenPayload): string {
   return jwt.sign(payload, AUTH_CONST.SECRET.ACCESS, {

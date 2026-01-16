@@ -160,7 +160,8 @@ const checkAuth = createAsyncThunk<
         body,
       });
     } catch (e) {
-      const error = handleError(e);
+      // Silence the error because failing checkAuth is normal for unauthenticated users
+      const error = handleError(e, { silent: true });
       return rejectWithValue(error.message);
     }
   },

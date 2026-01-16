@@ -22,7 +22,7 @@ export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
   public readonly data?: unknown;
-  public readonly silent?: boolean; // Matches your ErrorResponse
+  public silent?: boolean; // Matches your ErrorResponse
 
   constructor({
     message,

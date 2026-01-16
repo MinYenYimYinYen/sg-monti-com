@@ -1,3 +1,10 @@
+import {Role} from "@/lib/api/types/roles";
+
+export type TokenPayload = {
+  role: Role;
+  saId: string;
+}
+
 export type CheckedId = {
   checked: boolean;
   isValid: boolean;
