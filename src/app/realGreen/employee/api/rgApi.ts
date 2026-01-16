@@ -1,4 +1,4 @@
-import { rgHttp } from "@/lib/api/rgHttp";
+import { rgHttp } from "@/app/realGreen/employee/api/rgHttp";
 // import { CustFlagIdsSearch } from "@/realGreen/types/CustFlagIdsSearch";
 // import { CustomerSearch } from "@/realGreen/types/CustomerSearch";
 // import { ProgramSearch } from "@/realGreen/types/ProgramSearch";

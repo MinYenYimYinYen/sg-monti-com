@@ -25,8 +25,8 @@
 .spinner {
   width: 48px;
   height: 48px;
-  border: 5px solid c.$justOffWhite;
-  border-top: 5px solid c.$sgBlue; // Brand Color
+  border: 5px solid c.$just-off-white;
+  border-top: 5px solid c.$sg-blue; // Brand Color
   border-radius: 50%;
 
   // Continuous rotation is best handled by CSS (cheaper for the browser)
@@ -35,7 +35,7 @@
 
 .loader-message {
   font-family: 'Inter', sans-serif;
-  color: c.$basementGray;
+  color: c.$basement-gray;
   font-size: 1.125rem;
   font-weight: 600;
 }

@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
-import { User } from "@/app/auth/_types/User";
+import { UserWithPW } from "@/app/auth/_types/User";
 import { ROLES } from "@/lib/api/types/roles";
-import { rgApi } from "@/lib/api/rgApi";
+import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import { RawEmployee } from "@/app/realGreen/employee/Employee";
 
-export interface UserDoc extends User, mongoose.Document {}
+export interface UserDoc extends UserWithPW, mongoose.Document {}
 
 const UserSchema = new mongoose.Schema(
   {

@@ -3,9 +3,9 @@ import { EmployeeContract } from "@/app/realGreen/employee/api/EmployeeContract"
 import { normalizeError } from "@/lib/errors/errorHandler"; // Reuse your normalizer!
 
 // Mocking your Auth/DB checks for this example
-import { rgApi } from "@/lib/api/rgApi";
+import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
-import { assertRole } from "@/app/auth/assertRole";
+import { assertRole } from "@/app/auth/_lib/assertRole";
 import {
   Employee,
   extendEmployees,

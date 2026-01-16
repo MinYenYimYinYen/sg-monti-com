@@ -1,27 +1,36 @@
 @use "sass:color";
 
-$sgBlue: #597C91;
-$sgGreen: #4DA43A;
-$sgOrange: #EE7F4B;
-$basementGray: #5e5e5e;
-$justOffWhite: #e1e1e1;
+$sg-blue: #597C91;
+$sg-green: #4DA43A;
+$sg-orange: #EE7F4B;
+$basement-gray: #5e5e5e;
+$just-off-white: #dddddd;
+
+// Light variants (30% mix with white)
+$sg-blue-light: color.mix($sg-blue, white, 30%);
+$sg-green-light: color.mix($sg-green, white, 30%);
+$sg-orange-light: color.mix($sg-orange, white, 30%);
 
 :root {
-  --sgBlue: #{$sgBlue};
-  --sgGreen: #{$sgGreen};
-  --sgOrange: #{$sgOrange};
-  --outOfBounds: #{$basementGray};
-  --background: #{$justOffWhite};
+  --sg-blue: #{$sg-blue};
+  --sg-green: #{$sg-green};
+  --sg-orange: #{$sg-orange};
+  --sg-basement-gray: #{$basement-gray};
+  --sg-just-off-white: #{$just-off-white};
+
+  --sg-blue-light: #{$sg-blue-light};
+  --sg-green-light: #{$sg-green-light};
+  --sg-orange-light: #{$sg-orange-light};
 }
 
-.bgBlue {
-  background-color: color.mix($sgBlue, white, 30%);
+.sg-blue-light-30 {
+  background-color: var(--sg-blue-light);
 }
 
-.bgGreen {
-  background-color: color.mix($sgGreen, white, 30%);
+.sg-green-light-30 {
+  background-color: var(--sg-green-light);
 }
 
-.bgOrange {
-  background-color: color.mix($sgOrange, white, 30%);
+.sg-orange-light-30 {
+  background-color: var(--sg-orange-light);
 }

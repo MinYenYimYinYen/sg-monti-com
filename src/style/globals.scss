@@ -3,13 +3,73 @@
 @use "spinner";
 @import "tailwindcss";
 
+@theme {
+  /* -------------------------------------------------------------------------- */
+  /* 1. BRAND PALETTE (Raw Colors)                                              */
+  /* -------------------------------------------------------------------------- */
+  --color-sg-blue: var(--sg-blue);
+  --color-sg-green: var(--sg-green);
+  --color-sg-orange: var(--sg-orange);
+  --color-sg-gray: var(--sg-basement-gray);
+  --color-sg-off-white: var(--sg-just-off-white);
+
+  --color-sg-blue-light: var(--sg-blue-light);
+  --color-sg-green-light: var(--sg-green-light);
+  --color-sg-orange-light: var(--sg-orange-light);
+
+  /* -------------------------------------------------------------------------- */
+  /* 2. SEMANTIC THEME (Usage)                                                  */
+  /* -------------------------------------------------------------------------- */
+
+  /* PRIMARY: The main action color. Used for "Submit" buttons, active states,  */
+  /* and key branding elements.                                                 */
+  --color-primary: var(--sg-blue);
+  --color-primary-foreground: white; /* Text on top of primary */
+
+  /* SECONDARY: Alternative actions. Used for "Cancel" or "Back" buttons,       */
+  /* or less important highlights.                                              */
+  --color-secondary: var(--sg-green);
+  --color-secondary-foreground: white;
+
+  /* DESTRUCTIVE: Dangerous actions. Used for "Delete", "Remove", or Error      */
+  /* states. Usually Red, but we map it to your Orange for branding.            */
+  --color-destructive: var(--sg-orange);
+  --color-destructive-foreground: white;
+
+  /* MUTED: Subdued content. Used for secondary text (captions), disabled       */
+  /* states, or subtle backgrounds (like a table row hover).                    */
+  --color-muted: #f1f5f9; /* Standard Slate-100 */
+  --color-muted-foreground: #64748b; /* Standard Slate-500 */
+
+  /* ACCENT: Interactive elements. Used for dropdown items, hover states,       */
+  /* or selected items in a list.                                               */
+  --color-accent: var(--sg-blue-light);
+  --color-accent-foreground: var(--sg-blue);
+
+  /* BACKGROUND: The underlying page color.                                     */
+  --color-background: var(--sg-just-off-white);
+  --color-foreground: black; /* Main text color */
+
+  /* SURFACE (Card): Used for Cards, Modals, and elevated containers.           */
+  --color-surface: white;
+  --color-surface-foreground: black;
+
+  /* BORDER: Used for hair-lines, inputs, and dividers.                         */
+  --color-border: #e2e8f0; /* Standard Slate-200 */
+
+  /* INPUT: Specific border color for form inputs (often same as border).       */
+  --color-input: #e2e8f0;
+
+  /* RING: The focus ring color when tabbing through inputs.                    */
+  --color-ring: var(--sg-blue);
+}
 
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 html {
-  background-color: var(--outOfBounds);
+  background-color: var(--sg-basement-gray);
   font-size: 16px; /* 16px at 1024px */
   @media (max-width: 960px) {
     font-size: 14px; /* 17px at 960px */
@@ -27,7 +87,7 @@ body {
   min-height: 100vh;
   font-family: 'Inter', 'Inter-Fallback', sans-serif;
   background-color: var(--background);
-  color: black;
+  color: var(--foreground);
   font-size: 1rem; /* 16px */
 
   //overscroll-behavior: none; /* Disable pull-to-refresh effect */

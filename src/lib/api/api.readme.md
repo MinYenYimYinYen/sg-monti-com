@@ -130,12 +130,12 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/lib/api/api';
 import { OpMap } from '@/lib/api/types/rpcUtils';
 import { EmployeeContract } from '@/app/realGreen/employee/api/EmployeeContract';
-import { WithUI } from '@/store/reduxTypes';
-import { getUIMeta } from '@/store/getUIMeta';
+import { WithConfig } from '@/store/reduxUtil/reduxTypes';
+import { getUIMeta } from '@/store/reduxUtil/smartThunkOptions';
 
 export const getEmployees = createAsyncThunk<
   EmployeeContract['getAll']['result'],          // Return Type
-  WithUI<EmployeeContract['getAll']['params']>,  // Params (Wrapped with UI flags)
+  WithConfig<EmployeeContract['getAll']['params']>,  // Params (Wrapped with UI flags)
   { rejectValue: string }
 >(
   'employee/getEmployees',

@@ -1,5 +1,7 @@
 import { ErrorResponse } from "@/lib/api/types/responses";
 import { AppError, ErrorType } from "@/lib/errors/AppError";
+import { OpMap } from "@/lib/api/types/rpcUtils";
+import { AuthContract } from "@/app/auth/_types/AuthContract";
 
 // 1. EXTEND RequestInit
 // We "unlock" the body type so you can pass OpMaps or other objects
@@ -7,22 +9,81 @@ interface ApiConfig extends Omit<RequestInit, "body"> {
   body?: unknown;
 }
 
+// --- MUTEX FOR REFRESH ---
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+/**
+ * Handles the 401 Refresh Token flow with a Mutex to prevent parallel refreshes.
+ * Returns the new Response if retry succeeds, or null if refresh failed/not needed.
+ */
+async function handleRefreshAndRetry(
+  url: string,
+  fetchConfig: RequestInit,
+): Promise<Response | null> {
+  // Only attempt refresh if we are NOT currently hitting the auth endpoint (prevents loops)
+  if (url.includes("/auth/api")) {
+    return null;
+  }
+
+  if (!isRefreshing) {
+    isRefreshing = true;
+    refreshPromise = (async () => {
+      try {
+        const refreshBody: OpMap<AuthContract> = { op: "refresh" };
+        const refreshRes = await fetch("/auth/api", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(refreshBody),
+        });
+        return refreshRes.ok;
+      } catch (e) {
+        return false;
+      } finally {
+        isRefreshing = false;
+        refreshPromise = null;
+      }
+    })();
+  }
+
+  // Wait for the refresh to finish (whether we started it or someone else did)
+  const refreshSuccess = await refreshPromise;
+
+  if (refreshSuccess) {
+    // Retry the original request
+    return await fetch(url, fetchConfig);
+  }
+
+  return null;
+}
+
 export async function api<T>(url: string, config: ApiConfig = {}) {
   const { body, headers, ...rest } = config;
 
+  const fetchConfig = {
+    ...rest,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+    // 2. Auto-stringify
+    body:
+      body && typeof body === "object"
+        ? JSON.stringify(body)
+        : (body as BodyInit),
+  };
+
   try {
-    const res = await fetch(url, {
-      ...rest,
-      headers: {
-        "Content-Type": "application/json",
-        ...headers,
-      },
-      // 2. Auto-stringify
-      body:
-        body && typeof body === "object"
-          ? JSON.stringify(body)
-          : (body as BodyInit),
-    });
+    let res = await fetch(url, fetchConfig);
+
+    // --- RETRY LOGIC (401) ---
+    if (res.status === 401) {
+      const retryRes = await handleRefreshAndRetry(url, fetchConfig);
+      if (retryRes) {
+        res = retryRes;
+      }
+    }
+    // --- END RETRY LOGIC ---
 
     if (!res.ok) {
       const errorData = (await res
