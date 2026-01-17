@@ -1,5 +1,6 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Grouper } from "@/lib/Grouper";
+import { ServCode } from "../servCode/ServCode";
 
 export type RawProgramCode = {
   // anyBranch: boolean;
@@ -80,7 +81,10 @@ export type RemappedProgramCode = {
 //   progCodeId: string;
 // };
 
-export type ProgCode = RemappedProgramCode // & MongoProgramCode;
+export type ProgCode = RemappedProgramCode & {
+  servCodes?: ServCode[];
+
+} // & MongoProgramCode;
 
 export function remapProgramCode(raw: RawProgramCode): RemappedProgramCode {
   return {

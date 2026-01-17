@@ -18,7 +18,8 @@
 
 
 import {Grouper} from "@/lib/Grouper";
-import {CreatedUpdated} from "@/lib/mongoose/mongooseTypes";
+import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import {ProgCode} from "@/app/realGreen/programCode/ProgCode";
 
 export type RawServCode = {
   // autopostMobile: boolean;
@@ -108,7 +109,9 @@ export type MongoServCode = CreatedUpdated & {
   alwaysAsap: boolean;
 };
 
-export type ServCode = RemappedServCode & MongoServCode;
+export type ServCode = RemappedServCode & MongoServCode & {
+  progCode: ProgCode;
+};
 
 export function remapServCode(raw: RawServCode): RemappedServCode {
   return {
