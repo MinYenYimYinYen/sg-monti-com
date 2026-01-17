@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { cn } from "@/style/utils";
 import { X } from "lucide-react";
 import { Button } from "@/style/components/Button";
+import { useIsClient } from "@/lib/hooks/useIsClient";
 
 interface ModalProps {
   isOpen: boolean;
@@ -24,21 +25,15 @@ export function Modal({
   children,
   className,
 }: ModalProps) {
-  const [mounted, setMounted] = useState(false);
+  const isClient = useIsClient();
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Handle mounting for Portal (Client-side only)
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
   // GSAP Animation
   useGSAP(
     () => {
-      if (!mounted || !overlayRef.current || !contentRef.current) return;
+      if (!isClient || !overlayRef.current || !contentRef.current) return;
 
       if (isOpen) {
         // Enter Animation
@@ -77,7 +72,7 @@ export function Modal({
         });
       }
     },
-    { dependencies: [isOpen, mounted] },
+    { dependencies: [isOpen, isClient] },
   );
 
   // Close on Escape key
@@ -85,11 +80,17 @@ export function Modal({
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) onClose();
     };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [isOpen, onClose]);
+    if (isClient) {
+      window.addEventListener("keydown", handleEsc);
+    }
+    return () => {
+      if (isClient) {
+        window.removeEventListener("keydown", handleEsc);
+      }
+    };
+  }, [isOpen, onClose, isClient]);
 
-  if (!mounted) return null;
+  if (!isClient) return null;
 
   return createPortal(
     <div

@@ -51,10 +51,15 @@
 ## Development Rules
 
 - **React Compiler**: Code must strictly adhere to the Rules of React.
-    - No mutation of variables during render.
-    - No conditional hook calls.
+    - **No Manual Memoization**: Do not use `useCallback` or `useMemo` unless specifically needed for referential equality in external libraries. The compiler handles this.
+    - **Strict Compliance**: The compiler assumes your code follows the Rules of React (e.g., no mutation during render, consistent hook order). Violations can cause the compiler to de-opt or break the app.
+    - **Dependency Arrays**: Always include all dependencies in `useEffect`. The compiler relies on this correctness to optimize re-renders.
     - `eslint-plugin-react-compiler` is configured to "error" on violations.
 - **Type Safety**: `tsconfig.json` is set to strict mode with `noUnusedLocals`, `noImplicitReturns`.
+- **Hydration & Client Checks**:
+    - **Do not** use `useEffect` + `setState` to check for the client environment (this causes double renders and lint errors).
+    - **Use**: `const isClient = useIsClient()` from `@/lib/hooks/useIsClient`.
+    - This uses `useSyncExternalStore` for a safe, compliant, and performant check.
 
 - **Coding Style**:
     - **Function Parameters**: Prefer object-style parameters (destructuring) for functions with more than one

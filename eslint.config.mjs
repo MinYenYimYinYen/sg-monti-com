@@ -24,8 +24,6 @@ const eslintConfig = defineConfig([
                     "ignoreRestSiblings": true
                 }
             ],
-            // Disable the specific rule causing issues with mount checks
-            "react-hooks/set-state-in-effect": "off",
         },
     },
     // Override default ignores of eslint-config-next.
