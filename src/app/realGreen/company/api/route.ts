@@ -3,12 +3,12 @@ import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
-import { CompanyContract } from "@/app/realGreen/company/api/CompanyContract";
+import { CompanyContract } from "@/app/realGreen/company/_lib/CompanyContract";
 import {
   Company,
   RawCompany,
   remapCompany,
-} from "@/app/realGreen/company/Company";
+} from "@/app/realGreen/company/_lib/Company";
 
 const handlers: HandlerMap<CompanyContract> = {
   getAll: {

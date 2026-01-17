@@ -32,21 +32,13 @@ export type RemappedCompany = {
   addressLine2: string;
   addressLine3: string;
   areaCode: string;
-  branchNumber: string;
-  businessEndTime: string;
-  businessStartTime: string;
-  fax: string;
   isDefaultCompany: boolean;
   latitude: number;
   longitude: number;
-  marketId: number;
   phone1: string;
   phone2: string;
   replyEmail: string;
   state: string;
-  taxId1: string;
-  taxId2: string;
-  taxId3: string;
   unitCodeId: number;
 };
 
@@ -60,21 +52,13 @@ export function remapCompany(raw: RawCompany): RemappedCompany {
     addressLine2: raw.AddressLine2,
     addressLine3: raw.AddressLine3,
     areaCode: raw.AreaCode,
-    branchNumber: raw.BranchNumber,
-    businessEndTime: raw.BusinessEndTime,
-    businessStartTime: raw.BusinessStartTime,
-    fax: raw.Fax,
     isDefaultCompany: raw.IsDefaultCompany,
     latitude: raw.Latitude,
     longitude: raw.Longitude,
-    marketId: raw.MarketId,
     phone1: raw.Phone1,
     phone2: raw.Phone2,
     replyEmail: raw.ReplyEmail,
     state: raw.State,
-    taxId1: raw.TaxID1,
-    taxId2: raw.TaxID2,
-    taxId3: raw.TaxID3,
     unitCodeId: raw.UnitCodeID,
   };
 }

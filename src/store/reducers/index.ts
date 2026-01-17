@@ -10,7 +10,7 @@ import servCodeReducer from "@/app/realGreen/servCode/servCodeSlice";
 import productReducer from "@/app/realGreen/product/productSlice";
 import priceTableReducer from "@/app/realGreen/priceTable/priceTableSlice";
 import flagReducer from "@/app/realGreen/flag/flagSlice";
-import companyReducer from "@/app/realGreen/company/companySlice";
+import companyReducer from "@/app/realGreen/company/_lib/companySlice";
 
 const rootReducer = combineReducers({
   ui: uiReducer,
