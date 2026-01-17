@@ -1,52 +1,13 @@
 @use "fonts";
 @use "colors";
 @use "spinner";
-@import "tailwindcss";
-
-@theme {
-  /* Blue Surface (Primary / Info) */
-  --color-sg-blue-bg: var(--sg-blue-10);
-  --color-sg-blue-brdr: var(--sg-blue-50);
-
-  /* Green Surface (Success / Secondary) */
-  --color-sg-green-bg: var(--sg-green-10);
-  --color-sg-green-brdr: var(--sg-green-50);
-
-  /* Orange Surface (Emphasis / Tertiary) */
-  --color-sg-orange-bg: var(--sg-orange-10);
-  --color-sg-orange-brdr: var(--sg-orange-50); /* Also for dividers/rings */
-
-  /* Neutral Surface (disabled / muted) */
-  --color-sg-gray-bg: var(--sg-gray-10);
-  --color-sg-gray-brdr: var(--sg-gray-50);
-
-  /* Red Surface (Error / Danger) */
-  --color-sg-warn-bg: #ffcccc;
-  --color-sg-warn-fg: red;
-
-  /* Text */
-  --color-sg-text: black;
-  --color-sg-subtle: #6b7280; /* Slate 500 - Professional Gray */
-
-  /* Selection */
-  --color-sg-selectable-bg: var(--sg-just-off-white);
-  --color-sg-hovered-bg: var(--sg-blue-10); /* Very light blue hover */
-  --color-sg-selected-bg: var(--sg-blue-35);
-
-  /* Global Layout */
-  --color-sg-body-bg: var(--sg-just-off-white);
-  --color-sg-outOfBounds: var(--sg-basement-gray);
-
-
-
-}
 
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 html {
-  background-color: var(--color-sg-outOfBounds);
+  background-color: var(--sg-basement-gray);
   font-size: 16px; /* 16px at 1024px */
   @media (max-width: 960px) {
     font-size: 14px; /* 17px at 960px */
@@ -63,8 +24,8 @@ body {
   padding: 0;
   min-height: 100vh;
   font-family: 'Inter', 'Inter-Fallback', sans-serif;
-  background-color: var(--color-sg-body-bg);
-  color: var(--color-sg-text);
+  background-color: var(--sg-just-off-white);
+  color: black;
   font-size: 1rem; /* 16px */
 
   //overscroll-behavior: none; /* Disable pull-to-refresh effect */
