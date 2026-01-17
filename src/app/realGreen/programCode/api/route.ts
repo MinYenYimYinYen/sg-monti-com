@@ -21,7 +21,9 @@ const handlers: HandlerMap<ProgCodeContract> = {
 
       // Filter for available only, just in case the API returns all
       const availableProgCodes = rawProgCodes.filter((p) => p.available);
-      const progCodes = availableProgCodes.map(remapProgramCode);
+      const progCodes = availableProgCodes
+        .map(remapProgramCode)
+        .sort((a, b) => a.progCodeId.localeCompare(b.progCodeId));
 
       return { success: true, items: progCodes };
     },
