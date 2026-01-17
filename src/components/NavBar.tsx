@@ -22,12 +22,12 @@ export default function NavBar() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-sg-green-brdr bg-sg-green-bg px-4 py-3 shadow-sm">
+    <nav className="sticky top-0 z-50 w-full border-b border-secondary bg-secondary-100 px-4 py-3 shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         {/* Logo */}
         <Link
           href="/"
-          className="text-xl font-bold text-sg-green-brdr hover:opacity-80"
+          className="text-xl font-bold text-secondary hover:opacity-80"
         >
           SGMonti
         </Link>
@@ -46,12 +46,12 @@ export default function NavBar() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="relative mr-2 text-sg-green-brdr hover:bg-sg-green-brdr/10 hover:text-sg-green-brdr"
+                    className="relative mr-2 text-secondary hover:bg-secondary/10 hover:text-secondary"
                     onClick={() => setIsAdminModalOpen(true)}
                   >
                     <Inbox className="h-5 w-5" />
                     {totalPending > 0 && (
-                      <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-sg-warn-fg text-[10px] font-bold text-white">
+                      <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent-600 text-[10px] font-bold text-white">
                         {totalPending}
                       </span>
                     )}
@@ -63,7 +63,7 @@ export default function NavBar() {
                 </>
               )}
 
-              <span className="hidden text-sm font-medium text-sg-green-brdr md:block">
+              <span className="hidden text-sm font-medium text-secondary md:block">
                 Hello, {user?.firstName}
               </span>
               <Button

@@ -10,24 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        /* --- Legacy SG Colors (Keep for backward compatibility) --- */
-        "sg-blue-bg": "var(--sg-blue-10)",
-        "sg-blue-brdr": "var(--sg-blue-50)",
-        "sg-green-bg": "var(--sg-green-10)",
-        "sg-green-brdr": "var(--sg-green-50)",
-        "sg-orange-bg": "var(--sg-orange-10)",
-        "sg-orange-brdr": "var(--sg-orange-50)",
-        "sg-gray-bg": "var(--sg-gray-10)",
-        "sg-gray-brdr": "var(--sg-gray-50)",
-        "sg-warn-bg": "#ffcccc",
-        "sg-warn-fg": "red",
-        "sg-text": "black",
-        "sg-subtle": "#6b7280",
-        "sg-selectable-bg": "var(--sg-just-off-white)",
-        "sg-hovered-bg": "var(--sg-blue-10)",
-        "sg-selected-bg": "var(--sg-blue-35)",
-        "sg-body-bg": "var(--sg-just-off-white)",
-        "sg-outOfBounds": "var(--sg-basement-gray)",
+
 
         /* --- New Semantic Palette (Mapped to CSS Variables) --- */
         text: {

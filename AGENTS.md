@@ -11,11 +11,12 @@
 ## Styling
 
 - **Tailwind CSS**: v4 (configured via PostCSS)
-- **Preprocessor**: SASS/SCSS (`sass` dependency)
-- **Global Styles**: `src/style/globals.scss`
+- **Configuration**: `tailwind.config.ts` (Defines the Semantic Theme)
+- **CSS Entry**: `src/style/tailwind.css` (Imports Tailwind and Config)
+- **Global Styles**: `src/style/globals.scss` (Global layout styles only)
 - **Architecture Reference**: See `src/style/style.readme.md`.
 - **Summary**: The project uses a **Semantic Styling System**.
-    - **Theme**: Defined in `globals.scss` using `@theme`. Maps semantic names (`primary`, `surface`) to brand colors.
+    - **Theme**: Defined in `tailwind.config.ts`. Maps semantic names (`primary`, `secondary`, `text`) to CSS variables defined in `src/style/tailwind.css`.
     - **Components**: Reusable UI atoms (`Button`, `Card`, `Input`) located in `src/style/components/`.
     - **Containers**: Standardized layout wrappers in `src/style/components/Containers.tsx`.
 
@@ -85,3 +86,4 @@
 *   **"Applied" Role**: New users are gated with an "applied" role until approved.
 *   **Modal Architecture**: Use `Modal` (Portal + GSAP) and `TabControl` for complex dialogs.
 *   **File Structure**: Prefer `camelCase` for route folders (e.g., `changePassword`).
+*   **Styling Workflow**: Use `tailwind.config.ts` for theme definitions. Do not use SASS for colors. Use semantic classes (`bg-primary`, `text-text`) instead of raw colors.

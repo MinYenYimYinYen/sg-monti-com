@@ -58,7 +58,7 @@ function PendingUsersList({ users }: { users: User[] }) {
 
   if (users.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-sg-subtle">
+      <div className="flex h-full items-center justify-center text-text-500">
         No pending user approvals.
       </div>
     );
@@ -69,14 +69,14 @@ function PendingUsersList({ users }: { users: User[] }) {
       {users.map((user) => (
         <li
           key={user.userName}
-          className="flex flex-col gap-4 rounded-md border border-sg-blue-brdr/20 p-4 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-4 rounded-md border border-primary/20 p-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <p className="font-medium text-sg-text">
+            <p className="font-medium text-text">
               {user.firstName} {user.lastName}
             </p>
-            <p className="text-sm text-sg-subtle">@{user.userName}</p>
-            <p className="text-xs text-sg-subtle">SA ID: {user.saId}</p>
+            <p className="text-sm text-text-500">@{user.userName}</p>
+            <p className="text-xs text-text-500">SA ID: {user.saId}</p>
           </div>
           <div className="flex items-center gap-2">
             <RoleSelector
@@ -103,7 +103,7 @@ function RoleSelector({ onApprove }: { onApprove: (role: Role) => void }) {
       <select
         value={selectedRole}
         onChange={(e) => setSelectedRole(e.target.value as Role)}
-        className="h-9 rounded-md border border-sg-blue-brdr/30 bg-white px-3 py-1 text-sm focus:border-sg-blue-brdr focus:outline-none"
+        className="h-9 rounded-md border border-primary/30 bg-white px-3 py-1 text-sm focus:border-primary focus:outline-none"
       >
         {ROLES.filter((r) => r !== "applied" && r !== "public").map((role) => (
           <option key={role} value={role}>
@@ -125,7 +125,7 @@ function PendingResetsList({ requests }: { requests: PasswordResetRequest[] }) {
 
   if (requests.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-sg-subtle">
+      <div className="flex h-full items-center justify-center text-text-500">
         No pending password resets.
       </div>
     );
@@ -136,16 +136,16 @@ function PendingResetsList({ requests }: { requests: PasswordResetRequest[] }) {
       {requests.map((req) => (
         <li
           key={req.userName}
-          className="flex flex-col gap-4 rounded-md border border-sg-blue-brdr/20 p-4"
+          className="flex flex-col gap-4 rounded-md border border-primary/20 p-4"
         >
           <div className="flex justify-between">
             <div>
-              <p className="font-medium text-sg-text">
+              <p className="font-medium text-text">
                 {req.firstName} {req.lastName}
               </p>
-              <p className="text-sm text-sg-subtle">@{req.userName}</p>
+              <p className="text-sm text-text-500">@{req.userName}</p>
             </div>
-            <div className="text-xs text-sg-subtle">
+            <div className="text-xs text-text-500">
               Requested: {new Date(req.createdAt || "").toLocaleDateString()}
             </div>
           </div>

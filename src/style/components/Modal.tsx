@@ -116,8 +116,8 @@ export function Modal({
         aria-modal="true"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-sg-blue-brdr/10 px-6 py-4">
-          <h2 className="text-lg font-semibold text-sg-text">
+        <div className="flex items-center justify-between border-b border-primary/10 px-6 py-4">
+          <h2 className="text-lg font-semibold text-text">
             {title || "Modal"}
           </h2>
           <Button variant="ghost-neutral" size="icon" onClick={onClose}>

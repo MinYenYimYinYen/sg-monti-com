@@ -5,9 +5,9 @@ import { cva, type VariantProps } from "class-variance-authority";
 const infoBoxVariants = cva("rounded-md p-4 text-sm", {
   variants: {
     variant: {
-      default: "bg-sg-blue-bg text-sg-blue-brdr",
-      success: "bg-sg-green-bg text-sg-green-brdr",
-      destructive: "bg-destructive/10 text-destructive",
+      default: "bg-primary-100 text-primary",
+      success: "bg-secondary-100 text-secondary",
+      destructive: "bg-accent-600/10 text-accent-600",
     },
   },
   defaultVariants: {

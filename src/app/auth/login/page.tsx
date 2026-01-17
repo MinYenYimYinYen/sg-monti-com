@@ -54,11 +54,11 @@ function LoginContent() {
       description="Enter your credentials to access your account"
       footer={
         <>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-text-500">
             Don&#39;t have an account?{" "}
             <Link
               href="/auth/register"
-              className="font-medium text-slate-900 hover:underline"
+              className="font-medium text-text-900 hover:underline"
             >
               Register here
             </Link>
@@ -67,7 +67,7 @@ function LoginContent() {
           {invalidCredentialsEntered && (
             <Link
               href="/auth/forgot-password"
-              className="text-sm font-medium text-sg-warn-fg hover:underline"
+              className="text-sm font-medium text-accent-600 hover:underline"
             >
               Forgot Password?
             </Link>
