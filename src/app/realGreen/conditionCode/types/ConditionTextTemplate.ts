@@ -1,11 +1,11 @@
-import {ProgramCode} from "@/app/realGreen/programCode/ProgramCode";
+import {ProgCode} from "@/app/realGreen/programCode/ProgCode";
 
 export type ConditionUpsell = {
   progCodeId: string;
-  progCode?: ProgramCode;
+  progCode?: ProgCode;
   upsellMessage: string;
   precludedProgCodeIds: string[];
-  precludedProgCodes?: ProgramCode[];
+  precludedProgCodes?: ProgCode[];
   dontTextIfPrecluded: boolean;
 };
 

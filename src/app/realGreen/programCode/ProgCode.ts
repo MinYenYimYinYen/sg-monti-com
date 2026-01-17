@@ -46,7 +46,7 @@ export type RawProgramCode = {
   // maximumRepetitions: number | null;
   // minimumRoundForCAW: number | null;
   // minimumRoundForFullProgram: number | null;
-  // priceID: number | null;
+  priceID: number | null;
   programCode: string;
   // programCodeIsSpecial: boolean;
   programDefinitionID: number;
@@ -71,15 +71,16 @@ export type RemappedProgramCode = {
   description: string;
   programType: string | null; // todo: I should make an enum for this
   progDefId: number;
+  unitCode: number;
 
 
 };
 
-export type MongoProgramCode = CreatedUpdated & {
-  progCodeId: string;
-};
+// export type MongoProgramCode = CreatedUpdated & {
+//   progCodeId: string;
+// };
 
-export type ProgramCode = RemappedProgramCode & MongoProgramCode;
+export type ProgCode = RemappedProgramCode // & MongoProgramCode;
 
 export function remapProgramCode(raw: RawProgramCode): RemappedProgramCode {
   return {
@@ -88,36 +89,37 @@ export function remapProgramCode(raw: RawProgramCode): RemappedProgramCode {
     description: raw.description,
     programType: raw.programType,
     progDefId: raw.programDefinitionID,
+    unitCode: raw.unitCode || -1,
   };
 }
 
-export function extendProgramCode({
-  remapped,
-  mongo,
-}: {
-  remapped: RemappedProgramCode;
-  mongo?: MongoProgramCode;
-}): ProgramCode {
-  return {
-    ...remapped,
-    createdAt: mongo?.createdAt,
-    updatedAt: mongo?.updatedAt,
-  } as ProgramCode;
-}
-
-export function extendProgramCodes({
-  remapped,
-  mongo,
-}: {
-  remapped: RemappedProgramCode[];
-  mongo: MongoProgramCode[];
-}): ProgramCode[] {
-  const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.progCodeId);
-
-  return remapped.map((r) =>
-    extendProgramCode({
-      remapped: r,
-      mongo: mongoMap.get(r.progCodeId),
-    }),
-  );
-}
+// export function extendProgramCode({
+//   remapped,
+//   mongo,
+// }: {
+//   remapped: RemappedProgramCode;
+//   mongo?: MongoProgramCode;
+// }): ProgCode {
+//   return {
+//     ...remapped,
+//     createdAt: mongo?.createdAt,
+//     updatedAt: mongo?.updatedAt,
+//   } as ProgCode;
+// }
+//
+// export function extendProgramCodes({
+//   remapped,
+//   mongo,
+// }: {
+//   remapped: RemappedProgramCode[];
+//   mongo: MongoProgramCode[];
+// }): ProgCode[] {
+//   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.progCodeId);
+//
+//   return remapped.map((r) =>
+//     extendProgramCode({
+//       remapped: r,
+//       mongo: mongoMap.get(r.progCodeId),
+//     }),
+//   );
+// }

@@ -12,6 +12,7 @@ import { rgHttp } from "@/app/realGreen/employee/api/rgHttp";
 export type RgApiPath =
   | { path: "/CallAhead"; method: "GET"; body?: undefined }
   | { path: `/CallLog/Customer/${string}`; method: "GET"; body?: undefined }
+  | { path: "/Company"; method: "GET"; body?: undefined }
   | { path: `/Company/${string}`; method: "GET"; body?: undefined }
   | { path: "/ConditionCode"; method: "GET"; body?: undefined }
   // | {
@@ -77,7 +78,6 @@ export async function rgApi<T>(config: RgApiPath) {
     method,
     // Cast to 'any' allows passing the object payload.
     // The rgHttp wrapper will handle JSON.stringify automatically.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     body: body as any,
   });
 }
