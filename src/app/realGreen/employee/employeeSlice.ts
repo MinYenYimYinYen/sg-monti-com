@@ -11,6 +11,7 @@ import { handleError } from "@/lib/errors/errorHandler";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { AppState } from "@/store";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
+import {Grouper} from "@/lib/Grouper";
 
 // 1. STATE: Thin. No loading flags.
 type EmployeeState = {
@@ -43,6 +44,7 @@ export const employeeSlice = createSlice({
       [(state: EmployeeState) => state.employees],
       (employees) => employees.filter((employee) => employee.active),
     ),
+    employeeMap: (state) => new Grouper(state.employees).toUniqueMap((e) => e.employeeId)
   },
 });
 

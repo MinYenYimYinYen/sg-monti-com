@@ -1,4 +1,4 @@
 export type CreatedUpdated = {
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 };
