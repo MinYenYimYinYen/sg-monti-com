@@ -21,9 +21,21 @@ async function handleRefreshAndRetry(
   url: string,
   fetchConfig: RequestInit,
 ): Promise<Response | null> {
-  // Only attempt refresh if we are NOT currently hitting the auth endpoint (prevents loops)
+  // 1. Prevent Infinite Loops
+  // We must allow /auth/api calls to refresh (e.g., changePassword, checkAuth),
+  // but we must NOT allow the 'refresh' op itself to trigger a refresh loop.
   if (url.includes("/auth/api")) {
-    return null;
+    try {
+      if (typeof fetchConfig.body === "string") {
+        const body = JSON.parse(fetchConfig.body);
+        if (body.op === "refresh") {
+          return null;
+        }
+      }
+    } catch {
+      // If body isn't JSON, it's likely not our RPC, so proceed with caution or ignore.
+      // For now, we assume if we can't parse it, it's not a refresh op.
+    }
   }
 
   if (!isRefreshing) {

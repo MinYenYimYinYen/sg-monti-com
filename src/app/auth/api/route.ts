@@ -488,10 +488,14 @@ export async function POST(req: NextRequest) {
     });
 
     // 2. Determine Response Status
-    let status = 500;
-    if (error.type === "EXTERNAL_ERROR") status = 502;
-    else if (error.type === "VALIDATION_ERROR") status = 400;
-    else if (error.type === "AUTH_ERROR") status = 403;
+    let status = error.statusCode || 500;
+
+    // If status is default (500), try to map from type
+    if (status === 500) {
+      if (error.type === "EXTERNAL_ERROR") status = 502;
+      else if (error.type === "VALIDATION_ERROR") status = 400;
+      else if (error.type === "AUTH_ERROR") status = 403;
+    }
 
     // 3. Return Safe Response
     return NextResponse.json(
