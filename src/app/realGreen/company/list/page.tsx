@@ -11,7 +11,8 @@ import {
   CardTitle,
 } from "@/style/components/Card";
 import { CenteredContainer } from "@/style/components/Containers";
-import {useEffect} from "react";
+import { companyFunc } from "../_lib/companyFunc";
+import { clsx } from "clsx";
 
 export default function CompanyListPage() {
   // 1. Use the hook to ensure data is loaded
@@ -19,10 +20,6 @@ export default function CompanyListPage() {
 
   // 2. Select the data from the store
   const companies = useSelector(companySelect.allCompanies);
-
-  useEffect(() => {
-    console.log("companies", companies);
-  }, [companies]);
 
   return (
     <CenteredContainer className="items-start pt-10">
@@ -40,20 +37,16 @@ export default function CompanyListPage() {
                 <div>
                   <span className="font-semibold">Address:</span>
                   <div className="ml-2 text-sg-subtle">
-                    {company.addressLine1}
-                    {company.addressLine2 && <br />}
-                    {company.addressLine2}
-                    {company.addressLine3 && <br />}
-                    {company.addressLine3}
-                    <br />
-                    {company.state}
+                    {companyFunc.getAddressBlock(company)}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <span className="font-semibold">Phone 1:</span>{" "}
-                    <span className="text-sg-subtle">{company.phone1}</span>
+                    <span className={clsx("text-sg-subtle")}>
+                      {company.phone1}
+                    </span>
                   </div>
                   <div>
                     <span className="font-semibold">Phone 2:</span>{" "}

@@ -86,6 +86,7 @@ function LoginContent() {
             onChange={handleChange}
             required
             placeholder="Enter your username"
+            autoComplete="username"
           />
         </FormGroup>
 
@@ -99,6 +100,7 @@ function LoginContent() {
             onChange={handleChange}
             required
             placeholder="Enter your password"
+            autoComplete="current-password"
           />
         </FormGroup>
 

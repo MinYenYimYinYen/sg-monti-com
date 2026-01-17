@@ -105,6 +105,7 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               placeholder="you@company.com"
+              autoComplete="email"
             />
           </FormGroup>
 
@@ -156,6 +157,7 @@ export default function RegisterPage() {
             onChange={handleChange}
             required
             placeholder="Choose a username"
+            autoComplete="username"
           />
         </FormGroup>
 
@@ -169,6 +171,7 @@ export default function RegisterPage() {
               value={form.firstName}
               onChange={handleChange}
               required
+              autoComplete="given-name"
             />
           </FormGroup>
           <FormGroup>
@@ -180,6 +183,7 @@ export default function RegisterPage() {
               value={form.lastName}
               onChange={handleChange}
               required
+              autoComplete="family-name"
             />
           </FormGroup>
         </div>
@@ -194,6 +198,7 @@ export default function RegisterPage() {
             onChange={handleChange}
             required
             placeholder="Min 4 characters"
+            autoComplete="new-password"
           />
         </FormGroup>
 
@@ -207,6 +212,7 @@ export default function RegisterPage() {
             onChange={handleChange}
             required
             placeholder="Re-enter password"
+            autoComplete="new-password"
           />
         </FormGroup>
 

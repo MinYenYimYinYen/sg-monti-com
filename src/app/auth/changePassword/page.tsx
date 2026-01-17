@@ -73,6 +73,7 @@ export default function ChangePasswordPage() {
             required
             placeholder="Enter new password"
             autoFocus
+            autoComplete="new-password"
           />
         </FormGroup>
         <FormGroup>
@@ -84,6 +85,7 @@ export default function ChangePasswordPage() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             placeholder="Confirm new password"
+            autoComplete="new-password"
           />
         </FormGroup>
         <Button type="submit" className="w-full">
