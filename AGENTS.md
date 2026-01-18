@@ -32,7 +32,7 @@
     - This prevents unnecessary re-renders when a hook is used only for dispatching but the data it selects changes.
 - **Async UI Feedback**: Use the **Explicit Status Pattern**.
     - Do not rely on `thunk.fulfilled.match(result)` in components.
-    - Add specific status fields to the slice (e.g., `passwordResetStatus: 'idle' | 'pending' | 'success' | 'error'`).
+    - If (and only if) tracking status is a requirement, Add specific status fields to the slice (e.g., `passwordResetStatus: 'idle' | 'pending' | 'success' | 'error'`).
     - Update status in `extraReducers`.
     - Reset status via actions (e.g., `resetPasswordResetStatus`) on component unmount.
 

@@ -5,7 +5,7 @@ export type ErrorResponse<T = unknown> = {
   silent?: boolean;
   code?: number;
 };
-export type SuccessResponse = { success: true };
+export type SuccessResponse = { success: boolean };
 export type ObjResponse<T> = SuccessResponse & { item: T };
 export type ArrayResponse<T> = SuccessResponse & { items: T[] };
 

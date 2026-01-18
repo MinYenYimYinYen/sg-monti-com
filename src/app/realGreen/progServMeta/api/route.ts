@@ -1,0 +1,102 @@
+import { NextRequest, NextResponse } from "next/server";
+import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
+import { normalizeError } from "@/lib/errors/errorHandler";
+import { assertRole } from "@/app/auth/_lib/assertRole";
+import { ProgServMetaContract } from "@/app/realGreen/progServMeta/_lib/ProgServMetaContract";
+import { ProgServModel } from "@/app/realGreen/progServMeta/_lib/models/ProgServModel";
+import { dateCompare } from "@/lib/primatives/dates/dateCompare";
+import { rgApi } from "@/app/realGreen/employee/api/rgApi";
+import { ProgServ } from "@/app/realGreen/progServ/ProgServ";
+import { delay } from "@/lib/async/delay";
+import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+
+const handlers: HandlerMap<ProgServMetaContract> = {
+  sync: {
+    roles: ["office", "admin", "tech"],
+    handler: async ({ progDefIds }) => {
+      await connectToMongoDB();
+
+      // 1. Check Cache Freshness
+      const lastUpdated = await ProgServModel.findOne().sort({ updatedAt: -1 });
+      const isFresh =
+        lastUpdated &&
+        dateCompare.isWithinDays({
+          dateLo: lastUpdated.updatedAt.toISOString(),
+          dateHi: new Date().toISOString(),
+          maxDiff: 0.5, // 12 hours approx (0.5 days)
+          options: { valueUndefinedReturn: false, comparedToUndefinedReturn: false },
+        });
+
+      if (isFresh) {
+        const items = await ProgServModel.find({}); //todo: fix the model
+
+        return { items };
+      }
+
+      // 2. Fetch from RealGreen (Throttled)
+      const allProgServs: ProgServ[] = [];
+      for (const id of progDefIds) {
+        try {
+          const result = await rgApi<ProgServ[]>({
+            path: `/ProgramCode/${id}/Services`,
+            method: "GET",
+          });
+          if (Array.isArray(result)) {
+            allProgServs.push(...result);
+          }
+          await delay(10); // Throttle
+        } catch (e) {
+          console.warn(`Failed to fetch services for ProgDefId ${id}`, e);
+        }
+      }
+
+      // 3. Upsert to Mongo
+      if (allProgServs.length > 0) {
+        const bulkOps = allProgServs.map((doc) => ({
+          updateOne: {
+            filter: { progServId: doc.progServId },
+            update: { $set: doc },
+            upsert: true,
+          },
+        }));
+        await ProgServModel.bulkWrite(bulkOps);
+      }
+
+      // 4. Return fresh list
+      const items = await ProgServModel.find({});
+      return { items };
+    },
+  },
+};
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = (await req.json()) as OpMap<ProgServMetaContract>;
+    const { op, ...params } = body;
+    const config = handlers[op];
+
+    if (!config) {
+      return NextResponse.json(
+        { success: false, message: `Operation '${op}' not supported` },
+        { status: 400 },
+      );
+    }
+
+    await assertRole(config.roles);
+    const result = await config.handler(params as any);
+    return NextResponse.json(result);
+  } catch (e) {
+    const error = normalizeError(e);
+    console.error(`[API] ${error.type}: ${error.message}`, {
+      stack: error.stack,
+      data: error.data,
+    });
+    return NextResponse.json(
+      {
+        success: false,
+        message: error.isOperational ? error.message : "Internal Server Error",
+      },
+      { status: 500 },
+    );
+  }
+}

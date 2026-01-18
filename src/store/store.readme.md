@@ -63,7 +63,10 @@ Use the `smartThunkOptions` helper instead of writing manual conditions.
 **Crucial TypeScript Requirements:**
 1.  **`EmployeeContract`**: Ensures the return type and params match the backend exactly.
 2.  **`WithConfig<T>`**: Wraps the params to allow `force` and `staleTime` to be passed in. Without this, TypeScript will reject your smart options.
-3.  **`AppState`**: Required in the third generic slot so `getState` works correctly in the condition.
+3. **Generics**: Before sending apiParams to the API, spread the ThunkConfig params out:
+    - `const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
+        params;`
+4. **`AppState`**: Required in the third generic slot so `getState` works correctly in the condition.
 
 ```typescript
 import { createAsyncThunk } from "@reduxjs/toolkit";
