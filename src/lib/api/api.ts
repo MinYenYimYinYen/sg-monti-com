@@ -69,7 +69,10 @@ async function handleRefreshAndRetry(
   return null;
 }
 
-export async function api<T>(url: string, config: ApiConfig = {}) {
+export async function api<T>(
+  url: string,
+  config: ApiConfig = {},
+): Promise<T | ErrorResponse> {
   const { body, headers, ...rest } = config;
 
   const fetchConfig = {
@@ -123,11 +126,14 @@ export async function api<T>(url: string, config: ApiConfig = {}) {
     }
 
     if (res.status === 204) return null as T;
-    return (await res.json()) as T;
+
+    // 4. Return Data (Success or Handled Error)
+    // We assume the caller will check .success if T includes it.
+    return (await res.json()) as T | ErrorResponse;
   } catch (error) {
     if (error instanceof AppError) throw error;
 
-    // 4. Catch Network Errors
+    // 5. Catch Network Errors
     throw new AppError({
       message: error instanceof Error ? error.message : "Network error",
       type: "NETWORK_ERROR",

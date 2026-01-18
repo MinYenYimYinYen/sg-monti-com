@@ -5,34 +5,34 @@ import { ZipCodeContract } from "@/app/realGreen/zipCode/api/ZipCodeContract";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { handleError } from "@/lib/errors/errorHandler";
 import { Grouper } from "@/lib/Grouper";
 
 export const getZipCodes = createAsyncThunk<
-  ZipCodeContract["getAll"]["result"],
+  ZipCode[], // Return Data Only
   WithConfig<ZipCodeContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "zipCode/getZipCodes",
   async (params, { rejectWithValue }) => {
-    try {
-      const { showLoading, loadingMsg, ...apiParams } = params;
-      const body: OpMap<ZipCodeContract> = {
-        op: "getAll",
-        ...apiParams,
-      };
+    const { showLoading, loadingMsg, ...apiParams } = params;
+    const body: OpMap<ZipCodeContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
 
-      return await api<ZipCodeContract["getAll"]["result"]>(
-        "/realGreen/zipCode/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
+    const res = await api<ZipCodeContract["getAll"]["result"]>(
+      "/realGreen/zipCode/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) {
+      return rejectWithValue(res.message);
     }
+
+    return res.items;
   },
   smartThunkOptions({ typePrefix: "zipCode/getZipCodes" }),
 );
@@ -51,7 +51,7 @@ const zipCodeSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getZipCodes.fulfilled, (state, action) => {
-      state.zipCodes = action.payload.items;
+      state.zipCodes = action.payload;
     });
   },
   selectors: {

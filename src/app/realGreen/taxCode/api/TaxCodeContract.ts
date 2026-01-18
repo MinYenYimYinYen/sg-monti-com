@@ -1,7 +1,8 @@
 import { ArrayResponse } from "@/lib/api/types/responses";
 import { TaxCode } from "@/app/realGreen/taxCode/TaxCode";
+import { ApiContract } from "@/lib/api/types/ApiContract";
 
-export interface TaxCodeContract {
+export interface TaxCodeContract extends ApiContract {
   getAll: {
     params: {};
     result: ArrayResponse<TaxCode>;

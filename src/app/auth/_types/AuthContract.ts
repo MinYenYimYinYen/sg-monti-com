@@ -3,8 +3,9 @@ import { User, UserWithPW } from "@/app/auth/_types/User";
 import { CheckedId } from "@/app/auth/_types/authTypes";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
 import { Role } from "@/lib/api/types/roles";
+import { ApiContract } from "@/lib/api/types/ApiContract";
 
-export interface AuthContract {
+export interface AuthContract extends ApiContract {
   // 1. Check if they CAN register (RealGreen Check)
   checkEligibility: {
     params: {

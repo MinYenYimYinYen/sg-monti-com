@@ -5,34 +5,31 @@ import { ServCodeContract } from "@/app/realGreen/servCode/api/ServCodeContract"
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { handleError } from "@/lib/errors/errorHandler";
 import { Grouper } from "@/lib/Grouper";
 
 export const getServCodes = createAsyncThunk<
-  ServCodeContract["getAll"]["result"],
+  ServCode[], // Return Data Only
   WithConfig<ServCodeContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "servCode/getServCodes",
   async (params, { rejectWithValue }) => {
-    try {
-      const { showLoading, loadingMsg, ...apiParams } = params;
-      const body: OpMap<ServCodeContract> = {
-        op: "getAll",
-        ...apiParams,
-      };
+    const { showLoading, loadingMsg, ...apiParams } = params;
+    const body: OpMap<ServCodeContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
 
-      return await api<ServCodeContract["getAll"]["result"]>(
-        "/realGreen/servCode/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
-    }
+    const res = await api<ServCodeContract["getAll"]["result"]>(
+      "/realGreen/servCode/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) return rejectWithValue(res.message);
+    return res.items;
   },
   smartThunkOptions({ typePrefix: "servCode/getServCodes" }),
 );
@@ -51,7 +48,7 @@ const servCodeSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getServCodes.fulfilled, (state, action) => {
-      state.servCodes = action.payload.items;
+      state.servCodes = action.payload;
     });
   },
   selectors: {

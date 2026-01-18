@@ -5,35 +5,35 @@ import { CompanyContract } from "@/app/realGreen/company/_lib/CompanyContract";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { handleError } from "@/lib/errors/errorHandler";
 import { Grouper } from "@/lib/Grouper";
-import {companyFunc} from "@/app/realGreen/company/_lib/companyFunc";
+import { companyFunc } from "@/app/realGreen/company/_lib/companyFunc";
 
 export const getCompanies = createAsyncThunk<
-  CompanyContract["getAll"]["result"],
+  Company[], // Return Data Only
   WithConfig<CompanyContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "company/getCompanies",
   async (params, { rejectWithValue }) => {
-    try {
-      const { showLoading, loadingMsg, ...apiParams } = params;
-      const body: OpMap<CompanyContract> = {
-        op: "getAll",
-        ...apiParams,
-      };
+    const { showLoading, loadingMsg, ...apiParams } = params;
+    const body: OpMap<CompanyContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
 
-      return await api<CompanyContract["getAll"]["result"]>(
-        "/realGreen/company/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
+    const res = await api<CompanyContract["getAll"]["result"]>(
+      "/realGreen/company/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) {
+      return rejectWithValue(res.message);
     }
+
+    return res.items;
   },
   smartThunkOptions({ typePrefix: "company/getCompanies" }),
 );
@@ -52,13 +52,12 @@ const companySlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getCompanies.fulfilled, (state, action) => {
-      state.companies = action.payload.items;
+      state.companies = action.payload;
     });
   },
   selectors: {
     allCompanies: (state) => state.companies,
-    company: (state) => companyFunc.chooseDefault(state.companies)
-
+    company: (state) => companyFunc.chooseDefault(state.companies),
   },
 });
 

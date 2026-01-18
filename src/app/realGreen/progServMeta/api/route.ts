@@ -145,10 +145,25 @@ export async function POST(req: NextRequest) {
       stack: error.stack,
       data: error.data,
     });
+
+    // --- REFACTOR: Return 200 for Operational Errors ---
+    if (error.isOperational) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+          silent: error.silent,
+          code: error.statusCode,
+        },
+        { status: 200 }, // 200 OK for handled errors
+      );
+    }
+
+    // Keep 500 for unexpected crashes
     return NextResponse.json(
       {
         success: false,
-        message: error.isOperational ? error.message : "Internal Server Error",
+        message: "Internal Server Error",
       },
       { status: 500 },
     );

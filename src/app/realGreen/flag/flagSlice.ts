@@ -5,34 +5,34 @@ import { FlagContract } from "@/app/realGreen/flag/api/FlagContract";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { handleError } from "@/lib/errors/errorHandler";
 import { Grouper } from "@/lib/Grouper";
 
 export const getFlags = createAsyncThunk<
-  FlagContract["getAll"]["result"],
+  Flag[], // Return Data Only
   WithConfig<FlagContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "flag/getFlags",
   async (params, { rejectWithValue }) => {
-    try {
-      const { showLoading, loadingMsg, ...apiParams } = params;
-      const body: OpMap<FlagContract> = {
-        op: "getAll",
-        ...apiParams,
-      };
+    const { showLoading, loadingMsg, ...apiParams } = params;
+    const body: OpMap<FlagContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
 
-      return await api<FlagContract["getAll"]["result"]>(
-        "/realGreen/flag/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
+    const res = await api<FlagContract["getAll"]["result"]>(
+      "/realGreen/flag/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) {
+      return rejectWithValue(res.message);
     }
+
+    return res.items;
   },
   smartThunkOptions({ typePrefix: "flag/getFlags" }),
 );
@@ -51,7 +51,7 @@ const flagSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getFlags.fulfilled, (state, action) => {
-      state.flags = action.payload.items;
+      state.flags = action.payload;
     });
   },
   selectors: {

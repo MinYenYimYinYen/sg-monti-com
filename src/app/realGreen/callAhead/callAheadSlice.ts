@@ -5,34 +5,34 @@ import { CallAheadContract } from "@/app/realGreen/callAhead/api/CallAheadContra
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { handleError } from "@/lib/errors/errorHandler";
 import { Grouper } from "@/lib/Grouper";
 
 export const getCallAheads = createAsyncThunk<
-  CallAheadContract["getAll"]["result"],
+  CallAhead[], // Return Data Only
   WithConfig<CallAheadContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "callAhead/getCallAheads",
   async (params, { rejectWithValue }) => {
-    try {
-      const { showLoading, loadingMsg, ...apiParams } = params;
-      const body: OpMap<CallAheadContract> = {
-        op: "getAll",
-        ...apiParams,
-      };
+    const { showLoading, loadingMsg, ...apiParams } = params;
+    const body: OpMap<CallAheadContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
 
-      return await api<CallAheadContract["getAll"]["result"]>(
-        "/realGreen/callAhead/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
+    const res = await api<CallAheadContract["getAll"]["result"]>(
+      "/realGreen/callAhead/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) {
+      return rejectWithValue(res.message);
     }
+
+    return res.items;
   },
   smartThunkOptions({ typePrefix: "callAhead/getCallAheads" }),
 );
@@ -51,7 +51,7 @@ const callAheadSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getCallAheads.fulfilled, (state, action) => {
-      state.callAheads = action.payload.items;
+      state.callAheads = action.payload;
     });
   },
   selectors: {

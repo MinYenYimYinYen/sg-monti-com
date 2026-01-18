@@ -7,11 +7,10 @@ import { WithConfig } from "@/store/reduxUtil/reduxTypes"; // Your new shared ty
 import { Employee } from "@/app/realGreen/employee/Employee";
 import { EmployeeContract } from "@/app/realGreen/employee/api/EmployeeContract";
 import { api } from "@/lib/api/api";
-import { handleError } from "@/lib/errors/errorHandler";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { AppState } from "@/store";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import {Grouper} from "@/lib/Grouper";
+import { Grouper } from "@/lib/Grouper";
 
 // 1. STATE: Thin. No loading flags.
 type EmployeeState = {
@@ -34,7 +33,7 @@ export const employeeSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(getEmployees.fulfilled, (state, action) => {
-      state.employees = action.payload.items;
+      state.employees = action.payload;
     });
   },
   selectors: {
@@ -44,41 +43,40 @@ export const employeeSlice = createSlice({
       [(state: EmployeeState) => state.employees],
       (employees) => employees.filter((employee) => employee.active),
     ),
-    employeeMap: (state) => new Grouper(state.employees).toUniqueMap((e) => e.employeeId)
+    employeeMap: (state) =>
+      new Grouper(state.employees).toUniqueMap((e) => e.employeeId),
   },
 });
 
 // 2. THUNK
 const getEmployees = createAsyncThunk<
-  EmployeeContract["getAll"]["result"], // Return Type
+  Employee[], // Return Data Only
   WithConfig<EmployeeContract["getAll"]["params"]>, // Input: API Params + ThunkConfig
   { rejectValue: string; state: AppState }
 >(
   "employee/getEmployees",
   async (params, { rejectWithValue }) => {
-    try {
-      // 1. Separate Config from API Params
-      // We strip out 'force', 'cacheDuration', etc. so they don't get sent to the server
-      const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
-        params;
+    // 1. Separate Config from API Params
+    // We strip out 'force', 'cacheDuration', etc. so they don't get sent to the server
+    const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
+      params;
 
-      const body: OpMap<EmployeeContract> = {
-        op: "getAll",
-        ...apiParams,
-      };
+    const body: OpMap<EmployeeContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
 
-      console.log("executing getEmployees");
-      return await api<EmployeeContract["getAll"]["result"]>(
-        "/realGreen/employee/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
-    }
+    console.log("executing getEmployees");
+    const res = await api<EmployeeContract["getAll"]["result"]>(
+      "/realGreen/employee/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) return rejectWithValue(res.message);
+    return res.items;
   },
   smartThunkOptions({ typePrefix: "employee/getEmployees" }),
 );

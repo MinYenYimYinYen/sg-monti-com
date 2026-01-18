@@ -5,34 +5,34 @@ import { TaxCodeContract } from "@/app/realGreen/taxCode/api/TaxCodeContract";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { handleError } from "@/lib/errors/errorHandler";
 import { Grouper } from "@/lib/Grouper";
 
 export const getTaxCodes = createAsyncThunk<
-  TaxCodeContract["getAll"]["result"],
+  TaxCode[], // Return Data Only
   WithConfig<TaxCodeContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "taxCode/getTaxCodes",
   async (params, { rejectWithValue }) => {
-    try {
-      const { showLoading, loadingMsg, ...apiParams } = params;
-      const body: OpMap<TaxCodeContract> = {
-        op: "getAll",
-        ...apiParams,
-      };
+    const { showLoading, loadingMsg, ...apiParams } = params;
+    const body: OpMap<TaxCodeContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
 
-      return await api<TaxCodeContract["getAll"]["result"]>(
-        "/realGreen/taxCode/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
+    const res = await api<TaxCodeContract["getAll"]["result"]>(
+      "/realGreen/taxCode/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) {
+      return rejectWithValue(res.message);
     }
+
+    return res.items;
   },
   smartThunkOptions({ typePrefix: "taxCode/getTaxCodes" }),
 );
@@ -51,7 +51,7 @@ const taxCodeSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getTaxCodes.fulfilled, (state, action) => {
-      state.taxCodes = action.payload.items;
+      state.taxCodes = action.payload;
     });
   },
   selectors: {

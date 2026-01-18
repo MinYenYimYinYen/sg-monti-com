@@ -5,34 +5,34 @@ import { PriceTableContract } from "@/app/realGreen/priceTable/api/PriceTableCon
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { handleError } from "@/lib/errors/errorHandler";
 import { Grouper } from "@/lib/Grouper";
 
 export const getPriceTables = createAsyncThunk<
-  PriceTableContract["getAll"]["result"],
+  PriceTable[], // Return Data Only
   WithConfig<PriceTableContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "priceTable/getPriceTables",
   async (params, { rejectWithValue }) => {
-    try {
-      const { showLoading, loadingMsg, ...apiParams } = params;
-      const body: OpMap<PriceTableContract> = {
-        op: "getAll",
-        ...apiParams,
-      };
+    const { showLoading, loadingMsg, ...apiParams } = params;
+    const body: OpMap<PriceTableContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
 
-      return await api<PriceTableContract["getAll"]["result"]>(
-        "/realGreen/priceTable/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
+    const res = await api<PriceTableContract["getAll"]["result"]>(
+      "/realGreen/priceTable/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) {
+      return rejectWithValue(res.message);
     }
+
+    return res.items;
   },
   smartThunkOptions({ typePrefix: "priceTable/getPriceTables" }),
 );
@@ -51,7 +51,7 @@ const priceTableSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getPriceTables.fulfilled, (state, action) => {
-      state.priceTables = action.payload.items;
+      state.priceTables = action.payload;
     });
   },
   selectors: {

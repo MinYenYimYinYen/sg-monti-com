@@ -86,23 +86,26 @@ export async function POST(req: NextRequest) {
       data: error.data,
     });
 
-    // 2. Determine Response Status
-    // EXTERNAL_ERROR (RealGreen failed) -> 502 Bad Gateway
-    // VALIDATION_ERROR -> 400 Bad Request
-    // AUTH_ERROR -> 401/403
-    // Everything else -> 500 Internal Server Error
-    let status = 500;
-    if (error.type === "EXTERNAL_ERROR") status = 502;
-    else if (error.type === "VALIDATION_ERROR") status = 400;
-    else if (error.type === "AUTH_ERROR") status = 403;
+    // --- REFACTOR: Return 200 for Operational Errors ---
+    if (error.isOperational) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+          silent: error.silent,
+          code: error.statusCode,
+        },
+        { status: 200 }, // 200 OK for handled errors
+      );
+    }
 
-    // 3. Return Safe Response
+    // Keep 500 for unexpected crashes
     return NextResponse.json(
       {
         success: false,
-        message: error.isOperational ? error.message : "Internal Server Error",
+        message: "Internal Server Error",
       },
-      { status },
+      { status: 500 },
     );
   }
 }

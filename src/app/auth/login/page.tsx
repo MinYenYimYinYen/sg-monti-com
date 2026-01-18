@@ -66,7 +66,7 @@ function LoginContent() {
 
           {invalidCredentialsEntered && (
             <Link
-              href="/auth/forgot-password"
+              href="/auth/forgotPassword"
               className="text-sm font-medium text-accent-600 hover:underline"
             >
               Forgot Password?

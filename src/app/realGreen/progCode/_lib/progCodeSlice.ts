@@ -5,34 +5,34 @@ import { ProgCodeContract } from "@/app/realGreen/progCode/_lib/ProgCodeContract
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { handleError } from "@/lib/errors/errorHandler";
 import { Grouper } from "@/lib/Grouper";
 
 export const getProgCodes = createAsyncThunk<
-  ProgCodeContract["getAll"]["result"],
+  ProgCode[], // Return Data Only
   WithConfig<ProgCodeContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "progCode/getProgCodes",
   async (params, { rejectWithValue }) => {
-    try {
-      const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
-      const body: OpMap<ProgCodeContract> = {
-        op: "getAll",
-        ...apiParams,
-      };
+    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
+    const body: OpMap<ProgCodeContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
 
-      return await api<ProgCodeContract["getAll"]["result"]>(
-        "/realGreen/programCode/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
+    const res = await api<ProgCodeContract["getAll"]["result"]>(
+      "/realGreen/programCode/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) {
+      return rejectWithValue(res.message);
     }
+
+    return res.items;
   },
   smartThunkOptions({ typePrefix: "progCode/getProgCodes" }),
 );
@@ -51,7 +51,7 @@ const progCodeSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getProgCodes.fulfilled, (state, action) => {
-      state.progCodes = action.payload.items;
+      state.progCodes = action.payload;
     });
   },
   selectors: {

@@ -5,34 +5,34 @@ import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { handleError } from "@/lib/errors/errorHandler";
 import { Grouper } from "@/lib/Grouper";
 
 export const getProducts = createAsyncThunk<
-  ProductContract["getAll"]["result"],
+  Product[], // Return Data Only
   WithConfig<ProductContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "product/getProducts",
   async (params, { rejectWithValue }) => {
-    try {
-      const { showLoading, loadingMsg, ...apiParams } = params;
-      const body: OpMap<ProductContract> = {
-        op: "getAll",
-        ...apiParams,
-      };
+    const { showLoading, loadingMsg, ...apiParams } = params;
+    const body: OpMap<ProductContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
 
-      return await api<ProductContract["getAll"]["result"]>(
-        "/realGreen/product/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
+    const res = await api<ProductContract["getAll"]["result"]>(
+      "/realGreen/product/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) {
+      return rejectWithValue(res.message);
     }
+
+    return res.items;
   },
   smartThunkOptions({ typePrefix: "product/getProducts" }),
 );
@@ -51,7 +51,7 @@ const productSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getProducts.fulfilled, (state, action) => {
-      state.products = action.payload.items;
+      state.products = action.payload;
     });
   },
   selectors: {

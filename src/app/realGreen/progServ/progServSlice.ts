@@ -7,39 +7,39 @@ import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
-import { handleError } from "@/lib/errors/errorHandler";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { ProgServContract } from "@/app/realGreen/progServ/ProgServContract";
 
 export const getProgServ = createAsyncThunk<
-  ProgServContract["getOne"]["result"],
+  ProgServ, // Return Data Only
   WithConfig<ProgServContract["getOne"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "progServ/getProgServ",
   async (params, { rejectWithValue }) => {
-    try {
-      // 1. Separate Config params from API params
-      const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
-        params;
+    // 1. Separate Config params from API params
+    const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
+      params;
 
-      // 2. Type-Safe Body Construction
-      const body: OpMap<ProgServContract> = {
-        op: "getOne",
-        ...apiParams,
-      };
+    // 2. Type-Safe Body Construction
+    const body: OpMap<ProgServContract> = {
+      op: "getOne",
+      ...apiParams,
+    };
 
-      return await api<ProgServContract["getOne"]["result"]>(
-        "/realGreen/progServ/api",
-        {
-          method: "POST",
-          body,
-        },
-      );
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
+    const res = await api<ProgServContract["getOne"]["result"]>(
+      "/realGreen/progServ/api",
+      {
+        method: "POST",
+        body,
+      },
+    );
+
+    if (!res.success) {
+      return rejectWithValue(res.message);
     }
+
+    return res.item;
   },
   smartThunkOptions({ typePrefix: "progServ/getProgServ" }),
 );
