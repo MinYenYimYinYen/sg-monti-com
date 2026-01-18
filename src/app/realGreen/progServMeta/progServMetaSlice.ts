@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { ServCode } from "@/app/realGreen/servCode/ServCode";
 import { ProgServ } from "@/app/realGreen/progServ/ProgServ";
-import { ServCodeContract } from "@/app/realGreen/servCode/api/ServCodeContract";
 import { ProgServMetaContract } from "@/app/realGreen/progServMeta/_lib/ProgServMetaContract";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
@@ -9,13 +8,12 @@ import { handleError } from "@/lib/errors/errorHandler";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
 import { OpMap } from "@/lib/api/types/rpcUtils";
-import {ProgCode} from "@/app/realGreen/progCode/_lib/ProgCode";
-import {ProgCodeContract} from "@/app/realGreen/progCode/_lib/ProgCodeContract";
+import { ProgCode } from "@/app/realGreen/progCode/_lib/ProgCode";
 
 // --- Thunks ---
 
 export const fetchDryProgCodes = createAsyncThunk<
-  ProgCodeContract["getAll"]["result"],
+  ProgServMetaContract["getProgCodes"]["result"],
   WithConfig<{}>,
   { rejectValue: string; state: AppState }
 >(
@@ -24,13 +22,13 @@ export const fetchDryProgCodes = createAsyncThunk<
     try {
       const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
         params;
-      const body: OpMap<ProgCodeContract> = {
-        op: "getAll",
+      const body: OpMap<ProgServMetaContract> = {
+        op: "getProgCodes",
         ...apiParams,
       };
 
-      return await api<ProgCodeContract["getAll"]["result"]>(
-        "/realGreen/programCode/api",
+      return await api<ProgServMetaContract["getProgCodes"]["result"]>(
+        "/realGreen/progServMeta/api",
         {
           method: "POST",
           body,
@@ -45,7 +43,7 @@ export const fetchDryProgCodes = createAsyncThunk<
 );
 
 export const fetchDryServCodes = createAsyncThunk<
-  ServCodeContract["getAll"]["result"],
+  ProgServMetaContract["getServCodes"]["result"],
   WithConfig<{}>,
   { rejectValue: string; state: AppState }
 >(
@@ -54,13 +52,13 @@ export const fetchDryServCodes = createAsyncThunk<
     try {
       const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
         params;
-      const body: OpMap<ServCodeContract> = {
-        op: "getAll",
+      const body: OpMap<ProgServMetaContract> = {
+        op: "getServCodes",
         ...apiParams,
       };
 
-      return await api<ServCodeContract["getAll"]["result"]>(
-        "/realGreen/servCode/api",
+      return await api<ProgServMetaContract["getServCodes"]["result"]>(
+        "/realGreen/progServMeta/api",
         {
           method: "POST",
           body,
@@ -75,8 +73,8 @@ export const fetchDryServCodes = createAsyncThunk<
 );
 
 export const fetchProgServs = createAsyncThunk<
-  ProgServMetaContract["sync"]["result"],
-  WithConfig<ProgServMetaContract["sync"]["params"]>,
+  ProgServMetaContract["syncProgServ"]["result"],
+  WithConfig<ProgServMetaContract["syncProgServ"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "progServMeta/fetchProgServs",
@@ -85,11 +83,11 @@ export const fetchProgServs = createAsyncThunk<
       const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
         params;
       const body: OpMap<ProgServMetaContract> = {
-        op: "sync",
+        op: "syncProgServ",
         ...apiParams,
       };
 
-      return await api<ProgServMetaContract["sync"]["result"]>(
+      return await api<ProgServMetaContract["syncProgServ"]["result"]>(
         "/realGreen/progServMeta/api",
         {
           method: "POST",

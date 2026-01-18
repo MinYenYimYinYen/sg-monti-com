@@ -46,11 +46,16 @@ To add a new feature, follow this 3-step process.
 ### Step 1: Define the Contract
 Create a file defining the Inputs (`params`) and Outputs (`result`) for each operation.
 
+**Key Requirement:** Your contract interface **must** extend `ApiContract`. This enforces that every operation returns a valid `SuccessResponse` structure.
+
 **`src/app/realGreen/employee/api/EmployeeContract.ts`**
 ```typescript
-import { ObjResponse, ArrayResponse, SuccessResponse } from '@/lib/api/types/responses';
+import { ObjResponse, ArrayResponse } from '@/lib/api/types/responses';
+import { ApiContract } from '@/lib/api/types/ApiContract';
 
-export interface EmployeeContract {
+// Extend ApiContract to enforce structure. 
+// You can pass a default Params type if most ops share it, or leave it blank (defaults to any).
+export interface EmployeeContract extends ApiContract {
   // Op: getAll
   getAll: {
     params: { region?: string }; 
