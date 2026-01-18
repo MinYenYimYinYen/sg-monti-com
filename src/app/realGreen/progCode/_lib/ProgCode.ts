@@ -1,6 +1,6 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Grouper } from "@/lib/Grouper";
-import { ServCode } from "../servCode/ServCode";
+import { ServCode } from "../../servCode/ServCode";
 
 export type RawProgramCode = {
   // anyBranch: boolean;

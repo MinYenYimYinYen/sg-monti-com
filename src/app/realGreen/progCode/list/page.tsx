@@ -1,8 +1,8 @@
 "use client";
 
-import { useProgCode } from "@/app/realGreen/programCode/useProgCode";
+import { useProgCode } from "@/app/realGreen/progCode/_lib/useProgCode";
 import { useSelector } from "react-redux";
-import { progCodeSelect } from "@/app/realGreen/programCode/progCodeSlice";
+import { progCodeSelect } from "@/app/realGreen/progCode/_lib/progCodeSlice";
 import { CenteredContainer } from "@/style/components/Containers";
 import { cn } from "@/style/utils";
 

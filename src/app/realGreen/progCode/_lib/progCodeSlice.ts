@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { ProgCode } from "@/app/realGreen/programCode/ProgCode";
+import { ProgCode } from "@/app/realGreen/progCode/_lib/ProgCode";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
-import { ProgCodeContract } from "@/app/realGreen/programCode/api/ProgCodeContract";
+import { ProgCodeContract } from "@/app/realGreen/progCode/_lib/ProgCodeContract";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
@@ -16,7 +16,7 @@ export const getProgCodes = createAsyncThunk<
   "progCode/getProgCodes",
   async (params, { rejectWithValue }) => {
     try {
-      const { showLoading, loadingMsg, ...apiParams } = params;
+      const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
       const body: OpMap<ProgCodeContract> = {
         op: "getAll",
         ...apiParams,

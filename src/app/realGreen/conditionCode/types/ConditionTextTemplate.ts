@@ -1,4 +1,4 @@
-import {ProgCode} from "@/app/realGreen/programCode/ProgCode";
+import {ProgCode} from "@/app/realGreen/progCode/_lib/ProgCode";
 
 export type ConditionUpsell = {
   progCodeId: string;

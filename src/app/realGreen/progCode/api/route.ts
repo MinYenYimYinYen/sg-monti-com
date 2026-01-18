@@ -3,12 +3,12 @@ import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
-import { ProgCodeContract } from "@/app/realGreen/programCode/api/ProgCodeContract";
+import { ProgCodeContract } from "@/app/realGreen/progCode/_lib/ProgCodeContract";
 import {
   ProgCode,
   RawProgramCode,
   remapProgramCode,
-} from "@/app/realGreen/programCode/ProgCode";
+} from "@/app/realGreen/progCode/_lib/ProgCode";
 
 const handlers: HandlerMap<ProgCodeContract> = {
   getAll: {

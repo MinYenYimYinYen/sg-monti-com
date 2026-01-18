@@ -3,7 +3,7 @@ import { AppDispatch } from "@/store";
 import {
   progCodeActions,
   progCodeSelect,
-} from "@/app/realGreen/programCode/progCodeSlice";
+} from "@/app/realGreen/progCode/_lib/progCodeSlice";
 import { realGreenConst } from "@/app/realGreen/lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
 

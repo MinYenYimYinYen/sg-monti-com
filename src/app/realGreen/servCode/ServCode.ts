@@ -19,7 +19,7 @@
 
 import {Grouper} from "@/lib/Grouper";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import {ProgCode} from "@/app/realGreen/programCode/ProgCode";
+import {ProgCode} from "@/app/realGreen/progCode/_lib/ProgCode";
 
 export type RawServCode = {
   // autopostMobile: boolean;
