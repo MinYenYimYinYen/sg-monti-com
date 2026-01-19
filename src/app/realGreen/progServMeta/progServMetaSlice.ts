@@ -1,12 +1,5 @@
-import {
-  createAsyncThunk,
-  createSelector,
-  createSlice,
-} from "@reduxjs/toolkit";
-import {
-  ServCode, ServCodeMongo,
-  ServCodeRemapped, ServCodeWithMongo,
-} from "@/app/realGreen/progServMeta/_lib/types/ServCode";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { ServCodeWithMongo } from "@/app/realGreen/progServMeta/_lib/types/ServCode";
 import { ProgServ } from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
 import { ProgServMetaContract } from "@/app/realGreen/progServMeta/_lib/types/ProgServMetaContract";
 import { api } from "@/lib/api/api";
@@ -14,10 +7,7 @@ import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
 import { OpMap } from "@/lib/api/types/rpcUtils";
-import {
-   ProgCodeWithMongo,
-} from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
-import { hydrateProgCodes } from "@/app/realGreen/progServMeta/_lib/hydrateProgCodes";
+import { ProgCodeWithMongo } from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
 
 // --- Thunks ---
 
@@ -27,7 +17,7 @@ export const fetchDryProgCodes = createAsyncThunk<
   { rejectValue: string; state: AppState }
 >(
   "progServMeta/fetchDryProgCodes",
-  async (params, { rejectWithValue }) => {
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<ProgServMetaContract> = {
       op: "getProgCodes",
       ...params,
@@ -56,7 +46,7 @@ export const fetchDryServCodes = createAsyncThunk<
   { rejectValue: string; state: AppState }
 >(
   "progServMeta/fetchDryServCodes",
-  async (params, { rejectWithValue }) => {
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<ProgServMetaContract> = {
       op: "getServCodes",
       ...params,
@@ -85,7 +75,7 @@ export const fetchProgServs = createAsyncThunk<
   { rejectValue: string; state: AppState }
 >(
   "progServMeta/fetchProgServs",
-  async (params, { rejectWithValue }) => {
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<ProgServMetaContract> = {
       op: "syncProgServ",
       ...params,
@@ -137,7 +127,6 @@ const progServMetaSlice = createSlice({
       state.progServLinks = action.payload;
     });
   },
-
 });
 
 export const progServMetaActions = {

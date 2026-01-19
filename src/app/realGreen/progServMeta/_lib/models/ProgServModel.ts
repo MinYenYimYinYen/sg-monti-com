@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { ProgServ } from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
+import {CreatedUpdated} from "@/lib/mongoose/mongooseTypes";
 
 const ProgServSchema = new Schema<ProgServ>(
   {
@@ -15,5 +16,5 @@ const ProgServSchema = new Schema<ProgServ>(
 );
 
 export const ProgServModel =
-  mongoose.models.ProgServ ||
+  (mongoose.models?.ProgServ as mongoose.Model<ProgServ>) ||
   mongoose.model<ProgServ>("ProgServ", ProgServSchema);

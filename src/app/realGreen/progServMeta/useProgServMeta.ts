@@ -47,7 +47,6 @@ export function useProgServMeta({ autoLoad = false }: { autoLoad?: boolean }) {
   useEffect(() => {
     if (progCodesMongo.length > 0) {
       const progDefIds = progCodesMongo.map((p) => p.progDefId);
-      console.log("progDefIds", progDefIds);
       dispatch(
         progServMetaActions.fetchProgServs({
           params: { progDefIds },

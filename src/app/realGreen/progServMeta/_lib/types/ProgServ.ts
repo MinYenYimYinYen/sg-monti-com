@@ -1,3 +1,5 @@
+import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+
 export type RawProgServ = {
   id: number;
   programDefinitionID: number;
@@ -22,9 +24,9 @@ export type RemappedProgServ = {
 //   id: string;
 // };
 
-export type ProgServ = RemappedProgServ; // & MongoProgServ;
+export type ProgServ = RemappedProgServ & CreatedUpdated; // & MongoProgServ;
 
-export function remapProgServ(raw: RawProgServ): RemappedProgServ {
+ function remapProgServ(raw: RawProgServ): RemappedProgServ {
   return {
     progServId: raw.id,
     progDefId: raw.programDefinitionID,
@@ -34,6 +36,10 @@ export function remapProgServ(raw: RawProgServ): RemappedProgServ {
     do: raw.do,
     skipAfter: raw.skipAfter,
   };
+}
+
+export function remapProgServs(raw: RawProgServ[]) {
+  return raw.map(remapProgServ);
 }
 
 // export function extendProgServ({

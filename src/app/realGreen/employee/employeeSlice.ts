@@ -61,7 +61,6 @@ const getEmployees = createAsyncThunk<
       ...params,
     };
 
-    console.log("executing getEmployees");
     const res = await api<EmployeeContract["getAll"]["result"]>(
       "/realGreen/employee/api",
       {

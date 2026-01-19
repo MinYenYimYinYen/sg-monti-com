@@ -6,7 +6,10 @@ import { ProgServMetaContract } from "@/app/realGreen/progServMeta/_lib/types/Pr
 import { ProgServModel } from "@/app/realGreen/progServMeta/_lib/models/ProgServModel";
 import { dateCompare } from "@/lib/primatives/dates/dateCompare";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
-import { ProgServ } from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
+import {
+  ProgServ,
+  RawProgServ, remapProgServs,
+} from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
 import { delay } from "@/lib/async/delay";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import {
@@ -33,11 +36,11 @@ const handlers: HandlerMap<ProgServMetaContract> = {
       await connectToMongoDB();
 
       // 1. Check Cache Freshness
-      const lastUpdated = await ProgServModel.findOne().sort({ updatedAt: -1 });
+      const lastUpdated = await ProgServModel.findOne().sort({ updatedAt: -1 }).lean();
       const isFresh =
         lastUpdated &&
         dateCompare.isWithinDays({
-          dateLo: lastUpdated.updatedAt.toISOString(),
+          dateLo: new Date(lastUpdated.updatedAt).toISOString(),
           dateHi: new Date().toISOString(),
           maxDiff: 0.5, // 12 hours approx (0.5 days)
           options: {
@@ -47,21 +50,21 @@ const handlers: HandlerMap<ProgServMetaContract> = {
         });
 
       if (isFresh) {
-        const items = await ProgServModel.find({}); //todo: fix the model
+        const items = await ProgServModel.find({});
 
         return { success: true, items };
       }
 
       // 2. Fetch from RealGreen (Throttled)
-      const allProgServs: ProgServ[] = [];
+      const rawProgServs: RawProgServ[] = [];
       for (const id of progDefIds) {
         try {
-          const result = await rgApi<ProgServ[]>({
+          const result = await rgApi<RawProgServ[]>({
             path: `/ProgramCode/${id}/Services`,
             method: "GET",
           });
           if (Array.isArray(result)) {
-            allProgServs.push(...result);
+            rawProgServs.push(...result);
           }
           await delay(10); // Throttle
         } catch (e) {
@@ -69,9 +72,11 @@ const handlers: HandlerMap<ProgServMetaContract> = {
         }
       }
 
+      const remapped = remapProgServs(rawProgServs)
+
       // 3. Upsert to Mongo
-      if (allProgServs.length > 0) {
-        const bulkOps = allProgServs.map((doc) => ({
+      if (remapped.length > 0) {
+        const bulkOps = remapped.map((doc) => ({
           updateOne: {
             filter: { progServId: doc.progServId },
             update: { $set: doc },
