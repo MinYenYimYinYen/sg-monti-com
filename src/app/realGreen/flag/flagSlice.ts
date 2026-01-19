@@ -8,16 +8,15 @@ import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
 
 export const getFlags = createAsyncThunk<
-  Flag[], // Return Data Only
+  Flag[],
   WithConfig<FlagContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "flag/getFlags",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<FlagContract> = {
       op: "getAll",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<FlagContract["getAll"]["result"]>(

@@ -69,7 +69,7 @@ export default function NavBar() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => logout({ loadingMsg: "Logging out..." })}
+                onClick={() => logout()}
               >
                 Logout
               </Button>

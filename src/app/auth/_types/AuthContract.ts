@@ -4,15 +4,15 @@ import { CheckedId } from "@/app/auth/_types/authTypes";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
 import { Role } from "@/lib/api/types/roles";
 import { ApiContract } from "@/lib/api/types/ApiContract";
+import {PendingAdminActions} from "@/app/auth/authSlice";
 
 export interface AuthContract extends ApiContract {
   // 1. Check if they CAN register (RealGreen Check)
   checkEligibility: {
     params: {
       saId: string; // Matching User type
-      email: string;
     };
-    result: SuccessResponse & CheckedId;
+    result: ObjResponse<CheckedId>;
   };
 
   // 2. Create the account
@@ -68,10 +68,7 @@ export interface AuthContract extends ApiContract {
   // 9. Get Pending Actions (Admin)
   getPendingActions: {
     params: {};
-    result: ObjResponse<{
-      appliedUsers: User[];
-      pendingResets: PasswordResetRequest[];
-    }>;
+    result: ObjResponse<PendingAdminActions>;
   };
 
   // 10. Approve User (Admin)

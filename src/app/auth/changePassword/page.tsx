@@ -42,10 +42,7 @@ export default function ChangePasswordPage() {
 
     // We don't need to check the result here because the useEffect above
     // will handle the redirect when the Redux state updates.
-    changePassword({
-      newPassword: password,
-      loadingMsg: "Updating password...",
-    });
+    changePassword({ newPassword: password });
   };
 
   return (
@@ -56,7 +53,7 @@ export default function ChangePasswordPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => logout({ loadingMsg: "Logging out..." })}
+          onClick={() => logout()}
         >
           Logout
         </Button>

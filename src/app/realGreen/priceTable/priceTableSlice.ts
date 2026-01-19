@@ -8,16 +8,15 @@ import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
 
 export const getPriceTables = createAsyncThunk<
-  PriceTable[], // Return Data Only
+  PriceTable[],
   WithConfig<PriceTableContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "priceTable/getPriceTables",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<PriceTableContract> = {
       op: "getAll",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<PriceTableContract["getAll"]["result"]>(

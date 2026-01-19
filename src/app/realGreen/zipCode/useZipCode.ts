@@ -14,8 +14,11 @@ export function useZipCode({ autoLoad }: { autoLoad: boolean }) {
   if (autoLoad) {
     dispatch(
       zipCodeActions.getZipCodes({
-        showLoading: true,
-        staleTime: realGreenConst.paramTypesCacheTime,
+        params: {},
+        config: {
+          loadingMsg: "Loading zip codes...",
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
       }),
     );
   }
@@ -23,8 +26,11 @@ export function useZipCode({ autoLoad }: { autoLoad: boolean }) {
   const refresh = () =>
     dispatch(
       zipCodeActions.getZipCodes({
-        showLoading: true,
-        force: true,
+        params: {},
+        config: {
+          showLoading: true,
+          force: true,
+        },
       }),
     );
 

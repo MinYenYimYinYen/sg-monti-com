@@ -14,8 +14,11 @@ export function useProduct({ autoLoad }: { autoLoad: boolean }) {
   if (autoLoad) {
     dispatch(
       productActions.getProducts({
-        showLoading: true,
-        staleTime: realGreenConst.paramTypesCacheTime,
+        params: {},
+        config: {
+          loadingMsg: "Loading products...",
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
       }),
     );
   }
@@ -23,8 +26,11 @@ export function useProduct({ autoLoad }: { autoLoad: boolean }) {
   const refresh = () =>
     dispatch(
       productActions.getProducts({
-        showLoading: true,
-        force: true,
+        params: {},
+        config: {
+          loadingMsg: "Refreshing products...",
+          force: true,
+        },
       }),
     );
 

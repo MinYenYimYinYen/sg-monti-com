@@ -43,8 +43,6 @@ export default function RegisterPage() {
     }
     checkEligibility({
       saId: form.saId,
-      email: form.email,
-      loadingMsg: "Checking eligibility...",
     });
   };
 
@@ -58,7 +56,6 @@ export default function RegisterPage() {
 
     await register({
       ...form,
-      loadingMsg: "Creating account...",
       role: "applied",
     });
   };

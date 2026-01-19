@@ -26,7 +26,7 @@ Feature slices are "thin." They only track the actual data. They **do not** trac
 ### C. The `WithConfig` Pattern
 **File:** `src/store/reduxUtil/reduxTypes.ts`
 
-To control the traffic system, we wrap our Thunk arguments with the `WithConfig<T>` generic. This adds control flags to your API parameters.
+To control the traffic system, we wrap our Thunk arguments with the `WithConfig<T>` generic. This separates control flags from your API parameters to prevent leakage.
 
 ```typescript
 type ThunkConfig = {
@@ -37,6 +37,12 @@ type ThunkConfig = {
   // Traffic Controls
   force?: boolean;        // Bypass all checks (Refresh)
   staleTime?: number;     // Time-to-live in ms (e.g., 5000)
+};
+
+// Nested structure prevents config props from leaking into API calls
+type WithConfig<T> = {
+  config?: ThunkConfig;
+  apiParams: T;
 };
 ```
 
@@ -62,10 +68,8 @@ Use the `smartThunkOptions` helper instead of writing manual conditions.
 
 **Crucial TypeScript Requirements:**
 1.  **`EmployeeContract`**: Ensures the return type and params match the backend exactly.
-2.  **`WithConfig<T>`**: Wraps the params to allow `force` and `staleTime` to be passed in. Without this, TypeScript will reject your smart options.
-3. **Generics**: Before sending apiParams to the API, spread the ThunkConfig params out:
-    - `const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
-        params;`
+2.  **`WithConfig<T>`**: Wraps the params to allow `config` to be passed in.
+3. **Destructuring**: Destructure `{ apiParams }` from the thunk argument.
 4. **`AppState`**: Required in the third generic slot so `getState` works correctly in the condition.
 
 ```typescript
@@ -74,22 +78,36 @@ import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { EmployeeContract } from "@/app/realGreen/employee/api/EmployeeContract"; // Example import
 import { AppState } from "@/store";
+import { Employee } from "@/app/realGreen/employee/Employee";
+import { OpMap } from "@/lib/api/types/rpcUtils";
 
 export const getEmployees = createAsyncThunk<
-  EmployeeContract["getAll"]["result"], // 1. Return Type (From Contract)
+  Employee[], // 1. Return Data Only (Not the full response object)
   WithConfig<EmployeeContract["getAll"]["params"]>, // 2. Params + ThunkConfig
   { rejectValue: string; state: AppState } // 3. State type required for smart options
 >(
   "employee/getEmployees",
-  async (params, { rejectWithValue }) => {
-    // Standard fetch logic...
-    // REMEMBER: Destructure/remove config args before sending to API!
-    const { force, staleTime, showLoading, ...apiParams } = params;
+  async ({ apiParams }, { rejectWithValue }) => {
+    // 4. Construct Body using params directly
+    const body: OpMap<EmployeeContract> = {
+      op: "getAll",
+      ...apiParams,
+    };
     
-    // apiParams is now correctly typed as EmployeeContract["getAll"]["params"]
-    return await api.post("/employees", apiParams);
+    const res = await api<EmployeeContract["getAll"]["result"]>("/realGreen/employee/api", {
+        method: "POST",
+        body
+    });
+
+    // 5. Check for "Handled Errors" (200 OK with success: false)
+    if (!res.success) {
+        return rejectWithValue(res.message);
+    }
+
+    // 6. Return the data directly
+    return res.items;
   },
-  // 4. The Magic Line: Wires up Deduplication, Caching & UI Meta
+  // 7. The Magic Line: Wires up Deduplication, Caching & UI Meta
   smartThunkOptions({ typePrefix: "employee/getEmployees" })
 );
 ```
@@ -102,8 +120,8 @@ smartThunkOptions({
   typePrefix: "auth/checkEligibility",
   customCondition: (arg, { getState }) => {
     const state = getState() as AppState;
-    // If we already have a result for this ID, skip the network call
-    return !state.auth.checkedIds[arg.saId];
+    // Access params from the nested structure
+    return !state.auth.checkedIds[arg.apiParams.saId];
   }
 })
 ```
@@ -114,21 +132,23 @@ You can now control the caching and UI behavior directly from your components (o
 ```typescript
 // A. Standard (Deduplicated)
 // If 'getEmployees' is already running, this dispatch is ignored.
-dispatch(getEmployees({ region: 'MN' }));
+dispatch(getEmployees({ apiParams: { region: 'MN' } }));
 
 // B. Cached (Smart Fetch)
 // If data was fetched < 5 mins ago, this dispatch is ignored.
 dispatch(getEmployees({ 
-  region: 'MN', 
-  staleTime: 300000 // 5 minutes
+  apiParams: { region: 'MN' }, 
+  config: { staleTime: 300000 } // 5 minutes
 }));
 
 // C. Force Refresh (Bypass everything)
 // Runs immediately, shows spinner, updates timestamp.
 dispatch(getEmployees({ 
-  region: 'MN', 
-  force: true,
-  loadingMsg: "Refreshing..."
+  apiParams: { region: 'MN' }, 
+  config: { 
+    force: true,
+    loadingMsg: "Refreshing..."
+  }
 }));
 ```
 
@@ -143,10 +163,10 @@ dispatch(getEmployees({
 
 The `smartDispatchCondition` enforces the following priority:
 
-1.  **Force Rule:** Is `force: true`? -> **RUN**.
+1.  **Force Rule:** Is `config.force: true`? -> **RUN**.
 2.  **Custom Condition:** Does `customCondition(arg, api)` return false? -> **CANCEL**.
 3.  **Concurrency Rule:** Is this thunk type already in `activeRequests`? -> **CANCEL**.
 4.  **Cache Rule:**
-    * Is `staleTime` > 0?
+    * Is `config.staleTime` > 0?
     * AND is `(Now - lastFetched) < staleTime`? -> **CANCEL**.
 5.  **Default:** -> **RUN**.

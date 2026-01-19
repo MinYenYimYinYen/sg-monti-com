@@ -8,16 +8,15 @@ import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
 
 export const getProducts = createAsyncThunk<
-  Product[], // Return Data Only
+  Product[],
   WithConfig<ProductContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "product/getProducts",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<ProductContract> = {
       op: "getAll",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<ProductContract["getAll"]["result"]>(

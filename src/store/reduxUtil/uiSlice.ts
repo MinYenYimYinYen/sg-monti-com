@@ -6,7 +6,8 @@ import {
   isAnyOf,
   PayloadAction,
 } from "@reduxjs/toolkit";
-import { ThunkConfig } from "@/store/reduxUtil/reduxTypes";
+import { ThunkConfig, WithConfig } from "@/store/reduxUtil/reduxTypes";
+import { typeGuard } from "@/lib/typeGuard";
 
 type UIState = {
   loadingCount: number;
@@ -45,17 +46,19 @@ const uiSlice = createSlice({
     builder
       // A. START
       .addMatcher(isPending, (state, action) => {
-        const typePrefix = getTypePrefix(action); // <--- FIX
+        const typePrefix = getTypePrefix(action);
         state.activeRequests.push(typePrefix);
 
+        // The 'meta' property here is populated by getPendingMeta in smartThunkOptions
+        // It contains { showLoading, loadingMsg } directly.
         const meta = action.meta as ThunkConfig;
+
         if (meta?.showLoading === false) return;
 
         state.loadingCount++;
 
-        const arg = (action.meta as any).arg;
-        if (arg && typeof arg === "object" && arg.loadingMsg) {
-          state.loadingMessage = arg.loadingMsg;
+        if (meta.loadingMsg) {
+          state.loadingMessage = meta.loadingMsg;
         } else if (state.loadingCount === 1 || !state.loadingMessage) {
           state.loadingMessage = "Loading...";
         }
@@ -63,7 +66,7 @@ const uiSlice = createSlice({
 
       // B. SUCCESS
       .addMatcher(isFulfilled, (state, action) => {
-        const typePrefix = getTypePrefix(action); // <--- FIX
+        const typePrefix = getTypePrefix(action);
 
         // Remove from active
         const index = state.activeRequests.indexOf(typePrefix);
@@ -83,8 +86,18 @@ const uiSlice = createSlice({
 
       // D. FINALLY (UI Cleanup)
       .addMatcher(isAnyOf(isFulfilled, isRejected), (state, action) => {
-        const meta = action.meta as ThunkConfig;
-        if (meta?.showLoading === false) return;
+        // We need to check the original arg to see if showLoading was disabled.
+        // Redux Toolkit does NOT pass getPendingMeta results to fulfilled/rejected actions automatically.
+        // However, the 'arg' is available in action.meta.arg
+
+        const arg = action.meta.arg as Partial<WithConfig<unknown>>;
+        let showLoading = true;
+
+        if (typeGuard.hasDefined(arg, "config")) {
+          if (arg.config.showLoading === false) showLoading = false;
+        }
+
+        if (!showLoading) return;
 
         state.loadingCount--;
         if (state.loadingCount <= 0) {

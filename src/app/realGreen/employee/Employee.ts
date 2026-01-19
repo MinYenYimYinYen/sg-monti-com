@@ -51,8 +51,8 @@ export function extendEmployee({
   const employee: Employee = {
     ...remapped,
     phone: mongo?.phone || "",
-    createdAt: mongo?.createdAt,
-    updatedAt: mongo?.updatedAt,
+    createdAt: mongo?.createdAt || "",
+    updatedAt: mongo?.updatedAt || "",
   };
   return employee;
 }

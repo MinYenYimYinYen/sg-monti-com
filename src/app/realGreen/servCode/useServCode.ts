@@ -14,8 +14,11 @@ export function useServCode({ autoLoad }: { autoLoad: boolean }) {
   if (autoLoad) {
     dispatch(
       servCodeActions.getServCodes({
-        showLoading: true,
-        staleTime: realGreenConst.paramTypesCacheTime,
+        params: {},
+        config: {
+          loadingMsg: "Loading serv codes...",
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
       }),
     );
   }
@@ -23,8 +26,11 @@ export function useServCode({ autoLoad }: { autoLoad: boolean }) {
   const refresh = () =>
     dispatch(
       servCodeActions.getServCodes({
-        showLoading: true,
-        force: true,
+        params: {},
+        config: {
+          loadingMsg: "Loading serv codes",
+          force: true,
+        },
       }),
     );
 

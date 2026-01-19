@@ -14,8 +14,11 @@ export function useProgCode({ autoLoad }: { autoLoad: boolean }) {
   if (autoLoad) {
     dispatch(
       progCodeActions.getProgCodes({
-        showLoading: true,
-        staleTime: realGreenConst.paramTypesCacheTime,
+        params: {},
+        config: {
+          showLoading: true,
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
       }),
     );
   }
@@ -23,8 +26,11 @@ export function useProgCode({ autoLoad }: { autoLoad: boolean }) {
   const refresh = () =>
     dispatch(
       progCodeActions.getProgCodes({
-        showLoading: true,
-        force: true,
+        params: {},
+        config: {
+          showLoading: true,
+          force: true,
+        },
       }),
     );
 

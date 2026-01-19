@@ -7,14 +7,21 @@ import { uiSelect } from "@/store/reduxUtil/uiSlice";
  * Usage: { getPendingMeta: getUIMeta }
  */
 export const getUIMeta = ({ arg }: { arg: unknown }) => {
-  const uiArgs = arg as WithConfig<unknown>;
+  // Cast to our new structure.
+  // We use 'as' because we know this helper is only used with smart thunks
+  const smartArg = arg as WithConfig<unknown>;
+  const config = smartArg.config || {};
+
   return {
-    showLoading: uiArgs.showLoading ?? true,
-    loadingMsg: uiArgs.loadingMsg,
+    showLoading: config.showLoading ?? true,
+    loadingMsg: config.loadingMsg,
   };
 };
 
-type CustomCondition<T> = (arg: T, api: { getState: () => unknown }) => boolean;
+type CustomCondition<T> = (
+  arg: WithConfig<T>,
+  api: { getState: () => unknown },
+) => boolean;
 
 /**
  * Universal Condition for Smart Thunks.
@@ -25,17 +32,16 @@ type CustomCondition<T> = (arg: T, api: { getState: () => unknown }) => boolean;
  * @param getState Redux getState function
  * @param customCondition Optional function to add custom logic (return false to cancel)
  */
-export const smartDispatchCondition = <T extends ThunkConfig>(
+export const smartDispatchCondition = <T>(
   typePrefix: string,
-  args: T,
+  args: WithConfig<T>,
   getState: () => unknown,
   customCondition?: CustomCondition<T>,
 ): boolean => {
   const state = getState() as AppState;
 
   // 1. Destructure config
-  // Default cacheDuration is 0 (always stale) unless you add it to ThunkConfig
-  const { force = false, staleTime = 0 } = args;
+  const { force = false, staleTime = 0 } = args.config || {};
 
   // --- RULE 1: FORCE ---
   // If we really want it, we get it. Bypasses all other checks.
@@ -80,13 +86,13 @@ type SmartThunkOptionsParams<T> = {
  * Generates the standard options object for createAsyncThunk.
  * Wires up the Smart Dispatch (deduping/caching) and UI Meta (spinner).
  */
-export const smartThunkOptions = <T extends ThunkConfig>({
+export const smartThunkOptions = <T>({
   typePrefix,
   customCondition,
 }: SmartThunkOptionsParams<T>) => ({
   condition: (
     // We explicitly type the argument here so it matches the expected signature
-    arg: T,
+    arg: WithConfig<T>,
     { getState }: { getState: () => unknown },
   ) => smartDispatchCondition(typePrefix, arg, getState, customCondition),
 

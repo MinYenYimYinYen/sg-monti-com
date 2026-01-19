@@ -8,16 +8,15 @@ import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
 
 export const getCallAheads = createAsyncThunk<
-  CallAhead[], // Return Data Only
+  CallAhead[],
   WithConfig<CallAheadContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "callAhead/getCallAheads",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<CallAheadContract> = {
       op: "getAll",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<CallAheadContract["getAll"]["result"]>(

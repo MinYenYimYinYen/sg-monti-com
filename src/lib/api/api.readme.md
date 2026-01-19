@@ -23,8 +23,8 @@ export type ArrayResponse<T> = SuccessResponse & { items: T[] };
 ### C. The API Wrapper (`src/lib/api/api.ts`)
 A wrapper around `fetch` that integrates with our **Unified Error Architecture**.
 * **Auto-Stringify:** Accepts objects in `body` and handles `JSON.stringify`.
-* **Error Parsing:** Automatically throws `AppError` (Operational=True) on non-2xx responses.
-* **Type Safety:** Generic return types `api<ResultType>(...)`.
+* **Errors as Data:** Returns `Promise<T | ErrorResponse>`. It does **not** throw for operational errors (e.g., Validation, Auth). Instead, it returns a 200 OK response with `success: false`.
+* **Network Errors:** It *does* throw for network failures or unexpected server crashes (500s).
 
 ---
 
@@ -112,15 +112,26 @@ export async function POST(req: NextRequest) {
     const error = normalizeError(e);
     console.error(`[API] ${error.type}: ${error.message}`, { stack: error.stack });
 
-    // Map Errors to Status Codes
-    let status = 500;
-    if (error.type === "EXTERNAL_ERROR") status = 502; // Bad Gateway (RealGreen failed)
-    else if (error.type === "AUTH_ERROR") status = 403;
-    else if (error.type === "VALIDATION_ERROR") status = 400;
+    // --- REFACTOR: Return 200 for Operational Errors ---
+    if (error.isOperational) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+          silent: error.silent,
+          code: error.statusCode,
+        },
+        { status: 200 }, // 200 OK for handled errors
+      );
+    }
 
+    // Keep 500 for unexpected crashes
     return NextResponse.json(
-      { success: false, message: error.isOperational ? error.message : "Server Error" },
-      { status }
+      {
+        success: false,
+        message: "Internal Server Error",
+      },
+      { status: 500 },
     );
   }
 }
@@ -139,31 +150,34 @@ import { WithConfig } from '@/store/reduxUtil/reduxTypes';
 import { getUIMeta } from '@/store/reduxUtil/smartThunkOptions';
 
 export const getEmployees = createAsyncThunk<
-  EmployeeContract['getAll']['result'],          // Return Type
+  Employee[], // Return Data Only
   WithConfig<EmployeeContract['getAll']['params']>,  // Params (Wrapped with UI flags)
   { rejectValue: string }
 >(
   'employee/getEmployees',
   async (params, { rejectWithValue }) => {
-    try {
-      // 1. Segregate UI args from API args
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { showLoading, loadingMsg, ...apiParams } = params;
+    // 1. Segregate UI args from API args
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { showLoading, loadingMsg, ...apiParams } = params;
 
-      // 2. Construct Type-Safe Body
-      const body: OpMap<EmployeeContract> = {
-        op: 'getAll',
-        ...apiParams
-      };
+    // 2. Construct Type-Safe Body
+    const body: OpMap<EmployeeContract> = {
+      op: 'getAll',
+      ...apiParams
+    };
 
-      return await api<EmployeeContract['getAll']['result']>('/employee/api', {
-        method: 'POST',
-        body // Passed as object (api wrapper stringifies it)
-      });
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
+    const res = await api<EmployeeContract['getAll']['result']>('/employee/api', {
+      method: 'POST',
+      body // Passed as object (api wrapper stringifies it)
+    });
+
+    // 3. Check for Handled Errors
+    if (!res.success) {
+        return rejectWithValue(res.message);
     }
+
+    // 4. Return Data
+    return res.items;
   },
   { getPendingMeta: getUIMeta } // Hook up Global UI Spinner
 );

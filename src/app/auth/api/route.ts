@@ -22,7 +22,7 @@ import {
   verifyRefreshToken,
 } from "@/app/auth/_lib/tokenUtils";
 import { AUTH_CONST } from "@/app/auth/_lib/authConst";
-import { TokenPayload } from "@/app/auth/_types/authTypes";
+import { CheckedId, TokenPayload } from "@/app/auth/_types/authTypes";
 import PasswordResetRequestModel from "@/app/auth/_models/PasswordResetRequestModel";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
 import { ROLES } from "@/lib/api/types/roles";
@@ -50,12 +50,15 @@ const handlers: HandlerMap<AuthContract> = {
           })
         )?.id === saId;
 
-      return {
-        success: true,
+      const checkedId: CheckedId = {
         checked: true,
         isValid,
         alreadyExists,
         idChecked: saId,
+      };
+      return {
+        success: true,
+        item: checkedId,
       };
     },
   },
@@ -352,7 +355,7 @@ const handlers: HandlerMap<AuthContract> = {
       return {
         success: true,
         item: {
-          appliedUsers,
+          appliedUsers: appliedUsers,
           pendingResets,
         },
       };

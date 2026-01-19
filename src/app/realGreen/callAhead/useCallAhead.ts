@@ -14,8 +14,11 @@ export function useCallAhead({ autoLoad }: { autoLoad: boolean }) {
   if (autoLoad) {
     dispatch(
       callAheadActions.getCallAheads({
-        showLoading: true,
-        staleTime: realGreenConst.paramTypesCacheTime,
+        params: {
+          showLoading: true,
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
+        config: { loadingMsg: "Loading call aheads..." },
       }),
     );
   }
@@ -23,8 +26,11 @@ export function useCallAhead({ autoLoad }: { autoLoad: boolean }) {
   const refresh = () =>
     dispatch(
       callAheadActions.getCallAheads({
-        showLoading: true,
-        force: true,
+        params: {
+          showLoading: true,
+          force: true,
+        },
+        config: { loadingMsg: "Loading call aheads..." },
       }),
     );
 

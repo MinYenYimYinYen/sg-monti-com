@@ -55,15 +55,10 @@ const getEmployees = createAsyncThunk<
   { rejectValue: string; state: AppState }
 >(
   "employee/getEmployees",
-  async (params, { rejectWithValue }) => {
-    // 1. Separate Config from API Params
-    // We strip out 'force', 'cacheDuration', etc. so they don't get sent to the server
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
-      params;
-
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<EmployeeContract> = {
       op: "getAll",
-      ...apiParams,
+      ...params,
     };
 
     console.log("executing getEmployees");

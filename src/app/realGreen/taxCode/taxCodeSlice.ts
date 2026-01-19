@@ -8,16 +8,15 @@ import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
 
 export const getTaxCodes = createAsyncThunk<
-  TaxCode[], // Return Data Only
+  TaxCode[],
   WithConfig<TaxCodeContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "taxCode/getTaxCodes",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<TaxCodeContract> = {
       op: "getAll",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<TaxCodeContract["getAll"]["result"]>(

@@ -11,8 +11,11 @@ export function useFlag({ autoLoad }: { autoLoad: boolean }) {
   if (autoLoad) {
     dispatch(
       flagActions.getFlags({
-        showLoading: true,
-        staleTime: realGreenConst.paramTypesCacheTime,
+        params: {},
+        config: {
+          loadingMsg: "Loading flags...",
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
       }),
     );
   }
@@ -20,8 +23,11 @@ export function useFlag({ autoLoad }: { autoLoad: boolean }) {
   const refresh = () =>
     dispatch(
       flagActions.getFlags({
-        showLoading: true,
-        force: true,
+        params: {},
+        config: {
+          loadingMsg: "Loading flags...",
+          force: true,
+        },
       }),
     );
 

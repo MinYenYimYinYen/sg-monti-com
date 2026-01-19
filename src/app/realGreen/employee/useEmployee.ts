@@ -5,7 +5,7 @@ import {
   employeeSelect,
 } from "@/app/realGreen/employee/employeeSlice";
 import { realGreenConst } from "@/app/realGreen/lib/realGreenConst";
-import {AppError} from "@/lib/errors/AppError";
+import { AppError } from "@/lib/errors/AppError";
 
 export function useEmployee({ autoLoad }: { autoLoad: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
@@ -14,8 +14,11 @@ export function useEmployee({ autoLoad }: { autoLoad: boolean }) {
   if (autoLoad) {
     dispatch(
       employeeActions.getEmployees({
-        showLoading: true,
-        staleTime: realGreenConst.paramTypesCacheTime,
+        params: {},
+        config: {
+          loadingMsg: "Loading employees...",
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
       }),
     );
   }
@@ -23,8 +26,11 @@ export function useEmployee({ autoLoad }: { autoLoad: boolean }) {
   const refresh = () =>
     dispatch(
       employeeActions.getEmployees({
-        showLoading: true,
-        force: true,
+        params: {},
+        config: {
+          loadingMsg: "Loading employees...",
+          force: true,
+        },
       }),
     );
 
@@ -37,11 +43,10 @@ export function useEmployee({ autoLoad }: { autoLoad: boolean }) {
         type: "VALIDATION_ERROR",
         isOperational: true,
         data: id,
-      })
+      });
     }
     return employee;
-  }
-
+  };
 
   return { refresh, findEmployee, getEmployee };
 }

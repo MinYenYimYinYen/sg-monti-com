@@ -44,7 +44,6 @@ function LoginContent() {
     login({
       userName: form.userName,
       password: form.password,
-      loadingMsg: "Logging in...",
     });
   };
 

@@ -11,20 +11,15 @@ import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { ProgServContract } from "@/app/realGreen/progServ/ProgServContract";
 
 export const getProgServ = createAsyncThunk<
-  ProgServ, // Return Data Only
+  ProgServ,
   WithConfig<ProgServContract["getOne"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "progServ/getProgServ",
-  async (params, { rejectWithValue }) => {
-    // 1. Separate Config params from API params
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
-      params;
-
-    // 2. Type-Safe Body Construction
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<ProgServContract> = {
       op: "getOne",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<ProgServContract["getOne"]["result"]>(

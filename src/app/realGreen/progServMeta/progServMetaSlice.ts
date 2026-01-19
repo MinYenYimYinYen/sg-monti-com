@@ -8,21 +8,21 @@ import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { ProgCode } from "@/app/realGreen/progCode/_lib/ProgCode";
+import { ServCodeContract } from "@/app/realGreen/servCode/api/ServCodeContract";
+import { ProgCodeContract } from "@/app/realGreen/progCode/_lib/ProgCodeContract";
 
 // --- Thunks ---
 
 export const fetchDryProgCodes = createAsyncThunk<
   ProgCode[], // Return Data Only
-  WithConfig<{}>,
+  WithConfig<ProgCodeContract["getAll"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "progServMeta/fetchDryProgCodes",
   async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
-      params;
     const body: OpMap<ProgServMetaContract> = {
       op: "getProgCodes",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<ProgServMetaContract["getProgCodes"]["result"]>(
@@ -44,16 +44,14 @@ export const fetchDryProgCodes = createAsyncThunk<
 
 export const fetchDryServCodes = createAsyncThunk<
   ServCode[], // Return Data Only
-  WithConfig<{}>,
+  WithConfig<ServCodeContract["getAll"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "progServMeta/fetchDryServCodes",
   async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
-      params;
     const body: OpMap<ProgServMetaContract> = {
       op: "getServCodes",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<ProgServMetaContract["getServCodes"]["result"]>(
@@ -80,11 +78,9 @@ export const fetchProgServs = createAsyncThunk<
 >(
   "progServMeta/fetchProgServs",
   async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } =
-      params;
     const body: OpMap<ProgServMetaContract> = {
       op: "syncProgServ",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<ProgServMetaContract["syncProgServ"]["result"]>(

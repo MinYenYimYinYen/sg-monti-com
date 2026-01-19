@@ -8,16 +8,15 @@ import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
 
 export const getZipCodes = createAsyncThunk<
-  ZipCode[], // Return Data Only
+  ZipCode[],
   WithConfig<ZipCodeContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "zipCode/getZipCodes",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<ZipCodeContract> = {
       op: "getAll",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<ZipCodeContract["getAll"]["result"]>(

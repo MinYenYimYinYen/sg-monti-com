@@ -84,7 +84,6 @@ function PendingUsersList({ users }: { users: User[] }) {
                 approveUser({
                   userName: user.userName,
                   role,
-                  loadingMsg: "Approving...",
                 })
               }
             />
@@ -166,7 +165,6 @@ function PendingResetsList({ requests }: { requests: PasswordResetRequest[] }) {
                   resolvePasswordReset({
                     userName: req.userName,
                     tempPassword,
-                    loadingMsg: "Resetting...",
                   });
                   setActiveId(null);
                   setTempPassword("");

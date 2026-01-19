@@ -14,14 +14,21 @@ export default function AuthInitializer({ children }: { children: ReactNode }) {
   // 1. Check Auth on Mount
   useEffect(() => {
     if (!isInitialized && !isAuthenticated) {
-      dispatch(authActions.checkAuth({ showLoading: false }));
+      dispatch(
+        authActions.checkAuth({ config: { showLoading: false }, params: {} }),
+      );
     }
   }, [dispatch, isInitialized, isAuthenticated]);
 
   // 2. Fetch Admin Actions if Admin
   useEffect(() => {
     if (isAuthenticated && user?.role === "admin") {
-      dispatch(authActions.getPendingActions({ showLoading: false }));
+      dispatch(
+        authActions.getPendingActions({
+          params: {},
+          config: { showLoading: false },
+        }),
+      );
     }
   }, [dispatch, isAuthenticated, user?.role]);
 

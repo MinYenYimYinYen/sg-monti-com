@@ -1,4 +1,4 @@
-import { DateTimeRange } from "@/realGreen/types/DateTimeRange";
+import { TRange } from "@/lib/primatives/TRange";
 
 export enum RecentFrame {
   Hour = "Hour",
@@ -8,15 +8,15 @@ export enum RecentFrame {
   Year = "Year",
 }
 
-function getRecentDateTimeRange(frame: RecentFrame): DateTimeRange {
-  let dateTimeRange: DateTimeRange = { minValue: "", maxValue: "" };
+function getRecentDateTimeRange(frame: RecentFrame): TRange<string> {
+  let dateTimeRange: TRange<string> = { min: "", max: "" };
   switch (frame) {
     case "Hour": {
       const now = new Date();
       const anHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       dateTimeRange = {
-        minValue: anHourAgo.toISOString(),
-        maxValue: now.toISOString(),
+        min: anHourAgo.toISOString(),
+        max: now.toISOString(),
       };
       break;
     }
@@ -24,8 +24,8 @@ function getRecentDateTimeRange(frame: RecentFrame): DateTimeRange {
       const now = new Date();
       const aDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       dateTimeRange = {
-        minValue: aDayAgo.toISOString(),
-        maxValue: now.toISOString(),
+        min: aDayAgo.toISOString(),
+        max: now.toISOString(),
       };
       break;
     }
@@ -33,8 +33,8 @@ function getRecentDateTimeRange(frame: RecentFrame): DateTimeRange {
       const now = new Date();
       const aWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       dateTimeRange = {
-        minValue: aWeekAgo.toISOString(),
-        maxValue: now.toISOString(),
+        min: aWeekAgo.toISOString(),
+        max: now.toISOString(),
       };
       break;
     }
@@ -42,8 +42,8 @@ function getRecentDateTimeRange(frame: RecentFrame): DateTimeRange {
       const now = new Date();
       const aMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       dateTimeRange = {
-        minValue: aMonthAgo.toISOString(),
-        maxValue: now.toISOString(),
+        min: aMonthAgo.toISOString(),
+        max: now.toISOString(),
       };
       break;
     }
@@ -51,8 +51,8 @@ function getRecentDateTimeRange(frame: RecentFrame): DateTimeRange {
       const now = new Date();
       const aYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
       dateTimeRange = {
-        minValue: aYearAgo.toISOString(),
-        maxValue: now.toISOString(),
+        min: aYearAgo.toISOString(),
+        max: now.toISOString(),
       };
       break;
     }

@@ -14,10 +14,9 @@ export const getServCodes = createAsyncThunk<
 >(
   "servCode/getServCodes",
   async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, ...apiParams } = params;
     const body: OpMap<ServCodeContract> = {
       op: "getAll",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<ServCodeContract["getAll"]["result"]>(

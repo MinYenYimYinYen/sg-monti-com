@@ -1,8 +1,6 @@
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
-import {
-  companyActions,
-} from "@/app/realGreen/company/_lib/companySlice";
+import { companyActions } from "@/app/realGreen/company/_lib/companySlice";
 import { realGreenConst } from "@/app/realGreen/lib/realGreenConst";
 
 export function useCompany({ autoLoad }: { autoLoad: boolean }) {
@@ -11,8 +9,11 @@ export function useCompany({ autoLoad }: { autoLoad: boolean }) {
   if (autoLoad) {
     dispatch(
       companyActions.getCompanies({
-        showLoading: true,
-        staleTime: realGreenConst.paramTypesCacheTime,
+        params: {},
+        config: {
+          loadingMsg: "Loading companies...",
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
       }),
     );
   }
@@ -20,8 +21,8 @@ export function useCompany({ autoLoad }: { autoLoad: boolean }) {
   const refresh = () =>
     dispatch(
       companyActions.getCompanies({
-        showLoading: true,
-        force: true,
+        params: {},
+        config: { loadingMsg: "Loading companies...", force: true },
       }),
     );
 

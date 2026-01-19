@@ -3,66 +3,104 @@ import { AppDispatch } from "@/store";
 import { authActions } from "@/app/auth/authSlice";
 import { AuthContract } from "@/app/auth/_types/AuthContract";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
+import { User, UserWithPW } from "@/app/auth/_types/User";
 
 export const useAuth = () => {
   const dispatch = useDispatch<AppDispatch>();
 
-  const login = (params: WithConfig<AuthContract["login"]["params"]>) => {
-    return dispatch(authActions.login(params));
+  const login = (params: AuthContract["login"]["params"]) => {
+    return dispatch(
+      authActions.login({
+        params: params,
+        config: { loadingMsg: "Logging in..." },
+      }),
+    );
   };
 
-  const logout = (
-    params: WithConfig<AuthContract["logout"]["params"]> = {},
-  ) => {
-    return dispatch(authActions.logout(params));
+  const logout = () => {
+    return dispatch(
+      authActions.logout({
+        params: {},
+        config: { loadingMsg: "Logging out..." },
+      }),
+    );
   };
 
-  const register = (
-    params: WithConfig<AuthContract["register"]["params"]>,
-  ) => {
-    return dispatch(authActions.register(params));
+  const register = (params: AuthContract["register"]["params"]) => {
+    return dispatch(
+      authActions.register({
+        params,
+        config: { loadingMsg: "Registering..." },
+      }),
+    );
   };
 
   const checkEligibility = (
-    params: WithConfig<AuthContract["checkEligibility"]["params"]>,
+    params: AuthContract["checkEligibility"]["params"],
   ) => {
-    return dispatch(authActions.checkEligibility(params));
+    return dispatch(
+      authActions.checkEligibility({
+        params,
+        config: { loadingMsg: "Checking eligibility..." },
+      }),
+    );
   };
 
-  const checkAuth = (
-    params: WithConfig<AuthContract["checkAuth"]["params"]> = {},
-  ) => {
-    return dispatch(authActions.checkAuth(params));
+  const checkAuth = () => {
+    return dispatch(
+      authActions.checkAuth({ params: {}, config: { showLoading: false } }),
+    );
   };
 
   const requestPasswordReset = (
-    params: WithConfig<AuthContract["requestPasswordReset"]["params"]>,
+    params: AuthContract["requestPasswordReset"]["params"],
   ) => {
-    return dispatch(authActions.requestPasswordReset(params));
+    return dispatch(
+      authActions.requestPasswordReset({
+        params: { userName: params.userName },
+        config: { loadingMsg: "Requesting password reset..." },
+      }),
+    );
   };
 
   const getPendingActions = (
-    params: WithConfig<AuthContract["getPendingActions"]["params"]> = {},
+    params: AuthContract["getPendingActions"]["params"] = {},
   ) => {
-    return dispatch(authActions.getPendingActions(params));
+    return dispatch(
+      authActions.getPendingActions({
+        params: params,
+        config: { showLoading: false },
+      }),
+    );
   };
 
-  const approveUser = (
-    params: WithConfig<AuthContract["approveUser"]["params"]>,
-  ) => {
-    return dispatch(authActions.approveUser(params));
+  const approveUser = (params: AuthContract["approveUser"]["params"]) => {
+    return dispatch(
+      authActions.approveUser({
+        params,
+        config: { loadingMsg: "Approving..." },
+      }),
+    );
   };
 
   const resolvePasswordReset = (
-    params: WithConfig<AuthContract["resolvePasswordReset"]["params"]>,
+    params: AuthContract["resolvePasswordReset"]["params"],
   ) => {
-    return dispatch(authActions.resolvePasswordReset(params));
+    return dispatch(
+      authActions.resolvePasswordReset({
+        params,
+        config: { loadingMsg: "Updating password..." },
+      }),
+    );
   };
 
-  const changePassword = (
-    params: WithConfig<AuthContract["changePassword"]["params"]>,
-  ) => {
-    return dispatch(authActions.changePassword(params));
+  const changePassword = (params: AuthContract["changePassword"]["params"]) => {
+    return dispatch(
+      authActions.changePassword({
+        params,
+        config: { loadingMsg: "Updating password..." },
+      }),
+    );
   };
 
   const resetEligibility = () => {

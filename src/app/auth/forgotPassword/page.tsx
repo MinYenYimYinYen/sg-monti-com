@@ -28,10 +28,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     if (!userName.trim()) return;
 
-    requestPasswordReset({
-      userName,
-      loadingMsg: "Submitting request...",
-    });
+    requestPasswordReset({ userName });
   };
 
   return (

@@ -15,7 +15,7 @@ export default function AppliedPage() {
       footer={
         <Button
           variant="outline"
-          onClick={() => logout({ loadingMsg: "Logging out..." })}
+          onClick={() => logout()}
         >
           Logout
         </Button>

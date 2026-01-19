@@ -8,17 +8,13 @@ import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
 
 export const getProgCodes = createAsyncThunk<
-  ProgCode[], // Return Data Only
+  ProgCode[],
   WithConfig<ProgCodeContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "progCode/getProgCodes",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
-    const body: OpMap<ProgCodeContract> = {
-      op: "getAll",
-      ...apiParams,
-    };
+  async ({ params }, { rejectWithValue }) => {
+    const body: OpMap<ProgCodeContract> = { op: "getAll", ...params };
 
     const res = await api<ProgCodeContract["getAll"]["result"]>(
       "/realGreen/programCode/api",

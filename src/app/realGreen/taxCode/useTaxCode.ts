@@ -14,8 +14,11 @@ export function useTaxCode({ autoLoad }: { autoLoad: boolean }) {
   if (autoLoad) {
     dispatch(
       taxCodeActions.getTaxCodes({
-        showLoading: true,
-        staleTime: realGreenConst.paramTypesCacheTime,
+        params: {},
+        config: {
+          loadingMsg: "Loading tax codes...",
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
       }),
     );
   }
@@ -23,8 +26,11 @@ export function useTaxCode({ autoLoad }: { autoLoad: boolean }) {
   const refresh = () =>
     dispatch(
       taxCodeActions.getTaxCodes({
-        showLoading: true,
-        force: true,
+        params: {},
+        config: {
+          loadingMsg: "Loading tax codes...",
+          force: true,
+        },
       }),
     );
 

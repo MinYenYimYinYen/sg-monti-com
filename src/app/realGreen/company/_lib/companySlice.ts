@@ -9,16 +9,15 @@ import { Grouper } from "@/lib/Grouper";
 import { companyFunc } from "@/app/realGreen/company/_lib/companyFunc";
 
 export const getCompanies = createAsyncThunk<
-  Company[], // Return Data Only
+  Company[],
   WithConfig<CompanyContract["getAll"]["params"]>,
   { rejectValue: string }
 >(
   "company/getCompanies",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<CompanyContract> = {
       op: "getAll",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<CompanyContract["getAll"]["result"]>(

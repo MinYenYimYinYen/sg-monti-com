@@ -14,8 +14,11 @@ export function usePriceTable({ autoLoad }: { autoLoad: boolean }) {
   if (autoLoad) {
     dispatch(
       priceTableActions.getPriceTables({
-        showLoading: true,
-        staleTime: realGreenConst.paramTypesCacheTime,
+        params: {},
+        config: {
+          loadingMsg: "Loading price tables...",
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
       }),
     );
   }
@@ -23,8 +26,11 @@ export function usePriceTable({ autoLoad }: { autoLoad: boolean }) {
   const refresh = () =>
     dispatch(
       priceTableActions.getPriceTables({
-        showLoading: true,
-        force: true,
+        params: {},
+        config: {
+          loadingMsg: "Loading price tables...",
+          force: true,
+        },
       }),
     );
 

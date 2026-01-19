@@ -9,8 +9,14 @@ import { handleError } from "@/lib/errors/errorHandler";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { CheckedId } from "@/app/auth/_types/authTypes";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
+import {ObjResponse} from "@/lib/api/types/responses";
 
 type RequestStatus = "idle" | "pending" | "success" | "error";
+
+export type PendingAdminActions = {
+  appliedUsers: User[];
+  pendingResets: PasswordResetRequest[];
+};
 
 // 1. STATE
 type AuthState = {
@@ -21,10 +27,7 @@ type AuthState = {
   passwordResetRequestStatus: RequestStatus;
 
   // Admin State
-  admin: {
-    pendingUsers: User[];
-    pendingResets: PasswordResetRequest[];
-  };
+  pendingAdminActions: PendingAdminActions;
 
   // Transient state for the Registration Flow
   registrationEligibility: CheckedId;
@@ -38,8 +41,8 @@ const initialState: AuthState = {
   isInitialized: false,
   invalidCredentialsEntered: false,
   passwordResetRequestStatus: "idle",
-  admin: {
-    pendingUsers: [],
+  pendingAdminActions: {
+    appliedUsers: [],
     pendingResets: [],
   },
   registrationEligibility: null,
@@ -50,50 +53,46 @@ const initialState: AuthState = {
 
 // A. Check Eligibility
 const checkEligibility = createAsyncThunk<
-  CheckedId, // Return Data Only
+  CheckedId,
   WithConfig<AuthContract["checkEligibility"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "auth/checkEligibility",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<AuthContract> = {
       op: "checkEligibility",
-      ...apiParams,
+      ...params,
     };
 
-    const res = await api<AuthContract["checkEligibility"]["result"]>(
+    const res = await api<ObjResponse<CheckedId>>(
       "/auth/api",
       { method: "POST", body },
     );
 
     if (!res.success) return rejectWithValue(res.message);
-    
-    // Extract CheckedId properties
-    const { success, message, ...data } = res;
-    return data as CheckedId;
+
+    return res.item;
   },
   smartThunkOptions({
     typePrefix: "auth/checkEligibility",
     customCondition: (arg, { getState }) => {
       const state = getState() as AppState;
-      return !state.auth.checkedIds[arg.saId];
+      return !state.auth.checkedIds[arg.params.saId];
     },
   }),
 );
 
 // B. Register
 const register = createAsyncThunk<
-  User, // Return Data Only
+  User,
   WithConfig<AuthContract["register"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "auth/register",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
-    const body: OpMap<AuthContract> = { op: "register", ...apiParams };
+  async ({ params }, { rejectWithValue }) => {
+    const body: OpMap<AuthContract> = { op: "register", ...params };
 
-    const res = await api<AuthContract["register"]["result"]>("/auth/api", {
+    const res = await api<ObjResponse<User>>("/auth/api", {
       method: "POST",
       body,
     });
@@ -106,14 +105,13 @@ const register = createAsyncThunk<
 
 // C. Login
 const login = createAsyncThunk<
-  User, // Return Data Only
+  User,
   WithConfig<AuthContract["login"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "auth/login",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
-    const body: OpMap<AuthContract> = { op: "login", ...apiParams };
+  async ({ params }, { rejectWithValue }) => {
+    const body: OpMap<AuthContract> = { op: "login", ...params };
 
     const res = await api<AuthContract["login"]["result"]>("/auth/api", {
       method: "POST",
@@ -128,14 +126,13 @@ const login = createAsyncThunk<
 
 // D. Logout
 const logout = createAsyncThunk<
-  void, // Return Void
+  boolean,
   WithConfig<AuthContract["logout"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "auth/logout",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
-    const body: OpMap<AuthContract> = { op: "logout", ...apiParams };
+  async ({ params }, { rejectWithValue }) => {
+    const body: OpMap<AuthContract> = { op: "logout", ...params };
 
     const res = await api<AuthContract["logout"]["result"]>("/auth/api", {
       method: "POST",
@@ -143,20 +140,20 @@ const logout = createAsyncThunk<
     });
 
     if (!res.success) return rejectWithValue(res.message);
+    return res.success;
   },
   smartThunkOptions({ typePrefix: "auth/logout" }),
 );
 
 // E. Check Auth (Session Restoration)
 const checkAuth = createAsyncThunk<
-  User, // Return Data Only
+  User,
   WithConfig<AuthContract["checkAuth"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "auth/checkAuth",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
-    const body: OpMap<AuthContract> = { op: "checkAuth", ...apiParams };
+  async ({ params }, { rejectWithValue }) => {
+    const body: OpMap<AuthContract> = { op: "checkAuth", ...params };
 
     const res = await api<AuthContract["checkAuth"]["result"]>("/auth/api", {
       method: "POST",
@@ -177,16 +174,15 @@ const checkAuth = createAsyncThunk<
 
 // F. Request Password Reset
 const requestPasswordReset = createAsyncThunk<
-  void, // Return Void
+  boolean,
   WithConfig<AuthContract["requestPasswordReset"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "auth/requestPasswordReset",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<AuthContract> = {
       op: "requestPasswordReset",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<AuthContract["requestPasswordReset"]["result"]>(
@@ -195,22 +191,22 @@ const requestPasswordReset = createAsyncThunk<
     );
 
     if (!res.success) return rejectWithValue(res.message);
+    return res.success;
   },
   smartThunkOptions({ typePrefix: "auth/requestPasswordReset" }),
 );
 
 // G. Get Pending Actions (Admin)
 const getPendingActions = createAsyncThunk<
-  { appliedUsers: User[]; pendingResets: PasswordResetRequest[] }, // Return Data Only
+  { appliedUsers: User[]; pendingResets: PasswordResetRequest[] },
   WithConfig<AuthContract["getPendingActions"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "auth/getPendingActions",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<AuthContract> = {
       op: "getPendingActions",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<AuthContract["getPendingActions"]["result"]>(
@@ -226,40 +222,36 @@ const getPendingActions = createAsyncThunk<
 
 // H. Approve User (Admin)
 const approveUser = createAsyncThunk<
-  void, // Return Void
+  boolean,
   WithConfig<AuthContract["approveUser"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "auth/approveUser",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
-    const body: OpMap<AuthContract> = { op: "approveUser", ...apiParams };
+  async ({ params }, { rejectWithValue }) => {
+    const body: OpMap<AuthContract> = { op: "approveUser", ...params };
 
-    const res = await api<AuthContract["approveUser"]["result"]>(
-      "/auth/api",
-      {
-        method: "POST",
-        body,
-      },
-    );
+    const res = await api<AuthContract["approveUser"]["result"]>("/auth/api", {
+      method: "POST",
+      body,
+    });
 
     if (!res.success) return rejectWithValue(res.message);
+    return res.success;
   },
   smartThunkOptions({ typePrefix: "auth/approveUser" }),
 );
 
 // I. Resolve Password Reset (Admin)
 const resolvePasswordReset = createAsyncThunk<
-  void, // Return Void
+  boolean,
   WithConfig<AuthContract["resolvePasswordReset"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "auth/resolvePasswordReset",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<AuthContract> = {
       op: "resolvePasswordReset",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<AuthContract["resolvePasswordReset"]["result"]>(
@@ -268,22 +260,22 @@ const resolvePasswordReset = createAsyncThunk<
     );
 
     if (!res.success) return rejectWithValue(res.message);
+    return res.success;
   },
   smartThunkOptions({ typePrefix: "auth/resolvePasswordReset" }),
 );
 
 // J. Change Password (User)
 const changePassword = createAsyncThunk<
-  void, // Return Void
+  boolean,
   WithConfig<AuthContract["changePassword"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "auth/changePassword",
-  async (params, { rejectWithValue }) => {
-    const { showLoading, loadingMsg, force, staleTime, ...apiParams } = params;
+  async ({ params }, { rejectWithValue }) => {
     const body: OpMap<AuthContract> = {
       op: "changePassword",
-      ...apiParams,
+      ...params,
     };
 
     const res = await api<AuthContract["changePassword"]["result"]>(
@@ -292,6 +284,7 @@ const changePassword = createAsyncThunk<
     );
 
     if (!res.success) return rejectWithValue(res.message);
+    return res.success;
   },
   smartThunkOptions({ typePrefix: "auth/changePassword" }),
 );
@@ -322,15 +315,9 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     // Check Eligibility
     builder.addCase(checkEligibility.fulfilled, (state, action) => {
-      // action.payload is now CheckedId
-      const result: CheckedId = {
-        ...action.payload,
-        idChecked: action.meta.arg.saId,
-      };
-
-      state.registrationEligibility = result;
+      state.registrationEligibility = action.payload;
       // Cache the result
-      state.checkedIds[action.meta.arg.saId] = result;
+      state.checkedIds[action.meta.arg.params.saId] = action.payload;
     });
 
     // Register
@@ -359,8 +346,8 @@ const authSlice = createSlice({
     builder.addCase(logout.fulfilled, (state) => {
       state.user = null;
       state.isAuthenticated = false;
-      state.admin.pendingUsers = [];
-      state.admin.pendingResets = [];
+      state.pendingAdminActions.appliedUsers = [];
+      state.pendingAdminActions.pendingResets = [];
     });
 
     // Check Auth
@@ -393,24 +380,25 @@ const authSlice = createSlice({
     // Get Pending Actions
     builder.addCase(getPendingActions.fulfilled, (state, action) => {
       // action.payload is { appliedUsers, pendingResets }
-      state.admin.pendingUsers = action.payload.appliedUsers;
-      state.admin.pendingResets = action.payload.pendingResets;
+      state.pendingAdminActions = action.payload;
     });
 
     // Approve User
     builder.addCase(approveUser.fulfilled, (state, action) => {
       // Optimistic update: Remove the approved user from the list
-      state.admin.pendingUsers = state.admin.pendingUsers.filter(
-        (u) => u.userName !== action.meta.arg.userName,
-      );
+      state.pendingAdminActions.appliedUsers =
+        state.pendingAdminActions.appliedUsers.filter(
+          (u) => u.userName !== action.meta.arg.params.userName,
+        );
     });
 
     // Resolve Password Reset
     builder.addCase(resolvePasswordReset.fulfilled, (state, action) => {
       // Optimistic update: Remove the resolved request from the list
-      state.admin.pendingResets = state.admin.pendingResets.filter(
-        (r) => r.userName !== action.meta.arg.userName,
-      );
+      state.pendingAdminActions.pendingResets =
+        state.pendingAdminActions.pendingResets.filter(
+          (r) => r.userName !== action.meta.arg.params.userName,
+        );
     });
 
     // Change Password
@@ -428,8 +416,8 @@ const authSlice = createSlice({
     passwordResetRequestStatus: (state) => state.passwordResetRequestStatus,
     registrationEligibility: (state) => state.registrationEligibility,
     checkedIds: (state) => state.checkedIds,
-    adminPendingUsers: (state) => state.admin.pendingUsers,
-    adminPendingResets: (state) => state.admin.pendingResets,
+    adminPendingUsers: (state) => state.pendingAdminActions.appliedUsers,
+    adminPendingResets: (state) => state.pendingAdminActions.pendingResets,
   },
 });
 
