@@ -19,9 +19,9 @@
 
 import {Grouper} from "@/lib/Grouper";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import {ProgCode} from "@/app/realGreen/progCode/_lib/ProgCode";
+import {ProgCode} from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
 
-export type RawServCode = {
+export type ServCodeRaw = {
   // autopostMobile: boolean;
   available: boolean;
   // basePrice: number | null;
@@ -93,7 +93,7 @@ export type RawServCode = {
 };
 
 
-export type RemappedServCode = {
+export type ServCodeRemapped = {
   servCodeId: string;
   isServiceCall: boolean;
   available: boolean;
@@ -102,18 +102,23 @@ export type RemappedServCode = {
 
 };
 
-export type MongoServCode = CreatedUpdated & {
+export type ServCodeMongo = CreatedUpdated & {
   servCodeId: string;
   begin: string;
   end: string;
   alwaysAsap: boolean;
 };
 
-export type ServCode = RemappedServCode & MongoServCode & {
-  progCode: ProgCode;
-};
+export type ServCodeWithMongo = ServCodeRemapped & ServCodeMongo;
 
-export function remapServCode(raw: RawServCode): RemappedServCode {
+
+export type ServCodeHydrate = {
+  progCode: ProgCode;
+}
+
+export type ServCode = ServCodeWithMongo & ServCodeHydrate;
+
+export function remapServCode(raw: ServCodeRaw): ServCodeRemapped {
   return {
     servCodeId: raw.id,
     isServiceCall: raw.isServiceCall,
@@ -127,8 +132,8 @@ export function extendServCode({
   remapped,
   mongo,
 }: {
-  remapped: RemappedServCode;
-  mongo?: MongoServCode;
+  remapped: ServCodeRemapped;
+  mongo?: ServCodeMongo;
 }): ServCode {
   return {
     ...remapped,
@@ -141,8 +146,8 @@ export function extendServCodes({
   remapped,
   mongo,
 }: {
-  remapped: RemappedServCode[];
-  mongo: MongoServCode[];
+  remapped: ServCodeRemapped[];
+  mongo: ServCodeMongo[];
 }): ServCode[] {
   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.servCodeId);
 

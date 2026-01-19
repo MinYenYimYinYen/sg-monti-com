@@ -6,15 +6,15 @@ import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import { ProgCodeContract } from "@/app/realGreen/progCode/_lib/ProgCodeContract";
 import {
   ProgCode,
-  RawProgramCode,
+  ProgCodeRaw,
   remapProgramCode,
-} from "@/app/realGreen/progCode/_lib/ProgCode";
+} from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
 
 const handlers: HandlerMap<ProgCodeContract> = {
   getAll: {
     roles: ["office", "admin"],
     handler: async () => {
-      const rawProgCodes = await rgApi<RawProgramCode[]>({
+      const rawProgCodes = await rgApi<ProgCodeRaw[]>({
         path: "/ProgramCode",
         method: "GET",
       });

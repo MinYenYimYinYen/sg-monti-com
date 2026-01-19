@@ -1,21 +1,29 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { ServCode } from "@/app/realGreen/servCode/ServCode";
-import { ProgServ } from "@/app/realGreen/progServ/ProgServ";
-import { ProgServMetaContract } from "@/app/realGreen/progServMeta/_lib/ProgServMetaContract";
+import {
+  createAsyncThunk,
+  createSelector,
+  createSlice,
+} from "@reduxjs/toolkit";
+import {
+  ServCode, ServCodeMongo,
+  ServCodeRemapped, ServCodeWithMongo,
+} from "@/app/realGreen/progServMeta/_lib/types/ServCode";
+import { ProgServ } from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
+import { ProgServMetaContract } from "@/app/realGreen/progServMeta/_lib/types/ProgServMetaContract";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
 import { OpMap } from "@/lib/api/types/rpcUtils";
-import { ProgCode } from "@/app/realGreen/progCode/_lib/ProgCode";
-import { ServCodeContract } from "@/app/realGreen/servCode/api/ServCodeContract";
-import { ProgCodeContract } from "@/app/realGreen/progCode/_lib/ProgCodeContract";
+import {
+   ProgCodeWithMongo,
+} from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
+import { hydrateProgCodes } from "@/app/realGreen/progServMeta/_lib/hydrateProgCodes";
 
 // --- Thunks ---
 
 export const fetchDryProgCodes = createAsyncThunk<
-  ProgCode[], // Return Data Only
-  WithConfig<ProgCodeContract["getAll"]["params"]>,
+  ProgServMetaContract["getProgCodes"]["result"]["items"], // Return Data Only
+  WithConfig<ProgServMetaContract["getProgCodes"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "progServMeta/fetchDryProgCodes",
@@ -43,8 +51,8 @@ export const fetchDryProgCodes = createAsyncThunk<
 );
 
 export const fetchDryServCodes = createAsyncThunk<
-  ServCode[], // Return Data Only
-  WithConfig<ServCodeContract["getAll"]["params"]>,
+  ProgServMetaContract["getServCodes"]["result"]["items"], // Return Data Only
+  WithConfig<ProgServMetaContract["getServCodes"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
   "progServMeta/fetchDryServCodes",
@@ -72,7 +80,7 @@ export const fetchDryServCodes = createAsyncThunk<
 );
 
 export const fetchProgServs = createAsyncThunk<
-  ProgServ[], // Return Data Only
+  ProgServMetaContract["syncProgServ"]["result"]["items"],
   WithConfig<ProgServMetaContract["syncProgServ"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
@@ -103,8 +111,8 @@ export const fetchProgServs = createAsyncThunk<
 // --- Slice ---
 
 interface ProgServMetaState {
-  dryProgCodes: ProgCode[];
-  dryServCodes: ServCode[];
+  dryProgCodes: ProgCodeWithMongo[];
+  dryServCodes: ServCodeWithMongo[];
   progServLinks: ProgServ[];
 }
 
@@ -129,11 +137,7 @@ const progServMetaSlice = createSlice({
       state.progServLinks = action.payload;
     });
   },
-  selectors: {
-    dryProgCodes: (state) => state.dryProgCodes,
-    dryServCodes: (state) => state.dryServCodes,
-    progServLinks: (state) => state.progServLinks,
-  },
+
 });
 
 export const progServMetaActions = {
@@ -142,5 +146,4 @@ export const progServMetaActions = {
   fetchDryServCodes,
   fetchProgServs,
 };
-export const progServMetaSelect = { ...progServMetaSlice.selectors };
 export default progServMetaSlice.reducer;

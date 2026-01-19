@@ -2,25 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { assertRole } from "@/app/auth/_lib/assertRole";
-import { ProgServMetaContract } from "@/app/realGreen/progServMeta/_lib/ProgServMetaContract";
+import { ProgServMetaContract } from "@/app/realGreen/progServMeta/_lib/types/ProgServMetaContract";
 import { ProgServModel } from "@/app/realGreen/progServMeta/_lib/models/ProgServModel";
 import { dateCompare } from "@/lib/primatives/dates/dateCompare";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
-import { ProgServ } from "@/app/realGreen/progServ/ProgServ";
+import { ProgServ } from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
 import { delay } from "@/lib/async/delay";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import {
-  RawProgramCode,
-  remapProgramCode,
-} from "@/app/realGreen/progCode/_lib/ProgCode";
+  ProgCodeMongo,
+  ProgCodeRaw,
+  ProgCodeRemapped,
+  ProgCodeWithMongo,
+  remapProgCodes,
+} from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
 import {
   extendServCodes,
-  MongoServCode,
-  RawServCode,
+  ServCodeMongo,
+  ServCodeRaw,
   remapServCode,
   ServCode,
-} from "@/app/realGreen/servCode/ServCode";
+} from "@/app/realGreen/progServMeta/_lib/types/ServCode";
 import ServCodeModel from "@/app/realGreen/servCode/ServCodeModel";
+import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 
 const handlers: HandlerMap<ProgServMetaContract> = {
   syncProgServ: {
@@ -85,31 +89,34 @@ const handlers: HandlerMap<ProgServMetaContract> = {
   getProgCodes: {
     roles: ["office", "admin"],
     handler: async () => {
-      const rawProgCodes = await rgApi<RawProgramCode[]>({
+      const rawProgCodes = await rgApi<ProgCodeRaw[]>({
         path: "/ProgramCode",
         method: "GET",
       });
+      const remapped = remapProgCodes(rawProgCodes);
 
       // Filter for available only, just in case the API returns all
-      const availableProgCodes = rawProgCodes.filter((p) => p.available);
-      const progCodes = availableProgCodes
-        .map(remapProgramCode)
-        .sort((a, b) => a.progCodeId.localeCompare(b.progCodeId));
+      const availableProgCodes = remapped.filter((p) => p.available);
+      const progCodes = availableProgCodes.sort((a, b) =>
+        a.progCodeId.localeCompare(b.progCodeId),
+      );
 
-      return { success: true, items: progCodes };
+      const MOCKED_MONGO = progCodes as ProgCodeWithMongo[]; // Mongo db isn't extending this yet.
+
+      return { success: true, items: MOCKED_MONGO };
     },
   },
   getServCodes: {
     roles: ["office", "admin"],
     handler: async () => {
-      const rawServCodes = await rgApi<RawServCode[]>({
+      const rawServCodes = await rgApi<ServCodeRaw[]>({
         path: "/ServiceCode",
         method: "GET",
       });
 
       const remappedServCodes = rawServCodes.map(remapServCode);
       await connectToMongoDB();
-      const mongoServCodes: MongoServCode[] = await ServCodeModel.find(
+      const mongoServCodes: ServCodeMongo[] = await ServCodeModel.find(
         {},
       ).lean();
 

@@ -6,11 +6,11 @@ import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import { ServCodeContract } from "@/app/realGreen/servCode/api/ServCodeContract";
 import {
   extendServCodes,
-  MongoServCode,
-  RawServCode,
+  ServCodeMongo,
+  ServCodeRaw,
   remapServCode,
   ServCode,
-} from "@/app/realGreen/servCode/ServCode";
+} from "@/app/realGreen/progServMeta/_lib/types/ServCode";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import ServCodeModel from "@/app/realGreen/servCode/ServCodeModel";
 
@@ -18,14 +18,14 @@ const handlers: HandlerMap<ServCodeContract> = {
   getAll: {
     roles: ["office", "admin"],
     handler: async () => {
-      const rawServCodes = await rgApi<RawServCode[]>({
+      const rawServCodes = await rgApi<ServCodeRaw[]>({
         path: "/ServiceCode",
         method: "GET",
       });
 
       const remappedServCodes = rawServCodes.map(remapServCode);
       await connectToMongoDB();
-      const mongoServCodes: MongoServCode[] = await ServCodeModel.find(
+      const mongoServCodes: ServCodeMongo[] = await ServCodeModel.find(
         {},
       ).lean();
 

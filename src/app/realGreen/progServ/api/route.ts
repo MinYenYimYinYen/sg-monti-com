@@ -3,7 +3,7 @@ import {HandlerMap, OpMap} from "@/lib/api/types/rpcUtils";
 import {normalizeError} from "@/lib/errors/errorHandler";
 import {assertRole} from "@/app/auth/_lib/assertRole";
 import {ProgServContract} from "@/app/realGreen/progServ/ProgServContract";
-import {ProgServ} from "@/app/realGreen/progServ/ProgServ";
+import {ProgServ} from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
 import {rgApi} from "@/app/realGreen/employee/api/rgApi";
 
 /**

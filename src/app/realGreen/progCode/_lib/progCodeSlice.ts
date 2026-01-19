@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { ProgCode } from "@/app/realGreen/progCode/_lib/ProgCode";
+import { ProgCode } from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { ProgCodeContract } from "@/app/realGreen/progCode/_lib/ProgCodeContract";
 import { OpMap } from "@/lib/api/types/rpcUtils";

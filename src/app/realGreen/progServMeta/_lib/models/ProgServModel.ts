@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { ProgServ } from "@/app/realGreen/progServ/ProgServ";
+import { ProgServ } from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
 
 const ProgServSchema = new Schema<ProgServ>(
   {

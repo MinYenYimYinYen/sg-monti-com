@@ -2,7 +2,7 @@ import {
   createAsyncThunk,
   createSlice,
 } from "@reduxjs/toolkit";
-import { ProgServ } from "@/app/realGreen/progServ/ProgServ";
+import { ProgServ } from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
 import { OpMap } from "@/lib/api/types/rpcUtils";

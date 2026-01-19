@@ -48,6 +48,8 @@
     - **Type-Driven**: Models must implement a separate TypeScript interface.
     - **No IDs**: Use Natural Keys (e.g., `userName`) instead of `_id` in app logic.
     - **String Dates**: All dates must be strings (ISO 8601).
+- **Types**:
+  - Prefer types over interfaces, except where interface provides necessary functionality that types cannot handle.
 
 ## Development Rules
 
