@@ -23,7 +23,7 @@ import {
   remapServCode,
   ServCode,
 } from "@/app/realGreen/progServMeta/_lib/types/ServCode";
-import ServCodeModel from "@/app/realGreen/servCode/ServCodeModel";
+import ServCodeModel from "@/app/realGreen/progServMeta/_lib/models/ServCodeModel";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 
 const handlers: HandlerMap<ProgServMetaContract> = {

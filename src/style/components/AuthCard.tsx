@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/style/components/Card";
-import { CenteredContainer } from "@/style/components/Containers";
+import { Container } from "@/style/components/Containers";
 import { cn } from "@/style/utils";
 
 interface AuthCardProps {
@@ -26,7 +26,7 @@ export function AuthCard({
   className,
 }: AuthCardProps) {
   return (
-    <CenteredContainer>
+    <Container variant="centered">
       <Card className={cn("w-full max-w-md", className)}>
         <CardHeader>
           <CardTitle className="text-center">{title}</CardTitle>
@@ -43,6 +43,6 @@ export function AuthCard({
           </CardFooter>
         )}
       </Card>
-    </CenteredContainer>
+    </Container>
   );
 }

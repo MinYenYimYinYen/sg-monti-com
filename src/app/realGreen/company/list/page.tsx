@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/style/components/Card";
-import { CenteredContainer } from "@/style/components/Containers";
+import { Container } from "@/style/components/Containers";
 import { companyFunc } from "../_lib/companyFunc";
 import { clsx } from "clsx";
 
@@ -22,7 +22,7 @@ export default function CompanyListPage() {
   const companies = useSelector(companySelect.allCompanies);
 
   return (
-    <CenteredContainer className="items-start pt-10">
+    <Container variant="centered" className="items-start pt-10">
       <div className="w-full max-w-4xl space-y-6">
         <h1 className="text-3xl font-bold text-text">Companies</h1>
 
@@ -71,6 +71,6 @@ export default function CompanyListPage() {
           ))}
         </div>
       </div>
-    </CenteredContainer>
+    </Container>
   );
 }

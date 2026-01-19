@@ -1,12 +1,10 @@
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, AppState } from "@/store";
-import {
-  progServMetaActions,
-} from "@/app/realGreen/progServMeta/progServMetaSlice";
+import { progServMetaActions } from "@/app/realGreen/progServMeta/progServMetaSlice";
 import { useEffect } from "react";
 import { realGreenConst } from "@/app/realGreen/lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
-import {progServMetaSelect} from "@/app/realGreen/progServMeta/selectors/progServMetaSelectors";
+import { progServMetaSelect } from "@/app/realGreen/progServMeta/selectors/progServMetaSelectors";
 
 export function useProgServMeta({ autoLoad = false }: { autoLoad?: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
@@ -14,7 +12,6 @@ export function useProgServMeta({ autoLoad = false }: { autoLoad?: boolean }) {
   const servCodesMongo = useSelector(progServMetaSelect.dryServCodes);
   const progCodes = useSelector(progServMetaSelect.progCodes);
   const servCodes = useSelector(progServMetaSelect.servCodes);
-
 
   const load = ({ force = false }: { force?: boolean }) => {
     if (autoLoad) {
@@ -49,9 +46,11 @@ export function useProgServMeta({ autoLoad = false }: { autoLoad?: boolean }) {
 
   useEffect(() => {
     if (progCodesMongo.length > 0) {
+      const progDefIds = progCodesMongo.map((p) => p.progDefId);
+      console.log("progDefIds", progDefIds);
       dispatch(
         progServMetaActions.fetchProgServs({
-          params: { progDefIds: progCodesMongo.map((p) => p.progDefId) },
+          params: { progDefIds },
           config: {
             staleTime: realGreenConst.paramTypesCacheTime,
             loadingMsg: "Loading program/service code map...",

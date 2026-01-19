@@ -1,19 +1,44 @@
 import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/style/utils";
 
-export function CenteredContainer({
-  children,
+const containerVariants = cva("w-full", {
+  variants: {
+    variant: {
+      centered:
+        "flex min-h-screen items-center justify-center bg-background p-4",
+      page: "mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8",
+      fluid: "w-full px-4 py-8 sm:px-6 lg:px-8",
+    },
+  },
+  defaultVariants: {
+    variant: "page",
+  },
+});
+
+export interface ContainerProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof containerVariants> {
+  title?: string;
+  action?: React.ReactNode;
+}
+
+export function Container({
   className,
+  variant,
+  title,
+  action,
+  children,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: ContainerProps) {
   return (
-    <div
-      className={cn(
-        "flex min-h-screen w-full items-center justify-center bg-background p-4",
-        className,
+    <div className={cn(containerVariants({ variant, className }))} {...props}>
+      {(title || action) && variant !== "centered" && (
+        <div className="mb-8 flex items-center justify-between">
+          {title && <h1 className="text-2xl font-bold text-text">{title}</h1>}
+          {action && <div>{action}</div>}
+        </div>
       )}
-      {...props}
-    >
       {children}
     </div>
   );

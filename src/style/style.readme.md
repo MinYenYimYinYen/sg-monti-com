@@ -51,10 +51,31 @@ The `Button` component supports the `asChild` prop to merge styles onto a child 
 ```
 
 ## 4. Layout Containers
-We use standardized containers to ensure consistent spacing and alignment.
+We use a unified `Container` component to manage page width, centering, and standard padding.
 **Location:** `src/style/components/Containers.tsx`
 
-*   `CenteredContainer`: Full-screen, centered content (Login/Register pages). Uses `bg-background` (Off-White).
+**Variants:**
+*   `variant="page"` (Default): Standard page wrapper. Max-width `7xl`, centered, with standard padding.
+*   `variant="centered"`: Full-screen flex container. Centers content vertically and horizontally (e.g., Login/Register).
+*   `variant="fluid"`: Full-width container (100%). No max-width constraint. Useful for dashboards or large data grids.
+
+**Usage:**
+```tsx
+// Standard Page
+<Container title="My Page">
+  <Content />
+</Container>
+
+// Login Screen
+<Container variant="centered">
+  <LoginForm />
+</Container>
+
+// Dashboard
+<Container variant="fluid">
+  <DataGrid />
+</Container>
+```
 
 ## 5. Adding New Styles
 1.  **New Color Scale?** Add the CSS variables to `src/style/tailwind.css` inside `@layer base`.
