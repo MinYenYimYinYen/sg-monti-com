@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { flagActions, flagSelect } from "@/app/realGreen/flag/flagSlice";
-import { realGreenConst } from "@/app/realGreen/lib/realGreenConst";
+import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
 
 export function useFlag({ autoLoad }: { autoLoad: boolean }) {

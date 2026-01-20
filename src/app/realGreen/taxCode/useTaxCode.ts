@@ -4,7 +4,7 @@ import {
   taxCodeActions,
   taxCodeSelect,
 } from "@/app/realGreen/taxCode/taxCodeSlice";
-import { realGreenConst } from "@/app/realGreen/lib/realGreenConst";
+import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
 
 export function useTaxCode({ autoLoad }: { autoLoad: boolean }) {

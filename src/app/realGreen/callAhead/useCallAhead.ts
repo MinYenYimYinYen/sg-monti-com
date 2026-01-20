@@ -4,7 +4,7 @@ import {
   callAheadActions,
   callAheadSelect,
 } from "@/app/realGreen/callAhead/callAheadSlice";
-import { realGreenConst } from "@/app/realGreen/lib/realGreenConst";
+import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
 
 export function useCallAhead({ autoLoad }: { autoLoad: boolean }) {
