@@ -1,5 +1,5 @@
-import { ProgCode } from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
-import { ServCode } from "@/app/realGreen/progServMeta/_lib/types/ServCode";
+import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCode";
+import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCode";
 
 export type ProgServLink = {
   progDefId: number;

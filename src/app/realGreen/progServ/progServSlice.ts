@@ -1,30 +1,30 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { ServCodeWithMongo } from "@/app/realGreen/progServMeta/_lib/types/ServCode";
-import { ProgServ } from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
-import { ProgServMetaContract } from "@/app/realGreen/progServMeta/_lib/types/ProgServMetaContract";
+import { ServCodeWithMongo } from "@/app/realGreen/progServ/_lib/types/ServCode";
+import { ProgServ } from "@/app/realGreen/progServ/_lib/types/ProgServ";
+import { ProgServContract } from "@/app/realGreen/progServ/_lib/types/ProgServContract";
 import { api } from "@/lib/api/api";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
 import { OpMap } from "@/lib/api/types/rpcUtils";
-import { ProgCodeWithMongo } from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
+import { ProgCodeWithMongo } from "@/app/realGreen/progServ/_lib/types/ProgCode";
 
 // --- Thunks ---
 
 export const fetchDryProgCodes = createAsyncThunk<
-  ProgServMetaContract["getProgCodes"]["result"]["items"], // Return Data Only
-  WithConfig<ProgServMetaContract["getProgCodes"]["params"]>,
+  ProgServContract["getProgCodes"]["result"]["items"], // Return Data Only
+  WithConfig<ProgServContract["getProgCodes"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
-  "progServMeta/fetchDryProgCodes",
+  "progServ/fetchDryProgCodes",
   async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<ProgServMetaContract> = {
+    const body: OpMap<ProgServContract> = {
       op: "getProgCodes",
       ...params,
     };
 
-    const res = await api<ProgServMetaContract["getProgCodes"]["result"]>(
-      "/realGreen/progServMeta/api",
+    const res = await api<ProgServContract["getProgCodes"]["result"]>(
+      "/realGreen/progServ/api",
       {
         method: "POST",
         body,
@@ -37,23 +37,23 @@ export const fetchDryProgCodes = createAsyncThunk<
 
     return res.items;
   },
-  smartThunkOptions({ typePrefix: "progServMeta/fetchDryProgCodes" }),
+  smartThunkOptions({ typePrefix: "progServ/fetchDryProgCodes" }),
 );
 
 export const fetchDryServCodes = createAsyncThunk<
-  ProgServMetaContract["getServCodes"]["result"]["items"], // Return Data Only
-  WithConfig<ProgServMetaContract["getServCodes"]["params"]>,
+  ProgServContract["getServCodes"]["result"]["items"], // Return Data Only
+  WithConfig<ProgServContract["getServCodes"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
-  "progServMeta/fetchDryServCodes",
+  "progServ/fetchDryServCodes",
   async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<ProgServMetaContract> = {
+    const body: OpMap<ProgServContract> = {
       op: "getServCodes",
       ...params,
     };
 
-    const res = await api<ProgServMetaContract["getServCodes"]["result"]>(
-      "/realGreen/progServMeta/api",
+    const res = await api<ProgServContract["getServCodes"]["result"]>(
+      "/realGreen/progServ/api",
       {
         method: "POST",
         body,
@@ -66,23 +66,23 @@ export const fetchDryServCodes = createAsyncThunk<
 
     return res.items;
   },
-  smartThunkOptions({ typePrefix: "progServMeta/fetchDryServCodes" }),
+  smartThunkOptions({ typePrefix: "progServ/fetchDryServCodes" }),
 );
 
 export const fetchProgServs = createAsyncThunk<
-  ProgServMetaContract["syncProgServ"]["result"]["items"],
-  WithConfig<ProgServMetaContract["syncProgServ"]["params"]>,
+  ProgServContract["syncProgServ"]["result"]["items"],
+  WithConfig<ProgServContract["syncProgServ"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
-  "progServMeta/fetchProgServs",
+  "progServ/fetchProgServs",
   async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<ProgServMetaContract> = {
+    const body: OpMap<ProgServContract> = {
       op: "syncProgServ",
       ...params,
     };
 
-    const res = await api<ProgServMetaContract["syncProgServ"]["result"]>(
-      "/realGreen/progServMeta/api",
+    const res = await api<ProgServContract["syncProgServ"]["result"]>(
+      "/realGreen/progServ/api",
       {
         method: "POST",
         body,
@@ -95,25 +95,25 @@ export const fetchProgServs = createAsyncThunk<
 
     return res.items;
   },
-  smartThunkOptions({ typePrefix: "progServMeta/fetchProgServs" }),
+  smartThunkOptions({ typePrefix: "progServ/fetchProgServs" }),
 );
 
 // --- Slice ---
 
-interface ProgServMetaState {
+interface ProgServState {
   dryProgCodes: ProgCodeWithMongo[];
   dryServCodes: ServCodeWithMongo[];
   progServLinks: ProgServ[];
 }
 
-const initialState: ProgServMetaState = {
+const initialState: ProgServState = {
   dryProgCodes: [],
   dryServCodes: [],
   progServLinks: [],
 };
 
-const progServMetaSlice = createSlice({
-  name: "progServMeta",
+const progServSlice = createSlice({
+  name: "progServ",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
@@ -129,10 +129,10 @@ const progServMetaSlice = createSlice({
   },
 });
 
-export const progServMetaActions = {
-  ...progServMetaSlice.actions,
+export const progServActions = {
+  ...progServSlice.actions,
   fetchDryProgCodes,
   fetchDryServCodes,
   fetchProgServs,
 };
-export default progServMetaSlice.reducer;
+export default progServSlice.reducer;

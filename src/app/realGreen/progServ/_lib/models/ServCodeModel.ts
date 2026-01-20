@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { ServCodeMongo } from "@/app/realGreen/progServMeta/_lib/types/ServCode";
+import { ServCodeMongo } from "@/app/realGreen/progServ/_lib/types/ServCode";
 
 interface ServCodeDoc extends ServCodeMongo, mongoose.Document {}
 

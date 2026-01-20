@@ -2,34 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { assertRole } from "@/app/auth/_lib/assertRole";
-import { ProgServMetaContract } from "@/app/realGreen/progServMeta/_lib/types/ProgServMetaContract";
-import { ProgServModel } from "@/app/realGreen/progServMeta/_lib/models/ProgServModel";
+import { ProgServContract } from "@/app/realGreen/progServ/_lib/types/ProgServContract";
+import { ProgServModel } from "@/app/realGreen/progServ/_lib/models/ProgServModel";
 import { dateCompare } from "@/lib/primatives/dates/dateCompare";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import {
   ProgServ,
   RawProgServ, remapProgServs,
-} from "@/app/realGreen/progServMeta/_lib/types/ProgServ";
+} from "@/app/realGreen/progServ/_lib/types/ProgServ";
 import { delay } from "@/lib/async/delay";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import {
-  ProgCodeMongo,
   ProgCodeRaw,
-  ProgCodeRemapped,
   ProgCodeWithMongo,
   remapProgCodes,
-} from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
+} from "@/app/realGreen/progServ/_lib/types/ProgCode";
 import {
   extendServCodes,
   ServCodeMongo,
   ServCodeRaw,
   remapServCode,
   ServCode,
-} from "@/app/realGreen/progServMeta/_lib/types/ServCode";
-import ServCodeModel from "@/app/realGreen/progServMeta/_lib/models/ServCodeModel";
-import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+} from "@/app/realGreen/progServ/_lib/types/ServCode";
+import ServCodeModel from "@/app/realGreen/progServ/_lib/models/ServCodeModel";
 
-const handlers: HandlerMap<ProgServMetaContract> = {
+const handlers: HandlerMap<ProgServContract> = {
   syncProgServ: {
     roles: ["office", "admin", "tech"],
     handler: async ({ progDefIds }) => {
@@ -137,7 +134,7 @@ const handlers: HandlerMap<ProgServMetaContract> = {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as OpMap<ProgServMetaContract>;
+    const body = (await req.json()) as OpMap<ProgServContract>;
     const { op, ...params } = body;
     const config = handlers[op];
 

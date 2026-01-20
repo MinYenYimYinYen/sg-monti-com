@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import { ProgCodeViewer } from "@/app/realGreen/progServMeta/components/ProgCodeViewer";
+import { ProgCodeViewer } from "@/app/realGreen/progServ/components/ProgCodeViewer";
 import { Container } from "@/style/components/Containers";
-import { useProgServMeta } from "@/app/realGreen/progServMeta/useProgServMeta";
+import { useProgServ } from "@/app/realGreen/progServ/useProgServ";
 
-export default function ProgServMetaListPage() {
-  useProgServMeta({ autoLoad: true });
+export default function ProgServListPage() {
+  useProgServ({ autoLoad: true });
 
   return (
     <Container variant="page" title="Program & Service Codes">

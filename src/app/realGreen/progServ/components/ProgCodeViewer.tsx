@@ -2,14 +2,14 @@
 
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import { progServMetaSelect } from "@/app/realGreen/progServMeta/selectors/progServMetaSelectors";
-import { ProgCode } from "@/app/realGreen/progServMeta/_lib/types/ProgCode";
+import { progServSelect } from "@/app/realGreen/progServ/selectors/progServSelectors";
+import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCode";
 import { Button } from "@/style/components/Button";
 import { Modal } from "@/style/components/Modal";
 import { ServCodeViewer } from "./ServCodeViewer";
 
 export function ProgCodeViewer() {
-  const progCodes = useSelector(progServMetaSelect.progCodes);
+  const progCodes = useSelector(progServSelect.progCodes);
   const [selectedProgram, setSelectedProgram] = useState<ProgCode | null>(null);
 
   return (

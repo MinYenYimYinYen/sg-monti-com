@@ -1,22 +1,22 @@
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, AppState } from "@/store";
-import { progServMetaActions } from "@/app/realGreen/progServMeta/progServMetaSlice";
+import { AppDispatch } from "@/store";
+import { progServActions } from "@/app/realGreen/progServ/progServSlice";
 import { useEffect } from "react";
 import { realGreenConst } from "@/app/realGreen/lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
-import { progServMetaSelect } from "@/app/realGreen/progServMeta/selectors/progServMetaSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/selectors/progServSelectors";
 
-export function useProgServMeta({ autoLoad = false }: { autoLoad?: boolean }) {
+export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
-  const progCodesMongo = useSelector(progServMetaSelect.dryProgCodes);
-  const servCodesMongo = useSelector(progServMetaSelect.dryServCodes);
-  const progCodes = useSelector(progServMetaSelect.progCodes);
-  const servCodes = useSelector(progServMetaSelect.servCodes);
+  const progCodesMongo = useSelector(progServSelect.dryProgCodes);
+  const servCodesMongo = useSelector(progServSelect.dryServCodes);
+  const progCodes = useSelector(progServSelect.progCodes);
+  const servCodes = useSelector(progServSelect.servCodes);
 
   const load = ({ force = false }: { force?: boolean }) => {
     if (autoLoad) {
       dispatch(
-        progServMetaActions.fetchDryProgCodes({
+        progServActions.fetchDryProgCodes({
           params: {},
           config: {
             staleTime: realGreenConst.paramTypesCacheTime,
@@ -26,7 +26,7 @@ export function useProgServMeta({ autoLoad = false }: { autoLoad?: boolean }) {
         }),
       );
       dispatch(
-        progServMetaActions.fetchDryServCodes({
+        progServActions.fetchDryServCodes({
           params: {},
           config: {
             staleTime: realGreenConst.paramTypesCacheTime,
@@ -48,7 +48,7 @@ export function useProgServMeta({ autoLoad = false }: { autoLoad?: boolean }) {
     if (progCodesMongo.length > 0) {
       const progDefIds = progCodesMongo.map((p) => p.progDefId);
       dispatch(
-        progServMetaActions.fetchProgServs({
+        progServActions.fetchProgServs({
           params: { progDefIds },
           config: {
             staleTime: realGreenConst.paramTypesCacheTime,
