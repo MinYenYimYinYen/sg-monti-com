@@ -1,0 +1,227 @@
+Front,Back,Category,ClassCount
+p-4,"Padding of 1rem (16px) on all sides. The scale is usually 4 = 1rem.",Spacing,1
+m-2,"Margin of 0.5rem (8px) on all sides.",Spacing,1
+px-6,"Padding on the X-axis (left and right) of 1.5rem (24px).",Spacing,1
+py-3,"Padding on the Y-axis (top and bottom) of 0.75rem (12px).",Spacing,1
+w-full,"Width set to 100%.",Sizing,1
+h-screen,"Height set to 100vh (100% of the viewport height).",Sizing,1
+max-w-7xl,"Maximum width of 80rem (1280px). Common for page containers.",Sizing,1
+flex,"Enables Flexbox layout. Direct children become flex items.",Flexbox,1
+grid,"Enables CSS Grid layout.",Grid,1
+hidden,"Sets display: none.",Layout,1
+block,"Sets display: block.",Layout,1
+relative,"Sets position: relative. Used as a reference for absolute children.",Layout,1
+absolute,"Sets position: absolute. Positioned relative to the nearest positioned ancestor.",Layout,1
+fixed,"Sets position: fixed. Positioned relative to the viewport.",Layout,1
+z-10,"Sets z-index to 10. Controls stack order.",Layout,1
+text-sm,"Sets font-size to 0.875rem (14px) and line-height to 1.25rem.",Typography,1
+text-lg,"Sets font-size to 1.125rem (18px) and line-height to 1.75rem.",Typography,1
+font-bold,"Sets font-weight to 700.",Typography,1
+text-center,"Aligns text to the center.",Typography,1
+text-primary,"Sets text color to the semantic 'primary' color (Brand Blue).",Typography,1
+bg-surface,"Sets background color to the semantic 'surface' color (White).",Colors,1
+border,"Adds a 1px border to all sides.",Borders,1
+rounded-lg,"Adds a large border-radius (0.5rem / 8px).",Borders,1
+shadow-sm,"Adds a small box-shadow.",Effects,1
+hover:bg-primary-600,"On hover, changes the background color to primary-600.",Interactivity,1
+focus:ring-2,"On focus, adds a 2px ring (outline) around the element.",Interactivity,1
+flex items-center,"Flex container where items are centered vertically (cross-axis).",Flexbox,2
+flex justify-between,"Flex container where items are spaced out (first at start, last at end).",Flexbox,2
+flex flex-col,"Flex container with column direction (items stack vertically).",Flexbox,2
+grid grid-cols-3,"Grid container with 3 equal-width columns.",Grid,2
+gap-4,"Adds a 1rem (16px) gap between flex or grid items.",Spacing,1
+mx-auto,"Sets margin-left and margin-right to auto. Centers a container horizontally.",Spacing,1
+inset-0,"Sets top, right, bottom, and left to 0. Used to stretch an absolute/fixed element to fill its parent.",Layout,1
+w-full max-w-md,"Full width (100%) but constrained to a maximum of 28rem (448px). Common for modals/cards.",Sizing,2
+border-b border-border,"Adds a 1px border to the bottom only, using the semantic 'border' color.",Borders,2
+text-text-muted text-sm,"Sets text color to muted (gray) and size to small. Common for subtitles.",Typography,2
+flex items-center justify-center,"Centers content both vertically and horizontally in a flex container.",Flexbox,3
+fixed inset-0 z-50,"Fixed overlay covering the entire screen with a high z-index. Common for Modals.",Layout,3
+p-4 bg-white rounded-lg,"A standard card style: padding, white background, and rounded corners.",Components,3
+flex flex-col gap-4,"Vertical stack of items with 1rem spacing between them.",Flexbox,3
+grid grid-cols-1 md:grid-cols-2,"Responsive Grid: 1 column on mobile, 2 columns on medium screens and up.",Grid,2
+hover:bg-primary/90 transition-colors,"On hover, slightly dims the background. Includes a transition for smoothness.",Interactivity,2
+px-4 py-2 rounded-md,"Standard button sizing and shape.",Components,3
+text-2xl font-bold text-text,"Standard Page Title style.",Typography,3
+absolute top-2 right-2,"Positions an element (like a close button) in the top-right corner.",Layout,3
+min-h-screen flex flex-col,"Full-height layout that allows a footer to be pushed to the bottom.",Layout,3
+w-full border-collapse text-sm,"Standard Table setup: full width, collapsed borders, small text.",Components,3
+border-b border-border hover:bg-surface-hover,"Table Row style: bottom border and a hover effect.",Components,3
+inline-flex items-center justify-center,"Inline flex container that centers content. Common for badges or icons.",Flexbox,3
+focus-visible:outline-none focus-visible:ring-2,"Accessible focus state: removes default outline and adds a custom ring.",Interactivity,2
+mx-auto w-full max-w-7xl px-4,"Standard Page Container: Centered, max-width constraint, and horizontal padding.",Layout,4
+flex min-h-screen items-center justify-center bg-background,"Full-screen centered layout (e.g., Login Page).",Layout,5
+relative z-10 w-full max-w-lg rounded-lg bg-white shadow-xl,"Standard Modal Content: Positioned, constrained width, white bg, shadow.",Components,6
+inline,"Sets display: inline.",Layout,1
+inline-block,"Sets display: inline-block.",Layout,1
+invisible,"Sets visibility: hidden. The element is hidden but still takes up space.",Layout,1
+sticky,"Sets position: sticky. Sticks to the viewport based on top/bottom/left/right values.",Layout,1
+top-0,"Sets top: 0. Often used with absolute, fixed, or sticky.",Layout,1
+left-0,"Sets left: 0.",Layout,1
+overflow-hidden,"Clips content that overflows the container.",Layout,1
+overflow-auto,"Adds scrollbars only if content overflows.",Layout,1
+overflow-x-scroll,"Forces horizontal scrollbar if content overflows horizontally.",Layout,1
+uppercase,"Transforms text to uppercase.",Typography,1
+capitalize,"Transforms text to capitalize the first letter of each word.",Typography,1
+truncate,"Truncates text with an ellipsis (...) if it overflows one line.",Typography,1
+whitespace-nowrap,"Prevents text from wrapping to the next line.",Typography,1
+leading-none,"Sets line-height to 1. Tighter spacing.",Typography,1
+border-t,"Adds a 1px border to the top side only.",Borders,1
+border-l,"Adds a 1px border to the left side only.",Borders,1
+border-0,"Removes all borders.",Borders,1
+opacity-50,"Sets opacity to 0.5 (50% transparent).",Effects,1
+cursor-pointer,"Changes the cursor to a pointer (hand icon) on hover.",Interactivity,1
+pointer-events-none,"Makes the element ignore mouse events (clicks pass through).",Interactivity,1
+h-full,"Sets height to 100% of the parent.",Sizing,1
+min-h-0,"Sets min-height to 0. Crucial for nested flex containers to scroll correctly.",Sizing,1
+w-screen,"Sets width to 100vw (100% of the viewport width).",Sizing,1
+flex-1,"Sets flex-grow: 1 and flex-shrink: 1. The item will grow to fill available space.",Flexbox,1
+flex-none,"Sets flex: none. The item will not grow or shrink.",Flexbox,1
+grow,"Sets flex-grow: 1. The item will grow.",Flexbox,1
+shrink-0,"Sets flex-shrink: 0. The item will not shrink even if space is tight.",Flexbox,1
+col-span-2,"Makes a grid item span 2 columns.",Grid,1
+items-start,"Aligns flex items to the start of the cross axis (top).",Flexbox,1
+items-end,"Aligns flex items to the end of the cross axis (bottom).",Flexbox,1
+justify-start,"Aligns flex items to the start of the main axis (left).",Flexbox,1
+justify-end,"Aligns flex items to the end of the main axis (right).",Flexbox,1
+self-center,"Aligns a single flex item to the center of the cross axis, overriding the container.",Flexbox,1
+min-w-full,"Sets min-width to 100%.",Sizing,1
+max-h-screen,"Sets max-height to 100vh.",Sizing,1
+w-auto,"Sets width to auto. Allows element to size based on content.",Sizing,1
+text-left,"Aligns text to the left.",Typography,1
+text-right,"Aligns text to the right.",Typography,1
+underline,"Adds an underline to text.",Typography,1
+no-underline,"Removes underline from text.",Typography,1
+bg-transparent,"Sets background color to transparent.",Colors,1
+bg-cover,"Scales background image to cover the container.",Backgrounds,1
+bg-center,"Centers the background image.",Backgrounds,1
+outline-none,"Removes the default browser outline on focus.",Interactivity,1
+list-disc,"Sets list-style-type to disc (bullets).",Typography,1
+list-decimal,"Sets list-style-type to decimal (numbers).",Typography,1
+object-cover,"Resizes an image/video to cover its container while preserving aspect ratio.",Layout,1
+object-contain,"Resizes an image/video to fit within its container while preserving aspect ratio.",Layout,1
+flex-wrap,"Allows flex items to wrap to the next line if there isn't enough space.",Flexbox,1
+flex-nowrap,"Prevents flex items from wrapping. This is the default.",Flexbox,1
+rounded-full,"Sets border-radius to 9999px. Creates circles or pill shapes.",Borders,1
+rounded-md,"Sets border-radius to 0.375rem (6px). Medium rounding.",Borders,1
+rounded-none,"Removes border-radius.",Borders,1
+text-xs,"Sets font-size to 0.75rem (12px). Smallest standard size.",Typography,1
+text-xl,"Sets font-size to 1.25rem (20px).",Typography,1
+font-medium,"Sets font-weight to 500.",Typography,1
+font-semibold,"Sets font-weight to 600.",Typography,1
+italic,"Sets font-style to italic.",Typography,1
+tracking-wide,"Increases letter-spacing.",Typography,1
+shadow-md,"Adds a medium box-shadow.",Effects,1
+shadow-lg,"Adds a large box-shadow.",Effects,1
+shadow-none,"Removes box-shadow.",Effects,1
+opacity-0,"Sets opacity to 0 (invisible).",Effects,1
+opacity-100,"Sets opacity to 1 (fully visible).",Effects,1
+cursor-not-allowed,"Changes cursor to 'not-allowed' (circle with line). Used for disabled states.",Interactivity,1
+select-none,"Prevents the user from selecting text.",Interactivity,1
+min-h-screen,"Sets min-height to 100vh. Ensures container fills the screen vertically.",Sizing,1
+sr-only,"Hides element visually but keeps it accessible to screen readers.",Accessibility,1
+z-0,"Sets z-index to 0.",Layout,1
+z-50,"Sets z-index to 50. High stacking order.",Layout,1
+bottom-0,"Sets bottom: 0.",Layout,1
+right-0,"Sets right: 0.",Layout,1
+rotate-90,"Rotates the element 90 degrees.",Transforms,1
+scale-95,"Scales the element down to 95% size.",Transforms,1
+translate-x-1/2,"Translates the element horizontally by 50% of its own width.",Transforms,1
+flex justify-center,"Aligns flex items to the horizontal center of the container.",Flexbox,2
+flex justify-end,"Pushes flex items to the far right (end) of the container.",Flexbox,2
+flex flex-wrap,"Allows items to wrap onto multiple lines if they run out of space.",Flexbox,2
+flex gap-4,"Creates a row of items with 1rem (16px) of space between each item.",Flexbox,2
+inline-flex items-center,"Creates an inline flex container (flows with text) that vertically centers its children.",Flexbox,2
+flex-1 min-w-0,"Common pattern for text truncation: allows a flex child to shrink below its content size.",Flexbox,2
+flex shrink-0,"Prevents an item (like an icon) from squishing when the container gets too small.",Flexbox,2
+grid gap-4,"Creates a grid with 1rem (16px) gutters between all rows and columns.",Grid,2
+grid grid-cols-2,"Splits the container into two equal-width columns.",Grid,2
+grid place-items-center,"Centers grid content both vertically and horizontally in each cell.",Grid,2
+col-span-full w-full,"Forces a grid item to span all available columns and take full width.",Grid,2
+text-2xl font-bold,"Creates a large, thick headline style (approx 24px).",Typography,2
+uppercase tracking-wide,"Makes text all-caps and adds breathing room between letters for readability.",Typography,2
+font-semibold underline,"Emphasizes text with a medium-bold weight and a line underneath.",Typography,2
+text-center leading-relaxed,"Centers text and increases line height for better readability in paragraphs.",Typography,2
+whitespace-nowrap truncate,"Forces text to stay on one line and cuts it off with '...' if it gets too long.",Typography,2
+text-white bg-primary,"Creates a high-contrast element using the brand color background and white text.",Colors,2
+italic text-right,"Italicizes text and aligns it to the right side of the container.",Typography,2
+absolute top-0,"Pins an element to the very top edge of its nearest positioned parent.",Layout,2
+absolute right-0,"Pins an element to the very right edge of its nearest positioned parent.",Layout,2
+relative z-10,"Establishes a positioning context and lifts the element above default (z-0) content.",Layout,2
+fixed bottom-0,"Sticks an element (like a footer or banner) to the bottom of the browser window.",Layout,2
+sticky top-0,"Keeps an element at the top of the viewport while scrolling, until its parent scrolls away.",Layout,2
+inset-0 bg-black/50,"Creates a semi-transparent dark overlay that covers the entire parent container.",Layout,2
+mx-auto max-w-4xl,"Centers a container horizontally and restricts it to a comfortable reading width.",Layout,2
+block w-full,"Forces an element (like a button) to behave as a block and fill the full width.",Layout,2
+hidden md:block,"Hides the element on mobile, but shows it on medium screens and larger.",Layout,2
+overflow-y-auto h-full,"Enables vertical scrolling if content exceeds the container's full height.",Layout,2
+w-10 h-10,"Creates a fixed square box (2.5rem x 2.5rem). Common for icons or avatars.",Sizing,2
+w-full h-full,"Forces the element to completely fill its parent's width and height.",Sizing,2
+rounded-full w-12,"Creates a perfect circle (if height matches width) with a 3rem diameter.",Sizing,2
+min-h-screen flex,"Ensures the container is at least as tall as the screen and enables flex layout.",Layout,2
+max-w-sm w-full,"Constrains width to small (approx 24rem) but allows it to shrink on smaller screens.",Sizing,2
+object-cover w-full,"Forces an image to fill the width and crop vertically to maintain aspect ratio.",Layout,2
+h-px bg-border,"Creates a 1px tall horizontal divider line using the theme border color.",Layout,2
+hover:bg-surface-hover cursor-pointer,"Changes background on hover and shows a hand cursor to indicate interactivity.",Interactivity,2
+focus:outline-none focus:ring,"Removes default browser outline and replaces it with a custom ring on focus.",Interactivity,2
+transition-opacity duration-300,"Animate opacity changes smoothly over 300ms.",Interactivity,2
+opacity-0 hover:opacity-100,"Element is invisible by default but fades in when hovered.",Interactivity,2
+shadow-lg rounded-xl,"Adds a prominent shadow and very rounded corners. Common for floating cards.",Effects,2
+border rounded-md,"Adds a hairline border and slightly rounds the corners (standard input style).",Borders,2
+divide-y divide-border,"Adds a border between vertical children (but not at the top or bottom).",Borders,2
+ring-1 ring-inset,"Adds a 1px inner border (ring) that doesn't affect layout dimensions.",Borders,2
+outline-none ring-2,"Removes default outline and adds a 2px ring (often used for focus states).",Borders,2
+items-baseline gap-2,"Aligns flex items by their text baseline (good for different font sizes) with spacing.",Flexbox,2
+z-50 bg-white,"Lifts element high in the stack and gives it a white background (e.g., dropdowns).",Layout,2
+pointer-events-none opacity-50,"Visually dims the element and makes it unclickable (Disabled state).",Interactivity,2
+select-none cursor-not-allowed,"Prevents text selection and shows a 'no' symbol cursor.",Interactivity,2
+sr-only focus:not-sr-only,"Hidden visually (for screen readers) but appears when focused (Skip Links).",Accessibility,2
+flex items-center justify-between,"A common header pattern: items centered vertically, pushed to far left and right edges.",Flexbox,3
+flex flex-col items-center,"A vertical stack of items where each item is centered horizontally.",Flexbox,3
+flex flex-wrap gap-4,"A responsive collection of items that wraps to new lines with consistent spacing.",Flexbox,3
+grid grid-cols-1 md:grid-cols-3,"Responsive Grid: 1 column on mobile, switching to 3 columns on medium screens.",Grid,3
+absolute top-0 right-0,"Pins an element (like a notification badge) to the top-right corner of its parent.",Layout,3
+fixed bottom-4 right-4,"Pins a floating action button (FAB) or toast to the bottom-right of the screen.",Layout,3
+relative w-full h-64,"Creates a container with a fixed height that serves as a reference for absolute children.",Layout,3
+sticky top-0 z-50,"A sticky header that stays at the top of the viewport and sits above other content.",Layout,3
+w-full max-w-lg mx-auto,"A centered content block constrained to a 'large' width (approx 32rem).",Layout,3
+hidden lg:flex lg:items-center,"Hides content on mobile/tablet, but displays it as a centered flex row on large screens.",Layout,3
+text-sm font-medium text-text-muted,"Standard subtitle style: small size, medium weight, and muted color.",Typography,3
+text-3xl font-bold tracking-tight,"Large, bold headline with slightly tighter letter spacing for a modern look.",Typography,3
+uppercase text-xs font-bold,"Small, bold, all-caps text. Common for labels, badges, or table headers.",Typography,3
+whitespace-nowrap overflow-hidden text-ellipsis,"The 'Truncate' trio: forces text to one line and adds '...' if it overflows.",Typography,3
+bg-white shadow rounded-lg,"The classic 'Card' base: white background, subtle shadow, and rounded corners.",Components,3
+border border-border rounded-md,"Standard input field or container border style.",Components,3
+h-10 w-10 rounded-full,"A perfect circle container of fixed size (2.5rem). Common for avatars.",Components,3
+p-4 border-b border-border,"Standard header section style: padding with a separator line at the bottom.",Components,3
+hover:bg-primary hover:text-white transition,"On hover, element turns solid primary color with white text, animating smoothly.",Interactivity,3
+focus:ring-2 focus:ring-primary focus:outline-none,"Accessible focus state: Blue ring, no default outline.",Interactivity,3
+opacity-0 group-hover:opacity-100 transition,"Element is hidden until the user hovers over its parent (group).",Interactivity,3
+cursor-pointer hover:scale-105 transition,"Interactive element that slightly grows in size when hovered.",Interactivity,3
+flex-1 overflow-y-auto p-4,"A scrollable content area that fills the remaining space in a flex container.",Layout,3
+grid gap-4 items-start,"Grid layout where items align to the top of their cells (useful for uneven heights).",Grid,3
+absolute inset-y-0 left-0,"Pins an element to cover the entire left edge (top to bottom) of its parent.",Layout,3
+flex items-center gap-2 text-sm,"Small text row with an icon and label separated by a small gap.",Components,4
+flex flex-col justify-center h-full,"Vertically centers content within a full-height container.",Flexbox,4
+grid grid-cols-2 gap-4 md:grid-cols-4,"Responsive Grid: 2 columns on mobile, 4 columns on medium screens, with spacing.",Grid,4
+absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2,"Perfect Center: Absolutely positions an element in the exact center of its parent.",Layout,4
+fixed inset-0 bg-black/50 z-50,"Modal Backdrop: Fixed full-screen dark overlay with high z-index.",Layout,4
+relative rounded-full overflow-hidden w-10 h-10,"Avatar Container: Circular, clips overflowing image, fixed size.",Components,4
+flex items-center justify-between p-4 border-b,"Card Header: Centered title and action button, padding, and bottom border.",Components,4
+w-full px-4 py-2 rounded-md border,"Standard Input: Full width, comfortable padding, rounded corners, and border.",Components,4
+text-lg font-semibold text-text mb-2,"Section Title: Large, semi-bold text with bottom margin for spacing.",Typography,4
+bg-primary text-white px-4 py-2 rounded,"Primary Button: Solid brand color, white text, standard padding and rounding.",Components,4
+hover:bg-secondary text-secondary-foreground shadow-sm transition,"Secondary Button Hover: Subtle background change, shadow, and transition.",Interactivity,4
+group flex items-center gap-3 p-2 rounded-md hover:bg-surface-hover,"Sidebar Link: Flex row with icon/text, padding, and hover effect on the whole row.",Components,6
+animate-spin h-5 w-5 text-primary mr-2,"Loading Spinner: Rotating icon, fixed size, brand color, with right margin.",Components,4
+sr-only focus:not-sr-only focus:absolute focus:p-4,"Skip Link: Hidden by default, becomes visible and positioned when focused.",Accessibility,4
+grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6,"Form Layout: 1 column on mobile, 6 columns on small screens, distinct X/Y gaps.",Grid,4
+flex-none w-14 h-14 rounded-full bg-surface-muted,"Fixed-size circular icon placeholder with a muted background.",Components,4
+min-h-[200px] flex items-center justify-center border-2 border-dashed,"Empty State: Box with minimum height, centered content, and dashed border.",Components,4
+absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md shadow-lg,"Dropdown Menu: Positioned below trigger, fixed width, shadow, rounded.",Components,6
+pointer-events-none fixed inset-x-0 bottom-0 p-6,"Toast Container: Fixed at bottom, full width, allows clicks to pass through to content behind.",Layout,4
+divide-y divide-border rounded-md border border-border,"List Group: Bordered container with dividers between each child item.",Components,4
+flex items-center space-x-4 text-sm text-text-muted,"Footer Links: Row of small, muted links with horizontal spacing.",Components,4
+h-full w-full object-cover transition-transform duration-500 group-hover:scale-110,"Image Zoom Card: Full size image that zooms in slowly when the card is hovered.",Interactivity,4
+ring-1 ring-black/5 shadow-sm rounded-xl bg-white,"Modern Card: Subtle ring border, shadow, rounded corners, white background.",Components,4
+flex-1 flex flex-col min-h-0 overflow-hidden,"App Shell Main: Fills space, vertical layout, handles internal scrolling.",Layout,4
