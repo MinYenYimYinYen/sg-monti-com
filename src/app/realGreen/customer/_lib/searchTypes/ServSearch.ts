@@ -60,6 +60,17 @@ export type ServSearch = {
   custIds?: number[];
   servIds?: number[];
   progIds?: number[];
+  servStats?: string[];
+  season: number;
 }
 
-//todo: make the remap function
+export function remapServSearch(search: ServSearch): ServiceSearchRG {
+  const rgSearch: ServiceSearchRG = {};
+  if (search.custIds) rgSearch.customerNumber = search.custIds;
+  if (search.servIds) rgSearch.id = search.servIds;
+  if (search.progIds) rgSearch.programID = search.progIds;
+  if (search.servStats) rgSearch.serviceStatus = search.servStats;
+  rgSearch.serviceYear = [search.season];
+  return rgSearch;
+
+}

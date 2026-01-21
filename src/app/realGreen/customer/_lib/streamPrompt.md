@@ -3,9 +3,10 @@ I need to implement a "Streaming Data" pattern for customerSlice. I want to fetc
 Please help me implement this by following these 3 steps.
 
 Context & Architecture:
-- My Redux store setup is in: src/store (or equivalent)
-- I use standard Redux Toolkit (createSlice, createAsyncThunk).
-- I want to avoid "blocking" UI. As soon as the 'customers' chunk arrives, the UI should update, even if 'services' is still downloading.
+ - I have to gather the primary data needed to hydrate Customers
+ - Customers have Programs and Programs have Services
+ - I want to use a single api route to gather all of this data
+
 
 Please generate the code for these files:
 

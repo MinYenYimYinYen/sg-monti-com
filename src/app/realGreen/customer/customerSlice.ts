@@ -1,4 +1,4 @@
-import { createSelector, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { CustomerWithMongo } from "@/app/realGreen/customer/_lib/types/Customer";
 import { ProgramWithMongo } from "@/app/realGreen/customer/_lib/types/Program";
 import { ServiceWithMongo } from "@/app/realGreen/customer/_lib/types/Service";
