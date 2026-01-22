@@ -10,7 +10,6 @@ import productReducer from "@/app/realGreen/product/productSlice";
 import priceTableReducer from "@/app/realGreen/priceTable/priceTableSlice";
 import flagReducer from "@/app/realGreen/flag/flagSlice";
 import companyReducer from "@/app/realGreen/company/_lib/companySlice";
-import { activeCustomerReducer } from "@/app/realGreen/customer/_lib/slices";
 
 const rootReducer = combineReducers({
   ui: uiReducer,
@@ -24,7 +23,6 @@ const rootReducer = combineReducers({
   priceTable: priceTableReducer,
   flag: flagReducer,
   company: companyReducer,
-  activeCustomers: activeCustomerReducer,
 });
 
 export default rootReducer;
