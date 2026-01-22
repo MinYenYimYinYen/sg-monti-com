@@ -122,6 +122,10 @@ type WithExplicitCriteria = {
 
 type StepConfig = (WithCriteriaFunction | WithExplicitCriteria) & {
   stepName: "customers" | "programs" | "services";
+  filterFn?: (
+    fetchedData: PipelineData,
+    previousData: PipelineData,
+  ) => PipelineData;
 };
 
 export function createPaginationStep<TRawData extends RawData>(
@@ -199,7 +203,11 @@ export function createPaginationStep<TRawData extends RawData>(
         totalRecords += res.data.length;
 
         const remapData = remapFn(res.data);
-        const mongoData = await mongoFn(remapData);
+        let mongoData = await mongoFn(remapData);
+
+        if (config.filterFn) {
+          mongoData = config.filterFn(mongoData, pipelineData || []);
+        }
 
         yield {
           data: mongoData,
@@ -218,7 +226,11 @@ export function createPaginationStep<TRawData extends RawData>(
         } of fetchOverflow<TRawData>(rawCriteria, nextOffset)) {
           totalRecords += rawItems.length;
           const remapData = remapFn(rawItems);
-          const mongoData = await mongoFn(remapData);
+          let mongoData = await mongoFn(remapData);
+
+          if (config.filterFn) {
+            mongoData = config.filterFn(mongoData, pipelineData || []);
+          }
 
           yield {
             data: mongoData,
@@ -248,6 +260,10 @@ type BatchStepConfig<TRawData> = {
   stepName: "customers" | "programs" | "services";
   getIds: (pipelineData: PipelineData) => number[];
   getSearchCriteria: (ids: number[]) => SearchCriteria;
+  filterFn?: (
+    fetchedData: PipelineData,
+    previousData: PipelineData,
+  ) => PipelineData;
 };
 
 export function createBatchSizeStep<TRawData extends RawData>(
@@ -296,10 +312,14 @@ export function createBatchSizeStep<TRawData extends RawData>(
         }
 
         const remapped = remapFn(rawData);
-        const mongo = await mongoFn(remapped);
+        let mongoData = await mongoFn(remapped);
+
+        if (config.filterFn) {
+          mongoData = config.filterFn(mongoData, pipelineData || []);
+        }
 
         yield {
-          data: mongo,
+          data: mongoData,
           metrics: { calls: 1, durationMs: Date.now() - start },
         };
 
@@ -313,7 +333,11 @@ export function createBatchSizeStep<TRawData extends RawData>(
             realGreenConst.CustProgServRecordsMax,
           )) {
             const remappedOverflow = remapFn(rawItems as TRawData);
-            const mongoOverflow = await mongoFn(remappedOverflow);
+            let mongoOverflow = await mongoFn(remappedOverflow);
+
+            if (config.filterFn) {
+              mongoOverflow = config.filterFn(mongoOverflow, pipelineData || []);
+            }
 
             yield {
               data: mongoOverflow,

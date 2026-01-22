@@ -119,7 +119,7 @@ export type ProgramDoc = ProgramCore & ProgramDocProps;
 
 export type ProgramProps = {};
 
-export type ProgramHydrated = ProgramDoc & ProgramProps;
+export type Program = ProgramDoc & ProgramProps;
 
 function remapProgram(raw: ProgramRaw): ProgramCore {
   return {

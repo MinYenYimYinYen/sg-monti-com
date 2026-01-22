@@ -164,7 +164,7 @@ export type ServiceDoc = ServiceCore & ServiceDocProps;
 
 export type ServiceProps = {};
 
-export type ServiceHydrated = ServiceDoc & ServiceProps;
+export type Service = ServiceDoc & ServiceProps;
 
 function remapService(raw: ServiceRaw): ServiceCore {
   return {

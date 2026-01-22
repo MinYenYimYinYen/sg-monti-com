@@ -171,7 +171,7 @@ export type CustomerProps = {
   // progams: Program[]
 }
 
-export type CustomerHydrated = CustomerDoc & CustomerProps;
+export type Customer = CustomerDoc & CustomerProps;
 
 function remapCustomer(raw: CustomerRaw): CustomerCore {
   return {
