@@ -34,7 +34,6 @@ export type RgApiPath =
   //     method: "POST";
   //     body: AddFlagToCustomersPOST;
   //   }
-  | { path: `/Customer/Search${string}`; method: "POST"; body: CustomerSearchRaw }
   | { path: "/DiscountCode"; method: "GET"; body?: undefined }
   | { path: "/Employee"; method: "GET"; body?: undefined }
   | { path: `/Employee/${string}`; method: "GET"; body?: undefined }
@@ -44,7 +43,6 @@ export type RgApiPath =
   | { path: `/PriceTable/${string}/Detailed`; method: "GET"; body?: undefined }
   | { path: "/Products"; method: "GET"; body?: undefined }
   // | { path: "/Program"; method: "PUT"; body: RawProgram }
-  | { path: `/Program/Search`; method: "POST"; body: ProgramSearchRaw }
   | { path: "/ProgramCode"; method: "GET"; body?: undefined }
   | { path: `/ProgramCode/${string}/Services`; method: "GET"; body?: undefined }
   | {
@@ -57,7 +55,6 @@ export type RgApiPath =
   //     method: "POST";
   //     body?: SeasonSummaryReportPOST;
   //   }
-  // | { path: "/Service/Search"; method: "POST"; body: ServiceSearch }
   | { path: "/ServiceCode"; method: "GET"; body?: undefined }
   | {
       path: "/ServiceConditions/Search";

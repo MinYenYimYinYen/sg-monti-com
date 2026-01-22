@@ -14,26 +14,40 @@ import {
   ServiceCore,
   ServiceDoc,
 } from "@/app/realGreen/customer/_lib/types/Service";
-import {CustomerSearchRaw} from "@/app/realGreen/customer/_lib/searchTypes/CustSearch";
-import { ProgramSearchRaw } from "../searchTypes/ProgSearch";
-import { ServiceSearchRaw } from "../searchTypes/ServSearch";
+import {
+  CustomerSearchRaw,
+  CustomerSearchCriteria,
+} from "@/app/realGreen/customer/_lib/searchTypes/CustSearch";
+import {
+  ProgramSearchRaw,
+  ProgramSearchCriteria,
+} from "../searchTypes/ProgSearch";
+import {
+  ServiceSearchRaw,
+  ServiceSearchCriteria,
+} from "../searchTypes/ServSearch";
 
 export type RawData = CustomerRaw[] | ProgramRaw[] | ServiceRaw[];
 
-export type PipelineDataCore = 
+export type PipelineDataCore =
   | CustomerCore[]
   | ProgramCore[]
-  | ServiceCore[]
+  | ServiceCore[];
 
 export type PipelineData =
   | CustomerDoc[]
   | ProgramDoc[]
   | ServiceDoc[];
 
-export type SearchCriteriaRaw = 
+export type SearchCriteriaRaw =
   | CustomerSearchRaw
   | ProgramSearchRaw
-  | ServiceSearchRaw
+  | ServiceSearchRaw;
+
+export type SearchCriteria =
+  | CustomerSearchCriteria
+  | ProgramSearchCriteria
+  | ServiceSearchCriteria;
 
 export type StepContext = {
   pipelineData: PipelineData | null; // Data from the previous step

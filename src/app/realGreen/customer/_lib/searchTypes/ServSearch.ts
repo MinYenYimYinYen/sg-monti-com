@@ -1,7 +1,8 @@
-import {RGSearchBase} from "@/app/realGreen/customer/_lib/searchTypes/RGSearchBase";
-import {RGStringRange} from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
+import { RGSearchBase } from "@/app/realGreen/customer/_lib/searchTypes/RGSearchBase";
+import { RGStringRange } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 
 export type ServiceSearchRaw = RGSearchBase & {
+  searchType: "service";
   // asapDate?: DateTimeRange;
   // associationCode?: string;
   // callAhead?: number[];
@@ -54,7 +55,7 @@ export type ServiceSearchRaw = RGSearchBase & {
   // technicianNoteExpiration?: DateTimeRange;
   // totalAmount?: DecimalRange;
   // // updated?: DateTimeRange;
-}
+};
 
 export type ServiceSearchCriteria = {
   custIds?: number[];
@@ -62,15 +63,16 @@ export type ServiceSearchCriteria = {
   progIds?: number[];
   servStats?: string[];
   season: number;
-}
+};
 
-export function remapServSearch(search: ServiceSearchCriteria): ServiceSearchRaw {
-  const rgSearch: ServiceSearchRaw = {};
+export function remapServSearch(
+  search: ServiceSearchCriteria,
+): ServiceSearchRaw {
+  const rgSearch: ServiceSearchRaw = { searchType: "service" };
   if (search.custIds) rgSearch.customerNumber = search.custIds;
   if (search.servIds) rgSearch.id = search.servIds;
   if (search.progIds) rgSearch.programID = search.progIds;
   if (search.servStats) rgSearch.serviceStatus = search.servStats;
   rgSearch.serviceYear = [search.season];
   return rgSearch;
-
 }

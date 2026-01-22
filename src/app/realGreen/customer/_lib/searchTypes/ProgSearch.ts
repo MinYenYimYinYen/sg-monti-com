@@ -7,6 +7,7 @@ import { TRange } from "@/lib/primatives/TRange";
 import { RGSearchBase } from "@/app/realGreen/customer/_lib/searchTypes/RGSearchBase";
 
 export type ProgramSearchRaw = RGSearchBase & {
+  searchType: "program";
   // averagePrice?: DecimalRange;
   // averageTime?: IntRange;
   // billingType?: string;
@@ -88,7 +89,7 @@ export type ProgramSearchCriteria = {
 };
 
 export function remapProgSearch(search: ProgramSearchCriteria): ProgramSearchRaw {
-  const rgSearch: ProgramSearchRaw = {};
+  const rgSearch: ProgramSearchRaw = { searchType: "program"};
   if (search.custIds) rgSearch.customerNumber = search.custIds;
   if (search.soldRange)
     rgSearch.dateSold = {

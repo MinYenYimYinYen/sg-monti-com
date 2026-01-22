@@ -3,18 +3,87 @@ import {
   PipelineDataCore,
   PipelineData,
   SearchStep,
+  SearchCriteria,
   SearchCriteriaRaw,
   StepContext,
   StepResult,
 } from "../cpsSearchTypes/SearchScheme";
-import { rgApi, RgApiPath } from "@/app/realGreen/employee/api/rgApi";
 import { SearchOptimizer } from "@/app/realGreen/customer/_lib/cpsSearchTypes/SearchOptimizer";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
+import { rgSearch } from "@/app/realGreen/employee/api/rgSearchApi";
+import { remapCustSearch } from "@/app/realGreen/customer/_lib/searchTypes/CustSearch";
+import { remapProgSearch } from "@/app/realGreen/customer/_lib/searchTypes/ProgSearch";
+import { remapServSearch } from "@/app/realGreen/customer/_lib/searchTypes/ServSearch";
+import {
+  CustomerCore,
+  CustomerRaw,
+  extendCustomers,
+  remapCustomers,
+} from "@/app/realGreen/customer/_lib/types/Customer";
+import {
+  extendPrograms,
+  ProgramCore,
+  ProgramRaw,
+  remapPrograms,
+} from "@/app/realGreen/customer/_lib/types/Program";
+import {
+  extendServices,
+  remapServices,
+  ServiceCore,
+  ServiceRaw,
+} from "@/app/realGreen/customer/_lib/types/Service";
+
+// Helper to map criteria based on step name
+function mapCriteria(
+  stepName: string,
+  criteria: SearchCriteria,
+): SearchCriteriaRaw {
+  switch (stepName) {
+    case "customers":
+      return remapCustSearch(criteria as any);
+    case "programs":
+      return remapProgSearch(criteria as any);
+    case "services":
+      return remapServSearch(criteria as any);
+    default:
+      throw new Error(`Unknown step name: ${stepName}`);
+  }
+}
+
+function getRemapFn(stepName: string): (data: RawData) => PipelineDataCore {
+  switch (stepName) {
+    case "customers":
+      return (data) => remapCustomers(data as CustomerRaw[]);
+    case "programs":
+      return (data) => remapPrograms(data as ProgramRaw[]);
+    case "services":
+      return (data) => remapServices(data as ServiceRaw[]);
+    default:
+      throw new Error(`Unknown step name: ${stepName}`);
+  }
+}
+
+function getMongoFn(
+  stepName: string,
+): (data: PipelineDataCore) => Promise<PipelineData> {
+  switch (stepName) {
+    case "customers":
+      return async (data) =>
+        (await extendCustomers(data as CustomerCore[])) as PipelineData;
+    case "programs":
+      return async (data) =>
+        (await extendPrograms(data as ProgramCore[])) as PipelineData;
+    case "services":
+      return async (data) =>
+        (await extendServices(data as ServiceCore[])) as PipelineData;
+    default:
+      throw new Error(`Unknown step name: ${stepName}`);
+  }
+}
 
 // Helper to fetch remaining records
 async function* fetchOverflow<TRawData>(
-  apiPath: Pick<RgApiPath, "path">,
   baseSearchCriteria: SearchCriteriaRaw,
   startOffset: number,
 ) {
@@ -28,12 +97,7 @@ async function* fetchOverflow<TRawData>(
       offset: currentOffset,
     };
 
-    console.log(apiPath.path);
-    const res = await rgApi<TRawData>({
-      path: apiPath.path as any,
-      method: "POST",
-      body: body as any,
-    });
+    const res = await rgSearch<TRawData>(body);
 
     const duration = Date.now() - start;
 
@@ -49,17 +113,23 @@ async function* fetchOverflow<TRawData>(
   }
 }
 
-type StepConfig = {
+type WithCriteriaFunction = {
+  getSearchCriteria: (data: PipelineData) => SearchCriteria;
+};
+type WithExplicitCriteria = {
+  searchCriteria: SearchCriteria;
+};
+
+type StepConfig = (WithCriteriaFunction | WithExplicitCriteria) & {
   stepName: "customers" | "programs" | "services";
-  getSearchCriteria: ((data: PipelineData) => SearchCriteriaRaw) | SearchCriteriaRaw;
-  rgApiPath: Pick<RgApiPath, "path">;
-  remapFn: (data: RawData) => PipelineDataCore;
-  mongoFn: (data: PipelineDataCore) => Promise<PipelineData>;
 };
 
 export function createPaginationStep<TRawData extends RawData>(
   config: StepConfig,
 ): SearchStep {
+  const remapFn = getRemapFn(config.stepName);
+  const mongoFn = getMongoFn(config.stepName);
+
   return {
     stepName: config.stepName,
     optimizationStrategy: "pagination",
@@ -72,8 +142,9 @@ export function createPaginationStep<TRawData extends RawData>(
 
       const estimatedPages = Math.ceil(lastTotal / PAGE_SIZE);
 
-      let searchCriteria: SearchCriteriaRaw;
-      if (typeof config.getSearchCriteria === "function") {
+      let searchCriteria: SearchCriteria;
+
+      if ("getSearchCriteria" in config) {
         if (!pipelineData) {
           throw new AppError({
             message:
@@ -92,25 +163,23 @@ export function createPaginationStep<TRawData extends RawData>(
         }
         searchCriteria = config.getSearchCriteria(pipelineData);
       } else {
-        searchCriteria = config.getSearchCriteria;
+        searchCriteria = config.searchCriteria;
       }
+
+      // Map to Raw Criteria here
+      const rawCriteria = mapCriteria(config.stepName, searchCriteria);
 
       const promises = Array.from({ length: estimatedPages }).map(
         async (_, i) => {
           const start = Date.now();
 
           const body = {
-            ...searchCriteria,
+            ...rawCriteria,
             records: PAGE_SIZE,
             offset: i * PAGE_SIZE,
           };
 
-          console.log(config.rgApiPath.path);
-          const rawData: TRawData = await rgApi<TRawData>({
-            path: config.rgApiPath as any,
-            method: "POST",
-            body: body as any,
-          });
+          const rawData: TRawData = await rgSearch<TRawData>(body);
 
           const items =
             (rawData as any)?.items || (Array.isArray(rawData) ? rawData : []);
@@ -129,8 +198,8 @@ export function createPaginationStep<TRawData extends RawData>(
       for (const res of results) {
         totalRecords += res.data.length;
 
-        const remapData = config.remapFn(res.data);
-        const mongoData = await config.mongoFn(remapData);
+        const remapData = remapFn(res.data);
+        const mongoData = await mongoFn(remapData);
 
         yield {
           data: mongoData,
@@ -146,19 +215,10 @@ export function createPaginationStep<TRawData extends RawData>(
         for await (const {
           items: rawItems,
           duration,
-        } of fetchOverflow<TRawData>(
-          // config.rgApiPath,
-          {
-            path: config.rgApiPath.path,
-            method: "POST",
-            body: searchCriteria,
-          } as any,
-          searchCriteria,
-          nextOffset,
-        )) {
+        } of fetchOverflow<TRawData>(rawCriteria, nextOffset)) {
           totalRecords += rawItems.length;
-          const remapData = config.remapFn(rawItems);
-          const mongoData = await config.mongoFn(remapData);
+          const remapData = remapFn(rawItems);
+          const mongoData = await mongoFn(remapData);
 
           yield {
             data: mongoData,
@@ -186,16 +246,16 @@ function isBatchOptimizer(
 
 type BatchStepConfig<TRawData> = {
   stepName: "customers" | "programs" | "services";
-  rgApiPath: Pick<RgApiPath, "path">;
   getIds: (pipelineData: PipelineData) => number[];
-  getSearchCriteria: (ids: number[]) => SearchCriteriaRaw;
-  remapFn: (data: TRawData) => PipelineDataCore;
-  mongoFn: (data: PipelineDataCore) => Promise<PipelineData>;
+  getSearchCriteria: (ids: number[]) => SearchCriteria;
 };
 
 export function createBatchSizeStep<TRawData extends RawData>(
   config: BatchStepConfig<TRawData>,
 ): SearchStep {
+  const remapFn = getRemapFn(config.stepName);
+  const mongoFn = getMongoFn(config.stepName);
+
   return {
     stepName: config.stepName,
     optimizationStrategy: "batchSize",
@@ -219,16 +279,14 @@ export function createBatchSizeStep<TRawData extends RawData>(
         const batchIds = allIds.slice(i, i + batchSize);
         const searchCriteria = config.getSearchCriteria(batchIds);
 
+        // Map to Raw Criteria here
+        const rawCriteria = mapCriteria(config.stepName, searchCriteria);
+
         const start = Date.now();
 
-        const body = { ...searchCriteria };
+        const body = { ...rawCriteria };
 
-        console.log(config.rgApiPath.path);
-        const res = await rgApi<TRawData>({
-          path: config.rgApiPath as any,
-          method: "POST",
-          body: body as any,
-        });
+        const res = await rgSearch<TRawData>(body);
 
         const items = (res as any)?.items || (Array.isArray(res) ? res : []);
         const rawData = items as TRawData;
@@ -237,8 +295,8 @@ export function createBatchSizeStep<TRawData extends RawData>(
           currentMaxRecords = rawData.length;
         }
 
-        const remapped = config.remapFn(rawData);
-        const mongo = await config.mongoFn(remapped);
+        const remapped = remapFn(rawData);
+        const mongo = await mongoFn(remapped);
 
         yield {
           data: mongo,
@@ -251,12 +309,11 @@ export function createBatchSizeStep<TRawData extends RawData>(
             items: rawItems,
             duration,
           } of fetchOverflow<TRawData>(
-            config.rgApiPath as any,
-            searchCriteria,
+            rawCriteria,
             realGreenConst.CustProgServRecordsMax,
           )) {
-            const remappedOverflow = config.remapFn(rawItems as TRawData);
-            const mongoOverflow = await config.mongoFn(remappedOverflow);
+            const remappedOverflow = remapFn(rawItems as TRawData);
+            const mongoOverflow = await mongoFn(remappedOverflow);
 
             yield {
               data: mongoOverflow,

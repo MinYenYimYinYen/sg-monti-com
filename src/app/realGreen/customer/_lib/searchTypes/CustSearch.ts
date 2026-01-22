@@ -8,6 +8,7 @@ import { TRange } from "@/lib/primatives/TRange";
 import {RGSearchBase} from "@/app/realGreen/customer/_lib/searchTypes/RGSearchBase";
 
 export type CustomerSearchRaw = RGSearchBase & {
+  searchType: "customer";
   // billingCity?: string;
   // billingCompanyName?: string;
   // billingEmail?: string;
@@ -106,7 +107,7 @@ export type CustomerSearchCriteria = RGSearchBase & {
 };
 
 export function remapCustSearch(search: CustomerSearchCriteria): CustomerSearchRaw {
-  const rgSearch: CustomerSearchRaw = {};
+  const rgSearch: CustomerSearchRaw = { searchType: "customer"};
   if (search.custIds) rgSearch.customerID = search.custIds;
   if (search.zip) rgSearch.customerZip = search.zip;
   if (search.statuses)
