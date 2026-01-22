@@ -63,52 +63,56 @@ A helper function that generates the `condition` logic for `createAsyncThunk`. I
 
 ## 3. Implementation Guide
 
-### How to Write a Smart Thunk
-Use the `smartThunkOptions` helper instead of writing manual conditions.
+### Live Template: Smart Async Thunk
 
-**Crucial TypeScript Requirements:**
-1.  **`EmployeeContract`**: Ensures the return type and params match the backend exactly.
-2.  **`WithConfig<T>`**: Wraps the params to allow `config` to be passed in.
-3. **Destructuring**: Destructure `{ apiParams }` from the thunk argument.
-4. **`AppState`**: Required in the third generic slot so `getState` works correctly in the condition.
+Use this template to generate a standardized, type-safe Async Thunk.
+
+**Variables (Order):**
+1.  `$ContractType$`: The API Contract interface (e.g., `CustomerContract`).
+2.  `$OpName$`: The operation name from the contract (e.g., `runSearchScheme`).
+3.  `$ReturnType$`: The specific property of the result to return (e.g., `items`, `item`, or just `result` if returning the whole object).
+4.  `$SliceName$`: The name of the slice (e.g., `sanity`).
+5.  `$ThunkName$`: The name of the thunk function (e.g., `getDocs`).
+6.  `$ApiPath$`: The API route path (e.g., `/realGreen/customer/api`).
+
+**Template Code:**
 
 ```typescript
-import { createAsyncThunk } from "@reduxjs/toolkit";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { EmployeeContract } from "@/app/realGreen/employee/api/EmployeeContract"; // Example import
-import { AppState } from "@/store";
-import { Employee } from "@/app/realGreen/employee/Employee";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-
-export const getEmployees = createAsyncThunk<
-  Employee[], // 1. Return Data Only (Not the full response object)
-  WithConfig<EmployeeContract["getAll"]["params"]>, // 2. Params + ThunkConfig
-  { rejectValue: string; state: AppState } // 3. State type required for smart options
+export const $ThunkName$ = createAsyncThunk<
+  $ContractType$["$OpName$"]["result"]["$ReturnType$"],
+  WithConfig<$ContractType$["$OpName$"]["params"]>,
+  { rejectValue: string; state: AppState }
 >(
-  "employee/getEmployees",
-  async ({ apiParams }, { rejectWithValue }) => {
-    // 4. Construct Body using params directly
-    const body: OpMap<EmployeeContract> = {
-      op: "getAll",
-      ...apiParams,
-    };
-    
-    const res = await api<EmployeeContract["getAll"]["result"]>("/realGreen/employee/api", {
-        method: "POST",
-        body
-    });
+  "$SliceName$/$ThunkName$",
+  async (params, { rejectWithValue }) => {
+    try {
+      // 1. Separate Config params from API params
+      const { params: apiParams } = params;
 
-    // 5. Check for "Handled Errors" (200 OK with success: false)
-    if (!res.success) {
-        return rejectWithValue(res.message);
+      // 2. Type-Safe Body Construction
+      const body: OpMap<$ContractType$> = {
+        op: "$OpName$",
+        ...apiParams,
+      };
+
+      const result = await api<$ContractType$["$OpName$"]["result"]>(
+        "$ApiPath$",
+        {
+          method: "POST",
+          body,
+        },
+      );
+
+      if (!result.success) {
+        return rejectWithValue(result.message);
+      }
+      return result.$ReturnType$;
+    } catch (e) {
+      const error = handleError(e);
+      return rejectWithValue(error.message);
     }
-
-    // 6. Return the data directly
-    return res.items;
   },
-  // 7. The Magic Line: Wires up Deduplication, Caching & UI Meta
-  smartThunkOptions({ typePrefix: "employee/getEmployees" })
+  smartThunkOptions({ typePrefix: "$SliceName$/$ThunkName$" }),
 );
 ```
 
