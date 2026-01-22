@@ -13,4 +13,3 @@ export type SearchOptimizer = CreatedUpdated & OptimizationStrategy & {
   totalRecords: number;
   avgDuration: number;
 }
-
