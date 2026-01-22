@@ -199,33 +199,46 @@ export function remapServices(raw: ServiceRaw[]) {
   return raw.map((r) => remapService(r));
 }
 
-function extendService({
-  remapped,
-  mongo,
-}: {
-  remapped: ServiceRemapped;
-  mongo?: ServiceMongo;
-}): ServiceWithMongo {
-  return {
-    ...remapped,
-    createdAt: mongo?.createdAt || "",
-    updatedAt: mongo?.updatedAt || "",
-  };
+// function extendService({
+//   remapped,
+//   mongo,
+// }: {
+//   remapped: ServiceRemapped;
+//   mongo?: ServiceMongo;
+// }): ServiceWithMongo {
+//   return {
+//     ...remapped,
+//     createdAt: mongo?.createdAt || "",
+//     updatedAt: mongo?.updatedAt || "",
+//   };
+// }
+
+export async function extendServices(
+  remapped: ServiceRemapped[],
+): Promise<ServiceWithMongo[]> {
+  //MOCKED
+  //code the actual mongo lookup here.
+  const withMongo: ServiceWithMongo[] = remapped.map((serv) => ({
+    ...serv,
+    createdAt: "",
+    updatedAt: "",
+  }));
+  return withMongo;
 }
 
-export function extendServices({
-  remapped,
-  mongo,
-}: {
-  remapped: ServiceRemapped[];
-  mongo: ServiceMongo[];
-}): ServiceWithMongo[] {
-  const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.servId);
-
-  return remapped.map((r) =>
-    extendService({
-      remapped: r,
-      mongo: mongoMap.get(r.servId),
-    }),
-  );
-}
+// export function extendServices({
+//   remapped,
+//   mongo,
+// }: {
+//   remapped: ServiceRemapped[];
+//   mongo: ServiceMongo[];
+// }): ServiceWithMongo[] {
+//   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.servId);
+//
+//   return remapped.map((r) =>
+//     extendService({
+//       remapped: r,
+//       mongo: mongoMap.get(r.servId),
+//     }),
+//   );
+// }

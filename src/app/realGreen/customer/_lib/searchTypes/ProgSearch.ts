@@ -4,7 +4,7 @@ import {
   RGStringRange,
 } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 import { TRange } from "@/lib/primatives/TRange";
-import {RGSearchBase} from "@/app/realGreen/customer/_lib/searchTypes/RGSearchBase";
+import { RGSearchBase } from "@/app/realGreen/customer/_lib/searchTypes/RGSearchBase";
 
 export type ProgramSearchRG = RGSearchBase & {
   // averagePrice?: DecimalRange;
@@ -77,25 +77,26 @@ export type ProgramSearchRG = RGSearchBase & {
   // temporarySequence?: number;
   // // updated?: DateTimeRange;
   // workOrderPricing?: number;
-
 };
 
 export type ProgSearch = {
   custIds?: number[];
   soldRange?: TRange<string>;
   progIds?: number[];
-  statuses?: ProgStat;
-  season: number;
+  statuses?: ProgStat[];
+  season?: number;
 };
 
 export function remapProgSearch(search: ProgSearch): ProgramSearchRG {
   const rgSearch: ProgramSearchRG = {};
   if (search.custIds) rgSearch.customerNumber = search.custIds;
-  if (search.soldRange) rgSearch.dateSold = {
-    minValue: search.soldRange.min,
-    maxValue: search.soldRange.max,
-  }
+  if (search.soldRange)
+    rgSearch.dateSold = {
+      minValue: search.soldRange.min,
+      maxValue: search.soldRange.max,
+    };
   if (search.progIds) rgSearch.id = search.progIds;
-  rgSearch.serviceYear = {minValue: search.season, maxValue: search.season}
+  if (search.season)
+    rgSearch.serviceYear = { minValue: search.season, maxValue: search.season };
   return rgSearch;
 }

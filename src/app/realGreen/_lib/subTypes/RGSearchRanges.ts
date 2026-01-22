@@ -9,7 +9,7 @@ export type RGNumRange = {
 }
 
 export type ProgStat = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
-export type CustStat = "M" & ProgStat;
+export type CustStat = "M" | ProgStat;
 
 export function custStatRangeToArray(status: RGStringRange): string[] {
   // string range can be 0-9 or M

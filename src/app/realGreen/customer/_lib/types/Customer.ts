@@ -1,8 +1,6 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Grouper } from "@/lib/Grouper";
-import {
-  Address,
-} from "@/app/realGreen/_lib/subTypes/Address";
+import { Address } from "@/app/realGreen/_lib/subTypes/Address";
 import { typeGuard } from "@/lib/typeGuard";
 import {
   baseContactPreference,
@@ -10,7 +8,7 @@ import {
   ContactPreferenceRaw,
   remapContactPreference,
 } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
-import {baseNumId} from "@/app/realGreen/_lib/realGreenConst";
+import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { Phone } from "@/app/realGreen/_lib/subTypes/Phone";
 
 export type CustomerRaw = {
@@ -169,7 +167,7 @@ export type CustomerMongo = CreatedUpdated & {
 
 export type CustomerWithMongo = CustomerRemapped & CustomerMongo;
 
-export type CustomerHydrate = {}
+export type CustomerHydrate = {};
 
 export type Customer = CustomerWithMongo & CustomerHydrate;
 
@@ -205,37 +203,49 @@ function remapCustomer(raw: CustomerRaw): CustomerRemapped {
   };
 }
 
-export function remapCustomers (raw: CustomerRaw[]) {
+export function remapCustomers(raw: CustomerRaw[]) {
   return raw.map((r) => remapCustomer(r));
 }
 
-export function extendCustomer({
-  remapped,
-  mongo,
-}: {
-  remapped: CustomerRemapped;
-  mongo?: CustomerMongo;
-}): CustomerWithMongo {
-  return {
-    ...remapped,
-    createdAt: mongo?.createdAt || "",
-    updatedAt: mongo?.updatedAt || "",
-  };
+// export function extendCustomer({
+//   remapped,
+//   mongo,
+// }: {
+//   remapped: CustomerRemapped;
+//   mongo?: CustomerMongo;
+// }): CustomerWithMongo {
+//   return {
+//     ...remapped,
+//     createdAt: mongo?.createdAt || "",
+//     updatedAt: mongo?.updatedAt || "",
+//   };
+// }
+
+export async function extendCustomers(
+  remapped: CustomerRemapped[],
+): Promise<CustomerWithMongo[]> {
+  //MOCKED for now
+  const withMongo = remapped.map((cust) => ({
+    ...cust,
+    createdAt: "",
+    updatedAt: "",
+  }));
+  return withMongo;
 }
 
-export function extendCustomers({
-  remapped,
-  mongo,
-}: {
-  remapped: CustomerRemapped[];
-  mongo: CustomerMongo[];
-}): CustomerWithMongo[] {
-  const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.custId);
-
-  return remapped.map((r) =>
-    extendCustomer({
-      remapped: r,
-      mongo: mongoMap.get(r.custId),
-    }),
-  );
-}
+// export function extendCustomers({
+//   remapped,
+//   mongo,
+// }: {
+//   remapped: CustomerRemapped[];
+//   mongo: CustomerMongo[];
+// }): CustomerWithMongo[] {
+//   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.custId);
+//
+//   return remapped.map((r) =>
+//     extendCustomer({
+//       remapped: r,
+//       mongo: mongoMap.get(r.custId),
+//     }),
+//   );
+// }

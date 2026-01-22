@@ -2,8 +2,6 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { authActions } from "@/app/auth/authSlice";
 import { AuthContract } from "@/app/auth/_types/AuthContract";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
-import { User, UserWithPW } from "@/app/auth/_types/User";
 
 export const useAuth = () => {
   const dispatch = useDispatch<AppDispatch>();

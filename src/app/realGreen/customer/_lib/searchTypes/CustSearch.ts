@@ -98,7 +98,7 @@ export type CustomerSearchRG = RGSearchBase & {
   // useBillingInfo?: boolean;
 };
 
-export type CustSearch = {
+export type CustSearch = RGSearchBase & {
   custIds?: number[];
   size?: TRange<number>;
   statuses?: CustStat[];

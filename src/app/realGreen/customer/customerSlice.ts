@@ -3,13 +3,13 @@ import { CustomerWithMongo } from "@/app/realGreen/customer/_lib/types/Customer"
 import { ProgramWithMongo } from "@/app/realGreen/customer/_lib/types/Program";
 import { ServiceWithMongo } from "@/app/realGreen/customer/_lib/types/Service";
 
-type CustomerState = {
+export type CustomerState = {
   dryCustomers: CustomerWithMongo[];
   dryPrograms: ProgramWithMongo[];
   dryServices: ServiceWithMongo[];
 };
 
-const initialState: CustomerState = {
+export const initialCustomerState: CustomerState = {
   dryCustomers: [],
   dryPrograms: [],
   dryServices: [],
@@ -17,7 +17,7 @@ const initialState: CustomerState = {
 
 export const CustomerSlice = createSlice({
   name: "Customer",
-  initialState,
+  initialState: initialCustomerState,
   reducers: {},
   extraReducers: (builder) => {},
 });

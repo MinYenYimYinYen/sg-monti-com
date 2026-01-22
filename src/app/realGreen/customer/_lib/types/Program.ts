@@ -1,7 +1,11 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Grouper } from "@/lib/Grouper";
-import {mongo} from "mongoose";
-import {baseNumId, baseStrId, realGreenConst} from "@/app/realGreen/_lib/realGreenConst";
+import { mongo } from "mongoose";
+import {
+  baseNumId,
+  baseStrId,
+  realGreenConst,
+} from "@/app/realGreen/_lib/realGreenConst";
 
 export type ProgramRaw = {
   averagePrice: number;
@@ -113,7 +117,7 @@ export type ProgramMongo = CreatedUpdated & {
 
 export type ProgramWithMongo = ProgramRemapped & ProgramMongo;
 
-export type ProgramHydrate = {}
+export type ProgramHydrate = {};
 
 export type Program = ProgramWithMongo & ProgramHydrate;
 
@@ -140,37 +144,46 @@ function remapProgram(raw: ProgramRaw): ProgramRemapped {
   };
 }
 
-export function remapPrograms (raw: ProgramRaw[]) {
+export function remapPrograms(raw: ProgramRaw[]) {
   return raw.map((r) => remapProgram(r));
 }
 
-function extendProgram({
-  remapped,
-  mongo,
-}: {
-  remapped: ProgramRemapped;
-  mongo?: ProgramMongo;
-}): ProgramWithMongo {
-  return {
-    ...remapped,
-    createdAt: mongo?.createdAt || "",
-    updatedAt: mongo?.updatedAt || "",
-  }
+// async function extendProgram(remapped: ProgramRemapped): Promise<ProgramWithMongo> {
+//   // This is mocking the extension.  But when it is time to extend,
+//   // we can put how to extend here, or more likely remove this function,
+//   // and put that logic below.
+//   return {
+//     ...remapped,
+//     createdAt: "",
+//     updatedAt: "",
+//   };
+// }
+
+export async function extendPrograms(
+  remapped: ProgramRemapped[],
+): Promise<ProgramWithMongo[]> {
+  const withMongo = remapped.map((prog) => ({
+    ...prog,
+    createdAt: "",
+    updatedAt: "",
+  }));
+  return withMongo;
 }
 
-export function extendPrograms({
-  remapped,
-  mongo,
-}: {
-  remapped: ProgramRemapped[];
-  mongo: ProgramMongo[];
-}): ProgramWithMongo[] {
-  const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.progId );
 
-  return remapped.map((r) =>
-    extendProgram({
-      remapped: r,
-      mongo: mongoMap.get(r.progId),
-    }),
-  );
-}
+// export function extendPrograms({
+//   remapped,
+//   mongo,
+// }: {
+//   remapped: ProgramRemapped[];
+//   mongo: ProgramMongo[];
+// }): ProgramWithMongo[] {
+//   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.progId);
+//
+//   return remapped.map((r) =>
+//     extendProgram({
+//       remapped: r,
+//       mongo: mongoMap.get(r.progId),
+//     }),
+//   );
+// }
