@@ -69,25 +69,27 @@ async function handleRefreshAndRetry(
   return null;
 }
 
-export async function api<T>(
-  url: string,
-  config: ApiConfig = {},
-): Promise<T | ErrorResponse> {
+function prepareFetchConfig(config: ApiConfig): RequestInit {
   const { body, headers, ...rest } = config;
 
-  const fetchConfig = {
+  return {
     ...rest,
     headers: {
       "Content-Type": "application/json",
       ...headers,
     },
-    // 2. Auto-stringify
+    // Auto-stringify
     body:
       body && typeof body === "object"
         ? JSON.stringify(body)
         : (body as BodyInit),
   };
+}
 
+async function fetchWithRetry(
+  url: string,
+  fetchConfig: RequestInit,
+): Promise<Response> {
   try {
     let res = await fetch(url, fetchConfig);
 
@@ -100,40 +102,9 @@ export async function api<T>(
     }
     // --- END RETRY LOGIC ---
 
-    if (!res.ok) {
-      const errorData = (await res
-        .json()
-        .catch(() => ({}))) as Partial<ErrorResponse>;
-
-      const message = errorData.message || res.statusText || "Request failed";
-      const silent = errorData.silent ?? false;
-
-      // Map Status Code to Error Type
-      let type: ErrorType = "API_ERROR";
-      if (res.status === 400) type = "VALIDATION_ERROR";
-      if (res.status === 401 || res.status === 403) type = "AUTH_ERROR";
-      if (res.status >= 500) type = "SERVER_ERROR";
-
-      // 3. THROW WITH OBJECT
-      throw new AppError({
-        message,
-        type,
-        statusCode: res.status,
-        isOperational: true,
-        data: errorData.data,
-        silent,
-      });
-    }
-
-    if (res.status === 204) return null as T;
-
-    // 4. Return Data (Success or Handled Error)
-    // We assume the caller will check .success if T includes it.
-    return (await res.json()) as T | ErrorResponse;
+    return res;
   } catch (error) {
-    if (error instanceof AppError) throw error;
-
-    // 5. Catch Network Errors
+    // Catch Network Errors
     throw new AppError({
       message: error instanceof Error ? error.message : "Network error",
       type: "NETWORK_ERROR",
@@ -141,4 +112,67 @@ export async function api<T>(
       isOperational: true,
     });
   }
+}
+
+async function handleApiError(res: Response) {
+  const errorData = (await res.json().catch(() => ({}))) as Partial<ErrorResponse>;
+
+  const message = errorData.message || res.statusText || "Request failed";
+  const silent = errorData.silent ?? false;
+
+  // Map Status Code to Error Type
+  let type: ErrorType = "API_ERROR";
+  if (res.status === 400) type = "VALIDATION_ERROR";
+  if (res.status === 401 || res.status === 403) type = "AUTH_ERROR";
+  if (res.status >= 500) type = "SERVER_ERROR";
+
+  // THROW WITH OBJECT
+  throw new AppError({
+    message,
+    type,
+    statusCode: res.status,
+    isOperational: true,
+    data: errorData.data,
+    silent,
+  });
+}
+
+export async function api<T>(
+  url: string,
+  config: ApiConfig = {},
+): Promise<T | ErrorResponse> {
+  const fetchConfig = prepareFetchConfig(config);
+  const res = await fetchWithRetry(url, fetchConfig);
+
+  if (!res.ok) {
+    await handleApiError(res);
+  }
+
+  if (res.status === 204) return null as T;
+
+  // Return Data (Success or Handled Error)
+  // We assume the caller will check .success if T includes it.
+  return (await res.json()) as T | ErrorResponse;
+}
+
+export async function apiStream(
+  url: string,
+  config: ApiConfig = {},
+): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+  const fetchConfig = prepareFetchConfig(config);
+  const res = await fetchWithRetry(url, fetchConfig);
+
+  if (!res.ok) {
+    await handleApiError(res);
+  }
+
+  if (!res.body) {
+    throw new AppError({
+      message: "Response body is empty",
+      type: "API_ERROR",
+      statusCode: res.status,
+    });
+  }
+
+  return res.body.getReader();
 }
