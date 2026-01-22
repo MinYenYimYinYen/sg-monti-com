@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     const result = await config.handler(params as any);
     return NextResponse.json(result);
-  } catch (e) {
+  } catch (e) { //todo: this is duplicated in every api route.  A function should be extracted.
     const error = normalizeError(e);
     console.error(`[API] ${error.type}: ${error.message}`, {
       stack: error.stack,

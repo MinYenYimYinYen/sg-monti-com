@@ -83,3 +83,5 @@ export async function rgApi<T>(config: RgApiPath) {
     body: body as any,
   });
 }
+
+type SearchType = "customer" | "program" | "service"

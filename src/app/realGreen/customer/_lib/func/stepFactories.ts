@@ -10,6 +10,7 @@ import {
 import { rgApi, RgApiPath } from "@/app/realGreen/employee/api/rgApi";
 import { SearchOptimizer } from "@/app/realGreen/customer/_lib/cpsSearchTypes/SearchOptimizer";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
+import { AppError } from "@/lib/errors/AppError";
 
 // Helper to fetch remaining records
 async function* fetchOverflow<TRawData>(
@@ -67,13 +68,28 @@ export function createPaginationStep<TRawData extends RawData>(
 
       // Use defaultPageCount to determine initial records if optimizer is empty
       const lastTotal =
-        (optimizer as SearchOptimizer).totalRecords ??
-        realGreenConst.defaultPageCount * PAGE_SIZE;
+        optimizer.totalRecords ?? realGreenConst.defaultPageCount * PAGE_SIZE;
 
       const estimatedPages = Math.ceil(lastTotal / PAGE_SIZE);
 
       let searchCriteria: SearchType;
       if (typeof config.getSearchCriteria === "function") {
+        if (!prevData) {
+          throw new AppError({
+            message:
+              `Previous data is null for ${config.stepName}. ` +
+              "If this was the first step, do not use the function type for" +
+              "getSearchCriteria. If this does not make sense, notify the developer.",
+          });
+        }
+        if (!prevData.length) {
+          throw new AppError({
+            message:
+              `Previous data is empty for ${config.stepName}. ` +
+              "Aborting search scheme. Check the searchScheme. If this does not" +
+              "make sense, notify the developer.",
+          });
+        }
         searchCriteria = config.getSearchCriteria(prevData);
       } else {
         searchCriteria = config.getSearchCriteria;

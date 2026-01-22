@@ -36,7 +36,7 @@ export type SearchType =
   | ServiceSearchRG
 
 export type StepContext = {
-  prevData: MongoData; // Data from the previous step
+  prevData: MongoData | null; // Data from the previous step
   optimizer: SearchOptimizer; // Optimization stats for this step
 };
 
