@@ -136,7 +136,7 @@ export type ServiceRaw = {
   // varianceManHoursFormatted?: string;
 };
 
-export type ServiceRemapped = {
+export type ServiceCore = {
   servId: number;
   asapSince: string;
   callAheadId: number | null;
@@ -156,17 +156,17 @@ export type ServiceRemapped = {
   production: Production | null;
 };
 
-export type ServiceMongo = CreatedUpdated & {
+export type ServiceDocProps = CreatedUpdated & {
   servId: number;
 };
 
-export type ServiceWithMongo = ServiceRemapped & ServiceMongo;
+export type ServiceDoc = ServiceCore & ServiceDocProps;
 
-export type ServiceHydrate = {};
+export type ServiceProps = {};
 
-export type Service = ServiceWithMongo & ServiceHydrate;
+export type ServiceHydrated = ServiceDoc & ServiceProps;
 
-function remapService(raw: ServiceRaw): ServiceRemapped {
+function remapService(raw: ServiceRaw): ServiceCore {
   return {
     servId: raw.id,
     asapSince: raw.asapDate || "",
@@ -203,9 +203,9 @@ export function remapServices(raw: ServiceRaw[]) {
 //   remapped,
 //   mongo,
 // }: {
-//   remapped: ServiceRemapped;
-//   mongo?: ServiceMongo;
-// }): ServiceWithMongo {
+//   remapped: ServiceCore;
+//   mongo?: ServiceDoc;
+// }): Service {
 //   return {
 //     ...remapped,
 //     createdAt: mongo?.createdAt || "",
@@ -214,11 +214,11 @@ export function remapServices(raw: ServiceRaw[]) {
 // }
 
 export async function extendServices(
-  remapped: ServiceRemapped[],
-): Promise<ServiceWithMongo[]> {
+  remapped: ServiceCore[],
+): Promise<ServiceDoc[]> {
   //MOCKED
   //code the actual mongo lookup here.
-  const withMongo: ServiceWithMongo[] = remapped.map((serv) => ({
+  const withMongo: ServiceDoc[] = remapped.map((serv) => ({
     ...serv,
     createdAt: "",
     updatedAt: "",
@@ -230,9 +230,9 @@ export async function extendServices(
 //   remapped,
 //   mongo,
 // }: {
-//   remapped: ServiceRemapped[];
-//   mongo: ServiceMongo[];
-// }): ServiceWithMongo[] {
+//   remapped: ServiceCore[];
+//   mongo: ServiceDoc[];
+// }): Service[] {
 //   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.servId);
 //
 //   return remapped.map((r) =>

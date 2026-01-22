@@ -3,15 +3,16 @@ import { SearchOptimizerModel } from "../models/SearchOptimizerModel";
 import { cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { SearchOptimizer } from "@/app/realGreen/customer/_lib/cpsSearchTypes/SearchOptimizer";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
+import { OptimizationStrategyType } from "@/app/realGreen/customer/_lib/cpsSearchTypes/SearchScheme";
 
 export async function getSearchOptimizer({
   schemeName,
   stepName,
-  type,
+  optimizationStrategy,
 }: {
   schemeName: string;
   stepName: string;
-  type: "pagination" | "batchSize";
+  optimizationStrategy: OptimizationStrategyType;
 }): Promise<SearchOptimizer> {
   await connectToMongoDB();
 
@@ -25,7 +26,7 @@ export async function getSearchOptimizer({
     const baseDefaults = {
       scheme: schemeName,
       step: stepName,
-      type,
+      type: optimizationStrategy,
       totalCalls: 0,
       totalRecords: 0,
       avgDuration: 0,
@@ -33,11 +34,11 @@ export async function getSearchOptimizer({
 
     // Define strategy-specific defaults
     let strategyDefaults = {};
-    if (type === "pagination") {
+    if (optimizationStrategy === "pagination") {
       strategyDefaults = {
         lastRecordCount: 0,
       };
-    } else if (type === "batchSize") {
+    } else if (optimizationStrategy === "batchSize") {
       strategyDefaults = {
         optimalBatchSize: realGreenConst.defaultBatchSize,
         currentMaxRecordCount: 0,
@@ -56,5 +57,3 @@ export async function getSearchOptimizer({
 
   return cleanMongoObject(optimizer) as SearchOptimizer;
 }
-
-

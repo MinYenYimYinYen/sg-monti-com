@@ -4,10 +4,10 @@ import { searchScheme } from "@/app/realGreen/customer/_lib/searchSchemes/search
 import { SearchOptimizerModel } from "@/app/realGreen/customer/_lib/models/SearchOptimizerModel";
 import { StreamChunk } from "@/app/realGreen/customer/_lib/types/CustomerContract";
 import { SearchOptimizer } from "@/app/realGreen/customer/_lib/cpsSearchTypes/SearchOptimizer";
-import { MongoData } from "@/app/realGreen/customer/_lib/cpsSearchTypes/SearchScheme";
-import { CustomerWithMongo } from "@/app/realGreen/customer/_lib/types/Customer";
-import {ProgramWithMongo} from "@/app/realGreen/customer/_lib/types/Program";
-import {ServiceWithMongo} from "@/app/realGreen/customer/_lib/types/Service";
+import { PipelineData } from "@/app/realGreen/customer/_lib/cpsSearchTypes/SearchScheme";
+import { CustomerDoc } from "@/app/realGreen/customer/_lib/types/Customer";
+import {ProgramDoc} from "@/app/realGreen/customer/_lib/types/Program";
+import {ServiceDoc} from "@/app/realGreen/customer/_lib/types/Service";
 
 export async function POST(req: NextRequest) {
   await connectToMongoDB();
@@ -37,30 +37,30 @@ export async function POST(req: NextRequest) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      let prevData: MongoData = [];
+      let prevData: PipelineData = [];
 
       try {
         for (const step of scheme.steps) {
           // 1. Load Optimizer
           let optimizerDoc = await SearchOptimizerModel.findOne({
             scheme: schemeName,
-            step: step.name,
+            step: step.stepName,
           });
 
           if (!optimizerDoc) {
             // Create default if not exists
             optimizerDoc = await SearchOptimizerModel.create({
               scheme: schemeName,
-              step: step.name,
-              type: step.strategyType,
+              step: step.stepName,
+              type: step.optimizationStrategy,
               totalCalls: 0,
               totalRecords: 0,
               avgDuration: 0,
               // Defaults based on type
-              ...(step.strategyType === "pagination"
+              ...(step.optimizationStrategy === "pagination"
                 ? { lastRecordCount: 0 }
                 : {}),
-              ...(step.strategyType === "batchSize"
+              ...(step.optimizationStrategy === "batchSize"
                 ? { optimalBatchSize: 50, currentMaxRecordCount: 0 }
                 : {}),
             });
@@ -69,28 +69,28 @@ export async function POST(req: NextRequest) {
           const optimizer = optimizerDoc.toObject() as SearchOptimizer;
 
           // 2. Run Step
-          const generator = step.run({ optimizer, prevData });
+          const generator = step.run({ optimizer, pipelineData: prevData });
           const stepAccumulator: any[] = [];
 
           for await (const result of generator) {
             // Stream Chunk
             if (result.data.length > 0) {
               let data: Partial<StreamChunk["data"]>;
-              switch (step.name) {
+              switch (step.stepName) {
                 case "customers": {
-                  data = { dryCustomers: result.data as CustomerWithMongo[] };
+                  data = { dryCustomers: result.data as CustomerDoc[] };
                   break;
                 }
                 case "programs": {
-                  data = { dryPrograms: result.data as ProgramWithMongo[] }
+                  data = { dryPrograms: result.data as ProgramDoc[] }
                   break;
                 }
                 case "services": {
-                  data = { dryServices: result.data as ServiceWithMongo[] }
+                  data = { dryServices: result.data as ServiceDoc[] }
                 }
               }
               const chunk: StreamChunk = {
-                stepName: step.name,
+                stepName: step.stepName,
                 data, //: result.data,
                 metrics: result.metrics,
               };
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
           }
 
           // Set prevData for next step
-          prevData = stepAccumulator as MongoData;
+          prevData = stepAccumulator as PipelineData;
         }
 
         controller.close();

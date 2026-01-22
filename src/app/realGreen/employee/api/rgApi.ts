@@ -1,6 +1,6 @@
 import { rgHttp } from "@/app/realGreen/employee/api/rgHttp";
-import {CustomerSearchRG} from "@/app/realGreen/customer/_lib/searchTypes/CustSearch";
-import { ProgramSearchRG } from "../../customer/_lib/searchTypes/ProgSearch";
+import {CustomerSearchRaw} from "@/app/realGreen/customer/_lib/searchTypes/CustSearch";
+import { ProgramSearchRaw } from "../../customer/_lib/searchTypes/ProgSearch";
 // import { CustFlagIdsSearch } from "@/realGreen/types/CustFlagIdsSearch";
 // import { CustomerSearch } from "@/realGreen/types/CustomerSearch";
 // import { ProgramSearch } from "@/realGreen/types/ProgramSearch";
@@ -34,7 +34,7 @@ export type RgApiPath =
   //     method: "POST";
   //     body: AddFlagToCustomersPOST;
   //   }
-  | { path: `/Customer/Search${string}`; method: "POST"; body: CustomerSearchRG }
+  | { path: `/Customer/Search${string}`; method: "POST"; body: CustomerSearchRaw }
   | { path: "/DiscountCode"; method: "GET"; body?: undefined }
   | { path: "/Employee"; method: "GET"; body?: undefined }
   | { path: `/Employee/${string}`; method: "GET"; body?: undefined }
@@ -44,7 +44,7 @@ export type RgApiPath =
   | { path: `/PriceTable/${string}/Detailed`; method: "GET"; body?: undefined }
   | { path: "/Products"; method: "GET"; body?: undefined }
   // | { path: "/Program"; method: "PUT"; body: RawProgram }
-  | { path: `/Program/Search`; method: "POST"; body: ProgramSearchRG }
+  | { path: `/Program/Search`; method: "POST"; body: ProgramSearchRaw }
   | { path: "/ProgramCode"; method: "GET"; body?: undefined }
   | { path: `/ProgramCode/${string}/Services`; method: "GET"; body?: undefined }
   | {
@@ -83,5 +83,3 @@ export async function rgApi<T>(config: RgApiPath) {
     body: body as any,
   });
 }
-
-type SearchType = "customer" | "program" | "service"

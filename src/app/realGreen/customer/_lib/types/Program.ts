@@ -90,7 +90,7 @@ export type ProgramRaw = {
   // year: number | null;
 };
 
-export type ProgramRemapped = {
+export type ProgramCore = {
   avgPrice: number;
   billingType: string;
   callAheadId: number;
@@ -111,17 +111,17 @@ export type ProgramRemapped = {
   tempSeq: number;
 };
 
-export type ProgramMongo = CreatedUpdated & {
+export type ProgramDocProps = CreatedUpdated & {
   progId: number;
 };
 
-export type ProgramWithMongo = ProgramRemapped & ProgramMongo;
+export type ProgramDoc = ProgramCore & ProgramDocProps;
 
-export type ProgramHydrate = {};
+export type ProgramProps = {};
 
-export type Program = ProgramWithMongo & ProgramHydrate;
+export type ProgramHydrated = ProgramDoc & ProgramProps;
 
-function remapProgram(raw: ProgramRaw): ProgramRemapped {
+function remapProgram(raw: ProgramRaw): ProgramCore {
   return {
     avgPrice: raw.averagePrice,
     billingType: raw.billingType,
@@ -148,7 +148,7 @@ export function remapPrograms(raw: ProgramRaw[]) {
   return raw.map((r) => remapProgram(r));
 }
 
-// async function extendProgram(remapped: ProgramRemapped): Promise<ProgramWithMongo> {
+// async function extendProgram(remapped: ProgramCore): Promise<Program> {
 //   // This is mocking the extension.  But when it is time to extend,
 //   // we can put how to extend here, or more likely remove this function,
 //   // and put that logic below.
@@ -160,8 +160,8 @@ export function remapPrograms(raw: ProgramRaw[]) {
 // }
 
 export async function extendPrograms(
-  remapped: ProgramRemapped[],
-): Promise<ProgramWithMongo[]> {
+  remapped: ProgramCore[],
+): Promise<ProgramDoc[]> {
   const withMongo = remapped.map((prog) => ({
     ...prog,
     createdAt: "",
@@ -175,9 +175,9 @@ export async function extendPrograms(
 //   remapped,
 //   mongo,
 // }: {
-//   remapped: ProgramRemapped[];
-//   mongo: ProgramMongo[];
-// }): ProgramWithMongo[] {
+//   remapped: ProgramCore[];
+//   mongo: ProgramDoc[];
+// }): Program[] {
 //   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.progId);
 //
 //   return remapped.map((r) =>

@@ -1,7 +1,7 @@
 import {RGSearchBase} from "@/app/realGreen/customer/_lib/searchTypes/RGSearchBase";
 import {RGStringRange} from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 
-export type ServiceSearchRG = RGSearchBase & {
+export type ServiceSearchRaw = RGSearchBase & {
   // asapDate?: DateTimeRange;
   // associationCode?: string;
   // callAhead?: number[];
@@ -56,7 +56,7 @@ export type ServiceSearchRG = RGSearchBase & {
   // // updated?: DateTimeRange;
 }
 
-export type ServSearch = {
+export type ServiceSearchCriteria = {
   custIds?: number[];
   servIds?: number[];
   progIds?: number[];
@@ -64,8 +64,8 @@ export type ServSearch = {
   season: number;
 }
 
-export function remapServSearch(search: ServSearch): ServiceSearchRG {
-  const rgSearch: ServiceSearchRG = {};
+export function remapServSearch(search: ServiceSearchCriteria): ServiceSearchRaw {
+  const rgSearch: ServiceSearchRaw = {};
   if (search.custIds) rgSearch.customerNumber = search.custIds;
   if (search.servIds) rgSearch.id = search.servIds;
   if (search.progIds) rgSearch.programID = search.progIds;

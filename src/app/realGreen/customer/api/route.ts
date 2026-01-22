@@ -6,7 +6,7 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { CustomerContract } from "../_lib/types/CustomerContract";
 import { searchScheme } from "../_lib/searchSchemes/searchSchemes";
 import {
-  MongoData,
+  PipelineData,
   StepContext,
 } from "@/app/realGreen/customer/_lib/cpsSearchTypes/SearchScheme";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
@@ -33,25 +33,25 @@ const handlers: HandlerMap<CustomerContract> = {
               searchScheme[schemeName as keyof typeof searchScheme];
             const { steps } = scheme;
 
-            let prevData: MongoData | null = null;
+            let pipelineData: PipelineData | null = null;
 
             for (const step of steps) {
-              const { name: stepName, run } = step;
+              const { stepName, run, optimizationStrategy } = step;
 
               const optimizer = await getSearchOptimizer({
-                type: step.strategyType,
+                optimizationStrategy: optimizationStrategy,
                 stepName: stepName,
                 schemeName: schemeName,
               });
 
               const stepContext: StepContext = {
-                prevData: prevData || [],
+                pipelineData: pipelineData || [],
                 optimizer,
               };
 
               const generator = run(stepContext);
 
-              const stepAccumulator: any[] = [];
+              const nextStepInput: any[] = [];
               let runCalls = 0;
               let runRecords = 0;
               let runTotalDuration = 0;
@@ -60,7 +60,7 @@ const handlers: HandlerMap<CustomerContract> = {
                 // 1. Handle Data Chunk
                 if (result.data && result.data.length > 0) {
                   // Accumulate data for next step
-                  stepAccumulator.push(...result.data);
+                  nextStepInput.push(...result.data);
 
                   // Accumulate Stats
                   runCalls++;
@@ -98,13 +98,13 @@ const handlers: HandlerMap<CustomerContract> = {
                   };
 
                   // Save to DB
-                  await SearchOptimizerModel.findOneAndUpdate(
-                    { scheme: schemeName, step: stepName },
+                  await SearchOptimizerModel.updateOne(
+                    { scheme: optimizer.scheme, step: optimizer.step },
                     { $set: updateOp },
                   );
 
                   // Set prevData for the NEXT step in the outer loop
-                  prevData = stepAccumulator as MongoData;
+                  pipelineData = nextStepInput as PipelineData;
                 }
               }
             }

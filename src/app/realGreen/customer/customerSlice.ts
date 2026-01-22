@@ -1,26 +1,35 @@
-import { createSlice } from "@reduxjs/toolkit";
-import { CustomerWithMongo } from "@/app/realGreen/customer/_lib/types/Customer";
-import { ProgramWithMongo } from "@/app/realGreen/customer/_lib/types/Program";
-import { ServiceWithMongo } from "@/app/realGreen/customer/_lib/types/Service";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { CustomerDoc } from "@/app/realGreen/customer/_lib/types/Customer";
+import { ProgramDoc } from "@/app/realGreen/customer/_lib/types/Program";
+import { ServiceDoc } from "@/app/realGreen/customer/_lib/types/Service";
 
-export type CustomerState = {
-  dryCustomers: CustomerWithMongo[];
-  dryPrograms: ProgramWithMongo[];
-  dryServices: ServiceWithMongo[];
-};
+interface CustomerState {
+  dryCustomers: CustomerDoc[];
+  dryPrograms: ProgramDoc[];
+  dryServices: ServiceDoc[];
+}
 
-export const initialCustomerState: CustomerState = {
+const initialState: CustomerState = {
   dryCustomers: [],
   dryPrograms: [],
   dryServices: [],
 };
 
-export const CustomerSlice = createSlice({
-  name: "Customer",
-  initialState: initialCustomerState,
-  reducers: {},
-  extraReducers: (builder) => {},
+const customerSlice = createSlice({
+  name: "customer",
+  initialState,
+  reducers: {
+    addCustomers(state, action: PayloadAction<CustomerDoc[]>) {
+      state.dryCustomers.push(...action.payload);
+    },
+    addPrograms(state, action: PayloadAction<ProgramDoc[]>) {
+      state.dryPrograms.push(...action.payload);
+    },
+    addServices(state, action: PayloadAction<ServiceDoc[]>) {
+      state.dryServices.push(...action.payload);
+    },
+  },
 });
 
-export default CustomerSlice.reducer;
-export const CustomerActions = { ...CustomerSlice.actions };
+export const { addCustomers, addPrograms, addServices } = customerSlice.actions;
+export default customerSlice.reducer;

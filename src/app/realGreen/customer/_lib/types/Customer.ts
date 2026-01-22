@@ -132,7 +132,7 @@ export type CustomerRaw = {
   // yearBuilt: number | null;
 };
 
-export type CustomerRemapped = {
+export type CustomerCore = {
   custId: number;
   address: Address;
   billingAddress: Address;
@@ -161,17 +161,19 @@ export type CustomerRemapped = {
   useBilling: boolean;
 };
 
-export type CustomerMongo = CreatedUpdated & {
+export type CustomerDocProps = CreatedUpdated & {
   custId: number;
 };
 
-export type CustomerWithMongo = CustomerRemapped & CustomerMongo;
+export type CustomerDoc = CustomerCore & CustomerDocProps;
 
-export type CustomerHydrate = {};
+export type CustomerProps = {
+  // progams: Program[]
+}
 
-export type Customer = CustomerWithMongo & CustomerHydrate;
+export type CustomerHydrated = CustomerDoc & CustomerProps;
 
-function remapCustomer(raw: CustomerRaw): CustomerRemapped {
+function remapCustomer(raw: CustomerRaw): CustomerCore {
   return {
     custId: raw.id,
     address: raw.address,
@@ -211,9 +213,9 @@ export function remapCustomers(raw: CustomerRaw[]) {
 //   remapped,
 //   mongo,
 // }: {
-//   remapped: CustomerRemapped;
-//   mongo?: CustomerMongo;
-// }): CustomerWithMongo {
+//   remapped: CustomerCore;
+//   mongo?: CustomerDoc;
+// }): Customer {
 //   return {
 //     ...remapped,
 //     createdAt: mongo?.createdAt || "",
@@ -222,8 +224,8 @@ export function remapCustomers(raw: CustomerRaw[]) {
 // }
 
 export async function extendCustomers(
-  remapped: CustomerRemapped[],
-): Promise<CustomerWithMongo[]> {
+  remapped: CustomerCore[],
+): Promise<CustomerDoc[]> {
   //MOCKED for now
   const withMongo = remapped.map((cust) => ({
     ...cust,
@@ -237,9 +239,9 @@ export async function extendCustomers(
 //   remapped,
 //   mongo,
 // }: {
-//   remapped: CustomerRemapped[];
-//   mongo: CustomerMongo[];
-// }): CustomerWithMongo[] {
+//   remapped: CustomerCore[];
+//   mongo: CustomerDoc[];
+// }): Customer[] {
 //   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.custId);
 //
 //   return remapped.map((r) =>

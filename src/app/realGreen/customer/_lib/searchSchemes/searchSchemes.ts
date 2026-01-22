@@ -4,8 +4,8 @@ import { remapCustSearch } from "@/app/realGreen/customer/_lib/searchTypes/CustS
 
 import {
   CustomerRaw,
-  CustomerRemapped,
-  CustomerWithMongo,
+  CustomerCore,
+  CustomerDoc,
   extendCustomers,
   remapCustomers,
 } from "@/app/realGreen/customer/_lib/types/Customer";
@@ -17,8 +17,8 @@ import { remapProgSearch } from "@/app/realGreen/customer/_lib/searchTypes/ProgS
 import {
   extendPrograms,
   ProgramRaw,
-  ProgramRemapped,
-  ProgramWithMongo,
+  ProgramCore,
+  ProgramDoc,
   remapPrograms,
 } from "../types/Program";
 import { remapServSearch } from "@/app/realGreen/customer/_lib/searchTypes/ServSearch";
@@ -27,24 +27,25 @@ import {
   extendServices,
   remapServices,
   ServiceRaw,
-  ServiceRemapped,
+  ServiceCore,
+  ServiceDoc,
 } from "@/app/realGreen/customer/_lib/types/Service";
 
 const activeCustomers: SearchScheme = {
-  name: "activeCustomers",
+  schemeName: "activeCustomers",
   steps: [
     createPaginationStep({
       stepName: "customers",
       getSearchCriteria: remapCustSearch({ statuses: ["9"] }),
       remapFn: (data) => remapCustomers(data as CustomerRaw[]),
       mongoFn: async (data) =>
-        await extendCustomers(data as CustomerRemapped[]),
+        await extendCustomers(data as CustomerCore[]),
       rgApiPath: { path: "/Customer/Search" },
     }),
     createBatchSizeStep({
       stepName: "programs",
-      getIds: (prevData) =>
-        (prevData as CustomerWithMongo[]).map((c) => c.custId),
+      getIds: (pipelineData) =>
+        (pipelineData as CustomerDoc[]).map((c) => c.custId),
       getSearchCriteria: (ids) =>
         remapProgSearch({
           custIds: ids,
@@ -52,13 +53,13 @@ const activeCustomers: SearchScheme = {
           statuses: ["9"],
         }),
       remapFn: (data) => remapPrograms(data as ProgramRaw[]),
-      mongoFn: async (data) => await extendPrograms(data as ProgramRemapped[]),
+      mongoFn: async (data) => await extendPrograms(data as ProgramCore[]),
       rgApiPath: { path: "/Program/Search" },
     }),
     createBatchSizeStep({
       stepName: "services",
-      getIds: (prevData) =>
-        (prevData as ProgramWithMongo[]).map((p) => p.progId),
+      getIds: (pipelineData) =>
+        (pipelineData as ProgramDoc[]).map((p) => p.progId),
       getSearchCriteria: (ids) =>
         remapServSearch({
           progIds: ids,
@@ -72,7 +73,7 @@ const activeCustomers: SearchScheme = {
         }),
       rgApiPath: { path: "/Service/Search" as any },
       remapFn: (data) => remapServices(data as ServiceRaw[]),
-      mongoFn: async (data) => await extendServices(data as ServiceRemapped[]),
+      mongoFn: async (data) => await extendServices(data as ServiceCore[]),
     }),
   ],
 };

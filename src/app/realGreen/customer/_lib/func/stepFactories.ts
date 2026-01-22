@@ -1,9 +1,9 @@
 import {
   RawData,
-  RemappedData,
-  MongoData,
+  PipelineDataCore,
+  PipelineData,
   SearchStep,
-  SearchType,
+  SearchCriteriaRaw,
   StepContext,
   StepResult,
 } from "../cpsSearchTypes/SearchScheme";
@@ -15,7 +15,7 @@ import { AppError } from "@/lib/errors/AppError";
 // Helper to fetch remaining records
 async function* fetchOverflow<TRawData>(
   apiPath: Pick<RgApiPath, "path">,
-  baseSearchCriteria: SearchType,
+  baseSearchCriteria: SearchCriteriaRaw,
   startOffset: number,
 ) {
   let currentOffset = startOffset;
@@ -51,19 +51,19 @@ async function* fetchOverflow<TRawData>(
 
 type StepConfig = {
   stepName: "customers" | "programs" | "services";
-  getSearchCriteria: ((data: MongoData) => SearchType) | SearchType;
+  getSearchCriteria: ((data: PipelineData) => SearchCriteriaRaw) | SearchCriteriaRaw;
   rgApiPath: Pick<RgApiPath, "path">;
-  remapFn: (data: RawData) => RemappedData;
-  mongoFn: (data: RemappedData) => Promise<MongoData>;
+  remapFn: (data: RawData) => PipelineDataCore;
+  mongoFn: (data: PipelineDataCore) => Promise<PipelineData>;
 };
 
 export function createPaginationStep<TRawData extends RawData>(
   config: StepConfig,
 ): SearchStep {
   return {
-    name: config.stepName,
-    strategyType: "pagination",
-    run: async function* ({ optimizer, prevData }: StepContext) {
+    stepName: config.stepName,
+    optimizationStrategy: "pagination",
+    run: async function* ({ optimizer, pipelineData }: StepContext) {
       const PAGE_SIZE = realGreenConst.CustProgServRecordsMax;
 
       // Use defaultPageCount to determine initial records if optimizer is empty
@@ -72,9 +72,9 @@ export function createPaginationStep<TRawData extends RawData>(
 
       const estimatedPages = Math.ceil(lastTotal / PAGE_SIZE);
 
-      let searchCriteria: SearchType;
+      let searchCriteria: SearchCriteriaRaw;
       if (typeof config.getSearchCriteria === "function") {
-        if (!prevData) {
+        if (!pipelineData) {
           throw new AppError({
             message:
               `Previous data is null for ${config.stepName}. ` +
@@ -82,7 +82,7 @@ export function createPaginationStep<TRawData extends RawData>(
               "getSearchCriteria. If this does not make sense, notify the developer.",
           });
         }
-        if (!prevData.length) {
+        if (!pipelineData.length) {
           throw new AppError({
             message:
               `Previous data is empty for ${config.stepName}. ` +
@@ -90,7 +90,7 @@ export function createPaginationStep<TRawData extends RawData>(
               "make sense, notify the developer.",
           });
         }
-        searchCriteria = config.getSearchCriteria(prevData);
+        searchCriteria = config.getSearchCriteria(pipelineData);
       } else {
         searchCriteria = config.getSearchCriteria;
       }
@@ -187,19 +187,19 @@ function isBatchOptimizer(
 type BatchStepConfig<TRawData> = {
   stepName: "customers" | "programs" | "services";
   rgApiPath: Pick<RgApiPath, "path">;
-  getIds: (prevData: MongoData) => number[];
-  getSearchCriteria: (ids: number[]) => SearchType;
-  remapFn: (data: TRawData) => RemappedData;
-  mongoFn: (data: RemappedData) => Promise<MongoData>;
+  getIds: (pipelineData: PipelineData) => number[];
+  getSearchCriteria: (ids: number[]) => SearchCriteriaRaw;
+  remapFn: (data: TRawData) => PipelineDataCore;
+  mongoFn: (data: PipelineDataCore) => Promise<PipelineData>;
 };
 
 export function createBatchSizeStep<TRawData extends RawData>(
   config: BatchStepConfig<TRawData>,
 ): SearchStep {
   return {
-    name: config.stepName,
-    strategyType: "batchSize",
-    run: async function* ({ optimizer, prevData }: StepContext) {
+    stepName: config.stepName,
+    optimizationStrategy: "batchSize",
+    run: async function* ({ optimizer, pipelineData }: StepContext) {
       const TARGET_RESPONSE_RATIO = 0.9;
       const TARGET_RECORDS =
         realGreenConst.CustProgServRecordsMax * TARGET_RESPONSE_RATIO;
@@ -210,7 +210,7 @@ export function createBatchSizeStep<TRawData extends RawData>(
           optimizer.optimalBatchSize ?? realGreenConst.defaultBatchSize;
       }
 
-      const allIds = config.getIds(prevData as MongoData);
+      const allIds = config.getIds(pipelineData as PipelineData);
       const totalIds = allIds.length;
 
       let currentMaxRecords = 0;

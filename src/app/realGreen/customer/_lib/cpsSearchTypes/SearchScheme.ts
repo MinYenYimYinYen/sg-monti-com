@@ -1,47 +1,47 @@
 import { SearchOptimizer } from "./SearchOptimizer";
 import {
   CustomerRaw,
-  CustomerRemapped,
-  CustomerWithMongo,
+  CustomerCore,
+  CustomerDoc,
 } from "@/app/realGreen/customer/_lib/types/Customer";
 import {
   ProgramRaw,
-  ProgramRemapped,
-  ProgramWithMongo,
+  ProgramCore,
+  ProgramDoc,
 } from "@/app/realGreen/customer/_lib/types/Program";
 import {
   ServiceRaw,
-  ServiceRemapped,
-  ServiceWithMongo,
+  ServiceCore,
+  ServiceDoc,
 } from "@/app/realGreen/customer/_lib/types/Service";
-import {CustomerSearchRG} from "@/app/realGreen/customer/_lib/searchTypes/CustSearch";
-import { ProgramSearchRG } from "../searchTypes/ProgSearch";
-import { ServiceSearchRG } from "../searchTypes/ServSearch";
+import {CustomerSearchRaw} from "@/app/realGreen/customer/_lib/searchTypes/CustSearch";
+import { ProgramSearchRaw } from "../searchTypes/ProgSearch";
+import { ServiceSearchRaw } from "../searchTypes/ServSearch";
 
 export type RawData = CustomerRaw[] | ProgramRaw[] | ServiceRaw[];
 
-export type RemappedData = 
-  | CustomerRemapped[]
-  | ProgramRemapped[]
-  | ServiceRemapped[]
+export type PipelineDataCore = 
+  | CustomerCore[]
+  | ProgramCore[]
+  | ServiceCore[]
 
-export type MongoData =
-  | CustomerWithMongo[]
-  | ProgramWithMongo[]
-  | ServiceWithMongo[];
+export type PipelineData =
+  | CustomerDoc[]
+  | ProgramDoc[]
+  | ServiceDoc[];
 
-export type SearchType = 
-  | CustomerSearchRG
-  | ProgramSearchRG
-  | ServiceSearchRG
+export type SearchCriteriaRaw = 
+  | CustomerSearchRaw
+  | ProgramSearchRaw
+  | ServiceSearchRaw
 
 export type StepContext = {
-  prevData: MongoData | null; // Data from the previous step
+  pipelineData: PipelineData | null; // Data from the previous step
   optimizer: SearchOptimizer; // Optimization stats for this step
 };
 
 export type StepResult = {
-  data: MongoData;
+  data: PipelineData;
   metrics: {
     calls: number;
     durationMs: number;
@@ -50,14 +50,16 @@ export type StepResult = {
   optimizationUpdate?: Partial<SearchOptimizer>;
 };
 
+export type OptimizationStrategyType = "pagination" | "batchSize";
+
 export type SearchStep = {
-  name: "customers" | "programs" | "services";
+  stepName: "customers" | "programs" | "services";
   // Enforce strategy at definition time to match the optimizer
-  strategyType: "pagination" | "batchSize";
+  optimizationStrategy: OptimizationStrategyType;
   run: (ctx: StepContext) => AsyncGenerator<StepResult>;
 };
 
 export type SearchScheme = {
-  name: string;
+  schemeName: string;
   steps: SearchStep[];
 };
