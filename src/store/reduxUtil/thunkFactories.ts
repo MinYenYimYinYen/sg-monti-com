@@ -111,7 +111,7 @@ export function createStreamThunk<
         });
 
         await readNdjsonStream<TChunk>(reader, (chunk) => {
-          config.onChunk(dispatch, chunk);
+          config.onChunk(dispatch as AppDispatch, chunk);
         });
 
         return;

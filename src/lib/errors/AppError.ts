@@ -1,11 +1,11 @@
 // src/lib/AppError.ts
 export type ErrorType =
-  | "API_ERROR"      // Your Next.js API routes
+  | "API_ERROR" // Your Next.js API routes
   | "EXTERNAL_ERROR" // RealGreen or other 3rd parties
-  | "AUTH_ERROR"     // 401/403
-  | "VALIDATION_ERROR"     // 400 Bad Request
-  | "SERVER_ERROR"   // 500+
-  | "NETWORK_ERROR"  // fetch failed completely
+  | "AUTH_ERROR" // 401/403
+  | "VALIDATION_ERROR" // 400 Bad Request
+  | "SERVER_ERROR" // 500+
+  | "NETWORK_ERROR" // fetch failed completely
   | "UNKNOWN_ERROR";
 
 interface AppErrorParams {
@@ -15,6 +15,7 @@ interface AppErrorParams {
   isOperational?: boolean;
   data?: unknown;
   silent?: boolean;
+  code?: number;
 }
 
 export class AppError extends Error {
@@ -23,6 +24,7 @@ export class AppError extends Error {
   public readonly isOperational: boolean;
   public readonly data?: unknown;
   public silent?: boolean; // Matches your ErrorResponse
+  public code?: number;
 
   constructor({
     message,
@@ -31,6 +33,7 @@ export class AppError extends Error {
     isOperational = true,
     data,
     silent,
+    code,
   }: AppErrorParams) {
     super(message);
     this.name = "AppError";
@@ -39,6 +42,7 @@ export class AppError extends Error {
     this.isOperational = isOperational;
     this.data = data;
     this.silent = silent;
+    this.code = code;
 
     Object.setPrototypeOf(this, AppError.prototype);
     // Only capture stack if V8 (Chrome/Node)
