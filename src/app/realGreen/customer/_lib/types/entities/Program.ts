@@ -6,6 +6,8 @@ import {
   baseStrId,
   realGreenConst,
 } from "@/app/realGreen/_lib/realGreenConst";
+import { Service, ServiceSliceState } from "./Service";
+import { Customer } from "./Customer";
 
 export type ProgramRaw = {
   averagePrice: number;
@@ -117,7 +119,10 @@ export type ProgramDocProps = CreatedUpdated & {
 
 export type ProgramDoc = ProgramCore & ProgramDocProps;
 
-export type ProgramProps = {};
+export type ProgramProps = {
+  services: Service[];
+  customer?: Customer;
+};
 
 export type Program = ProgramDoc & ProgramProps;
 
@@ -187,3 +192,10 @@ export async function extendPrograms(
 //     }),
 //   );
 // }
+
+// --- SELECTORS ---
+
+// 1. Define the slice of state this entity cares about
+export type ProgramSliceState = ServiceSliceState & {
+  programDocs: ProgramDoc[];
+};

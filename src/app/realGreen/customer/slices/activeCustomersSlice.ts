@@ -9,6 +9,7 @@ import {
   StreamChunk,
 } from "@/app/realGreen/customer/_lib/types/CustomerContract";
 import { uiActions } from "@/store/reduxUtil/uiSlice";
+import { Grouper } from "@/lib/Grouper";
 
 type ActiveCustomersState = BaseCustomerState;
 
@@ -32,9 +33,12 @@ export const activeCustomersSlice = createSlice({
     },
   },
   selectors: {
-    customerDocs: (state) => state.customerDocs,
-    programDocs: (state) => state.programDocs,
-    serviceDocs: (state) => state.serviceDocs,
+    customerDocMap: (state) => new Grouper(state.customerDocs).toUniqueMap((e) => e.custId),
+    programDocMap: (state) => new Grouper(state.programDocs).toUniqueMap((e) => e.progId),
+    serviceDocMap: (state) => new Grouper(state.serviceDocs).toUniqueMap((e) => e.servId),
+    progIdServicesMap: (state) => {
+      new Grouper(state.serviceDocs).groupBy((item) => item.progId).toMap()
+    }
   },
 });
 

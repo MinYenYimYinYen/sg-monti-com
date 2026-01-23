@@ -10,6 +10,7 @@ import {
 } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { Phone } from "@/app/realGreen/_lib/subTypes/Phone";
+import { Program, ProgramSliceState } from "./Program";
 
 export type CustomerRaw = {
   address: Address;
@@ -168,7 +169,7 @@ export type CustomerDocProps = CreatedUpdated & {
 export type CustomerDoc = CustomerCore & CustomerDocProps;
 
 export type CustomerProps = {
-  // progams: Program[]
+  programs: Program[]
 }
 
 export type Customer = CustomerDoc & CustomerProps;
@@ -251,3 +252,10 @@ export async function extendCustomers(
 //     }),
 //   );
 // }
+
+// --- SELECTORS ---
+
+// 1. Define the slice of state this entity cares about
+export type CustomerSliceState = ProgramSliceState & {
+  customerDocs: CustomerDoc[];
+};

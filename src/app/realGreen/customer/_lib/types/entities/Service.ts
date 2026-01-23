@@ -21,6 +21,7 @@ import {
   ProductionRemapped,
 } from "@/app/realGreen/_lib/subTypes/Production";
 import { AppError } from "@/lib/errors/AppError";
+import { Program } from "./Program";
 
 function remapProduction({
   invoice,
@@ -162,7 +163,9 @@ export type ServiceDocProps = CreatedUpdated & {
 
 export type ServiceDoc = ServiceCore & ServiceDocProps;
 
-export type ServiceProps = {};
+export type ServiceProps = {
+  program?: Program;
+};
 
 export type Service = ServiceDoc & ServiceProps;
 
@@ -199,20 +202,6 @@ export function remapServices(raw: ServiceRaw[]) {
   return raw.map((r) => remapService(r));
 }
 
-// function extendService({
-//   remapped,
-//   mongo,
-// }: {
-//   remapped: ServiceCore;
-//   mongo?: ServiceDoc;
-// }): Service {
-//   return {
-//     ...remapped,
-//     createdAt: mongo?.createdAt || "",
-//     updatedAt: mongo?.updatedAt || "",
-//   };
-// }
-
 export async function extendServices(
   remapped: ServiceCore[],
 ): Promise<ServiceDoc[]> {
@@ -226,19 +215,9 @@ export async function extendServices(
   return withMongo;
 }
 
-// export function extendServices({
-//   remapped,
-//   mongo,
-// }: {
-//   remapped: ServiceCore[];
-//   mongo: ServiceDoc[];
-// }): Service[] {
-//   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.servId);
-//
-//   return remapped.map((r) =>
-//     extendService({
-//       remapped: r,
-//       mongo: mongoMap.get(r.servId),
-//     }),
-//   );
-// }
+// --- SELECTORS ---
+
+// 1. Define the slice of state this entity cares about
+export type ServiceSliceState = {
+  serviceDocs: ServiceDoc[];
+};
