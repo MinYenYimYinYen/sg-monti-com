@@ -6,9 +6,9 @@ import { ServiceDoc } from "@/app/realGreen/customer/_lib/types/Service";
 import { searchScheme } from "@/app/realGreen/customer/_lib/searchSchemes/searchSchemes";
 
 export type StreamChunkData = {
-  dryCustomers: CustomerDoc[];
-  dryPrograms: ProgramDoc[];
-  dryServices: ServiceDoc[];
+  customerDocs: CustomerDoc[];
+  programDocs: ProgramDoc[];
+  serviceDocs: ServiceDoc[];
 };
 
 export type StreamChunk = {

@@ -82,6 +82,11 @@
     - Use `cleanMongoObject(doc)` or `cleanMongoArray(docs)` from `@/lib/mongoose/cleanMongoObj` to strip `_id` and `__v`.
     - Ensure sensitive fields are removed before returning.
 
+## RealGreen Customer Module
+- **Reference**: See `src/app/realGreen/customer/customer.readme.md`.
+- **Streaming**: See `src/app/realGreen/customer/streaming.readme.md`.
+- **Summary**: Handles complex data fetching (Customers -> Programs -> Services) using a streaming pipeline and "Search Schemes".
+
 ## Session Learnings (Key Conventions)
 *   **Silent Error Handling**: Use `handleError(e, { silent: true })` to suppress toasts for expected errors.
 *   **Admin-Assisted Auth**: Password resets are handled via admin approval, not email.

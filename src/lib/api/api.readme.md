@@ -16,8 +16,7 @@ All API endpoints must return data in a standardized "envelope".
 ```typescript
 export type ErrorResponse<T = unknown> = { success: false; message: string; silent?: boolean; ... };
 export type SuccessResponse = { success: true };
-export type ObjResponse<T> = SuccessResponse & { item: T };
-export type ArrayResponse<T> = SuccessResponse & { items: T[] };
+export type DataResponse<T> = SuccessResponse & { payload: T };
 ```
 
 ### C. The API Wrapper (`src/lib/api/api.ts`)
@@ -25,6 +24,7 @@ A wrapper around `fetch` that integrates with our **Unified Error Architecture**
 * **Auto-Stringify:** Accepts objects in `body` and handles `JSON.stringify`.
 * **Errors as Data:** Returns `Promise<T | ErrorResponse>`. It does **not** throw for operational errors (e.g., Validation, Auth). Instead, it returns a 200 OK response with `success: false`.
 * **Network Errors:** It *does* throw for network failures or unexpected server crashes (500s).
+* **Streaming:** Use `apiStream` for endpoints that return NDJSON streams.
 
 ---
 
@@ -46,26 +46,19 @@ To add a new feature, follow this 3-step process.
 ### Step 1: Define the Contract
 Create a file defining the Inputs (`params`) and Outputs (`result`) for each operation.
 
-**Key Requirement:** Your contract interface **must** extend `ApiContract`. This enforces that every operation returns a valid `SuccessResponse` structure.
+**Key Requirement:** Your contract interface **must** extend `ApiContract`. This enforces that every operation returns a valid `DataResponse` structure.
 
 **`src/app/realGreen/employee/api/EmployeeContract.ts`**
 ```typescript
-import { ObjResponse, ArrayResponse } from '@/lib/api/types/responses';
+import { DataResponse } from '@/lib/api/types/responses';
 import { ApiContract } from '@/lib/api/types/ApiContract';
 
 // Extend ApiContract to enforce structure. 
-// You can pass a default Params type if most ops share it, or leave it blank (defaults to any).
 export interface EmployeeContract extends ApiContract {
   // Op: getAll
   getAll: {
     params: { region?: string }; 
-    result: ArrayResponse<Employee>; 
-  };
-  
-  // Op: postOne
-  postOne: {
-    params: { employee: EmployeeExt };
-    result: ObjResponse<Employee>;   
+    result: DataResponse<Employee[]>; 
   };
 }
 ```
@@ -86,7 +79,7 @@ const handlers: HandlerMap<EmployeeContract> = {
     roles: ["office", "admin"], 
     handler: async (params) => {
       // Logic (DB or RealGreen API)
-      return { success: true, items: [] };
+      return { success: true, payload: [] };
     },
   },
 };
@@ -138,47 +131,16 @@ export async function POST(req: NextRequest) {
 ```
 
 ### Step 3: Client-Side Usage (Redux Thunk)
-The Thunk acts as the bridge. It segregates **UI Parameters** (for the global spinner) from **API Parameters** (for the contract).
+Use the `createStandardThunk` factory to generate a type-safe thunk.
 
 **`src/lib/features/employee/employeeSlice.ts`**
 ```typescript
-import { createAsyncThunk } from '@reduxjs/toolkit';
-import { api } from '@/lib/api/api';
-import { OpMap } from '@/lib/api/types/rpcUtils';
+import { createStandardThunk } from '@/store/reduxUtil/thunkFactories';
 import { EmployeeContract } from '@/app/realGreen/employee/api/EmployeeContract';
-import { WithConfig } from '@/store/reduxUtil/reduxTypes';
-import { getUIMeta } from '@/store/reduxUtil/smartThunkOptions';
 
-export const getEmployees = createAsyncThunk<
-  Employee[], // Return Data Only
-  WithConfig<EmployeeContract['getAll']['params']>,  // Params (Wrapped with UI flags)
-  { rejectValue: string }
->(
-  'employee/getEmployees',
-  async (params, { rejectWithValue }) => {
-    // 1. Segregate UI args from API args
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { showLoading, loadingMsg, ...apiParams } = params;
-
-    // 2. Construct Type-Safe Body
-    const body: OpMap<EmployeeContract> = {
-      op: 'getAll',
-      ...apiParams
-    };
-
-    const res = await api<EmployeeContract['getAll']['result']>('/employee/api', {
-      method: 'POST',
-      body // Passed as object (api wrapper stringifies it)
-    });
-
-    // 3. Check for Handled Errors
-    if (!res.success) {
-        return rejectWithValue(res.message);
-    }
-
-    // 4. Return Data
-    return res.items;
-  },
-  { getPendingMeta: getUIMeta } // Hook up Global UI Spinner
-);
+export const getEmployees = createStandardThunk<EmployeeContract, "getAll">({
+  typePrefix: "employee/getEmployees",
+  apiPath: "/realGreen/employee/api",
+  opName: "getAll",
+});
 ```

@@ -37,12 +37,13 @@ type ThunkConfig = {
   // Traffic Controls
   force?: boolean;        // Bypass all checks (Refresh)
   staleTime?: number;     // Time-to-live in ms (e.g., 5000)
+  silentError?: boolean;  // Suppress error toasts
 };
 
 // Nested structure prevents config props from leaking into API calls
 type WithConfig<T> = {
   config?: ThunkConfig;
-  apiParams: T;
+  params: T;
 };
 ```
 
@@ -65,69 +66,38 @@ A helper function that generates the `condition` logic for `createAsyncThunk`. I
 
 ### Live Template: Smart Async Thunk
 
-Use this template to generate a standardized, type-safe Async Thunk.
+Use this template to generate a standardized, type-safe Async Thunk using the `createStandardThunk` factory.
 
 **Variables (Order):**
 1.  `$ContractType$`: The API Contract interface (e.g., `CustomerContract`).
 2.  `$OpName$`: The operation name from the contract (e.g., `runSearchScheme`).
-3.  `$ReturnType$`: The specific property of the result to return (e.g., `items`, `item`, or just `result` if returning the whole object).
-4.  `$SliceName$`: The name of the slice (e.g., `sanity`).
-5.  `$ThunkName$`: The name of the thunk function (e.g., `getDocs`).
-6.  `$ApiPath$`: The API route path (e.g., `/realGreen/customer/api`).
+3.  `$SliceName$`: The name of the slice (e.g., `sanity`).
+4.  `$ThunkName$`: The name of the thunk function (e.g., `getDocs`).
+5.  `$ApiPath$`: The API route path (e.g., `/realGreen/customer/api`).
 
 **Template Code:**
 
 ```typescript
-export const $ThunkName$ = createAsyncThunk<
-  $ContractType$["$OpName$"]["result"]["$ReturnType$"],
-  WithConfig<$ContractType$["$OpName$"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "$SliceName$/$ThunkName$",
-  async (params, { rejectWithValue }) => {
-    try {
-      // 1. Separate Config params from API params
-      const { params: apiParams } = params;
-
-      // 2. Type-Safe Body Construction
-      const body: OpMap<$ContractType$> = {
-        op: "$OpName$",
-        ...apiParams,
-      };
-
-      const result = await api<$ContractType$["$OpName$"]["result"]>(
-        "$ApiPath$",
-        {
-          method: "POST",
-          body,
-        },
-      );
-
-      if (!result.success) {
-        return rejectWithValue(result.message);
-      }
-      return result.$ReturnType$;
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
-    }
-  },
-  smartThunkOptions({ typePrefix: "$SliceName$/$ThunkName$" }),
-);
+export const $ThunkName$ = createStandardThunk<$ContractType$, "$OpName$">({
+  typePrefix: "$SliceName$/$ThunkName$",
+  apiPath: "$ApiPath$",
+  opName: "$OpName$",
+});
 ```
 
 ### Using Custom Conditions
 You can inject custom logic to prevent dispatching based on state.
 
 ```typescript
-smartThunkOptions({
+const checkEligibility = createStandardThunk<AuthContract, "checkEligibility">({
   typePrefix: "auth/checkEligibility",
+  apiPath: "/auth/api",
+  opName: "checkEligibility",
   customCondition: (arg, { getState }) => {
     const state = getState() as AppState;
-    // Access params from the nested structure
-    return !state.auth.checkedIds[arg.apiParams.saId];
-  }
-})
+    return !state.auth.checkedIds[arg.params.saId];
+  },
+});
 ```
 
 ### How to Dispatch (Usage)
@@ -136,19 +106,19 @@ You can now control the caching and UI behavior directly from your components (o
 ```typescript
 // A. Standard (Deduplicated)
 // If 'getEmployees' is already running, this dispatch is ignored.
-dispatch(getEmployees({ apiParams: { region: 'MN' } }));
+dispatch(getEmployees({ params: { region: 'MN' } }));
 
 // B. Cached (Smart Fetch)
 // If data was fetched < 5 mins ago, this dispatch is ignored.
 dispatch(getEmployees({ 
-  apiParams: { region: 'MN' }, 
+  params: { region: 'MN' }, 
   config: { staleTime: 300000 } // 5 minutes
 }));
 
 // C. Force Refresh (Bypass everything)
 // Runs immediately, shows spinner, updates timestamp.
 dispatch(getEmployees({ 
-  apiParams: { region: 'MN' }, 
+  params: { region: 'MN' },
   config: { 
     force: true,
     loadingMsg: "Refreshing..."

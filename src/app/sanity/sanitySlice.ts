@@ -9,15 +9,15 @@ import { ServiceDoc } from "@/app/realGreen/customer/_lib/types/Service";
 import { createStreamThunk } from "@/store/reduxUtil/thunkFactories";
 
 interface SanityState {
-  dryCustomers: CustomerDoc[];
-  dryPrograms: ProgramDoc[];
-  dryServices: ServiceDoc[];
+  customerDocs: CustomerDoc[];
+  programDocs: ProgramDoc[];
+  serviceDocs: ServiceDoc[];
 }
 
 const initialState: SanityState = {
-  dryCustomers: [],
-  dryPrograms: [],
-  dryServices: [],
+  customerDocs: [],
+  programDocs: [],
+  serviceDocs: [],
 };
 
 const sanitySlice = createSlice({
@@ -25,28 +25,25 @@ const sanitySlice = createSlice({
   initialState,
   reducers: {
     clearDocs(state) {
-      state.dryCustomers = [];
-      state.dryPrograms = [];
-      state.dryServices = [];
+      state.customerDocs = [];
+      state.programDocs = [];
+      state.serviceDocs = [];
     },
     receiveChunk(state, action: PayloadAction<StreamChunk>) {
       const { stepName, data } = action.payload;
 
-      if (stepName === "customers" && data.dryCustomers) {
-        state.dryCustomers.push(...data.dryCustomers);
-      } else if (stepName === "programs" && data.dryPrograms) {
-        state.dryPrograms.push(...data.dryPrograms);
-      } else if (stepName === "services" && data.dryServices) {
-        state.dryServices.push(...data.dryServices);
+      if (stepName === "customers" && data.customerDocs) {
+        state.customerDocs.push(...data.customerDocs);
+      } else if (stepName === "programs" && data.programDocs) {
+        state.programDocs.push(...data.programDocs);
+      } else if (stepName === "services" && data.serviceDocs) {
+        state.serviceDocs.push(...data.serviceDocs);
       }
     },
   },
 });
 
-export const getDocs = createStreamThunk<
-  CustomerContract,
-  "runSearchScheme"
->({
+export const getDocs = createStreamThunk<CustomerContract, "runSearchScheme">({
   typePrefix: "sanity/getDocs",
   apiPath: "/realGreen/customer/api",
   opName: "runSearchScheme",

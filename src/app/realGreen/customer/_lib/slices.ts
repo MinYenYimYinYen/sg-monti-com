@@ -53,10 +53,10 @@
 // ) {
 //   action.payload.forEach((chunk) => {
 //     const { data } = chunk;
-//     const { dryCustomers, dryPrograms, dryServices } = data;
-//     if (dryCustomers) state.dryCustomers.push(...dryCustomers);
+//     const { customerDocs, dryPrograms, serviceDocs } = data;
+//     if (customerDocs) state.customerDocs.push(...customerDocs);
 //     if (dryPrograms) state.dryPrograms.push(...dryPrograms);
-//     if (dryServices) state.dryServices.push(...dryServices);
+//     if (serviceDocs) state.serviceDocs.push(...serviceDocs);
 //   });
 // }
 //
