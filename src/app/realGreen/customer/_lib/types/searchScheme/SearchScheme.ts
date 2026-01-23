@@ -3,29 +3,29 @@ import {
   CustomerRaw,
   CustomerCore,
   CustomerDoc,
-} from "@/app/realGreen/customer/_lib/types/Customer";
+} from "@/app/realGreen/customer/_lib/types/entities/Customer";
 import {
   ProgramRaw,
   ProgramCore,
   ProgramDoc,
-} from "@/app/realGreen/customer/_lib/types/Program";
+} from "@/app/realGreen/customer/_lib/types/entities/Program";
 import {
   ServiceRaw,
   ServiceCore,
   ServiceDoc,
-} from "@/app/realGreen/customer/_lib/types/Service";
+} from "@/app/realGreen/customer/_lib/types/entities/Service";
 import {
   CustomerSearchRaw,
   CustomerSearchCriteria,
-} from "@/app/realGreen/customer/_lib/searchTypes/CustSearch";
+} from "@/app/realGreen/customer/_lib/types/searchCriteria/CustSearch";
 import {
   ProgramSearchRaw,
   ProgramSearchCriteria,
-} from "../searchTypes/ProgSearch";
+} from "../searchCriteria/ProgSearch";
 import {
   ServiceSearchRaw,
   ServiceSearchCriteria,
-} from "../searchTypes/ServSearch";
+} from "../searchCriteria/ServSearch";
 
 export type RawData = CustomerRaw[] | ProgramRaw[] | ServiceRaw[];
 
@@ -71,6 +71,22 @@ export type SearchStep = {
   // Enforce strategy at definition time to match the optimizer
   optimizationStrategy: OptimizationStrategyType;
   run: (ctx: StepContext) => AsyncGenerator<StepResult>;
+};
+
+
+type WithCriteriaFunction = {
+  getSearchCriteria: (data: PipelineData) => SearchCriteria;
+};
+type WithExplicitCriteria = {
+  searchCriteria: SearchCriteria;
+};
+
+export type StepConfig = (WithCriteriaFunction | WithExplicitCriteria) & {
+  stepName: "customers" | "programs" | "services";
+  filterFn?: (
+    fetchedData: PipelineData,
+    previousData: PipelineData,
+  ) => PipelineData;
 };
 
 export type SearchScheme = {

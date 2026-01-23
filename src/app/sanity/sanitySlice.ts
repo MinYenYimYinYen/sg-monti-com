@@ -3,9 +3,9 @@ import {
   CustomerContract,
   StreamChunk,
 } from "@/app/realGreen/customer/_lib/types/CustomerContract";
-import { CustomerDoc } from "@/app/realGreen/customer/_lib/types/Customer";
-import { ProgramDoc } from "@/app/realGreen/customer/_lib/types/Program";
-import { ServiceDoc } from "@/app/realGreen/customer/_lib/types/Service";
+import { CustomerDoc } from "@/app/realGreen/customer/_lib/types/entities/Customer";
+import { ProgramDoc } from "@/app/realGreen/customer/_lib/types/entities/Program";
+import { ServiceDoc } from "@/app/realGreen/customer/_lib/types/entities/Service";
 import { createStreamThunk } from "@/store/reduxUtil/thunkFactories";
 
 interface SanityState {

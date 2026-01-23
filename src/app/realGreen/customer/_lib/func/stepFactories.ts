@@ -6,33 +6,33 @@ import {
   SearchCriteria,
   SearchCriteriaRaw,
   StepContext,
-  StepResult,
-} from "../cpsSearchTypes/SearchScheme";
-import { SearchOptimizer } from "@/app/realGreen/customer/_lib/cpsSearchTypes/SearchOptimizer";
+  StepResult, StepConfig,
+} from "../types/searchScheme/SearchScheme";
+import {SearchOptimizer} from "@/app/realGreen/customer/_lib/types/searchScheme/SearchOptimizer";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
 import { rgSearch } from "@/app/realGreen/employee/api/rgSearchApi";
-import { remapCustSearch } from "@/app/realGreen/customer/_lib/searchTypes/CustSearch";
-import { remapProgSearch } from "@/app/realGreen/customer/_lib/searchTypes/ProgSearch";
-import { remapServSearch } from "@/app/realGreen/customer/_lib/searchTypes/ServSearch";
+import { remapCustSearch } from "@/app/realGreen/customer/_lib/types/searchCriteria/CustSearch";
+import { remapProgSearch } from "@/app/realGreen/customer/_lib/types/searchCriteria/ProgSearch";
+import { remapServSearch } from "@/app/realGreen/customer/_lib/types/searchCriteria/ServSearch";
 import {
   CustomerCore,
   CustomerRaw,
   extendCustomers,
   remapCustomers,
-} from "@/app/realGreen/customer/_lib/types/Customer";
+} from "@/app/realGreen/customer/_lib/types/entities/Customer";
 import {
   extendPrograms,
   ProgramCore,
   ProgramRaw,
   remapPrograms,
-} from "@/app/realGreen/customer/_lib/types/Program";
+} from "@/app/realGreen/customer/_lib/types/entities/Program";
 import {
   extendServices,
   remapServices,
   ServiceCore,
   ServiceRaw,
-} from "@/app/realGreen/customer/_lib/types/Service";
+} from "@/app/realGreen/customer/_lib/types/entities/Service";
 
 // Helper to map criteria based on step name
 function mapCriteria(
@@ -113,20 +113,7 @@ async function* fetchOverflow<TRawData>(
   }
 }
 
-type WithCriteriaFunction = {
-  getSearchCriteria: (data: PipelineData) => SearchCriteria;
-};
-type WithExplicitCriteria = {
-  searchCriteria: SearchCriteria;
-};
 
-type StepConfig = (WithCriteriaFunction | WithExplicitCriteria) & {
-  stepName: "customers" | "programs" | "services";
-  filterFn?: (
-    fetchedData: PipelineData,
-    previousData: PipelineData,
-  ) => PipelineData;
-};
 
 export function createPaginationStep<TRawData extends RawData>(
   config: StepConfig,
@@ -138,6 +125,7 @@ export function createPaginationStep<TRawData extends RawData>(
     stepName: config.stepName,
     optimizationStrategy: "pagination",
     run: async function* ({ optimizer, pipelineData }: StepContext) {
+      console.log("entering pagination step");
       const PAGE_SIZE = realGreenConst.CustProgServRecordsMax;
 
       // Use defaultPageCount to determine initial records if optimizer is empty

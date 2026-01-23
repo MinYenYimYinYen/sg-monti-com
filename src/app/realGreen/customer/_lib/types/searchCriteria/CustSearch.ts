@@ -5,7 +5,7 @@ import {
   statusArrayToStringRange,
 } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 import { TRange } from "@/lib/primatives/TRange";
-import {RGSearchBase} from "@/app/realGreen/customer/_lib/searchTypes/RGSearchBase";
+import {RGSearchBase} from "@/app/realGreen/customer/_lib/types/searchCriteria/RGSearchBase";
 
 export type CustomerSearchRaw = RGSearchBase & {
   searchType: "customer";

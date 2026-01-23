@@ -4,15 +4,15 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { CallAheadContract } from "@/app/realGreen/callAhead/api/CallAheadContract";
+import { CallAheadContract } from "@/app/realGreen/callAhead/_lib/CallAheadContract";
 import {
   CallAhead,
   extendCallAheads,
   MongoCallAhead,
   RawCallAhead,
   remapCallAhead,
-} from "@/app/realGreen/callAhead/CallAhead";
-import CallAheadModel from "@/app/realGreen/callAhead/CallAheadModel";
+} from "@/app/realGreen/callAhead/_lib/CallAhead";
+import CallAheadModel from "@/app/realGreen/callAhead/_lib/CallAheadModel";
 
 const handlers: HandlerMap<CallAheadContract> = {
   getAll: {

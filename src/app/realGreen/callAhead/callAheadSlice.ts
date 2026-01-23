@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { CallAhead } from "@/app/realGreen/callAhead/CallAhead";
-import { CallAheadContract } from "@/app/realGreen/callAhead/api/CallAheadContract";
+import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAhead";
+import { CallAheadContract } from "@/app/realGreen/callAhead/_lib/CallAheadContract";
 import { Grouper } from "@/lib/Grouper";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 

@@ -1,4 +1,8 @@
-export type CallLogNote = {
+import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+
+// --- CallLogNote ---
+
+export type CallLogNoteRaw = {
   id: number;
   headerID: number;
   date?: string;
@@ -7,16 +11,39 @@ export type CallLogNote = {
   employeeID?: string;
 };
 
-export type RemappedCallLogNote = {
+export type CallLogNoteCore = {
   callLogNoteId: number;
-  CallLogId: number;
+  callLogId: number;
   date: string;
   reason: string;
   note: string;
   employeeId: string;
 };
 
-export type RawCallLog = {
+export type CallLogNoteDocProps = CreatedUpdated & {
+  callLogNoteId: number;
+};
+
+export type CallLogNoteDoc = CallLogNoteCore & CallLogNoteDocProps;
+
+export type CallLogNoteProps = {};
+
+export type CallLogNote = CallLogNoteDoc & CallLogNoteProps;
+
+function remapCallLogNote(raw: CallLogNoteRaw): CallLogNoteCore {
+  return {
+    callLogNoteId: raw.id,
+    callLogId: raw.headerID,
+    date: raw.date || "",
+    reason: raw.reason || "",
+    note: raw.note || "",
+    employeeId: raw.employeeID || "",
+  };
+}
+
+// --- CallLog ---
+
+export type CallLogRaw = {
   id: number;
   customerNumber?: number;
   enterDate: string;
@@ -30,10 +57,10 @@ export type RawCallLog = {
   status?: string;
   enteredBy?: string;
   assignedTo?: string;
-  notes?: CallLogNote[];
+  notes?: CallLogNoteRaw[];
 };
 
-export type RemappedCallLog = {
+export type CallLogCore = {
   callLogId: number;
   custId: number;
   enterDate: string;
@@ -44,12 +71,20 @@ export type RemappedCallLog = {
   status: string;
   enteredBy: string;
   assignedTo: string;
-  notes: RemappedCallLogNote[];
+  notes: CallLogNoteCore[];
 };
 
-export type CallLog = RemappedCallLog;
+export type CallLogDocProps = CreatedUpdated & {
+  callLogId: number;
+};
 
-export function remapCallLog(raw: RawCallLog): RemappedCallLog {
+export type CallLogDoc = CallLogCore & CallLogDocProps;
+
+export type CallLogProps = {};
+
+export type CallLog = CallLogDoc & CallLogProps;
+
+function remapCallLog(raw: CallLogRaw): CallLogCore {
   return {
     callLogId: raw.id,
     custId: raw.customerNumber || 0,
@@ -65,13 +100,19 @@ export function remapCallLog(raw: RawCallLog): RemappedCallLog {
   };
 }
 
-export function remapCallLogNote(raw: CallLogNote): RemappedCallLogNote {
-  return {
-    callLogNoteId: raw.id,
-    CallLogId: raw.headerID,
-    date: raw.date || "",
-    reason: raw.reason || "",
-    note: raw.note || "",
-    employeeId: raw.employeeID || "",
-  };
+export function remapCallLogs(raw: CallLogRaw[]) {
+  return raw.map(remapCallLog);
+}
+
+export async function extendCallLogs(
+  remapped: CallLogCore[],
+): Promise<CallLogDoc[]> {
+  // MOCKED: In the future, fetch from Mongo and merge
+  // THIS MUST BE DONE IN THE API ROUTE
+  const withMongo = remapped.map((log) => ({
+    ...log,
+    createdAt: "",
+    updatedAt: "",
+  }));
+  return withMongo;
 }

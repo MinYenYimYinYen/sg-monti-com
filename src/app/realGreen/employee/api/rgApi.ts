@@ -1,6 +1,6 @@
 import { rgHttp } from "@/app/realGreen/employee/api/rgHttp";
-import {CustomerSearchRaw} from "@/app/realGreen/customer/_lib/searchTypes/CustSearch";
-import { ProgramSearchRaw } from "../../customer/_lib/searchTypes/ProgSearch";
+import {CustomerSearchRaw} from "@/app/realGreen/customer/_lib/types/searchCriteria/CustSearch";
+import { ProgramSearchRaw } from "../../customer/_lib/types/searchCriteria/ProgSearch";
 // import { CustFlagIdsSearch } from "@/realGreen/types/CustFlagIdsSearch";
 // import { CustomerSearch } from "@/realGreen/types/CustomerSearch";
 // import { ProgramSearch } from "@/realGreen/types/ProgramSearch";

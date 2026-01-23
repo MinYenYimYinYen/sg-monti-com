@@ -1,4 +1,4 @@
-import { RGSearchBase } from "@/app/realGreen/customer/_lib/searchTypes/RGSearchBase";
+import { RGSearchBase } from "@/app/realGreen/customer/_lib/types/searchCriteria/RGSearchBase";
 import { RGStringRange } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 
 export type ServiceSearchRaw = RGSearchBase & {

@@ -1,5 +1,5 @@
 import { rgHttp } from "@/app/realGreen/employee/api/rgHttp";
-import { SearchCriteriaRaw } from "@/app/realGreen/customer/_lib/cpsSearchTypes/SearchScheme";
+import { SearchCriteriaRaw } from "@/app/realGreen/customer/_lib/types/searchScheme/SearchScheme";
 
 export async function rgSearch<T>(criteria: SearchCriteriaRaw) {
   let path: string;
