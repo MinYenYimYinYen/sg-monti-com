@@ -44,6 +44,7 @@ const handlers: HandlerMap<CustomerContract> = {
                 schemeName: schemeName,
               });
 
+
               const stepContext: StepContext = {
                 pipelineData: pipelineData || [],
                 optimizer,

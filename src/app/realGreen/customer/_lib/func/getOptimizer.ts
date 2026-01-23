@@ -23,7 +23,6 @@ export async function getSearchOptimizer({
 
   if (!optimizer) {
     // Define base defaults
-    //todo: This needs to generate default values based on the strategy
     const baseDefaults = {
       scheme: schemeName,
       step: stepName,
@@ -37,12 +36,12 @@ export async function getSearchOptimizer({
     let strategyDefaults = {};
     if (optimizationStrategy === "pagination") {
       strategyDefaults = {
-        lastRecordCount: 0,
+        lastRecordCount: realGreenConst.defaultPageCount,
       };
     } else if (optimizationStrategy === "batchSize") {
       strategyDefaults = {
         optimalBatchSize: realGreenConst.defaultBatchSize,
-        currentMaxRecordCount: 0,
+        currentMaxRecordCount: 0
       };
     }
 

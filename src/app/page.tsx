@@ -1,5 +1,5 @@
 "use client";
-import { AppDispatch } from "@/store";
+import {AppDispatch, AppState} from "@/store";
 import { useDispatch, useSelector } from "react-redux";
 import {
   activeCustomersActions,
@@ -9,7 +9,7 @@ import { useEffect } from "react";
 
 export default function Home() {
   const dispatch = useDispatch<AppDispatch>();
-  const customerDocs = useSelector(activeCustomersSelect.customerDocs);
+  const customerDocs = useSelector((state: AppState) =>activeCustomersSelect.customerDocs(state));
 
   useEffect(() => {
     dispatch(

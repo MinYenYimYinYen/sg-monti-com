@@ -126,8 +126,6 @@ export function createPaginationStep<TRawData extends RawData>(
     stepName: config.stepName,
     optimizationStrategy: "pagination",
     run: async function* ({ optimizer, pipelineData }: StepContext) {
-      console.log("optimizer", optimizer);
-      console.log("entering pagination step");
       const PAGE_SIZE = realGreenConst.CustProgServRecordsMax;
 
       let lastRecordCount = 1;
@@ -164,12 +162,10 @@ export function createPaginationStep<TRawData extends RawData>(
       } else {
         searchCriteria = config.searchCriteria;
       }
-      console.log("searchCriteria", searchCriteria);
 
 
       // Map to Raw Criteria here
       const rawCriteria = mapCriteria(config.stepName, searchCriteria);
-      console.log("rawCriteria", rawCriteria);
       console.log("estimatedPages", estimatedPages);
 
       const promises = Array.from({ length: estimatedPages }).map(
@@ -183,7 +179,7 @@ export function createPaginationStep<TRawData extends RawData>(
           };
 
           const rawData: TRawData = await rgSearch<TRawData>(body);
-          console.log("rawData", rawData);
+          console.log("rawData", rawData.length);
 
 
           const items =
