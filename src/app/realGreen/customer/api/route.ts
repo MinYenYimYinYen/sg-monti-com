@@ -53,22 +53,12 @@ const handlers: HandlerMap<CustomerContract> = {
               const generator = run(stepContext);
 
               const nextStepInput: any[] = [];
-              let runCalls = 0;
-              let runRecords = 0;
-              let runTotalDuration = 0;
 
               for await (const result of generator) {
                 // 1. Handle Data Chunk
                 if (result.data && result.data.length > 0) {
                   // Accumulate data for next step
                   nextStepInput.push(...result.data);
-
-                  // Accumulate Stats
-                  runCalls++;
-                  runRecords += result.data.length;
-                  if (result.metrics) {
-                    runTotalDuration += result.metrics.durationMs;
-                  }
 
                   // Stream to client
                   // NOTE: Streaming chunks are NOT wrapped in { success: true, payload: ... }
@@ -82,24 +72,9 @@ const handlers: HandlerMap<CustomerContract> = {
 
                 // 2. Handle Optimization Update (End of Step)
                 if (result.optimizationUpdate) {
-                  // Calculate new Average Duration
-                  // Formula: (OldTotalDuration + NewRunDuration) / (OldTotalCalls + NewRunCalls)
-                  const oldTotalDuration =
-                    optimizer.avgDuration * optimizer.totalCalls;
-                  const newTotalCalls = optimizer.totalCalls + runCalls;
-
-                  let newAvgDuration = 0;
-                  if (newTotalCalls > 0) {
-                    newAvgDuration =
-                      (oldTotalDuration + runTotalDuration) / newTotalCalls;
-                  }
-
                   // Prepare DB Update
                   const updateOp = {
                     ...result.optimizationUpdate,
-                    totalCalls: newTotalCalls,
-                    totalRecords: optimizer.totalRecords + runRecords,
-                    avgDuration: newAvgDuration,
                   };
 
                   // Save to DB

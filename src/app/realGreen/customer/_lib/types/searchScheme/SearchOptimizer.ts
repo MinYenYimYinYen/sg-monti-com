@@ -1,17 +1,20 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 
-export type OptimizationStrategy =
-  | { type: "pagination", lastRecordCount: number }
-  | { type: "batchSize", optimalBatchSize: number, currentMaxRecordCount: number }
+export type PaginationStrategy = {
+  type: "pagination";
+  initialPageCount: number;
+};
+
+export type BatchSizeStrategy = {
+  type: "batchSize";
+  batchSize: number;
+  lastMaxResponseSize: number;
+};
+
+export type OptimizationStrategy = PaginationStrategy | BatchSizeStrategy;
 
 // any changes to this must be reflected in SearchOptimizerModel.ts
 export type SearchOptimizer = CreatedUpdated & OptimizationStrategy & {
   scheme: string;
   step: string;
-
-  totalCalls: number;
-  totalRecords: number;
-  avgDuration: number;
 }
-
-

@@ -33,7 +33,10 @@ import {
   ServiceCore,
   ServiceRaw,
 } from "@/app/realGreen/customer/_lib/types/entities/Service";
-import {typeGuard} from "@/lib/typeGuard";
+import {
+  calculateNextBatchSize,
+  calculateNextPagination
+} from "@/app/realGreen/customer/_lib/func/optimizerCalculations";
 
 // Helper to map criteria based on step name
 function mapCriteria(
@@ -128,16 +131,15 @@ export function createPaginationStep<TRawData extends RawData>(
     run: async function* ({ optimizer, pipelineData }: StepContext) {
       const PAGE_SIZE = realGreenConst.CustProgServRecordsMax;
 
-      let lastRecordCount = 1;
-      if(optimizer.type==="pagination"){
-        lastRecordCount = optimizer.lastRecordCount
+      // Type Guard: Ensure we have the correct optimizer strategy
+      if (optimizer.type !== "pagination") {
+        throw new AppError({
+          message: `Invalid optimizer type for pagination step: ${optimizer.type}`,
+        });
       }
-      // Use defaultPageCount to determine initial records if optimizer is empty
 
-      const lastTotal =
-        lastRecordCount ?? realGreenConst.defaultPageCount * PAGE_SIZE;
-
-      const estimatedPages = Math.ceil(lastTotal / PAGE_SIZE);
+      // Use stored value directly (guaranteed by getOptimizer defaults)
+      const estimatedPages = optimizer.initialPageCount;
 
       let searchCriteria: SearchCriteria;
 
@@ -236,21 +238,16 @@ export function createPaginationStep<TRawData extends RawData>(
         }
       }
 
+      // Calculate next optimization values
+      const optimizationUpdate = calculateNextPagination(totalRecords);
+
       yield {
         data: [],
         metrics: { calls: 0, durationMs: 0 },
-        optimizationUpdate: {
-          lastRecordCount: totalRecords,
-        },
+        optimizationUpdate,
       };
     },
   };
-}
-
-function isBatchOptimizer(
-  opt: SearchOptimizer,
-): opt is SearchOptimizer & { type: "batchSize" } {
-  return opt.type === "batchSize";
 }
 
 type BatchStepConfig<TRawData> = {
@@ -273,15 +270,16 @@ export function createBatchSizeStep<TRawData extends RawData>(
     stepName: config.stepName,
     optimizationStrategy: "batchSize",
     run: async function* ({ optimizer, pipelineData }: StepContext) {
-      const TARGET_RESPONSE_RATIO = 0.9;
-      const TARGET_RECORDS =
-        realGreenConst.CustProgServRecordsMax * TARGET_RESPONSE_RATIO;
 
-      let batchSize = realGreenConst.defaultBatchSize;
-      if (isBatchOptimizer(optimizer)) {
-        batchSize =
-          optimizer.optimalBatchSize ?? realGreenConst.defaultBatchSize;
+      // Type Guard: Ensure we have the correct optimizer strategy
+      if (optimizer.type !== "batchSize") {
+        throw new AppError({
+          message: `Invalid optimizer type for batchSize step: ${optimizer.type}`,
+        });
       }
+
+      // Use stored value directly (guaranteed by getOptimizer defaults)
+      const batchSize = optimizer.batchSize;
 
       const allIds = config.getIds(pipelineData as PipelineData);
       const totalIds = allIds.length;
@@ -304,9 +302,8 @@ export function createBatchSizeStep<TRawData extends RawData>(
         const items = (res as any)?.items || (Array.isArray(res) ? res : []);
         const rawData = items as TRawData;
 
-        if (rawData.length > currentMaxRecords) {
-          currentMaxRecords = rawData.length;
-        }
+        // Track total records for this batch (including overflow)
+        let batchTotalRecords = rawData.length;
 
         const remapped = remapFn(rawData);
         let mongoData = await mongoFn(remapped);
@@ -329,6 +326,9 @@ export function createBatchSizeStep<TRawData extends RawData>(
             rawCriteria,
             realGreenConst.CustProgServRecordsMax,
           )) {
+            // Accumulate overflow records
+            batchTotalRecords += rawItems.length;
+
             const remappedOverflow = remapFn(rawItems as TRawData);
             let mongoOverflow = await mongoFn(remappedOverflow);
 
@@ -342,27 +342,20 @@ export function createBatchSizeStep<TRawData extends RawData>(
             };
           }
         }
+
+        // Update max records found in a single batch
+        if (batchTotalRecords > currentMaxRecords) {
+          currentMaxRecords = batchTotalRecords;
+        }
       }
 
-      // Optimization Logic
-      let newBatchSize = batchSize;
-
-      if (currentMaxRecords > 0) {
-        const ratio = TARGET_RECORDS / currentMaxRecords;
-        newBatchSize = Math.floor(batchSize * ratio);
-      } else {
-        newBatchSize = batchSize * 2;
-      }
-
-      newBatchSize = Math.max(1, Math.min(newBatchSize, 1000));
+      // Calculate next optimization values
+      const optimizationUpdate = calculateNextBatchSize(batchSize, currentMaxRecords);
 
       yield {
         data: [],
         metrics: { calls: 0, durationMs: 0 },
-        optimizationUpdate: {
-          optimalBatchSize: newBatchSize,
-          currentMaxRecordCount: currentMaxRecords,
-        },
+        optimizationUpdate,
       };
     },
   };

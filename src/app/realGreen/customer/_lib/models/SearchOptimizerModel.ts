@@ -6,13 +6,13 @@ import { SearchOptimizer } from "../types/searchScheme/SearchOptimizer";
 export interface SearchOptimizerDoc
   extends Omit<
       SearchOptimizer,
-      "type" | "lastRecordCount" | "optimalBatchSize" | "currentMaxRecordCount"
+      "type" | "initialPageCount" | "batchSize" | "lastMaxResponseSize"
     >,
     Document {
   type: "pagination" | "batchSize";
-  lastRecordCount?: number;
-  optimalBatchSize?: number;
-  currentMaxRecordCount?: number;
+  initialPageCount?: number;
+  batchSize?: number;
+  lastMaxResponseSize?: number;
 }
 
 const SearchOptimizerSchema = new Schema<SearchOptimizerDoc>(
@@ -24,16 +24,11 @@ const SearchOptimizerSchema = new Schema<SearchOptimizerDoc>(
     type: { type: String, required: true, enum: ["pagination", "batchSize"] },
 
     // Fields for the 'pagination' strategy
-    lastRecordCount: { type: Number },
+    initialPageCount: { type: Number },
 
     // Fields for the 'batchSize' strategy
-    optimalBatchSize: { type: Number },
-    currentMaxRecordCount: { type: Number },
-
-    // Metering fields
-    totalCalls: { type: Number, default: 0 },
-    totalRecords: { type: Number, default: 0 },
-    avgDuration: { type: Number, default: 0 },
+    batchSize: { type: Number },
+    lastMaxResponseSize: { type: Number },
   },
   {
     // This option automatically adds createdAt and updatedAt fields.

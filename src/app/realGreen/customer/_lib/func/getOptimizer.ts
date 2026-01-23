@@ -27,21 +27,18 @@ export async function getSearchOptimizer({
       scheme: schemeName,
       step: stepName,
       type: optimizationStrategy,
-      totalCalls: 0,
-      totalRecords: 0,
-      avgDuration: 0,
     };
 
     // Define strategy-specific defaults
     let strategyDefaults = {};
     if (optimizationStrategy === "pagination") {
       strategyDefaults = {
-        lastRecordCount: realGreenConst.defaultPageCount,
+        initialPageCount: realGreenConst.defaultPageCount,
       };
     } else if (optimizationStrategy === "batchSize") {
       strategyDefaults = {
-        optimalBatchSize: realGreenConst.defaultBatchSize,
-        currentMaxRecordCount: 0
+        batchSize: realGreenConst.defaultBatchSize,
+        lastMaxResponseSize: 0
       };
     }
 
