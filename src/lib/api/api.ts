@@ -147,6 +147,17 @@ export async function api<T>(
   const res = await fetchWithRetry(url, fetchConfig);
 
   if (!res.ok) {
+    // Special handling for 401s: Return ErrorResponse instead of throwing
+    // This allows the Thunk to handle it gracefully (e.g., silent failure)
+    if (res.status === 401) {
+      return {
+        success: false,
+        message: "Unauthorized",
+        code: 401,
+        silent: true, // Default to silent for 401s
+      };
+    }
+
     await handleApiError(res);
   }
 

@@ -492,6 +492,9 @@ export async function POST(req: NextRequest) {
 
     // --- REFACTOR: Return 200 for Operational Errors ---
     if (error.isOperational) {
+      // Exception: Auth Errors should remain 401/403 for client handling
+      const status = error.type === "AUTH_ERROR" ? error.statusCode : 200;
+
       return NextResponse.json(
         {
           success: false,
@@ -499,7 +502,7 @@ export async function POST(req: NextRequest) {
           silent: error.silent,
           code: error.statusCode,
         },
-        { status: 200 }, // 200 OK for handled errors
+        { status }, // 200 OK for handled errors, 401 for Auth
       );
     }
 
