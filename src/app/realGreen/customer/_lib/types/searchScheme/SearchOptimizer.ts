@@ -13,8 +13,14 @@ export type BatchSizeStrategy = {
 
 export type OptimizationStrategy = PaginationStrategy | BatchSizeStrategy;
 
+export type DailyUsage = {
+  date: string; // "YYYY-MM-DD"
+  count: number; // Number of API calls
+};
+
 // any changes to this must be reflected in SearchOptimizerModel.ts
 export type SearchOptimizer = CreatedUpdated & OptimizationStrategy & {
   scheme: string;
   step: string;
+  usageHistory: DailyUsage[];
 }

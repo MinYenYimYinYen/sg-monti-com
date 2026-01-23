@@ -15,6 +15,14 @@ export interface SearchOptimizerDoc
   lastMaxResponseSize?: number;
 }
 
+const DailyUsageSchema = new Schema(
+  {
+    date: { type: String, required: true },
+    count: { type: Number, required: true, default: 0 },
+  },
+  { _id: false },
+);
+
 const SearchOptimizerSchema = new Schema<SearchOptimizerDoc>(
   {
     scheme: { type: String, required: true },
@@ -29,6 +37,9 @@ const SearchOptimizerSchema = new Schema<SearchOptimizerDoc>(
     // Fields for the 'batchSize' strategy
     batchSize: { type: Number },
     lastMaxResponseSize: { type: Number },
+
+    // Usage History (Rolling 30 days)
+    usageHistory: { type: [DailyUsageSchema], default: [] },
   },
   {
     // This option automatically adds createdAt and updatedAt fields.

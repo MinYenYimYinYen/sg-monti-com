@@ -27,6 +27,7 @@ export async function getSearchOptimizer({
       scheme: schemeName,
       step: stepName,
       type: optimizationStrategy,
+      usageHistory: [],
     };
 
     // Define strategy-specific defaults

@@ -53,12 +53,18 @@ const handlers: HandlerMap<CustomerContract> = {
               const generator = run(stepContext);
 
               const nextStepInput: any[] = [];
+              let runCalls = 0;
 
               for await (const result of generator) {
                 // 1. Handle Data Chunk
                 if (result.data && result.data.length > 0) {
                   // Accumulate data for next step
                   nextStepInput.push(...result.data);
+
+                  // Accumulate metrics
+                  if (result.metrics) {
+                    runCalls += result.metrics.calls;
+                  }
 
                   // Stream to client
                   // NOTE: Streaming chunks are NOT wrapped in { success: true, payload: ... }
@@ -77,11 +83,43 @@ const handlers: HandlerMap<CustomerContract> = {
                     ...result.optimizationUpdate,
                   };
 
-                  // Save to DB
+                  // Save to DB (Strategy Update)
                   await SearchOptimizerModel.updateOne(
                     { scheme: optimizer.scheme, step: optimizer.step },
                     { $set: updateOp },
                   );
+
+                  // Save to DB (Usage History)
+                  if (runCalls > 0) {
+                    const today = new Date().toISOString().split("T")[0];
+
+                    // Try to increment today's bucket
+                    const updateResult = await SearchOptimizerModel.updateOne(
+                      {
+                        scheme: optimizer.scheme,
+                        step: optimizer.step,
+                        "usageHistory.date": today,
+                      },
+                      {
+                        $inc: { "usageHistory.$.count": runCalls },
+                      },
+                    );
+
+                    // If today's bucket doesn't exist, push it
+                    if (updateResult.modifiedCount === 0) {
+                      await SearchOptimizerModel.updateOne(
+                        { scheme: optimizer.scheme, step: optimizer.step },
+                        {
+                          $push: {
+                            usageHistory: {
+                              $each: [{ date: today, count: runCalls }],
+                              $slice: -30, // Keep only last 30 days
+                            },
+                          },
+                        },
+                      );
+                    }
+                  }
 
                   // Set prevData for the NEXT step in the outer loop
                   pipelineData = nextStepInput as PipelineData;
