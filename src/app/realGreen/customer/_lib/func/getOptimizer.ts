@@ -23,6 +23,7 @@ export async function getSearchOptimizer({
 
   if (!optimizer) {
     // Define base defaults
+    //todo: This needs to generate default values based on the strategy
     const baseDefaults = {
       scheme: schemeName,
       step: stepName,
