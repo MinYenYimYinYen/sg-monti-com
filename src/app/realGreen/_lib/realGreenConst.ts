@@ -5,6 +5,6 @@ export const realGreenConst = {
   defaultPageCount: 1,
 };
 
-export const baseStrId: string = "";
+export const baseStrId: string = "<null>";
 export const baseNumId: number = -1;
 // todo: have gemini grep and replace manually defaulted id fields

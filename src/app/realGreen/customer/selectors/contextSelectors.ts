@@ -1,74 +1,72 @@
 import { createSelector } from "@reduxjs/toolkit";
-import {
-  Customer,
-  CustomerSliceState,
-} from "../_lib/types/entities/Customer";
-import { Program, ProgramSliceState } from "../_lib/types/entities/Program";
-import { Service, ServiceSliceState } from "../_lib/types/entities/Service";
+import { Customer } from "../_lib/entities/types/CustomerTypes";
+import { Program } from "../_lib/entities/types/ProgramTypes";
+import { Service } from "../_lib/entities/types/ServiceTypes";
 import { Grouper } from "@/lib/Grouper";
-
-// Combine all slice requirements
-type ContextSelectorState = CustomerSliceState &
-  ProgramSliceState &
-  ServiceSliceState;
-
-const getCustomerDocs = (state: ContextSelectorState) => state.customerDocs;
-const getProgramDocs = (state: ContextSelectorState) => state.programDocs;
-const getServiceDocs = (state: ContextSelectorState) => state.serviceDocs;
+import { BaseCustomerState } from "@/app/realGreen/customer/_lib/types/SliceTypes";
+import { AppState } from "@/store";
+import { progServSelect } from "@/app/realGreen/progServ/selectors/progServSelectors";
+import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCode";
+import { baseProgram } from "../_lib/entities/bases/ProgramBase";
+import { baseCustomer } from "../_lib/entities/bases/CustomerBase";
+import { baseProgCode } from "../../progServ/_lib/types/ProgCode";
 
 /**
- * 1. Build the "Base Tree" (Top-Down Only)
- * Customer -> Programs -> Services
- * No upward pointers to avoid cycles during construction.
+ * Factory to create the Base Tree Selector.
+ * Injects global metadata (ServCodes) into the hydration process.
  */
-const selectBaseTree = createSelector(
-  [getCustomerDocs, getProgramDocs, getServiceDocs],
-  (customerDocs, programDocs, serviceDocs) => {
-    // Group Services by ProgId
-    const servicesByProgId = new Grouper(serviceDocs)
-      .groupBy((s) => s.progId)
-      .toMap();
+export const createSelectBaseTree = (
+  selectSlice: (state: AppState) => BaseCustomerState,
+) =>
+  createSelector(
+    [selectSlice, progServSelect.servCodeMap, progServSelect.progCodeByDefIdMap],
+    (slice, servCodeMap, progCodeByDefIdMap) => {
+      const { customerDocs, programDocs, serviceDocs } = slice;
 
-    // Group Programs by CustId
-    // And hydrate them with Services immediately
-    const programsByCustId = new Map<number, Program[]>();
+      // Group Services by ProgId
+      const servicesByProgId = new Grouper(serviceDocs)
+        .groupBy((s) => s.progId)
+        .toMap();
 
-    // We iterate programDocs to build the hydrated Programs first
-    const hydratedPrograms = programDocs.map((p): Program => ({
-      ...p,
-      services: servicesByProgId.get(p.progId) || [],
-      // No customer pointer yet
-    }));
+      // We iterate programDocs to build the hydrated Programs first
+      const hydratedPrograms = programDocs.map((p): Program => ({
+        ...p,
+        progCode: progCodeByDefIdMap.get(p.progDefId) || baseProgCode,
+        services: (servicesByProgId.get(p.progId) || []).map((s) => ({
+          ...s,
+          // Hydrate ServCode metadata
+          servCode: servCodeMap.get(s.servCodeId) || baseServCode,
+          // Default to baseProgram for now (overwritten in Context Selectors)
+          program: baseProgram,
+        })),
+        // Default to baseCustomer for now (overwritten in Context Selectors)
+        customer: baseCustomer,
+      }));
 
-    // Now group these hydrated programs
-    const groupedPrograms = new Grouper(hydratedPrograms)
-      .groupBy((p) => p.custId)
-      .toMap();
+      // Now group these hydrated programs
+      const groupedPrograms = new Grouper(hydratedPrograms)
+        .groupBy((p) => p.custId)
+        .toMap();
 
-    // Hydrate Customers with Programs
-    const hydratedCustomers = customerDocs.map((c): Customer => ({
-      ...c,
-      programs: groupedPrograms.get(c.custId) || [],
-    }));
+      // Hydrate Customers with Programs
+      const hydratedCustomers = customerDocs.map((c): Customer => ({
+        ...c,
+        programs: groupedPrograms.get(c.custId) || [],
+      }));
 
-    return hydratedCustomers;
-  },
-);
+      return hydratedCustomers;
+    },
+  );
 
 /**
- * 2. Select Context Services
- * Returns Services with upward pointers to the Base Tree.
- *
- * Structure:
- * Service
- *  -> program (BaseProgram)
- *      -> services (Siblings)
- *      -> customer (BaseCustomer)
- *          -> programs (Cousins)
+ * Factory to create the Context Services Selector.
  */
-export const selectContextServices = createSelector(
-  [selectBaseTree],
-  (baseCustomers): Service[] => {
+export const createSelectServices = (
+  selectSlice: (state: AppState) => BaseCustomerState,
+) => {
+  const selectBaseTree = createSelectBaseTree(selectSlice);
+
+  return createSelector([selectBaseTree], (baseCustomers): Service[] => {
     const contextServices: Service[] = [];
 
     for (const customer of baseCustomers) {
@@ -94,22 +92,18 @@ export const selectContextServices = createSelector(
     }
 
     return contextServices;
-  },
-);
+  });
+};
 
 /**
- * 3. Select Context Programs
- * Returns Programs with upward pointers to the Base Tree.
- *
- * Structure:
- * Program
- *  -> services (Children)
- *  -> customer (BaseCustomer)
- *      -> programs (Siblings)
+ * Factory to create the Context Programs Selector.
  */
-export const selectContextPrograms = createSelector(
-  [selectBaseTree],
-  (baseCustomers): Program[] => {
+export const createSelectPrograms = (
+  selectSlice: (state: AppState) => BaseCustomerState,
+) => {
+  const selectBaseTree = createSelectBaseTree(selectSlice);
+
+  return createSelector([selectBaseTree], (baseCustomers): Program[] => {
     const contextPrograms: Program[] = [];
 
     for (const customer of baseCustomers) {
@@ -123,11 +117,12 @@ export const selectContextPrograms = createSelector(
     }
 
     return contextPrograms;
-  },
-);
+  });
+};
 
 /**
- * 4. Select Context Customers
- * This is effectively the same as the Base Tree, but exported for consistency.
+ * Factory to create the Context Customers Selector.
  */
-export const selectContextCustomers = selectBaseTree;
+export const createSelectCustomers = (
+  selectSlice: (state: AppState) => BaseCustomerState,
+) => createSelectBaseTree(selectSlice);

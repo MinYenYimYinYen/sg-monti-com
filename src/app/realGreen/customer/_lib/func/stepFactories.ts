@@ -18,25 +18,31 @@ import { remapServSearch } from "@/app/realGreen/customer/_lib/types/searchCrite
 import {
   CustomerCore,
   CustomerRaw,
-  extendCustomers,
-  remapCustomers,
-} from "@/app/realGreen/customer/_lib/types/entities/Customer";
+} from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import {
-  extendPrograms,
+  remapCustomers,
+} from "@/app/realGreen/customer/_lib/entities/funcs/CustomerFuncs";
+import {
   ProgramCore,
   ProgramRaw,
-  remapPrograms,
-} from "@/app/realGreen/customer/_lib/types/entities/Program";
+} from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import {
-  extendServices,
-  remapServices,
+  remapPrograms,
+} from "@/app/realGreen/customer/_lib/entities/funcs/ProgramFuncs";
+import {
   ServiceCore,
   ServiceRaw,
-} from "@/app/realGreen/customer/_lib/types/entities/Service";
+} from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import {
+  remapServices,
+} from "@/app/realGreen/customer/_lib/entities/funcs/ServiceFuncs";
 import {
   calculateNextBatchSize,
   calculateNextPagination
 } from "@/app/realGreen/customer/_lib/func/optimizerCalculations";
+import {extendCustomers} from "@/app/realGreen/customer/_lib/entities/serverFuncs/serverCustomerFunc";
+import {extendPrograms} from "@/app/realGreen/customer/_lib/entities/serverFuncs/serverProgramFunc";
+import {extendServices} from "@/app/realGreen/customer/_lib/entities/serverFuncs/serverServiceFunc";
 
 // Helper to map criteria based on step name
 function mapCriteria(

@@ -35,6 +35,75 @@ The data in this module follows a strict lifecycle to ensure type safety and con
 
 ---
 
+## Selectors (Context Tree Architecture)
+
+The application uses a **"Context Tree"** pattern to hydrate entities with their relationships (Parents, Children, Siblings, Cousins) without causing circular dependency errors or infinite recursion in Redux/Immer.
+
+### The Problem
+We want to be able to navigate the graph freely:
+*   `customer.programs` (Children)
+*   `service.program` (Parent)
+*   `service.program.services` (Siblings)
+*   `service.program.customer.programs` (Cousins)
+
+However, a naive implementation creates circular references (`A -> B -> A`), which breaks:
+1.  **Immer**: Cannot freeze circular state.
+2.  **Redux DevTools**: Crashes on serialization.
+3.  **JSON.stringify**: Throws "Converting circular structure to JSON".
+
+### The Solution: "Terminating DAG"
+We build the tree in layers, ensuring that the "Upward" pointers (Parent) point to objects that do **not** have further upward pointers or infinite downward loops.
+
+#### 1. The Base Tree (Top-Down)
+First, we build the full hierarchy downwards using `Grouper` for O(N) efficiency.
+*   `Customer` -> `Program[]` -> `Service[]`
+*   This tree has **NO** parent pointers. It is a pure Directed Acyclic Graph (DAG).
+
+#### 2. The Context Wrappers (Bottom-Up Views)
+When you select a specific entity type (e.g., `selectServices`), we wrap the objects from the Base Tree in a "Context" object that adds the parent pointer.
+
+**Example: `selectServices`**
+Returns a `Service` object where:
+*   `service.program` points to a **ContextProgram**.
+    *   `ContextProgram` has `services` (Siblings).
+    *   `ContextProgram` points to a **BaseCustomer**.
+        *   `BaseCustomer` has `programs` (Cousins).
+        *   `BaseCustomer` has **NO** parent pointer (Termination).
+
+### Usage
+
+All selectors are located in `src/app/realGreen/customer/selectors/contextSelectors.ts`.
+
+```typescript
+// 1. Import the selector
+import { selectServices } from "@/app/realGreen/customer/selectors/contextSelectors";
+
+// 2. Use in a Hook or Component
+const services = useSelector((state: AppState) =>
+  selectServices(state.activeCustomers) // Pass the slice state
+);
+
+// 3. Navigate freely
+services.map(service => {
+  console.log(service.program.customer.displayName); // Works!
+  console.log(service.program.services.length);      // Works (Siblings)!
+});
+```
+
+### Adding New Slices
+Any Redux slice that stores Customer data must implement the `ContextSelectorState` interface (i.e., it must have `customerDocs`, `programDocs`, and `serviceDocs`).
+
+```typescript
+// activeCustomersSlice.ts
+export const activeCustomersSelect = {
+  // ...
+  selectHydratedActiveCustomers: (state: AppState) =>
+    selectCustomers(state.activeCustomers),
+};
+```
+
+---
+
 ## Configuring Search Schemes
 
 A `SearchScheme` defines a multi-step process to fetch related data from RealGreen. It is defined in `src/app/realGreen/customer/_lib/searchSchemes/searchSchemes.ts`.

@@ -1,12 +1,12 @@
 import { SearchScheme } from "@/app/realGreen/customer/_lib/types/searchScheme/SearchScheme";
 
-import { CustomerDoc } from "@/app/realGreen/customer/_lib/types/entities/Customer";
 import {
   createBatchSizeStep,
   createPaginationStep,
 } from "../../func/stepFactories";
-import { ProgramDoc } from "../entities/Program";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
+import { CustomerDoc } from "../../entities/types/CustomerTypes";
+import { ProgramDoc } from "../../entities/types/ProgramTypes";
 
 const activeCustomers: SearchScheme = {
   schemeName: "activeCustomers",

@@ -1,6 +1,7 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Grouper } from "@/lib/Grouper";
 import { ServCode } from "./ServCode";
+import {baseNumId, baseStrId, realGreenConst} from "@/app/realGreen/_lib/realGreenConst";
 
 export type ProgCodeRaw = {
   // anyBranch: boolean;
@@ -90,6 +91,19 @@ export type ProgCodeHydrate = {
 
 export type ProgCode = ProgCodeWithMongo & ProgCodeHydrate;
 
+export const baseProgCode: ProgCode = {
+  progCodeId: baseStrId,
+  available: true,
+  description: "",
+  programType: "",
+  progDefId: baseNumId,
+  unitCode: baseNumId,
+  servCodes: [],
+  isSpecial: false,
+  createdAt: "",
+  updatedAt: "",
+}
+
 function remapProgramCode(raw: ProgCodeRaw): ProgCodeRemapped {
   return {
     progCodeId: raw.programCode,
@@ -97,7 +111,7 @@ function remapProgramCode(raw: ProgCodeRaw): ProgCodeRemapped {
     description: raw.description,
     programType: raw.programType,
     progDefId: raw.programDefinitionID,
-    unitCode: raw.unitCode || -1,
+    unitCode: raw.unitCode || baseNumId,
   };
 }
 

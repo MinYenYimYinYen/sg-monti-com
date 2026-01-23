@@ -1,16 +1,11 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { Grouper } from "@/lib/Grouper";
 import { Address } from "@/app/realGreen/_lib/subTypes/Address";
-import { typeGuard } from "@/lib/typeGuard";
 import {
-  baseContactPreference,
   ContactPreference,
   ContactPreferenceRaw,
-  remapContactPreference,
 } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
-import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { Phone } from "@/app/realGreen/_lib/subTypes/Phone";
-import { Program, ProgramSliceState } from "./Program";
+import { Program } from "./ProgramTypes";
 
 export type CustomerRaw = {
   address: Address;
@@ -169,93 +164,7 @@ export type CustomerDocProps = CreatedUpdated & {
 export type CustomerDoc = CustomerCore & CustomerDocProps;
 
 export type CustomerProps = {
-  programs: Program[]
-}
+  programs: Program[];
+};
 
 export type Customer = CustomerDoc & CustomerProps;
-
-function remapCustomer(raw: CustomerRaw): CustomerCore {
-  return {
-    custId: raw.id,
-    address: raw.address,
-    billingAddress: raw.billingAddress,
-    billingCompanyName: raw.billingCompanyName,
-    billingFirstName: raw.billingFirstName,
-    billingLastName: raw.billingLastName,
-    billingTitle: raw.billingTitle,
-    billingType: raw.billingType,
-    callAheadId: raw.callCode,
-    censusTractInfo: raw.censusTractInfo,
-    contactPreference:
-      remapContactPreference(raw.contactPreferences) || baseContactPreference,
-    directions: raw.directions,
-    discountId: raw.discountCode,
-    displayName: raw.displayName,
-    email: raw.email,
-    importDate: raw.importDate || "",
-    isMasterAcct: raw.isMasterAccount,
-    masterAcctId: raw.masterAccountID || baseNumId,
-    netBalance: raw.netBalance,
-    phones: raw.phones,
-    size: raw.size,
-    status: raw.statusCharacter,
-    subdivisionId: raw.subdivisionID || baseNumId,
-    taxIds: typeGuard.definedArray([raw.taxID1, raw.taxID2, raw.taxID3]),
-    techNote: raw.techNote,
-    useBilling: raw.useBillingInfo,
-  };
-}
-
-export function remapCustomers(raw: CustomerRaw[]) {
-  return raw.map((r) => remapCustomer(r));
-}
-
-// export function extendCustomer({
-//   remapped,
-//   mongo,
-// }: {
-//   remapped: CustomerCore;
-//   mongo?: CustomerDoc;
-// }): Customer {
-//   return {
-//     ...remapped,
-//     createdAt: mongo?.createdAt || "",
-//     updatedAt: mongo?.updatedAt || "",
-//   };
-// }
-
-export async function extendCustomers(
-  remapped: CustomerCore[],
-): Promise<CustomerDoc[]> {
-  //MOCKED for now
-  const withMongo = remapped.map((cust) => ({
-    ...cust,
-    createdAt: "",
-    updatedAt: "",
-  }));
-  return withMongo;
-}
-
-// export function extendCustomers({
-//   remapped,
-//   mongo,
-// }: {
-//   remapped: CustomerCore[];
-//   mongo: CustomerDoc[];
-// }): Customer[] {
-//   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.custId);
-//
-//   return remapped.map((r) =>
-//     extendCustomer({
-//       remapped: r,
-//       mongo: mongoMap.get(r.custId),
-//     }),
-//   );
-// }
-
-// --- SELECTORS ---
-
-// 1. Define the slice of state this entity cares about
-export type CustomerSliceState = ProgramSliceState & {
-  customerDocs: CustomerDoc[];
-};

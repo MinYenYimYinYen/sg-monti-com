@@ -1,13 +1,7 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { Grouper } from "@/lib/Grouper";
-import { mongo } from "mongoose";
-import {
-  baseNumId,
-  baseStrId,
-  realGreenConst,
-} from "@/app/realGreen/_lib/realGreenConst";
-import { Service, ServiceSliceState } from "./Service";
-import { Customer } from "./Customer";
+import { Service } from "./ServiceTypes";
+import { Customer } from "./CustomerTypes";
+import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCode";
 
 export type ProgramRaw = {
   averagePrice: number;
@@ -121,81 +115,8 @@ export type ProgramDoc = ProgramCore & ProgramDocProps;
 
 export type ProgramProps = {
   services: Service[];
-  customer?: Customer;
+  customer: Customer;
+  progCode: ProgCode;
 };
 
 export type Program = ProgramDoc & ProgramProps;
-
-function remapProgram(raw: ProgramRaw): ProgramCore {
-  return {
-    avgPrice: raw.averagePrice,
-    billingType: raw.billingType,
-    callAheadId: raw.callAhead || baseNumId,
-    custId: raw.customerNumber,
-    dateSold: raw.dateSold,
-    discountId: raw.discountCodeId,
-    progId: raw.id,
-    isFullProgram: raw.isFullProgram,
-    lastPriceChange: raw.lastPriceChange || "",
-    nextDate: raw.nextDate || "",
-    price: raw.price,
-    progDefId: raw.programCodeId || baseNumId,
-    season: raw.season,
-    soldBy: [raw.soldby1, raw.soldby2].filter(Boolean) as string[],
-    sourceCodeId: raw.sourceCode,
-    status: raw.status,
-    techNote: raw.technicianNote,
-    tempSeq: raw.temporarySequence,
-  };
-}
-
-export function remapPrograms(raw: ProgramRaw[]) {
-  return raw.map((r) => remapProgram(r));
-}
-
-// async function extendProgram(remapped: ProgramCore): Promise<Program> {
-//   // This is mocking the extension.  But when it is time to extend,
-//   // we can put how to extend here, or more likely remove this function,
-//   // and put that logic below.
-//   return {
-//     ...remapped,
-//     createdAt: "",
-//     updatedAt: "",
-//   };
-// }
-
-export async function extendPrograms(
-  remapped: ProgramCore[],
-): Promise<ProgramDoc[]> {
-  const withMongo = remapped.map((prog) => ({
-    ...prog,
-    createdAt: "",
-    updatedAt: "",
-  }));
-  return withMongo;
-}
-
-
-// export function extendPrograms({
-//   remapped,
-//   mongo,
-// }: {
-//   remapped: ProgramCore[];
-//   mongo: ProgramDoc[];
-// }): Program[] {
-//   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.progId);
-//
-//   return remapped.map((r) =>
-//     extendProgram({
-//       remapped: r,
-//       mongo: mongoMap.get(r.progId),
-//     }),
-//   );
-// }
-
-// --- SELECTORS ---
-
-// 1. Define the slice of state this entity cares about
-export type ProgramSliceState = ServiceSliceState & {
-  programDocs: ProgramDoc[];
-};

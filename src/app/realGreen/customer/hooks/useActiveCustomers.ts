@@ -1,16 +1,17 @@
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, AppState } from "@/store";
 import { useEffect } from "react";
-import { activeCustomersActions } from "@/app/realGreen/customer/slices/activeCustomersSlice";
-import { selectContextServices } from "@/app/realGreen/customer/selectors/contextSelectors";
+import {
+  activeCustomersActions,
+  activeCustomersSelect,
+} from "@/app/realGreen/customer/slices/activeCustomersSlice";
 
 export function useActiveCustomers() {
   const dispatch = useDispatch<AppDispatch>();
 
-  // Use the Context Selector to get fully hydrated services
-  // We pass the 'activeCustomers' slice state to the selector
+  // Use the specific selector exported from the slice
   const services = useSelector((state: AppState) =>
-    selectContextServices(state.activeCustomers),
+    activeCustomersSelect.selectHydratedServices(state),
   );
 
   useEffect(() => {

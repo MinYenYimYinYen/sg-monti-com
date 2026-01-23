@@ -19,5 +19,21 @@ export type Address = {
   zip?: string;
 };
 
+export const baseAddress: Address = {
+  formattedAddress: "",
+  formattedAddressWithCulture: "",
+  formattedZip: "",
+  formattedZipWithCulture: "",
+  houseNumber: "",
+  latitude: null,
+  longitude: null,
+  postDirection: "",
+  preDirection: "",
+  streetName: "",
+  streetSuffix: "",
+};
+
+
+
 
 

@@ -1,70 +1,18 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { Grouper } from "@/lib/Grouper";
 import {
-  remapUsedProducts,
   UsedProductRaw,
-  UsedProductRemapped,
 } from "@/app/realGreen/_lib/subTypes/UsedProduct";
 import {
-  remapServiceHistory,
-  ServiceHistory,
   ServiceHistoryRaw,
 } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import {
   DoneByRaw,
-  DoneByRemapped,
-  remapDoneBys,
 } from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
-import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import {
   Production,
-  ProductionRemapped,
 } from "@/app/realGreen/_lib/subTypes/Production";
-import { AppError } from "@/lib/errors/AppError";
-import { Program } from "./Program";
-
-function remapProduction({
-  invoice,
-  servId,
-  servStatus,
-  historyRaw,
-  usedProductsRaw,
-  doneBysRaw,
-}: {
-  invoice: number | null;
-  servId: number;
-  servStatus: string;
-  historyRaw: ServiceHistoryRaw | undefined;
-  usedProductsRaw: UsedProductRaw[] | undefined;
-  doneBysRaw: DoneByRaw[] | undefined;
-}): ProductionRemapped | null {
-  if (!(servStatus === "S")) return null;
-  if (!historyRaw || !usedProductsRaw || !doneBysRaw || !invoice) {
-    throw new AppError({
-      message:
-        "Completed service has missing data! Please contact your department lead.",
-      data: {
-        history: !!historyRaw,
-        usedProducts: !!usedProductsRaw,
-        doneBys: !!doneBysRaw,
-        invoice: !!invoice,
-      },
-    });
-  }
-  const history: ServiceHistory = remapServiceHistory(historyRaw);
-  const usedProducts: UsedProductRemapped[] =
-    remapUsedProducts(usedProductsRaw);
-  const doneBys: DoneByRemapped[] = remapDoneBys(doneBysRaw);
-
-  const production: ProductionRemapped = {
-    ...history,
-    usedProducts,
-    doneBys,
-    servId,
-    invoice,
-  };
-  return production;
-}
+import { Program } from "./ProgramTypes";
+import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCode";
 
 export type ServiceRaw = {
   // actualManHours?: number;
@@ -164,60 +112,8 @@ export type ServiceDocProps = CreatedUpdated & {
 export type ServiceDoc = ServiceCore & ServiceDocProps;
 
 export type ServiceProps = {
-  program?: Program;
+  program: Program;
+  servCode: ServCode;
 };
 
 export type Service = ServiceDoc & ServiceProps;
-
-function remapService(raw: ServiceRaw): ServiceCore {
-  return {
-    servId: raw.id,
-    asapSince: raw.asapDate || "",
-    callAheadId: raw.callAhead || null,
-    custId: raw.customerNumber,
-    discountId: raw.discountCode || null,
-    invoice: raw.invoiceNumber || null,
-    isPromised: raw.isPromised,
-    nextPrice: raw.nextPrice,
-    nextSize: raw.nextSize,
-    price: raw.price,
-    size: raw.size,
-    progId: raw.programID,
-    season: raw.serviceYear,
-    servCodeId: raw.serviceCode || baseStrId,
-    status: raw.serviceStatus,
-    techNote: raw.technicianNote,
-    production: remapProduction({
-      invoice: raw.invoiceNumber,
-      servId: raw.id,
-      doneBysRaw: raw.doneByEmployees,
-      historyRaw: raw.serviceHistory,
-      usedProductsRaw: raw.productsUsed,
-      servStatus: raw.serviceStatus,
-    }),
-  };
-}
-
-export function remapServices(raw: ServiceRaw[]) {
-  return raw.map((r) => remapService(r));
-}
-
-export async function extendServices(
-  remapped: ServiceCore[],
-): Promise<ServiceDoc[]> {
-  //MOCKED
-  //code the actual mongo lookup here.
-  const withMongo: ServiceDoc[] = remapped.map((serv) => ({
-    ...serv,
-    createdAt: "",
-    updatedAt: "",
-  }));
-  return withMongo;
-}
-
-// --- SELECTORS ---
-
-// 1. Define the slice of state this entity cares about
-export type ServiceSliceState = {
-  serviceDocs: ServiceDoc[];
-};

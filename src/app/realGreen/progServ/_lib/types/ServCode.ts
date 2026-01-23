@@ -19,7 +19,8 @@
 
 import {Grouper} from "@/lib/Grouper";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import {ProgCode} from "@/app/realGreen/progServ/_lib/types/ProgCode";
+import {baseProgCode, ProgCode} from "@/app/realGreen/progServ/_lib/types/ProgCode";
+import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export type ServCodeRaw = {
   // autopostMobile: boolean;
@@ -112,11 +113,25 @@ export type ServCodeMongo = CreatedUpdated & {
 export type ServCodeWithMongo = ServCodeRemapped & ServCodeMongo;
 
 
-export type ServCodeHydrate = {
+export type ServCodeProps = {
   progCode: ProgCode;
 }
 
-export type ServCode = ServCodeWithMongo & ServCodeHydrate;
+export type ServCode = ServCodeWithMongo & ServCodeProps;
+
+export const baseServCode: ServCode = {
+  servCodeId: baseStrId,
+  isServiceCall: false,
+  available: true,
+  longName: "",
+  invoiceMessage: "",
+  alwaysAsap: false,
+  begin: "",
+  end: "",
+  progCode: baseProgCode,
+  createdAt: "",
+  updatedAt: "",
+}
 
 export function remapServCode(raw: ServCodeRaw): ServCodeRemapped {
   return {
