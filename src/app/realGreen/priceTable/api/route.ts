@@ -21,7 +21,7 @@ const handlers: HandlerMap<PriceTableContract> = {
 
       const priceTables = rawPriceTables.map(remapPriceTable);
 
-      return { success: true, items: priceTables };
+      return { success: true, payload: priceTables };
     },
   },
 };

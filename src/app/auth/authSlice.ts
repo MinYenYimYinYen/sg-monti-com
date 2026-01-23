@@ -9,7 +9,7 @@ import { handleError } from "@/lib/errors/errorHandler";
 import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { CheckedId } from "@/app/auth/_types/authTypes";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
-import {ObjResponse} from "@/lib/api/types/responses";
+import { DataResponse } from "@/lib/api/types/responses";
 
 type RequestStatus = "idle" | "pending" | "success" | "error";
 
@@ -64,14 +64,14 @@ const checkEligibility = createAsyncThunk<
       ...params,
     };
 
-    const res = await api<ObjResponse<CheckedId>>(
-      "/auth/api",
-      { method: "POST", body },
-    );
+    const res = await api<DataResponse<CheckedId>>("/auth/api", {
+      method: "POST",
+      body,
+    });
 
     if (!res.success) return rejectWithValue(res.message);
 
-    return res.item;
+    return res.payload;
   },
   smartThunkOptions({
     typePrefix: "auth/checkEligibility",
@@ -92,13 +92,13 @@ const register = createAsyncThunk<
   async ({ params }, { rejectWithValue }) => {
     const body: OpMap<AuthContract> = { op: "register", ...params };
 
-    const res = await api<ObjResponse<User>>("/auth/api", {
+    const res = await api<DataResponse<User>>("/auth/api", {
       method: "POST",
       body,
     });
 
     if (!res.success) return rejectWithValue(res.message);
-    return res.item;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "auth/register" }),
 );
@@ -119,7 +119,7 @@ const login = createAsyncThunk<
     });
 
     if (!res.success) return rejectWithValue(res.message);
-    return res.item;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "auth/login" }),
 );
@@ -167,7 +167,7 @@ const checkAuth = createAsyncThunk<
       );
       return rejectWithValue(res.message);
     }
-    return res.item;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "auth/checkAuth" }),
 );
@@ -215,7 +215,7 @@ const getPendingActions = createAsyncThunk<
     );
 
     if (!res.success) return rejectWithValue(res.message);
-    return res.item;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "auth/getPendingActions" }),
 );

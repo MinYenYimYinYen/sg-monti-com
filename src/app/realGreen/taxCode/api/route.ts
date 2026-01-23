@@ -20,7 +20,7 @@ const handlers: HandlerMap<TaxCodeContract> = {
 
       const taxCodes = rawTaxCodes.map(remapTaxCode);
 
-      return { success: true, items: taxCodes };
+      return { success: true, payload: taxCodes };
     },
   },
 };

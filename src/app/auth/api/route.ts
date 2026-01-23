@@ -58,7 +58,7 @@ const handlers: HandlerMap<AuthContract> = {
       };
       return {
         success: true,
-        item: checkedId,
+        payload: checkedId,
       };
     },
   },
@@ -111,7 +111,7 @@ const handlers: HandlerMap<AuthContract> = {
 
       return {
         success: true,
-        item: cleanUser,
+        payload: cleanUser,
       };
     },
   },
@@ -174,7 +174,7 @@ const handlers: HandlerMap<AuthContract> = {
 
       return {
         success: true,
-        item: cleanUser,
+        payload: cleanUser,
       };
     },
   },
@@ -254,7 +254,7 @@ const handlers: HandlerMap<AuthContract> = {
         });
       }
 
-      return { success: true, item: cleanMongoObject(user.toObject()) };
+      return { success: true, payload: cleanMongoObject(user.toObject()) };
     },
   },
   requestPasswordReset: {
@@ -354,7 +354,7 @@ const handlers: HandlerMap<AuthContract> = {
 
       return {
         success: true,
-        item: {
+        payload: {
           appliedUsers: appliedUsers,
           pendingResets,
         },

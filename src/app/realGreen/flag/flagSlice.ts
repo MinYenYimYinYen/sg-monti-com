@@ -31,7 +31,7 @@ export const getFlags = createAsyncThunk<
       return rejectWithValue(res.message);
     }
 
-    return res.items;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "flag/getFlags" }),
 );

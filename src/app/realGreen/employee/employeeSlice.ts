@@ -70,7 +70,7 @@ const getEmployees = createAsyncThunk<
     );
 
     if (!res.success) return rejectWithValue(res.message);
-    return res.items;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "employee/getEmployees" }),
 );

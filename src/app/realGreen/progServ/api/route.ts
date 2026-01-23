@@ -49,7 +49,7 @@ const handlers: HandlerMap<ProgServContract> = {
       if (isFresh) {
         const items = await ProgServModel.find({});
 
-        return { success: true, items };
+        return { success: true, payload: items };
       }
 
       // 2. Fetch from RealGreen (Throttled)
@@ -85,7 +85,7 @@ const handlers: HandlerMap<ProgServContract> = {
 
       // 4. Return fresh list
       const items = await ProgServModel.find({});
-      return { success: true, items };
+      return { success: true, payload: items };
     },
   },
   getProgCodes: {
@@ -105,7 +105,7 @@ const handlers: HandlerMap<ProgServContract> = {
 
       const MOCKED_MONGO = progCodes as ProgCodeWithMongo[]; // Mongo db isn't extending this yet.
 
-      return { success: true, items: MOCKED_MONGO };
+      return { success: true, payload: MOCKED_MONGO };
     },
   },
   getServCodes: {
@@ -127,7 +127,7 @@ const handlers: HandlerMap<ProgServContract> = {
         mongo: mongoServCodes,
       });
 
-      return { success: true, items: servCodes };
+      return { success: true, payload: servCodes };
     },
   },
 };

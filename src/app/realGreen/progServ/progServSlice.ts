@@ -12,7 +12,7 @@ import { ProgCodeWithMongo } from "@/app/realGreen/progServ/_lib/types/ProgCode"
 // --- Thunks ---
 
 export const fetchDryProgCodes = createAsyncThunk<
-  ProgServContract["getProgCodes"]["result"]["items"], // Return Data Only
+  ProgServContract["getProgCodes"]["result"]["payload"], // Return Data Only
   WithConfig<ProgServContract["getProgCodes"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
@@ -35,13 +35,13 @@ export const fetchDryProgCodes = createAsyncThunk<
       return rejectWithValue(res.message);
     }
 
-    return res.items;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "progServ/fetchDryProgCodes" }),
 );
 
 export const fetchDryServCodes = createAsyncThunk<
-  ProgServContract["getServCodes"]["result"]["items"], // Return Data Only
+  ProgServContract["getServCodes"]["result"]["payload"], // Return Data Only
   WithConfig<ProgServContract["getServCodes"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
@@ -64,13 +64,13 @@ export const fetchDryServCodes = createAsyncThunk<
       return rejectWithValue(res.message);
     }
 
-    return res.items;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "progServ/fetchDryServCodes" }),
 );
 
 export const fetchProgServs = createAsyncThunk<
-  ProgServContract["syncProgServ"]["result"]["items"],
+  ProgServContract["syncProgServ"]["result"]["payload"],
   WithConfig<ProgServContract["syncProgServ"]["params"]>,
   { rejectValue: string; state: AppState }
 >(
@@ -93,7 +93,7 @@ export const fetchProgServs = createAsyncThunk<
       return rejectWithValue(res.message);
     }
 
-    return res.items;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "progServ/fetchProgServs" }),
 );

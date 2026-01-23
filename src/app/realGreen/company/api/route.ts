@@ -21,7 +21,7 @@ const handlers: HandlerMap<CompanyContract> = {
 
       const companies = rawCompanies.map(remapCompany);
 
-      return { success: true, items: companies };
+      return { success: true, payload: companies };
     },
   },
 };

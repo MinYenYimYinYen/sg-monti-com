@@ -1,5 +1,5 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
-import { ArrayResponse } from "@/lib/api/types/responses";
+import { DataResponse } from "@/lib/api/types/responses";
 import { CustomerDoc } from "@/app/realGreen/customer/_lib/types/Customer";
 import { ProgramDoc } from "@/app/realGreen/customer/_lib/types/Program";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/types/Service";
@@ -24,6 +24,6 @@ export type StreamChunk = {
 export interface CustomerContract extends ApiContract {
   runSearchScheme: {
     params: { schemeName: keyof typeof searchScheme };
-    result: ArrayResponse<StreamChunk>; // In streaming, this represents the chunk structure
+    result: DataResponse<StreamChunk[]>; // In streaming, this represents the chunk structure
   };
 }

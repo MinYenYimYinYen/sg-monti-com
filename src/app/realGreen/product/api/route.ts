@@ -32,7 +32,7 @@ const handlers: HandlerMap<ProductContract> = {
         mongo: mongoProducts,
       });
 
-      return { success: true, items: products };
+      return { success: true, payload: products };
     },
   },
 };

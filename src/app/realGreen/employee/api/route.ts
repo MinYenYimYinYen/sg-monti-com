@@ -43,7 +43,7 @@ const handlers: HandlerMap<EmployeeContract> = {
         mongo: mongoEmployees,
       });
 
-      return { success: true, items: employees };
+      return { success: true, payload: employees };
     },
   },
 };

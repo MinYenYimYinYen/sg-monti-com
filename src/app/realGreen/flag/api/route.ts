@@ -17,7 +17,7 @@ const handlers: HandlerMap<FlagContract> = {
 
       const flags = rawFlags.map(remapFlag);
 
-      return { success: true, items: flags };
+      return { success: true, payload: flags };
     },
   },
 };

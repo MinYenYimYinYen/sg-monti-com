@@ -70,6 +70,10 @@ const handlers: HandlerMap<CustomerContract> = {
                   }
 
                   // Stream to client
+                  // NOTE: Streaming chunks are NOT wrapped in { success: true, payload: ... }
+                  // because they are NDJSON lines. The client parses them directly.
+                  // However, if we wanted to standardize, we could wrap them.
+                  // For now, we keep them as raw StreamChunk objects as defined in the contract.
                   controller.enqueue(
                     encoder.encode(JSON.stringify(result) + "\n"),
                   );

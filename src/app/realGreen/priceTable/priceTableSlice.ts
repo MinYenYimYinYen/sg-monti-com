@@ -31,7 +31,7 @@ export const getPriceTables = createAsyncThunk<
       return rejectWithValue(res.message);
     }
 
-    return res.items;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "priceTable/getPriceTables" }),
 );

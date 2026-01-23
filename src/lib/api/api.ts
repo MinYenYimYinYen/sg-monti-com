@@ -1,4 +1,4 @@
-import { ErrorResponse } from "@/lib/api/types/responses";
+import { DataResponse, ErrorResponse } from "@/lib/api/types/responses";
 import { AppError, ErrorType } from "@/lib/errors/AppError";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { AuthContract } from "@/app/auth/_types/AuthContract";
@@ -115,7 +115,9 @@ async function fetchWithRetry(
 }
 
 async function handleApiError(res: Response) {
-  const errorData = (await res.json().catch(() => ({}))) as Partial<ErrorResponse>;
+  const errorData = (await res
+    .json()
+    .catch(() => ({}))) as Partial<ErrorResponse>;
 
   const message = errorData.message || res.statusText || "Request failed";
   const silent = errorData.silent ?? false;

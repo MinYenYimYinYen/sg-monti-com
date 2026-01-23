@@ -34,7 +34,7 @@ const handlers: HandlerMap<CallAheadContract> = {
         mongo: mongoCallAheads,
       });
 
-      return { success: true, items: callAheads };
+      return { success: true, payload: callAheads };
     },
   },
 };

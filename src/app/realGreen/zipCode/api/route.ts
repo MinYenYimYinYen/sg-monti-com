@@ -17,7 +17,7 @@ const handlers: HandlerMap<ZipCodeContract> = {
 
       const zipCodes = rawZipCodes.map(remapZipCode);
 
-      return { success: true, items: zipCodes };
+      return { success: true, payload: zipCodes };
     },
   },
 };

@@ -31,7 +31,7 @@ export const getCallAheads = createAsyncThunk<
       return rejectWithValue(res.message);
     }
 
-    return res.items;
+    return res.payload;
   },
   smartThunkOptions({ typePrefix: "callAhead/getCallAheads" }),
 );

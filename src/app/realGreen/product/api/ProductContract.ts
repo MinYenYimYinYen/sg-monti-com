@@ -1,10 +1,10 @@
-import { ArrayResponse } from "@/lib/api/types/responses";
+import { DataResponse } from "@/lib/api/types/responses";
 import { Product } from "@/app/realGreen/product/Product";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 
 export interface ProductContract extends ApiContract {
   getAll: {
     params: {};
-    result: ArrayResponse<Product>;
+    result: DataResponse<Product[]>;
   };
 }
