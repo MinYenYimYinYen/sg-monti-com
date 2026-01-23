@@ -1,40 +1,14 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { Flag } from "@/app/realGreen/flag/Flag";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { FlagContract } from "@/app/realGreen/flag/api/FlagContract";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-import { api } from "@/lib/api/api";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
+import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
-export const getFlags = createAsyncThunk<
-  Flag[],
-  WithConfig<FlagContract["getAll"]["params"]>,
-  { rejectValue: string }
->(
-  "flag/getFlags",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<FlagContract> = {
-      op: "getAll",
-      ...params,
-    };
-
-    const res = await api<FlagContract["getAll"]["result"]>(
-      "/realGreen/flag/api",
-      {
-        method: "POST",
-        body,
-      },
-    );
-
-    if (!res.success) {
-      return rejectWithValue(res.message);
-    }
-
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "flag/getFlags" }),
-);
+export const getFlags = createStandardThunk<FlagContract, "getAll">({
+  typePrefix: "flag/getFlags",
+  apiPath: "/realGreen/flag/api",
+  opName: "getAll",
+});
 
 interface FlagState {
   flags: Flag[];

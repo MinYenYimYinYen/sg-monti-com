@@ -1,40 +1,14 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { PriceTable } from "@/app/realGreen/priceTable/PriceTable";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { PriceTableContract } from "@/app/realGreen/priceTable/api/PriceTableContract";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-import { api } from "@/lib/api/api";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
+import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
-export const getPriceTables = createAsyncThunk<
-  PriceTable[],
-  WithConfig<PriceTableContract["getAll"]["params"]>,
-  { rejectValue: string }
->(
-  "priceTable/getPriceTables",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<PriceTableContract> = {
-      op: "getAll",
-      ...params,
-    };
-
-    const res = await api<PriceTableContract["getAll"]["result"]>(
-      "/realGreen/priceTable/api",
-      {
-        method: "POST",
-        body,
-      },
-    );
-
-    if (!res.success) {
-      return rejectWithValue(res.message);
-    }
-
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "priceTable/getPriceTables" }),
-);
+export const getPriceTables = createStandardThunk<PriceTableContract, "getAll">({
+  typePrefix: "priceTable/getPriceTables",
+  apiPath: "/realGreen/priceTable/api",
+  opName: "getAll",
+});
 
 interface PriceTableState {
   priceTables: PriceTable[];

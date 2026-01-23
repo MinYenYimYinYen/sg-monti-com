@@ -1,16 +1,11 @@
 import {
-  createAsyncThunk,
   createSelector,
   createSlice,
 } from "@reduxjs/toolkit";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes"; // Your new shared type
 import { Employee } from "@/app/realGreen/employee/Employee";
 import { EmployeeContract } from "@/app/realGreen/employee/api/EmployeeContract";
-import { api } from "@/lib/api/api";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-import { AppState } from "@/store";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
+import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
 // 1. STATE: Thin. No loading flags.
 type EmployeeState = {
@@ -20,6 +15,13 @@ type EmployeeState = {
 const initialState: EmployeeState = {
   employees: [],
 };
+
+// 2. THUNK
+const getEmployees = createStandardThunk<EmployeeContract, "getAll">({
+  typePrefix: "employee/getEmployees",
+  apiPath: "/realGreen/employee/api",
+  opName: "getAll",
+});
 
 // 3. SLICE
 export const employeeSlice = createSlice({
@@ -48,32 +50,6 @@ export const employeeSlice = createSlice({
   },
 });
 
-// 2. THUNK
-const getEmployees = createAsyncThunk<
-  Employee[], // Return Data Only
-  WithConfig<EmployeeContract["getAll"]["params"]>, // Input: API Params + ThunkConfig
-  { rejectValue: string; state: AppState }
->(
-  "employee/getEmployees",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<EmployeeContract> = {
-      op: "getAll",
-      ...params,
-    };
-
-    const res = await api<EmployeeContract["getAll"]["result"]>(
-      "/realGreen/employee/api",
-      {
-        method: "POST",
-        body,
-      },
-    );
-
-    if (!res.success) return rejectWithValue(res.message);
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "employee/getEmployees" }),
-);
 export default employeeSlice.reducer;
 // Exporting the thunk as part of the actions object is a nice convention
 export const employeeActions = { ...employeeSlice.actions, getEmployees };

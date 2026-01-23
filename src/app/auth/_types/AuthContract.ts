@@ -1,4 +1,4 @@
-import { DataResponse, SuccessResponse } from "@/lib/api/types/responses";
+import { DataResponse } from "@/lib/api/types/responses";
 import { User, UserWithPW } from "@/app/auth/_types/User";
 import { CheckedId } from "@/app/auth/_types/authTypes";
 import { Role } from "@/lib/api/types/roles";
@@ -32,13 +32,13 @@ export interface AuthContract extends ApiContract {
   // 4. Logout
   logout: {
     params: {};
-    result: SuccessResponse;
+    result: DataResponse<null>;
   };
 
   // 5. Refresh Token
   refresh: {
     params: {};
-    result: SuccessResponse;
+    result: DataResponse<null>;
   };
 
   // 6. Check Auth (Session Restoration)
@@ -52,7 +52,7 @@ export interface AuthContract extends ApiContract {
     params: {
       userName: string;
     };
-    result: SuccessResponse;
+    result: DataResponse<null>;
   };
 
   // 8. Resolve Password Reset (Admin)
@@ -61,7 +61,7 @@ export interface AuthContract extends ApiContract {
       userName: string; // Natural Key
       tempPassword: string;
     };
-    result: SuccessResponse;
+    result: DataResponse<null>;
   };
 
   // 9. Get Pending Actions (Admin)
@@ -76,7 +76,7 @@ export interface AuthContract extends ApiContract {
       userName: string;
       role: Role;
     };
-    result: SuccessResponse;
+    result: DataResponse<null>;
   };
 
   // 11. Change Password (Authenticated User)
@@ -84,6 +84,6 @@ export interface AuthContract extends ApiContract {
     params: {
       newPassword: string;
     };
-    result: SuccessResponse;
+    result: DataResponse<null>;
   };
 }

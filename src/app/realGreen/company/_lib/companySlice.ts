@@ -1,41 +1,14 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { Company } from "@/app/realGreen/company/_lib/Company";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { CompanyContract } from "@/app/realGreen/company/_lib/CompanyContract";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-import { api } from "@/lib/api/api";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
-import { Grouper } from "@/lib/Grouper";
 import { companyFunc } from "@/app/realGreen/company/_lib/companyFunc";
+import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
-export const getCompanies = createAsyncThunk<
-  Company[],
-  WithConfig<CompanyContract["getAll"]["params"]>,
-  { rejectValue: string }
->(
-  "company/getCompanies",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<CompanyContract> = {
-      op: "getAll",
-      ...params,
-    };
-
-    const res = await api<CompanyContract["getAll"]["result"]>(
-      "/realGreen/company/api",
-      {
-        method: "POST",
-        body,
-      },
-    );
-
-    if (!res.success) {
-      return rejectWithValue(res.message);
-    }
-
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "company/getCompanies" }),
-);
+export const getCompanies = createStandardThunk<CompanyContract, "getAll">({
+  typePrefix: "company/getCompanies",
+  apiPath: "/realGreen/company/api",
+  opName: "getAll",
+});
 
 interface CompanyState {
   companies: Company[];

@@ -58,14 +58,14 @@ Update all `createAsyncThunk` definitions to read from `.payload`.
 ## 6. Generic Thunk Factories (`src/store/reduxUtil/thunkFactories.ts`)
 Create reusable factories to eliminate boilerplate.
 
-- [ ] `createStandardThunk<TParams, TResult>`:
+- [x] `createStandardThunk<TParams, TResult>`:
     - Automatically calls `api`.
     - Automatically returns `res.payload`.
     - Handles `smartThunkOptions`.
-- [ ] `createStreamThunk<TParams, TChunk>`:
+- [x] `createStreamThunk<TParams, TChunk>`:
     - Automatically calls `apiStream`.
     - Automatically reads NDJSON.
     - Dispatches to a provided `onChunk` action.
 
 ## 7. Cleanup
-- [ ] Remove `ObjResponse` and `ArrayResponse` types once all references are gone.
+- [x] Remove `ObjResponse` and `ArrayResponse` types once all references are gone.

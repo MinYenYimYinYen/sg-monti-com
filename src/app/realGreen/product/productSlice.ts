@@ -1,40 +1,14 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { Product } from "@/app/realGreen/product/Product";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-import { api } from "@/lib/api/api";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
+import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
-export const getProducts = createAsyncThunk<
-  Product[],
-  WithConfig<ProductContract["getAll"]["params"]>,
-  { rejectValue: string }
->(
-  "product/getProducts",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<ProductContract> = {
-      op: "getAll",
-      ...params,
-    };
-
-    const res = await api<ProductContract["getAll"]["result"]>(
-      "/realGreen/product/api",
-      {
-        method: "POST",
-        body,
-      },
-    );
-
-    if (!res.success) {
-      return rejectWithValue(res.message);
-    }
-
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "product/getProducts" }),
-);
+export const getProducts = createStandardThunk<ProductContract, "getAll">({
+  typePrefix: "product/getProducts",
+  apiPath: "/realGreen/product/api",
+  opName: "getAll",
+});
 
 interface ProductState {
   products: Product[];

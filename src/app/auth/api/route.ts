@@ -184,7 +184,7 @@ const handlers: HandlerMap<AuthContract> = {
       const cookieStore = await cookies();
       cookieStore.delete(AUTH_CONST.COOKIE.ACCESS_TOKEN);
       cookieStore.delete(AUTH_CONST.COOKIE.REFRESH_TOKEN);
-      return { success: true };
+      return { success: true, payload: null };
     },
   },
   refresh: {
@@ -224,7 +224,7 @@ const handlers: HandlerMap<AuthContract> = {
         maxAge: AUTH_CONST.EXPIRATION.COOKIE.ACCESS,
       });
 
-      return { success: true };
+      return { success: true, payload: null };
     },
   },
   checkAuth: {
@@ -267,7 +267,7 @@ const handlers: HandlerMap<AuthContract> = {
 
       // Security: Always return success to prevent username enumeration
       if (!user) {
-        return { success: true };
+        return { success: true, payload: null };
       }
 
       // 2. Create Request (Upsert to handle duplicates gracefully)
@@ -285,7 +285,7 @@ const handlers: HandlerMap<AuthContract> = {
         { upsert: true, new: true },
       );
 
-      return { success: true };
+      return { success: true, payload: null };
     },
   },
   resolvePasswordReset: {
@@ -328,7 +328,7 @@ const handlers: HandlerMap<AuthContract> = {
       request.status = "resolved";
       await request.save();
 
-      return { success: true };
+      return { success: true, payload: null };
     },
   },
   getPendingActions: {
@@ -386,7 +386,7 @@ const handlers: HandlerMap<AuthContract> = {
       user.role = role;
       await user.save();
 
-      return { success: true };
+      return { success: true, payload: null };
     },
   },
   changePassword: {
@@ -451,7 +451,7 @@ const handlers: HandlerMap<AuthContract> = {
         maxAge: AUTH_CONST.EXPIRATION.COOKIE.REFRESH,
       });
 
-      return { success: true };
+      return { success: true, payload: null };
     },
   },
 };

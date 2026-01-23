@@ -1,15 +1,10 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { User } from "@/app/auth/_types/User";
 import { AuthContract } from "@/app/auth/_types/AuthContract";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
-import { api } from "@/lib/api/api";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-import { handleError } from "@/lib/errors/errorHandler";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { CheckedId } from "@/app/auth/_types/authTypes";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
-import { DataResponse } from "@/lib/api/types/responses";
+import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
 type RequestStatus = "idle" | "pending" | "success" | "error";
 
@@ -52,242 +47,90 @@ const initialState: AuthState = {
 // 2. THUNKS
 
 // A. Check Eligibility
-const checkEligibility = createAsyncThunk<
-  CheckedId,
-  WithConfig<AuthContract["checkEligibility"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "auth/checkEligibility",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<AuthContract> = {
-      op: "checkEligibility",
-      ...params,
-    };
-
-    const res = await api<DataResponse<CheckedId>>("/auth/api", {
-      method: "POST",
-      body,
-    });
-
-    if (!res.success) return rejectWithValue(res.message);
-
-    return res.payload;
+const checkEligibility = createStandardThunk<
+  AuthContract,
+  "checkEligibility"
+>({
+  typePrefix: "auth/checkEligibility",
+  apiPath: "/auth/api",
+  opName: "checkEligibility",
+  customCondition: (arg, { getState }) => {
+    const state = getState() as AppState;
+    return !state.auth.checkedIds[arg.params.saId];
   },
-  smartThunkOptions({
-    typePrefix: "auth/checkEligibility",
-    customCondition: (arg, { getState }) => {
-      const state = getState() as AppState;
-      return !state.auth.checkedIds[arg.params.saId];
-    },
-  }),
-);
+});
 
 // B. Register
-const register = createAsyncThunk<
-  User,
-  WithConfig<AuthContract["register"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "auth/register",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<AuthContract> = { op: "register", ...params };
-
-    const res = await api<DataResponse<User>>("/auth/api", {
-      method: "POST",
-      body,
-    });
-
-    if (!res.success) return rejectWithValue(res.message);
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "auth/register" }),
-);
+const register = createStandardThunk<AuthContract, "register">({
+  typePrefix: "auth/register",
+  apiPath: "/auth/api",
+  opName: "register",
+});
 
 // C. Login
-const login = createAsyncThunk<
-  User,
-  WithConfig<AuthContract["login"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "auth/login",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<AuthContract> = { op: "login", ...params };
-
-    const res = await api<AuthContract["login"]["result"]>("/auth/api", {
-      method: "POST",
-      body,
-    });
-
-    if (!res.success) return rejectWithValue(res.message);
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "auth/login" }),
-);
+const login = createStandardThunk<AuthContract, "login">({
+  typePrefix: "auth/login",
+  apiPath: "/auth/api",
+  opName: "login",
+});
 
 // D. Logout
-const logout = createAsyncThunk<
-  boolean,
-  WithConfig<AuthContract["logout"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "auth/logout",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<AuthContract> = { op: "logout", ...params };
-
-    const res = await api<AuthContract["logout"]["result"]>("/auth/api", {
-      method: "POST",
-      body,
-    });
-
-    if (!res.success) return rejectWithValue(res.message);
-    return res.success;
-  },
-  smartThunkOptions({ typePrefix: "auth/logout" }),
-);
+const logout = createStandardThunk<AuthContract, "logout">({
+  typePrefix: "auth/logout",
+  apiPath: "/auth/api",
+  opName: "logout",
+});
 
 // E. Check Auth (Session Restoration)
-const checkAuth = createAsyncThunk<
-  User,
-  WithConfig<AuthContract["checkAuth"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "auth/checkAuth",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<AuthContract> = { op: "checkAuth", ...params };
-
-    const res = await api<AuthContract["checkAuth"]["result"]>("/auth/api", {
-      method: "POST",
-      body,
-    });
-
-    if (!res.success) {
-      handleError(
-        { message: res.message, type: "AUTH_ERROR", isOperational: true },
-        { silent: true },
-      );
-      return rejectWithValue(res.message);
-    }
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "auth/checkAuth" }),
-);
+const checkAuth = createStandardThunk<AuthContract, "checkAuth">({
+  typePrefix: "auth/checkAuth",
+  apiPath: "/auth/api",
+  opName: "checkAuth",
+});
 
 // F. Request Password Reset
-const requestPasswordReset = createAsyncThunk<
-  boolean,
-  WithConfig<AuthContract["requestPasswordReset"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "auth/requestPasswordReset",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<AuthContract> = {
-      op: "requestPasswordReset",
-      ...params,
-    };
-
-    const res = await api<AuthContract["requestPasswordReset"]["result"]>(
-      "/auth/api",
-      { method: "POST", body },
-    );
-
-    if (!res.success) return rejectWithValue(res.message);
-    return res.success;
-  },
-  smartThunkOptions({ typePrefix: "auth/requestPasswordReset" }),
-);
+const requestPasswordReset = createStandardThunk<
+  AuthContract,
+  "requestPasswordReset"
+>({
+  typePrefix: "auth/requestPasswordReset",
+  apiPath: "/auth/api",
+  opName: "requestPasswordReset",
+});
 
 // G. Get Pending Actions (Admin)
-const getPendingActions = createAsyncThunk<
-  { appliedUsers: User[]; pendingResets: PasswordResetRequest[] },
-  WithConfig<AuthContract["getPendingActions"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "auth/getPendingActions",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<AuthContract> = {
-      op: "getPendingActions",
-      ...params,
-    };
-
-    const res = await api<AuthContract["getPendingActions"]["result"]>(
-      "/auth/api",
-      { method: "POST", body },
-    );
-
-    if (!res.success) return rejectWithValue(res.message);
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "auth/getPendingActions" }),
-);
+const getPendingActions = createStandardThunk<
+  AuthContract,
+  "getPendingActions"
+>({
+  typePrefix: "auth/getPendingActions",
+  apiPath: "/auth/api",
+  opName: "getPendingActions",
+});
 
 // H. Approve User (Admin)
-const approveUser = createAsyncThunk<
-  boolean,
-  WithConfig<AuthContract["approveUser"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "auth/approveUser",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<AuthContract> = { op: "approveUser", ...params };
-
-    const res = await api<AuthContract["approveUser"]["result"]>("/auth/api", {
-      method: "POST",
-      body,
-    });
-
-    if (!res.success) return rejectWithValue(res.message);
-    return res.success;
-  },
-  smartThunkOptions({ typePrefix: "auth/approveUser" }),
-);
+const approveUser = createStandardThunk<AuthContract, "approveUser">({
+  typePrefix: "auth/approveUser",
+  apiPath: "/auth/api",
+  opName: "approveUser",
+});
 
 // I. Resolve Password Reset (Admin)
-const resolvePasswordReset = createAsyncThunk<
-  boolean,
-  WithConfig<AuthContract["resolvePasswordReset"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "auth/resolvePasswordReset",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<AuthContract> = {
-      op: "resolvePasswordReset",
-      ...params,
-    };
-
-    const res = await api<AuthContract["resolvePasswordReset"]["result"]>(
-      "/auth/api",
-      { method: "POST", body },
-    );
-
-    if (!res.success) return rejectWithValue(res.message);
-    return res.success;
-  },
-  smartThunkOptions({ typePrefix: "auth/resolvePasswordReset" }),
-);
+const resolvePasswordReset = createStandardThunk<
+  AuthContract,
+  "resolvePasswordReset"
+>({
+  typePrefix: "auth/resolvePasswordReset",
+  apiPath: "/auth/api",
+  opName: "resolvePasswordReset",
+});
 
 // J. Change Password (User)
-const changePassword = createAsyncThunk<
-  boolean,
-  WithConfig<AuthContract["changePassword"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "auth/changePassword",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<AuthContract> = {
-      op: "changePassword",
-      ...params,
-    };
-
-    const res = await api<AuthContract["changePassword"]["result"]>(
-      "/auth/api",
-      { method: "POST", body },
-    );
-
-    if (!res.success) return rejectWithValue(res.message);
-    return res.success;
-  },
-  smartThunkOptions({ typePrefix: "auth/changePassword" }),
-);
+const changePassword = createStandardThunk<AuthContract, "changePassword">({
+  typePrefix: "auth/changePassword",
+  apiPath: "/auth/api",
+  opName: "changePassword",
+});
 
 // 3. SLICE
 const authSlice = createSlice({

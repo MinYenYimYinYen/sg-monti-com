@@ -1,40 +1,14 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { TaxCode } from "@/app/realGreen/taxCode/TaxCode";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { TaxCodeContract } from "@/app/realGreen/taxCode/api/TaxCodeContract";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-import { api } from "@/lib/api/api";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
+import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
-export const getTaxCodes = createAsyncThunk<
-  TaxCode[],
-  WithConfig<TaxCodeContract["getAll"]["params"]>,
-  { rejectValue: string }
->(
-  "taxCode/getTaxCodes",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<TaxCodeContract> = {
-      op: "getAll",
-      ...params,
-    };
-
-    const res = await api<TaxCodeContract["getAll"]["result"]>(
-      "/realGreen/taxCode/api",
-      {
-        method: "POST",
-        body,
-      },
-    );
-
-    if (!res.success) {
-      return rejectWithValue(res.message);
-    }
-
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "taxCode/getTaxCodes" }),
-);
+export const getTaxCodes = createStandardThunk<TaxCodeContract, "getAll">({
+  typePrefix: "taxCode/getTaxCodes",
+  apiPath: "/realGreen/taxCode/api",
+  opName: "getAll",
+});
 
 interface TaxCodeState {
   taxCodes: TaxCode[];

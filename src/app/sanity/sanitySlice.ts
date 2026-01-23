@@ -1,18 +1,12 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { AppState } from "@/store";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   CustomerContract,
   StreamChunk,
 } from "@/app/realGreen/customer/_lib/types/CustomerContract";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-import { handleError } from "@/lib/errors/errorHandler";
-import { apiStream } from "@/lib/api/api";
 import { CustomerDoc } from "@/app/realGreen/customer/_lib/types/Customer";
 import { ProgramDoc } from "@/app/realGreen/customer/_lib/types/Program";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/types/Service";
-import { readNdjsonStream } from "@/lib/api/streamUtils";
+import { createStreamThunk } from "@/store/reduxUtil/thunkFactories";
 
 interface SanityState {
   dryCustomers: CustomerDoc[];
@@ -49,38 +43,17 @@ const sanitySlice = createSlice({
   },
 });
 
-export const getDocs = createAsyncThunk<
-  void,
-  WithConfig<CustomerContract["runSearchScheme"]["params"]>,
-  { rejectValue: string; state: AppState }
->(
-  "sanity/getDocs",
-  async (params, { dispatch, rejectWithValue }) => {
-    try {
-      const { params: apiParams } = params;
-      const body: OpMap<CustomerContract> = {
-        op: "runSearchScheme",
-        ...apiParams,
-      };
-
-      // Use the new apiStream wrapper (handles Auth & Errors)
-      const reader = await apiStream("/realGreen/customer/api", {
-        method: "POST",
-        body,
-      });
-
-      await readNdjsonStream<StreamChunk>(reader, (chunk) => {
-        dispatch(sanitySlice.actions.receiveChunk(chunk));
-      });
-
-      return;
-    } catch (e) {
-      const error = handleError(e);
-      return rejectWithValue(error.message);
-    }
+export const getDocs = createStreamThunk<
+  CustomerContract,
+  "runSearchScheme"
+>({
+  typePrefix: "sanity/getDocs",
+  apiPath: "/realGreen/customer/api",
+  opName: "runSearchScheme",
+  onChunk: (dispatch, chunk) => {
+    dispatch(sanitySlice.actions.receiveChunk(chunk));
   },
-  smartThunkOptions({ typePrefix: "sanity/getDocs" }),
-);
+});
 
 export const { clearDocs, receiveChunk } = sanitySlice.actions;
 export default sanitySlice.reducer;

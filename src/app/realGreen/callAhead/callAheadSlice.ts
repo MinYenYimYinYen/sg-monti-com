@@ -1,40 +1,14 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { CallAhead } from "@/app/realGreen/callAhead/CallAhead";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { CallAheadContract } from "@/app/realGreen/callAhead/api/CallAheadContract";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-import { api } from "@/lib/api/api";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
+import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
-export const getCallAheads = createAsyncThunk<
-  CallAhead[],
-  WithConfig<CallAheadContract["getAll"]["params"]>,
-  { rejectValue: string }
->(
-  "callAhead/getCallAheads",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<CallAheadContract> = {
-      op: "getAll",
-      ...params,
-    };
-
-    const res = await api<CallAheadContract["getAll"]["result"]>(
-      "/realGreen/callAhead/api",
-      {
-        method: "POST",
-        body,
-      },
-    );
-
-    if (!res.success) {
-      return rejectWithValue(res.message);
-    }
-
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "callAhead/getCallAheads" }),
-);
+export const getCallAheads = createStandardThunk<CallAheadContract, "getAll">({
+  typePrefix: "callAhead/getCallAheads",
+  apiPath: "/realGreen/callAhead/api",
+  opName: "getAll",
+});
 
 interface CallAheadState {
   callAheads: CallAhead[];

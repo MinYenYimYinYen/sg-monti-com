@@ -1,40 +1,14 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { ZipCode } from "@/app/realGreen/zipCode/ZipCode";
-import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { ZipCodeContract } from "@/app/realGreen/zipCode/api/ZipCodeContract";
-import { OpMap } from "@/lib/api/types/rpcUtils";
-import { api } from "@/lib/api/api";
-import { smartThunkOptions } from "@/store/reduxUtil/smartThunkOptions";
 import { Grouper } from "@/lib/Grouper";
+import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
-export const getZipCodes = createAsyncThunk<
-  ZipCode[],
-  WithConfig<ZipCodeContract["getAll"]["params"]>,
-  { rejectValue: string }
->(
-  "zipCode/getZipCodes",
-  async ({ params }, { rejectWithValue }) => {
-    const body: OpMap<ZipCodeContract> = {
-      op: "getAll",
-      ...params,
-    };
-
-    const res = await api<ZipCodeContract["getAll"]["result"]>(
-      "/realGreen/zipCode/api",
-      {
-        method: "POST",
-        body,
-      },
-    );
-
-    if (!res.success) {
-      return rejectWithValue(res.message);
-    }
-
-    return res.payload;
-  },
-  smartThunkOptions({ typePrefix: "zipCode/getZipCodes" }),
-);
+export const getZipCodes = createStandardThunk<ZipCodeContract, "getAll">({
+  typePrefix: "zipCode/getZipCodes",
+  apiPath: "/realGreen/zipCode/api",
+  opName: "getAll",
+});
 
 interface ZipCodeState {
   zipCodes: ZipCode[];
