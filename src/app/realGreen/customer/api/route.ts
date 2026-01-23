@@ -3,7 +3,7 @@ import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import * as console from "node:console";
 import { assertRole } from "@/app/auth/_lib/assertRole";
-import { CustomerContract } from "../_lib/types/CustomerContract";
+import { CustomerContract, StreamChunk } from "../_lib/types/CustomerContract";
 import { searchScheme } from "../_lib/types/searchScheme/searchSchemes";
 import {
   PipelineData,
@@ -67,12 +67,24 @@ const handlers: HandlerMap<CustomerContract> = {
                   }
 
                   // Stream to client
-                  // NOTE: Streaming chunks are NOT wrapped in { success: true, payload: ... }
-                  // because they are NDJSON lines. The client parses them directly.
-                  // However, if we wanted to standardize, we could wrap them.
-                  // For now, we keep them as raw StreamChunk objects as defined in the contract.
+                  // We need to map the flat array to the specific key expected by the client
+                  let chunkData = {};
+                  if (stepName === "customers") {
+                    chunkData = { customerDocs: result.data };
+                  } else if (stepName === "programs") {
+                    chunkData = { programDocs: result.data };
+                  } else if (stepName === "services") {
+                    chunkData = { serviceDocs: result.data };
+                  }
+
+                  const streamChunk: StreamChunk = {
+                    stepName: stepName,
+                    data: chunkData,
+                    metrics: result.metrics,
+                  };
+
                   controller.enqueue(
-                    encoder.encode(JSON.stringify(result) + "\n"),
+                    encoder.encode(JSON.stringify(streamChunk) + "\n"),
                   );
                 }
 

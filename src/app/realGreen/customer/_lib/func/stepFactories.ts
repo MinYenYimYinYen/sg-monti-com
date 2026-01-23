@@ -197,6 +197,7 @@ export function createPaginationStep<TRawData extends RawData>(
       const results = await Promise.all(promises);
 
       let totalRecords = 0;
+      let cumulativeRecords = 0;
 
       for (const res of results) {
         totalRecords += res.data.length;
@@ -208,9 +209,11 @@ export function createPaginationStep<TRawData extends RawData>(
           mongoData = config.filterFn(mongoData, pipelineData || []);
         }
 
+        cumulativeRecords += mongoData.length;
+
         yield {
           data: mongoData,
-          metrics: { calls: 1, durationMs: res.duration },
+          metrics: { calls: 1, durationMs: res.duration, cumulativeRecords },
         } as StepResult;
       }
 
@@ -231,9 +234,11 @@ export function createPaginationStep<TRawData extends RawData>(
             mongoData = config.filterFn(mongoData, pipelineData || []);
           }
 
+          cumulativeRecords += mongoData.length;
+
           yield {
             data: mongoData,
-            metrics: { calls: 1, durationMs: duration },
+            metrics: { calls: 1, durationMs: duration, cumulativeRecords },
           } as StepResult;
         }
       }
@@ -243,7 +248,7 @@ export function createPaginationStep<TRawData extends RawData>(
 
       yield {
         data: [],
-        metrics: { calls: 0, durationMs: 0 },
+        metrics: { calls: 0, durationMs: 0, cumulativeRecords },
         optimizationUpdate,
       };
     },
@@ -285,6 +290,7 @@ export function createBatchSizeStep<TRawData extends RawData>(
       const totalIds = allIds.length;
 
       let currentMaxRecords = 0;
+      let cumulativeRecords = 0;
 
       for (let i = 0; i < totalIds; i += batchSize) {
         const batchIds = allIds.slice(i, i + batchSize);
@@ -312,9 +318,11 @@ export function createBatchSizeStep<TRawData extends RawData>(
           mongoData = config.filterFn(mongoData, pipelineData || []);
         }
 
+        cumulativeRecords += mongoData.length;
+
         yield {
           data: mongoData,
-          metrics: { calls: 1, durationMs: Date.now() - start },
+          metrics: { calls: 1, durationMs: Date.now() - start, cumulativeRecords },
         };
 
         // Check for overflow
@@ -336,9 +344,11 @@ export function createBatchSizeStep<TRawData extends RawData>(
               mongoOverflow = config.filterFn(mongoOverflow, pipelineData || []);
             }
 
+            cumulativeRecords += mongoData.length;
+
             yield {
               data: mongoOverflow,
-              metrics: { calls: 1, durationMs: duration },
+              metrics: { calls: 1, durationMs: duration, cumulativeRecords },
             };
           }
         }
@@ -354,7 +364,7 @@ export function createBatchSizeStep<TRawData extends RawData>(
 
       yield {
         data: [],
-        metrics: { calls: 0, durationMs: 0 },
+        metrics: { calls: 0, durationMs: 0, cumulativeRecords },
         optimizationUpdate,
       };
     },

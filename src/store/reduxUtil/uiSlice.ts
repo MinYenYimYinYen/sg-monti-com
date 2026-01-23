@@ -41,6 +41,9 @@ const uiSlice = createSlice({
       state.loadingCount = 1;
       state.loadingMessage = "Loading...";
     },
+    setLoadingMessage: (state, action: PayloadAction<string>) => {
+      state.loadingMessage = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder

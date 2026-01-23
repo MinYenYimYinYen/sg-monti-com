@@ -59,6 +59,7 @@ export type StepResult = {
   metrics: {
     calls: number;
     durationMs: number;
+    cumulativeRecords: number;
   };
   // The step calculates its own optimization updates
   optimizationUpdate?: Partial<SearchOptimizer>;

@@ -8,6 +8,7 @@ import {
   CustomerContract,
   StreamChunk,
 } from "@/app/realGreen/customer/_lib/types/CustomerContract";
+import { uiActions } from "@/store/reduxUtil/uiSlice";
 
 type ActiveCustomersState = BaseCustomerState;
 
@@ -43,6 +44,13 @@ const getCustDocs = createStreamThunk<CustomerContract, "runSearchScheme">({
   opName: "runSearchScheme",
   onChunk: (dispatch, chunk) => {
     dispatch(activeCustomersSlice.actions.receiveChunk(chunk));
+    if (chunk.metrics?.cumulativeRecords) {
+      dispatch(
+        uiActions.setLoadingMessage(
+          `${chunk.metrics.cumulativeRecords} ${chunk.stepName} loaded...`,
+        ),
+      );
+    }
   },
 });
 

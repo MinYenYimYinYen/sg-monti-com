@@ -18,6 +18,7 @@ export type StreamChunk = {
   metrics?: {
     calls: number;
     durationMs: number;
+    cumulativeRecords: number;
   };
 };
 
