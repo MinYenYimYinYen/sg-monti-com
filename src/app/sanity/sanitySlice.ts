@@ -12,6 +12,7 @@ import { apiStream } from "@/lib/api/api";
 import { CustomerDoc } from "@/app/realGreen/customer/_lib/types/Customer";
 import { ProgramDoc } from "@/app/realGreen/customer/_lib/types/Program";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/types/Service";
+import { readNdjsonStream } from "@/lib/api/streamUtils";
 
 interface SanityState {
   dryCustomers: CustomerDoc[];
@@ -68,31 +69,9 @@ export const getDocs = createAsyncThunk<
         body,
       });
 
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        // Handle NDJSON (Newline Delimited JSON)
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep the last incomplete line in buffer
-
-        for (const line of lines) {
-          if (line.trim()) {
-            try {
-              const chunk: StreamChunk = JSON.parse(line);
-              // DISPATCH INCREMENTAL UPDATE
-              dispatch(sanitySlice.actions.receiveChunk(chunk));
-            } catch (parseError) {
-              console.error("Failed to parse chunk", parseError);
-            }
-          }
-        }
-      }
+      await readNdjsonStream<StreamChunk>(reader, (chunk) => {
+        dispatch(sanitySlice.actions.receiveChunk(chunk));
+      });
 
       return;
     } catch (e) {
