@@ -6,25 +6,62 @@ import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import { PriceTableContract } from "@/app/realGreen/priceTable/api/PriceTableContract";
 import {
   PriceTable,
-  RawPriceTable,
-
+  PriceTableDoc,
+  PriceTableRaw,
 } from "@/app/realGreen/priceTable/_entities/PriceTableTypes";
-import {remapPriceTable} from "@/app/realGreen/priceTable/_lib/priceTableServerFunc";
+import {
+  extendPriceRanges,
+  extendPriceTables,
+  remapPriceRanges,
+  remapPriceTables,
+} from "@/app/realGreen/priceTable/_lib/priceTableServerFunc";
+import { PriceRangeRaw } from "@/app/realGreen/priceTable/_entities/PriceRangeType";
+import { Grouper } from "@/lib/Grouper";
 
 const handlers: HandlerMap<PriceTableContract> = {
-  getAll: {
+  getPriceTableDocs: {
     roles: ["office", "admin"],
     handler: async () => {
-      const rawPriceTables = await rgApi<RawPriceTable[]>({
+
+      //todo: Cache these in mongo.  It's a slow load.
+      const priceTablesRaw = await rgApi<PriceTableRaw[]>({
         path: "/PriceTable",
         method: "GET",
       });
 
-      const priceTables = rawPriceTables.map(remapPriceTable);
+      const priceTableCores = remapPriceTables(priceTablesRaw);
+      const partialPriceTableDocs = await extendPriceTables(priceTableCores);
 
-      return { success: true, payload: priceTables };
+      const tableIds = priceTableCores.map((p) => p.tableId);
+
+      const priceRangesRaw: PriceRangeRaw[] = [];
+      for (const tableId of tableIds) {
+        const priceRange = await rgApi<PriceRangeRaw>({
+          path: `/PriceTable/${tableId}/Detailed`,
+          method: "GET",
+        });
+        priceRangesRaw.push(priceRange);
+      }
+      const priceRangeCores = remapPriceRanges(priceRangesRaw);
+      const priceRangeDocs = extendPriceRanges(priceRangeCores);
+      const priceRangesByTableId = new Grouper(priceRangeDocs)
+        .groupBy((item) => item.tableId)
+        .toMap();
+
+      const priceTableDocs: PriceTableDoc[] = partialPriceTableDocs.map(
+        (pt) => {
+          return {
+            ...pt,
+            ranges: priceRangesByTableId.get(pt.tableId) || [],
+          };
+        },
+      );
+
+      return { success: true, payload: priceTableDocs };
     },
   },
+
+
 };
 
 export async function POST(req: NextRequest) {

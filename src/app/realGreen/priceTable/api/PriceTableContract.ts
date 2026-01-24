@@ -1,10 +1,10 @@
 import { DataResponse } from "@/lib/api/types/responses";
-import { PriceTable } from "@/app/realGreen/priceTable/_entities/PriceTableTypes";
+import { PriceTableDoc } from "@/app/realGreen/priceTable/_entities/PriceTableTypes";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 
 export interface PriceTableContract extends ApiContract {
-  getAll: {
+  getPriceTableDocs: {
     params: {};
-    result: DataResponse<PriceTable[]>;
+    result: DataResponse<PriceTableDoc[]>;
   };
 }
