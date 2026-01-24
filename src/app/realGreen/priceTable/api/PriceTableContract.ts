@@ -1,5 +1,5 @@
 import { DataResponse } from "@/lib/api/types/responses";
-import { PriceTable } from "@/app/realGreen/priceTable/PriceTable";
+import { PriceTable } from "@/app/realGreen/priceTable/_entities/PriceTableTypes";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 
 export interface PriceTableContract extends ApiContract {

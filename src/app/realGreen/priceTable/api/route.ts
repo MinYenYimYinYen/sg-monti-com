@@ -7,8 +7,9 @@ import { PriceTableContract } from "@/app/realGreen/priceTable/api/PriceTableCon
 import {
   PriceTable,
   RawPriceTable,
-  remapPriceTable,
-} from "@/app/realGreen/priceTable/PriceTable";
+
+} from "@/app/realGreen/priceTable/_entities/PriceTableTypes";
+import {remapPriceTable} from "@/app/realGreen/priceTable/_lib/priceTableServerFunc";
 
 const handlers: HandlerMap<PriceTableContract> = {
   getAll: {
