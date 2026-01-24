@@ -5,22 +5,25 @@ import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import { TaxCodeContract } from "@/app/realGreen/taxCode/api/TaxCodeContract";
 import {
-  RawTaxCode,
-  remapTaxCode,
-} from "@/app/realGreen/taxCode/TaxCode";
+  TaxCodeRaw,
+
+} from "@/app/realGreen/taxCode/TaxCodeTypes";
+import {extendTaxCodes, remapTaxCodes} from "../_lib/taxCodeServerFunc";
 
 const handlers: HandlerMap<TaxCodeContract> = {
   getAll: {
     roles: ["office", "admin"],
     handler: async () => {
-      const rawTaxCodes = await rgApi<RawTaxCode[]>({
+      const rawTaxCodes = await rgApi<TaxCodeRaw[]>({
         path: "/Tax",
         method: "GET",
       });
 
-      const taxCodes = rawTaxCodes.map(remapTaxCode);
+      const taxCodesCore = remapTaxCodes(rawTaxCodes);
+      const taxCodeDocs = await extendTaxCodes(taxCodesCore)
+      
 
-      return { success: true, payload: taxCodes };
+      return { success: true, payload: taxCodeDocs };
     },
   },
 };

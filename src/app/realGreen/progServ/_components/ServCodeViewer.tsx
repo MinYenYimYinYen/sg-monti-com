@@ -1,5 +1,5 @@
 import React from "react";
-import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCode";
+import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
 type ServCodeViewerProps = {
   servCodes: ServCode[];

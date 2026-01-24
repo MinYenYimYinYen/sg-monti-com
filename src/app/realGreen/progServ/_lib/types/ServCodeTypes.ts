@@ -17,9 +17,11 @@
 // };
 
 
-import {Grouper} from "@/lib/Grouper";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import {baseProgCode, ProgCode} from "@/app/realGreen/progServ/_lib/types/ProgCode";
+import {
+  baseProgCode,
+  ProgCode,
+} from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export type ServCodeRaw = {
@@ -94,7 +96,7 @@ export type ServCodeRaw = {
 };
 
 
-export type ServCodeRemapped = {
+export type ServCodeCore = {
   servCodeId: string;
   isServiceCall: boolean;
   available: boolean;
@@ -103,21 +105,21 @@ export type ServCodeRemapped = {
 
 };
 
-export type ServCodeMongo = CreatedUpdated & {
+export type ServCodeDocProps = CreatedUpdated & {
   servCodeId: string;
   begin: string;
   end: string;
   alwaysAsap: boolean;
 };
 
-export type ServCodeWithMongo = ServCodeRemapped & ServCodeMongo;
+export type ServCodeDoc = ServCodeCore & ServCodeDocProps;
 
 
 export type ServCodeProps = {
   progCode: ProgCode;
 }
 
-export type ServCode = ServCodeWithMongo & ServCodeProps;
+export type ServCode = ServCodeDoc & ServCodeProps;
 
 export const baseServCode: ServCode = {
   servCodeId: baseStrId,
@@ -133,43 +135,3 @@ export const baseServCode: ServCode = {
   updatedAt: "",
 }
 
-export function remapServCode(raw: ServCodeRaw): ServCodeRemapped {
-  return {
-    servCodeId: raw.id,
-    isServiceCall: raw.isServiceCall,
-    available: raw.available,
-    longName: raw.longName,
-    invoiceMessage: raw.invoiceMessage,
-  };
-}
-
-export function extendServCode({
-  remapped,
-  mongo,
-}: {
-  remapped: ServCodeRemapped;
-  mongo?: ServCodeMongo;
-}): ServCode {
-  return {
-    ...remapped,
-    createdAt: mongo?.createdAt,
-    updatedAt: mongo?.updatedAt,
-  } as ServCode;
-}
-
-export function extendServCodes({
-  remapped,
-  mongo,
-}: {
-  remapped: ServCodeRemapped[];
-  mongo: ServCodeMongo[];
-}): ServCode[] {
-  const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.servCodeId);
-
-  return remapped.map((r) =>
-    extendServCode({
-      remapped: r,
-      mongo: mongoMap.get(r.servCodeId),
-    }),
-  );
-}

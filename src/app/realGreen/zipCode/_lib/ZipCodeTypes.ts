@@ -35,6 +35,7 @@ export type ZipCodeDocProps = CreatedUpdated & {
 
 export type ZipCodeDoc = ZipCodeCore & ZipCodeDocProps;
 
+
 export type ZipCodeProps = {};
 
 export type ZipCode = ZipCodeDoc & ZipCodeProps;

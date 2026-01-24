@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { ServCodeMongo } from "@/app/realGreen/progServ/_lib/types/ServCode";
+import { ServCodeDocProps } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
-interface ServCodeDoc extends ServCodeMongo, mongoose.Document {}
+interface ServCodeDoc extends ServCodeDocProps, mongoose.Document {}
 
 const ServCodeSchema = new mongoose.Schema(
   {

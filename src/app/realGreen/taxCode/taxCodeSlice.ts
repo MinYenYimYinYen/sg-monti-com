@@ -1,7 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { TaxCode } from "@/app/realGreen/taxCode/TaxCode";
+import { TaxCodeDoc } from "@/app/realGreen/taxCode/TaxCodeTypes";
 import { TaxCodeContract } from "@/app/realGreen/taxCode/api/TaxCodeContract";
-import { Grouper } from "@/lib/Grouper";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
 export const getTaxCodes = createStandardThunk<TaxCodeContract, "getAll">({
@@ -11,11 +10,11 @@ export const getTaxCodes = createStandardThunk<TaxCodeContract, "getAll">({
 });
 
 interface TaxCodeState {
-  taxCodes: TaxCode[];
+  taxCodeDocs: TaxCodeDoc[];
 }
 
 const initialState: TaxCodeState = {
-  taxCodes: [],
+  taxCodeDocs: [],
 };
 
 const taxCodeSlice = createSlice({
@@ -24,18 +23,10 @@ const taxCodeSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getTaxCodes.fulfilled, (state, action) => {
-      state.taxCodes = action.payload;
+      state.taxCodeDocs = action.payload;
     });
-  },
-  selectors: {
-    allTaxCodes: (state) => state.taxCodes,
-    activeTaxCodes: (state) =>
-      state.taxCodes.filter((taxCode) => taxCode.available),
-    taxCodeMap: (state) =>
-      new Grouper(state.taxCodes).toUniqueMap((c) => c.taxCodeId),
   },
 });
 
 export const taxCodeActions = { ...taxCodeSlice.actions, getTaxCodes };
-export const taxCodeSelect = { ...taxCodeSlice.selectors };
 export default taxCodeSlice.reducer;

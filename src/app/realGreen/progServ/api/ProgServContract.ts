@@ -1,8 +1,8 @@
 import { ProgServ } from "@/app/realGreen/progServ/_lib/types/ProgServ";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { DataResponse } from "@/lib/api/types/responses";
-import { ProgCodeWithMongo } from "@/app/realGreen/progServ/_lib/types/ProgCode";
-import { ServCodeWithMongo } from "@/app/realGreen/progServ/_lib/types/ServCode";
+import { ProgCodeDoc } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
 export interface ProgServContract extends ApiContract {
   syncProgServ: {
@@ -11,10 +11,10 @@ export interface ProgServContract extends ApiContract {
   };
   getProgCodes: {
     params: {};
-    result: DataResponse<ProgCodeWithMongo[]>;
+    result: DataResponse<ProgCodeDoc[]>;
   };
   getServCodes: {
     params: {};
-    result: DataResponse<ServCodeWithMongo[]>;
+    result: DataResponse<ServCodeDoc[]>;
   };
 }

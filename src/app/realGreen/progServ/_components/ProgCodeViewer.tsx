@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import { progServSelect } from "@/app/realGreen/progServ/selectors/progServSelectors";
-import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCode";
+import { progServSelect } from "@/app/realGreen/progServ/_selectors/progServSelectors";
+import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { Button } from "@/style/components/Button";
 import { Modal } from "@/style/components/Modal";
 import { ServCodeViewer } from "./ServCodeViewer";

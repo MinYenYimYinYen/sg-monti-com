@@ -1,7 +1,19 @@
 import {
   ZipCodeCore,
   ZipCodeDoc,
-} from "@/app/realGreen/zipCode/_lib/entities/types/ZipCode";
+  ZipCodeRaw,
+} from "@/app/realGreen/zipCode/_lib/ZipCodeTypes";
+
+function remapZipCode(raw: ZipCodeRaw): ZipCodeCore {
+  return {
+    zip: raw.zip,
+    city: raw.city,
+  };
+}
+
+export function remapZipCodes(raw: ZipCodeRaw[]) {
+  return raw.map((r) => remapZipCode(r));
+}
 
 export async function extendZipCodes(
   remapped: ZipCodeCore[],

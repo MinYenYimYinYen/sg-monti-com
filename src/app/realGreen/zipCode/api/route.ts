@@ -4,11 +4,8 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import { ZipCodeContract } from "@/app/realGreen/zipCode/api/ZipCodeContract";
-import { ZipCodeRaw } from "../_lib/entities/types/ZipCode";
-import {
-  remapZipCodes,
-} from "../_lib/entities/funcs/zipCodeFunc";
-import {extendZipCodes} from "@/app/realGreen/zipCode/_lib/entities/serverFuncs/zipCodeServerFunc";
+import { ZipCodeRaw } from "../_lib/ZipCodeTypes";
+import {extendZipCodes, remapZipCodes} from "@/app/realGreen/zipCode/_lib/zipCodeServerFunc";
 
 const handlers: HandlerMap<ZipCodeContract> = {
   getAll: {

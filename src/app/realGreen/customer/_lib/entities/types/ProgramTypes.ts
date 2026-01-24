@@ -1,7 +1,7 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Service } from "./ServiceTypes";
 import { Customer } from "./CustomerTypes";
-import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCode";
+import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 
 export type ProgramRaw = {
   averagePrice: number;

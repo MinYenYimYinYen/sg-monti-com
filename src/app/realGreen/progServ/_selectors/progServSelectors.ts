@@ -1,14 +1,14 @@
 import { AppState } from "@/store";
-import { hydrateProgCodes } from "@/app/realGreen/progServ/_lib/hydrateProgCodes";
+import { hydrateProgCodes } from "@/app/realGreen/progServ/_selectors/_hydrateProgCodes";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/Grouper";
 
-const selectDryProgCodes = (state: AppState) => state.progServ.dryProgCodes;
-const selectDryServCodes = (state: AppState) => state.progServ.dryServCodes;
-const selectProgServLinks = (state: AppState) => state.progServ.progServLinks;
+const selectProgCodeDocs = (state: AppState) => state.progServ.progCodeDocs;
+const selectDryServCodes = (state: AppState) => state.progServ.servCodeDocs;
+const selectProgServs = (state: AppState) => state.progServ.progServs;
 
 const selectProgCodes = createSelector(
-  [selectDryProgCodes, selectDryServCodes, selectProgServLinks],
+  [selectProgCodeDocs, selectDryServCodes, selectProgServs],
   (dryProgCodes, dryServCodes, progServLinks) =>
     hydrateProgCodes(dryProgCodes, dryServCodes, progServLinks),
 );
@@ -26,12 +26,6 @@ const selectServCodeMap = createSelector([selectServCodes], (servCodes) =>
 );
 
 export const progServSelect = {
-  //Source data
-  dryProgCodes: selectDryProgCodes,
-  dryServCodes: selectDryServCodes,
-  progServLinks: selectProgServLinks,
-
-  //Derived data
   progCodes: selectProgCodes,
   progCodeByDefIdMap: selectProgCodeByDefIdMap,
   servCodes: selectServCodes,

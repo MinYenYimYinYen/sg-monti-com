@@ -1,51 +1,20 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { ServCodeWithMongo } from "@/app/realGreen/progServ/_lib/types/ServCode";
+import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { ProgServ } from "@/app/realGreen/progServ/_lib/types/ProgServ";
-import { ProgServContract } from "@/app/realGreen/progServ/_lib/types/ProgServContract";
-import { ProgCodeWithMongo } from "@/app/realGreen/progServ/_lib/types/ProgCode";
+import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract";
+import { ProgCodeDoc } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
-// --- Thunks ---
-
-export const fetchDryProgCodes = createStandardThunk<
-  ProgServContract,
-  "getProgCodes"
->({
-  typePrefix: "progServ/fetchDryProgCodes",
-  apiPath: "/realGreen/progServ/api",
-  opName: "getProgCodes",
-});
-
-export const fetchDryServCodes = createStandardThunk<
-  ProgServContract,
-  "getServCodes"
->({
-  typePrefix: "progServ/fetchDryServCodes",
-  apiPath: "/realGreen/progServ/api",
-  opName: "getServCodes",
-});
-
-export const fetchProgServs = createStandardThunk<
-  ProgServContract,
-  "syncProgServ"
->({
-  typePrefix: "progServ/fetchProgServs",
-  apiPath: "/realGreen/progServ/api",
-  opName: "syncProgServ",
-});
-
-// --- Slice ---
-
 interface ProgServState {
-  dryProgCodes: ProgCodeWithMongo[];
-  dryServCodes: ServCodeWithMongo[];
-  progServLinks: ProgServ[];
+  progCodeDocs: ProgCodeDoc[];
+  servCodeDocs: ServCodeDoc[];
+  progServs: ProgServ[];
 }
 
 const initialState: ProgServState = {
-  dryProgCodes: [],
-  dryServCodes: [],
-  progServLinks: [],
+  progCodeDocs: [],
+  servCodeDocs: [],
+  progServs: [],
 };
 
 const progServSlice = createSlice({
@@ -53,22 +22,49 @@ const progServSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: (builder) => {
-    builder.addCase(fetchDryProgCodes.fulfilled, (state, action) => {
-      state.dryProgCodes = action.payload;
+    builder.addCase(getProgCodeDocs.fulfilled, (state, action) => {
+      state.progCodeDocs = action.payload;
     });
-    builder.addCase(fetchDryServCodes.fulfilled, (state, action) => {
-      state.dryServCodes = action.payload;
+    builder.addCase(getServCodeDocs.fulfilled, (state, action) => {
+      state.servCodeDocs = action.payload;
     });
-    builder.addCase(fetchProgServs.fulfilled, (state, action) => {
-      state.progServLinks = action.payload;
+    builder.addCase(getProgServs.fulfilled, (state, action) => {
+      state.progServs = action.payload;
     });
   },
 });
 
+export const getProgCodeDocs = createStandardThunk<
+  ProgServContract,
+  "getProgCodes"
+>({
+  typePrefix: "progServ/getProgCodeDocs",
+  apiPath: "/realGreen/progServ/api",
+  opName: "getProgCodes",
+});
+
+export const getServCodeDocs = createStandardThunk<
+  ProgServContract,
+  "getServCodes"
+>({
+  typePrefix: "progServ/getServCodeDocs",
+  apiPath: "/realGreen/progServ/api",
+  opName: "getServCodes",
+});
+
+export const getProgServs = createStandardThunk<
+  ProgServContract,
+  "syncProgServ"
+>({
+  typePrefix: "progServ/getProgServs",
+  apiPath: "/realGreen/progServ/api",
+  opName: "syncProgServ",
+});
+
 export const progServActions = {
   ...progServSlice.actions,
-  fetchDryProgCodes,
-  fetchDryServCodes,
-  fetchProgServs,
+  fetchDryProgCodes: getProgCodeDocs,
+  fetchDryServCodes: getServCodeDocs,
+  fetchProgServs: getProgServs,
 };
 export default progServSlice.reducer;

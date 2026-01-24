@@ -1,7 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { Product } from "@/app/realGreen/product/Product";
+import { ProductDoc } from "@/app/realGreen/product/ProductTypes";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
-import { Grouper } from "@/lib/Grouper";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
 export const getProducts = createStandardThunk<ProductContract, "getAll">({
@@ -11,11 +10,11 @@ export const getProducts = createStandardThunk<ProductContract, "getAll">({
 });
 
 interface ProductState {
-  products: Product[];
+  productDocs: ProductDoc[];
 }
 
 const initialState: ProductState = {
-  products: [],
+  productDocs: [],
 };
 
 const productSlice = createSlice({
@@ -24,16 +23,10 @@ const productSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getProducts.fulfilled, (state, action) => {
-      state.products = action.payload;
+      state.productDocs = action.payload;
     });
-  },
-  selectors: {
-    allProducts: (state) => state.products,
-    productMap: (state) =>
-      new Grouper(state.products).toUniqueMap((c) => c.productId),
   },
 });
 
 export const productActions = { ...productSlice.actions, getProducts };
-export const productSelect = { ...productSlice.selectors };
 export default productSlice.reducer;

@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { MongoProduct } from "@/app/realGreen/product/Product";
+import { ProductDocProps } from "@/app/realGreen/product/ProductTypes";
 
-interface ProductDoc extends MongoProduct, mongoose.Document {}
+interface ProductDoc extends ProductDocProps, mongoose.Document {}
 
 const ProductSchema = new mongoose.Schema(
   {

@@ -1,7 +1,7 @@
 import { Service } from "../types/ServiceTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseProgram } from "./ProgramBase";
-import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCode";
+import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
 export const baseService: Service = {
   servId: baseNumId,

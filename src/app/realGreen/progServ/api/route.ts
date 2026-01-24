@@ -2,29 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { assertRole } from "@/app/auth/_lib/assertRole";
-import { ProgServContract } from "@/app/realGreen/progServ/_lib/types/ProgServContract";
-import { ProgServModel } from "@/app/realGreen/progServ/_lib/models/ProgServModel";
+import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract";
+import { ProgServModel } from "@/app/realGreen/progServ/_models/ProgServModel";
 import { dateCompare } from "@/lib/primatives/dates/dateCompare";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import {
-  ProgServ,
-  RawProgServ, remapProgServs,
+  RawProgServ,
+  remapProgServs,
 } from "@/app/realGreen/progServ/_lib/types/ProgServ";
 import { delay } from "@/lib/async/delay";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { ProgCodeRaw } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import { ServCodeRaw } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+
 import {
-  ProgCodeRaw,
-  ProgCodeWithMongo,
+  extendProgCodes,
   remapProgCodes,
-} from "@/app/realGreen/progServ/_lib/types/ProgCode";
+} from "@/app/realGreen/progServ/_lib/func/progCodeServerFunc";
 import {
   extendServCodes,
-  ServCodeMongo,
-  ServCodeRaw,
   remapServCode,
-  ServCode,
-} from "@/app/realGreen/progServ/_lib/types/ServCode";
-import ServCodeModel from "@/app/realGreen/progServ/_lib/models/ServCodeModel";
+} from "@/app/realGreen/progServ/_lib/func/servCodeServerFunc";
 
 const handlers: HandlerMap<ProgServContract> = {
   syncProgServ: {
@@ -33,7 +31,9 @@ const handlers: HandlerMap<ProgServContract> = {
       await connectToMongoDB();
 
       // 1. Check Cache Freshness
-      const lastUpdated = await ProgServModel.findOne().sort({ updatedAt: -1 }).lean();
+      const lastUpdated = await ProgServModel.findOne()
+        .sort({ updatedAt: -1 })
+        .lean();
       const isFresh =
         lastUpdated &&
         dateCompare.isWithinDays({
@@ -69,7 +69,7 @@ const handlers: HandlerMap<ProgServContract> = {
         }
       }
 
-      const remapped = remapProgServs(rawProgServs)
+      const remapped = remapProgServs(rawProgServs);
 
       // 3. Upsert to Mongo
       if (remapped.length > 0) {
@@ -99,13 +99,13 @@ const handlers: HandlerMap<ProgServContract> = {
 
       // Filter for available only, just in case the API returns all
       const availableProgCodes = remapped.filter((p) => p.available);
-      const progCodes = availableProgCodes.sort((a, b) =>
+      const progCodeCores = availableProgCodes.sort((a, b) =>
         a.progCodeId.localeCompare(b.progCodeId),
       );
 
-      const MOCKED_MONGO = progCodes as ProgCodeWithMongo[]; // Mongo db isn't extending this yet.
+      const progCodeDocs = await extendProgCodes(progCodeCores);
 
-      return { success: true, payload: MOCKED_MONGO };
+      return { success: true, payload: progCodeDocs };
     },
   },
   getServCodes: {
@@ -116,18 +116,10 @@ const handlers: HandlerMap<ProgServContract> = {
         method: "GET",
       });
 
-      const remappedServCodes = rawServCodes.map(remapServCode);
-      await connectToMongoDB();
-      const mongoServCodes: ServCodeMongo[] = await ServCodeModel.find(
-        {},
-      ).lean();
+      const servCodeCores = rawServCodes.map(remapServCode);
+      const servCodeDocs = await extendServCodes(servCodeCores);
 
-      const servCodes: ServCode[] = extendServCodes({
-        remapped: remappedServCodes,
-        mongo: mongoServCodes,
-      });
-
-      return { success: true, payload: servCodes };
+      return { success: true, payload: servCodeDocs };
     },
   },
 };

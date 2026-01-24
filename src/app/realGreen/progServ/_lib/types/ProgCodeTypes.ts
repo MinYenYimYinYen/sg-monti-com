@@ -1,7 +1,6 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { Grouper } from "@/lib/Grouper";
-import { ServCode } from "./ServCode";
-import {baseNumId, baseStrId, realGreenConst} from "@/app/realGreen/_lib/realGreenConst";
+import { ServCode } from "./ServCodeTypes";
+import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export type ProgCodeRaw = {
   // anyBranch: boolean;
@@ -74,22 +73,20 @@ export type ProgCodeRemapped = {
   programType: string | null;
   progDefId: number;
   unitCode: number;
-
-
 };
 
-export type ProgCodeMongo = CreatedUpdated & {
+export type ProgCodeDocProps = CreatedUpdated & {
   progCodeId: string;
 };
 
-export type ProgCodeWithMongo = ProgCodeRemapped & ProgCodeMongo;
+export type ProgCodeDoc = ProgCodeRemapped & ProgCodeDocProps;
 
-export type ProgCodeHydrate = {
+export type ProgCodeProps = {
   servCodes: ServCode[];
   isSpecial: boolean;
-}
+};
 
-export type ProgCode = ProgCodeWithMongo & ProgCodeHydrate;
+export type ProgCode = ProgCodeDoc & ProgCodeProps;
 
 export const baseProgCode: ProgCode = {
   progCodeId: baseStrId,
@@ -102,50 +99,4 @@ export const baseProgCode: ProgCode = {
   isSpecial: false,
   createdAt: "",
   updatedAt: "",
-}
-
-function remapProgramCode(raw: ProgCodeRaw): ProgCodeRemapped {
-  return {
-    progCodeId: raw.programCode,
-    available: raw.available,
-    description: raw.description,
-    programType: raw.programType,
-    progDefId: raw.programDefinitionID,
-    unitCode: raw.unitCode || baseNumId,
-  };
-}
-
-export function remapProgCodes (raw: ProgCodeRaw[]): ProgCodeRemapped[] {
-  return raw.map(remapProgramCode);
-}
-
-// export function extendProgramCode({
-//   remapped,
-//   mongo,
-// }: {
-//   remapped: ProgCodeRemapped;
-//   mongo?: MongoProgramCode;
-// }): ProgCode {
-//   return {
-//     ...remapped,
-//     createdAt: mongo?.createdAt,
-//     updatedAt: mongo?.updatedAt,
-//   } as ProgCode;
-// }
-//
-// export function extendProgramCodes({
-//   remapped,
-//   mongo,
-// }: {
-//   remapped: ProgCodeRemapped[];
-//   mongo: MongoProgramCode[];
-// }): ProgCode[] {
-//   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.progCodeId);
-//
-//   return remapped.map((r) =>
-//     extendProgramCode({
-//       remapped: r,
-//       mongo: mongoMap.get(r.progCodeId),
-//     }),
-//   );
-// }
+};

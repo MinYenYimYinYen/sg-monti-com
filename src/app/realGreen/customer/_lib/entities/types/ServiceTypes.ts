@@ -12,7 +12,7 @@ import {
   Production,
 } from "@/app/realGreen/_lib/subTypes/Production";
 import { Program } from "./ProgramTypes";
-import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCode";
+import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
 export type ServiceRaw = {
   // actualManHours?: number;

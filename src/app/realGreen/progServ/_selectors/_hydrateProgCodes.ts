@@ -1,10 +1,10 @@
-import { ProgCode, ProgCodeWithMongo } from "./types/ProgCode";
-import { ServCode, ServCodeWithMongo } from "./types/ServCode";
-import { ProgServ } from "./types/ProgServ";
+import { ProgCode, ProgCodeDoc } from "../_lib/types/ProgCodeTypes";
+import { ServCode, ServCodeDoc } from "../_lib/types/ServCodeTypes";
+import { ProgServ } from "../_lib/types/ProgServ";
 
 export function hydrateProgCodes(
-  dryProgCodes: ProgCodeWithMongo[],
-  dryServCodes: ServCodeWithMongo[],
+  dryProgCodes: ProgCodeDoc[],
+  dryServCodes: ServCodeDoc[],
   links: ProgServ[],
 ): ProgCode[] {
   // --- Data Preparation ---
@@ -55,15 +55,15 @@ function mapProgDefIdToServCodeIds(links: ProgServ[]): Map<number, string[]> {
 }
 
 function mapServCodeIdToServCode(
-  dryServCodes: ServCodeWithMongo[],
-): Map<string, ServCodeWithMongo> {
-  const map = new Map<string, ServCodeWithMongo>();
+  dryServCodes: ServCodeDoc[],
+): Map<string, ServCodeDoc> {
+  const map = new Map<string, ServCodeDoc>();
   dryServCodes.forEach((s) => map.set(s.servCodeId, s));
   return map;
 }
 
 function mapProgDefIdToIsSpecial(
-  dryProgCodes: ProgCodeWithMongo[],
+  dryProgCodes: ProgCodeDoc[],
   progToServMap: Map<number, string[]>,
 ): Map<number, boolean> {
   const map = new Map<number, boolean>();
@@ -76,7 +76,7 @@ function mapProgDefIdToIsSpecial(
 }
 
 function createStubProgCodes(
-  dryProgCodes: ProgCodeWithMongo[],
+  dryProgCodes: ProgCodeDoc[],
   isSpecialMap: Map<number, boolean>,
 ): Map<number, ProgCode> {
   const map = new Map<number, ProgCode>();
@@ -92,12 +92,12 @@ function createStubProgCodes(
 
 function createLeafServCodes(
   servCodeIds: string[],
-  servMap: Map<string, ServCodeWithMongo>,
+  servMap: Map<string, ServCodeDoc>,
   stubParent: ProgCode,
 ): ServCode[] {
   return servCodeIds
     .map((id) => servMap.get(id))
-    .filter((s): s is ServCodeWithMongo => !!s)
+    .filter((s): s is ServCodeDoc => !!s)
     .map((dryServ) => ({
       ...dryServ,
       progCode: stubParent,
@@ -106,10 +106,10 @@ function createLeafServCodes(
 }
 
 function createContextProgCodes(
-  dryProgCodes: ProgCodeWithMongo[],
+  dryProgCodes: ProgCodeDoc[],
   stubProgCodes: Map<number, ProgCode>,
   progToServMap: Map<number, string[]>,
-  servMap: Map<string, ServCodeWithMongo>,
+  servMap: Map<string, ServCodeDoc>,
   isSpecialMap: Map<number, boolean>,
 ): Map<number, ProgCode> {
   const map = new Map<number, ProgCode>();
@@ -128,12 +128,12 @@ function createContextProgCodes(
 
 function createRichServCodes(
   servCodeIds: string[],
-  servMap: Map<string, ServCodeWithMongo>,
+  servMap: Map<string, ServCodeDoc>,
   contextParent: ProgCode,
 ): ServCode[] {
   return servCodeIds
     .map((id) => servMap.get(id))
-    .filter((s): s is ServCodeWithMongo => !!s)
+    .filter((s): s is ServCodeDoc => !!s)
     .map((dryServ) => ({
       ...dryServ,
       progCode: contextParent,
@@ -142,10 +142,10 @@ function createRichServCodes(
 }
 
 function createRootProgCodes(
-  dryProgCodes: ProgCodeWithMongo[],
+  dryProgCodes: ProgCodeDoc[],
   contextProgCodes: Map<number, ProgCode>,
   progToServMap: Map<number, string[]>,
-  servMap: Map<string, ServCodeWithMongo>,
+  servMap: Map<string, ServCodeDoc>,
   isSpecialMap: Map<number, boolean>,
 ): ProgCode[] {
   return dryProgCodes

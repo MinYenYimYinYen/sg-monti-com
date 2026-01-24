@@ -5,11 +5,11 @@ import { Service } from "../_lib/entities/types/ServiceTypes";
 import { Grouper } from "@/lib/Grouper";
 import { BaseCustomerState } from "@/app/realGreen/customer/slices/SliceTypes";
 import { AppState } from "@/store";
-import { progServSelect } from "@/app/realGreen/progServ/selectors/progServSelectors";
-import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCode";
+import { progServSelect } from "@/app/realGreen/progServ/_selectors/progServSelectors";
+import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { baseProgram } from "../_lib/entities/bases/ProgramBase";
 import { baseCustomer } from "../_lib/entities/bases/CustomerBase";
-import { baseProgCode } from "../../progServ/_lib/types/ProgCode";
+import { baseProgCode } from "../../progServ/_lib/types/ProgCodeTypes";
 
 /**
  * Factory to create the Base Tree Selector.

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ProgCodeViewer } from "@/app/realGreen/progServ/components/ProgCodeViewer";
+import { ProgCodeViewer } from "@/app/realGreen/progServ/_components/ProgCodeViewer";
 import { Container } from "@/style/components/Containers";
 import { useProgServ } from "@/app/realGreen/progServ/useProgServ";
 

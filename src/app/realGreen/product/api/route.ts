@@ -4,35 +4,25 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
+import { ProductRaw, ProductDoc } from "@/app/realGreen/product/ProductTypes";
 import {
   extendProducts,
-  MongoProduct,
-  Product,
-  RawProduct,
-  remapProduct,
-} from "@/app/realGreen/product/Product";
-import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import ProductModel from "@/app/realGreen/product/ProductModel";
+  remapProducts,
+} from "@/app/realGreen/product/_lib/productServerFunc";
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {
     roles: ["office", "admin"],
     handler: async () => {
-      const rawProducts = await rgApi<RawProduct[]>({
+      const rawProducts = await rgApi<ProductRaw[]>({
         path: "/Products",
         method: "GET",
       });
 
-      const remappedProducts = rawProducts.map(remapProduct);
-      await connectToMongoDB();
-      const mongoProducts: MongoProduct[] = await ProductModel.find({}).lean();
+      const productsCore = remapProducts(rawProducts);
+      const productDocs: ProductDoc[] = await extendProducts(productsCore);
 
-      const products: Product[] = extendProducts({
-        remapped: remappedProducts,
-        mongo: mongoProducts,
-      });
-
-      return { success: true, payload: products };
+      return { success: true, payload: productDocs };
     },
   },
 };

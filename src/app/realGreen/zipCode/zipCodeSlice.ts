@@ -1,7 +1,7 @@
 import {createSlice} from "@reduxjs/toolkit";
 import {ZipCodeContract} from "@/app/realGreen/zipCode/api/ZipCodeContract";
 import {createStandardThunk} from "@/store/reduxUtil/thunkFactories";
-import {ZipCodeDoc} from "./_lib/entities/types/ZipCode";
+import {ZipCodeDoc} from "./_lib/ZipCodeTypes";
 
 export const getZipCodes = createStandardThunk<ZipCodeContract, "getAll">({
   typePrefix: "zipCode/getZipCodes",
