@@ -1,0 +1,43 @@
+import { typeGuard } from "@/lib/typeGuard";
+import {
+  baseContactPreference,
+  remapContactPreference,
+} from "@/app/realGreen/_lib/subTypes/ContactPreferences";
+import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
+import { CustomerCore, CustomerRaw } from "../types/CustomerTypes";
+
+function remapCustomer(raw: CustomerRaw): CustomerCore {
+  return {
+    custId: raw.id,
+    address: raw.address,
+    billingAddress: raw.billingAddress,
+    billingCompanyName: raw.billingCompanyName,
+    billingFirstName: raw.billingFirstName,
+    billingLastName: raw.billingLastName,
+    billingTitle: raw.billingTitle,
+    billingType: raw.billingType,
+    callAheadId: raw.callCode,
+    censusTractInfo: raw.censusTractInfo,
+    contactPreference:
+      remapContactPreference(raw.contactPreferences) || baseContactPreference,
+    directions: raw.directions,
+    discountId: raw.discountCode,
+    displayName: raw.displayName,
+    email: raw.email,
+    importDate: raw.importDate || "",
+    isMasterAcct: raw.isMasterAccount,
+    masterAcctId: raw.masterAccountID || baseNumId,
+    netBalance: raw.netBalance,
+    phones: raw.phones,
+    size: raw.size,
+    status: raw.statusCharacter,
+    subdivisionId: raw.subdivisionID || baseNumId,
+    taxIds: typeGuard.definedArray([raw.taxID1, raw.taxID2, raw.taxID3]),
+    techNote: raw.techNote,
+    useBilling: raw.useBillingInfo,
+  };
+}
+
+export function remapCustomers(raw: CustomerRaw[]) {
+  return raw.map((r) => remapCustomer(r));
+}
