@@ -5,7 +5,7 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract";
 import { ProgServModel } from "@/app/realGreen/progServ/_models/ProgServModel";
 import { dateCompare } from "@/lib/primatives/dates/dateCompare";
-import { rgApi } from "@/app/realGreen/employee/api/rgApi";
+import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import {
   RawProgServ,
   remapProgServs,

@@ -3,8 +3,8 @@ import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { AuthContract } from "@/app/auth/_types/AuthContract";
-import { rgApi } from "@/app/realGreen/employee/api/rgApi";
-import { RawEmployee } from "@/app/realGreen/employee/Employee";
+import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
+import { EmployeeRaw } from "@/app/realGreen/employee/EmployeeTypes";
 import UserModel from "@/app/auth/_models/UserModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { AppError } from "@/lib/errors/AppError";
@@ -44,7 +44,7 @@ const handlers: HandlerMap<AuthContract> = {
       const isValid =
         !alreadyExists &&
         (
-          await rgApi<RawEmployee | null>({
+          await rgApi<EmployeeRaw | null>({
             path: `/Employee/${saId}`,
             method: "GET",
           })
@@ -78,7 +78,7 @@ const handlers: HandlerMap<AuthContract> = {
         });
       }
 
-      const rgEmployee = await rgApi<RawEmployee | null>({
+      const rgEmployee = await rgApi<EmployeeRaw | null>({
         path: `/Employee/${saId}`,
         method: "GET",
       });

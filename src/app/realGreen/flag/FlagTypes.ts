@@ -1,4 +1,6 @@
-export type RawFlag = {
+import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+
+export type FlagRaw = {
   available: boolean;
   backgroundCOlor: number | null;
   emphasis: boolean;
@@ -16,7 +18,7 @@ export type RawFlag = {
   websiteAvailable: boolean;
 };
 
-export type RemappedFlag = {
+export type FlagCore = {
   flagId: number;
   available: boolean;
   description: string;
@@ -26,21 +28,22 @@ export type RemappedFlag = {
 //   id: string;
 // };
 
-export type Flag = RemappedFlag; // & MongoFlag;
+export type FlagDocProps = CreatedUpdated & {
+  flagId: number;
+};
 
-export function remapFlag(raw: RawFlag): RemappedFlag {
-  return {
-    flagId: raw.id,
-    available: raw.available,
-    description: raw.flagDescription,
-  };
-}
+export type FlagDoc = FlagDocProps & FlagCore;
+
+
+export type FlagProps = {};
+
+export type Flag = FlagProps & FlagDoc;
 
 // export function extendFlag({
 //   remapped,
 //   mongo,
 // }: {
-//   remapped: RemappedFlag;
+//   remapped: FlagCore;
 //   mongo?: MongoFlag;
 // }): Flag {
 //   return {
@@ -54,7 +57,7 @@ export function remapFlag(raw: RawFlag): RemappedFlag {
 //   remapped,
 //   mongo,
 // }: {
-//   remapped: RemappedFlag[];
+//   remapped: FlagCore[];
 //   mongo: MongoFlag[];
 // }): Flag[] {
 //   const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.id);

@@ -1,4 +1,4 @@
-import { rgHttp } from "@/app/realGreen/employee/api/rgHttp";
+import { rgHttp } from "@/app/realGreen/_lib/api/rgHttp";
 import { SearchCriteriaRaw } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/types/SearchScheme";
 
 export async function rgSearch<T>(criteria: SearchCriteriaRaw) {

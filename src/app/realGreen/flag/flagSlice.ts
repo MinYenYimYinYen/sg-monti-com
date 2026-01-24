@@ -1,21 +1,20 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { Flag } from "@/app/realGreen/flag/Flag";
+import { FlagDoc } from "@/app/realGreen/flag/FlagTypes";
 import { FlagContract } from "@/app/realGreen/flag/api/FlagContract";
-import { Grouper } from "@/lib/Grouper";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
-export const getFlags = createStandardThunk<FlagContract, "getAll">({
+export const getFlagDocs = createStandardThunk<FlagContract, "getAll">({
   typePrefix: "flag/getFlags",
   apiPath: "/realGreen/flag/api",
   opName: "getAll",
 });
 
 interface FlagState {
-  flags: Flag[];
+  flagDocs: FlagDoc[];
 }
 
 const initialState: FlagState = {
-  flags: [],
+  flagDocs: [],
 };
 
 const flagSlice = createSlice({
@@ -23,17 +22,12 @@ const flagSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: (builder) => {
-    builder.addCase(getFlags.fulfilled, (state, action) => {
-      state.flags = action.payload;
+    builder.addCase(getFlagDocs.fulfilled, (state, action) => {
+      state.flagDocs = action.payload;
     });
   },
-  selectors: {
-    allFlags: (state) => state.flags,
-    activeFlags: (state) => state.flags.filter((flag) => flag.available),
-    flagMap: (state) => new Grouper(state.flags).toUniqueMap((f) => f.flagId),
-  },
+
 });
 
-export const flagActions = { ...flagSlice.actions, getFlags };
-export const flagSelect = { ...flagSlice.selectors };
+export const flagActions = { ...flagSlice.actions, getFlagDocs };
 export default flagSlice.reducer;

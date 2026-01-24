@@ -2,22 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
-import { rgApi } from "@/app/realGreen/employee/api/rgApi";
+import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { FlagContract } from "@/app/realGreen/flag/api/FlagContract";
-import { Flag, RawFlag, remapFlag } from "@/app/realGreen/flag/Flag";
+import { FlagRaw } from "@/app/realGreen/flag/FlagTypes";
+import {
+  extendFlags,
+  remapFlags,
+} from "@/app/realGreen/flag/_lib/flagServerFunc";
 
 const handlers: HandlerMap<FlagContract> = {
   getAll: {
     roles: ["office", "admin"],
     handler: async () => {
-      const rawFlags = await rgApi<RawFlag[]>({
+      const rawFlags = await rgApi<FlagRaw[]>({
         path: "/Flag",
         method: "GET",
       });
 
-      const flags = rawFlags.map(remapFlag);
+      const flagCores = remapFlags(rawFlags);
+      const flagDocs = await extendFlags(flagCores);
 
-      return { success: true, payload: flags };
+      return { success: true, payload: flagDocs };
     },
   },
 };
@@ -39,7 +44,8 @@ export async function POST(req: NextRequest) {
 
     const result = await config.handler(params as any);
     return NextResponse.json(result);
-  } catch (e) { //todo: this is duplicated in every api route.  A function should be extracted.
+  } catch (e) {
+    //todo: this is duplicated in every api route.  A function should be extracted.
     const error = normalizeError(e);
     console.error(`[API] ${error.type}: ${error.message}`, {
       stack: error.stack,

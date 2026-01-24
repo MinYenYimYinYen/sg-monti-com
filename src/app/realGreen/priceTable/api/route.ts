@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
-import { rgApi } from "@/app/realGreen/employee/api/rgApi";
+import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { PriceTableContract } from "@/app/realGreen/priceTable/api/PriceTableContract";
 import {
   PriceTable,

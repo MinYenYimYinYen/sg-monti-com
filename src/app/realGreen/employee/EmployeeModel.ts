@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { MongoEmployee } from "@/app/realGreen/employee/Employee";
+import {EmployeeDocProps} from "@/app/realGreen/employee/EmployeeTypes";
 
-interface EmployeeDoc extends MongoEmployee, mongoose.Document {}
+interface EmployeeDoc extends EmployeeDocProps, mongoose.Document {}
 
 const EmployeeSchema = new mongoose.Schema(
   {

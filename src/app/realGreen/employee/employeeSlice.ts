@@ -2,7 +2,7 @@ import {
   createSelector,
   createSlice,
 } from "@reduxjs/toolkit";
-import { Employee } from "@/app/realGreen/employee/Employee";
+import { Employee } from "@/app/realGreen/employee/EmployeeTypes";
 import { EmployeeContract } from "@/app/realGreen/employee/api/EmployeeContract";
 import { Grouper } from "@/lib/Grouper";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";

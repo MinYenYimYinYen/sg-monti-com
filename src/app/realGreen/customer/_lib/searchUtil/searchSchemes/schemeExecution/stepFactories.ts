@@ -11,7 +11,7 @@ import {
 import {SearchOptimizer} from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/types/SearchOptimizer";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
-import { rgSearch } from "@/app/realGreen/employee/api/rgSearchApi";
+import { rgSearch } from "@/app/realGreen/_lib/api/rgSearchApi";
 import {
   CustomerCore,
   CustomerRaw,
