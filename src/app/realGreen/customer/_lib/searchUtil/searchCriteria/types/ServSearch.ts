@@ -1,4 +1,4 @@
-import { RGSearchBase } from "@/app/realGreen/customer/_lib/types/searchCriteria/RGSearchBase";
+import { RGSearchBase } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/types/RGSearchBase";
 import { RGStringRange } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 
 export type ServiceSearchRaw = RGSearchBase & {
@@ -64,15 +64,3 @@ export type ServiceSearchCriteria = {
   servStats?: string[];
   season: number;
 };
-
-export function remapServSearch(
-  search: ServiceSearchCriteria,
-): ServiceSearchRaw {
-  const rgSearch: ServiceSearchRaw = { searchType: "service" };
-  if (search.custIds) rgSearch.customerNumber = search.custIds;
-  if (search.servIds) rgSearch.id = search.servIds;
-  if (search.progIds) rgSearch.programID = search.progIds;
-  if (search.servStats) rgSearch.serviceStatus = search.servStats;
-  rgSearch.serviceYear = [search.season];
-  return rgSearch;
-}

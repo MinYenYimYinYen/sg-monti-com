@@ -1,119 +1,60 @@
 # RealGreen Entity Architecture
 
-This directory follows a strict "Type Flow" pipeline to handle data ingestion, cleaning, storage, and hydration.
+This directory follows a strict "Type Flow" pipeline to handle data ingestion, cleaning, storage, and hydration. This architecture is designed to enforce separation of concerns and ensure type safety across the application.
 
-## The 5-Stage Pipeline
+## Folder Structure
 
-Data flows through five distinct type stages to ensure separation of concerns between the external API, our internal database, and the UI.
+Code for each entity is organized into three distinct subfolders within `_lib/entities/`:
 
-1.  **Raw** (`$Entity$Raw`)
+1.  **`types/`**: Pure TypeScript definitions. No runtime logic.
+2.  **`bases/`**: Default "Empty" objects for initialization and fallbacks.
+3.  **`funcs/`**: Pure functions for data transformation (Remappers, Extenders).
+
+## The 4-Stage Type Pipeline
+
+Data flows through four distinct type stages:
+
+1.  **Raw (`[Entity]Raw`)**
     *   **Source**: External API (RealGreen).
     *   **Characteristics**: Exact shape of the JSON response. All fields (even unused ones), original messy naming, nullable types.
-    *   **Action**: Input for `remap$Entity$`.
+    *   **Location**: `types/[Entity]Types.ts`
 
-2.  **Remapped** (`$Entity$Remapped`)
-    *   **Source**: Output of `remap$Entity$`.
-    *   **Characteristics**: Clean, camelCase field names. Nulls handled/defaulted. Data structures transformed (e.g., combining fields).
-    *   **Purpose**: The "Pure" data shape used in business logic.
+2.  **Core (`[Entity]Core`)**
+    *   **Source**: Output of `remap[Entity]`.
+    *   **Characteristics**: Clean, normalized JavaScript objects. CamelCase field names. Nulls handled/defaulted.
+    *   **Location**: `types/[Entity]Types.ts`
 
-3.  **Mongo** (`$Entity$Mongo`)
-    *   **Source**: MongoDB.
-    *   **Characteristics**: Extends `CreatedUpdated`. Contains the **Unique ID** to link back to the Source.
-    *   **Purpose**: Metadata storage (when was this record first seen/last updated?).
+3.  **Doc (`[Entity]Doc`)**
+    *   **Source**: MongoDB / Redux Store.
+    *   **Characteristics**: Intersection of `Core` & `DocProps`. Contains the data plus metadata (`createdAt`, `updatedAt`, `_id`).
+    *   **Definition**: `type [Entity]Doc = [Entity]Core & [Entity]DocProps`.
+    *   **Location**: `types/[Entity]Types.ts`
 
-4.  **WithMongo** (`$Entity$WithMongo`)
-    *   **Source**: Output of `extend$Entity$s`.
-    *   **Characteristics**: Intersection of `Remapped & Mongo`.
-    *   **Purpose**: The base entity ready for use, containing clean data + timestamps.
-    *   **Efficiency**: Merging must use `Grouper` to ensure **O(N)** complexity.
+4.  **Hydrated (`[Entity]`)**
+    *   **Source**: UI Selectors.
+    *   **Characteristics**: The `Doc` enriched with relationships (e.g., `Service` containing its `Program`).
+    *   **Definition**: `type [Entity] = [Entity]Doc & [Entity]Props`.
+    *   **Location**: `types/[Entity]Types.ts`
 
-5.  **Hydrate** (`$Entity$Hydrate`)
-    *   **Source**: Application Logic.
-    *   **Characteristics**: Contains joined/resolved data (e.g., a `Program` containing its full `Customer` object).
-    *   **Final Type**: `type $Entity$ = $Entity$WithMongo & $Entity$Hydrate`.
+## Standard Functions (`funcs/`)
 
-## Standard Functions
+*   `remap[Entity](raw: [Entity]Raw): [Entity]Core`
+    *   Pure function. Transforms one raw item to one clean core item.
+*   `extend[Entity]s(core: [Entity]Core[]): Promise<[Entity]Doc[]>`
+    *   Merges the clean core data with database metadata.
 
-*   `remap$Entity$(raw: $Entity$Raw): $Entity$Remapped`
-    *   Pure function. Transforms one raw item to one clean item.
-*   `extend$Entity$s({ remapped, mongo }): $Entity$WithMongo[]`
-    *   Merges the clean data with database metadata.
-    *   **MUST** use `Grouper` to create a hash map of Mongo items before iterating.
+## Base Objects (`bases/`)
 
-## WebStorm Live Template
+*   `base[Entity]`: A constant object matching the `[Entity]` type with default empty values.
+*   **Usage**:
+    *   Initializing state.
+    *   Providing safe fallbacks for missing relationships (e.g., `service.program || baseProgram`).
 
-Use the abbreviation `typeflow` to generate this structure.
+## Selectors
 
-**Template Text:**
+For simple entities (like `ZipCode`), standard Redux selectors are sufficient.
 
-```typescript
-import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { Grouper } from "@/lib/Grouper";
-
-export type $Entity$Raw = {
-  id: $IdType$;
-};
-
-export type $Entity$Remapped = {
-  $IdField$: $IdType$;
-};
-
-export type $Entity$Mongo = CreatedUpdated & {
-  $IdField$: $IdType$;
-};
-
-export type $Entity$WithMongo = $Entity$Remapped & $Entity$Mongo;
-
-export type $Entity$Hydrate = {}
-
-export type $Entity$ = $Entity$WithMongo & $Entity$Hydrate;
-
-function remap$Entity$(raw: $Entity$Raw): $Entity$Remapped {
-  return {
-    $IdField$: raw.id,
-  } as $Entity$Remapped;
-}
-
-export function remap$Entity$s (raw: $Entity$Raw[]) {
-  return raw.map((r) => remap$Entity$(r));
-}
-
-function extend$Entity$({
-  remapped,
-  mongo,
-}: {
-  remapped: $Entity$Remapped;
-  mongo?: $Entity$Mongo;
-}): $Entity$WithMongo {
-  return {
-    ...remapped,
-    createdAt: mongo?.createdAt || "",
-    updatedAt: mongo?.updatedAt || "",
-  }
-}
-
-export function extend$Entity$s({
-  remapped,
-  mongo,
-}: {
-  remapped: $Entity$Remapped[];
-  mongo: $Entity$Mongo[];
-}): $Entity$WithMongo[] {
-  const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.$IdField$ );
-
-  return remapped.map((r) =>
-    extend$Entity$({
-      remapped: r,
-      mongo: mongoMap.get(r.$IdField$),
-    }),
-  );
-}
-```
-
-**Variables:**
-
-| Name | Expression | Default value | Skip if defined |
-| :--- | :--- | :--- | :--- |
-| **Entity** | `capitalize(camelCase(fileNameWithoutExtension()))` | `"Entity"` | ☐ |
-| **IdField** | `camelCase(Entity) + "Id"` | `"id"` | ☐ |
-| **IdType** | | `"number"` | ☐ |
+For complex, interconnected entities (like `Customer` -> `Program` -> `Service`), we use the **Context Tree Architecture**.
+*   **Goal**: Allow bidirectional navigation (`service.program.services`) without circular dependencies.
+*   **Pattern**: Build a "Base Tree" (Top-Down), then wrap nodes in "Context Objects" (Bottom-Up) that provide parent pointers.
+*   **Reference**: See `src/app/realGreen/customer/customer.readme.md` for the full Context Tree documentation.

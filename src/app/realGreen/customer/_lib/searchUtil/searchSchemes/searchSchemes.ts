@@ -1,9 +1,9 @@
-import { SearchScheme } from "@/app/realGreen/customer/_lib/types/searchScheme/SearchScheme";
+import { SearchScheme } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/types/SearchScheme";
 
 import {
   createBatchSizeStep,
   createPaginationStep,
-} from "../../func/stepFactories";
+} from "./schemeExecution/stepFactories";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { CustomerDoc } from "../../entities/types/CustomerTypes";
 import { ProgramDoc } from "../../entities/types/ProgramTypes";

@@ -2,10 +2,9 @@ import {
   CustStat,
   RGNumRange,
   RGStringRange,
-  statusArrayToStringRange,
 } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 import { TRange } from "@/lib/primatives/TRange";
-import {RGSearchBase} from "@/app/realGreen/customer/_lib/types/searchCriteria/RGSearchBase";
+import { RGSearchBase } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/types/RGSearchBase";
 
 export type CustomerSearchRaw = RGSearchBase & {
   searchType: "customer";
@@ -105,16 +104,3 @@ export type CustomerSearchCriteria = RGSearchBase & {
   statuses?: CustStat[];
   zip?: string;
 };
-
-export function remapCustSearch(search: CustomerSearchCriteria): CustomerSearchRaw {
-  const rgSearch: CustomerSearchRaw = { searchType: "customer"};
-  if (search.custIds) rgSearch.customerID = search.custIds;
-  if (search.zip) rgSearch.customerZip = search.zip;
-  if (search.statuses)
-    rgSearch.customerStatus = statusArrayToStringRange(search.statuses);
-  if (search.size) rgSearch.customerSize = {
-    minValue: search.size.min,
-    maxValue: search.size.max,
-  }
-  return rgSearch;
-}

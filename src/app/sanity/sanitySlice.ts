@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   CustomerContract,
   StreamChunk,
-} from "@/app/realGreen/customer/_lib/types/CustomerContract";
+} from "@/app/realGreen/customer/api/CustomerContract";
 
 import { createStreamThunk } from "@/store/reduxUtil/thunkFactories";
 import { CustomerDoc } from "../realGreen/customer/_lib/entities/types/CustomerTypes";

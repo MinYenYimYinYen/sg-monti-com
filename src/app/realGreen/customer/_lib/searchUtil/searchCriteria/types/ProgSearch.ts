@@ -4,7 +4,7 @@ import {
   RGStringRange,
 } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 import { TRange } from "@/lib/primatives/TRange";
-import { RGSearchBase } from "@/app/realGreen/customer/_lib/types/searchCriteria/RGSearchBase";
+import { RGSearchBase } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/types/RGSearchBase";
 
 export type ProgramSearchRaw = RGSearchBase & {
   searchType: "program";
@@ -87,17 +87,3 @@ export type ProgramSearchCriteria = {
   statuses?: ProgStat[];
   season?: number;
 };
-
-export function remapProgSearch(search: ProgramSearchCriteria): ProgramSearchRaw {
-  const rgSearch: ProgramSearchRaw = { searchType: "program"};
-  if (search.custIds) rgSearch.customerNumber = search.custIds;
-  if (search.soldRange)
-    rgSearch.dateSold = {
-      minValue: search.soldRange.min,
-      maxValue: search.soldRange.max,
-    };
-  if (search.progIds) rgSearch.id = search.progIds;
-  if (search.season)
-    rgSearch.serviceYear = { minValue: search.season, maxValue: search.season };
-  return rgSearch;
-}

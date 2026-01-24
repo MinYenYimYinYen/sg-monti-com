@@ -1,8 +1,7 @@
-import { createSlice } from "@reduxjs/toolkit";
-import { ZipCode } from "@/app/realGreen/zipCode/ZipCode";
-import { ZipCodeContract } from "@/app/realGreen/zipCode/api/ZipCodeContract";
-import { Grouper } from "@/lib/Grouper";
-import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
+import {createSlice} from "@reduxjs/toolkit";
+import {ZipCodeContract} from "@/app/realGreen/zipCode/api/ZipCodeContract";
+import {createStandardThunk} from "@/store/reduxUtil/thunkFactories";
+import {ZipCodeDoc} from "./_lib/entities/types/ZipCode";
 
 export const getZipCodes = createStandardThunk<ZipCodeContract, "getAll">({
   typePrefix: "zipCode/getZipCodes",
@@ -11,11 +10,11 @@ export const getZipCodes = createStandardThunk<ZipCodeContract, "getAll">({
 });
 
 interface ZipCodeState {
-  zipCodes: ZipCode[];
+  zipCodeDocs: ZipCodeDoc[];
 }
 
 const initialState: ZipCodeState = {
-  zipCodes: [],
+  zipCodeDocs: [],
 };
 
 const zipCodeSlice = createSlice({
@@ -24,16 +23,10 @@ const zipCodeSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getZipCodes.fulfilled, (state, action) => {
-      state.zipCodes = action.payload;
+      state.zipCodeDocs = action.payload;
     });
-  },
-  selectors: {
-    allZipCodes: (state) => state.zipCodes,
-    zipCodeMap: (state) =>
-      new Grouper(state.zipCodes).toUniqueMap((c) => c.zip),
   },
 });
 
-export const zipCodeActions = { ...zipCodeSlice.actions, getZipCodes };
-export const zipCodeSelect = { ...zipCodeSlice.selectors };
+export const zipCodeActions = {...zipCodeSlice.actions, getZipCodes};
 export default zipCodeSlice.reducer;

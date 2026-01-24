@@ -2,30 +2,30 @@ import { SearchOptimizer } from "./SearchOptimizer";
 import {
   CustomerSearchRaw,
   CustomerSearchCriteria,
-} from "@/app/realGreen/customer/_lib/types/searchCriteria/CustSearch";
+} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/types/CustSearch";
 import {
   ProgramSearchRaw,
   ProgramSearchCriteria,
-} from "../searchCriteria/ProgSearch";
+} from "../../searchCriteria/types/ProgSearch";
 import {
   ServiceSearchRaw,
   ServiceSearchCriteria,
-} from "../searchCriteria/ServSearch";
+} from "../../searchCriteria/types/ServSearch";
 import {
   CustomerCore,
   CustomerDoc,
   CustomerRaw,
-} from "../../entities/types/CustomerTypes";
+} from "../../../entities/types/CustomerTypes";
 import {
   ProgramCore,
   ProgramDoc,
   ProgramRaw,
-} from "../../entities/types/ProgramTypes";
+} from "../../../entities/types/ProgramTypes";
 import {
   ServiceCore,
   ServiceDoc,
   ServiceRaw,
-} from "../../entities/types/ServiceTypes";
+} from "../../../entities/types/ServiceTypes";
 
 export type RawData = CustomerRaw[] | ProgramRaw[] | ServiceRaw[];
 

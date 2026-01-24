@@ -3,14 +3,14 @@ import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import * as console from "node:console";
 import { assertRole } from "@/app/auth/_lib/assertRole";
-import { CustomerContract, StreamChunk } from "../_lib/types/CustomerContract";
-import { searchScheme } from "../_lib/types/searchScheme/searchSchemes";
+import { CustomerContract, StreamChunk } from "./CustomerContract";
+import { searchScheme } from "../_lib/searchUtil/searchSchemes/searchSchemes";
 import {
   PipelineData,
   StepContext,
-} from "@/app/realGreen/customer/_lib/types/searchScheme/SearchScheme";
+} from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/types/SearchScheme";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { getSearchOptimizer } from "@/app/realGreen/customer/_lib/func/getOptimizer";
+import { getSearchOptimizer } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/searchOptimizer/getOptimizer";
 import { SearchOptimizerModel } from "@/app/realGreen/customer/_lib/models/SearchOptimizerModel";
 
 /**

@@ -1,15 +1,10 @@
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
-import {
-  zipCodeActions,
-  zipCodeSelect,
-} from "@/app/realGreen/zipCode/zipCodeSlice";
+import { zipCodeActions } from "@/app/realGreen/zipCode/zipCodeSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
-import { AppError } from "@/lib/errors/AppError";
 
 export function useZipCode({ autoLoad }: { autoLoad: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
-  const zipCodeMap = useSelector(zipCodeSelect.zipCodeMap);
 
   if (autoLoad) {
     dispatch(
@@ -34,19 +29,5 @@ export function useZipCode({ autoLoad }: { autoLoad: boolean }) {
       }),
     );
 
-  const findZipCode = (zip: string) => zipCodeMap.get(zip);
-  const getZipCode = (zip: string) => {
-    const zipCode = zipCodeMap.get(zip);
-    if (!zipCode) {
-      throw new AppError({
-        message: "ZipCode not found",
-        type: "VALIDATION_ERROR",
-        isOperational: true,
-        data: zip,
-      });
-    }
-    return zipCode;
-  };
-
-  return { refresh, findZipCode, getZipCode };
+  return { refresh };
 }

@@ -2,12 +2,12 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   BaseCustomerState,
   baseInitialState,
-} from "@/app/realGreen/customer/_lib/types/SliceTypes";
+} from "@/app/realGreen/customer/slices/SliceTypes";
 import { createStreamThunk } from "@/store/reduxUtil/thunkFactories";
 import {
   CustomerContract,
   StreamChunk,
-} from "@/app/realGreen/customer/_lib/types/CustomerContract";
+} from "@/app/realGreen/customer/api/CustomerContract";
 import { uiActions } from "@/store/reduxUtil/uiSlice";
 import { Grouper } from "@/lib/Grouper";
 import { AppState } from "@/store";

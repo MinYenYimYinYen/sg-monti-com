@@ -1,9 +1,9 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { DataResponse } from "@/lib/api/types/responses";
-import { searchScheme } from "@/app/realGreen/customer/_lib/types/searchScheme/searchSchemes";
-import { CustomerDoc } from "../entities/types/CustomerTypes";
-import { ProgramDoc } from "../entities/types/ProgramTypes";
-import { ServiceDoc } from "../entities/types/ServiceTypes";
+import { searchScheme } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/searchSchemes";
+import { CustomerDoc } from "../_lib/entities/types/CustomerTypes";
+import { ProgramDoc } from "../_lib/entities/types/ProgramTypes";
+import { ServiceDoc } from "../_lib/entities/types/ServiceTypes";
 
 export type StreamChunkData = {
   customerDocs: CustomerDoc[];

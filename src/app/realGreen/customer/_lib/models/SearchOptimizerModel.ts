@@ -1,5 +1,5 @@
 import { Schema, model, models, Document, Model } from "mongoose";
-import { SearchOptimizer } from "../types/searchScheme/SearchOptimizer";
+import { SearchOptimizer } from "../searchUtil/searchSchemes/types/SearchOptimizer";
 
 // This interface represents the Mongoose document structure.
 // It extends the base SearchOptimizer type and Mongoose's Document type.

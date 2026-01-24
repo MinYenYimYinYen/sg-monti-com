@@ -7,14 +7,11 @@ import {
   SearchCriteriaRaw,
   StepContext,
   StepResult, StepConfig,
-} from "../types/searchScheme/SearchScheme";
-import {SearchOptimizer} from "@/app/realGreen/customer/_lib/types/searchScheme/SearchOptimizer";
+} from "../types/SearchScheme";
+import {SearchOptimizer} from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/types/SearchOptimizer";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
 import { rgSearch } from "@/app/realGreen/employee/api/rgSearchApi";
-import { remapCustSearch } from "@/app/realGreen/customer/_lib/types/searchCriteria/CustSearch";
-import { remapProgSearch } from "@/app/realGreen/customer/_lib/types/searchCriteria/ProgSearch";
-import { remapServSearch } from "@/app/realGreen/customer/_lib/types/searchCriteria/ServSearch";
 import {
   CustomerCore,
   CustomerRaw,
@@ -39,10 +36,13 @@ import {
 import {
   calculateNextBatchSize,
   calculateNextPagination
-} from "@/app/realGreen/customer/_lib/func/optimizerCalculations";
+} from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/searchOptimizer/optimizerCalculations";
 import {extendCustomers} from "@/app/realGreen/customer/_lib/entities/serverFuncs/serverCustomerFunc";
 import {extendPrograms} from "@/app/realGreen/customer/_lib/entities/serverFuncs/serverProgramFunc";
 import {extendServices} from "@/app/realGreen/customer/_lib/entities/serverFuncs/serverServiceFunc";
+import {remapCustSearch} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapCustSearch";
+import {remapProgSearch} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapProgSearch";
+import {remapServSearch} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapServSearch";
 
 // Helper to map criteria based on step name
 function mapCriteria(

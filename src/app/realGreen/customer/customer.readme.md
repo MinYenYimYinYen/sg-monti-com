@@ -4,34 +4,24 @@ This module handles the fetching, processing, and display of Customer, Program, 
 
 ## Data Flow Lifecycle
 
-The data in this module follows a strict lifecycle to ensure type safety and consistency.
+The data in this module follows a strict lifecycle to ensure type safety and consistency. The code is organized into `types`, `bases`, and `funcs` to enforce separation of concerns and avoid circular dependencies.
 
-1.  **Raw (`[Entity]Raw`)**:
-    *   **Source**: The RealGreen API.
-    *   **Characteristics**: These types match the exact JSON structure returned by the external API. Field names are often inconsistent or obscure.
-    *   **Example**: `CustomerRaw`, `ProgramRaw`.
+### 1. Types (`_lib/entities/types/`)
+Pure TypeScript definitions. These files contain no runtime logic.
+*   **Raw (`[Entity]Raw`)**: Matches the exact JSON structure returned by the RealGreen API.
+*   **Core (`[Entity]Core`)**: Clean, normalized JavaScript objects (camelCase).
+*   **Doc (`[Entity]Doc`)**: `Core` + MongoDB metadata (`createdAt`, `updatedAt`, `_id`).
+*   **Hydrated (`[Entity]`)**: `Doc` + Relationships (`programs`, `services`, `customer`).
 
-2.  **Core (`[Entity]Core`)**:
-    *   **Source**: The result of a "Remap" function (e.g., `remapCustomer`).
-    *   **Characteristics**: These are clean, normalized JavaScript objects. Field names are standardized (camelCase), and useless data is discarded.
-    *   **Example**: `CustomerCore`, `ProgramCore`.
+### 2. Bases (`_lib/entities/bases/`)
+Default "Empty" objects for each entity type.
+*   Used for initialization and as safe fallbacks for missing relationships.
+*   Example: `baseCustomer`, `baseProgram`.
 
-3.  **Doc (`[Entity]Doc`)**:
-    *   **Source**: The combination of `Core` and MongoDB metadata.
-    *   **Characteristics**: This is the primary type used throughout the application pipeline and stored in the database. It includes `createdAt`, `updatedAt`, and the primary key (e.g., `custId`).
-    *   **Definition**: `[Entity]Core & [Entity]DocProps`.
-    *   **Example**: `CustomerDoc`.
-
-4.  **Pipeline (`PipelineData`)**:
-    *   **Source**: The output of a Search Step.
-    *   **Characteristics**: A union of `Doc` arrays flowing through the search pipeline.
-    *   **Definition**: `CustomerDoc[] | ProgramDoc[] | ServiceDoc[]`.
-
-5.  **Hydrated (`[Entity]`)**:
-    *   **Source**: The UI State (Redux Selectors).
-    *   **Characteristics**: These objects contain additional computed fields or relationships needed for the UI (e.g., a Customer object that has an array of its Programs attached). This naked type is the standard for the rest of the codebase.
-    *   **Definition**: `[Entity]Doc & [Entity]Props`.
-    *   **Example**: `Customer`.
+### 3. Funcs (`_lib/entities/funcs/`)
+Pure functions for data transformation.
+*   **Remappers**: Convert `Raw` -> `Core`.
+*   **Extenders**: Convert `Core` -> `Doc` (Mocked for now).
 
 ---
 
@@ -57,7 +47,7 @@ We build the tree in layers, ensuring that the "Upward" pointers (Parent) point 
 #### 1. The Base Tree (Top-Down)
 First, we build the full hierarchy downwards using `Grouper` for O(N) efficiency.
 *   `Customer` -> `Program[]` -> `Service[]`
-*   This tree has **NO** parent pointers. It is a pure Directed Acyclic Graph (DAG).
+*   This tree has **NO** parent pointers (or points to `base*` objects). It is a pure Directed Acyclic Graph (DAG).
 
 #### 2. The Context Wrappers (Bottom-Up Views)
 When you select a specific entity type (e.g., `selectServices`), we wrap the objects from the Base Tree in a "Context" object that adds the parent pointer.
@@ -91,14 +81,17 @@ services.map(service => {
 ```
 
 ### Adding New Slices
-Any Redux slice that stores Customer data must implement the `ContextSelectorState` interface (i.e., it must have `customerDocs`, `programDocs`, and `serviceDocs`).
+Any Redux slice that stores Customer data must implement the `BaseCustomerState` interface defined in `_lib/types/SliceTypes.ts`.
 
 ```typescript
 // activeCustomersSlice.ts
+import { BaseCustomerState } from "@/app/realGreen/customer/_lib/types/SliceTypes";
+
+type ActiveCustomersState = BaseCustomerState; // & any other state
+
 export const activeCustomersSelect = {
   // ...
-  selectHydratedActiveCustomers: (state: AppState) =>
-    selectCustomers(state.activeCustomers),
+  selectHydratedActiveCustomers: createSelectCustomers(selectSlice),
 };
 ```
 

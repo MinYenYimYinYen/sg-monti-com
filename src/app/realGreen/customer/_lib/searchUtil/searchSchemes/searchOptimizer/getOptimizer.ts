@@ -1,9 +1,9 @@
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { SearchOptimizerModel } from "../models/SearchOptimizerModel";
+import { SearchOptimizerModel } from "../../../models/SearchOptimizerModel";
 import { cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
-import { SearchOptimizer } from "@/app/realGreen/customer/_lib/types/searchScheme/SearchOptimizer";
+import { SearchOptimizer } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/types/SearchOptimizer";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
-import { OptimizationStrategyType } from "@/app/realGreen/customer/_lib/types/searchScheme/SearchScheme";
+import { OptimizationStrategyType } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/types/SearchScheme";
 
 export async function getSearchOptimizer({
   schemeName,

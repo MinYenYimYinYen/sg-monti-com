@@ -4,18 +4,23 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/employee/api/rgApi";
 import { ZipCodeContract } from "@/app/realGreen/zipCode/api/ZipCodeContract";
-import { RawZipCode, remapZipCode } from "@/app/realGreen/zipCode/ZipCode";
+import { ZipCodeRaw } from "../_lib/entities/types/ZipCode";
+import {
+  remapZipCodes,
+} from "../_lib/entities/funcs/zipCodeFunc";
+import {extendZipCodes} from "@/app/realGreen/zipCode/_lib/entities/serverFuncs/zipCodeServerFunc";
 
 const handlers: HandlerMap<ZipCodeContract> = {
   getAll: {
     roles: ["office", "admin"],
     handler: async () => {
-      const rawZipCodes = await rgApi<RawZipCode[]>({
+      const rawZipCodes = await rgApi<ZipCodeRaw[]>({
         path: "/ZipCode",
         method: "GET",
       });
 
-      const zipCodes = rawZipCodes.map(remapZipCode);
+      const coreZipCodes = remapZipCodes(rawZipCodes);
+      const zipCodes = await extendZipCodes(coreZipCodes);
 
       return { success: true, payload: zipCodes };
     },

@@ -3,7 +3,7 @@ import { Customer } from "../_lib/entities/types/CustomerTypes";
 import { Program } from "../_lib/entities/types/ProgramTypes";
 import { Service } from "../_lib/entities/types/ServiceTypes";
 import { Grouper } from "@/lib/Grouper";
-import { BaseCustomerState } from "@/app/realGreen/customer/_lib/types/SliceTypes";
+import { BaseCustomerState } from "@/app/realGreen/customer/slices/SliceTypes";
 import { AppState } from "@/store";
 import { progServSelect } from "@/app/realGreen/progServ/selectors/progServSelectors";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCode";
