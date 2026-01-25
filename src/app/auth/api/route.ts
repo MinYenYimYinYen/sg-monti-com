@@ -4,7 +4,7 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { AuthContract } from "@/app/auth/_types/AuthContract";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
-import { EmployeeRaw } from "@/app/realGreen/employee/EmployeeTypes";
+import { EmployeeRaw } from "@/app/realGreen/employee/types/EmployeeTypes";
 import UserModel from "@/app/auth/_models/UserModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { AppError } from "@/lib/errors/AppError";

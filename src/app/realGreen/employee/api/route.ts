@@ -2,23 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { EmployeeContract } from "@/app/realGreen/employee/api/EmployeeContract";
 import { normalizeError } from "@/lib/errors/errorHandler"; // Reuse your normalizer!
 
-// Mocking your Auth/DB checks for this example
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
-import { Employee, EmployeeRaw } from "@/app/realGreen/employee/EmployeeTypes";
-import EmployeeModel from "@/app/realGreen/employee/EmployeeModel";
-import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import {  EmployeeRaw } from "@/app/realGreen/employee/types/EmployeeTypes";
+
 import {
   extendEmployees,
   remapEmployees,
 } from "@/app/realGreen/employee/_lib/employeeServerFunc";
 
-/**
- * 1. DEFINE HANDLERS
- * This enforces strict typing: You MUST define 'roles' and 'handler'
- * for every operation in EmployeeContract.
- */
 const handlers: HandlerMap<EmployeeContract> = {
   getAll: {
     roles: ["office", "admin"], // 🔒 Secured
@@ -26,10 +19,9 @@ const handlers: HandlerMap<EmployeeContract> = {
       // "Two-Hop" Source: Calling RealGreen
       // If rgApi throws an error, it bubbles up to the POST catch block
       const rawEmployees = await rgApi<EmployeeRaw[]>({
-        path: "/Employee",
+        path: "/Employee/Active/true",
         method: "GET",
       });
-
       const employeeCores = remapEmployees(rawEmployees);
       const employeeDocs = await extendEmployees(employeeCores);
 
@@ -77,13 +69,14 @@ export async function POST(req: NextRequest) {
     });
 
     // --- REFACTOR: Return 200 for Operational Errors ---
-    if (error.isOperational) {
+    if (error.isOperational || process.env.NODE_ENV === "development") {
       return NextResponse.json(
         {
           success: false,
           message: error.message,
           silent: error.silent,
           code: error.statusCode,
+          data: e,
         },
         { status: 200 }, // 200 OK for handled errors
       );

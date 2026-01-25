@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import {EmployeeDocProps} from "@/app/realGreen/employee/EmployeeTypes";
+import {EmployeeDocProps} from "@/app/realGreen/employee/types/EmployeeTypes";
 
 interface EmployeeDoc extends EmployeeDocProps, mongoose.Document {}
 
