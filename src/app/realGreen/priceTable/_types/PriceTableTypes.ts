@@ -1,5 +1,5 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import {PriceRange} from "@/app/realGreen/priceTable/_entities/PriceRangeType";
+import {PriceRange} from "@/app/realGreen/priceTable/_types/PriceRangeType";
 
 export type PriceTableRaw = {
   available: boolean;
@@ -18,14 +18,14 @@ export type PriceTableRaw = {
 
 export type PriceTableCore = {
   tableId: number;
-  description: string;
-  maxRate: number;
+  desc: string;
+  maxPrice: number;
   maxSize: number;
   ranges: PriceRange[];
 };
 
 export type PriceTableDocProps = CreatedUpdated & {
-  id: number;
+  tableId: number;
   ranges: PriceRange[]
 };
 

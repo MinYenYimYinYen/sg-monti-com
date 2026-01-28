@@ -2,66 +2,37 @@ import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
-import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { PriceTableContract } from "@/app/realGreen/priceTable/api/PriceTableContract";
 import {
-  PriceTable,
-  PriceTableDoc,
-  PriceTableRaw,
-} from "@/app/realGreen/priceTable/_entities/PriceTableTypes";
-import {
-  extendPriceRanges,
-  extendPriceTables,
-  remapPriceRanges,
-  remapPriceTables,
+  cachePriceTableDocs,
+  fetchMongoPriceTableDocs,
+  fetchRGPriceTableDocs,
 } from "@/app/realGreen/priceTable/_lib/priceTableServerFunc";
-import { PriceRangeRaw } from "@/app/realGreen/priceTable/_entities/PriceRangeType";
-import { Grouper } from "@/lib/Grouper";
 
 const handlers: HandlerMap<PriceTableContract> = {
   getPriceTableDocs: {
     roles: ["office", "admin"],
     handler: async () => {
-
-      //todo: Cache these in mongo.  It's a slow load.
-      const priceTablesRaw = await rgApi<PriceTableRaw[]>({
-        path: "/PriceTable",
-        method: "GET",
-      });
-
-      const priceTableCores = remapPriceTables(priceTablesRaw);
-      const partialPriceTableDocs = await extendPriceTables(priceTableCores);
-
-      const tableIds = priceTableCores.map((p) => p.tableId);
-
-      const priceRangesRaw: PriceRangeRaw[] = [];
-      for (const tableId of tableIds) {
-        const priceRange = await rgApi<PriceRangeRaw>({
-          path: `/PriceTable/${tableId}/Detailed`,
-          method: "GET",
-        });
-        priceRangesRaw.push(priceRange);
+      const mongoCachedPriceTableDocs = await fetchMongoPriceTableDocs(0.5);
+      if (mongoCachedPriceTableDocs) {
+        return { success: true, payload: mongoCachedPriceTableDocs };
       }
-      const priceRangeCores = remapPriceRanges(priceRangesRaw);
-      const priceRangeDocs = extendPriceRanges(priceRangeCores);
-      const priceRangesByTableId = new Grouper(priceRangeDocs)
-        .groupBy((item) => item.tableId)
-        .toMap();
 
-      const priceTableDocs: PriceTableDoc[] = partialPriceTableDocs.map(
-        (pt) => {
-          return {
-            ...pt,
-            ranges: priceRangesByTableId.get(pt.tableId) || [],
-          };
-        },
-      );
+      const rgPriceTableDocs = await fetchRGPriceTableDocs();
 
-      return { success: true, payload: priceTableDocs };
+      const cacheResult = await cachePriceTableDocs(rgPriceTableDocs);
+      if (!cacheResult.success) {
+        console.error("Failed to cache price table docs", cacheResult);
+        return {
+          success: true,
+          payload: rgPriceTableDocs,
+          partialError: cacheResult.message,
+        };
+      }
+
+      return { success: true, payload: rgPriceTableDocs };
     },
   },
-
-
 };
 
 export async function POST(req: NextRequest) {

@@ -80,7 +80,7 @@ const handlers: HandlerMap<ProgServContract> = {
             upsert: true,
           },
         }));
-        await ProgServModel.bulkWrite(bulkOps);
+        await ProgServModel.bulkWrite(bulkOps, {ordered: false});
       }
 
       // 4. Return fresh list

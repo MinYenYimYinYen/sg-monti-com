@@ -5,7 +5,7 @@ export type ErrorResponse<T = unknown> = {
   silent?: boolean;
   code?: number;
 };
-export type SuccessResponse = { success: true };
+export type SuccessResponse = { success: true; partialError?: string };
 
 export type DataResponse<T> = SuccessResponse & { payload: T };
 
