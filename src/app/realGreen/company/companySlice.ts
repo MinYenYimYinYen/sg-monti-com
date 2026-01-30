@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { Company } from "@/app/realGreen/company/_lib/Company";
-import { CompanyContract } from "@/app/realGreen/company/_lib/CompanyContract";
+import { Company } from "@/app/realGreen/company/_lib/CompanyTypes";
+import { CompanyContract } from "@/app/realGreen/company/api/CompanyContract";
 import { companyFunc } from "@/app/realGreen/company/_lib/companyFunc";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 

@@ -9,6 +9,7 @@ import { ProgCodeDocPropsModel } from "../../_models/ProgCodeDocPropsModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { Grouper } from "@/lib/Grouper";
 import { baseProgCodeDocProps } from "../baseProgCode";
+import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 
 export function remapProgramCode(raw: ProgCodeRaw): ProgCodeRemapped {
   return {
@@ -28,15 +29,16 @@ export function remapProgCodes(raw: ProgCodeRaw[]): ProgCodeRemapped[] {
 export async function extendProgCodes(
   remapped: ProgCodeRemapped[],
 ): Promise<ProgCodeDoc[]> {
+  await connectToMongoDB();
   const docPropDocs = await ProgCodeDocPropsModel.find({}).lean();
   const docProps: ProgCodeDocProps[] =
     cleanMongoArray<ProgCodeDocProps>(docPropDocs);
   const docPropsMap = new Grouper(docProps).toUniqueMap((d) => d.progCodeId);
-  const extended: ProgCodeDoc[] = remapped.map((progCode) => {
+  const extended: ProgCodeDoc[] = remapped.map((core) => {
     const { progCodeId, ...docProps } =
-      docPropsMap.get(progCode.progCodeId) || baseProgCodeDocProps;
+      docPropsMap.get(core.progCodeId) || baseProgCodeDocProps;
     const progCodeDoc: ProgCodeDoc = {
-      ...progCode,
+      ...core,
       ...docProps,
     };
     return progCodeDoc;

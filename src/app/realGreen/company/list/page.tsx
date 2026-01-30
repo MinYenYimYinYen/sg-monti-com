@@ -1,8 +1,8 @@
 "use client";
 
-import { useCompany } from "@/app/realGreen/company/_lib/useCompany";
+import { useCompany } from "@/app/realGreen/company/useCompany";
 import { useSelector } from "react-redux";
-import { companySelect } from "@/app/realGreen/company/_lib/companySlice";
+import { companySelect } from "@/app/realGreen/company/companySlice";
 import {
   Card,
   CardContent,

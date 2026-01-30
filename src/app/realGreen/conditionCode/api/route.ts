@@ -1,35 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
-import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
-import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
-import { CompanyContract } from "@/app/realGreen/company/api/CompanyContract";
-import {
-  Company,
-  CompanyRaw,
+import { ConditionContract } from "./ConditionContract";
+import { rgApi } from "../../_lib/api/rgApi";
+import { ConditionRaw } from "../types/ConditionCode";
+import { extendConditions, remapConditions } from "../_lib/serverConditionFunc";
+import {assertRole} from "@/app/auth/_lib/assertRole";
+import * as console from "node:console";
 
-} from "@/app/realGreen/company/_lib/CompanyTypes";
-import {remapCompany} from "@/app/realGreen/company/_lib/serverCompanyFunc";
-
-const handlers: HandlerMap<CompanyContract> = {
+const handlers: HandlerMap<ConditionContract> = {
   getAll: {
-    roles: ["office", "admin"],
+    roles: ["admin", "office"],
     handler: async () => {
-      const rawCompanies = await rgApi<CompanyRaw[]>({
-        path: "/Company",
+      const rawConditions = await rgApi<ConditionRaw[]>({
+        path: "/ConditionCode",
         method: "GET",
       });
 
-      const companies = rawCompanies.map(remapCompany);
+      const conditionCores = remapConditions(rawConditions);
+      const conditionDocs = await extendConditions(conditionCores);
 
-      return { success: true, payload: companies };
+      return {
+        success: true,
+        payload: conditionDocs,
+      };
     },
   },
 };
 
+/**
+ * 2. THE GATEWAY (Generic POST)
+ * Handles Deserialization, Validation, Auth, and Error Normalization.
+ */
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as OpMap<CompanyContract>;
+    // A. Parse Body & Validate Op
+    const body = (await req.json()) as OpMap<ConditionContract>;
     const { op, ...params } = body;
     const config = handlers[op];
 
@@ -40,22 +46,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // B. Security Check
     await assertRole(config.roles);
 
+    // C. Execution
     const result = await config.handler(params as any);
     return NextResponse.json(result);
   } catch (e) {
+    // D. "TWO-HOP" ERROR HANDLING
     const error = normalizeError(e);
+
+    // 1. Log the REAL error (with stack trace) for the developer
     console.error(`[API] ${error.type}: ${error.message}`, {
       stack: error.stack,
       data: error.data,
     });
 
+    // 2. Determine Response Status
     let status = 500;
     if (error.type === "EXTERNAL_ERROR") status = 502;
     else if (error.type === "VALIDATION_ERROR") status = 400;
     else if (error.type === "AUTH_ERROR") status = 403;
 
+    // 3. Return Safe Response
     return NextResponse.json(
       {
         success: false,

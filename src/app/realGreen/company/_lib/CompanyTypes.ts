@@ -1,6 +1,4 @@
-import { Grouper } from "@/lib/Grouper";
-
-export type RawCompany = {
+export type CompanyRaw = {
   AddressLine1: string;
   AddressLine2: string;
   AddressLine3: string;
@@ -25,7 +23,7 @@ export type RawCompany = {
   UnitCodeID: number;
 };
 
-export type RemappedCompany = {
+export type CompanyCore = {
   companyId: number;
   companyName: string;
   addressLine1: string;
@@ -42,23 +40,5 @@ export type RemappedCompany = {
   unitCodeId: number;
 };
 
-export type Company = RemappedCompany;
+export type Company = CompanyCore;
 
-export function remapCompany(raw: RawCompany): RemappedCompany {
-  return {
-    companyId: raw.ID,
-    companyName: raw.CompanyName,
-    addressLine1: raw.AddressLine1,
-    addressLine2: raw.AddressLine2,
-    addressLine3: raw.AddressLine3,
-    areaCode: raw.AreaCode,
-    isDefaultCompany: raw.IsDefaultCompany,
-    latitude: raw.Latitude,
-    longitude: raw.Longitude,
-    phone1: raw.Phone1,
-    phone2: raw.Phone2,
-    replyEmail: raw.ReplyEmail,
-    state: raw.State,
-    unitCodeId: raw.UnitCodeID,
-  };
-}

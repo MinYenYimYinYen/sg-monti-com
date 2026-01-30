@@ -1,5 +1,5 @@
 import { DataResponse } from "@/lib/api/types/responses";
-import { Company } from "@/app/realGreen/company/_lib/Company";
+import { Company } from "@/app/realGreen/company/_lib/CompanyTypes";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 
 export interface CompanyContract extends ApiContract {

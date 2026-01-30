@@ -1,9 +1,6 @@
-import { ConditionTextTemplate } from "@/app/realGreen/conditionCode/types/ConditionTextTemplate";
-import { ConditionSetting } from "@/app/realGreen/conditionCode/types/ConditionSetting";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { Grouper } from "@/lib/Grouper";
 
-export type ConditionCodeRaw = {
+export type ConditionRaw = {
   id: string;
   description: string;
   letterID: string | null;
@@ -28,13 +25,14 @@ export type ConditionCodeRaw = {
 };
 
 export type ConditionCore = {
-  conditionCodeId: string;
+  conditionId: string;
   desc: string;
   available: boolean;
 };
 
 export type ConditionDocProps = CreatedUpdated & {
-  conditionCodeId: string;
+  conditionId: string;
+  upsellProgCodeIds: string[];
 };
 
 export type ConditionDoc = ConditionCore & ConditionDocProps;
@@ -42,15 +40,6 @@ export type ConditionDoc = ConditionCore & ConditionDocProps;
 export type ConditionProps = {};
 
 export type Condition = ConditionDoc & ConditionProps;
-
-export function remapCondition(raw: ConditionCodeRaw): ConditionCore {
-  return {
-    conditionCodeId: raw.id,
-    desc: raw.description,
-    available: raw.available,
-  };
-}
-
 
 // export function extendConditionCodes({
 //   remapped,

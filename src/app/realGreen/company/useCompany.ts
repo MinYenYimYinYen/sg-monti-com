@@ -1,6 +1,6 @@
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
-import { companyActions } from "@/app/realGreen/company/_lib/companySlice";
+import { companyActions } from "@/app/realGreen/company/companySlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
 export function useCompany({ autoLoad }: { autoLoad: boolean }) {

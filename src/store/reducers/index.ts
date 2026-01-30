@@ -1,7 +1,7 @@
 import { combineReducers } from "redux";
 import uiReducer from "@/store/reduxUtil/uiSlice";
 import authReducer from "@/app/auth/authSlice";
-import companyReducer from "@/app/realGreen/company/_lib/companySlice";
+import companyReducer from "@/app/realGreen/company/companySlice";
 import callAheadReducer from "@/app/realGreen/callAhead/callAheadSlice";
 import disctountReducer from"@/app/realGreen/discount/discountSlice";
 import employeeReducer from "@/app/realGreen/employee/employeeSlice";

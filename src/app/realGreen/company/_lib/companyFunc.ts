@@ -1,4 +1,4 @@
-import { Company } from "@/app/realGreen/company/_lib/Company";
+import { Company } from "@/app/realGreen/company/_lib/CompanyTypes";
 import { AppError } from "@/lib/errors/AppError";
 
 function chooseDefault(companies: Company[]) {
