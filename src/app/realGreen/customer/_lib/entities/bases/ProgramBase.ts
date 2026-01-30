@@ -1,7 +1,8 @@
 import { Program } from "../types/ProgramTypes";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseCustomer } from "./CustomerBase";
-import { baseProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+
+import {baseProgCode} from "@/app/realGreen/progServ/_lib/baseProgCode";
 
 export const baseProgram: Program = {
   avgPrice: 0,

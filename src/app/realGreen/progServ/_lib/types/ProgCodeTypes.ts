@@ -1,6 +1,5 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { ServCode } from "./ServCodeTypes";
-import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export type ProgCodeRaw = {
   // anyBranch: boolean;
@@ -77,6 +76,7 @@ export type ProgCodeRemapped = {
 
 export type ProgCodeDocProps = CreatedUpdated & {
   progCodeId: string;
+  precludedIds: string[];
 };
 
 export type ProgCodeDoc = ProgCodeRemapped & ProgCodeDocProps;
@@ -87,16 +87,3 @@ export type ProgCodeProps = {
 };
 
 export type ProgCode = ProgCodeDoc & ProgCodeProps;
-
-export const baseProgCode: ProgCode = {
-  progCodeId: baseStrId,
-  available: true,
-  description: "",
-  programType: "",
-  progDefId: baseNumId,
-  unitCode: baseNumId,
-  servCodes: [],
-  isSpecial: false,
-  createdAt: "",
-  updatedAt: "",
-};

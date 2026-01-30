@@ -19,10 +19,10 @@
 
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import {
-  baseProgCode,
   ProgCode,
 } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import {baseProgCode} from "@/app/realGreen/progServ/_lib/baseProgCode";
 
 export type ServCodeRaw = {
   // autopostMobile: boolean;

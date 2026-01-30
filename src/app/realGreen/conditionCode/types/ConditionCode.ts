@@ -3,7 +3,7 @@ import { ConditionSetting } from "@/app/realGreen/conditionCode/types/ConditionS
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Grouper } from "@/lib/Grouper";
 
-export type RawConditionCode = {
+export type ConditionCodeRaw = {
   id: string;
   description: string;
   letterID: string | null;
@@ -27,56 +27,37 @@ export type RawConditionCode = {
   internalUse: boolean;
 };
 
-export type RemappedConditionCode = {
+export type ConditionCore = {
   conditionCodeId: string;
+  desc: string;
   available: boolean;
 };
 
-export type MongoConditionCode = CreatedUpdated & {
+export type ConditionDocProps = CreatedUpdated & {
   conditionCodeId: string;
-  setting?: ConditionSetting;
-  template?: ConditionTextTemplate;
 };
 
-export type ConditionCode = RemappedConditionCode & MongoConditionCode;
+export type ConditionDoc = ConditionCore & ConditionDocProps;
 
-export function remapConditionCode(
-  raw: RawConditionCode,
-): RemappedConditionCode {
+export type ConditionProps = {};
+
+export type Condition = ConditionDoc & ConditionProps;
+
+export function remapCondition(raw: ConditionCodeRaw): ConditionCore {
   return {
     conditionCodeId: raw.id,
+    desc: raw.description,
     available: raw.available,
   };
 }
 
-export function extendConditionCode({
-  remapped,
-  mongo,
-}: {
-  remapped: RemappedConditionCode;
-  mongo?: MongoConditionCode;
-}): ConditionCode {
-  return {
-    ...remapped,
-    createdAt: mongo?.createdAt || "",
-    updatedAt: mongo?.updatedAt || "",
-    setting: mongo?.setting,
-    template: mongo?.template,
-  };
-}
 
-export function extendConditionCodes({
-  remapped,
-  mongo,
-}: {
-  remapped: RemappedConditionCode[];
-  mongo: MongoConditionCode[];
-}): ConditionCode[] {
-  const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.conditionCodeId);
-  return remapped.map((r) =>
-    extendConditionCode({
-      remapped: r,
-      mongo: mongoMap.get(r.conditionCodeId),
-    }),
-  );
-}
+// export function extendConditionCodes({
+//   remapped,
+//   mongo,
+// }: {
+//   remapped: ConditionCodeCore[];
+//   mongo: ConditionCodeDocProps[];
+// }): ConditionCode[] {
+//
+// }

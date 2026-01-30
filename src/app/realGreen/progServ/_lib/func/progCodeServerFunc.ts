@@ -1,9 +1,14 @@
 import {
   ProgCodeDoc,
+  ProgCodeDocProps,
   ProgCodeRaw,
   ProgCodeRemapped,
 } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
+import { ProgCodeDocPropsModel } from "../../_models/ProgCodeDocPropsModel";
+import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
+import { Grouper } from "@/lib/Grouper";
+import { baseProgCodeDocProps } from "../baseProgCode";
 
 export function remapProgramCode(raw: ProgCodeRaw): ProgCodeRemapped {
   return {
@@ -21,7 +26,20 @@ export function remapProgCodes(raw: ProgCodeRaw[]): ProgCodeRemapped[] {
 }
 
 export async function extendProgCodes(
-  progCodes: ProgCodeRemapped[],
+  remapped: ProgCodeRemapped[],
 ): Promise<ProgCodeDoc[]> {
-  return progCodes as ProgCodeDoc[];
+  const docPropDocs = await ProgCodeDocPropsModel.find({}).lean();
+  const docProps: ProgCodeDocProps[] =
+    cleanMongoArray<ProgCodeDocProps>(docPropDocs);
+  const docPropsMap = new Grouper(docProps).toUniqueMap((d) => d.progCodeId);
+  const extended: ProgCodeDoc[] = remapped.map((progCode) => {
+    const { progCodeId, ...docProps } =
+      docPropsMap.get(progCode.progCodeId) || baseProgCodeDocProps;
+    const progCodeDoc: ProgCodeDoc = {
+      ...progCode,
+      ...docProps,
+    };
+    return progCodeDoc;
+  });
+  return extended;
 }

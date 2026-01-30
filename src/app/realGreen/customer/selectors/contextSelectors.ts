@@ -9,7 +9,8 @@ import { progServSelect } from "@/app/realGreen/progServ/_selectors/progServSele
 import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { baseProgram } from "../_lib/entities/bases/ProgramBase";
 import { baseCustomer } from "../_lib/entities/bases/CustomerBase";
-import { baseProgCode } from "../../progServ/_lib/types/ProgCodeTypes";
+
+import {baseProgCode} from "@/app/realGreen/progServ/_lib/baseProgCode";
 
 /**
  * Factory to create the Base Tree Selector.
