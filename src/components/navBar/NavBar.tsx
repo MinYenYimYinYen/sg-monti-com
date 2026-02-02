@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useAuth } from "@/app/auth/_hooks/useAuth";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
-import { useState } from "react";
-import { Inbox } from "lucide-react";
+import React, { useState } from "react";
+import {Inbox, Menu, Sheet} from "lucide-react";
 import AdminActionModal from "@/app/auth/_components/AdminActionModal";
 import { Button } from "@/style/components/button";
+import NavMenu from "./NavMenu";
+import {SheetContent, SheetHeader, SheetTitle, SheetTrigger} from "@/style/components/sheet";
+import NavSheet from "./NavSheet";
 
 export default function NavBar() {
   const { logout } = useAuth();
@@ -28,12 +31,12 @@ export default function NavBar() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         {/*Menu*/}
-        <div>Menu</div>
+        <NavMenu />
 
 
         {/* Logo */}
         <Link
-          href="/public"
+          href="/"
           className="text-xl font-bold text-primary hover:opacity-80"
         >
           SGMonti
