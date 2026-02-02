@@ -55,12 +55,7 @@ const prepaySection: NavSection = {
   ],
 };
 
-const menuSections = [
-  schedulingSection,
-  prepaySection,
-  schedulingSection,
-  prepaySection,
-];
+const menuSections = [schedulingSection, prepaySection];
 
 export default function NavMenu() {
   return (
@@ -94,9 +89,7 @@ export default function NavMenu() {
                         <Link href={item.href}>
                           <NavigationMenuLink
                             className={cn(
-                              "block select-none rounded-md p-1 text-sm leading-none no-underline outline-none " +
-                              "transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent " +
-                              "focus:text-accent-foreground",
+                              "block select-none rounded-md p-1 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
                             )}
                           >
                             <div className="text-sm font-medium leading-none mb-1">

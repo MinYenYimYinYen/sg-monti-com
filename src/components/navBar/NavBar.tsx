@@ -5,12 +5,10 @@ import { useAuth } from "@/app/auth/_hooks/useAuth";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
 import React, { useState } from "react";
-import {Inbox, Menu, Sheet} from "lucide-react";
+import { Inbox } from "lucide-react";
 import AdminActionModal from "@/app/auth/_components/AdminActionModal";
 import { Button } from "@/style/components/button";
 import NavMenu from "./NavMenu";
-import {SheetContent, SheetHeader, SheetTitle, SheetTrigger} from "@/style/components/sheet";
-import NavSheet from "./NavSheet";
 
 export default function NavBar() {
   const { logout } = useAuth();
@@ -26,13 +24,11 @@ export default function NavBar() {
 
   return (
     <nav
-      className="sticky top-0 z-50 w-full border-b border-border bg-secondary 
-    px-4 py-3 shadow-sm"
+      className="sticky top-0 z-50 w-full border-b border-border bg-secondary px-4 py-3 shadow-sm"
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         {/*Menu*/}
         <NavMenu />
-
 
         {/* Logo */}
         <Link
