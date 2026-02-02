@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "../style/tailwind.css";
-import "../style/globals.scss";
+import "../style/globals.css";
 
 import "react-toastify/dist/ReactToastify.css";
 import { Providers } from "./providers";

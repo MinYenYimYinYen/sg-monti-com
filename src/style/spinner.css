@@ -6,11 +6,11 @@
   height: 100vh;
   z-index: 9999;
 
-  // Default hidden state (GSAP will handle the toggle)
+  /* Default hidden state (GSAP will handle the toggle) */
   opacity: 0;
   pointer-events: none;
 
-  // Visuals
+  /* Visuals */
   background-color: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
@@ -24,10 +24,10 @@
   width: 48px;
   height: 48px;
   border: 5px solid var(--background-200);
-  border-top: 5px solid var(--primary-500); // Brand Color
+  border-top: 5px solid var(--primary-500); /* Brand Color */
   border-radius: 50%;
 
-  // Continuous rotation is best handled by CSS (cheaper for the browser)
+  /* Continuous rotation is best handled by CSS (cheaper for the browser) */
   animation: spin 1s linear infinite;
 }
 

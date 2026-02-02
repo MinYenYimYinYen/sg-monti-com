@@ -1,5 +1,5 @@
-@use "fonts";
-@use "spinner";
+@import "./fonts.css";
+@import "./spinner.css";
 
 *, *::before, *::after {
   box-sizing: border-box;
