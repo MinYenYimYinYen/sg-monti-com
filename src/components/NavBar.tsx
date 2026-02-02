@@ -22,12 +22,12 @@ export default function NavBar() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border bg-primary backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-3 shadow-sm">
+    <nav className="sticky top-0 z-50 w-full border-b border-border bg-secondary px-4 py-3 shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         {/* Logo */}
         <Link
           href="/"
-          className="text-xl font-bold text-foreground hover:opacity-80"
+          className="text-xl font-bold text-primary hover:opacity-80"
         >
           SGMonti
         </Link>
