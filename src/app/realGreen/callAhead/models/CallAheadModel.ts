@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-import { MongoCallAhead } from "@/app/realGreen/callAhead/_lib/CallAhead";
+import { CallAheadDocProps } from "@/app/realGreen/callAhead/_lib/CallAhead";
 
-interface CallAheadDoc extends MongoCallAhead, mongoose.Document {}
+interface CallAheadDoc extends CallAheadDocProps, mongoose.Document {}
 
-const CallAheadSchema = new mongoose.Schema(
+const CallAheadSchema = new mongoose.Schema<CallAheadDoc>(
   {
     callAheadId: { type: Number, required: true, unique: true },
   },

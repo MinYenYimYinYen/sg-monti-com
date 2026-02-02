@@ -1,5 +1,5 @@
 import { baseStrId } from "../../_lib/realGreenConst";
-import { Condition, ConditionDocProps } from "../types/ConditionCode";
+import { Condition, ConditionDocProps } from "@/app/realGreen/conditionCode/_types/ConditionCode";
 
 export const baseConditionDocProps: ConditionDocProps = {
   conditionId: baseStrId,

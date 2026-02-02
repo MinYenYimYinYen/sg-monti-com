@@ -32,7 +32,6 @@ export async function extendEmployees(
   const docPropDocs: EmployeeDocProps[] = await EmployeeModel.find({
     employeeId: { $in: cores.map((c) => c.employeeId) },
   }).lean();
-  console.log("docPropDocs", docPropDocs);
 
   const docProps = cleanMongoArray(docPropDocs);
   const docPropMap = new Grouper(docProps).toUniqueMap((d) => d.employeeId);

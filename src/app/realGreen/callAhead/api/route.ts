@@ -4,37 +4,31 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { CallAheadContract } from "@/app/realGreen/callAhead/_lib/CallAheadContract";
+import { CallAheadContract } from "@/app/realGreen/callAhead/api/CallAheadContract";
 import {
   CallAhead,
-  extendCallAheads,
-  MongoCallAhead,
-  RawCallAhead,
-  remapCallAhead,
+  CallAheadDocProps,
+  CallAheadRaw,
 } from "@/app/realGreen/callAhead/_lib/CallAhead";
-import CallAheadModel from "@/app/realGreen/callAhead/_lib/CallAheadModel";
+import CallAheadModel from "@/app/realGreen/callAhead/models/CallAheadModel";
+import {
+  extendCallAheads,
+  remapCallAheads,
+} from "@/app/realGreen/callAhead/_lib/callAheadServerFunc";
 
 const handlers: HandlerMap<CallAheadContract> = {
   getAll: {
     roles: ["office", "admin"],
     handler: async () => {
-      const rawCallAheads = await rgApi<RawCallAhead[]>({
+      const rawCallAheads = await rgApi<CallAheadRaw[]>({
         path: "/CallAhead",
         method: "GET",
       });
 
-      const remappedCallAheads = rawCallAheads.map(remapCallAhead);
-      await connectToMongoDB();
-      const mongoCallAheads: MongoCallAhead[] = await CallAheadModel.find(
-        {},
-      ).lean();
+      const callAheadCores = remapCallAheads(rawCallAheads);
+      const callAheadDocs = await extendCallAheads(callAheadCores);
 
-      const callAheads: CallAhead[] = extendCallAheads({
-        remapped: remappedCallAheads,
-        mongo: mongoCallAheads,
-      });
-
-      return { success: true, payload: callAheads };
+      return { success: true, payload: callAheadDocs };
     },
   },
 };

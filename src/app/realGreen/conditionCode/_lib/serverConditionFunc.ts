@@ -3,8 +3,8 @@ import {
   ConditionCore,
   ConditionDoc,
   ConditionDocProps,
-} from "@/app/realGreen/conditionCode/types/ConditionCode";
-import { ConditionDocPropsModel } from "@/app/realGreen/conditionCode/models/ConditionDocPropsModel";
+} from "@/app/realGreen/conditionCode/_types/ConditionCode";
+import { ConditionDocPropsModel } from "@/app/realGreen/conditionCode/_models/ConditionDocPropsModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { Grouper } from "@/lib/Grouper";

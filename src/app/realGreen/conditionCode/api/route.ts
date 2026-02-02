@@ -3,7 +3,7 @@ import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { ConditionContract } from "./ConditionContract";
 import { rgApi } from "../../_lib/api/rgApi";
-import { ConditionRaw } from "../types/ConditionCode";
+import { ConditionRaw } from "@/app/realGreen/conditionCode/_types/ConditionCode";
 import { extendConditions, remapConditions } from "../_lib/serverConditionFunc";
 import {assertRole} from "@/app/auth/_lib/assertRole";
 import * as console from "node:console";

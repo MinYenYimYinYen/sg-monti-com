@@ -1,7 +1,4 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { Grouper } from "@/lib/Grouper";
-
-
 
 export enum NotificationType {
   Text = "T",
@@ -10,7 +7,7 @@ export enum NotificationType {
   Email = "E",
 }
 
-export type RawCallAhead = {
+export type CallAheadRaw = {
   available: boolean;
   callAheadDescription: string;
   callDescFrench: string;
@@ -21,55 +18,21 @@ export type RawCallAhead = {
   renewable: boolean;
 };
 
-export type RemappedCallAhead = {
+export type CallAheadCore = {
   available: boolean;
   callAheadId: number;
   description: string;
   type: NotificationType;
 };
 
-export type MongoCallAhead = CreatedUpdated & {
+export type CallAheadDocProps = CreatedUpdated & {
   callAheadId: number;
 };
 
-export type CallAhead = RemappedCallAhead & MongoCallAhead;
+export type CallAheadDoc = CallAheadCore & CallAheadDocProps;
 
-export function remapCallAhead(raw: RawCallAhead): RemappedCallAhead {
-  return {
-    available: raw.available,
-    description: raw.callAheadDescription,
-    type: raw.notificationType,
-    callAheadId: raw.id,
-  };
-}
+export type CallAheadProps = {};
 
-export function extendCallAhead({
-  remapped,
-  mongo,
-}: {
-  remapped: RemappedCallAhead;
-  mongo?: MongoCallAhead;
-}): CallAhead {
-  return {
-    ...remapped,
-    createdAt: mongo?.createdAt,
-    updatedAt: mongo?.updatedAt,
-  } as CallAhead;
-}
+export type CallAhead = CallAheadDoc & CallAheadProps;
 
-export function extendCallAheads({
-  remapped,
-  mongo,
-}: {
-  remapped: RemappedCallAhead[];
-  mongo: MongoCallAhead[];
-}): CallAhead[] {
-  const mongoMap = new Grouper(mongo).toUniqueMap((e) => e.callAheadId);
 
-  return remapped.map((r) =>
-    extendCallAhead({
-      remapped: r,
-      mongo: mongoMap.get(r.callAheadId),
-    }),
-  );
-}

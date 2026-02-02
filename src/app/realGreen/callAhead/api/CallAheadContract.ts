@@ -1,10 +1,10 @@
 import { DataResponse } from "@/lib/api/types/responses";
-import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAhead";
+import {CallAhead, CallAheadDoc} from "@/app/realGreen/callAhead/_lib/CallAhead";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 
 export interface CallAheadContract extends ApiContract {
   getAll: {
     params: {};
-    result: DataResponse<CallAhead[]>;
+    result: DataResponse<CallAheadDoc[]>;
   };
 }

@@ -1,5 +1,5 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
-import { ConditionDoc } from "../types/ConditionCode";
+import { ConditionDoc } from "@/app/realGreen/conditionCode/_types/ConditionCode";
 import { DataResponse } from "@/lib/api/types/responses";
 
 export interface ConditionContract extends ApiContract {

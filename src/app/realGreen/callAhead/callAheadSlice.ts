@@ -1,7 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAhead";
-import { CallAheadContract } from "@/app/realGreen/callAhead/_lib/CallAheadContract";
-import { Grouper } from "@/lib/Grouper";
+import { CallAheadDoc} from "@/app/realGreen/callAhead/_lib/CallAhead";
+import { CallAheadContract } from "@/app/realGreen/callAhead/api/CallAheadContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
 export const getCallAheads = createStandardThunk<CallAheadContract, "getAll">({
@@ -11,11 +10,11 @@ export const getCallAheads = createStandardThunk<CallAheadContract, "getAll">({
 });
 
 interface CallAheadState {
-  callAheads: CallAhead[];
+  callAheadDocs: CallAheadDoc[];
 }
 
 const initialState: CallAheadState = {
-  callAheads: [],
+  callAheadDocs: [],
 };
 
 const callAheadSlice = createSlice({
@@ -24,18 +23,10 @@ const callAheadSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getCallAheads.fulfilled, (state, action) => {
-      state.callAheads = action.payload;
+      state.callAheadDocs = action.payload;
     });
-  },
-  selectors: {
-    allCallAheads: (state) => state.callAheads,
-    activeCallAheads: (state) =>
-      state.callAheads.filter((callAhead) => callAhead.available),
-    callAheadMap: (state) =>
-      new Grouper(state.callAheads).toUniqueMap((c) => c.callAheadId),
   },
 });
 
 export const callAheadActions = { ...callAheadSlice.actions, getCallAheads };
-export const callAheadSelect = { ...callAheadSlice.selectors };
 export default callAheadSlice.reducer;
