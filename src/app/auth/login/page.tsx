@@ -9,7 +9,7 @@ import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
 import { Input } from "@/style/components/input";
 import { AuthCard } from "@/app/auth/_components/AuthCard";
-import { FormGroup } from "@/style/componentsLegacy/FormGroup";
+import { FormGroup } from "@/components/FormGroup";
 import { Label } from "@/style/components/label";
 import {Button} from "@/style/components/button";
 
