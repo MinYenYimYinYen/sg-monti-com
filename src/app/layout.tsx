@@ -5,7 +5,7 @@ import "../style/globals.css";
 import "react-toastify/dist/ReactToastify.css";
 import { Providers } from "./providers";
 import { ReactNode } from "react";
-import NavBar from "@/components/NavBar";
+import NavBar from "@/components/navBar/NavBar";
 import { ToastContainer } from "react-toastify";
 import {GlobalLoader} from "@/components/globalLoader/GlobalLoader";
 
