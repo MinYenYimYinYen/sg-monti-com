@@ -11,7 +11,7 @@
   pointer-events: none;
 
   /* Visuals */
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: hsl(var(--background) / 0.8);
   backdrop-filter: blur(4px);
   display: flex;
   flex-direction: column;
@@ -23,8 +23,8 @@
 .spinner {
   width: 48px;
   height: 48px;
-  border: 5px solid var(--background-200);
-  border-top: 5px solid var(--primary-500); /* Brand Color */
+  border: 5px solid hsl(var(--muted));
+  border-top: 5px solid hsl(var(--primary)); /* Brand Color */
   border-radius: 50%;
 
   /* Continuous rotation is best handled by CSS (cheaper for the browser) */
@@ -33,7 +33,7 @@
 
 .loader-message {
   font-family: 'Inter', sans-serif;
-  color: var(--text-700);
+  color: hsl(var(--foreground));
   font-size: 1.125rem;
   font-weight: 600;
 }

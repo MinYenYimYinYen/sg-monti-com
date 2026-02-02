@@ -8,7 +8,7 @@ import gsap from "gsap";
 import { cn } from "@/style/utils";
 import { X } from "lucide-react";
 import { useIsClient } from "@/lib/hooks/useIsClient";
-import {Button} from "@/style/components/button";
+import { Button } from "@/style/components/button";
 
 interface ModalProps {
   isOpen: boolean;
@@ -101,7 +101,7 @@ export function Modal({
       {/* Backdrop */}
       <div
         ref={overlayRef}
-        className="absolute inset-0 bg-black/50 opacity-0 backdrop-blur-sm"
+        className="absolute inset-0 bg-background/80 opacity-0 backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -109,15 +109,15 @@ export function Modal({
       <div
         ref={contentRef}
         className={cn(
-          "relative z-10 w-full max-w-lg rounded-lg bg-white shadow-xl opacity-0",
+          "relative z-10 w-full max-w-lg rounded-lg bg-background border border-border shadow-xl opacity-0",
           className,
         )}
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-primary/10 px-6 py-4">
-          <h2 className="text-lg font-semibold text-text">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h2 className="text-lg font-semibold text-foreground">
             {title || "Modal"}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose}>

@@ -35,7 +35,7 @@ export function Container({
     <div className={cn(containerVariants({ variant, className }))} {...props}>
       {(title || action) && variant !== "centered" && (
         <div className="mb-8 flex items-center justify-between">
-          {title && <h1 className="text-2xl font-bold text-text">{title}</h1>}
+          {title && <h1 className="text-2xl font-bold text-foreground">{title}</h1>}
           {action && <div>{action}</div>}
         </div>
       )}
