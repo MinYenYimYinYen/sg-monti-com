@@ -1,9 +1,9 @@
 "use client";
 
 import { useAuth } from "@/app/auth/_hooks/useAuth";
-import { Button } from "@/style/components/Button";
-import { AuthCard } from "@/style/components/AuthCard";
-import { InfoBox } from "@/style/components/InfoBox";
+import { AuthCard } from "@/app/auth/_components/AuthCard";
+import { InfoBox } from "@/style/componentsLegacy/InfoBox";
+import {Button} from "@/style/components/button";
 
 export default function AppliedPage() {
   const { logout } = useAuth();

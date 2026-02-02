@@ -3,7 +3,7 @@ import React from "react";
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { useSelector } from "react-redux";
-import { Container } from "@/style/components/Containers";
+import { Container } from "@/components/Containers";
 
 export default function ViewActiveEmployees() {
   useEmployee({ autoLoad: true });

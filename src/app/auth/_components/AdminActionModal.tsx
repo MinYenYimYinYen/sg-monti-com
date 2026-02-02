@@ -4,13 +4,18 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
 import { useAuth } from "@/app/auth/_hooks/useAuth";
-import { Modal } from "@/style/components/Modal";
-import { TabControl } from "@/style/components/TabControl";
-import { Button } from "@/style/components/Button";
+import { Modal } from "@/components/Modal";
 import { Role, ROLES } from "@/lib/api/types/roles";
 import { User } from "@/app/auth/_types/User";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
-import { Input } from "@/style/components/Input";
+import { Input } from "@/style/components/input";
+import { Button } from "@/style/components/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/style/components/tabs";
 
 interface AdminActionModalProps {
   isOpen: boolean;
@@ -24,21 +29,6 @@ export default function AdminActionModal({
   const pendingUsers = useSelector(authSelect.adminPendingUsers);
   const pendingResets = useSelector(authSelect.adminPendingResets);
 
-  const tabs = [
-    {
-      id: "users",
-      label: "Pending Users",
-      content: <PendingUsersList users={pendingUsers} />,
-      badge: pendingUsers.length > 0 ? pendingUsers.length : undefined,
-    },
-    {
-      id: "resets",
-      label: "Password Resets",
-      content: <PendingResetsList requests={pendingResets} />,
-      badge: pendingResets.length > 0 ? pendingResets.length : undefined,
-    },
-  ];
-
   return (
     <Modal
       isOpen={isOpen}
@@ -46,7 +36,32 @@ export default function AdminActionModal({
       title="Admin Actions"
       className="max-w-2xl"
     >
-      <TabControl tabs={tabs} className="h-[500px]" />
+      <Tabs defaultValue="users" className="flex h-[500px] flex-col">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="users">
+            Pending Users
+            {pendingUsers.length > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-xs font-bold text-destructive-foreground">
+                {pendingUsers.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="resets">
+            Password Resets
+            {pendingResets.length > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-xs font-bold text-destructive-foreground">
+                {pendingResets.length}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="users" className="flex-1 overflow-auto p-1">
+          <PendingUsersList users={pendingUsers} />
+        </TabsContent>
+        <TabsContent value="resets" className="flex-1 overflow-auto p-1">
+          <PendingResetsList requests={pendingResets} />
+        </TabsContent>
+      </Tabs>
     </Modal>
   );
 }
@@ -58,7 +73,7 @@ function PendingUsersList({ users }: { users: User[] }) {
 
   if (users.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-text-500">
+      <div className="flex h-full items-center justify-center text-muted-foreground">
         No pending user approvals.
       </div>
     );
@@ -69,14 +84,14 @@ function PendingUsersList({ users }: { users: User[] }) {
       {users.map((user) => (
         <li
           key={user.userName}
-          className="flex flex-col gap-4 rounded-md border border-primary/20 p-4 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-4 rounded-md border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <p className="font-medium text-text">
+            <p className="font-medium text-foreground">
               {user.firstName} {user.lastName}
             </p>
-            <p className="text-sm text-text-500">@{user.userName}</p>
-            <p className="text-xs text-text-500">SA ID: {user.saId}</p>
+            <p className="text-sm text-muted-foreground">@{user.userName}</p>
+            <p className="text-xs text-muted-foreground">SA ID: {user.saId}</p>
           </div>
           <div className="flex items-center gap-2">
             <RoleSelector
@@ -102,7 +117,7 @@ function RoleSelector({ onApprove }: { onApprove: (role: Role) => void }) {
       <select
         value={selectedRole}
         onChange={(e) => setSelectedRole(e.target.value as Role)}
-        className="h-9 rounded-md border border-primary/30 bg-white px-3 py-1 text-sm focus:border-primary focus:outline-none"
+        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:border-primary focus:outline-none"
       >
         {ROLES.filter((r) => r !== "applied" && r !== "public").map((role) => (
           <option key={role} value={role}>
@@ -124,7 +139,7 @@ function PendingResetsList({ requests }: { requests: PasswordResetRequest[] }) {
 
   if (requests.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-text-500">
+      <div className="flex h-full items-center justify-center text-muted-foreground">
         No pending password resets.
       </div>
     );
@@ -135,16 +150,16 @@ function PendingResetsList({ requests }: { requests: PasswordResetRequest[] }) {
       {requests.map((req) => (
         <li
           key={req.userName}
-          className="flex flex-col gap-4 rounded-md border border-primary/20 p-4"
+          className="flex flex-col gap-4 rounded-md border border-border p-4"
         >
           <div className="flex justify-between">
             <div>
-              <p className="font-medium text-text">
+              <p className="font-medium text-foreground">
                 {req.firstName} {req.lastName}
               </p>
-              <p className="text-sm text-text-500">@{req.userName}</p>
+              <p className="text-sm text-muted-foreground">@{req.userName}</p>
             </div>
-            <div className="text-xs text-text-500">
+            <div className="text-xs text-muted-foreground">
               Requested: {new Date(req.createdAt || "").toLocaleDateString()}
             </div>
           </div>

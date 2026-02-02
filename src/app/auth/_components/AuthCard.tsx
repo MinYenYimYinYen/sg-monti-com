@@ -1,14 +1,21 @@
 import * as React from "react";
+// import {
+//   Card,
+//   CardContent,
+//   CardDescription,
+//   CardFooter,
+//   CardHeader,
+//   CardTitle,
+// } from "@/style/componentsLegacy/Card";
+import { Container } from "@/components/Containers";
+import { cn } from "@/style/utils";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
+  CardDescription, CardFooter,
   CardHeader,
   CardTitle,
-} from "@/style/components/Card";
-import { Container } from "@/style/components/Containers";
-import { cn } from "@/style/utils";
+} from "@/style/components/card";
 
 interface AuthCardProps {
   title: string;

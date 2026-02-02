@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { progServSelect } from "@/app/realGreen/progServ/_selectors/progServSelectors";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
-import { Button } from "@/style/components/Button";
-import { Modal } from "@/style/components/Modal";
+import { Modal } from "@/components/Modal";
 import { ServCodeViewer } from "./ServCodeViewer";
+import {Button} from "@/style/components/button";
 
 export function ProgCodeViewer() {
   const progCodes = useSelector(progServSelect.progCodes);

@@ -9,8 +9,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/style/components/Card";
-import { Container } from "@/style/components/Containers";
+} from "@/style/components/card";
+import { Container } from "@/components/Containers";
 import { companyFunc } from "../_lib/companyFunc";
 import { clsx } from "clsx";
 

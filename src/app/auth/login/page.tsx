@@ -7,11 +7,11 @@ import { LoginForm } from "@/app/auth/_types/authTypes";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
-import { Button } from "@/style/components/Button";
-import { Input } from "@/style/components/Input";
-import { Label } from "@/style/components/Label";
-import { AuthCard } from "@/style/components/AuthCard";
-import { FormGroup } from "@/style/components/FormGroup";
+import { Input } from "@/style/components/input";
+import { AuthCard } from "@/app/auth/_components/AuthCard";
+import { FormGroup } from "@/style/componentsLegacy/FormGroup";
+import { Label } from "@/style/components/label";
+import {Button} from "@/style/components/button";
 
 function LoginContent() {
   const router = useRouter();

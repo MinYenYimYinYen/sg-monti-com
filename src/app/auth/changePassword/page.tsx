@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/_hooks/useAuth";
-import { Button } from "@/style/components/Button";
-import { Input } from "@/style/components/Input";
-import { Label } from "@/style/components/Label";
+import { Input } from "@/style/components/input";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
-import { AuthCard } from "@/style/components/AuthCard";
-import { FormGroup } from "@/style/components/FormGroup";
+import { AuthCard } from "@/app/auth/_components/AuthCard";
+import { FormGroup } from "@/style/componentsLegacy/FormGroup";
+import { Label } from "@/style/components/label";
+import { Button } from "@/style/components/button";
 
 export default function ChangePasswordPage() {
   const { changePassword, logout } = useAuth();

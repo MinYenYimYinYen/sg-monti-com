@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useAuth } from "@/app/auth/_hooks/useAuth";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
-import { Button } from "@/style/components/Button";
 import { useState } from "react";
 import { Inbox } from "lucide-react";
 import AdminActionModal from "@/app/auth/_components/AdminActionModal";
+import { Button } from "@/style/components/button";
 
 export default function NavBar() {
   const { logout } = useAuth();
@@ -36,7 +36,7 @@ export default function NavBar() {
         <div className="flex items-center gap-4">
           {!isInitialized ? (
             // Loading Skeleton
-            <Button variant="loading" size="sm" className="w-20">
+            <Button variant="ghost" size="sm" className="w-20" disabled={true}>
               Loading
             </Button>
           ) : isAuthenticated ? (
@@ -66,11 +66,7 @@ export default function NavBar() {
               <span className="hidden text-sm font-medium text-secondary md:block">
                 Hello, {user?.firstName}
               </span>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => logout()}
-              >
+              <Button variant="destructive" size="sm" onClick={() => logout()}>
                 Logout
               </Button>
             </>

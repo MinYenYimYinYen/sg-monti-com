@@ -7,8 +7,8 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { cn } from "@/style/utils";
 import { X } from "lucide-react";
-import { Button } from "@/style/components/Button";
 import { useIsClient } from "@/lib/hooks/useIsClient";
+import {Button} from "@/style/components/button";
 
 interface ModalProps {
   isOpen: boolean;
@@ -120,7 +120,7 @@ export function Modal({
           <h2 className="text-lg font-semibold text-text">
             {title || "Modal"}
           </h2>
-          <Button variant="ghost-neutral" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
