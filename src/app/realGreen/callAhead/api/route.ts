@@ -3,14 +3,8 @@ import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
-import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { CallAheadContract } from "@/app/realGreen/callAhead/api/CallAheadContract";
-import {
-  CallAhead,
-  CallAheadDocProps,
-  CallAheadRaw,
-} from "@/app/realGreen/callAhead/_lib/CallAhead";
-import CallAheadModel from "@/app/realGreen/callAhead/models/CallAheadModel";
+import { CallAheadRaw } from "@/app/realGreen/callAhead/_lib/CallAhead";
 import {
   extendCallAheads,
   remapCallAheads,
