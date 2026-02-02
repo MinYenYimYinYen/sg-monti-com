@@ -13,6 +13,7 @@ import { Grouper } from "@/lib/Grouper";
 import { AppState } from "@/store";
 import {
   createSelectCustomers,
+  createSelectPrograms,
   createSelectServices,
 } from "../selectors/contextSelectors";
 
@@ -76,6 +77,7 @@ const selectSlice = (state: AppState) => state.activeCustomers;
 export const activeCustomersSelect = {
   ...activeCustomersSlice.selectors,
   // Use factories to create specific selectors for this slice
-  selectHydratedActiveCustomers: createSelectCustomers(selectSlice),
-  selectHydratedServices: createSelectServices(selectSlice),
+  customers: createSelectCustomers(selectSlice),
+  programs: createSelectPrograms(selectSlice),
+  services: createSelectServices(selectSlice),
 };
