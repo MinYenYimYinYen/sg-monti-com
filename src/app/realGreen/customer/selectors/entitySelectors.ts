@@ -26,7 +26,6 @@ const selectPrograms = createBatchSelector([selectCustomers], (customers) =>
   customers.flatMap((c) => c.programs),
 );
 
-type Service = Program["services"][number];
 
 const selectServices = createBatchSelector([selectPrograms], (programs) =>
   programs.flatMap((p) => p.services),

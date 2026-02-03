@@ -16,7 +16,7 @@ import { Label } from "@/style/components/label";
 import {Button} from "@/style/components/button";
 
 export default function RegisterPage() {
-  const router = useRouter();
+  const router = useRouter(); //todo: after registration, route to "/"
   const { register, checkEligibility, resetEligibility } = useAuth();
   const eligibility = useSelector(authSelect.registrationEligibility);
 

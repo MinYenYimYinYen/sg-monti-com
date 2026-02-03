@@ -8,7 +8,6 @@ import {
   StepContext,
   StepResult, StepConfig,
 } from "../types/SearchScheme";
-import {SearchOptimizer} from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/types/SearchOptimizer";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { AppError } from "@/lib/errors/AppError";
 import { rgSearch } from "@/app/realGreen/_lib/api/rgSearchApi";
@@ -260,7 +259,7 @@ export function createPaginationStep<TRawData extends RawData>(
   };
 }
 
-type BatchStepConfig<TRawData> = {
+type BatchStepConfig = {
   stepName: "customers" | "programs" | "services";
   optimizerKey?: string;
   getIds: (pipelineData: PipelineData) => number[];
@@ -272,7 +271,7 @@ type BatchStepConfig<TRawData> = {
 };
 
 export function createBatchSizeStep<TRawData extends RawData>(
-  config: BatchStepConfig<TRawData>,
+  config: BatchStepConfig,
 ): SearchStep {
   const remapFn = getRemapFn(config.stepName);
   const mongoFn = getMongoFn(config.stepName);
