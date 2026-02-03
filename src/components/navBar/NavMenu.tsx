@@ -86,8 +86,9 @@ export default function NavMenu() {
                   <ul className="grid gap-2">
                     {section.navItems.map((item) => (
                       <li key={item.href}>
-                        <Link href={item.href}>
-                          <NavigationMenuLink
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href={item.href}
                             className={cn(
                               "block select-none rounded-md p-1 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
                             )}
@@ -95,9 +96,8 @@ export default function NavMenu() {
                             <div className="text-sm font-medium leading-none mb-1">
                               {item.title}
                             </div>
-                            {/* Optional description text could go here if your type supported it */}
-                          </NavigationMenuLink>
-                        </Link>
+                          </Link>
+                        </NavigationMenuLink>
                       </li>
                     ))}
                   </ul>

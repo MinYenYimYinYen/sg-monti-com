@@ -8,7 +8,6 @@ import { Container } from "@/components/Containers";
 export default function ViewActiveEmployees() {
   useEmployee({ autoLoad: true });
   const employees = useSelector(employeeSelect.employees);
-  console.log("employees", employees);
   return (
     <Container variant="page" title="Employees">
       <p className={"text-text"}>

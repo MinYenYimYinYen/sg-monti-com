@@ -5,7 +5,6 @@ import {
   activeCustomersActions,
   activeCustomersSelect,
 } from "@/app/realGreen/customer/slices/activeCustomersSlice";
-import {createSelectServices} from "@/app/realGreen/customer/selectors/contextSelectors";
 
 export function useActiveCustomers() {
   const dispatch = useDispatch<AppDispatch>();

@@ -22,6 +22,11 @@ export type StreamChunk = {
   };
 };
 
+export type ErrorChunk = {
+  success: false;
+  message: string;
+};
+
 export interface CustomerContract extends ApiContract {
   runSearchScheme: {
     params: { schemeName: keyof typeof searchScheme };

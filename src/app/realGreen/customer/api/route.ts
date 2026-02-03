@@ -36,14 +36,13 @@ const handlers: HandlerMap<CustomerContract> = {
             let pipelineData: PipelineData | null = null;
 
             for (const step of steps) {
-              const { stepName, run, optimizationStrategy } = step;
+              const { stepName, run, optimizationStrategy, optimizerKey } = step;
 
               const optimizer = await getSearchOptimizer({
                 optimizationStrategy: optimizationStrategy,
-                stepName: stepName,
+                stepName: optimizerKey ?? stepName,
                 schemeName: schemeName,
               });
-
 
               const stepContext: StepContext = {
                 pipelineData: pipelineData || [],

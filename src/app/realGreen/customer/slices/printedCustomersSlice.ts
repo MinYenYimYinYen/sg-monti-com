@@ -6,6 +6,7 @@ import {
 import { createStreamThunk } from "@/store/reduxUtil/thunkFactories";
 import {
   CustomerContract,
+  ErrorChunk,
   StreamChunk,
 } from "@/app/realGreen/customer/api/CustomerContract";
 import { uiActions } from "@/store/reduxUtil/uiSlice";
@@ -16,16 +17,17 @@ import {
   createSelectPrograms,
   createSelectServices,
 } from "../selectors/contextSelectors";
+import { AppError } from "@/lib/errors/AppError";
 
 // Ensure the slice state satisfies the requirements for the selectors
-type ActiveCustomersState = BaseCustomerState;
+type PrintedCustomersState = BaseCustomerState;
 
-const initialState: ActiveCustomersState = {
+const initialState: PrintedCustomersState = {
   ...baseInitialState,
 };
 
-export const activeCustomersSlice = createSlice({
-  name: "activeCustomers",
+export const printedCustomersSlice = createSlice({
+  name: "printedCustomers",
   initialState,
   reducers: {
     receiveChunk(state, action: PayloadAction<StreamChunk>) {
@@ -50,32 +52,43 @@ export const activeCustomersSlice = createSlice({
 });
 
 const getCustDocs = createStreamThunk<CustomerContract, "runSearchScheme">({
-  typePrefix: "activeCustomers/getCustDocs",
+  typePrefix: "printedCustomers/getCustDocs",
   apiPath: "/realGreen/customer/api",
   opName: "runSearchScheme",
   onChunk: (dispatch, chunk) => {
-    dispatch(activeCustomersSlice.actions.receiveChunk(chunk));
-    if (chunk.metrics?.cumulativeRecords) {
+    // Check for Error Chunk
+    if ("success" in chunk && chunk.success === false) {
+      const errorChunk = chunk as unknown as ErrorChunk;
+      throw new AppError({
+        message: errorChunk.message,
+        type: "SERVER_ERROR",
+      });
+    }
+
+    const streamChunk = chunk as StreamChunk;
+
+    dispatch(printedCustomersSlice.actions.receiveChunk(streamChunk));
+    if (streamChunk.metrics?.cumulativeRecords) {
       dispatch(
         uiActions.setLoadingMessage(
-          `${chunk.metrics.cumulativeRecords} ${chunk.stepName} loaded...`,
+          `${streamChunk.metrics.cumulativeRecords} ${streamChunk.stepName} loaded...`,
         ),
       );
     }
   },
 });
 
-export default activeCustomersSlice.reducer;
-export const activeCustomersActions = {
-  ...activeCustomersSlice.actions,
+export default printedCustomersSlice.reducer;
+export const printedCustomersActions = {
+  ...printedCustomersSlice.actions,
   getCustDocs,
 };
 
 // Define the slice selector
-const selectSlice = (state: AppState) => state.customer.active;
+const selectSlice = (state: AppState) => state.customer.printed;
 
-export const activeCustomersSelect = {
-  ...activeCustomersSlice.selectors,
+export const printedCustomersSelect = {
+  ...printedCustomersSlice.selectors,
   // Use factories to create specific selectors for this slice
   customers: createSelectCustomers(selectSlice),
   programs: createSelectPrograms(selectSlice),

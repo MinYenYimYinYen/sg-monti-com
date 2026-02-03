@@ -69,6 +69,8 @@ export type OptimizationStrategyType = "pagination" | "batchSize";
 
 export type SearchStep = {
   stepName: "customers" | "programs" | "services";
+  // Optional key to distinguish multiple steps of the same type in the same scheme
+  optimizerKey?: string;
   // Enforce strategy at definition time to match the optimizer
   optimizationStrategy: OptimizationStrategyType;
   run: (ctx: StepContext) => AsyncGenerator<StepResult>;
@@ -84,6 +86,7 @@ type WithExplicitCriteria = {
 
 export type StepConfig = (WithCriteriaFunction | WithExplicitCriteria) & {
   stepName: "customers" | "programs" | "services";
+  optimizerKey?: string;
   filterFn?: (
     fetchedData: PipelineData,
     previousData: PipelineData,

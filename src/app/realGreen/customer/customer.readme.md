@@ -108,6 +108,7 @@ A `SearchScheme` defines a multi-step process to fetch related data from RealGre
     *   **Behavior**: Iterates through pages of results until all records are fetched.
     *   **Config**:
         *   `stepName`: "customers" | "programs" | "services"
+        *   `optimizerKey`: (Optional) Unique key for the optimizer. Defaults to `stepName`.
         *   `searchCriteria`: The criteria object (e.g., `{ statuses: ["9"] }`).
 
 2.  **Batch Size Step (`createBatchSizeStep`)**:
@@ -115,8 +116,18 @@ A `SearchScheme` defines a multi-step process to fetch related data from RealGre
     *   **Behavior**: Batches IDs from the previous step and fetches results in chunks. Automatically optimizes batch size.
     *   **Config**:
         *   `stepName`: "customers" | "programs" | "services"
+        *   `optimizerKey`: (Optional) Unique key for the optimizer. Defaults to `stepName`.
         *   `getIds`: Function to extract IDs from the previous step's data.
         *   `getSearchCriteria`: Function to create criteria using the batch of IDs.
+
+### The `optimizerKey` Property
+
+The `optimizerKey` property is used to uniquely identify the optimization strategy (pagination page count or batch size) for a specific step within a scheme.
+
+*   **Default**: If omitted, it defaults to the `stepName` (e.g., "customers").
+*   **When to use**: You **MUST** provide a unique `optimizerKey` if your scheme contains multiple steps with the same `stepName`.
+    *   *Example*: A scheme that searches for "Printed Services" (Step 1: Services) and then later fetches "Related Services" (Step 4: Services).
+    *   Without unique keys, the optimizer would try to apply the "Pagination" strategy from Step 1 to the "BatchSize" strategy of Step 4, causing a crash.
 
 ### Examples
 
@@ -147,51 +158,38 @@ const activeCustomers: SearchScheme = {
 };
 ```
 
-#### 2. Negative Search (Filtering)
+#### 2. Complex Scheme with Duplicate Step Names (Using `optimizerKey`)
 
-Scenario: Find Active Customers who **DO NOT** have an 'MLC' program.
-
-```typescript
-const missingMLC: SearchScheme = {
-  schemeName: "missingMLC",
-  steps: [
-    // Step 1: Find all 'MLC' programs
-    createPaginationStep({
-      stepName: "programs",
-      searchCriteria: { season: 2026, /* ...criteria for MLC... */ },
-    }),
-    // Step 2: Find all Active Customers, but FILTER out those found in Step 1
-    createPaginationStep({
-      stepName: "customers",
-      searchCriteria: { statuses: ["9"] },
-      filterFn: (fetchedCustomers, previousPrograms) => {
-        const mlcCustomerIds = new Set((previousPrograms as ProgramDoc[]).map(p => p.custId));
-        // Keep only customers NOT in the MLC set
-        return (fetchedCustomers as CustomerDoc[]).filter(c => !mlcCustomerIds.has(c.custId));
-      }
-    }),
-  ],
-};
-```
-
-#### 3. Reverse Lookup (Service -> Customer)
-
-Scenario: Find Customers who have a specific Service status.
+Scenario: Find "Printed" Services, then find their Customers, Programs, and finally all *other* Services for those Programs.
 
 ```typescript
-const serviceBasedSearch: SearchScheme = {
-  schemeName: "serviceBased",
+const printedCustomers: SearchScheme = {
+  schemeName: "printedCustomers",
   steps: [
-    // Step 1: Find Services ready for work
+    // Step 1: Services (Pagination) - Needs unique key
     createPaginationStep({
       stepName: "services",
-      searchCriteria: { season: 2026, servStats: ["active"] },
+      optimizerKey: "initialServices", // <--- Unique Key
+      searchCriteria: { servStats: ["printed"] },
     }),
-    // Step 2: Find the Customers who own those services
+    // Step 2: Customers (Batch)
     createBatchSizeStep({
       stepName: "customers",
       getIds: (pipelineData) => (pipelineData as ServiceDoc[]).map(s => s.custId),
       getSearchCriteria: (ids) => ({ custIds: ids }),
+    }),
+    // Step 3: Programs (Batch)
+    createBatchSizeStep({
+      stepName: "programs",
+      getIds: (pipelineData) => (pipelineData as CustomerDoc[]).map(c => c.custId),
+      getSearchCriteria: (ids) => ({ custIds: ids }),
+    }),
+    // Step 4: Services (Batch) - Needs unique key to avoid collision with Step 1
+    createBatchSizeStep({
+      stepName: "services",
+      optimizerKey: "relatedServices", // <--- Unique Key
+      getIds: (pipelineData) => (pipelineData as ProgramDoc[]).map(p => p.progId),
+      getSearchCriteria: (ids) => ({ progIds: ids }),
     }),
   ],
 };

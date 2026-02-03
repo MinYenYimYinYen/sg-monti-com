@@ -133,6 +133,7 @@ export function createPaginationStep<TRawData extends RawData>(
 
   return {
     stepName: config.stepName,
+    optimizerKey: config.optimizerKey,
     optimizationStrategy: "pagination",
     run: async function* ({ optimizer, pipelineData }: StepContext) {
       const PAGE_SIZE = realGreenConst.CustProgServRecordsMax;
@@ -174,7 +175,6 @@ export function createPaginationStep<TRawData extends RawData>(
 
       // Map to Raw Criteria here
       const rawCriteria = mapCriteria(config.stepName, searchCriteria);
-      console.log("estimatedPages", estimatedPages);
 
       const promises = Array.from({ length: estimatedPages }).map(
         async (_, i) => {
@@ -187,7 +187,6 @@ export function createPaginationStep<TRawData extends RawData>(
           };
 
           const rawData: TRawData = await rgSearch<TRawData>(body);
-          console.log("rawData", rawData.length);
 
 
           const items =
@@ -263,6 +262,7 @@ export function createPaginationStep<TRawData extends RawData>(
 
 type BatchStepConfig<TRawData> = {
   stepName: "customers" | "programs" | "services";
+  optimizerKey?: string;
   getIds: (pipelineData: PipelineData) => number[];
   getSearchCriteria: (ids: number[]) => SearchCriteria;
   filterFn?: (
@@ -279,6 +279,7 @@ export function createBatchSizeStep<TRawData extends RawData>(
 
   return {
     stepName: config.stepName,
+    optimizerKey: config.optimizerKey,
     optimizationStrategy: "batchSize",
     run: async function* ({ optimizer, pipelineData }: StepContext) {
 
