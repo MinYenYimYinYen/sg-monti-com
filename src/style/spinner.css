@@ -23,8 +23,8 @@
 .spinner {
   width: 48px;
   height: 48px;
-  border: 5px solid hsl(var(--muted));
-  border-top: 5px solid hsl(var(--primary)); /* Brand Color */
+  border: 5px solid hsl(var(--muted-foreground));
+  border-top: 5px solid hsl(var(--primary));
   border-radius: 50%;
 
   /* Continuous rotation is best handled by CSS (cheaper for the browser) */

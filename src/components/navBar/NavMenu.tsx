@@ -35,6 +35,11 @@ const schedulingSection: NavSection = {
       roles: ["admin", "office"],
     },
     {
+      title: "Cover Sheets",
+      href: "/scheduling/coverSheets",
+      roles: ["admin", "office"],
+    },
+    {
       title: "Prenotification",
       href: "/scheduling/prenotify",
       roles: ["admin", "office"],
