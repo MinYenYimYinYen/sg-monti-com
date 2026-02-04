@@ -2,9 +2,7 @@
 import React, { useState } from "react";
 import { useFlag } from "@/app/realGreen/flag/useFlag";
 import { Container } from "@/components/Containers";
-import FlagSelector from "@/app/realGreen/flag/_components/FlagSelector";
 import { Flag } from "@/app/realGreen/flag/FlagTypes";
-import clsx from "clsx";
 import EntitySelector from "@/components/EntitySelector";
 import { useSelector } from "react-redux";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
