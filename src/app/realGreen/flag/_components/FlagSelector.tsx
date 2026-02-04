@@ -54,7 +54,7 @@ export default function FlagSelector({
                 value={flag.flagId.toString()}
                 className={itemClassName}
               >
-                {flag.description}
+                {flag.desc}
               </SelectItem>
             ))}
           </SelectGroup>

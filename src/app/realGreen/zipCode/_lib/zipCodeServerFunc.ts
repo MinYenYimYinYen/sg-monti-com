@@ -1,8 +1,10 @@
 import {
   ZipCodeCore,
   ZipCodeDoc,
+  ZipCodeDocProps,
   ZipCodeRaw,
 } from "@/app/realGreen/zipCode/_lib/ZipCodeTypes";
+import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
 
 function remapZipCode(raw: ZipCodeRaw): ZipCodeCore {
   return {
@@ -18,11 +20,9 @@ export function remapZipCodes(raw: ZipCodeRaw[]) {
 export async function extendZipCodes(
   remapped: ZipCodeCore[],
 ): Promise<ZipCodeDoc[]> {
-  // MOCKED: In a real scenario, we would fetch Mongo data here
-  const withMongo = remapped.map((zip) => ({
-    ...zip,
-    createdAt: "",
-    updatedAt: "",
-  }));
-  return withMongo;
+  return extendEntities<ZipCodeCore, ZipCodeDocProps, ZipCodeDoc>({
+    cores: remapped,
+    idField: "zip",
+    baseDocProps: {} as ZipCodeDocProps,
+  });
 }

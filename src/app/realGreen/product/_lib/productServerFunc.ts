@@ -1,8 +1,10 @@
 import {
   ProductCore,
   ProductDoc,
+  ProductDocProps,
   ProductRaw,
 } from "@/app/realGreen/product/ProductTypes";
+import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
 
 function remapProduct(raw: ProductRaw): ProductCore {
   return {
@@ -26,5 +28,9 @@ export function remapProducts(raw: ProductRaw[]): ProductCore[] {
 export async function extendProducts(
   remapped: ProductCore[],
 ): Promise<ProductDoc[]> {
-  return remapped as ProductDoc[];
+  return extendEntities<ProductCore, ProductDocProps, ProductDoc>({
+    cores: remapped,
+    idField: "productId",
+    baseDocProps: {} as ProductDocProps,
+  });
 }

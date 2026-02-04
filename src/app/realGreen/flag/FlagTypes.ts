@@ -21,15 +21,12 @@ export type FlagRaw = {
 export type FlagCore = {
   flagId: number;
   available: boolean;
-  description: string;
+  desc: string;
 };
-
-// export type MongoFlag = CreatedUpdated & {
-//   id: string;
-// };
 
 export type FlagDocProps = CreatedUpdated & {
   flagId: number;
+  isOnCoverSheet: boolean;
 };
 
 export type FlagDoc = FlagDocProps & FlagCore;

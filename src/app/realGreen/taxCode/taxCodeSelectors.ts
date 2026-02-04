@@ -12,7 +12,7 @@ const selectTaxCodes = createSelector(
 );
 
 const selectTaxCodeMap = createSelector([selectTaxCodes], (taxCodes) =>
-  new Grouper(taxCodes).toUniqueMap((c) => c.id),
+  new Grouper(taxCodes).toUniqueMap((c) => c.taxCodeId),
 );
 
 export const taxCodeSelect = {

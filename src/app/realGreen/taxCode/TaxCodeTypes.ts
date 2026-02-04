@@ -17,7 +17,7 @@ export type TaxCodeRaw = {
 };
 
 export type TaxCodeDocProps = CreatedUpdated & {
-  id: string;
+  taxCodeId: string;
 };
 
 export type TaxCodeDoc = TaxCodeCore & TaxCodeDocProps;

@@ -19,11 +19,11 @@ export default function ListFlags() {
         <EntitySelector
           items={flags}
           getItemId={(f) => f.flagId}
-          getItemLabel={(f) => f.description}
+          getItemLabel={(f) => f.desc}
           onValueChange={(_, flag) => setSelected(flag)}
           placeholder={"Select Flag"}
         />
-        {selected ? <div>{selected.description}</div> : <div />}
+        {selected ? <div>{selected.desc}</div> : <div />}
       </div>
     </Container>
   );

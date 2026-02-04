@@ -38,8 +38,8 @@ export class Grouper<T> {
    *
    * ```typescript
    * const serviceConditions = [
-   *   { id: 1, description: "Condition A", conditionCodes: [{ id: "C1", name: "Code 1" }, { id: "C2", name: "Code 2" }] },
-   *   { id: 2, description: "Condition B", conditionCodes: [{ id: "C2", name: "Code 2" }, { id: "C3", name: "Code 3" }] },
+   *   { id: 1, desc: "Condition A", conditionCodes: [{ id: "C1", name: "Code 1" }, { id: "C2", name: "Code 2" }] },
+   *   { id: 2, desc: "Condition B", conditionCodes: [{ id: "C2", name: "Code 2" }, { id: "C3", name: "Code 3" }] },
    * ];
    *
    * const pivotedConditionCodes = new Grouper(serviceConditions).pivot(
@@ -58,20 +58,20 @@ export class Grouper<T> {
    *   {
    *     "id": "C1",
    *     "name": "Code 1",
-   *     "serviceConditions": [{ "id": 1, "description": "Condition A" }]
+   *     "serviceConditions": [{ "id": 1, "desc": "Condition A" }]
    *   },
    *   {
    *     "id": "C2",
    *     "name": "Code 2",
    *     "serviceConditions": [
-   *       { "id": 1, "description": "Condition A" },
-   *       { "id": 2, "description": "Condition B" }
+   *       { "id": 1, "desc": "Condition A" },
+   *       { "id": 2, "desc": "Condition B" }
    *     ]
    *   },
    *   {
    *     "id": "C3",
    *     "name": "Code 3",
-   *     "serviceConditions": [{ "id": 2, "description": "Condition B" }]
+   *     "serviceConditions": [{ "id": 2, "desc": "Condition B" }]
    *   }
    * ]
    * ```

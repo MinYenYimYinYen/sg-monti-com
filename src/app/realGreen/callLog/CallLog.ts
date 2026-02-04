@@ -107,12 +107,10 @@ export function remapCallLogs(raw: CallLogRaw[]) {
 export async function extendCallLogs(
   remapped: CallLogCore[],
 ): Promise<CallLogDoc[]> {
-  // MOCKED: In the future, fetch from Mongo and merge
-  // THIS MUST BE DONE IN THE API ROUTE
-  const withMongo = remapped.map((log) => ({
-    ...log,
-    createdAt: "",
-    updatedAt: "",
-  }));
-  return withMongo;
+  const { extendEntities } = await import("@/app/realGreen/_lib/extendEntities");
+  return extendEntities<CallLogCore, CallLogDocProps, CallLogDoc>({
+    cores: remapped,
+    idField: "callLogId",
+    baseDocProps: {} as CallLogDocProps,
+  });
 }

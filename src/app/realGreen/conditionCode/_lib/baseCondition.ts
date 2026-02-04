@@ -1,5 +1,17 @@
 import { baseStrId } from "../../_lib/realGreenConst";
-import { Condition, ConditionDocProps } from "@/app/realGreen/conditionCode/_types/ConditionCode";
+import {
+  Condition,
+  ConditionCore,
+  ConditionDoc,
+  ConditionDocProps,
+  ConditionProps,
+} from "@/app/realGreen/conditionCode/_types/ConditionCode";
+
+export const baseConditionCore: ConditionCore = {
+  conditionId: baseStrId,
+  desc: baseStrId,
+  available: true,
+};
 
 export const baseConditionDocProps: ConditionDocProps = {
   conditionId: baseStrId,
@@ -8,8 +20,14 @@ export const baseConditionDocProps: ConditionDocProps = {
   upsellProgCodeIds: [],
 };
 
-export const baseCondition: Condition = {
+export const baseConditionDoc: ConditionDoc = {
+  ...baseConditionCore,
   ...baseConditionDocProps,
-  desc: baseStrId,
-  available: true,
+};
+
+export const baseConditionProps: ConditionProps = {};
+
+export const baseCondition: Condition = {
+  ...baseConditionDoc,
+  ...baseConditionProps,
 };

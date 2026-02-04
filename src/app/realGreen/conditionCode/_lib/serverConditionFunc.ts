@@ -5,10 +5,8 @@ import {
   ConditionDocProps,
 } from "@/app/realGreen/conditionCode/_types/ConditionCode";
 import { ConditionDocPropsModel } from "@/app/realGreen/conditionCode/_models/ConditionDocPropsModel";
-import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
-import { Grouper } from "@/lib/Grouper";
 import { baseConditionDocProps } from "./baseCondition";
+import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
 
 function remapCondition(raw: ConditionRaw): ConditionCore {
   return {
@@ -25,17 +23,10 @@ export function remapConditions(raw: ConditionRaw[]): ConditionCore[] {
 export async function extendConditions(
   remapped: ConditionCore[],
 ): Promise<ConditionDoc[]> {
-  await connectToMongoDB();
-  const docPropDocs = await ConditionDocPropsModel.find({}).lean();
-  const docProps = cleanMongoArray<ConditionDocProps>(docPropDocs);
-  const docPropsMap = new Grouper(docProps).toUniqueMap((d) => d.conditionId);
-  const extended: ConditionDoc[] = remapped.map((core) => {
-    const { conditionId, ...docProps } =
-      docPropsMap.get(core.conditionId) || baseConditionDocProps;
-    return {
-      ...core,
-      ...docProps,
-    };
+  return extendEntities<ConditionCore, ConditionDocProps, ConditionDoc>({
+    cores: remapped,
+    model: ConditionDocPropsModel,
+    idField: "conditionId",
+    baseDocProps: baseConditionDocProps,
   });
-  return extended;
 }

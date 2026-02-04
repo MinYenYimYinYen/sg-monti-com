@@ -1,4 +1,5 @@
-import { TaxCodeCore, TaxCodeDoc, TaxCodeRaw } from "../TaxCodeTypes";
+import { TaxCodeCore, TaxCodeDoc, TaxCodeDocProps, TaxCodeRaw } from "../TaxCodeTypes";
+import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
 
 function remapTaxCode(raw: TaxCodeRaw): TaxCodeCore {
   return {
@@ -15,5 +16,9 @@ export function remapTaxCodes(raw: TaxCodeRaw[]): TaxCodeCore[] {
 export async function extendTaxCodes(
   taxCodesCore: TaxCodeCore[],
 ): Promise<TaxCodeDoc[]> {
-  return taxCodesCore as TaxCodeDoc[];
+  return extendEntities<TaxCodeCore, TaxCodeDocProps, TaxCodeDoc>({
+    cores: taxCodesCore,
+    idField: "taxCodeId",
+    baseDocProps: {} as TaxCodeDocProps,
+  });
 }

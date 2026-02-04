@@ -1,17 +1,39 @@
-import { Product } from "@/app/realGreen/product/ProductTypes";
+import {
+  Product,
+  ProductCore,
+  ProductDoc,
+  ProductDocProps,
+  ProductProps,
+} from "@/app/realGreen/product/ProductTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
-export const baseProduct: Product = {
+export const baseProductCore: ProductCore = {
   productId: baseNumId,
-  updatedAt: "",
-  createdAt: "",
-  isProduction: false,
+  description: baseStrId,
   isLabor: false,
   isMaster: false,
   isNonInventory: false,
+  isProduction: false,
+  isWorkOrder: false,
   categoryId: baseNumId,
   productCode: baseStrId,
-  description: baseStrId,
   unitId: baseNumId,
-  isWorkOrder: false,
+};
+
+export const baseProductDocProps: ProductDocProps = {
+  productId: baseNumId,
+  createdAt: "",
+  updatedAt: "",
+};
+
+export const baseProductDoc: ProductDoc = {
+  ...baseProductCore,
+  ...baseProductDocProps,
+};
+
+export const baseProductProps: ProductProps = {};
+
+export const baseProduct: Product = {
+  ...baseProductDoc,
+  ...baseProductProps,
 };

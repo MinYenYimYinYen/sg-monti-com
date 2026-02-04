@@ -34,7 +34,16 @@ export function remapPriceTables(
 export async function extendPriceTables(
   priceTables: Omit<PriceTableCore, "ranges">[],
 ): Promise<Omit<PriceTableDoc, "ranges">[]> {
-  return priceTables as Omit<PriceTableDoc, "ranges">[];
+  const { extendEntities } = await import("@/app/realGreen/_lib/extendEntities");
+  type PartialCore = Omit<PriceTableCore, "ranges">;
+  type PartialDocProps = { tableId: number };
+  type PartialDoc = Omit<PriceTableDoc, "ranges">;
+
+  return extendEntities<PartialCore, PartialDocProps, PartialDoc>({
+    cores: priceTables,
+    idField: "tableId",
+    baseDocProps: {} as PartialDocProps,
+  });
 }
 
 function remapPriceRange(raw: PriceRangeRaw): PriceRangeCore {
@@ -50,10 +59,17 @@ export function remapPriceRanges(raw: PriceRangeRaw[]): PriceRangeCore[] {
   return raw.map(remapPriceRange);
 }
 
-export function extendPriceRanges(
+export async function extendPriceRanges(
   priceRanges: PriceRangeCore[],
-): PriceRangeDoc[] {
-  return priceRanges as PriceRangeDoc[];
+): Promise<PriceRangeDoc[]> {
+  const { extendEntities } = await import("@/app/realGreen/_lib/extendEntities");
+  type PriceRangeDocProps = { priceId: number };
+
+  return extendEntities<PriceRangeCore, PriceRangeDocProps, PriceRangeDoc>({
+    cores: priceRanges,
+    idField: "priceId",
+    baseDocProps: {} as PriceRangeDocProps,
+  });
 }
 
 export async function fetchRGPriceTableDocs() {
@@ -76,7 +92,7 @@ export async function fetchRGPriceTableDocs() {
     priceRangesRaw.push(priceRange);
   }
   const priceRangeCores = remapPriceRanges(priceRangesRaw);
-  const priceRangeDocs = extendPriceRanges(priceRangeCores);
+  const priceRangeDocs = await extendPriceRanges(priceRangeCores);
   const priceRangesByTableId = new Grouper(priceRangeDocs)
     .groupBy((item) => item.tableId)
     .toMap();

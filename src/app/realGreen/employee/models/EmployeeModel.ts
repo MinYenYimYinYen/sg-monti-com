@@ -11,8 +11,7 @@ const EmployeeSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-const EmployeeModel =
+export const EmployeeModel =
   (mongoose.models?.Employee as mongoose.Model<EmployeeDoc>) ||
   mongoose.model<EmployeeDoc>("Employee", EmployeeSchema);
 
-export default EmployeeModel;
