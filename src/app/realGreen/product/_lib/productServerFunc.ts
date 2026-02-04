@@ -3,7 +3,7 @@ import {
   ProductDoc,
   ProductDocProps,
   ProductRaw,
-} from "@/app/realGreen/product/ProductTypes";
+} from "@/app/realGreen/product/_lib/ProductTypes";
 import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
 
 function remapProduct(raw: ProductRaw): ProductCore {
@@ -14,6 +14,7 @@ function remapProduct(raw: ProductRaw): ProductCore {
     isMaster: raw.isMaster,
     isNonInventory: raw.isNonInventory,
     isProduction: raw.isProduction,
+    isMobile: raw.availableOnHandheld,
     isWorkOrder: raw.isWorkOrder,
     categoryId: raw.productCategoryId,
     productCode: raw.productCode,

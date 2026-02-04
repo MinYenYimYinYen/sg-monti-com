@@ -10,6 +10,8 @@ import Link from "next/link";
 import { Role } from "@/lib/api/types/roles";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSelector } from "react-redux";
+import { authSelect } from "@/app/auth/authSlice";
 
 // ... (Types and Data objects remain the same) ...
 
@@ -60,9 +62,31 @@ const prepaySection: NavSection = {
   ],
 };
 
-const menuSections = [schedulingSection, prepaySection];
+const realGreenParams: NavSection = {
+  title: "Real Green",
+  roles: ["admin"],
+  navItems: [
+    { title: "Products", href: "/realGreen/product/list", roles: ["admin"] },
+  ]
+}
+
+
+const menuSections = [schedulingSection, prepaySection, realGreenParams];
 
 export default function NavMenu() {
+  const user = useSelector(authSelect.user);
+  const role = user?.role || "public";
+
+  const userSections = menuSections.filter((section) => section.roles.includes(role))
+    .map((section) => {
+      return {
+        title: section.title,
+        navItems: section.navItems.filter((item) => item.roles.includes(role)),
+      };
+    });
+
+
+
   return (
     <NavigationMenu>
       <NavigationMenuList>
@@ -80,7 +104,7 @@ export default function NavMenu() {
                 w-[600px]   -> Makes the menu wide enough to fit them
             */}
             <div className={"grid grid-cols-1 md:grid-cols-2 w-[600px] gap-4"}>
-              {menuSections.map((section) => (
+              {userSections.map((section) => (
                 <div key={section.title} className="flex flex-col space-y-3">
                   {/* Section Title */}
                   <div className="font-bold text-lg leading-none mb-1 text-primary border-b pb-2">

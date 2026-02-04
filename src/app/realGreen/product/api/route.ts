@@ -4,7 +4,7 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
-import { ProductRaw, ProductDoc } from "@/app/realGreen/product/ProductTypes";
+import { ProductRaw, ProductDoc } from "@/app/realGreen/product/_lib/ProductTypes";
 import {
   extendProducts,
   remapProducts,

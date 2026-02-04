@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
-import { productActions } from "@/app/realGreen/product/productSlice";
+import { productActions } from "@/app/realGreen/product/_lib/productSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
 export function useProduct({ autoLoad }: { autoLoad: boolean }) {

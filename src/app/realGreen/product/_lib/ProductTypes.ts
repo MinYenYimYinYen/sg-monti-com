@@ -41,6 +41,7 @@ export type ProductCore = {
   isMaster: boolean;
   isNonInventory: boolean;
   isProduction: boolean;
+  isMobile: boolean;
   isWorkOrder: boolean;
   categoryId: number;
   productCode: string; //identifier but not the key!

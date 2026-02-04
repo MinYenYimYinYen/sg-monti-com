@@ -4,7 +4,7 @@ import {
   ProductDoc,
   ProductDocProps,
   ProductProps,
-} from "@/app/realGreen/product/ProductTypes";
+} from "@/app/realGreen/product/_lib/ProductTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export const baseProductCore: ProductCore = {
@@ -14,6 +14,7 @@ export const baseProductCore: ProductCore = {
   isMaster: false,
   isNonInventory: false,
   isProduction: false,
+  isMobile: false,
   isWorkOrder: false,
   categoryId: baseNumId,
   productCode: baseStrId,

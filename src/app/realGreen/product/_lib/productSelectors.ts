@@ -1,11 +1,12 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
+import { Product } from "@/app/realGreen/product/_lib/ProductTypes";
 
 const selectProductDocs = (state: AppState) => state.product.productDocs;
 const selectProducts = createSelector(
   //Mock Hydration
   [selectProductDocs],
-  (productDocs) => productDocs,
+  (productDocs) => productDocs as Product[],
 );
 
 const selectProductMap = createSelector(

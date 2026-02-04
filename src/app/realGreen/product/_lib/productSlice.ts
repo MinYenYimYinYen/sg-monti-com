@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { ProductDoc } from "@/app/realGreen/product/ProductTypes";
+import { ProductDoc } from "@/app/realGreen/product/_lib/ProductTypes";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
