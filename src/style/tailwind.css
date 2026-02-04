@@ -69,7 +69,7 @@
   --muted: oklch(0.96 0 0); /* Light neutral */
   --muted-foreground: oklch(0.50 0 0); /* Medium gray */
 
-  --accent: oklch(0.88 0.08 142.4); /* Light green background */
+  --accent: oklch(0.88 0.04 142.4); /* Light green background */
   --accent-foreground: oklch(0.20 0 0); /* Dark text */
 
   --destructive: oklch(0.525 0.173 38.4); /* Burnt Orange #CE4200 */
