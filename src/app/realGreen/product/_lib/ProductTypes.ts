@@ -34,6 +34,7 @@ export type ProductRaw = {
   unitofMeasure: number;
 };
 
+// Remapped API data (not yet extended with MongoDB DocProps)
 export type ProductCore = {
   productId: number;
   description: string;
@@ -48,12 +49,55 @@ export type ProductCore = {
   unitId: number;
 };
 
-export type ProductDocProps = CreatedUpdated & {
+// What we store in MongoDB
+export type ProductDocPropsStorage = {
   productId: number;
+  productType: 'single' | 'master' | 'sub';
+  subProductIds?: number[];
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
 };
 
-export type ProductDoc = ProductCore & ProductDocProps;
+// DocProps variants (discriminated union)
+type ProductDocPropsBase = {
+  productId: number;
+  createdAt: string;
+  updatedAt: string;
+};
 
+export type ProductDocPropsMaster = ProductDocPropsBase & {
+  productType: 'master';
+  subProductIds: number[];
+};
+
+export type ProductDocPropsSub = ProductDocPropsBase & {
+  productType: 'sub';
+};
+
+export type ProductDocPropsSingle = ProductDocPropsBase & {
+  productType: 'single';
+};
+
+export type ProductDocProps =
+  | ProductDocPropsMaster
+  | ProductDocPropsSub
+  | ProductDocPropsSingle;
+
+// Extended documents (Core + DocProps)
+export type ProductMasterDoc = ProductCore & ProductDocPropsMaster;
+export type ProductSubDoc = ProductCore & ProductDocPropsSub;
+export type ProductSingleDoc = ProductCore & ProductDocPropsSingle;
+
+export type ProductDoc = ProductMasterDoc | ProductSubDoc | ProductSingleDoc;
+
+// Server response structure
+export type ProductsResponse = {
+  productMasterDocs: ProductMasterDoc[];
+  productSingleDocs: ProductSingleDoc[];
+  productCores: ProductCore[]; // Not extended - for UI configuration
+};
+
+// Client-side hydrated types (for later implementation)
 export type ProductProps = {};
 
 export type Product = ProductDoc & ProductProps;

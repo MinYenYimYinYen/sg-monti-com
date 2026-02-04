@@ -1,20 +1,42 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
-import { Product } from "@/app/realGreen/product/_lib/ProductTypes";
 
-const selectProductDocs = (state: AppState) => state.product.productDocs;
-const selectProducts = createSelector(
-  //Mock Hydration
-  [selectProductDocs],
-  (productDocs) => productDocs as Product[],
+const selectProductMasterDocs = (state: AppState) =>
+  state.product.productMasterDocs;
+const selectProductSingleDocs = (state: AppState) =>
+  state.product.productSingleDocs;
+const selectProductCores = (state: AppState) => state.product.productCores;
+
+// Derive subs from cores and master relationships
+const selectProductSubDocs = createSelector(
+  [selectProductMasterDocs, selectProductCores],
+  (masters, cores) => {
+    const allSubIds = new Set(masters.flatMap((m) => m.subProductIds));
+    return cores.filter((c) => allSubIds.has(c.productId));
+  },
 );
 
-const selectProductMap = createSelector(
-  [selectProducts],
-  (products) => new Map(products.map((p) => [p.productId, p])),
+const selectMasterMap = createSelector(
+  [selectProductMasterDocs],
+  (masters) => new Map(masters.map((m) => [m.productId, m])),
+);
+
+const selectSingleMap = createSelector(
+  [selectProductSingleDocs],
+  (singles) => new Map(singles.map((s) => [s.productId, s])),
+);
+
+const selectCoreMap = createSelector(
+  [selectProductCores],
+  (cores) => new Map(cores.map((c) => [c.productId, c])),
 );
 
 export const productSelect = {
-  products: selectProducts,
-  productMap: selectProductMap,
-}
+  productMasterDocs: selectProductMasterDocs,
+  productSingleDocs: selectProductSingleDocs,
+  productCores: selectProductCores,
+  productSubDocs: selectProductSubDocs, // Derived selector
+  masterMap: selectMasterMap,
+  singleMap: selectSingleMap,
+  coreMap: selectCoreMap,
+};

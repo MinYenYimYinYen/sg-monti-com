@@ -1,5 +1,9 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { ProductDoc } from "@/app/realGreen/product/_lib/ProductTypes";
+import {
+  ProductCore,
+  ProductMasterDoc,
+  ProductSingleDoc,
+} from "@/app/realGreen/product/_lib/ProductTypes";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
@@ -10,11 +14,15 @@ export const getProducts = createStandardThunk<ProductContract, "getAll">({
 });
 
 interface ProductState {
-  productDocs: ProductDoc[];
+  productMasterDocs: ProductMasterDoc[];
+  productSingleDocs: ProductSingleDoc[];
+  productCores: ProductCore[];
 }
 
 const initialState: ProductState = {
-  productDocs: [],
+  productMasterDocs: [],
+  productSingleDocs: [],
+  productCores: [],
 };
 
 const productSlice = createSlice({
@@ -23,7 +31,9 @@ const productSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getProducts.fulfilled, (state, action) => {
-      state.productDocs = action.payload;
+      state.productMasterDocs = action.payload.productMasterDocs;
+      state.productSingleDocs = action.payload.productSingleDocs;
+      state.productCores = action.payload.productCores;
     });
   },
 });

@@ -2,8 +2,13 @@ import {
   Product,
   ProductCore,
   ProductDoc,
-  ProductDocProps,
+  ProductDocPropsMaster,
+  ProductDocPropsSingle,
+  ProductDocPropsSub,
+  ProductMasterDoc,
   ProductProps,
+  ProductSingleDoc,
+  ProductSubDoc,
 } from "@/app/realGreen/product/_lib/ProductTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
@@ -21,16 +26,44 @@ export const baseProductCore: ProductCore = {
   unitId: baseNumId,
 };
 
-export const baseProductDocProps: ProductDocProps = {
+export const baseProductDocPropsMaster: ProductDocPropsMaster = {
   productId: baseNumId,
+  productType: 'master',
+  subProductIds: [],
   createdAt: "",
   updatedAt: "",
 };
 
-export const baseProductDoc: ProductDoc = {
-  ...baseProductCore,
-  ...baseProductDocProps,
+export const baseProductDocPropsSub: ProductDocPropsSub = {
+  productId: baseNumId,
+  productType: 'sub',
+  createdAt: "",
+  updatedAt: "",
 };
+
+export const baseProductDocPropsSingle: ProductDocPropsSingle = {
+  productId: baseNumId,
+  productType: 'single',
+  createdAt: "",
+  updatedAt: "",
+};
+
+export const baseProductMasterDoc: ProductMasterDoc = {
+  ...baseProductCore,
+  ...baseProductDocPropsMaster,
+};
+
+export const baseProductSubDoc: ProductSubDoc = {
+  ...baseProductCore,
+  ...baseProductDocPropsSub,
+};
+
+export const baseProductSingleDoc: ProductSingleDoc = {
+  ...baseProductCore,
+  ...baseProductDocPropsSingle,
+};
+
+export const baseProductDoc: ProductDoc = baseProductSingleDoc;
 
 export const baseProductProps: ProductProps = {};
 

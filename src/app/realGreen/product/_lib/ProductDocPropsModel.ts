@@ -1,13 +1,25 @@
 import mongoose from "mongoose";
-import { ProductDocProps } from "@/app/realGreen/product/_lib/ProductTypes";
+import { ProductDocPropsStorage } from "@/app/realGreen/product/_lib/ProductTypes";
 
-interface ProductDocPropsDoc extends ProductDocProps, mongoose.Document {}
+interface ProductDocPropsDoc extends ProductDocPropsStorage, mongoose.Document {}
 
 const ProductDocPropsSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true, unique: true },
+    productType: {
+      type: String,
+      required: true,
+      enum: ['single', 'master', 'sub'],
+    },
+    subProductIds: {
+      type: [Number],
+      required: false,
+      default: undefined,
+    },
+    createdAt: { type: String, required: true },
+    updatedAt: { type: String, required: true },
   },
-  { timestamps: true },
+  { timestamps: false }, // We manage timestamps manually as ISO strings
 );
 
 export const ProductDocPropsModel =

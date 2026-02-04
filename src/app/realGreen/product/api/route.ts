@@ -4,7 +4,10 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
-import { ProductRaw, ProductDoc } from "@/app/realGreen/product/_lib/ProductTypes";
+import {
+  ProductRaw,
+  ProductsResponse,
+} from "@/app/realGreen/product/_lib/ProductTypes";
 import {
   extendProducts,
   remapProducts,
@@ -20,9 +23,9 @@ const handlers: HandlerMap<ProductContract> = {
       });
 
       const productsCore = remapProducts(rawProducts);
-      const productDocs: ProductDoc[] = await extendProducts(productsCore);
+      const productsResponse: ProductsResponse = await extendProducts(productsCore);
 
-      return { success: true, payload: productDocs };
+      return { success: true, payload: productsResponse };
     },
   },
 };

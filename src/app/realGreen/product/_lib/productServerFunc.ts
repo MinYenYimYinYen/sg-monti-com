@@ -1,10 +1,12 @@
 import {
   ProductCore,
-  ProductDoc,
-  ProductDocProps,
+  ProductDocPropsStorage,
+  ProductMasterDoc,
   ProductRaw,
+  ProductSingleDoc,
+  ProductsResponse,
 } from "@/app/realGreen/product/_lib/ProductTypes";
-import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
+import { ProductDocPropsModel } from "@/app/realGreen/product/_lib/ProductDocPropsModel";
 
 function remapProduct(raw: ProductRaw): ProductCore {
   return {
@@ -26,12 +28,127 @@ export function remapProducts(raw: ProductRaw[]): ProductCore[] {
   return raw.map(remapProduct);
 }
 
+function determineProductType(
+  core: ProductCore,
+  docProps: ProductDocPropsStorage | null,
+): 'master' | 'sub' | 'single' {
+  // Detect API capabilities
+  const canBeMaster = core.isMaster && core.isProduction && core.isMobile;
+  const canBeSingle = !core.isMaster && core.isProduction && core.isMobile;
+  const canBeSub = !core.isMaster && core.isProduction && !core.isMobile;
+
+  // If no stored config, use API capability
+  if (!docProps) {
+    if (canBeMaster) return 'master';
+    if (canBeSub) return 'sub';
+    if (canBeSingle) return 'single';
+    return 'single'; // fallback
+  }
+
+  // Validate stored config against API capability
+  if (docProps.productType === 'master' && canBeMaster) return 'master';
+  if (docProps.productType === 'sub' && canBeSub) return 'sub';
+  if (docProps.productType === 'single' && canBeSingle) return 'single';
+
+  // CONFLICT: API capability changed, fall back to API
+  if (canBeMaster) return 'master';
+  if (canBeSub) return 'sub';
+  if (canBeSingle) return 'single';
+
+  return 'single';
+}
+
 export async function extendProducts(
   remapped: ProductCore[],
-): Promise<ProductDoc[]> {
-  return extendEntities<ProductCore, ProductDocProps, ProductDoc>({
-    cores: remapped,
-    idField: "productId",
-    baseDocProps: {} as ProductDocProps,
-  });
+): Promise<ProductsResponse> {
+  // Fetch all stored DocProps
+  const allDocProps = await ProductDocPropsModel.find({}).lean();
+  const docPropsMap = new Map<number, ProductDocPropsStorage>(
+    allDocProps.map((doc) => [
+      doc.productId,
+      {
+        productId: doc.productId,
+        productType: doc.productType,
+        subProductIds: doc.subProductIds,
+        createdAt: doc.createdAt || new Date().toISOString(),
+        updatedAt: doc.updatedAt || new Date().toISOString(),
+      },
+    ]),
+  );
+
+  const productMasterDocs: ProductMasterDoc[] = [];
+  const productSingleDocs: ProductSingleDoc[] = [];
+  const bulkOps = [];
+  const now = new Date().toISOString();
+
+  for (const core of remapped) {
+    const storedDocProps = docPropsMap.get(core.productId);
+    const productType = determineProductType(core, storedDocProps || null);
+    const createdAt = storedDocProps?.createdAt || now;
+
+    // Prepare bulk operation
+    const updateDoc: any = {
+      productId: core.productId,
+      productType,
+      updatedAt: now,
+    };
+
+    if (productType === 'master') {
+      updateDoc.subProductIds = storedDocProps?.subProductIds || [];
+    } else {
+      // For non-master types, explicitly unset subProductIds if it exists
+      if (storedDocProps?.subProductIds) {
+        updateDoc.$unset = { subProductIds: '' };
+      }
+    }
+
+    const operation: any = {
+      updateOne: {
+        filter: { productId: core.productId },
+        update: {
+          $set: updateDoc,
+          $setOnInsert: { createdAt },
+        },
+        upsert: true,
+      },
+    };
+
+    // Move $unset to top-level update if it exists
+    if (updateDoc.$unset) {
+      operation.updateOne.update.$unset = updateDoc.$unset;
+      delete updateDoc.$unset;
+    }
+
+    bulkOps.push(operation);
+
+    // Build return objects
+    if (productType === 'master') {
+      productMasterDocs.push({
+        ...core,
+        productType: 'master',
+        subProductIds: storedDocProps?.subProductIds || [],
+        createdAt,
+        updatedAt: now,
+      });
+    } else if (productType === 'single') {
+      productSingleDocs.push({
+        ...core,
+        productType: 'single',
+        createdAt,
+        updatedAt: now,
+      });
+    }
+    // Subs are included in productCores, not separate array
+  }
+
+  // Execute bulk write
+  if (bulkOps.length > 0) {
+    await ProductDocPropsModel.bulkWrite(bulkOps);
+  }
+
+  return {
+    productMasterDocs,
+    productSingleDocs,
+    productCores: remapped,
+  };
 }
