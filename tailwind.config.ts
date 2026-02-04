@@ -7,6 +7,13 @@ const config: Config = {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/style/**/*.{js,ts,jsx,tsx,mdx,css}",
   ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'Inter-Fallback', 'sans-serif'],
+      },
+    },
+  },
   plugins: [],
 };
 export default config;
