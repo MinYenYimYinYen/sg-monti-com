@@ -1,4 +1,4 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import { FlagDocProps } from "@/app/realGreen/flag/FlagTypes";
 
 interface FlagDocPropsDoc extends mongoose.Document, FlagDocProps {}

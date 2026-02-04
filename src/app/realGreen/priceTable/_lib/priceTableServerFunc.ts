@@ -13,7 +13,7 @@ import { Grouper } from "@/lib/Grouper";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { PriceTableDocModel } from "@/app/realGreen/priceTable/_models/PriceTableDocModel";
 import { dateCompare } from "@/lib/primatives/dates/dateCompare";
-import { DataResponse, ErrorResponse } from "@/lib/api/types/responses";
+import { ErrorResponse } from "@/lib/api/types/responses";
 import { getBulkOpsResult } from "@/lib/mongoose/getBulkOpsResult";
 
 function remapPriceTable(raw: PriceTableRaw): Omit<PriceTableCore, "ranges"> {
