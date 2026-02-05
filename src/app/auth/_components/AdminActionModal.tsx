@@ -189,7 +189,7 @@ function PendingResetsList({ requests }: { requests: PasswordResetRequest[] }) {
               </Button>
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 onClick={() => {
                   setActiveId(null);
                   setTempPassword("");

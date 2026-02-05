@@ -27,7 +27,7 @@ export default function Home() {
           <Button>Default Button</Button>
           <Button variant="secondary">Secondary</Button>
           <Button variant="outline">Outline</Button>
-          <Button variant="ghost">Ghost</Button>
+          <Button variant="outline">Ghost</Button>
           <Button variant="destructive">Destructive</Button>
           <Button size="sm">Small</Button>
           <Button size="lg">Large</Button>
@@ -171,7 +171,7 @@ export default function Home() {
                   <TableCell><Badge>Active</Badge></TableCell>
                   <TableCell>Admin</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">Edit</Button>
+                    <Button variant="outline" size="sm">Edit</Button>
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -179,7 +179,7 @@ export default function Home() {
                   <TableCell><Badge variant="secondary">Pending</Badge></TableCell>
                   <TableCell>User</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">Edit</Button>
+                    <Button variant="outline" size="sm">Edit</Button>
                   </TableCell>
                 </TableRow>
                 <TableRow>
@@ -187,7 +187,7 @@ export default function Home() {
                   <TableCell><Badge>Active</Badge></TableCell>
                   <TableCell>Manager</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">Edit</Button>
+                    <Button variant="outline" size="sm">Edit</Button>
                   </TableCell>
                 </TableRow>
               </TableBody>

@@ -32,7 +32,7 @@ export function DataGridColumnHeader<TData, TValue>({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             className="-ml-3 h-8 data-[state=open]:bg-accent"
           >

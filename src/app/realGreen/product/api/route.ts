@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
-import { normalizeError } from "@/lib/errors/errorHandler";
+import { handleError, normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
 import {
@@ -14,6 +14,7 @@ import {
 } from "@/app/realGreen/product/_lib/productServerFunc";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { ProductCategoryModel } from "@/app/realGreen/product/_lib/models/ProductCategoryModel";
+import { AppError } from "@/lib/errors/AppError";
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {
@@ -39,12 +40,18 @@ const handlers: HandlerMap<ProductContract> = {
     roles: ["admin"],
     handler: async (params) => {
       await connectToMongoDB();
-      await ProductCategoryModel.updateOne(
+      console.log("params", params);
+      const result = await ProductCategoryModel.findOneAndUpdate(
         { categoryId: params.categoryId },
-        { params },
-        { upsert: true },
-      );
-      return { success: true };
+        { categoryId: params.categoryId, category: params.category },
+        { upsert: true, new: true },
+      ).lean();
+      console.log("result", result);
+      if (result.categoryId) {
+        return { success: true };
+      } else {
+        throw new AppError({ message: "Error saving category" });
+      }
     },
   },
 };

@@ -8,9 +8,10 @@ import { Pencil } from "lucide-react";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 // Masters Table Columns
-export const mastersColumns: (
-  onEdit?: (master: ProductMasterDoc) => void,
-) => ColumnDef<ProductMasterDoc>[] = (onEdit) => [
+export const createMastersColumns: (
+  onEdit: (master: ProductMasterDoc) => void,
+  onEditCategory: (categoryId: number, categoryName: string) => void,
+) => ColumnDef<ProductMasterDoc>[] = (onEdit, onEditCategory) => [
   {
     accessorKey: "productCode",
     header: ({ column }) => (
@@ -35,10 +36,23 @@ export const mastersColumns: (
       <DataGridColumnHeader column={column} title="Category" />
     ),
     cell: ({ row }) => (
-      <div>
-        {row.original.category === baseStrId
-          ? row.original.categoryId
-          : row.original.category}
+      <div className={"flex items-center gap-2"}>
+        <span>
+          {row.original.category === baseStrId
+            ? row.original.categoryId
+            : row.original.category}
+        </span>
+        <Button
+          variant={"outline"}
+          size={"icon"}
+          onClick={(e) => {
+            e.stopPropagation();
+
+            onEditCategory?.(row.original.categoryId, row.original.category);
+          }}
+        >
+          <Pencil />
+        </Button>
       </div>
     ),
     size: 180,
@@ -58,7 +72,7 @@ export const mastersColumns: (
     header: "Actions",
     cell: ({ row }) => (
       <Button
-        variant="ghost"
+        variant="outline"
         size="sm"
         onClick={(e) => {
           e.stopPropagation(); // Prevent row expansion when clicking edit

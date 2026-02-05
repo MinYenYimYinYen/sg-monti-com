@@ -55,7 +55,7 @@ export default function NavBar() {
         <div className="flex items-center gap-4">
           {!isInitialized ? (
             // Loading Skeleton
-            <Button variant="ghost" size="sm" className="w-20" disabled={true}>
+            <Button variant="outline" size="sm" className="w-20" disabled={true}>
               Loading
             </Button>
           ) : isAuthenticated ? (

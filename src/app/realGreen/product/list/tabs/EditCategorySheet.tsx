@@ -12,8 +12,6 @@ import {
 import { Button } from "@/style/components/button";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { Input } from "@/style/components/input";
-import { Label } from "@/style/components/label";
-import { FormGroup } from "@/components/FormGroup";
 import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/style/components/field";
 
 interface EditCategorySheetProps {

@@ -40,7 +40,7 @@ export const createSinglesColumns = (
             : row.original.category}
         </span>
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           className="h-6 w-6"
           onClick={() =>

@@ -51,7 +51,7 @@ export default function ChangePasswordPage() {
       description="Your account requires a password change."
       footer={
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => logout()}
         >

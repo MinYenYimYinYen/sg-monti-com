@@ -120,7 +120,7 @@ export function Modal({
           <h2 className="text-lg font-semibold text-foreground">
             {title || "Modal"}
           </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="outline" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>

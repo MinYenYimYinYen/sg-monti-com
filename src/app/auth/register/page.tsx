@@ -129,7 +129,7 @@ export default function RegisterPage() {
       description="Set up your profile and password."
       footer={
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => resetEligibility()}
           className="w-full"

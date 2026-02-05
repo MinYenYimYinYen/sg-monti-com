@@ -1,19 +1,32 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
 import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { Row } from "@tanstack/react-table";
 import { MasterEditSheet } from "./MasterEditSheet";
-import { mastersColumns } from "@/app/realGreen/product/list/tabs/mastersColumns";
+import { createMastersColumns } from "@/app/realGreen/product/list/tabs/mastersColumns";
+import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
+import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 
 export default function MastersTab() {
   const masters = useSelector(productSelect.productMasterDocs);
   const coreMap = useSelector(productSelect.coreMap);
   const [editingMaster, setEditingMaster] =
     React.useState<ProductMasterDoc | null>(null);
+  const [editCategoryState, setEditCategoryState] = React.useState<{
+    categoryId: number;
+    categoryName: string;
+  } | null>(null);
+
+  const mastersColumns = useMemo(() => {
+    return createMastersColumns(
+      setEditingMaster,
+      () => setEditCategoryState,
+    );
+  }, []);
 
   const renderSubComponent = (row: Row<ProductMasterDoc>) => {
     const master = row.original;
@@ -58,7 +71,7 @@ export default function MastersTab() {
       </div>
       <DataGrid
         data={masters}
-        columns={mastersColumns(setEditingMaster)}
+        columns={mastersColumns}
         enableSorting={true}
         enableFiltering={true}
         enablePagination={true}
@@ -75,6 +88,12 @@ export default function MastersTab() {
         master={editingMaster}
         open={editingMaster !== null}
         onOpenChange={(open) => !open && setEditingMaster(null)}
+      />
+      <EditCategorySheet
+        categoryId={editCategoryState?.categoryId || baseNumId}
+        categoryName={editCategoryState?.categoryName || ""}
+        open={editCategoryState !== null}
+        onOpenChange={(open) => !open && setEditCategoryState(null)}
       />
     </div>
   );

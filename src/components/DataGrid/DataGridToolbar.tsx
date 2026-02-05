@@ -51,7 +51,7 @@ export function DataGridToolbar<TData>({
             />
             {isFiltered && (
               <Button
-                variant="ghost"
+                variant="outline"
                 onClick={() => {
                   table.setGlobalFilter("");
                   setFilterValue("");
