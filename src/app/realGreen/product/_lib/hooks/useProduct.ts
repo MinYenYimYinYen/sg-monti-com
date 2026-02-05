@@ -2,21 +2,24 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { productActions } from "@/app/realGreen/product/_lib/slices/productSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
+import { useEffect } from "react";
 
 export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
 
-  if (autoLoad) {
-    dispatch(
-      productActions.getProducts({
-        params: {},
-        config: {
-          loadingMsg: "Loading productDocs...",
-          staleTime: realGreenConst.paramTypesCacheTime,
-        },
-      }),
-    );
-  }
+  useEffect(() => {
+    if (autoLoad) {
+      dispatch(
+        productActions.getProducts({
+          params: {},
+          config: {
+            loadingMsg: "Loading productDocs...",
+            staleTime: realGreenConst.paramTypesCacheTime,
+          },
+        }),
+      );
+    }
+  }, [autoLoad, dispatch]);
 
   const refresh = () =>
     dispatch(
