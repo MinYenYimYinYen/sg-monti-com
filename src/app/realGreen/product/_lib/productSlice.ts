@@ -3,7 +3,7 @@ import {
   ProductCore,
   ProductMasterDoc,
   ProductSingleDoc,
-} from "@/app/realGreen/product/_lib/ProductTypes";
+} from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 

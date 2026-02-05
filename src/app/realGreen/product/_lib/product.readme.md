@@ -398,3 +398,218 @@ This architecture provides:
 - ✅ Scalable foundation for future enhancements
 
 The discriminated union pattern ensures compile-time safety while the normalized state structure enables efficient runtime operations.
+
+---
+
+## Implementation Status Report
+
+**Last Updated**: 2026-02-04
+**Status**: UI Implementation Phase - View & Edit Features
+
+### Completed Features ✅
+
+#### Architecture & Backend
+- [x] Discriminated union type system for products (Master/Sub/Single)
+- [x] MongoDB schema with `ProductDocPropsModel`
+- [x] Server-side product type determination logic
+- [x] Bulk write operations for efficient database updates
+- [x] API contract and route handlers (`/api/realGreen/product`)
+- [x] Redux state management with `productSlice`
+- [x] Normalized selectors for derived data (`productSelectors.ts`)
+- [x] Base product types for defaults and placeholders
+
+#### UI Framework
+- [x] Reusable `DataGrid` component with TanStack Table v8
+- [x] Global search across multiple columns (type-safe)
+- [x] Column sorting with visual indicators
+- [x] Pagination controls with state management
+- [x] Column visibility toggle
+- [x] **Column resizing** with real-time feedback
+  - [x] Resize handles visible on column borders (subtle at 20% opacity, 100% on hover)
+  - [x] "Right only" resize behavior (affects only the resized column)
+  - [x] Double-click to reset column width
+  - [x] `table-layout: auto` for independent column widths
+- [x] Expandable rows for master-sub relationships
+- [x] CVA-based table variants (alternating, expandable, default)
+- [x] Text truncation in cells (with `truncate` class)
+
+#### Product List View
+- [x] **Singles Tab**: Display all single products
+  - [x] Product Code, Description, Sub-Category columns
+  - [x] Green alternating row colors
+  - [x] Sortable columns
+  - [x] Global search (productCode, description)
+  - [x] Pagination (20 per page)
+- [x] **Masters Tab**: Display all master products
+  - [x] Product Code, Description, Sub-Category, Sub Count, Actions columns
+  - [x] Expandable rows showing sub-products
+  - [x] Edit button to open relationship editor
+  - [x] Sortable columns
+  - [x] Global search (productCode, description)
+  - [x] Pagination (20 per page)
+- [x] Tab navigation between Singles and Masters views
+- [x] Product count display per tab
+
+#### Master-Sub Relationship Editor
+- [x] `MasterEditSheet` component (opens in side sheet)
+- [x] Display master product details (code, description)
+- [x] Checkbox list of available sub-products
+- [x] Filter to show only products capable of being subs
+- [x] Current sub-products pre-selected in checkboxes
+
+### In Progress / Pending Features 🚧
+
+#### Master-Sub Relationship Management
+- [ ] **Save functionality** for master-sub relationships
+  - [ ] API endpoint to update `subProductIds` on master
+  - [ ] Redux action to dispatch save request
+  - [ ] Optimistic UI update in Redux state
+  - [ ] Error handling and rollback on failure
+  - [ ] Toast notifications for success/error
+  - [ ] Close sheet after successful save
+- [ ] **Validation logic** in edit sheet
+  - [ ] Prevent saving if no changes made
+  - [ ] Warn if removing all subs from a master
+  - [ ] Validate sub-products still exist in API data
+
+#### UI Polish
+- [ ] **Text truncation tooltips** (Issue #3 from resizing discussion)
+  - Current: `truncate` class applied, but tooltips not working
+  - Problem: Column cells render `<div>{value}</div>`, making text extraction complex
+  - Options to fix:
+    1. Render plain text in cells instead of wrapping in div
+    2. Manually add `title` attributes in column definitions
+    3. Implement recursive text extraction in `TableCell`
+  - **Recommendation**: Update column cell renderers to include explicit `title` attributes
+- [ ] Replace `categoryId` with resolved `categoryName`
+  - Need category lookup/mapping from API
+  - Update selectors to hydrate category names
+- [ ] Loading states for data fetching
+- [ ] Empty states when no products exist
+- [ ] Error boundaries for component failures
+
+#### Data Management
+- [ ] **Create new master products** (UI + API)
+- [ ] **Promote single to master** (if API allows via `isMaster` flag)
+- [ ] **Demote master to single** (remove all subs, update type)
+- [ ] **Reassign sub-products** between masters
+- [ ] **Orphaned sub detection** (subs whose master was deleted)
+  - Visual indicator in UI
+  - Bulk reassignment tool
+- [ ] **Product type migration**
+  - Handle products whose API flags changed
+  - Show warnings/confirmations before reconciling
+
+#### Advanced Features
+- [ ] **Bulk operations**
+  - Select multiple products
+  - Bulk assign to master
+  - Bulk delete relationships
+- [ ] **Product hierarchy visualization**
+  - Tree view showing master → sub relationships
+  - Drag-and-drop to reassign subs
+- [ ] **Search and filtering enhancements**
+  - Filter by product type (master/single/sub)
+  - Filter by category
+  - Advanced filter builder
+- [ ] **Audit trail**
+  - Track relationship changes (who, when, what)
+  - Display change history in UI
+  - Add `lastModifiedBy` and `lastModifiedAt` fields
+
+#### Technical Debt & Optimization
+- [ ] Remove debug `console.log` statements from DataGrid components
+- [ ] Add TypeScript strict mode compliance
+- [ ] Add unit tests for selectors
+- [ ] Add integration tests for API routes
+- [ ] Performance optimization for large datasets (>1000 products)
+  - Virtualized scrolling for tables
+  - Lazy loading of sub-product details
+- [ ] Error tracking fields on `ProductDocPropsStorage`:
+  - `apiDataIncomplete: boolean`
+  - `missingFields: string[]`
+  - `lastApiSync: Date`
+
+### Known Issues 🐛
+
+1. **Column resizing text truncation** (Low Priority)
+   - Truncation CSS works, but tooltip doesn't show full text
+   - Cell content wrapped in `<div>` makes text extraction complex
+   - Workaround: Update column definitions to add explicit `title` attributes
+
+2. **Category ID instead of name** (Medium Priority)
+   - Currently displaying numeric `categoryId` in tables
+   - Need to fetch category data from API and create selector to resolve names
+   - Affects both Singles and Masters tabs
+
+### Next Steps (Recommended Order)
+
+1. **Implement save functionality** for master-sub relationships (highest value)
+   - Create API endpoint: `PUT /api/realGreen/product/:productId`
+   - Add Redux thunk for save action
+   - Wire up save button in `MasterEditSheet`
+   - Add loading state and error handling
+
+2. **Fix category name resolution** (improves UX)
+   - Fetch categories from RealGreen API
+   - Create category selector
+   - Update product table columns to display names
+
+3. **Add tooltip fix for truncated text** (polish)
+   - Update column cell renderers in `productTableColumns.tsx`
+   - Add explicit `title={row.getValue(...)}` to divs
+
+4. **Implement loading and error states** (production readiness)
+   - Add loading spinner during data fetch
+   - Add error messages when API fails
+   - Add empty states for zero products
+
+5. **Build bulk operations** (advanced features)
+   - Multi-select in tables
+   - Bulk assign/unassign subs
+
+### Files Modified in This Session
+
+**Component Library:**
+- `src/components/DataGrid/DataGrid.tsx` - Main grid component with resizing
+- `src/components/DataGrid/DataGridToolbar.tsx` - Global search implementation
+- `src/components/DataGrid/DataGridPagination.tsx` - Fixed state sync issues
+- `src/components/DataGrid/types.ts` - Added resizing and global filter props
+- `src/style/components/table.tsx` - Added resize handles, changed to `table-layout: auto`
+
+**Product Features:**
+- `src/app/realGreen/product/list/page.tsx` - Tab navigation layout
+- `src/app/realGreen/product/list/tabs/SinglesTab.tsx` - Singles product table
+- `src/app/realGreen/product/list/tabs/MastersTab.tsx` - Masters product table with expandable rows
+- `src/app/realGreen/product/list/tabs/MasterEditSheet.tsx` - Relationship editor UI
+- `src/app/realGreen/product/list/productTableColumns.tsx` - Column definitions with sizing
+
+**Navigation:**
+- `src/components/navBar/NavMenu.tsx` - Added "Real Green → Products" menu item with role-based filtering
+
+### Architecture Decisions Made
+
+1. **Global Search vs Per-Column Filters**: Chose global search across multiple columns (Option 3)
+   - More user-friendly single search box
+   - Searches across `productCode` and `description` simultaneously
+   - Type-safe with `keyof TData` constraint
+
+2. **Column Resizing: Fixed vs Auto Layout**: Chose `table-layout: auto` (Option B modified)
+   - Provides "right only" resize behavior naturally
+   - Resizing one column doesn't affect others proportionally
+   - Better UX - users don't need to re-adjust earlier columns
+   - Table still fills container width with `w-full`
+
+3. **Text Truncation Strategy**: Deferred implementation
+   - Applied `truncate` CSS class to cells
+   - Tooltip extraction from nested React elements too complex
+   - Decided to handle explicitly in column definitions when needed
+
+4. **State Management for Table Features**: Explicit state props
+   - TanStack Table's internal state changes don't trigger React re-renders
+   - Solution: Pass explicit state values as props to sub-components
+   - Affects: pagination, column visibility, global filter
+
+---
+
+**Session Context**: This session focused on building the DataGrid component library and implementing the product list viewer with column resizing, global search, and master-sub relationship visualization. The next major milestone is implementing the save functionality for relationship management.

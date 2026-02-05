@@ -4,7 +4,7 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
-import { singlesColumns } from "../productTableColumns";
+import { singlesColumns } from "./productTableColumns";
 
 export default function SinglesTab() {
   const singles = useSelector(productSelect.productSingleDocs);

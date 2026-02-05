@@ -5,8 +5,8 @@ import {
   ProductRaw,
   ProductSingleDoc,
   ProductsResponse,
-} from "@/app/realGreen/product/_lib/ProductTypes";
-import { ProductDocPropsModel } from "@/app/realGreen/product/_lib/ProductDocPropsModel";
+} from "@/app/realGreen/product/_lib/types/ProductTypes";
+import { ProductDocPropsModel } from "@/app/realGreen/product/_lib/models/ProductDocPropsModel";
 
 function remapProduct(raw: ProductRaw): ProductCore {
   return {

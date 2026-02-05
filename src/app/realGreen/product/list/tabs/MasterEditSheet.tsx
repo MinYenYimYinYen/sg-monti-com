@@ -3,7 +3,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
-import { ProductMasterDoc } from "@/app/realGreen/product/_lib/ProductTypes";
+import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import {
   Sheet,
   SheetContent,

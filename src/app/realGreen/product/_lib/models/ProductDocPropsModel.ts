@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { ProductDocPropsStorage } from "@/app/realGreen/product/_lib/ProductTypes";
+import { ProductDocPropsStorage } from "@/app/realGreen/product/_lib/types/ProductTypes";
 
 interface ProductDocPropsDoc extends ProductDocPropsStorage, mongoose.Document {}
 

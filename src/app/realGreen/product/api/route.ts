@@ -7,11 +7,13 @@ import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
 import {
   ProductRaw,
   ProductsResponse,
-} from "@/app/realGreen/product/_lib/ProductTypes";
+} from "@/app/realGreen/product/_lib/types/ProductTypes";
 import {
   extendProducts,
   remapProducts,
 } from "@/app/realGreen/product/_lib/productServerFunc";
+import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { ProductCategoryModel } from "@/app/realGreen/product/_lib/models/ProductCategoryModel";
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {
@@ -28,6 +30,15 @@ const handlers: HandlerMap<ProductContract> = {
       return { success: true, payload: productsResponse };
     },
   },
+
+  getCategories: {
+    roles: ["admin", "office"],
+    handler: async () => {
+      await connectToMongoDB();
+      const categories = await ProductCategoryModel.find();
+      return { success: true, payload: categories };
+    }
+  }
 };
 
 export async function POST(req: NextRequest) {

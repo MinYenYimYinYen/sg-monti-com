@@ -9,7 +9,7 @@ import {
   ProductProps,
   ProductSingleDoc,
   ProductSubDoc,
-} from "@/app/realGreen/product/_lib/ProductTypes";
+} from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export const baseProductCore: ProductCore = {

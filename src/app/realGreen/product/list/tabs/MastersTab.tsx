@@ -4,8 +4,8 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
-import { mastersColumns } from "../productTableColumns";
-import { ProductMasterDoc } from "@/app/realGreen/product/_lib/ProductTypes";
+import { mastersColumns } from "./productTableColumns";
+import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { Row } from "@tanstack/react-table";
 import { MasterEditSheet } from "./MasterEditSheet";
 

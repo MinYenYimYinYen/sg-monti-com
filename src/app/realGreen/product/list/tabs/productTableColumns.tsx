@@ -5,7 +5,7 @@ import {
   ProductCore,
   ProductMasterDoc,
   ProductSingleDoc,
-} from "@/app/realGreen/product/_lib/ProductTypes";
+} from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { DataGridColumnHeader } from "@/components/DataGrid";
 import { Button } from "@/style/components/button";
 import { Pencil } from "lucide-react";
