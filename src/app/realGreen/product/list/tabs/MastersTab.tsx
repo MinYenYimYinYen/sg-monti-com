@@ -24,7 +24,8 @@ export default function MastersTab() {
   const mastersColumns = useMemo(() => {
     return createMastersColumns(
       setEditingMaster,
-      () => setEditCategoryState,
+      (categoryId, categoryName) =>
+        setEditCategoryState({ categoryId, categoryName }),
     );
   }, []);
 
