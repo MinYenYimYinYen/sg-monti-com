@@ -1,4 +1,4 @@
-export type ProductCategory = {
+export type ProductCategoryStored = {
   categoryId: number;
   category: string;
 };

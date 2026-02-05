@@ -1,4 +1,5 @@
 import { ColumnDef, Row, ColumnResizeMode } from "@tanstack/react-table";
+import { ReactNode } from "react";
 
 export interface DataGridProps<TData> {
   data: TData[];
@@ -11,7 +12,7 @@ export interface DataGridProps<TData> {
   enableColumnResizing?: boolean;
   columnResizeMode?: ColumnResizeMode;
   getRowCanExpand?: (row: Row<TData>) => boolean;
-  renderSubComponent?: (row: Row<TData>) => React.ReactNode;
+  renderSubComponent?: (row: Row<TData>) => ReactNode;
   rowVariant?: "default" | "alternating" | "expandable";
   pageSize?: number;
   className?: string;

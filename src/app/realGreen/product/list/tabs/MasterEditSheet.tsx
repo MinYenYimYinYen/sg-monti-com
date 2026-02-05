@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
 import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
@@ -30,20 +30,15 @@ export function MasterEditSheet({
   onOpenChange,
 }: MasterEditSheetProps) {
   const productDocs = useSelector(productSelect.productDocs);
-  const [selectedSubIds, setSelectedSubIds] = React.useState<number[]>([]);
+  const [selectedSubIds, setSelectedSubIds] = React.useState<number[]>(
+    master?.subProductIds || [],
+  );
 
   // Filter cores to show only products that can be subs
   // (isProduction=true, isMobile=false)
   const availableSubs = productDocs.filter(
     (doc) => doc.isProduction && !doc.isMobile,
   );
-
-  // Initialize selected subs when master changes
-  React.useEffect(() => {
-    if (master) {
-      setSelectedSubIds(master.subProductIds);
-    }
-  }, [master]);
 
   const toggleSub = (productId: number) => {
     setSelectedSubIds((prev) =>
@@ -55,7 +50,12 @@ export function MasterEditSheet({
 
   const handleSave = () => {
     // TODO: Implement save logic (Redux action + API call)
-    console.log("Saving master:", master?.productId, "with subs:", selectedSubIds);
+    console.log(
+      "Saving master:",
+      master?.productId,
+      "with subs:",
+      selectedSubIds,
+    );
     onOpenChange(false);
   };
 
@@ -70,7 +70,7 @@ export function MasterEditSheet({
   if (!master) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet key={master.productId} open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-[540px]">
         <SheetHeader>
           <SheetTitle>Edit Master Product</SheetTitle>
@@ -86,7 +86,9 @@ export function MasterEditSheet({
             <div className="rounded-lg border p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{master.productCode}</Badge>
-                <span className="text-sm font-medium">{master.description}</span>
+                <span className="text-sm font-medium">
+                  {master.description}
+                </span>
               </div>
               <div className="text-sm text-muted-foreground">
                 Category ID: {master.categoryId}
@@ -137,7 +139,7 @@ export function MasterEditSheet({
                           </span>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Category: {sub.category.category}
+                          Category: {sub.category}
                         </div>
                       </div>
                     </div>

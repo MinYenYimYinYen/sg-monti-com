@@ -63,6 +63,11 @@
     - **Do not** use `useEffect` + `setState` to check for the client environment (this causes double renders and lint errors).
     - **Use**: `const isClient = useIsClient()` from `@/lib/hooks/useIsClient`.
     - This uses `useSyncExternalStore` for a safe, compliant, and performant check.
+- **State Initialization from Props**:
+    - **Do not** use `useEffect` to synchronize props to state (triggers ESLint warning `react-hooks/set-state-in-effect` and causes cascading renders).
+    - **Pattern**: Initialize state in `useState` with the prop value, then use a `key` prop on the component to reset when data changes.
+    - **Example**: `const [selected, setSelected] = useState(item?.value || [])` + `<Component key={item.id} />`.
+    - This ensures reactivity without effects and aligns with React Compiler expectations.
 
 - **Coding Style**:
     - **Function Parameters**: Prefer object-style parameters (destructuring) for functions with more than one
@@ -85,7 +90,7 @@
 ## RealGreen Customer Module
 - **Reference**: See `src/app/realGreen/customer/customer.readme.md`.
 - **Streaming**: See `src/app/realGreen/customer/streaming.readme.md`.
-- **Summary**: Handles complex data fetching (Customers -> Programs -> Services) using a streaming pipeline and "Search Schemes".
+- **Summary**: Handles complex data fetching (Customers → Programs -> Services) using a streaming pipeline and "Search Schemes".
 
 ## Session Learnings (Key Conventions)
 *   **Silent Error Handling**: Use `handleError(e, { silent: true })` to suppress toasts for expected errors.

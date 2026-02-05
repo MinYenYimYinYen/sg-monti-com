@@ -1,48 +1,16 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import {
-  ProductMasterDoc,
-  ProductSingleDoc,
-} from "@/app/realGreen/product/_lib/types/ProductTypes";
+import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { DataGridColumnHeader } from "@/components/DataGrid";
 import { Button } from "@/style/components/button";
 import { Pencil } from "lucide-react";
-
-// Singles Table Columns
-export const singlesColumns: ColumnDef<ProductSingleDoc>[] = [
-  {
-    accessorKey: "productCode",
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Product Code" />
-    ),
-    cell: ({ row }) => <div>{row.getValue("productCode")}</div>,
-    size: 150,
-  },
-  {
-    accessorKey: "description",
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Description" />
-    ),
-    cell: ({ row }) => <div>{row.getValue("description")}</div>,
-    enableColumnFilter: true,
-    filterFn: "includesString",
-    size: 400,
-  },
-  {
-    accessorKey: "category",
-    header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Sub-Category" />
-    ),
-    cell: ({ row }) => <div>{row.original.category.category}</div>,
-    size: 200,
-  },
-];
+import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 // Masters Table Columns
-export const mastersColumns: (onEdit?: (master: ProductMasterDoc) => void) => ColumnDef<ProductMasterDoc>[] = (
-  onEdit,
-) => [
+export const mastersColumns: (
+  onEdit?: (master: ProductMasterDoc) => void,
+) => ColumnDef<ProductMasterDoc>[] = (onEdit) => [
   {
     accessorKey: "productCode",
     header: ({ column }) => (
@@ -64,9 +32,15 @@ export const mastersColumns: (onEdit?: (master: ProductMasterDoc) => void) => Co
   {
     accessorKey: "category",
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Sub-Category" />
+      <DataGridColumnHeader column={column} title="Category" />
     ),
-    cell: ({ row }) => <div>{row.original.category.category}</div>,
+    cell: ({ row }) => (
+      <div>
+        {row.original.category === baseStrId
+          ? row.original.categoryId
+          : row.original.category}
+      </div>
+    ),
     size: 180,
   },
   {

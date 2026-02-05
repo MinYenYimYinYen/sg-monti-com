@@ -12,9 +12,7 @@ import {
   extendProducts,
   remapProducts,
 } from "@/app/realGreen/product/_lib/productServerFunc";
-import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { ProductCategoryModel } from "@/app/realGreen/product/_lib/models/ProductCategoryModel";
-import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
+
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {
@@ -32,15 +30,6 @@ const handlers: HandlerMap<ProductContract> = {
     },
   },
 
-  getCategories: {
-    roles: ["admin", "office"],
-    handler: async () => {
-      await connectToMongoDB();
-      const categoryDocs = await ProductCategoryModel.find().lean();
-      const categories = cleanMongoArray(categoryDocs);
-      return { success: true, payload: categories };
-    }
-  }
 };
 
 export async function POST(req: NextRequest) {

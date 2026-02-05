@@ -1,4 +1,4 @@
-import { ProductCategory } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
+import { ProductCategoryStored } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
 
 export type ProductRaw = {
   anyBranch: boolean;
@@ -61,7 +61,7 @@ export type ProductDocPropsStorage = {
 // DocProps variants (discriminated union)
 type ProductDocPropsBase = {
   productId: number;
-  category: ProductCategory;
+  category: string;
   createdAt: string;
   updatedAt: string;
 };

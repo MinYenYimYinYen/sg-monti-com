@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   ProductCore,
   ProductDoc,
@@ -29,7 +29,31 @@ const initialState: ProductState = {
 const productSlice = createSlice({
   name: "product",
   initialState,
-  reducers: {},
+  reducers: {
+    updateCategory: (
+      state,
+      action: PayloadAction<{ categoryId: number; newCategory: string }>,
+    ) => {
+      const matchingMasters = state.productMasterDocs.filter(
+        (master) => master.categoryId === action.payload.categoryId,
+      );
+      matchingMasters.forEach((master) => {
+        master.category = action.payload.newCategory;
+      });
+      const matchingSingles = state.productSingleDocs.filter(
+        (single) => single.categoryId === action.payload.categoryId,
+      );
+      matchingSingles.forEach((single) => {
+        single.category = action.payload.newCategory;
+      });
+      const matchingDocs = state.productDocs.filter(
+        (doc) => doc.categoryId === action.payload.categoryId,
+      );
+      matchingDocs.forEach((doc) => {
+        doc.category = action.payload.newCategory;
+      });
+    },
+  },
   extraReducers: (builder) => {
     builder.addCase(getProducts.fulfilled, (state, action) => {
       state.productMasterDocs = action.payload.productMasterDocs;

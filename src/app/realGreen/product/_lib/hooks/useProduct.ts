@@ -3,7 +3,7 @@ import { AppDispatch } from "@/store";
 import { productActions } from "@/app/realGreen/product/_lib/slices/productSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
-export function useProduct({ autoLoad }: { autoLoad: boolean }) {
+export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
 
   if (autoLoad) {
@@ -29,5 +29,14 @@ export function useProduct({ autoLoad }: { autoLoad: boolean }) {
       }),
     );
 
-  return { refresh };
+  const updateCategory = (categoryId: number, newCategory: string) => {
+    dispatch(
+      productActions.updateCategory({
+        categoryId,
+        newCategory,
+      }),
+    );
+  };
+
+  return { refresh, updateCategory };
 }

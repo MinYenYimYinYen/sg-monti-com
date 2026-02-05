@@ -8,11 +8,11 @@ import {
   ProductsResponse,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { ProductDocPropsModel } from "@/app/realGreen/product/_lib/models/ProductDocPropsModel";
-import { baseProductCategory } from "./baseProduct";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { ProductCategoryModel } from "@/app/realGreen/product/_lib/models/ProductCategoryModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { Grouper } from "@/lib/Grouper";
+import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 function remapProduct(raw: ProductRaw): ProductCore {
   return {
@@ -64,19 +64,24 @@ function determineProductType(
   return 'single';
 }
 
+async function getCategoryMap() {
+  const categoryDocs = await ProductCategoryModel.find({}).lean();
+  const categories = cleanMongoArray(categoryDocs);
+  const categoryMap = new Grouper(categories).toUniqueMap((cat) => cat.categoryId);
+  return categoryMap;
+}
+
 export async function extendProducts(
   remapped: ProductCore[],
 ): Promise<ProductsResponse> {
   // Fetch all stored DocProps
   await connectToMongoDB();
-  const categoryDocs = await ProductCategoryModel.find({}).lean();
-  const categories = cleanMongoArray(categoryDocs);
-  const categoryMap = new Grouper(categories).toUniqueMap((cat) => cat.categoryId);
-  
+  const categoryMap = await getCategoryMap();
+
   const productDocs: ProductDoc[] = remapped.map(doc => {
     return {
       ...doc,
-      category: categoryMap.get(doc.categoryId) || baseProductCategory,
+      category: categoryMap.get(doc.categoryId)?.category || baseStrId,
       createdAt: "",
       updatedAt: "",
     }
@@ -149,7 +154,7 @@ export async function extendProducts(
         subProductIds: storedDocProps?.subProductIds || [],
         createdAt,
         updatedAt: now,
-        category: categoryMap.get(core.categoryId) || baseProductCategory,
+        category: categoryMap.get(core.categoryId)?.category || baseStrId,
       });
     } else if (productType === 'single') {
       productSingleDocs.push({
@@ -157,7 +162,7 @@ export async function extendProducts(
         productType: 'single',
         createdAt,
         updatedAt: now,
-        category: categoryMap.get(core.categoryId) || baseProductCategory,
+        category: categoryMap.get(core.categoryId)?.category || baseStrId,
       });
     }
     // Subs are included in productCores, not separate array

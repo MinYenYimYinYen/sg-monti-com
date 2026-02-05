@@ -4,10 +4,26 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
-import { singlesColumns } from "./productTableColumns";
+
+import { createSinglesColumns } from "@/app/realGreen/product/list/tabs/singlesColumns";
+import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
+import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 
 export default function SinglesTab() {
   const singles = useSelector(productSelect.productSingleDocs);
+
+  const [editCategoryState, setEditCategoryState] = React.useState<{
+    categoryId: number;
+    categoryName: string;
+  } | null>(null);
+
+  const singlesColumns = React.useMemo(
+    () =>
+      createSinglesColumns((categoryId, categoryName) => {
+        setEditCategoryState({ categoryId, categoryName });
+      }),
+    [],
+  );
 
   return (
     <div className="space-y-4">
@@ -30,6 +46,12 @@ export default function SinglesTab() {
         pageSize={20}
         globalFilterColumns={["description", "productCode"]}
         globalFilterPlaceholder="Search products..."
+      />
+      <EditCategorySheet
+        categoryId={editCategoryState?.categoryId || baseNumId}
+        categoryName={editCategoryState?.categoryName || ""}
+        open={editCategoryState !== null}
+        onOpenChange={(open) => !open && setEditCategoryState(null)}
       />
     </div>
   );
