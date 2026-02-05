@@ -1,4 +1,4 @@
-import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { ProductCategory } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
 
 export type ProductRaw = {
   anyBranch: boolean;
@@ -52,7 +52,7 @@ export type ProductCore = {
 // What we store in MongoDB
 export type ProductDocPropsStorage = {
   productId: number;
-  productType: 'single' | 'master' | 'sub';
+  productType: "single" | "master" | "sub";
   subProductIds?: number[];
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
@@ -61,21 +61,22 @@ export type ProductDocPropsStorage = {
 // DocProps variants (discriminated union)
 type ProductDocPropsBase = {
   productId: number;
+  category: ProductCategory;
   createdAt: string;
   updatedAt: string;
 };
 
 export type ProductDocPropsMaster = ProductDocPropsBase & {
-  productType: 'master';
+  productType: "master";
   subProductIds: number[];
 };
 
 export type ProductDocPropsSub = ProductDocPropsBase & {
-  productType: 'sub';
+  productType: "sub";
 };
 
 export type ProductDocPropsSingle = ProductDocPropsBase & {
-  productType: 'single';
+  productType: "single";
 };
 
 export type ProductDocProps =

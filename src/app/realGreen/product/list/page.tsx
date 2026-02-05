@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Container } from "@/components/Containers";
-import { useProduct } from "@/app/realGreen/product/_lib/useProduct";
+import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/style/components/tabs";
 import SinglesTab from "@/app/realGreen/product/list/tabs/SinglesTab";
 import MastersTab from "@/app/realGreen/product/list/tabs/MastersTab";

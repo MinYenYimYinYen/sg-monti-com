@@ -52,7 +52,7 @@ export function DataGridViewOptions<TData>({
                 key={column.id}
                 className="capitalize"
                 checked={isVisible}
-                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                onCheckedChange={(value) => column.toggleVisibility(value)}
               >
                 {column.id}
               </DropdownMenuCheckboxItem>

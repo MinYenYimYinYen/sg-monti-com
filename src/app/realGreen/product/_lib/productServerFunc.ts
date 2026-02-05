@@ -7,6 +7,7 @@ import {
   ProductsResponse,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { ProductDocPropsModel } from "@/app/realGreen/product/_lib/models/ProductDocPropsModel";
+import { baseProductCategory } from "./baseProduct";
 
 function remapProduct(raw: ProductRaw): ProductCore {
   return {
@@ -129,6 +130,7 @@ export async function extendProducts(
         subProductIds: storedDocProps?.subProductIds || [],
         createdAt,
         updatedAt: now,
+        category: baseProductCategory,
       });
     } else if (productType === 'single') {
       productSingleDocs.push({
@@ -136,6 +138,7 @@ export async function extendProducts(
         productType: 'single',
         createdAt,
         updatedAt: now,
+        category: baseProductCategory,
       });
     }
     // Subs are included in productCores, not separate array

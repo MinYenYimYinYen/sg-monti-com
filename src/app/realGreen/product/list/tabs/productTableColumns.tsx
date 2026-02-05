@@ -2,7 +2,6 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import {
-  ProductCore,
   ProductMasterDoc,
   ProductSingleDoc,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
