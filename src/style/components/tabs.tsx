@@ -2,21 +2,59 @@
 
 import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
+import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/style/utils"
 
 const Tabs = TabsPrimitive.Root
 
+const tabsListVariants = cva(
+  "inline-flex h-9 items-center justify-center rounded-lg p-1",
+  {
+    variants: {
+      variant: {
+        primary: "bg-primary/10",
+        accent: "bg-accent/10",
+        secondary: "bg-secondary/10",
+      },
+    },
+    defaultVariants: {
+      variant: "primary",
+    },
+  }
+)
+
+const tabsTriggerVariants = cva(
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        primary: "text-foreground/60 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow focus-visible:ring-primary",
+        accent: "text-foreground/60 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow focus-visible:ring-accent",
+        secondary: "text-foreground/60 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground data-[state=active]:shadow focus-visible:ring-secondary",
+      },
+    },
+    defaultVariants: {
+      variant: "primary",
+    },
+  }
+)
+
+export interface TabsListProps
+  extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>,
+    VariantProps<typeof tabsListVariants> {}
+
+export interface TabsTriggerProps
+  extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>,
+    VariantProps<typeof tabsTriggerVariants> {}
+
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
+  TabsListProps
+>(({ className, variant, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn(
-      "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
-      className
-    )}
+    className={cn(tabsListVariants({ variant }), className)}
     {...props}
   />
 ))
@@ -24,14 +62,11 @@ TabsList.displayName = TabsPrimitive.List.displayName
 
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
+  TabsTriggerProps
+>(({ className, variant, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
-    className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow",
-      className
-    )}
+    className={cn(tabsTriggerVariants({ variant }), className)}
     {...props}
   />
 ))

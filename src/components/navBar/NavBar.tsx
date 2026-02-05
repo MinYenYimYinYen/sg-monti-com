@@ -24,7 +24,7 @@ export default function NavBar() {
 
   return (
     <nav
-      className="sticky top-0 z-50 w-full border-b border-border bg-accent px-4 py-3 shadow-sm"
+      className="sticky top-0 z-50 w-full border-b border-border bg-accent/20 px-4 py-3 shadow-sm"
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         {/*Menu*/}
@@ -50,9 +50,10 @@ export default function NavBar() {
               {user?.role === "admin" && (
                 <>
                   <Button
-                    variant="ghost"
+                    variant="accent"
+                    intensity="ghost"
                     size="icon"
-                    className="relative mr-2 text-foreground hover:bg-accent hover:text-accent-foreground"
+                    className="relative mr-2"
                     onClick={() => setIsAdminModalOpen(true)}
                   >
                     <Inbox className="h-5 w-5" />
@@ -77,7 +78,7 @@ export default function NavBar() {
               </Button>
             </>
           ) : (
-            <Button asChild variant="default" size="sm">
+            <Button asChild variant="primary" size="sm">
               <Link href="/auth/login">Login</Link>
             </Button>
           )}

@@ -54,14 +54,14 @@ const TableFooter = React.forwardRef<
 TableFooter.displayName = "TableFooter"
 
 const tableRowVariants = cva(
-  "border-b transition-colors data-[state=selected]:bg-muted",
+  "border-b transition-colors",
   {
     variants: {
       variant: {
         default: "hover:bg-muted/50",
-        alternating: "even:bg-green-50 odd:bg-white hover:bg-green-100",
+        alternating: "even:bg-accent/10 hover:bg-accent/15",
         expandable: "cursor-pointer hover:bg-muted/50",
-        selected: "bg-accent",
+        selected: "bg-accent/20",
       },
     },
     defaultVariants: {

@@ -11,14 +11,34 @@
 ## Styling
 
 - **Tailwind CSS**: v4 (configured via PostCSS)
-- **Configuration**: `tailwind.config.ts` (Defines the Semantic Theme)
-- **CSS Entry**: `src/style/tailwind.css` (Imports Tailwind and Config)
+- **shadcn/ui**: Component library built on Radix UI
+- **CSS Variables**: `src/style/tailwind.css` (Brand colors in OKLCH)
 - **Global Styles**: `src/style/globals.scss` (Global layout styles only)
 - **Architecture Reference**: See `src/style/style.readme.md`.
-- **Summary**: The project uses a **Semantic Styling System**.
-    - **Theme**: Defined in `tailwind.config.ts`. Maps semantic names (`primary`, `secondary`, `text`) to CSS variables defined in `src/style/tailwind.css`.
-    - **Components**: Reusable UI atoms (`Button`, `Card`, `Input`) located in `src/style/components/`.
-    - **Containers**: Standardized layout wrappers in `src/style/components/Containers.tsx`.
+- **Summary**: The project uses a **Semantic Styling System** with **Intensity-Based Design**.
+    - **Brand Colors**:
+        - `primary` (Blue): Buttons, primary actions, tabs
+        - `accent` (Green): Backgrounds, surfaces, NavBar, table rows
+        - `secondary` (Orange): Alternative variant
+        - `destructive` (Burnt Orange): Errors, warnings
+    - **Intensity Scale**: `ghost` (10%), `soft` (20%), `solid` (100%), `bold` (100% + emphasis)
+    - **Default**: Buttons use `variant="primary" intensity="solid"`
+    - **Components**: All shadcn components in `src/style/components/` support variant + intensity axes
+
+### Styling Rules
+
+**DO ✓**
+- Use semantic colors: `bg-primary`, `bg-accent`, `bg-card`, `text-foreground`
+- Use variant + intensity props: `<Button variant="primary" intensity="solid">`
+- Use opacity modifiers for tints: `bg-accent/10` (ghost), `bg-primary/20` (soft)
+- Let focus rings match variant color automatically
+- Use `bg-card` for inputs and popovers instead of `bg-white`
+
+**DON'T ✗**
+- Hardcoded colors: `bg-blue-500`, `bg-green-50`, `bg-white`, `text-gray-600`
+- Hardcoded focus rings: `focus:ring-blue-500` (use variant's auto ring)
+- Custom inline styles for brand colors
+- Override semantic colors with className
 
 ## State Management
 
@@ -98,4 +118,4 @@
 *   **"Applied" Role**: New users are gated with an "applied" role until approved.
 *   **Modal Architecture**: Use `Modal` (Portal + GSAP) and `TabControl` for complex dialogs.
 *   **File Structure**: Prefer `camelCase` for route folders (e.g., `changePassword`).
-*   **Styling Workflow**: Use `tailwind.config.ts` for theme definitions. Do not use SASS for colors. Use semantic classes (`bg-primary`, `text-text`) instead of raw colors.
+*   **Styling Workflow**: Use semantic colors (`bg-primary`, `bg-accent`, `text-foreground`) with variant + intensity props. Never use hardcoded colors (`bg-blue-500`). See styling rules above.
