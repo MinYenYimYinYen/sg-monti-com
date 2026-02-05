@@ -104,7 +104,7 @@ export function MasterEditSheet({
               </Label>
               {selectedSubIds.length > 0 && (
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setSelectedSubIds([])}
                 >
@@ -122,7 +122,7 @@ export function MasterEditSheet({
                   availableSubs.map((sub) => (
                     <div
                       key={sub.productId}
-                      className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent cursor-pointer"
+                      className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/10 cursor-pointer"
                       onClick={() => toggleSub(sub.productId)}
                     >
                       <Checkbox

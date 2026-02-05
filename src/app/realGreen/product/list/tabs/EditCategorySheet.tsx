@@ -77,7 +77,7 @@ export default function EditCategorySheet({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant="default" onClick={handleSave} disabled={!canSave}>
+          <Button variant="primary" onClick={handleSave} disabled={!canSave}>
             Save
           </Button>
         </SheetFooter>

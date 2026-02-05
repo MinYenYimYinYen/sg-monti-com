@@ -36,9 +36,9 @@ export function ServCodeViewer({ servCodes }: ServCodeViewerProps) {
               <td className="p-2 text-text">{sc.longName}</td>
               <td className="p-2 text-text">
                 {sc.available ? (
-                  <span className="text-green-600">Yes</span>
+                  <span className="text-accent">Yes</span>
                 ) : (
-                  <span className="text-red-600">No</span>
+                  <span className="text-destructive">No</span>
                 )}
               </td>
               <td className="p-2 text-text">

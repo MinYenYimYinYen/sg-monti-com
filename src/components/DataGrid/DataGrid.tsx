@@ -119,7 +119,7 @@ export function DataGrid<TData>({
   const getRowVariantClass = (isExpanded: boolean) => {
     switch (rowVariant) {
       case "alternating":
-        return "even:bg-green-50 odd:bg-white hover:bg-green-100";
+        return "even:bg-accent/10 hover:bg-accent/15";
       case "expandable":
         return cn("cursor-pointer hover:bg-muted/50", isExpanded && "bg-muted");
       default:

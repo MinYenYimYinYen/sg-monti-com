@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useAuth } from "@/app/auth/_hooks/useAuth";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
-import React, { useState } from "react";
-import { Inbox } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Inbox, Moon, Sun } from "lucide-react";
 import AdminActionModal from "@/app/auth/_components/AdminActionModal";
 import { Button } from "@/style/components/button";
 import NavMenu from "./NavMenu";
@@ -22,9 +22,22 @@ export default function NavBar() {
   const totalPending = pendingUsers.length + pendingResets.length;
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
+  // Dark Mode State
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    // Check initial theme
+    setIsDark(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  const toggleDarkMode = () => {
+    document.documentElement.classList.toggle("dark");
+    setIsDark((prev) => !prev);
+  };
+
   return (
     <nav
-      className="sticky top-0 z-50 w-full border-b border-border bg-accent/20 px-4 py-3 shadow-sm"
+      className="sticky top-0 z-50 w-full border-b border-border bg-[color-mix(in_oklch,var(--accent)_20%,var(--background))] px-4 py-3 shadow-sm"
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         {/*Menu*/}
@@ -47,13 +60,28 @@ export default function NavBar() {
             </Button>
           ) : isAuthenticated ? (
             <>
+              {/* Dark Mode Toggle */}
+              <Button
+                variant="accent"
+                intensity="ghost"
+                size="icon"
+                onClick={toggleDarkMode}
+                aria-label="Toggle dark mode"
+              >
+                {isDark ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </Button>
+
               {user?.role === "admin" && (
                 <>
                   <Button
                     variant="accent"
                     intensity="ghost"
                     size="icon"
-                    className="relative mr-2"
+                    className="relative"
                     onClick={() => setIsAdminModalOpen(true)}
                   >
                     <Inbox className="h-5 w-5" />

@@ -6,7 +6,8 @@ import { progServSelect } from "@/app/realGreen/progServ/_selectors/progServSele
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { Modal } from "@/components/Modal";
 import { ServCodeViewer } from "./ServCodeViewer";
-import {Button} from "@/style/components/button";
+import { Button } from "@/style/components/button";
+import { Badge } from "@/style/components/badge";
 
 export function ProgCodeViewer() {
   const progCodes = useSelector(progServSelect.progCodes);
@@ -39,11 +40,11 @@ export function ProgCodeViewer() {
                 <td className="p-3 text-text">{pc.programType || "-"}</td>
                 <td className="p-3 text-text">
                   {pc.isSpecial ? (
-                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                    <Badge variant="primary" intensity="soft">
                       Special
-                    </span>
+                    </Badge>
                   ) : (
-                    <span className="text-text-muted">-</span>
+                    <span className="text-muted-foreground">-</span>
                   )}
                 </td>
                 <td className="p-3 text-text">
