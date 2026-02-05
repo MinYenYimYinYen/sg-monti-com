@@ -1,4 +1,4 @@
-import { DataResponse } from "@/lib/api/types/responses";
+import { DataResponse, SuccessResponse } from "@/lib/api/types/responses";
 import { ProductsResponse } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { ProductCategoryStored } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
@@ -8,4 +8,9 @@ export interface ProductContract extends ApiContract {
     params: {};
     result: DataResponse<ProductsResponse>;
   };
+
+  saveCategory: {
+    params: ProductCategoryStored;
+    result: SuccessResponse;
+  }
 }

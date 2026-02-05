@@ -8,6 +8,7 @@ import {
 } from "@reduxjs/toolkit";
 import { ThunkConfig, WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { typeGuard } from "@/lib/typeGuard";
+import { toast } from "react-toastify";
 
 type UIState = {
   loadingCount: number;
@@ -77,6 +78,12 @@ const uiSlice = createSlice({
 
         // Record History
         state.lastFetched[typePrefix] = Date.now();
+
+        // Show success toast if configured
+        const arg = action.meta.arg as Partial<WithConfig<unknown>>;
+        if (typeGuard.hasDefined(arg, "config") && arg.config.successMsg) {
+          toast.success(arg.config.successMsg);
+        }
       })
 
       // C. FAIL

@@ -39,6 +39,17 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
         newCategory,
       }),
     );
+
+    dispatch(
+      productActions.saveCategory({
+        params: { categoryId, category: newCategory },
+        config: {
+          force: true,
+          showLoading: false,
+          successMsg: "Category saved successfully"
+        },
+      }),
+    );
   };
 
   return { refresh, updateCategory };

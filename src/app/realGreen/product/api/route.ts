@@ -12,7 +12,8 @@ import {
   extendProducts,
   remapProducts,
 } from "@/app/realGreen/product/_lib/productServerFunc";
-
+import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { ProductCategoryModel } from "@/app/realGreen/product/_lib/models/ProductCategoryModel";
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {
@@ -24,12 +25,28 @@ const handlers: HandlerMap<ProductContract> = {
       });
 
       const productsCore = remapProducts(rawProducts);
-      const productsResponse: ProductsResponse = await extendProducts(productsCore);
+      const available = productsCore.filter(
+        (p) => p.isMobile || p.isProduction || p.isMaster,
+      );
+      const productsResponse: ProductsResponse =
+        await extendProducts(available);
 
       return { success: true, payload: productsResponse };
     },
   },
 
+  saveCategory: {
+    roles: ["admin"],
+    handler: async (params) => {
+      await connectToMongoDB();
+      await ProductCategoryModel.updateOne(
+        { categoryId: params.categoryId },
+        { params },
+        { upsert: true },
+      );
+      return { success: true };
+    },
+  },
 };
 
 export async function POST(req: NextRequest) {

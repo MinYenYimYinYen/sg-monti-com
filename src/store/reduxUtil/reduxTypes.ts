@@ -6,6 +6,8 @@ export type ThunkConfig = {
   staleTime?: number;
   // Suppress error toasts
   silentError?: boolean;
+  // Show success toast on fulfillment
+  successMsg?: string;
 };
 
 // Helper to easily add UI args to your payload types
