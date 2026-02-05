@@ -89,13 +89,17 @@ export type ProductMasterDoc = ProductCore & ProductDocPropsMaster;
 export type ProductSubDoc = ProductCore & ProductDocPropsSub;
 export type ProductSingleDoc = ProductCore & ProductDocPropsSingle;
 
-export type ProductDoc = ProductMasterDoc | ProductSubDoc | ProductSingleDoc;
+export type ProductDoc =
+  | ProductMasterDoc
+  | ProductSubDoc
+  | ProductSingleDoc
+  | (ProductCore & ProductDocPropsBase);
 
 // Server response structure
 export type ProductsResponse = {
   productMasterDocs: ProductMasterDoc[];
   productSingleDocs: ProductSingleDoc[];
-  productCores: ProductCore[]; // Not extended - for UI configuration
+  productDocs: ProductDoc[]; // Not extended - for UI configuration
 };
 
 // Client-side hydrated types (for later implementation)

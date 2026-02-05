@@ -29,13 +29,13 @@ export function MasterEditSheet({
   open,
   onOpenChange,
 }: MasterEditSheetProps) {
-  const productCores = useSelector(productSelect.productCores);
+  const productDocs = useSelector(productSelect.productDocs);
   const [selectedSubIds, setSelectedSubIds] = React.useState<number[]>([]);
 
   // Filter cores to show only products that can be subs
   // (isProduction=true, isMobile=false)
-  const availableSubs = productCores.filter(
-    (core) => core.isProduction && !core.isMobile,
+  const availableSubs = productDocs.filter(
+    (doc) => doc.isProduction && !doc.isMobile,
   );
 
   // Initialize selected subs when master changes
@@ -137,7 +137,7 @@ export function MasterEditSheet({
                           </span>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Category: {sub.categoryId}
+                          Category: {sub.category.category}
                         </div>
                       </div>
                     </div>

@@ -1,5 +1,6 @@
 import {
   ProductCore,
+  ProductDoc,
   ProductDocPropsStorage,
   ProductMasterDoc,
   ProductRaw,
@@ -8,6 +9,10 @@ import {
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { ProductDocPropsModel } from "@/app/realGreen/product/_lib/models/ProductDocPropsModel";
 import { baseProductCategory } from "./baseProduct";
+import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { ProductCategoryModel } from "@/app/realGreen/product/_lib/models/ProductCategoryModel";
+import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
+import { Grouper } from "@/lib/Grouper";
 
 function remapProduct(raw: ProductRaw): ProductCore {
   return {
@@ -63,6 +68,20 @@ export async function extendProducts(
   remapped: ProductCore[],
 ): Promise<ProductsResponse> {
   // Fetch all stored DocProps
+  await connectToMongoDB();
+  const categoryDocs = await ProductCategoryModel.find({}).lean();
+  const categories = cleanMongoArray(categoryDocs);
+  const categoryMap = new Grouper(categories).toUniqueMap((cat) => cat.categoryId);
+  
+  const productDocs: ProductDoc[] = remapped.map(doc => {
+    return {
+      ...doc,
+      category: categoryMap.get(doc.categoryId) || baseProductCategory,
+      createdAt: "",
+      updatedAt: "",
+    }
+  })
+  
   const allDocProps = await ProductDocPropsModel.find({}).lean();
   const docPropsMap = new Map<number, ProductDocPropsStorage>(
     allDocProps.map((doc) => [
@@ -130,7 +149,7 @@ export async function extendProducts(
         subProductIds: storedDocProps?.subProductIds || [],
         createdAt,
         updatedAt: now,
-        category: baseProductCategory,
+        category: categoryMap.get(core.categoryId) || baseProductCategory,
       });
     } else if (productType === 'single') {
       productSingleDocs.push({
@@ -138,7 +157,7 @@ export async function extendProducts(
         productType: 'single',
         createdAt,
         updatedAt: now,
-        category: baseProductCategory,
+        category: categoryMap.get(core.categoryId) || baseProductCategory,
       });
     }
     // Subs are included in productCores, not separate array
@@ -152,6 +171,6 @@ export async function extendProducts(
   return {
     productMasterDocs,
     productSingleDocs,
-    productCores: remapped,
+    productDocs,
   };
 }

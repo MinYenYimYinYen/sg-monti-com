@@ -30,11 +30,11 @@ export const singlesColumns: ColumnDef<ProductSingleDoc>[] = [
     size: 400,
   },
   {
-    accessorKey: "categoryId",
+    accessorKey: "category",
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="Sub-Category" />
     ),
-    cell: ({ row }) => <div>{row.getValue("categoryId")}</div>,
+    cell: ({ row }) => <div>{row.original.category.category}</div>,
     size: 200,
   },
 ];
@@ -62,11 +62,11 @@ export const mastersColumns: (onEdit?: (master: ProductMasterDoc) => void) => Co
     size: 400,
   },
   {
-    accessorKey: "categoryId",
+    accessorKey: "category",
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="Sub-Category" />
     ),
-    cell: ({ row }) => <div>{row.getValue("categoryId")}</div>,
+    cell: ({ row }) => <div>{row.original.category.category}</div>,
     size: 180,
   },
   {
