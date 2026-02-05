@@ -13,9 +13,6 @@ const selectProductDocs = (state: AppState) => state.product.productDocs;
   // Below: All of the product types need to check for their categories.
   // If not present, they can keep baseCategory.
   // Then we need to find a way to handle the missing categories.
-  // Actually it would have been better not to make a slice for categories.
-  // This should have been handled in the api route.
-  // So delete all that crap except for the model definition.
   // Route should do as follows:
   // 1. find categories and Map them. DONE
   // 2. products find their categories and add them to the product. DONE
