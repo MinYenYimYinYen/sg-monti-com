@@ -1,10 +1,9 @@
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/store";
 import { authActions } from "@/app/auth/authSlice";
 import { AuthContract } from "@/app/auth/_types/AuthContract";
+import { useAppDispatch } from "@/lib/hooks/redux";
 
 export const useAuth = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
 
   const login = (params: AuthContract["login"]["params"]) => {
     return dispatch(

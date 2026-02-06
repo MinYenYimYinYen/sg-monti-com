@@ -2,22 +2,79 @@
 
 import { Button } from "@/style/components/button";
 import { Badge } from "@/style/components/badge";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/style/components/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/style/components/tabs";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/style/components/card";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/style/components/tabs";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 import { Checkbox } from "@/style/components/checkbox";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/style/components/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/style/components/select";
 import { Separator } from "@/style/components/separator";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/style/components/table";
-import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/style/components/sheet";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/style/components/table";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/style/components/sheet";
+import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCustomers";
+import { useSelector } from "react-redux";
+import {
+  selectCustomers,
+} from "@/app/realGreen/customer/centralSelectors/centralSelectors";
+import { useEffect } from "react";
+import { selectPrograms } from "@/app/realGreen/customer/centralSelectors/centralTerminatingSelectors";
 
 export default function Home() {
+  usePrintedCustomers({ autoLoad: true });
+  const customers = useSelector(selectCustomers);
+  const programs = useSelector(selectPrograms);
+
+  useEffect(() => {
+    console.log("Customers:", customers);
+  }, [customers]);
+
+  useEffect(() => {
+    console.log("Programs:", programs);
+  }, [programs]);
+
+
+
   return (
     <div className="container mx-auto p-8 space-y-12">
       <div>
-        <h1 className="text-4xl font-bold mb-2">shadcn/ui Component Showcase</h1>
-        <p className="text-muted-foreground">Testing all installed components with current theme</p>
+        <h1 className="text-4xl font-bold mb-2">
+          shadcn/ui Component Showcase
+        </h1>
+        <p className="text-muted-foreground">
+          Testing all installed components with current theme
+        </p>
       </div>
 
       {/* Buttons */}
@@ -56,7 +113,9 @@ export default function Home() {
               <CardDescription>Card description goes here</CardDescription>
             </CardHeader>
             <CardContent>
-              <p>This is the card content area. You can put any content here.</p>
+              <p>
+                This is the card content area. You can put any content here.
+              </p>
             </CardContent>
             <CardFooter>
               <Button>Action</Button>
@@ -69,7 +128,9 @@ export default function Home() {
               <CardDescription>With different content</CardDescription>
             </CardHeader>
             <CardContent>
-              <p>Cards are versatile containers for grouping related content.</p>
+              <p>
+                Cards are versatile containers for grouping related content.
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -168,26 +229,38 @@ export default function Home() {
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium">John Doe</TableCell>
-                  <TableCell><Badge>Active</Badge></TableCell>
+                  <TableCell>
+                    <Badge>Active</Badge>
+                  </TableCell>
                   <TableCell>Admin</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm">Edit</Button>
+                    <Button variant="outline" size="sm">
+                      Edit
+                    </Button>
                   </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Jane Smith</TableCell>
-                  <TableCell><Badge variant="secondary">Pending</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">Pending</Badge>
+                  </TableCell>
                   <TableCell>User</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm">Edit</Button>
+                    <Button variant="outline" size="sm">
+                      Edit
+                    </Button>
                   </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Bob Johnson</TableCell>
-                  <TableCell><Badge>Active</Badge></TableCell>
+                  <TableCell>
+                    <Badge>Active</Badge>
+                  </TableCell>
                   <TableCell>Manager</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm">Edit</Button>
+                    <Button variant="outline" size="sm">
+                      Edit
+                    </Button>
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -211,7 +284,10 @@ export default function Home() {
               </SheetDescription>
             </SheetHeader>
             <div className="py-4">
-              <p>Sheet content goes here. You can put forms, lists, or any other content.</p>
+              <p>
+                Sheet content goes here. You can put forms, lists, or any other
+                content.
+              </p>
             </div>
           </SheetContent>
         </Sheet>

@@ -1,12 +1,12 @@
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "@/store";
+import { useSelector } from "react-redux";
 import { progServActions } from "@/app/realGreen/progServ/_lib/progServSlice";
 import { useCallback, useEffect } from "react";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { progServSelect } from "@/app/realGreen/progServ/_selectors/progServSelectors";
+import { useAppDispatch } from "@/lib/hooks/redux";
 
 export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const progCodesMongo = useSelector(progServSelect.progCodes);
 
   const load = useCallback(({ force = false }: { force?: boolean }) => {

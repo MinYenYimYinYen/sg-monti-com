@@ -4,6 +4,7 @@ import {
   PayloadAction,
   ThunkAction,
   ThunkDispatch,
+  UnknownAction,
 } from "@reduxjs/toolkit";
 import rootReducer from "./reducers";
 // import debounceMiddleware from "@/store/middleware/debounce";
@@ -39,12 +40,12 @@ export const makeStore = () =>
 
 export type AppStore = ReturnType<typeof makeStore>;
 export type AppState = ReturnType<typeof rootReducer>;
-export type AppDispatch = ThunkDispatch<AppState, undefined, PayloadAction> &
-  Dispatch;
+// Use UnknownAction to allow dispatching any Redux action (including those with payloads)
+export type AppDispatch = ThunkDispatch<AppState, unknown, UnknownAction>;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
   ReturnType,
   AppState,
   unknown,
-  PayloadAction
+  UnknownAction
 >;

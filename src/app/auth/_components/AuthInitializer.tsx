@@ -1,12 +1,12 @@
 "use client";
 
 import { ReactNode, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { authActions, authSelect } from "@/app/auth/authSlice";
-import { AppDispatch } from "@/store";
+import { useAppDispatch } from "@/lib/hooks/redux";
 
 export default function AuthInitializer({ children }: { children: ReactNode }) {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const isInitialized = useSelector(authSelect.isInitialized);
   const isAuthenticated = useSelector(authSelect.isAuthenticated);
   const user = useSelector(authSelect.user);

@@ -1,11 +1,10 @@
-import { AppDispatch } from "@/store";
-import { useDispatch } from "react-redux";
 import { conditionActions } from "./conditionSlice";
 import { realGreenConst } from "../_lib/realGreenConst";
 import { useEffect } from "react";
+import { useAppDispatch } from "@/lib/hooks/redux";
 
 export function useCondition({ autoLoad }: { autoLoad: boolean }) {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (autoLoad) {
