@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
 import { DataGrid } from "@/components/DataGrid";

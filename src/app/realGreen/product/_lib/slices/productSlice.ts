@@ -2,7 +2,6 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import {
-  ProductMaster,
   ProductMasterDoc,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingleDoc } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";

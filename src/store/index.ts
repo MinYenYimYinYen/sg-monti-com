@@ -1,7 +1,5 @@
 import {
   configureStore,
-  Dispatch,
-  PayloadAction,
   ThunkAction,
   ThunkDispatch,
   UnknownAction,

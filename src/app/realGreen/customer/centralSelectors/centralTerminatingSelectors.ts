@@ -39,7 +39,7 @@ export const selectTerminatingCustomers = createSelector(
     // Helper to create a "Base" object (terminator)
     // These objects satisfy the type but have no navigation properties or empty ones
     const createBaseCustomer = (doc: any): Customer =>
-      ({ ...doc, programs: [] }) as Customer;
+      ({ ...doc, programs: [] }) as Customer; //todo: these should be replaced with baseEntities defined in _lib
     const createBaseProgram = (doc: any): Program =>
       ({ ...doc, services: [], customer: {} as Customer }) as Program;
     const createBaseService = (doc: any): Service =>
