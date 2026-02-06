@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
 import {

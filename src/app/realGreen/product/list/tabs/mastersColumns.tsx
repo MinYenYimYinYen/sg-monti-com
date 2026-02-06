@@ -4,10 +4,8 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataGridColumnHeader } from "@/components/DataGrid";
 import { Button } from "@/style/components/button";
 import { Pencil } from "lucide-react";
-import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
-// Masters Table Columns
 export const createMastersColumns: (
   onEdit: (master: ProductMaster) => void,
   onEditCategory: (categoryId: number, categoryName: string) => void,

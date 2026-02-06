@@ -1,7 +1,5 @@
-// Singles Table Columns
 import { ColumnDef } from "@tanstack/react-table";
 import { DataGridColumnHeader } from "@/components/DataGrid";
-import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { Button } from "@/style/components/button";
 import { Pencil } from "lucide-react";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";

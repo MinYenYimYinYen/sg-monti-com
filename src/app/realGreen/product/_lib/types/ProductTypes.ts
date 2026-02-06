@@ -1,6 +1,3 @@
-import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
-
 export type ProductRaw = {
   anyBranch: boolean;
   availableOnHandheld: boolean;

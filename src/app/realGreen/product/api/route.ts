@@ -39,6 +39,9 @@ const handlers: HandlerMap<ProductContract> = {
       });
 
       const { masterCores, singleCores, subCores, productCores } =
+        // product Cores is unused.  I'm leaving it available here in case
+        // it is needed in the future.
+        // productCores is just raw products remapped.
         remapRawProducts(rawProducts);
 
       await connectToMongoDB();
