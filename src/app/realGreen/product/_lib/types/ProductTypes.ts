@@ -1,5 +1,3 @@
-import { ProductCategoryStored } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
-
 export type ProductRaw = {
   anyBranch: boolean;
   availableOnHandheld: boolean;
@@ -79,30 +77,22 @@ export type ProductDocPropsSingle = ProductDocPropsBase & {
   productType: "single";
 };
 
-export type ProductDocProps =
-  | ProductDocPropsMaster
-  | ProductDocPropsSub
-  | ProductDocPropsSingle;
+
 
 // Extended documents (Core + DocProps)
 export type ProductMasterDoc = ProductCore & ProductDocPropsMaster;
 export type ProductSubDoc = ProductCore & ProductDocPropsSub;
 export type ProductSingleDoc = ProductCore & ProductDocPropsSingle;
 
-export type ProductDoc =
-  | ProductMasterDoc
-  | ProductSubDoc
-  | ProductSingleDoc
-  | (ProductCore & ProductDocPropsBase);
 
-// Server response structure
-export type ProductsResponse = {
-  productMasterDocs: ProductMasterDoc[];
-  productSingleDocs: ProductSingleDoc[];
-  productDocs: ProductDoc[]; // Not extended - for UI configuration
-};
 
 // Client-side hydrated types (for later implementation)
 export type ProductProps = {};
 
-export type Product = ProductDoc & ProductProps;
+export type ProductMaster = ProductMasterDoc & ProductProps;
+export type ProductSub = ProductSubDoc & ProductProps;
+export type ProductSingle = ProductSingleDoc & ProductProps;
+
+
+
+

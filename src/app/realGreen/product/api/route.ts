@@ -3,10 +3,13 @@ import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { handleError, normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
-import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
+import {
+  ProductContract,
+  ProductsResponse,
+} from "@/app/realGreen/product/api/ProductContract";
 import {
   ProductRaw,
-  ProductsResponse,
+
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import {
   extendProducts,

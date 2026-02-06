@@ -26,13 +26,13 @@ export const saveCategory = createStandardThunk<
 interface ProductState {
   productMasterDocs: ProductMasterDoc[];
   productSingleDocs: ProductSingleDoc[];
-  productDocs: ProductDoc[];
+  productSubDocs: ProductDoc[];
 }
 
 const initialState: ProductState = {
   productMasterDocs: [],
   productSingleDocs: [],
-  productDocs: [],
+  productSubDocs: [],
 };
 
 const productSlice = createSlice({
@@ -55,7 +55,7 @@ const productSlice = createSlice({
       matchingSingles.forEach((single) => {
         single.category = action.payload.newCategory;
       });
-      const matchingDocs = state.productDocs.filter(
+      const matchingDocs = state.productSubDocs.filter(
         (doc) => doc.categoryId === action.payload.categoryId,
       );
       matchingDocs.forEach((doc) => {
@@ -67,7 +67,7 @@ const productSlice = createSlice({
     builder.addCase(getProducts.fulfilled, (state, action) => {
       state.productMasterDocs = action.payload.productMasterDocs;
       state.productSingleDocs = action.payload.productSingleDocs;
-      state.productDocs = action.payload.productDocs;
+      state.productSubDocs = action.payload.productSubDocs;
     });
   },
 });

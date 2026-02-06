@@ -5,7 +5,7 @@ import {
   ProductMasterDoc,
   ProductRaw,
   ProductSingleDoc,
-  ProductsResponse,
+  ProductSubDoc,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { ProductDocPropsModel } from "@/app/realGreen/product/_lib/models/ProductDocPropsModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
@@ -13,6 +13,8 @@ import { ProductCategoryModel } from "@/app/realGreen/product/_lib/models/Produc
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { Grouper } from "@/lib/Grouper";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import { baseProductDocPropsStorage } from "@/app/realGreen/product/_lib/baseProduct";
+import { ProductsResponse } from "@/app/realGreen/product/api/ProductContract";
 
 function remapProduct(raw: ProductRaw): ProductCore {
   return {
@@ -42,6 +44,7 @@ function determineProductType(
   const canBeMaster = core.isMaster && core.isProduction && core.isMobile;
   const canBeSingle = !core.isMaster && core.isProduction && core.isMobile;
   const canBeSub = !core.isMaster && core.isProduction && !core.isMobile;
+  if(canBeSub) console.log(core.productId);
 
   // If no stored config, use API capability
   if (!docProps) {
@@ -71,22 +74,7 @@ async function getCategoryMap() {
   return categoryMap;
 }
 
-export async function extendProducts(
-  remapped: ProductCore[],
-): Promise<ProductsResponse> {
-  // Fetch all stored DocProps
-  await connectToMongoDB();
-  const categoryMap = await getCategoryMap();
-
-  const productDocs: ProductDoc[] = remapped.map(doc => {
-    return {
-      ...doc,
-      category: categoryMap.get(doc.categoryId)?.category || baseStrId,
-      createdAt: "",
-      updatedAt: "",
-    }
-  })
-  
+async function getProductDocProps() {
   const allDocProps = await ProductDocPropsModel.find({}).lean();
   const docPropsMap = new Map<number, ProductDocPropsStorage>(
     allDocProps.map((doc) => [
@@ -100,9 +88,31 @@ export async function extendProducts(
       },
     ]),
   );
+  return docPropsMap;
+}
+
+export async function extendProducts(
+  remapped: ProductCore[],
+): Promise<ProductsResponse> {
+  // Fetch all stored DocProps
+  await connectToMongoDB();
+  const docPropsMap = await getProductDocProps();
+  const categoryMap = await getCategoryMap();
+  const productDocs: ProductDoc[] = remapped.map(p => {
+    const docProps = docPropsMap.get(p.productId) || baseProductDocPropsStorage;
+    return {
+      ...p,
+      ...docProps,
+      category: categoryMap.get(p.categoryId)?.category || baseStrId,
+      createdAt: "",
+      updatedAt: "",
+    }
+  })
+
 
   const productMasterDocs: ProductMasterDoc[] = [];
   const productSingleDocs: ProductSingleDoc[] = [];
+  const productSubDocs: ProductSubDoc[] = [];
   const bulkOps = [];
   const now = new Date().toISOString();
 
@@ -164,8 +174,16 @@ export async function extendProducts(
         updatedAt: now,
         category: categoryMap.get(core.categoryId)?.category || baseStrId,
       });
+    } else if (productType === 'sub') {
+      productSubDocs.push({
+        ...core,
+        productType: 'sub',
+        createdAt,
+        updatedAt: now,
+        category: categoryMap.get(core.categoryId)?.category || baseStrId,
+      });
     }
-    // Subs are included in productCores, not separate array
+
   }
 
   // Execute bulk write
@@ -176,6 +194,7 @@ export async function extendProducts(
   return {
     productMasterDocs,
     productSingleDocs,
-    productDocs,
+    // productDocs, //todo: I think this should return subs.
+    productSubDocs
   };
 }
