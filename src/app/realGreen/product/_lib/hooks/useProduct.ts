@@ -40,16 +40,15 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
       }),
     );
 
-    dispatch(
+    return dispatch(
       productActions.saveCategory({
         params: { categoryId, category: newCategory },
         config: {
           force: true,
           showLoading: false,
-          successMsg: "Category saved successfully",
         },
       }),
-    );
+    ).unwrap();
   };
 
   const updateMasterSubProducts = (params: {
@@ -65,5 +64,9 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
     );
   };
 
-  return { refresh, updateCategory, updateMasterSubProducts };
+  return {
+    refresh,
+    updateCategory,
+    updateMasterSubProducts,
+  };
 }
