@@ -1,28 +1,30 @@
 import mongoose from "mongoose";
-import { ProductDocPropsStorage } from "@/app/realGreen/product/_lib/types/ProductTypes";
+import { ProductMasterDocProps } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { ProductSingleDocProps } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
+import { ProductSubDocProps } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
+import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 
-interface ProductDocPropsDoc extends ProductDocPropsStorage, mongoose.Document {}
+export type ProductDocPropsStorage = (Partial<ProductMasterDocProps> &
+  Partial<ProductSingleDocProps> &
+  Partial<ProductSubDocProps>) &
+  CreatedUpdated;
+
+interface ProductDocPropsDoc
+  extends ProductDocPropsStorage, mongoose.Document {}
 
 const ProductDocPropsSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true, unique: true },
-    productType: {
-      type: String,
-      required: true,
-      enum: ['single', 'master', 'sub'],
-    },
+
     subProductIds: {
       type: [Number],
       required: false,
       default: undefined,
     },
-    createdAt: { type: String, required: true },
-    updatedAt: { type: String, required: true },
   },
-  { timestamps: false }, // We manage timestamps manually as ISO strings
+  { timestamps: true },
 );
 
 export const ProductDocPropsModel =
   (mongoose.models?.Product as mongoose.Model<ProductDocPropsDoc>) ||
   mongoose.model<ProductDocPropsDoc>("Product", ProductDocPropsSchema);
-

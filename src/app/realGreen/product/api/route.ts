@@ -1,23 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { assertRole } from "@/app/auth/_lib/assertRole";
-import { handleError, normalizeError } from "@/lib/errors/errorHandler";
+import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import {
   ProductContract,
   ProductsResponse,
 } from "@/app/realGreen/product/api/ProductContract";
-import {
-  ProductRaw,
+import { ProductRaw } from "@/app/realGreen/product/_lib/types/ProductTypes";
 
-} from "@/app/realGreen/product/_lib/types/ProductTypes";
-import {
-  extendProducts,
-  remapProducts,
-} from "@/app/realGreen/product/_lib/productServerFunc";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { ProductCategoryModel } from "@/app/realGreen/product/_lib/models/ProductCategoryModel";
 import { AppError } from "@/lib/errors/AppError";
+import {
+  extendProductMasters,
+  extendProductSingles,
+  extendProductSubs,
+  remapRawProducts,
+} from "@/app/realGreen/product/_lib/productServerFunc";
+import {
+  ProductDocPropsModel,
+  ProductDocPropsStorage,
+} from "@/app/realGreen/product/_lib/models/ProductDocPropsModel";
+import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
+import { baseNumId } from "../../_lib/realGreenConst";
+import { ProductMasterDocProps } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { ProductSingleDocProps } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
+import { ProductSubDocProps } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {
@@ -28,12 +37,43 @@ const handlers: HandlerMap<ProductContract> = {
         method: "GET",
       });
 
-      const productsCore = remapProducts(rawProducts);
-      const available = productsCore.filter(
-        (p) => p.isMobile || p.isProduction || p.isMaster,
+      const { masterCores, singleCores, subCores, productCores } =
+        remapRawProducts(rawProducts);
+
+      await connectToMongoDB();
+      const storedProductDocProps = await ProductDocPropsModel.find({}).lean();
+      const productDocProps = cleanMongoArray<ProductDocPropsStorage>(
+        storedProductDocProps,
       );
-      const productsResponse: ProductsResponse =
-        await extendProducts(available);
+
+      const masterCoreIds = masterCores.map((p) => p.productId);
+      const singleCoreIds = singleCores.map((p) => p.productId);
+      const subCoreIds = subCores.map((p) => p.productId);
+
+      const getDocProps = (coreIds: number[]) => {
+        const docProps = productDocProps.filter((docProp) =>
+          coreIds.includes(docProp.productId || baseNumId),
+        );
+        return docProps;
+      };
+
+      const masterDocProps = getDocProps(
+        masterCoreIds,
+      ) as ProductMasterDocProps[];
+      const singleDocProps = getDocProps(
+        singleCoreIds,
+      ) as ProductSingleDocProps[];
+      const subDocProps = getDocProps(subCoreIds) as ProductSubDocProps[];
+
+      const masterDocs = extendProductMasters(masterCores, masterDocProps);
+      const singleDocs = extendProductSingles(singleCores, singleDocProps);
+      const subDocs = extendProductSubs(subCores, subDocProps);
+
+      const productsResponse: ProductsResponse = {
+        productMasterDocs: masterDocs,
+        productSingleDocs: singleDocs,
+        productSubDocs: subDocs,
+      };
 
       return { success: true, payload: productsResponse };
     },

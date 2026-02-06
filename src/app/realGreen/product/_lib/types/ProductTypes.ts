@@ -1,3 +1,6 @@
+import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+
 export type ProductRaw = {
   anyBranch: boolean;
   availableOnHandheld: boolean;
@@ -32,7 +35,6 @@ export type ProductRaw = {
   unitofMeasure: number;
 };
 
-// Remapped API data (not yet extended with MongoDB DocProps)
 export type ProductCore = {
   productId: number;
   description: string;
@@ -46,52 +48,6 @@ export type ProductCore = {
   productCode: string; //identifier but not the key!
   unitId: number;
 };
-
-// What we store in MongoDB
-export type ProductDocPropsStorage = {
-  productId: number;
-  productType: "single" | "master" | "sub";
-  subProductIds?: number[];
-  createdAt: string; // ISO string
-  updatedAt: string; // ISO string
-};
-
-// DocProps variants (discriminated union)
-type ProductDocPropsBase = {
-  productId: number;
-  category: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type ProductDocPropsMaster = ProductDocPropsBase & {
-  productType: "master";
-  subProductIds: number[];
-};
-
-export type ProductDocPropsSub = ProductDocPropsBase & {
-  productType: "sub";
-};
-
-export type ProductDocPropsSingle = ProductDocPropsBase & {
-  productType: "single";
-};
-
-
-
-// Extended documents (Core + DocProps)
-export type ProductMasterDoc = ProductCore & ProductDocPropsMaster;
-export type ProductSubDoc = ProductCore & ProductDocPropsSub;
-export type ProductSingleDoc = ProductCore & ProductDocPropsSingle;
-
-
-
-// Client-side hydrated types (for later implementation)
-export type ProductProps = {};
-
-export type ProductMaster = ProductMasterDoc & ProductProps;
-export type ProductSub = ProductSubDoc & ProductProps;
-export type ProductSingle = ProductSingleDoc & ProductProps;
 
 
 

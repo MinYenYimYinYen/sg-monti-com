@@ -44,6 +44,8 @@ function hasDefined<T, K extends keyof T>(
  * const customers: RawCustomer[] = [
  *   { id: 1, callAhead: { id: "123" } },
  *   { id: 2, callAhead: undefined },
+ },
+ *   { id: 2, callAhead: undefined },
  *   { id: 3 },
  * ];
  *
@@ -90,6 +92,7 @@ function withDefinedKeys<T, K extends keyof T>(
   items: T[],
   keys: K[],
 ): Array<T & { [P in K]-?: NonNullable<T[P]> }> {
+  return items.filter((item): item is T): Array<T & { [P in K]-?: NonNullable<T[P]> }> {
   return items.filter((item): item is T & { [P in K]-?: NonNullable<T[P]> } =>
     keys.every((key) => item[key] !== undefined && item[key] !== null),
   );

@@ -1,15 +1,25 @@
-import {
-  ProductCore,
-  ProductDocPropsMaster,
-  ProductDocPropsSingle,
-  ProductDocPropsStorage,
-  ProductDocPropsSub,
-  ProductMasterDoc,
-  ProductProps,
-  ProductSingleDoc,
-  ProductSubDoc,
-} from "@/app/realGreen/product/_lib/types/ProductTypes";
+import { ProductCore } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import {
+  ProductMaster,
+  ProductMasterCore,
+  ProductMasterDoc,
+  ProductMasterDocProps,
+  ProductMasterProps,
+} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import {
+  ProductSingleCore,
+  ProductSingleDoc,
+  ProductSingleDocProps,
+  ProductSingleProps,
+} from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
+import {
+  ProductSub,
+  ProductSubCore,
+  ProductSubDoc,
+  ProductSubDocProps,
+  ProductSubProps,
+} from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 
 export const baseProductCore: ProductCore = {
   productId: baseNumId,
@@ -25,63 +35,79 @@ export const baseProductCore: ProductCore = {
   unitId: baseNumId,
 };
 
-// todo: Have to rework how product get reclassified and extended.
-//  Might be best to use 3 separate MongoModels and eliminate the made
-//  up productType field.  This would simplify the type weaving issue.
-//  Three types files, three models, and each would follow the standard workflow.
-export const baseProductDocPropsStorage: ProductDocPropsStorage = {
-  productId: baseNumId,
-  productType: "single",
-  createdAt: "",
-  updatedAt: "",
+export const baseProductMasterCore: ProductMasterCore = {
+  ...baseProductCore,
+  isMaster: true,
+  isProduction: true,
+  isMobile: true,
 };
 
-export const baseProductDocPropsMaster: ProductDocPropsMaster = {
+export const baseProductMasterDocProps: ProductMasterDocProps = {
   productId: baseNumId,
-  productType: "master",
   subProductIds: [],
   createdAt: "",
   updatedAt: "",
-  category: baseStrId,
-};
-
-export const baseProductDocPropsSub: ProductDocPropsSub = {
-  productId: baseNumId,
-  productType: "sub",
-  createdAt: "",
-  updatedAt: "",
-  category: baseStrId,
-};
-
-export const baseProductDocPropsSingle: ProductDocPropsSingle = {
-  productId: baseNumId,
-  productType: "single",
-  createdAt: "",
-  updatedAt: "",
-  category: baseStrId,
 };
 
 export const baseProductMasterDoc: ProductMasterDoc = {
-  ...baseProductCore,
-  ...baseProductDocPropsMaster,
+  ...baseProductMasterCore,
+  ...baseProductMasterDocProps,
 };
 
-export const baseProductSubDoc: ProductSubDoc = {
+export const baseProductMasterProps: ProductMasterProps = {};
+
+export const baseProductMaster: ProductMaster = {
+  ...baseProductMasterDoc,
+  ...baseProductMasterProps,
+};
+
+export const baseProductSingleCore: ProductSingleCore = {
   ...baseProductCore,
-  ...baseProductDocPropsSub,
+  isMaster: false,
+  isProduction: true,
+  isMobile: true,
+};
+
+export const baseProductSingleDocProps: ProductSingleDocProps = {
+  productId: baseNumId,
+  createdAt: "",
+  updatedAt: "",
 };
 
 export const baseProductSingleDoc: ProductSingleDoc = {
+  ...baseProductSingleCore,
+  ...baseProductSingleDocProps,
+};
+
+export const baseProductSingeProps: ProductSingleProps = {};
+
+export const baseProductSingle: ProductSingleDoc = {
+  ...baseProductSingleDoc,
+  ...baseProductSingeProps,
+};
+
+export const baseProductSubCore: ProductSubCore = {
   ...baseProductCore,
-  ...baseProductDocPropsSingle,
-};
+  isMaster: false,
+  isProduction: true,
+  isMobile: false,
+}
 
-export const baseProductDoc: ProductDoc =
-  baseProductSingleDoc || baseProductMasterDoc || baseProductSubDoc;
+export const baseProductSubDocProps: ProductSubDocProps = {
+  productId: baseNumId,
+  createdAt: "",
+  updatedAt: "",
+}
 
-export const baseProductProps: ProductProps = {};
+export const baseProductSubDoc: ProductSubDoc = {
+  ...baseProductSubCore,
+  ...baseProductSubDocProps,
+}
 
-export const baseProduct: Product = {
-  ...baseProductDoc,
-  ...baseProductProps,
-};
+export const baseProductSubProps: ProductSubProps = {}
+
+export const baseProductSub: ProductSub = {
+  ...baseProductSubDoc,
+  ...baseProductSubProps,
+}
+
