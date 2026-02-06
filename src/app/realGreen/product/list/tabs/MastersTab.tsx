@@ -4,18 +4,18 @@ import React, { useMemo } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
-import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { Row } from "@tanstack/react-table";
 import { MasterEditSheet } from "./MasterEditSheet";
 import { createMastersColumns } from "@/app/realGreen/product/list/tabs/mastersColumns";
 import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
+import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
 export default function MastersTab() {
-  const masters = useSelector(productSelect.productMasterDocs);
-  const coreMap = useSelector(productSelect.coreMap);
+  const masters = useSelector(productSelect.productMasters);
+  const subsMap = useSelector(productSelect.productSubsMap);
   const [editingMaster, setEditingMaster] =
-    React.useState<ProductMasterDoc | null>(null);
+    React.useState<ProductMaster | null>(null);
   const [editCategoryState, setEditCategoryState] = React.useState<{
     categoryId: number;
     categoryName: string;
@@ -29,10 +29,10 @@ export default function MastersTab() {
     );
   }, []);
 
-  const renderSubComponent = (row: Row<ProductMasterDoc>) => {
+  const renderSubComponent = (row: Row<ProductMaster>) => {
     const master = row.original;
     const subProducts = master.subProductIds
-      .map((id) => coreMap.get(id))
+      .map((id) => subsMap.get(id))
       .filter(Boolean);
 
     if (subProducts.length === 0) {
@@ -81,7 +81,6 @@ export default function MastersTab() {
         getRowCanExpand={() => true}
         renderSubComponent={renderSubComponent}
         rowVariant="expandable"
-        pageSize={20}
         globalFilterColumns={["description", "productCode"]}
         globalFilterPlaceholder="Search products..."
       />

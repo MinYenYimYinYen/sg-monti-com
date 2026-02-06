@@ -12,7 +12,7 @@ import {
   isProductSingleCore,
   ProductSingleCore,
   ProductSingleDoc,
-  ProductSingleDocProps, // Added this import
+  ProductSingleDocProps,
 } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import {
   isProductSubCore,
@@ -25,9 +25,9 @@ import {
   baseProductMasterDocProps,
   baseProductSingleDocProps,
 } from "@/app/realGreen/product/_lib/baseProduct";
+import { ProductCategoryStored } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
 
 export function remapRawProducts(raw: ProductRaw[]) {
-  // ... (unchanged)
   const cores: ProductCore[] = raw.map((p) => {
     return {
       productId: p.id,
@@ -63,15 +63,20 @@ export function remapRawProducts(raw: ProductRaw[]) {
   };
 }
 
-// New Generic Function
 export function extendProducts<
-  TCore extends { productId: number },
-  TDocProps extends { productId: number },
->(
-  cores: TCore[],
-  docProps: TDocProps[],
-  baseDocProps: TDocProps,
-): (TCore & TDocProps)[] {
+  TCore extends { productId: number; categoryId: number },
+  TDocProps extends { productId: number; category: string },
+>({
+  cores,
+  docProps,
+  baseDocProps,
+  categoryMap,
+}: {
+  cores: TCore[];
+  docProps: TDocProps[];
+  baseDocProps: TDocProps;
+  categoryMap: Map<number, ProductCategoryStored>;
+}): (TCore & TDocProps)[] {
   const docPropsMap = new Grouper(docProps).toUniqueMap((p) => p.productId);
   return cores.map((core) => {
     const docProps = docPropsMap.get(core.productId) || baseDocProps;
@@ -79,6 +84,12 @@ export function extendProducts<
     return {
       ...core,
       ...props,
+      category:
+        categoryMap.get(core.categoryId)?.category ||
+        core.categoryId.toString(),
+      //todo: Now, core.category will always have a value.
+      // So, in the columns components, eliminate the check
+      // Also, in the updateCategory action, make sure it is set accordingly
     } as TCore & TDocProps;
   });
 }
@@ -86,20 +97,38 @@ export function extendProducts<
 export function extendProductMasters(
   cores: ProductMasterCore[],
   docProps: ProductMasterDocProps[],
+  categoryMap: Map<number, ProductCategoryStored>,
 ): ProductMasterDoc[] {
-  return extendProducts(cores, docProps, baseProductMasterDocProps);
+  return extendProducts({
+    cores,
+    docProps,
+    baseDocProps: baseProductMasterDocProps,
+    categoryMap,
+  });
 }
 
 export function extendProductSingles(
   cores: ProductSingleCore[],
-  docProps: ProductSingleDocProps[], // Fixed type from ProductMasterDocProps
+  docProps: ProductSingleDocProps[],
+  categoryMap: Map<number, ProductCategoryStored>,
 ): ProductSingleDoc[] {
-  return extendProducts(cores, docProps, baseProductSingleDocProps);
+  return extendProducts({
+    cores,
+    docProps,
+    baseDocProps: baseProductSingleDocProps,
+    categoryMap,
+  });
 }
 
 export function extendProductSubs(
   cores: ProductSubCore[],
   docProps: ProductSubDocProps[],
+  categoryMap: Map<number, ProductCategoryStored>,
 ): ProductSubDoc[] {
-  return extendProducts(cores, docProps, baseProductMasterDocProps);
+  return extendProducts({
+    cores,
+    docProps,
+    baseDocProps: baseProductMasterDocProps,
+    categoryMap,
+  });
 }

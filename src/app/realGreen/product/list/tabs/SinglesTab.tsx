@@ -10,7 +10,7 @@ import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategoryShe
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 
 export default function SinglesTab() {
-  const singles = useSelector(productSelect.productSingleDocs);
+  const singles = useSelector(productSelect.productSingles);
 
   const [editCategoryState, setEditCategoryState] = React.useState<{
     categoryId: number;
@@ -43,7 +43,6 @@ export default function SinglesTab() {
         enablePagination={true}
         enableColumnVisibility={true}
         rowVariant="alternating"
-        pageSize={20}
         globalFilterColumns={["description", "productCode"]}
         globalFilterPlaceholder="Search products..."
       />

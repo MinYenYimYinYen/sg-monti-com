@@ -9,7 +9,7 @@ import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategoryShe
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 
 export default function SubsTab() {
-  const subs = useSelector(productSelect.productSubDocs);
+  const subs = useSelector(productSelect.productSubs);
   const [editCategoryState, setEditCategoryState] = useState<{
     categoryId: number;
     categoryName: string;
@@ -39,7 +39,6 @@ export default function SubsTab() {
         enablePagination={true}
         enableColumnVisibility={true}
         rowVariant="alternating"
-        pageSize={20}
         globalFilterColumns={["description", "productCode"]}
         globalFilterPlaceholder="Search products..."
       />
@@ -48,7 +47,7 @@ export default function SubsTab() {
         categoryName={editCategoryState?.categoryName || ""}
         open={editCategoryState !== null}
         onOpenChange={(open) => !open && setEditCategoryState(null)}
-        />
+      />
     </div>
   );
 }

@@ -49,6 +49,10 @@ export type ProductCore = {
   unitId: number;
 };
 
+export type ProductCommonDocProps = {
+  category: string;
+}
+
 
 
 

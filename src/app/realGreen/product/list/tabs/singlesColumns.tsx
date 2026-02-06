@@ -1,14 +1,14 @@
 // Singles Table Columns
 import { ColumnDef } from "@tanstack/react-table";
-import { ProductSingleDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { DataGridColumnHeader } from "@/components/DataGrid";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { Button } from "@/style/components/button";
 import { Pencil } from "lucide-react";
+import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 
 export const createSinglesColumns = (
-  onEditCategory: (categoryId: number, categoryName: string) => void
-): ColumnDef<ProductSingleDoc>[] => [
+  onEditCategory: (categoryId: number, categoryName: string) => void,
+): ColumnDef<ProductSingle>[] => [
   {
     accessorKey: "productCode",
     header: ({ column }) => (
@@ -34,11 +34,7 @@ export const createSinglesColumns = (
     ),
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
-        <span>
-          {row.original.category === baseStrId
-            ? row.original.categoryId
-            : row.original.category}
-        </span>
+        <span>{row.original.category}</span>
         <Button
           variant="outline"
           size="icon"

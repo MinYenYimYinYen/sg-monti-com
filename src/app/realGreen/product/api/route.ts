@@ -27,6 +27,7 @@ import { baseNumId } from "../../_lib/realGreenConst";
 import { ProductMasterDocProps } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingleDocProps } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDocProps } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
+import { Grouper } from "@/lib/Grouper";
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {
@@ -65,9 +66,15 @@ const handlers: HandlerMap<ProductContract> = {
       ) as ProductSingleDocProps[];
       const subDocProps = getDocProps(subCoreIds) as ProductSubDocProps[];
 
-      const masterDocs = extendProductMasters(masterCores, masterDocProps);
-      const singleDocs = extendProductSingles(singleCores, singleDocProps);
-      const subDocs = extendProductSubs(subCores, subDocProps);
+      const categoryDocs = await ProductCategoryModel.find().lean();
+      const categories = cleanMongoArray(categoryDocs);
+      const categoryMap = new Grouper(categories).toUniqueMap(
+        (c) => c.categoryId,
+      );
+
+      const masterDocs = extendProductMasters(masterCores, masterDocProps, categoryMap);
+      const singleDocs = extendProductSingles(singleCores, singleDocProps, categoryMap);
+      const subDocs = extendProductSubs(subCores, subDocProps, categoryMap);
 
       const productsResponse: ProductsResponse = {
         productMasterDocs: masterDocs,

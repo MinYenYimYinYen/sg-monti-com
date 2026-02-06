@@ -3,7 +3,6 @@
 import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
-import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import {
   Sheet,
   SheetContent,
@@ -17,9 +16,10 @@ import { Badge } from "@/style/components/badge";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { Checkbox } from "@/style/components/checkbox";
 import { Label } from "@/style/components/label";
+import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
 interface MasterEditSheetProps {
-  master: ProductMasterDoc | null;
+  master: ProductMaster | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -29,14 +29,14 @@ export function MasterEditSheet({
   open,
   onOpenChange,
 }: MasterEditSheetProps) {
-  const productDocs = useSelector(productSelect.productDocs);
+  const productSubs = useSelector(productSelect.productSubs);
   const [selectedSubIds, setSelectedSubIds] = React.useState<number[]>(
     master?.subProductIds || [],
   );
 
   // Filter cores to show only products that can be subs
   // (isProduction=true, isMobile=false)
-  const availableSubs = productDocs.filter(
+  const availableSubs = productSubs.filter(
     (doc) => doc.isProduction && !doc.isMobile,
   );
 

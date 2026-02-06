@@ -1,12 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import {
-  ProductCore,
-  ProductDoc,
-  ProductMasterDoc,
-  ProductSingleDoc,
-} from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
+import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { ProductSingleDoc } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
+import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 
 export const getProducts = createStandardThunk<ProductContract, "getAll">({
   typePrefix: "product/getProducts",
@@ -26,7 +23,7 @@ export const saveCategory = createStandardThunk<
 interface ProductState {
   productMasterDocs: ProductMasterDoc[];
   productSingleDocs: ProductSingleDoc[];
-  productSubDocs: ProductDoc[];
+  productSubDocs: ProductSubDoc[];
 }
 
 const initialState: ProductState = {

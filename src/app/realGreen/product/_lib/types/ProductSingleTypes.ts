@@ -1,4 +1,4 @@
-import { ProductCore } from "@/app/realGreen/product/_lib/types/ProductTypes";
+import { ProductCommonDocProps, ProductCore } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 
 
@@ -15,7 +15,7 @@ export function isProductSingleCore(
   return isProduction && !isMaster && isMobile;
 }
 
-export type ProductSingleDocProps = CreatedUpdated & {
+export type ProductSingleDocProps = CreatedUpdated & ProductCommonDocProps & {
   productId: number;
 };
 

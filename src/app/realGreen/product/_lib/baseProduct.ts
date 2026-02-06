@@ -45,6 +45,7 @@ export const baseProductMasterCore: ProductMasterCore = {
 export const baseProductMasterDocProps: ProductMasterDocProps = {
   productId: baseNumId,
   subProductIds: [],
+  category: baseStrId,
   createdAt: "",
   updatedAt: "",
 };
@@ -70,6 +71,7 @@ export const baseProductSingleCore: ProductSingleCore = {
 
 export const baseProductSingleDocProps: ProductSingleDocProps = {
   productId: baseNumId,
+  category: baseStrId,
   createdAt: "",
   updatedAt: "",
 };
@@ -95,6 +97,7 @@ export const baseProductSubCore: ProductSubCore = {
 
 export const baseProductSubDocProps: ProductSubDocProps = {
   productId: baseNumId,
+  category: baseStrId,
   createdAt: "",
   updatedAt: "",
 }

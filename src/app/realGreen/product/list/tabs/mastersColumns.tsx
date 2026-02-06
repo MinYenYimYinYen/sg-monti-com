@@ -1,17 +1,17 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { DataGridColumnHeader } from "@/components/DataGrid";
 import { Button } from "@/style/components/button";
 import { Pencil } from "lucide-react";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
 // Masters Table Columns
 export const createMastersColumns: (
-  onEdit: (master: ProductMasterDoc) => void,
+  onEdit: (master: ProductMaster) => void,
   onEditCategory: (categoryId: number, categoryName: string) => void,
-) => ColumnDef<ProductMasterDoc>[] = (onEdit, onEditCategory) => [
+) => ColumnDef<ProductMaster>[] = (onEdit, onEditCategory) => [
   {
     accessorKey: "productCode",
     header: ({ column }) => (
@@ -37,11 +37,7 @@ export const createMastersColumns: (
     ),
     cell: ({ row }) => (
       <div className={"flex items-center gap-2"}>
-        <span>
-          {row.original.category === baseStrId
-            ? row.original.categoryId
-            : row.original.category}
-        </span>
+        <span>{row.original.category}</span>
         <Button
           variant={"outline"}
           size={"icon"}
