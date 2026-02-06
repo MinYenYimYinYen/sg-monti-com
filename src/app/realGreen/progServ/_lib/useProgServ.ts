@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
-import { progServActions } from "@/app/realGreen/progServ/progServSlice";
+import { progServActions } from "@/app/realGreen/progServ/_lib/progServSlice";
 import { useCallback, useEffect } from "react";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { progServSelect } from "@/app/realGreen/progServ/_selectors/progServSelectors";

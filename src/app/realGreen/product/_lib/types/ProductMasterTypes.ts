@@ -3,6 +3,7 @@ import {
   ProductCore,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 
 export type ProductMasterCore = ProductCore & {
   isProduction: true;
@@ -24,7 +25,9 @@ export type ProductMasterDocProps = CreatedUpdated & ProductCommonDocProps & {
 
 export type ProductMasterDoc = ProductMasterCore & ProductMasterDocProps;
 
-export type ProductMasterProps = {};
+export type ProductMasterProps = {
+  subProducts: ProductSub[];
+};
 
 export type ProductMaster = ProductMasterDoc & ProductMasterProps;
 

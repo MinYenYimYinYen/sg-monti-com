@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
@@ -20,6 +20,12 @@ export default function MastersTab() {
     categoryId: number;
     categoryName: string;
   } | null>(null);
+  
+  /*DEBUG*/
+  // useEffect(() => {
+  //   console.log("masters", masters)
+  // }, [masters]);
+  /*END DEBUG*/
 
   const mastersColumns = useMemo(() => {
     return createMastersColumns(

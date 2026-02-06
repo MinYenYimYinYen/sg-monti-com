@@ -4,6 +4,7 @@ import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterT
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Grouper } from "@/lib/Grouper";
+import { baseProductSub } from "@/app/realGreen/product/_lib/baseProduct";
 
 const selectProductMasterDocs = (state: AppState) =>
   state.product.productMasterDocs;
@@ -11,10 +12,26 @@ const selectProductSingleDocs = (state: AppState) =>
   state.product.productSingleDocs;
 const selectProductSubDocs = (state: AppState) => state.product.productSubDocs;
 
+const selectProductSubs = createSelector([selectProductSubDocs], (subs) => {
+  return subs as ProductSubDoc[];
+});
+
+const selectProductSubsMap = createSelector([selectProductSubs], (subs) => {
+  return new Grouper(subs).toUniqueMap((s) => s.productId);
+});
+
 const selectProductMasters = createSelector(
-  [selectProductMasterDocs],
-  (masters) => {
-    return masters as ProductMaster[];
+  [selectProductMasterDocs, selectProductSubsMap],
+  (masterDocs, subsMap) => {
+    const masters: ProductMaster[] = masterDocs.map((doc) => {
+      return {
+        ...doc,
+        subProducts: doc.subProductIds.map((subId) => {
+          return subsMap.get(subId) || baseProductSub;
+        }),
+      };
+    });
+    return masters;
   },
 );
 
@@ -24,10 +41,6 @@ const selectProductSingles = createSelector(
     return singles as ProductSingle[];
   },
 );
-
-const selectProductSubs = createSelector([selectProductSubDocs], (subs) => {
-  return subs as ProductSubDoc[];
-});
 
 const selectProductMastersMap = createSelector(
   [selectProductMasters],
@@ -42,10 +55,6 @@ const selectProductSinglesMap = createSelector(
     return new Grouper(singles).toUniqueMap((s) => s.productId);
   },
 );
-
-const selectProductSubsMap = createSelector([selectProductSubs], (subs) => {
-  return new Grouper(subs).toUniqueMap((s) => s.productId);
-});
 
 export const productSelect = {
   productMasters: selectProductMasters,

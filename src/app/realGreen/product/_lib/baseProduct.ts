@@ -55,7 +55,9 @@ export const baseProductMasterDoc: ProductMasterDoc = {
   ...baseProductMasterDocProps,
 };
 
-export const baseProductMasterProps: ProductMasterProps = {};
+export const baseProductMasterProps: ProductMasterProps = {
+  subProducts: [],
+};
 
 export const baseProductMaster: ProductMaster = {
   ...baseProductMasterDoc,

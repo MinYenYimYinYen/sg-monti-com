@@ -3,7 +3,7 @@
 import React from "react";
 import { ProgCodeViewer } from "@/app/realGreen/progServ/_components/ProgCodeViewer";
 import { Container } from "@/components/Containers";
-import { useProgServ } from "@/app/realGreen/progServ/useProgServ";
+import { useProgServ } from "@/app/realGreen/progServ/_lib/useProgServ";
 
 export default function ProgServListPage() {
   useProgServ({ autoLoad: true });
