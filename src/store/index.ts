@@ -2,6 +2,7 @@ import {
   configureStore,
   Dispatch,
   PayloadAction,
+  ThunkAction,
   ThunkDispatch,
 } from "@reduxjs/toolkit";
 import rootReducer from "./reducers";
@@ -40,3 +41,10 @@ export type AppStore = ReturnType<typeof makeStore>;
 export type AppState = ReturnType<typeof rootReducer>;
 export type AppDispatch = ThunkDispatch<AppState, undefined, PayloadAction> &
   Dispatch;
+
+export type AppThunk<ReturnType = void> = ThunkAction<
+  ReturnType,
+  AppState,
+  unknown,
+  PayloadAction
+>;
