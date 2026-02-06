@@ -87,9 +87,6 @@ export function extendProducts<
       category:
         categoryMap.get(core.categoryId)?.category ||
         core.categoryId.toString(),
-      //todo: Now, core.category will always have a value.
-      // So, in the columns components, eliminate the check
-      // Also, in the updateCategory action, make sure it is set accordingly
     } as TCore & TDocProps;
   });
 }
