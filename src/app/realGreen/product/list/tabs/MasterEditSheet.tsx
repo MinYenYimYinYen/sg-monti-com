@@ -17,6 +17,7 @@ import { ScrollArea } from "@/style/components/scroll-area";
 import { Checkbox } from "@/style/components/checkbox";
 import { Label } from "@/style/components/label";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 
 interface MasterEditSheetProps {
   master: ProductMaster | null;
@@ -29,6 +30,7 @@ export function MasterEditSheet({
   open,
   onOpenChange,
 }: MasterEditSheetProps) {
+  const { updateMasterSubProducts } = useProduct({});
   const productSubs = useSelector(productSelect.productSubs);
   const [selectedSubIds, setSelectedSubIds] = React.useState<number[]>(
     master?.subProductIds || [],
@@ -50,12 +52,21 @@ export function MasterEditSheet({
 
   const handleSave = () => {
     // TODO: Implement save logic (Redux action + API call)
+
+    if (master) {
+      updateMasterSubProducts({
+        masterId: master.productId,
+        subProductIds: selectedSubIds,
+      });
+    }
+
     console.log(
       "Saving master:",
       master?.productId,
       "with subs:",
       selectedSubIds,
     );
+
     onOpenChange(false);
   };
 

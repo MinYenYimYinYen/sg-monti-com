@@ -1,7 +1,10 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
-import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import {
+  ProductMaster,
+  ProductMasterDoc,
+} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingleDoc } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 
@@ -59,7 +62,19 @@ const productSlice = createSlice({
         doc.category = action.payload.newCategory;
       });
     },
+    updateMasterSubProducts: (
+      state,
+      action: PayloadAction<{ masterId: number; subProductIds: number[] }>,
+    ) => {
+      const matchingMaster = state.productMasterDocs.find(
+        (master) => master.productId === action.payload.masterId,
+      );
+      if (matchingMaster) {
+        matchingMaster.subProductIds = action.payload.subProductIds;
+      }
+    },
   },
+
   extraReducers: (builder) => {
     builder.addCase(getProducts.fulfilled, (state, action) => {
       state.productMasterDocs = action.payload.productMasterDocs;

@@ -46,11 +46,24 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
         config: {
           force: true,
           showLoading: false,
-          successMsg: "Category saved successfully"
+          successMsg: "Category saved successfully",
         },
       }),
     );
   };
 
-  return { refresh, updateCategory };
+  const updateMasterSubProducts = (params: {
+    masterId: number;
+    subProductIds: number[];
+  }) => {
+    const { masterId, subProductIds } = params;
+    dispatch(
+      productActions.updateMasterSubProducts({
+        masterId,
+        subProductIds,
+      }),
+    );
+  };
+
+  return { refresh, updateCategory, updateMasterSubProducts };
 }

@@ -82,7 +82,10 @@ const uiSlice = createSlice({
         // Show success toast if configured
         const arg = action.meta.arg as Partial<WithConfig<unknown>>;
         if (typeGuard.hasDefined(arg, "config") && arg.config.successMsg) {
-          toast.success(arg.config.successMsg);
+          toast.success(arg.config.successMsg, {
+            delay: 300,
+
+          });
         }
       })
 
