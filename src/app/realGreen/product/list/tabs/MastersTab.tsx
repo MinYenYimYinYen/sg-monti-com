@@ -85,6 +85,7 @@ export default function MastersTab() {
         globalFilterPlaceholder="Search products..."
       />
       <MasterEditSheet
+        key={editingMaster?.productId ?? "closed"}
         master={editingMaster}
         open={editingMaster !== null}
         onOpenChange={(open) => !open && setEditingMaster(null)}

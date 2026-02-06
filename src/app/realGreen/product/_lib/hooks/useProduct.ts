@@ -62,6 +62,16 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
         subProductIds,
       }),
     );
+
+    return dispatch(
+      productActions.saveMasterSubProducts({
+        params,
+        config: {
+          force: true,
+          showLoading: false,
+        },
+      }),
+    ).unwrap();
   };
 
   return {

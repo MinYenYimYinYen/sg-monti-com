@@ -107,6 +107,25 @@ const handlers: HandlerMap<ProductContract> = {
       }
     },
   },
+
+  saveMasterSubProducts: {
+    roles: ["admin"],
+    handler: async (params) => {
+      await connectToMongoDB();
+      const { masterId, subProductIds } = params;
+      const result =
+        await ProductDocPropsModel.findOneAndUpdate(
+          {productId: masterId},
+          {subProductIds},
+          {upsert: true, new: true}
+        ).lean();
+      if (result.productId) {
+        return { success: true };
+      } else {
+        throw new AppError({ message: "Error saving master sub products" });
+      }
+    }
+  }
 };
 
 export async function POST(req: NextRequest) {

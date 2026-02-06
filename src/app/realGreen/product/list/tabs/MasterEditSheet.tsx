@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
 import {
@@ -18,6 +18,7 @@ import { Checkbox } from "@/style/components/checkbox";
 import { Label } from "@/style/components/label";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
+import { SaveButton, SaveStatus } from "@/components/SaveButton";
 
 interface MasterEditSheetProps {
   master: ProductMaster | null;
@@ -50,24 +51,22 @@ export function MasterEditSheet({
     );
   };
 
-  const handleSave = () => {
-    // TODO: Implement save logic (Redux action + API call)
-
+  const [status, setStatus] = useState<SaveStatus>("idle");
+  const handleSave = async () => {
     if (master) {
-      updateMasterSubProducts({
+      await updateMasterSubProducts({
         masterId: master.productId,
         subProductIds: selectedSubIds,
       });
+      setStatus("success");
     }
 
-    console.log(
-      "Saving master:",
-      master?.productId,
-      "with subs:",
-      selectedSubIds,
-    );
-
-    onOpenChange(false);
+    // console.log(
+    //   "Saving master:",
+    //   master?.productId,
+    //   "with subs:",
+    //   selectedSubIds,
+    // );
   };
 
   const handleCancel = () => {
@@ -165,7 +164,14 @@ export function MasterEditSheet({
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save Changes</Button>
+          <SaveButton
+            onClick={handleSave}
+            status={status}
+            onSuccessComplete={() => {
+              onOpenChange(false);
+              setStatus("idle");
+            }}
+          >Save Changes</SaveButton>
         </SheetFooter>
       </SheetContent>
     </Sheet>

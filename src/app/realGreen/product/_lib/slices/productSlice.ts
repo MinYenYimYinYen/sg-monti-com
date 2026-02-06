@@ -23,6 +23,15 @@ export const saveCategory = createStandardThunk<
   opName: "saveCategory",
 });
 
+export const saveMasterSubProducts = createStandardThunk<
+  ProductContract,
+  "saveMasterSubProducts"
+>({
+  typePrefix: "product/saveMasterSubProducts",
+  apiPath: "/realGreen/product/api",
+  opName: "saveMasterSubProducts",
+});
+
 interface ProductState {
   productMasterDocs: ProductMasterDoc[];
   productSingleDocs: ProductSingleDoc[];
@@ -88,5 +97,6 @@ export const productActions = {
   ...productSlice.actions,
   getProducts,
   saveCategory,
+  saveMasterSubProducts,
 };
 export default productSlice.reducer;

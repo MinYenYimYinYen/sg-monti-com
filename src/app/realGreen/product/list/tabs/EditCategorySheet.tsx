@@ -97,7 +97,11 @@ export default function EditCategorySheet({
             onClick={handleSave}
             disabled={!canSave}
             status={status}
-            onSuccessComplete={() => onOpenChange(false)}
+            onSuccessComplete={() => {
+              onOpenChange(false);
+              setStatus("idle");
+              setNewName("");
+            }}
           >
             Save
           </SaveButton>
