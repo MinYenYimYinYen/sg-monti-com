@@ -4,6 +4,9 @@ import { Grouper } from "@/lib/Grouper";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
+import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
 const selectCustomerContext = (state: AppState) =>
   state.customer.central.context;
@@ -14,13 +17,6 @@ const selectProgramDocs = (state: AppState) =>
   state.customer.central.programDocs;
 const selectServiceDocs = (state: AppState) =>
   state.customer.central.serviceDocs;
-
-const selectCustomerDocMap = createSelector(
-  [selectCustomerDocs],
-  (customerDocs) => {
-    return new Grouper(customerDocs).toUniqueMap((e) => e.custId);
-  },
-);
 
 const selectProgramDocMap = createSelector(
   [selectProgramDocs],
@@ -36,34 +32,53 @@ const selectServiceDocMap = createSelector(
   },
 );
 
+const selectProgCodeMapByDefId = createSelector(
+  [progServSelect.progCodes],
+  (progCodes) => new Grouper(progCodes).toUniqueMap((p) => p.progDefId),
+);
+
+const selectServCodeMap = createSelector(
+  [progServSelect.servCodes],
+  (servCodes) => new Grouper(servCodes).toUniqueMap((s) => s.servCodeId),
+);
+
 export const selectCustomers = createSelector(
-  [selectCustomerDocs, selectProgramDocMap, selectServiceDocMap],
-  (customerDocs, programDocMap, serviceDocMap) => {
+  [
+    selectCustomerDocs,
+    selectProgramDocMap,
+    selectServiceDocMap,
+    selectProgCodeMapByDefId,
+    selectServCodeMap,
+  ],
+  (customerDocs, programDocMap, serviceDocMap, progCodeMap, servCodeMap) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
-      const customer = {
+      const customer: Customer = {
         ...custDoc,
-        // TODO: RESOLVE TYPESCRIPT ERRORS HERE BY HYDRATING CUSTOMER OBJECTS (TAX, DISCOUNT, ETC)
-      } as Customer;
+        programs: [],
+      };
 
       const progDocs = programDocMap.get(custDoc.custId) || [];
 
       const programs = progDocs.map((progDoc) => {
-        const program = {
-          ...progDoc,
-          // TODO: RESOLVE TYPESCRIPT ERRORS HERE BY HYDRATING PROGRAM OBJECTS
-        } as Program;
+        const progCode = progCodeMap.get(progDoc.progDefId) || baseProgCode;
 
-        program.customer = customer;
+        const program: Program = {
+          ...progDoc,
+          customer,
+          services: [],
+          progCode,
+        };
 
         const serviceDocs = serviceDocMap.get(progDoc.progId) || [];
 
         const services = serviceDocs.map((servDoc) => {
-          const service = {
-            ...servDoc,
-            // TODO: RESOLVE TYPESCRIPT ERRORS HERE BY HYDRATING SERVICE OBJECTS
-          } as Service;
+          const servCode = servCodeMap.get(servDoc.servCodeId) || baseServCode;
 
-          service.program = program;
+          const service: Service = {
+            ...servDoc,
+            program,
+            servCode,
+          };
 
           return service;
         });
