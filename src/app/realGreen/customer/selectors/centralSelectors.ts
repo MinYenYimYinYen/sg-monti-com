@@ -60,6 +60,12 @@ const selectServCodeMap = createSelector(
 5. If I provide a ServCodeDocMap[] selector and a ProgCodeDocMap[] selector
 * from progServSelectors, I could use that in centralSelectors.  According to
 * my theory, this would break the selector circularity.
+*
+* **********************
+*
+* EVEN BETTER IDEA.
+* The selector files should be factories.  Then I don't think there'd be any issue
+* at all with circularity in selectors that use the same logic.
 * */
 
 
