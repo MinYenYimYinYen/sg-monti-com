@@ -47,11 +47,13 @@ export const selectBasicProgCodes = createSelector(
 
           const servDoc = servCodeMap.get(link.servCodeId);
           if (!servDoc) return null;
-
+          console.log("special", progCode.progCodeId, link.servCodeId);
           const servCode: ServCode = {
             ...servDoc,
             progCode,
+            progCodeId: progCode.progCodeId,
             services: [], // Initialize empty
+            isSpecial: progCode.progCodeId === link.servCodeId
           };
 
           return servCode;

@@ -13,6 +13,19 @@ export const createServiceCodeColumns: (
     size: 10,
   },
   {
+    accessorKey: "progCodeId",
+    header: ({column}) => <DataGridColumnHeader column={column} title={"Program"} />,
+    cell: ({row}) => <div>{row.getValue("progCodeId")}</div>,
+    size: 10,
+  },
+  {
+    accessorKey: "isSpecial",
+    header: ({column}) => <DataGridColumnHeader column={column} title={"Special"} />,
+    cell: ({row}) => <div>{row.getValue("isSpecial") ? "Special" : "Program"}</div>,
+    size: 10,
+  },
+
+  {
     accessorKey: "begin",
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="Begin" />

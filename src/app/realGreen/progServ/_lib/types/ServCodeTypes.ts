@@ -113,13 +113,16 @@ export type ServCodeDoc = ServCodeCore & ServCodeDocProps;
 
 export type ServCodeProps = {
   progCode: ProgCode;
+  progCodeId: string;
   services: Service[];
+  isSpecial: boolean;
 };
 
 export type ServCode = ServCodeDoc & ServCodeProps;
 
 export const baseServCode: ServCode = {
   servCodeId: baseStrId,
+  progCodeId: baseStrId,
   isServiceCall: false,
   available: true,
   longName: "",
@@ -132,4 +135,5 @@ export const baseServCode: ServCode = {
   createdAt: "",
   updatedAt: "",
   productDocs: [],
+  isSpecial: false,
 };
