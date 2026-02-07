@@ -25,7 +25,7 @@ const selectProgCodes = createSelector(
   [selectProgCodeDocs, selectProgServMap, selectServCodeMap],
   (progCodeDocs, progServMap, servCodeMap) => {
     // 1. Hydrate all programs
-    const progCodes = progCodeDocs.map((progDoc) => {
+    const progCodes: ProgCode[] = progCodeDocs.map((progDoc) => {
       const progServLinks = progServMap.get(progDoc.progDefId) || [];
 
       // Logic from _hydrateProgCodes: isSpecial if there is exactly one link
@@ -34,24 +34,25 @@ const selectProgCodes = createSelector(
         progServLinks.length === 1 &&
         progServLinks[0].servCodeId === progDoc.progCodeId;
 
-      const progCode = {
+      const progCode: ProgCode = {
         ...progDoc,
         isSpecial,
+        servCodes: [],
         // TODO: ADD NEW PROG CODE PROPS HERE
-      } as ProgCode;
+      };
 
-      const servCodes = progServLinks
+      const servCodes: ServCode[] = progServLinks
         .map((link) => {
           if (!link.servCodeId) return null;
 
           const servDoc = servCodeMap.get(link.servCodeId);
           if (!servDoc) return null;
 
-          const servCode = {
+          const servCode: ServCode = {
             ...servDoc,
             progCode,
             // TODO: ADD NEW SERV CODE PROPS HERE
-          } as ServCode;
+          };
 
           return servCode;
         })
