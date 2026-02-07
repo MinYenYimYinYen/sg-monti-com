@@ -42,6 +42,28 @@ const selectServCodeMap = createSelector(
   (servCodes) => new Grouper(servCodes).toUniqueMap((s) => s.servCodeId),
 );
 
+/*
+* 1. I added ServCode and ProgCode to Service and Program so I could access the
+* metadata that these codes provide.  This data is hydrated in
+* @centralSelectors.ts
+*
+* 2. the types ServCodeDoc and ProgCodeDoc also have the metadata, so I could
+* have used those instead.
+*
+3. I want to add services: Service[] to ServCodeProps and programs: Program[]
+* to ProgCodeProps, so I can hydrate this data into @progServSelectors.ts.
+* This data would come from centralSelectors.
+*
+4. I cannot do this because it creates selector circularity, which does not
+* work.  It errors or loops.
+*
+5. If I provide a ServCodeDocMap[] selector and a ProgCodeDocMap[] selector
+* from progServSelectors, I could use that in centralSelectors.  According to
+* my theory, this would break the selector circularity.
+* */
+
+
+
 export const selectCustomers = createSelector(
   [
     selectCustomerDocs,
