@@ -5,6 +5,9 @@ import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerT
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 
+const selectCustomerContext = (state: AppState) =>
+  state.customer.central.context;
+
 const selectCustomerDocs = (state: AppState) =>
   state.customer.central.customerDocs;
 const selectProgramDocs = (state: AppState) =>
@@ -34,16 +37,8 @@ const selectServiceDocMap = createSelector(
 );
 
 export const selectCustomers = createSelector(
-  [
-    selectCustomerDocs,
-    selectProgramDocMap,
-    selectServiceDocMap,
-  ],
-  (
-    customerDocs,
-    programDocMap,
-    serviceDocMap,
-  ) => {
+  [selectCustomerDocs, selectProgramDocMap, selectServiceDocMap],
+  (customerDocs, programDocMap, serviceDocMap) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
       const customer = {
         ...custDoc,
@@ -86,3 +81,18 @@ export const selectCustomers = createSelector(
     return customers;
   },
 );
+
+const selectPrograms = createSelector([selectCustomers], (customers) => {
+  return customers.flatMap((c) => c.programs);
+});
+
+const selectServices = createSelector([selectPrograms], (programs) => {
+  return programs.flatMap((p) => p.services);
+});
+
+export const customerSelect = {
+  context: selectCustomerContext,
+  customers: selectCustomers,
+  programs: selectPrograms,
+  services: selectServices,
+};

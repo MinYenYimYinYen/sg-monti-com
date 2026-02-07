@@ -3,16 +3,17 @@ import { realGreenConst } from "../../_lib/realGreenConst";
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { centralCustomerActions } from "@/app/realGreen/customer/slices/centralCustomerSlice";
+import { useSelector } from "react-redux";
+import { customerSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 
 export function usePrintedCustomers({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();
+  const context = useSelector(customerSelect.context);
 
-  // Set Context to Printed on Mount
   useEffect(() => {
+    if (context === "printed") return;
     dispatch(centralCustomerActions.setCustomerContext("printed"));
-    //todo: after I have selector for context made, this should only execute if
-    // there's an actual change.
-  }, [dispatch]);
+  }, [dispatch, context]);
 
   useEffect(() => {
     if (autoLoad) {

@@ -1,40 +1,45 @@
 import { useSelector } from "react-redux";
-import { AppState } from "@/store";
 import { useEffect } from "react";
-import {
-  activeCustomersActions,
-  activeCustomersSelect,
-} from "@/app/realGreen/customer/slices/activeCustomersSlice";
+import { activeCustomersActions } from "@/app/realGreen/customer/slices/activeCustomersSlice";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { centralCustomerActions } from "@/app/realGreen/customer/slices/centralCustomerSlice";
+import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
+import { customerSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 
 export function useActiveCustomers() {
   const dispatch = useAppDispatch();
+  const context = useSelector(customerSelect.context);
 
-  // // Use the specific selector exported from the slice
-  // const services = useSelector((state: AppState) =>
-  //   activeCustomersSelect.services(state),
-  // );
-
-  // Set Context to Active on Mount
   useEffect(() => {
+    if (context === "active") return;
     dispatch(centralCustomerActions.setCustomerContext("active"));
-    //todo: after I have selector for context made, this should only execute if
-    // there's an actual change.
+  }, [context, dispatch]);
+
+  useEffect(() => {
+    dispatch(
+      activeCustomersActions.getCustDocs({
+        params: {
+          schemeName: "activeCustomers",
+        },
+        config: {
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
+      }),
+    );
   }, [dispatch]);
 
-  // useEffect(() => {
-  //   // Only fetch if we don't have data (simple check for now)
-  //   if (services.length === 0) {
-  //     dispatch(
-  //       activeCustomersActions.getCustDocs({
-  //         params: {
-  //           schemeName: "activeCustomers",
-  //         },
-  //       }),
-  //     );
-  //   }
-  // }, [dispatch, services.length]);
+  const refresh = () => {
+    dispatch(
+      activeCustomersActions.getCustDocs({
+        params: {
+          schemeName: "activeCustomers",
+        },
+        config: {
+          force: true,
+        },
+      }),
+    );
+  };
 
-  return {};
+  return { refresh };
 }
