@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   NavigationMenu,
@@ -69,9 +69,13 @@ const realGreenParams: NavSection = {
   roles: ["admin"],
   navItems: [
     { title: "Products", href: "/realGreen/product/list", roles: ["admin"] },
-  ]
-}
-
+    {
+      title: "Service Codes",
+      href: "/realGreen/progServ/list/serviceCodes",
+      roles: ["admin"],
+    },
+  ],
+};
 
 const menuSections = [schedulingSection, prepaySection, realGreenParams];
 
@@ -79,15 +83,14 @@ export default function NavMenu() {
   const user = useSelector(authSelect.user);
   const role = user?.role || "public";
 
-  const userSections = menuSections.filter((section) => section.roles.includes(role))
+  const userSections = menuSections
+    .filter((section) => section.roles.includes(role))
     .map((section) => {
       return {
         title: section.title,
         navItems: section.navItems.filter((item) => item.roles.includes(role)),
       };
     });
-
-
 
   return (
     <NavigationMenu>

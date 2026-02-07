@@ -12,7 +12,7 @@ import SinglesTab from "@/app/realGreen/product/list/tabs/SinglesTab";
 import MastersTab from "@/app/realGreen/product/list/tabs/MastersTab";
 import SubsTab from "@/app/realGreen/product/list/tabs/SubsTab";
 
-export default function ProductList() {
+export default function ListProducts() {
   useProduct({ autoLoad: true });
   return (
     <Container variant={"page"}>
