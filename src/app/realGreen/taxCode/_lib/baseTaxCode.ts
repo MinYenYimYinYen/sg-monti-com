@@ -24,7 +24,9 @@ export const baseTaxCodeDoc: TaxCodeDoc = {
   ...baseTaxCodeDocProps,
 };
 
-export const baseTaxCodeProps: TaxCodeProps = {};
+export const baseTaxCodeProps: TaxCodeProps = {
+  customers: [],
+};
 
 export const baseTaxCode: TaxCode = {
   ...baseTaxCodeDoc,

@@ -28,6 +28,7 @@ export const baseCustomer: Customer = {
   status: "",
   subdivisionId: baseNumId,
   taxIds: [],
+  taxCodes: [],
   techNote: "",
   useBilling: false,
   createdAt: "",

@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { CallAheadDoc} from "@/app/realGreen/callAhead/_lib/CallAhead";
 import { CallAheadContract } from "@/app/realGreen/callAhead/api/CallAheadContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
+import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 
 export const getCallAheads = createStandardThunk<CallAheadContract, "getAll">({
   typePrefix: "callAhead/getCallAheads",

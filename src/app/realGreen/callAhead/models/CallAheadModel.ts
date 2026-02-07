@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { CallAheadDocProps } from "@/app/realGreen/callAhead/_lib/CallAhead";
+import { CallAheadDocProps } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 
 interface CallAheadDoc extends CallAheadDocProps, mongoose.Document {}
 

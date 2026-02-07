@@ -6,6 +6,7 @@ import {
 } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
 import { Phone } from "@/app/realGreen/_lib/subTypes/Phone";
 import { Program } from "./ProgramTypes";
+import { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 
 export type CustomerRaw = {
   address: Address;
@@ -165,6 +166,7 @@ export type CustomerDoc = CustomerCore & CustomerDocProps;
 
 export type CustomerProps = {
   programs: Program[];
+  taxCodes: TaxCode[];
 };
 
 export type Customer = CustomerDoc & CustomerProps;

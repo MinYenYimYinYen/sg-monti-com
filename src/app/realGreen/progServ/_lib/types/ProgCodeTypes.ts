@@ -1,5 +1,6 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { ServCode } from "./ServCodeTypes";
+import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 
 export type ProgCodeRaw = {
   // anyBranch: boolean;
@@ -84,6 +85,7 @@ export type ProgCodeDoc = ProgCodeRemapped & ProgCodeDocProps;
 export type ProgCodeProps = {
   servCodes: ServCode[];
   isSpecial: boolean;
+  programs: Program[];
 };
 
 export type ProgCode = ProgCodeDoc & ProgCodeProps;

@@ -23,6 +23,7 @@ import {
 } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import {baseProgCode} from "@/app/realGreen/progServ/_lib/baseProgCode";
+import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 
 export type ServCodeRaw = {
   // autopostMobile: boolean;
@@ -117,6 +118,7 @@ export type ServCodeDoc = ServCodeCore & ServCodeDocProps;
 
 export type ServCodeProps = {
   progCode: ProgCode;
+  services: Service[];
 }
 
 export type ServCode = ServCodeDoc & ServCodeProps;
@@ -131,7 +133,7 @@ export const baseServCode: ServCode = {
   begin: "",
   end: "",
   progCode: baseProgCode,
+  services: [],
   createdAt: "",
   updatedAt: "",
 }
-

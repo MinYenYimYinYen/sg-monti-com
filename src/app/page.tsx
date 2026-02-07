@@ -46,15 +46,24 @@ import {
 import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCustomers";
 import { useSelector } from "react-redux";
 import {
+  centralSelect,
   selectCustomers,
 } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { useEffect } from "react";
 import { selectPrograms } from "@/app/realGreen/customer/selectors/centralTerminatingSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { useProgServ } from "@/app/realGreen/progServ/_lib/useProgServ";
+import { useTaxCode } from "@/app/realGreen/taxCode/useTaxCode";
+import { taxCodeSelect } from "@/app/realGreen/taxCode/taxCodeSelectors";
 
 export default function Home() {
   usePrintedCustomers({ autoLoad: true });
-  const customers = useSelector(selectCustomers);
-  const programs = useSelector(selectPrograms);
+  useProgServ({ autoLoad: true });
+  useTaxCode({autoLoad: true})
+  const customers = useSelector(centralSelect.customers);
+  const programs = useSelector(centralSelect.programs);
+  const progCodes = useSelector(progServSelect.progCodes);
+  const taxCodes = useSelector(taxCodeSelect.taxCodes)
 
   useEffect(() => {
     console.log("Customers:", customers);
@@ -64,7 +73,13 @@ export default function Home() {
     console.log("Programs:", programs);
   }, [programs]);
 
+  useEffect(() => {
+    console.log("ProgCodes:", progCodes);
+  }, [progCodes]);
 
+  useEffect(() => {
+    console.log("TaxCodes:", taxCodes)
+  }, [taxCodes]);
 
   return (
     <div className="container mx-auto p-8 space-y-12">

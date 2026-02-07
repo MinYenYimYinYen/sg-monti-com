@@ -4,9 +4,11 @@ import { Grouper } from "@/lib/Grouper";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
 import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import { basicTaxCodeSelect } from "@/app/realGreen/taxCode/taxCodeBaseSelectors";
+import { baseTaxCode } from "@/app/realGreen/taxCode/_lib/baseTaxCode";
 
 const selectCustomerContext = (state: AppState) =>
   state.customer.central.context;
@@ -32,43 +34,16 @@ const selectServiceDocMap = createSelector(
   },
 );
 
+// Use BASE selectors to avoid circular dependency
 const selectProgCodeMapByDefId = createSelector(
-  [progServSelect.progCodes],
+  [progServBaseSelect.basicProgCodes],
   (progCodes) => new Grouper(progCodes).toUniqueMap((p) => p.progDefId),
 );
 
 const selectServCodeMap = createSelector(
-  [progServSelect.servCodes],
+  [progServBaseSelect.basicServCodes],
   (servCodes) => new Grouper(servCodes).toUniqueMap((s) => s.servCodeId),
 );
-
-/*
-* 1. I added ServCode and ProgCode to Service and Program so I could access the
-* metadata that these codes provide.  This data is hydrated in
-* @centralSelectors.ts
-*
-* 2. the types ServCodeDoc and ProgCodeDoc also have the metadata, so I could
-* have used those instead.
-*
-3. I want to add services: Service[] to ServCodeProps and programs: Program[]
-* to ProgCodeProps, so I can hydrate this data into @progServSelectors.ts.
-* This data would come from centralSelectors.
-*
-4. I cannot do this because it creates selector circularity, which does not
-* work.  It errors or loops.
-*
-5. If I provide a ServCodeDocMap[] selector and a ProgCodeDocMap[] selector
-* from progServSelectors, I could use that in centralSelectors.  According to
-* my theory, this would break the selector circularity.
-*
-* **********************
-*
-* EVEN BETTER IDEA.
-* The selector files should be factories.  Then I don't think there'd be any issue
-* at all with circularity in selectors that use the same logic.
-* */
-
-
 
 export const selectCustomers = createSelector(
   [
@@ -77,12 +52,24 @@ export const selectCustomers = createSelector(
     selectServiceDocMap,
     selectProgCodeMapByDefId,
     selectServCodeMap,
+    basicTaxCodeSelect.basicTaxCodeMap,
   ],
-  (customerDocs, programDocMap, serviceDocMap, progCodeMap, servCodeMap) => {
+  (
+    customerDocs,
+    programDocMap,
+    serviceDocMap,
+    progCodeMap,
+    servCodeMap,
+    basicTaxCodeMap,
+  ) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
+      const taxCodes = custDoc.taxIds.map(
+        (taxId) => basicTaxCodeMap.get(taxId) || baseTaxCode,
+      );
       const customer: Customer = {
         ...custDoc,
         programs: [],
+        taxCodes,
       };
 
       const progDocs = programDocMap.get(custDoc.custId) || [];
@@ -133,9 +120,15 @@ const selectServices = createSelector([selectPrograms], (programs) => {
   return programs.flatMap((p) => p.services);
 });
 
+const customerMap = createSelector([selectCustomers], (customers) => {
+  return new Grouper(customers).toUniqueMap((c) => c.custId);
+});
+
+
 export const centralSelect = {
   context: selectCustomerContext,
   customers: selectCustomers,
   programs: selectPrograms,
   services: selectServices,
+  customerMap: customerMap,
 };

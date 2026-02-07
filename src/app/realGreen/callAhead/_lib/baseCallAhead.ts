@@ -1,3 +1,5 @@
+
+import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import {
   CallAhead,
   CallAheadCore,
@@ -5,8 +7,7 @@ import {
   CallAheadDocProps,
   CallAheadProps,
   NotificationType,
-} from "@/app/realGreen/callAhead/_lib/CallAhead";
-import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+} from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 
 export const baseCallAheadCore: CallAheadCore = {
   callAheadId: baseNumId,

@@ -1,12 +1,13 @@
+
+import CallAheadModel from "@/app/realGreen/callAhead/models/CallAheadModel";
+import { baseCallAheadDocProps } from "@/app/realGreen/callAhead/_lib/baseCallAhead";
+import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
 import {
   CallAheadCore,
   CallAheadDoc,
   CallAheadDocProps,
   CallAheadRaw,
-} from "@/app/realGreen/callAhead/_lib/CallAhead";
-import CallAheadModel from "@/app/realGreen/callAhead/models/CallAheadModel";
-import { baseCallAheadDocProps } from "@/app/realGreen/callAhead/_lib/baseCallAhead";
-import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
+} from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 
 function remapCallAhead(raw: CallAheadRaw): CallAheadCore {
   return {

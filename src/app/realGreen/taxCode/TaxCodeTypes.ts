@@ -1,4 +1,5 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 
 export type TaxCodeCore = {
   taxCodeId: string;
@@ -22,6 +23,8 @@ export type TaxCodeDocProps = CreatedUpdated & {
 
 export type TaxCodeDoc = TaxCodeCore & TaxCodeDocProps;
 
-export type TaxCodeProps = {};
+export type TaxCodeProps = {
+  customers: Customer[]
+};
 
 export type TaxCode = TaxCodeDoc & TaxCodeProps;

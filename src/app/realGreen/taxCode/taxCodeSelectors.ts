@@ -1,14 +1,34 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
-import { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
-import {Grouper} from "@/lib/Grouper";
+import { Grouper } from "@/lib/Grouper";
+import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 
 const selectTaxCodeDocs = (state: AppState) => state.taxCode.taxCodeDocs;
 
 const selectTaxCodes = createSelector(
-  // Mocking Hydration
-  [selectTaxCodeDocs],
-  (taxCodeDocs) => taxCodeDocs as TaxCode[],
+  [selectTaxCodeDocs, centralSelect.customers],
+  (taxCodeDocs, customers) => {
+    // 1. Group Customers by Tax Code ID directly
+    const customersByTaxCode = new Map<string, Customer[]>();
+
+    for (const customer of customers) {
+      for (const taxId of customer.taxIds) {
+        let list = customersByTaxCode.get(taxId);
+        if (!list) {
+          list = [];
+          customersByTaxCode.set(taxId, list);
+        }
+        list.push(customer);
+      }
+    }
+
+    // 2. Map Docs to Rich Objects
+    return taxCodeDocs.map((doc) => ({
+      ...doc,
+      customers: customersByTaxCode.get(doc.taxCodeId) || [],
+    }));
+  },
 );
 
 const selectTaxCodeMap = createSelector([selectTaxCodes], (taxCodes) =>
@@ -18,4 +38,4 @@ const selectTaxCodeMap = createSelector([selectTaxCodes], (taxCodes) =>
 export const taxCodeSelect = {
   taxCodes: selectTaxCodes,
   taxCodeMap: selectTaxCodeMap,
-}
+};

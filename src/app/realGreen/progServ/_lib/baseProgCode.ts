@@ -19,5 +19,6 @@ export const baseProgCode: ProgCode = {
   unitCode: baseNumId,
   servCodes: [],
   isSpecial: false,
+  programs: [],
   ...baseProgCodeDocProps
 };

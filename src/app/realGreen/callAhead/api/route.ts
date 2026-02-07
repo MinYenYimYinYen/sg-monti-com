@@ -4,11 +4,11 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { CallAheadContract } from "@/app/realGreen/callAhead/api/CallAheadContract";
-import { CallAheadRaw } from "@/app/realGreen/callAhead/_lib/CallAhead";
 import {
   extendCallAheads,
   remapCallAheads,
 } from "@/app/realGreen/callAhead/_lib/callAheadServerFunc";
+import { CallAheadRaw } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 
 const handlers: HandlerMap<CallAheadContract> = {
   getAll: {
