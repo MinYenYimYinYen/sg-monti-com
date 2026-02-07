@@ -5,13 +5,9 @@ import { ProgCodeDoc } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
 export interface ProgServContract extends ApiContract {
-  syncProgServ: {
-    params: { progDefIds: number[] };
-    result: DataResponse<ProgServ[]>;
-  };
   getProgCodes: {
     params: {};
-    result: DataResponse<ProgCodeDoc[]>;
+    result: DataResponse<{ progCodeDocs: ProgCodeDoc[], progServs: ProgServ[] }>;
   };
   getServCodes: {
     params: {};

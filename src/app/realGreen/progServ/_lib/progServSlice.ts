@@ -23,13 +23,12 @@ const progServSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getProgCodeDocs.fulfilled, (state, action) => {
-      state.progCodeDocs = action.payload;
+      const { progCodeDocs, progServs } = action.payload;
+      state.progCodeDocs = progCodeDocs;
+      state.progServs = progServs;
     });
     builder.addCase(getServCodeDocs.fulfilled, (state, action) => {
       state.servCodeDocs = action.payload;
-    });
-    builder.addCase(getProgServs.fulfilled, (state, action) => {
-      state.progServs = action.payload;
     });
   },
 });
@@ -52,19 +51,9 @@ export const getServCodeDocs = createStandardThunk<
   opName: "getServCodes",
 });
 
-export const getProgServs = createStandardThunk<
-  ProgServContract,
-  "syncProgServ"
->({
-  typePrefix: "progServ/getProgServs",
-  apiPath: "/realGreen/progServ/api",
-  opName: "syncProgServ",
-});
-
 export const progServActions = {
   ...progServSlice.actions,
-   getProgCodeDocs,
-   getServCodeDocs,
-   getProgServs,
+  getProgCodeDocs,
+  getServCodeDocs,
 };
 export default progServSlice.reducer;
