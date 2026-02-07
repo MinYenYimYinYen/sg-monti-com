@@ -1,4 +1,3 @@
-
 // type ProductionParams = {
 //   canChangeProductionPrice: boolean;
 //   canChangeProductionSize: boolean;
@@ -16,14 +15,12 @@
 //   preNotify: boolean;
 // };
 
-
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import {
-  ProgCode,
-} from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
-import {baseProgCode} from "@/app/realGreen/progServ/_lib/baseProgCode";
+import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import { ServCodeProductDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeProduct";
 
 export type ServCodeRaw = {
   // autopostMobile: boolean;
@@ -96,14 +93,12 @@ export type ServCodeRaw = {
   // technicianNote: string | null;
 };
 
-
 export type ServCodeCore = {
   servCodeId: string;
   isServiceCall: boolean;
   available: boolean;
   longName: string;
   invoiceMessage: string | null;
-
 };
 
 export type ServCodeDocProps = CreatedUpdated & {
@@ -111,15 +106,15 @@ export type ServCodeDocProps = CreatedUpdated & {
   begin: string;
   end: string;
   alwaysAsap: boolean;
+  productDocs: ServCodeProductDoc[];
 };
 
 export type ServCodeDoc = ServCodeCore & ServCodeDocProps;
 
-
 export type ServCodeProps = {
   progCode: ProgCode;
   services: Service[];
-}
+};
 
 export type ServCode = ServCodeDoc & ServCodeProps;
 
@@ -136,4 +131,5 @@ export const baseServCode: ServCode = {
   services: [],
   createdAt: "",
   updatedAt: "",
-}
+  productDocs: [],
+};
