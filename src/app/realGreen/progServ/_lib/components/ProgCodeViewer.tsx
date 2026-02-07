@@ -1,16 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { progServSelect } from "@/app/realGreen/progServ/_selectors/progServSelectors";
+// import { progServSelect } from "@/app/realGreen/progServ/_selectors/progServSelectors";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { Modal } from "@/components/Modal";
 import { ServCodeViewer } from "./ServCodeViewer";
 import { Button } from "@/style/components/button";
 import { Badge } from "@/style/components/badge";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+// import { selectProgCodes } from "@/app/realGreen/progServ/_lib/selectors/newProgCodeSelectors";
 
 export function ProgCodeViewer() {
+  // const progCodes = useSelector(progServSelect.progCodes);
   const progCodes = useSelector(progServSelect.progCodes);
+
+  useEffect(() => {
+    console.log("progCodes", progCodes);
+  }, [progCodes]);
+  
   const [selectedProgram, setSelectedProgram] = useState<ProgCode | null>(null);
 
   return (

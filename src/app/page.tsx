@@ -47,9 +47,9 @@ import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCu
 import { useSelector } from "react-redux";
 import {
   selectCustomers,
-} from "@/app/realGreen/customer/centralSelectors/centralSelectors";
+} from "@/app/realGreen/customer/selectors/centralSelectors";
 import { useEffect } from "react";
-import { selectPrograms } from "@/app/realGreen/customer/centralSelectors/centralTerminatingSelectors";
+import { selectPrograms } from "@/app/realGreen/customer/selectors/centralTerminatingSelectors";
 
 export default function Home() {
   usePrintedCustomers({ autoLoad: true });

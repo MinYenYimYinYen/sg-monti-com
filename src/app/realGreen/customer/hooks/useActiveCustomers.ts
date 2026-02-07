@@ -11,10 +11,10 @@ import { centralCustomerActions } from "@/app/realGreen/customer/slices/centralC
 export function useActiveCustomers() {
   const dispatch = useAppDispatch();
 
-  // Use the specific selector exported from the slice
-  const services = useSelector((state: AppState) =>
-    activeCustomersSelect.services(state),
-  );
+  // // Use the specific selector exported from the slice
+  // const services = useSelector((state: AppState) =>
+  //   activeCustomersSelect.services(state),
+  // );
 
   // Set Context to Active on Mount
   useEffect(() => {
@@ -23,20 +23,18 @@ export function useActiveCustomers() {
     // there's an actual change.
   }, [dispatch]);
 
-  useEffect(() => {
-    // Only fetch if we don't have data (simple check for now)
-    if (services.length === 0) {
-      dispatch(
-        activeCustomersActions.getCustDocs({
-          params: {
-            schemeName: "activeCustomers",
-          },
-        }),
-      );
-    }
-  }, [dispatch, services.length]);
+  // useEffect(() => {
+  //   // Only fetch if we don't have data (simple check for now)
+  //   if (services.length === 0) {
+  //     dispatch(
+  //       activeCustomersActions.getCustDocs({
+  //         params: {
+  //           schemeName: "activeCustomers",
+  //         },
+  //       }),
+  //     );
+  //   }
+  // }, [dispatch, services.length]);
 
-  return {
-    services,
-  };
+  return {};
 }

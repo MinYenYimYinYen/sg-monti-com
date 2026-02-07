@@ -5,7 +5,7 @@ import {
   ProgCodeRemapped,
 } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
-import { ProgCodeDocPropsModel } from "../../_models/ProgCodeDocPropsModel";
+import { ProgCodeDocPropsModel } from "../models/ProgCodeDocPropsModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { Grouper } from "@/lib/Grouper";
 import { baseProgCodeDocProps } from "../baseProgCode";

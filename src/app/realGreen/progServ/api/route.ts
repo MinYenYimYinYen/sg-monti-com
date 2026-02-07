@@ -3,7 +3,7 @@ import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract";
-import { ProgServModel } from "@/app/realGreen/progServ/_models/ProgServModel";
+import { ProgServModel } from "@/app/realGreen/progServ/_lib/models/ProgServModel";
 import { dateCompare } from "@/lib/primatives/dates/dateCompare";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import {

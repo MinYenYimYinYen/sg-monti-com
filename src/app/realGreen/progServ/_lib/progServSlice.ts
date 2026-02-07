@@ -63,8 +63,8 @@ export const getProgServs = createStandardThunk<
 
 export const progServActions = {
   ...progServSlice.actions,
-  fetchDryProgCodes: getProgCodeDocs,
-  fetchDryServCodes: getServCodeDocs,
-  fetchProgServs: getProgServs,
+   getProgCodeDocs,
+   getServCodeDocs,
+   getProgServs,
 };
 export default progServSlice.reducer;

@@ -12,11 +12,11 @@ import {
 import { uiActions } from "@/store/reduxUtil/uiSlice";
 import { Grouper } from "@/lib/Grouper";
 import { AppState } from "@/store";
-import {
-  createSelectCustomers,
-  createSelectPrograms,
-  createSelectServices,
-} from "../selectors/contextSelectors";
+// import {
+//   createSelectCustomers,
+//   createSelectPrograms,
+//   createSelectServices,
+// } from "../_lib/deprecated/contextSelectors";
 import { AppError } from "@/lib/errors/AppError";
 
 // Ensure the slice state satisfies the requirements for the selectors
@@ -41,14 +41,14 @@ export const printedCustomersSlice = createSlice({
       }
     },
   },
-  selectors: {
-    customerDocMap: (state) =>
-      new Grouper(state.customerDocs).toUniqueMap((e) => e.custId),
-    programDocMap: (state) =>
-      new Grouper(state.programDocs).toUniqueMap((e) => e.progId),
-    serviceDocMap: (state) =>
-      new Grouper(state.serviceDocs).toUniqueMap((e) => e.servId),
-  },
+  // selectors: {
+  //   customerDocMap: (state) =>
+  //     new Grouper(state.customerDocs).toUniqueMap((e) => e.custId),
+  //   programDocMap: (state) =>
+  //     new Grouper(state.programDocs).toUniqueMap((e) => e.progId),
+  //   serviceDocMap: (state) =>
+  //     new Grouper(state.serviceDocs).toUniqueMap((e) => e.servId),
+  // },
 });
 
 const getCustDocs = createStreamThunk<CustomerContract, "runSearchScheme">({
@@ -90,7 +90,7 @@ const selectSlice = (state: AppState) => state.customer.printed;
 export const printedCustomersSelect = {
   ...printedCustomersSlice.selectors,
   // Use factories to create specific selectors for this slice
-  customers: createSelectCustomers(selectSlice),
-  programs: createSelectPrograms(selectSlice),
-  services: createSelectServices(selectSlice),
+  // customers: createSelectCustomers(selectSlice),
+  // programs: createSelectPrograms(selectSlice),
+  // services: createSelectServices(selectSlice),
 };
