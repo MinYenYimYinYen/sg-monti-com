@@ -90,7 +90,7 @@ const selectServices = createSelector([selectPrograms], (programs) => {
   return programs.flatMap((p) => p.services);
 });
 
-export const customerSelect = {
+export const centralSelect = {
   context: selectCustomerContext,
   customers: selectCustomers,
   programs: selectPrograms,

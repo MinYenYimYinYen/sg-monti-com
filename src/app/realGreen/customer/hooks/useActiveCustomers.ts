@@ -4,11 +4,11 @@ import { activeCustomersActions } from "@/app/realGreen/customer/slices/activeCu
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { centralCustomerActions } from "@/app/realGreen/customer/slices/centralCustomerSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
-import { customerSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 
 export function useActiveCustomers() {
   const dispatch = useAppDispatch();
-  const context = useSelector(customerSelect.context);
+  const context = useSelector(centralSelect.context);
 
   useEffect(() => {
     if (context === "active") return;
