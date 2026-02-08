@@ -21,6 +21,7 @@ import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServCodeProductDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeProduct";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export type ServCodeRaw = {
   // autopostMobile: boolean;
@@ -103,8 +104,8 @@ export type ServCodeCore = {
 
 export type ServCodeDocProps = CreatedUpdated & {
   servCodeId: string;
-  begin: string;
-  end: string;
+  dateRange: TRange<string>;
+
   alwaysAsap: boolean;
   productDocs: ServCodeProductDoc[];
 };
@@ -128,8 +129,7 @@ export const baseServCode: ServCode = {
   longName: "",
   invoiceMessage: "",
   alwaysAsap: false,
-  begin: "",
-  end: "",
+  dateRange: { min: "", max: "" },
   progCode: baseProgCode,
   services: [],
   createdAt: "",

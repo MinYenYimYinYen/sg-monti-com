@@ -116,7 +116,7 @@ export function DatePicker({
         onFocus={handleFocus}
         placeholder={placeholder}
         className={cn(
-          "w-[160px] pr-9",
+          "w-[110px] pr-9",
           isInvalid &&
             clsx("border-destructive focus-visible:border-destructive"),
         )}
@@ -124,14 +124,15 @@ export function DatePicker({
       <Popover>
         <PopoverTrigger asChild>
           <Button
-            variant="outline"
+            variant="primary"
+            intensity={"ghost"}
             size="icon"
             className={cn(
-              "absolute right-0 top-0 h-full w-9 px-2 bg-transparent border-0",
+              "absolute right-0 top-0 h-full w-9 px-2",
               !date && "text-muted-foreground",
             )}
           >
-            <CalendarIcon className="h-4 w-4" />
+            <CalendarIcon className={cn("h-4 w-4")}   />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">

@@ -11,11 +11,18 @@ const ServCodeProductSchema = new mongoose.Schema<ServCodeProductDoc>({
   productMasterIds: { type: [Number], required: true },
 });
 
+const DateRangeSchema = new mongoose.Schema(
+  {
+    min: { type: String, default: "" },
+    max: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
 const ServCodeSchema = new mongoose.Schema<ServCodeDocPropsDoc>(
   {
     servCodeId: { type: String, required: true, unique: true },
-    begin: { type: String },
-    end: { type: String },
+    dateRange: { type: DateRangeSchema, default: () => ({ min: "", max: "" }) },
     alwaysAsap: { type: Boolean },
     productDocs: [ServCodeProductSchema],
   },

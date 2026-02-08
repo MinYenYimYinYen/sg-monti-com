@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { TRange } from "@/lib/primatives/TRange";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 import { DatePicker } from "@/components/DatePicker";
 import { cn } from "@/lib/utils";
 import { validateDateRange } from "@/lib/primatives/dates/dateRangeSchema";
@@ -38,14 +38,14 @@ export function DateRangePicker({
       <DatePicker
         value={value.min}
         onChange={handleMinChange}
-        placeholder="Start Date"
+        placeholder="Start"
         isInvalid={!!validation.errors?.min}
       />
       <span className="text-muted-foreground text-sm">to</span>
       <DatePicker
         value={value.max}
         onChange={handleMaxChange}
-        placeholder="End Date"
+        placeholder="End"
         isInvalid={!!validation.errors?.max}
       />
     </div>

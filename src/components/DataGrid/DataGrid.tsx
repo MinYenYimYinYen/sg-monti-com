@@ -141,26 +141,29 @@ export function DataGrid<TData>({
       )}
 
       <div className="rounded-md border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {enableRowExpansion && <TableHead className="w-[40px]" />}
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    style={{ width: header.getSize() }}
-                    enableColumnResizing={enableColumnResizing}
-                    header={header}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const isFluid = (header.column.columnDef.meta as any)?.isFluid;
+                  return (
+                    <TableHead
+                      key={header.id}
+                      style={{ width: isFluid ? "auto" : header.getSize() }}
+                      enableColumnResizing={enableColumnResizing}
+                      header={header}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             ))}
           </TableHeader>
@@ -188,17 +191,20 @@ export function DataGrid<TData>({
                         ) : null}
                       </TableCell>
                     )}
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        style={{ width: cell.column.getSize() }}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
+                    {row.getVisibleCells().map((cell) => {
+                      const isFluid = (cell.column.columnDef.meta as any)?.isFluid;
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          style={{ width: isFluid ? "auto" : cell.column.getSize() }}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                   {row.getIsExpanded() && renderSubComponent && (
                     <TableRow>

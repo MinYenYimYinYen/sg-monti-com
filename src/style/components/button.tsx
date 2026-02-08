@@ -136,6 +136,12 @@ const buttonVariants = cva(
         intensity: "bold",
         className: "text-primary font-semibold",
       },
+      {
+        variant: "outline",
+        intensity: "ghost",
+        className: "text-primary/60 border-0 bg-transparent hover:bg-primary/10 focus-visible:ring-primary"
+      }
+
     ],
     defaultVariants: {
       variant: "primary",

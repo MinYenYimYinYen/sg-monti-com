@@ -13,7 +13,7 @@ import {
 } from "date-fns";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { AppError } from "@/lib/errors/AppError";
-import {TRange} from "@/lib/primatives/TRange";
+import {TRange} from "@/lib/primatives/tRange/TRange";
 
 // import { ValidationError } from "@/utils/types/errors/customErrors";
 // import { ValidDateRange } from "@/utils/types/ValidDateRange";

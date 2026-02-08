@@ -57,7 +57,7 @@ import { useTaxCode } from "@/app/realGreen/taxCode/useTaxCode";
 import { taxCodeSelect } from "@/app/realGreen/taxCode/taxCodeSelectors";
 import { DatePicker } from "@/components/DatePicker";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { TRange } from "@/lib/primatives/TRange";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export default function Home() {
   usePrintedCustomers({ autoLoad: true });

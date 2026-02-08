@@ -1,4 +1,4 @@
-import { TRange } from "@/lib/primatives/TRange";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export enum RecentFrame {
   Hour = "Hour",

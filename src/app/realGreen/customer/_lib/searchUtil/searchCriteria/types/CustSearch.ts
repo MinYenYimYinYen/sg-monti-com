@@ -3,7 +3,7 @@ import {
   RGNumRange,
   RGStringRange,
 } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
-import { TRange } from "@/lib/primatives/TRange";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 import { RGSearchBase } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/types/RGSearchBase";
 
 export type CustomerSearchRaw = RGSearchBase & {

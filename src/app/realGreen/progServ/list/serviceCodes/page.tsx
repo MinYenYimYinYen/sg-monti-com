@@ -22,7 +22,7 @@ export default function ListServiceCodes() {
       <p className={"text-sm text-muted-foreground"}>
         View and manage SA5 service code extensions.
       </p>
-      <DataGrid data={servCodes} columns={columns} />
+      <DataGrid data={servCodes} columns={columns} enableColumnResizing={false} />
     </Container>
   );
 }
