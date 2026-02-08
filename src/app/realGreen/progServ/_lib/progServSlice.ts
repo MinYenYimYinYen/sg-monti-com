@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { ProgServ } from "@/app/realGreen/progServ/_lib/types/ProgServ";
 import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract";
@@ -20,7 +20,22 @@ const initialState: ProgServState = {
 const progServSlice = createSlice({
   name: "progServ",
   initialState,
-  reducers: {},
+  reducers: {
+    updateServCode: (state, action: PayloadAction<Partial<ServCodeDoc>>) => {
+      const servCodeId = action.payload.servCodeId;
+      if (servCodeId) {
+        const index = state.servCodeDocs.findIndex(
+          (servCode) => servCode.servCodeId === servCodeId,
+        );
+        if (index !== -1) {
+          state.servCodeDocs[index] = {
+            ...state.servCodeDocs[index],
+            ...action.payload,
+          };
+        }
+      }
+    },
+  },
   extraReducers: (builder) => {
     builder.addCase(getProgCodeDocs.fulfilled, (state, action) => {
       const { progCodeDocs, progServs } = action.payload;

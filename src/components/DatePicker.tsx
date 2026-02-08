@@ -116,7 +116,7 @@ export function DatePicker({
         onFocus={handleFocus}
         placeholder={placeholder}
         className={cn(
-          "w-[110px] pr-9",
+          "w-[130px] pr-9",
           isInvalid &&
             clsx("border-destructive focus-visible:border-destructive"),
         )}

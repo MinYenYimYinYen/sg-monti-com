@@ -3,6 +3,10 @@ import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataGridColumnHeader } from "@/components/DataGrid";
 import { DateRangePicker } from "@/components/DateRangePicker";
+import {
+  EditAlwaysAsap,
+  EditServCodeDates,
+} from "@/app/realGreen/progServ/_lib/components/servCodeEditor";
 
 export const createServiceCodeColumns: (
   onEdit: (servCode: ServCode) => void,
@@ -34,12 +38,10 @@ export const createServiceCodeColumns: (
   {
     accessorKey: "dateRange",
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Begin" />
+      <DataGridColumnHeader column={column} title="Date Range" />
     ),
     cell: ({ row }) => (
-      <div>
-        <DateRangePicker />
-      </div>
+      <EditServCodeDates servCodeId={row.original.servCodeId} />
     ),
     size: 320,
   },
@@ -48,7 +50,7 @@ export const createServiceCodeColumns: (
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title={"ASAP"} />
     ),
-    cell: ({ row }) => <div>{row.getValue("alwaysAsap")}</div>,
+    cell: ({ row }) => <EditAlwaysAsap servCodeId={row.original.servCodeId} />,
     size: 80,
   },
   {
