@@ -15,5 +15,6 @@ export function remapServCode(raw: ServCodeRaw): ServCodeCore {
 }
 
 export async function extendServCodes(servCodesCore: ServCodeCore[]): Promise<ServCodeDoc[]> {
+  //todo: implement this and we should be good on managing servCodes
   return servCodesCore as ServCodeDoc[];
 }

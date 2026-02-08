@@ -1,8 +1,9 @@
-import { progServActions } from "@/app/realGreen/progServ/_lib/progServSlice";
+import { progServActions } from "@/app/realGreen/progServ/_lib/slice/progServSlice";
 import { useCallback, useEffect } from "react";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import { UnsavedServCodeChanges } from "@/app/realGreen/progServ/_lib/types/ProgServState";
 
 export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();
@@ -41,9 +42,24 @@ export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
 
   const refresh = () => load({ force: true });
 
-  const updateServCode = useCallback((servCode: Partial<ServCodeDoc>) => {
-    dispatch(progServActions.updateServCode(servCode));
-  }, [dispatch])
+  const updateServCode = useCallback(
+    (servCode: Partial<ServCodeDoc>) => {
+      dispatch(progServActions.updateServCode(servCode));
+    },
+    [dispatch],
+  );
 
-  return { refresh, updateServCode };
+  const saveServCodeChanges = useCallback(
+    (unsavedChanges: UnsavedServCodeChanges[]) => {
+      return dispatch(
+        progServActions.saveServCodeChanges({
+          params: { unsavedChanges },
+          config: { force: true },
+        }),
+      );
+    },
+    [dispatch],
+  );
+
+  return { refresh, updateServCode, saveServCodeChanges };
 }

@@ -16,6 +16,7 @@ import {
   remapServCode,
 } from "@/app/realGreen/progServ/_lib/func/servCodeServerFunc";
 import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
+import ServCodeModel from "@/app/realGreen/progServ/_lib/models/ServCodeModel";
 
 const handlers: HandlerMap<ProgServContract> = {
   getProgCodes: {
@@ -38,7 +39,7 @@ const handlers: HandlerMap<ProgServContract> = {
         progCodeDocs.map((p) => p.progDefId),
       );
 
-      return { success: true, payload: {progCodeDocs, progServs} };
+      return { success: true, payload: { progCodeDocs, progServs } };
     },
   },
   getServCodes: {
@@ -53,6 +54,40 @@ const handlers: HandlerMap<ProgServContract> = {
       const servCodeDocs = await extendServCodes(servCodeCores);
 
       return { success: true, payload: servCodeDocs };
+    },
+  },
+
+  saveServCodeChanges: {
+    roles: ["admin"],
+    handler: async (params) => {
+      const { unsavedChanges } = params;
+      console.log("unsavedChanges", unsavedChanges);
+      // ... inside saveServCodeChanges handler
+      const ops = unsavedChanges.map((change) => ({
+        updateOne: {
+          filter: { servCodeId: change.updated.servCodeId },
+          update: {
+            //todo: consider saving the whole object
+            // might not be necessary if hydration doesn't need the
+            // whole object. But may crash with undefined properties
+            // if all are not present.  This currently only saves a
+            // partial object.  Would set like
+            // change.updated.property || change.original.property.
+            $set: {
+              dateRange: change.updated.dateRange,
+              alwaysAsap: change.updated.alwaysAsap,
+              productDocs: change.updated.productDocs,
+            },
+          },
+          upsert: true,
+        },
+      }));
+
+      if (ops.length > 0) {
+        await ServCodeModel.bulkWrite(ops);
+      }
+
+      return { success: true, payload: true };
     },
   },
 };
