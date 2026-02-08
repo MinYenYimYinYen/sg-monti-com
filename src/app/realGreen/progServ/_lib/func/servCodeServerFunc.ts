@@ -22,7 +22,7 @@ export function remapServCode(raw: ServCodeRaw): ServCodeCore {
 export async function extendServCodes(
   servCodesCore: ServCodeCore[],
 ): Promise<ServCodeDoc[]> {
-  //todo: implement this and we should be good on managing servCodes
+  //todo: DUPLICATE KEY ERROR ON GROUPER BEOLOW
   await connectToMongoDB();
   const servCodeDocPropDocs = await ServCodeModel.find();
   const servCodeDocProps = cleanMongoArray(servCodeDocPropDocs);
