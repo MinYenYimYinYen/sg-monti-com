@@ -3,6 +3,7 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/style/utils"
+import clsx from "clsx"
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
@@ -34,7 +35,7 @@ const buttonVariants = cva(
       {
         variant: "primary",
         intensity: "ghost",
-        className: "bg-primary/10 text-primary hover:bg-primary/20 focus-visible:ring-primary",
+        className: "bg-transparent text-primary hover:bg-primary/20 focus-visible:ring-primary",
       },
       {
         variant: "primary",
@@ -55,7 +56,7 @@ const buttonVariants = cva(
       {
         variant: "accent",
         intensity: "ghost",
-        className: "bg-accent/10 text-accent hover:bg-accent/20 focus-visible:ring-accent",
+        className: "bg-transparent text-accent hover:bg-accent/20 focus-visible:ring-accent",
       },
       {
         variant: "accent",
@@ -76,7 +77,7 @@ const buttonVariants = cva(
       {
         variant: "secondary",
         intensity: "ghost",
-        className: "bg-secondary/10 text-secondary hover:bg-secondary/20 focus-visible:ring-secondary",
+        className: "bg-transparent text-secondary hover:bg-secondary/20 focus-visible:ring-secondary",
       },
       {
         variant: "secondary",
@@ -97,7 +98,7 @@ const buttonVariants = cva(
       {
         variant: "destructive",
         intensity: "ghost",
-        className: "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:ring-destructive",
+        className: "bg-transparent text-destructive hover:bg-destructive/20 focus-visible:ring-destructive",
       },
       {
         variant: "destructive",

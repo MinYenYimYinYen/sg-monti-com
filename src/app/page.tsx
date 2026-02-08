@@ -49,12 +49,15 @@ import {
   centralSelect,
   selectCustomers,
 } from "@/app/realGreen/customer/selectors/centralSelectors";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { selectPrograms } from "@/app/realGreen/customer/selectors/centralTerminatingSelectors";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/useProgServ";
 import { useTaxCode } from "@/app/realGreen/taxCode/useTaxCode";
 import { taxCodeSelect } from "@/app/realGreen/taxCode/taxCodeSelectors";
+import { DatePicker } from "@/components/DatePicker";
+import { DateRangePicker } from "@/components/DateRangePicker";
+import { TRange } from "@/lib/primatives/TRange";
 
 export default function Home() {
   usePrintedCustomers({ autoLoad: true });
@@ -81,6 +84,11 @@ export default function Home() {
     console.log("TaxCodes:", taxCodes)
   }, [taxCodes]);
 
+
+  const [date, setDate] = useState("");
+  const [dateRange, setDateRange] = useState<TRange<string>>({ min: "", max: "" });
+
+
   return (
     <div className="container mx-auto p-8 space-y-12">
       <div>
@@ -91,6 +99,16 @@ export default function Home() {
           Testing all installed components with current theme
         </p>
       </div>
+
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold">Date Picker ({date})</h2>
+        <DatePicker value={date} onChange={(date) => setDate(date || "")} />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold">Date Range Picker ({dateRange.min} - {dateRange.max})</h2>
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
+      </section>
 
       {/* Buttons */}
       <section className="space-y-4">
