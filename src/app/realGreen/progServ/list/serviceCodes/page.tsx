@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Container } from "@/components/Containers";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/useProgServ";
 import { useSelector } from "react-redux";
@@ -27,10 +27,12 @@ export default function ListServiceCodes() {
       setSaveStatus("idle")
     }
   }
-
   const columns = useMemo(() => {
     return createServiceCodeColumns((servCode) => {});
   }, []);
+
+
+
   return (
     <Container variant={"page"}>
       <div className={"flex items-center justify-start gap-2"}>
@@ -38,7 +40,7 @@ export default function ListServiceCodes() {
           Service Codes
         </h2>
         <SaveButton
-          className={"w-[16rem]"}
+          className={"w-[12rem]"}
           disabled={unsavedChanges.length === 0}
           status={saveStatus}
           onClick={handleSave}
@@ -51,7 +53,7 @@ export default function ListServiceCodes() {
       <DataGrid
         data={servCodes}
         columns={columns}
-        enableColumnResizing={false}
+        enableColumnResizing={true}
       />
     </Container>
   );

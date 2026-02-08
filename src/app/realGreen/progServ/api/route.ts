@@ -69,22 +69,27 @@ const handlers: HandlerMap<ProgServContract> = {
     roles: ["admin"],
     handler: async (params) => {
       const { unsavedChanges } = params;
-      console.log("unsavedChanges", unsavedChanges);
 
       const ops = unsavedChanges.map((change) => {
         // Enforce that all updatable properties are present
         // If ServCodeDocProps changes, this will error until updated
         const updatePayload: UpdatableServCodeProps = {
-          dateRange: change.updated.dateRange,
-          alwaysAsap: change.updated.alwaysAsap,
-          productDocs: change.updated.productDocs,
+          dateRange: change.updated.dateRange || change.original.dateRange,
+          alwaysAsap:
+            change.updated.alwaysAsap !== undefined
+              ? change.updated.alwaysAsap
+              : change.original.alwaysAsap,
+          productDocs:
+            change.updated.productDocs || change.original.productDocs,
         };
 
         return {
           updateOne: {
             filter: { servCodeId: change.updated.servCodeId },
             update: {
-              $set: updatePayload,
+              $set: {
+                ...updatePayload,
+              },
             },
             upsert: true,
           },

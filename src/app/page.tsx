@@ -68,21 +68,21 @@ export default function Home() {
   const progCodes = useSelector(progServSelect.progCodes);
   const taxCodes = useSelector(taxCodeSelect.taxCodes)
 
-  useEffect(() => {
-    console.log("Customers:", customers);
-  }, [customers]);
-
-  useEffect(() => {
-    console.log("Programs:", programs);
-  }, [programs]);
-
-  useEffect(() => {
-    console.log("ProgCodes:", progCodes);
-  }, [progCodes]);
-
-  useEffect(() => {
-    console.log("TaxCodes:", taxCodes)
-  }, [taxCodes]);
+  // useEffect(() => {
+  //   console.log("Customers:", customers);
+  // }, [customers]);
+  //
+  // useEffect(() => {
+  //   console.log("Programs:", programs);
+  // }, [programs]);
+  //
+  // useEffect(() => {
+  //   console.log("ProgCodes:", progCodes);
+  // }, [progCodes]);
+  //
+  // useEffect(() => {
+  //   console.log("TaxCodes:", taxCodes)
+  // }, [taxCodes]);
 
 
   const [date, setDate] = useState("");

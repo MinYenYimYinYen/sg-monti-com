@@ -15,10 +15,6 @@ export function ProgCodeViewer() {
   // const progCodes = useSelector(progServSelect.progCodes);
   const progCodes = useSelector(progServSelect.progCodes);
 
-  useEffect(() => {
-    console.log("progCodes", progCodes);
-  }, [progCodes]);
-  
   const [selectedProgram, setSelectedProgram] = useState<ProgCode | null>(null);
 
   return (

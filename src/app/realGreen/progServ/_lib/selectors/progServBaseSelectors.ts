@@ -4,14 +4,19 @@ import { Grouper } from "@/lib/Grouper";
 import { ProgCode } from "../types/ProgCodeTypes";
 import { ServCode } from "../types/ServCodeTypes";
 
-export const selectProgCodeDocs = (state: AppState) => state.progServ.progCodeDocs;
-export const selectServCodeDocs = (state: AppState) => state.progServ.servCodeDocs;
+export const selectProgCodeDocs = (state: AppState) =>
+  state.progServ.progCodeDocs;
+export const selectServCodeDocs = (state: AppState) =>
+  state.progServ.servCodeDocs;
 export const selectProgServs = (state: AppState) => state.progServ.progServs;
 
 // Group ProgServ links by Program Definition ID for fast lookup
-export const selectProgServMap = createSelector([selectProgServs], (progServs) => {
-  return new Grouper(progServs).groupBy((ps) => ps.progDefId).toMap();
-});
+export const selectProgServMap = createSelector(
+  [selectProgServs],
+  (progServs) => {
+    return new Grouper(progServs).groupBy((ps) => ps.progDefId).toMap();
+  },
+);
 
 // Map Service Codes by ID for fast lookup
 export const selectServCodeMap = createSelector(
@@ -47,13 +52,12 @@ export const selectBasicProgCodes = createSelector(
 
           const servDoc = servCodeMap.get(link.servCodeId);
           if (!servDoc) return null;
-          console.log("special", progCode.progCodeId, link.servCodeId);
           const servCode: ServCode = {
             ...servDoc,
             progCode,
             progCodeId: progCode.progCodeId,
             services: [], // Initialize empty
-            isSpecial: progCode.progCodeId === link.servCodeId
+            isSpecial: progCode.progCodeId === link.servCodeId,
           };
 
           return servCode;
@@ -87,9 +91,12 @@ export const selectBasicProgCodes = createSelector(
   },
 );
 
-export const selectBasicServCodes = createSelector([selectBasicProgCodes], (progCodes) => {
-  return progCodes.flatMap((p) => p.servCodes);
-});
+export const selectBasicServCodes = createSelector(
+  [selectBasicProgCodes],
+  (progCodes) => {
+    return progCodes.flatMap((p) => p.servCodes);
+  },
+);
 
 export const progServBaseSelect = {
   progCodeDocs: selectProgCodeDocs,

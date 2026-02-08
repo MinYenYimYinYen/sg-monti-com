@@ -3,6 +3,11 @@ import {
   ServCodeDoc,
   ServCodeRaw,
 } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import ServCodeModel from "@/app/realGreen/progServ/_lib/models/ServCodeModel";
+import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
+import { Grouper } from "@/lib/Grouper";
+import { baseServCodeDocProps } from "@/app/realGreen/progServ/_lib/baseServCode";
 
 export function remapServCode(raw: ServCodeRaw): ServCodeCore {
   return {
@@ -14,7 +19,24 @@ export function remapServCode(raw: ServCodeRaw): ServCodeCore {
   };
 }
 
-export async function extendServCodes(servCodesCore: ServCodeCore[]): Promise<ServCodeDoc[]> {
+export async function extendServCodes(
+  servCodesCore: ServCodeCore[],
+): Promise<ServCodeDoc[]> {
   //todo: implement this and we should be good on managing servCodes
-  return servCodesCore as ServCodeDoc[];
+  await connectToMongoDB();
+  const servCodeDocPropDocs = await ServCodeModel.find();
+  const servCodeDocProps = cleanMongoArray(servCodeDocPropDocs);
+
+  const docPropMap = new Grouper(servCodeDocProps).toUniqueMap(
+    (sc) => sc.servCodeId,
+  );
+
+  return servCodesCore.map((core) => {
+    const docProps = docPropMap.get(core.servCodeId) || baseServCodeDocProps;
+    const { servCodeId, ...rest } = docProps;
+    return {
+      ...core,
+      ...rest,
+    };
+  });
 }

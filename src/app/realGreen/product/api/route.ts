@@ -93,13 +93,11 @@ const handlers: HandlerMap<ProductContract> = {
     roles: ["admin"],
     handler: async (params) => {
       await connectToMongoDB();
-      console.log("params", params);
       const result = await ProductCategoryModel.findOneAndUpdate(
         { categoryId: params.categoryId },
         { categoryId: params.categoryId, category: params.category },
         { upsert: true, new: true },
       ).lean();
-      console.log("result", result);
       if (result.categoryId) {
         return { success: true };
       } else {

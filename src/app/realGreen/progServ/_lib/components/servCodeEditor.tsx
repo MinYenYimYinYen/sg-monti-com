@@ -6,6 +6,7 @@ import { Input } from "@/style/components/input";
 import { Toggle } from "@/style/components/toggle";
 import { ShieldAlert } from "lucide-react";
 import clsx from "clsx";
+import { useEffect } from "react";
 
 interface EditServCodeProps {
   servCodeId: string;
@@ -29,7 +30,13 @@ export function EditServCodeDates({ servCodeId }: EditServCodeProps) {
 export function EditAlwaysAsap({ servCodeId }: EditServCodeProps) {
   const { updateServCode } = useProgServ({});
   const servCode = useSelector(servCodeLookup.byId(servCodeId));
+  useEffect(() => {
+    console.log("servCode", servCode);
+  }, [servCode]);
+
   if (!servCode) return null;
+
+
   return (
     <div>
       <Toggle
