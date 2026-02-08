@@ -5,7 +5,10 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { ProgCodeRaw } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
-import { ServCodeRaw } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import {
+  ServCodeDocProps,
+  ServCodeRaw,
+} from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
 import {
   extendProgCodes,
@@ -17,6 +20,11 @@ import {
 } from "@/app/realGreen/progServ/_lib/func/servCodeServerFunc";
 import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
 import ServCodeModel from "@/app/realGreen/progServ/_lib/models/ServCodeModel";
+
+type UpdatableServCodeProps = Omit<
+  ServCodeDocProps,
+  "servCodeId" | "createdAt" | "updatedAt"
+>;
 
 const handlers: HandlerMap<ProgServContract> = {
   getProgCodes: {
@@ -62,26 +70,26 @@ const handlers: HandlerMap<ProgServContract> = {
     handler: async (params) => {
       const { unsavedChanges } = params;
       console.log("unsavedChanges", unsavedChanges);
-      // ... inside saveServCodeChanges handler
-      const ops = unsavedChanges.map((change) => ({
-        updateOne: {
-          filter: { servCodeId: change.updated.servCodeId },
-          update: {
-            //todo: consider saving the whole object
-            // might not be necessary if hydration doesn't need the
-            // whole object. But may crash with undefined properties
-            // if all are not present.  This currently only saves a
-            // partial object.  Would set like
-            // change.updated.property || change.original.property.
-            $set: {
-              dateRange: change.updated.dateRange,
-              alwaysAsap: change.updated.alwaysAsap,
-              productDocs: change.updated.productDocs,
+
+      const ops = unsavedChanges.map((change) => {
+        // Enforce that all updatable properties are present
+        // If ServCodeDocProps changes, this will error until updated
+        const updatePayload: UpdatableServCodeProps = {
+          dateRange: change.updated.dateRange,
+          alwaysAsap: change.updated.alwaysAsap,
+          productDocs: change.updated.productDocs,
+        };
+
+        return {
+          updateOne: {
+            filter: { servCodeId: change.updated.servCodeId },
+            update: {
+              $set: updatePayload,
             },
+            upsert: true,
           },
-          upsert: true,
-        },
-      }));
+        };
+      });
 
       if (ops.length > 0) {
         await ServCodeModel.bulkWrite(ops);

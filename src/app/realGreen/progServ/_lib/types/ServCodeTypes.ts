@@ -105,7 +105,6 @@ export type ServCodeCore = {
 export type ServCodeDocProps = CreatedUpdated & {
   servCodeId: string;
   dateRange: TRange<string>;
-
   alwaysAsap: boolean;
   productDocs: ServCodeProductDoc[];
 };
