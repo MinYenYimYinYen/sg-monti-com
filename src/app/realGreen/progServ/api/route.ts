@@ -58,12 +58,26 @@ const handlers: HandlerMap<ProgServContract> = {
         method: "GET",
       });
 
-      const servCodeCores = rawServCodes.map(remapServCode);
+      const available = rawServCodes.filter((sc) => sc.available);
+
+      const servCodeCores = available.map(remapServCode);
       const servCodeDocs = await extendServCodes(servCodeCores);
 
       return { success: true, payload: servCodeDocs };
     },
   },
+
+  /* todo: Need to find where the '<' is coming from
+  * [UNKNOWN_ERROR] Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+overrideMethod	@	installHook.js:1
+handleError	@	errorHandler.ts:43
+typePrefix	@	thunkFactories.ts:69
+await in typePrefix
+dispatch	@	page.bundle.js:6
+useProgServ[saveServCodeChanges]	@	useProgServ.ts:54
+ListServiceCodes[handleSave]	@	page.tsx:22
+
+  * */
 
   saveServCodeChanges: {
     roles: ["admin"],

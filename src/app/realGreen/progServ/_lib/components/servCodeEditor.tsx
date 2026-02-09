@@ -30,18 +30,16 @@ export function EditServCodeDates({ servCodeId }: EditServCodeProps) {
 export function EditAlwaysAsap({ servCodeId }: EditServCodeProps) {
   const { updateServCode } = useProgServ({});
   const servCode = useSelector(servCodeLookup.byId(servCodeId));
-  useEffect(() => {
-    console.log("servCode", servCode);
-  }, [servCode]);
 
   if (!servCode) return null;
-
 
   return (
     <div>
       <Toggle
         pressed={servCode.alwaysAsap}
-        onPressedChange={(value) => updateServCode({ servCodeId, alwaysAsap: value })}
+        onPressedChange={(value) =>
+          updateServCode({ servCodeId, alwaysAsap: value })
+        }
         className="data-[state=on]:bg-destructive/20 data-[state=on]:text-destructive"
       >
         <ShieldAlert className="h-4 w-4" />

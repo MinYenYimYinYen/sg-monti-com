@@ -22,10 +22,10 @@ export function remapServCode(raw: ServCodeRaw): ServCodeCore {
 export async function extendServCodes(
   servCodesCore: ServCodeCore[],
 ): Promise<ServCodeDoc[]> {
-  //todo: DUPLICATE KEY ERROR ON GROUPER BEOLOW
   await connectToMongoDB();
-  const servCodeDocPropDocs = await ServCodeModel.find();
+  const servCodeDocPropDocs = await ServCodeModel.find().lean();
   const servCodeDocProps = cleanMongoArray(servCodeDocPropDocs);
+
 
   const docPropMap = new Grouper(servCodeDocProps).toUniqueMap(
     (sc) => sc.servCodeId,
@@ -34,9 +34,10 @@ export async function extendServCodes(
   return servCodesCore.map((core) => {
     const docProps = docPropMap.get(core.servCodeId) || baseServCodeDocProps;
     const { servCodeId, ...rest } = docProps;
-    return {
+    const docs = {
       ...core,
       ...rest,
     };
+    return docs;
   });
 }
