@@ -19,7 +19,7 @@ export const selectProgServMap = createSelector(
 );
 
 // Map Service Codes by ID for fast lookup
-export const selectServCodeMap = createSelector(
+export const selectServCodeDocMap = createSelector(
   [selectServCodeDocs],
   (servCodeDocs) => {
     return new Grouper(servCodeDocs).toUniqueMap((s) => s.servCodeId);
@@ -27,7 +27,7 @@ export const selectServCodeMap = createSelector(
 );
 
 export const selectBasicProgCodes = createSelector(
-  [selectProgCodeDocs, selectProgServMap, selectServCodeMap],
+  [selectProgCodeDocs, selectProgServMap, selectServCodeDocMap],
   (progCodeDocs, progServMap, servCodeMap) => {
     // 1. Hydrate all programs
     const progCodes: ProgCode[] = progCodeDocs.map((progDoc) => {
@@ -98,12 +98,20 @@ export const selectBasicServCodes = createSelector(
   },
 );
 
+export const selectBasicServCodeMap = createSelector(
+  [selectBasicServCodes],
+  (servCodes) => {
+    return new Grouper(servCodes).toUniqueMap((s) => s.servCodeId);
+  }
+)
+
 export const progServBaseSelect = {
   progCodeDocs: selectProgCodeDocs,
   servCodeDocs: selectServCodeDocs,
   progServs: selectProgServs,
   progServMap: selectProgServMap,
-  servCodeMap: selectServCodeMap,
+  servCodeDocMap: selectServCodeDocMap,
   basicProgCodes: selectBasicProgCodes,
   basicServCodes: selectBasicServCodes,
+  basicServCodeMap: selectBasicServCodeMap,
 };

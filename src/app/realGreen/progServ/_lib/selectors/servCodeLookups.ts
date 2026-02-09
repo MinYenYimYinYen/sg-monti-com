@@ -4,13 +4,19 @@ import { AppState } from "@/store";
 
 const selectUnsavedChanges = (state: AppState) => state.progServ.unsavedServCodeChanges;
 
-const selectServCodeById = (servCodeId: string) =>
-  createSelector([progServBaseSelect.servCodeMap], (servCodeMap) =>
+const selectServCodeDocById = (servCodeId: string) =>
+  createSelector([progServBaseSelect.servCodeDocMap], (servCodeMap) =>
     servCodeMap.get(servCodeId),
   );
+
+const selectBasicServCodeById = (servCodeId: string) =>
+  createSelector([progServBaseSelect.basicServCodeMap], (servCodeMap) => {
+    return servCodeMap.get(servCodeId);
+  })
 
 
 export const servCodeLookup = {
   unsavedChanges: selectUnsavedChanges,
-  byId: selectServCodeById,
+  docById: selectServCodeDocById,
+  basicById: selectBasicServCodeById,
 };

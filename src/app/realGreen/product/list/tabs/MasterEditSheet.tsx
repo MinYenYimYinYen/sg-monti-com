@@ -171,7 +171,9 @@ export function MasterEditSheet({
               onOpenChange(false);
               setStatus("idle");
             }}
-          >Save Changes</SaveButton>
+          >
+            Save Changes
+          </SaveButton>
         </SheetFooter>
       </SheetContent>
     </Sheet>
