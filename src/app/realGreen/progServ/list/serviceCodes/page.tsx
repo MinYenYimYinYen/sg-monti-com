@@ -34,8 +34,8 @@ export default function ListServiceCodes() {
 
 
   return (
-    <Container variant={"page"}>
-      <div className={"flex items-center justify-start gap-2"}>
+    <Container variant={"page"} className={"relative"} >
+      <div className={"flex items-center justify-start gap-2 sticky top-15 z-40 bg-background pb-4"}>
         <h2 className={"text-2xl font-semibold tracking-tight"}>
           Service Codes
         </h2>

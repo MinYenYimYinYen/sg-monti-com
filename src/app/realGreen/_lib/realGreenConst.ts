@@ -7,4 +7,3 @@ export const realGreenConst = {
 
 export const baseStrId: string = "|null|";
 export const baseNumId: number = -1;
-// todo: have gemini grep and replace manually defaulted id fields
