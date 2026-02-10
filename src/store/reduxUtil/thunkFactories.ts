@@ -39,12 +39,14 @@ export function createStandardThunk<
           ...params,
         } as any;
 
+        // api() now returns DataResponse<TResult> | ErrorResponse
+        // It does NOT throw for handled errors (success: false)
         const res = await api<DataResponse<TResult>>(config.apiPath, {
           method: "POST",
           body,
         });
 
-        // Path A: Soft Error
+        // Path A: Soft Error (Handled by Server)
         if (!res.success) {
           const error = new AppError({
             message: res.message,
@@ -64,7 +66,7 @@ export function createStandardThunk<
         // Path B: Success
         return res.payload;
       } catch (e) {
-        // Path C: Hard Error
+        // Path C: Hard Error (Network / Crash)
         const isSilent = thunkConfig?.silentError;
         const error = handleError(e, { silent: isSilent });
         return rejectWithValue(error.message);
@@ -105,6 +107,7 @@ export function createStreamThunk<
           ...params,
         } as any;
 
+        // apiStream still throws on error because it returns a Reader
         const reader = await apiStream(config.apiPath, {
           method: "POST",
           body,

@@ -25,41 +25,41 @@ Standardize API error handling and response structure across the full stack (Ser
 ## Progress Checklist
 
 ### Infrastructure
-- [ ] **Step 1: Server-Side Standardization**
+- [x] **Step 1: Server-Side Standardization**
     - Create `src/lib/api/createRpcHandler.ts`
     - Implement `op` parsing, auth check, and error normalization.
     - Ensure JSON return for all errors.
     - **Key Feature**: Log `op` name on error for easier debugging.
-- [ ] **Step 2: Client-Side Fetch Wrapper**
+- [x] **Step 2: Client-Side Fetch Wrapper**
     - Modify `src/lib/api/api.ts`
     - Update `api<T>()` to return `ErrorResponse` instead of throwing for structured errors.
-- [ ] **Step 3: Redux Thunk Factory**
+- [x] **Step 3: Redux Thunk Factory**
     - Modify `src/store/reduxUtil/thunkFactories.ts`
     - Update `createStandardThunk` to handle the new `api()` return type.
     - Logic: `if (!res.success) return rejectWithValue(...)`.
-- [ ] **Step 4: Redux UI Slice**
+- [x] **Step 4: Redux UI Slice**
     - Modify `src/store/reduxUtil/uiSlice.ts`
-    - Ensure `isRejected` handles the structured error messages correctly.
-    - (Optional) Remove `isFulfilled` error check since we are sticking to `rejected` for failures.
-- [ ] **Step 5: Type Definitions**
+    - Verified: No changes needed (toasting handled by thunk factory).
+- [x] **Step 5: Type Definitions**
     - Verify `src/lib/api/types/ApiContract.ts` compatibility.
+    - Verified: No changes needed.
 
 ### Migration (Route Files)
 Replace `export async function POST` with `createRpcHandler(handlers)`.
 
-- [ ] `src/app/auth/api/route.ts`
-- [ ] `src/app/realGreen/callAhead/api/route.ts`
-- [ ] `src/app/realGreen/company/api/route.ts`
-- [ ] `src/app/realGreen/conditionCode/api/route.ts`
-- [ ] `src/app/realGreen/customer/api/route.ts`
-- [ ] `src/app/realGreen/discount/api/route.ts`
-- [ ] `src/app/realGreen/employee/api/route.ts`
-- [ ] `src/app/realGreen/flag/api/route.ts`
-- [ ] `src/app/realGreen/priceTable/api/route.ts`
-- [ ] `src/app/realGreen/product/api/route.ts`
-- [ ] `src/app/realGreen/progServ/api/route.ts`
-- [ ] `src/app/realGreen/taxCode/api/route.ts`
-- [ ] `src/app/realGreen/zipCode/api/route.ts`
+- [x] `src/app/auth/api/route.ts`
+- [x] `src/app/realGreen/callAhead/api/route.ts`
+- [x] `src/app/realGreen/company/api/route.ts`
+- [x] `src/app/realGreen/conditionCode/api/route.ts`
+- [x] `src/app/realGreen/customer/api/route.ts`
+- [x] `src/app/realGreen/discount/api/route.ts`
+- [x] `src/app/realGreen/employee/api/route.ts`
+- [x] `src/app/realGreen/flag/api/route.ts`
+- [x] `src/app/realGreen/priceTable/api/route.ts`
+- [x] `src/app/realGreen/product/api/route.ts`
+- [x] `src/app/realGreen/progServ/api/route.ts`
+- [x] `src/app/realGreen/taxCode/api/route.ts`
+- [x] `src/app/realGreen/zipCode/api/route.ts`
 
 ---
 
@@ -141,15 +141,7 @@ Ensure the contract types reflect that operations can return errors.
 
 **Server (`route.ts`):**
 ```typescript
-export const POST = createRpcHandler({
-  myOp: {
-    roles: ['admin'],
-    handler: async (params) => {
-      if (bad) throw new AppError({ ... }); // Returns 400 JSON
-      return { success: true, payload: data };
-    }
-  }
-});
+export const POST = createRpcHandler(handlers);
 ```
 
 **Component:**

@@ -64,15 +64,13 @@ export interface EmployeeContract extends ApiContract {
 ```
 
 ### Step 2: Server-Side Implementation (The Gateway)
-Implement the logic using `HandlerMap`. This acts as the **"First Hop"** in our error architecture—catching upstream errors (RealGreen/DB), logging them, and returning safe status codes.
+Implement the logic using `HandlerMap` and the universal `createRpcHandler`. This acts as the **"First Hop"** in our error architecture—catching upstream errors (RealGreen/DB), logging them with the operation name, and returning safe status codes.
 
 **`src/app/realGreen/employee/api/route.ts`**
 ```typescript
-import { NextRequest, NextResponse } from "next/server";
-import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
+import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { EmployeeContract } from "./EmployeeContract";
-import { assertRole } from "@/app/auth/assertRole";
-import { normalizeError } from "@/lib/errors/errorHandler";
+import { createRpcHandler } from "@/lib/api/createRpcHandler";
 
 const handlers: HandlerMap<EmployeeContract> = {
   getAll: {
@@ -84,50 +82,8 @@ const handlers: HandlerMap<EmployeeContract> = {
   },
 };
 
-export async function POST(req: NextRequest) {
-  try {
-    // 1. Strict Typing (OpMap ensures body matches contract)
-    const body = (await req.json()) as OpMap<EmployeeContract>;
-    const { op, ...params } = body;
-    const config = handlers[op];
-
-    if (!config) return NextResponse.json({ success: false, message: 'Invalid Op' }, { status: 400 });
-
-    // 2. Security Check
-    await assertRole(config.roles);
-
-    // 3. Execution
-    const result = await config.handler(params as any);
-    return NextResponse.json(result);
-
-  } catch (e) {
-    // 4. "Two-Hop" Error Handling
-    const error = normalizeError(e);
-    console.error(`[API] ${error.type}: ${error.message}`, { stack: error.stack });
-
-    // --- REFACTOR: Return 200 for Operational Errors ---
-    if (error.isOperational) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: error.message,
-          silent: error.silent,
-          code: error.statusCode,
-        },
-        { status: 200 }, // 200 OK for handled errors
-      );
-    }
-
-    // Keep 500 for unexpected crashes
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Internal Server Error",
-      },
-      { status: 500 },
-    );
-  }
-}
+// Use the factory function to create the POST handler
+export const POST = createRpcHandler(handlers);
 ```
 
 ### Step 3: Client-Side Usage (Redux Thunk)

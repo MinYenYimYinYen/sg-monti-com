@@ -1,7 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
-import { normalizeError } from "@/lib/errors/errorHandler";
-import { assertRole } from "@/app/auth/_lib/assertRole";
+import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { ProgCodeRaw } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
@@ -20,6 +17,7 @@ import {
 } from "@/app/realGreen/progServ/_lib/func/servCodeServerFunc";
 import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
 import ServCodeModel from "@/app/realGreen/progServ/_lib/models/ServCodeModel";
+import { createRpcHandler } from "@/lib/api/createRpcHandler";
 
 type UpdatableServCodeProps = Omit<
   ServCodeDocProps,
@@ -119,49 +117,4 @@ ListServiceCodes[handleSave]	@	page.tsx:22
   },
 };
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = (await req.json()) as OpMap<ProgServContract>;
-    const { op, ...params } = body;
-    const config = handlers[op];
-
-    if (!config) {
-      return NextResponse.json(
-        { success: false, message: `Operation '${op}' not supported` },
-        { status: 400 },
-      );
-    }
-
-    await assertRole(config.roles);
-    const result = await config.handler(params as any);
-    return NextResponse.json(result);
-  } catch (e) {
-    const error = normalizeError(e);
-    console.error(`[API] ${error.type}: ${error.message}`, {
-      stack: error.stack,
-      data: error.data,
-    });
-
-    // --- REFACTOR: Return 200 for Operational Errors ---
-    if (error.isOperational) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: error.message,
-          silent: error.silent,
-          code: error.statusCode,
-        },
-        { status: 200 }, // 200 OK for handled errors
-      );
-    }
-
-    // Keep 500 for unexpected crashes
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Internal Server Error",
-      },
-      { status: 500 },
-    );
-  }
-}
+export const POST = createRpcHandler(handlers);

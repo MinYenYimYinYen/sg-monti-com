@@ -31,7 +31,7 @@ You rarely set this manually. It is determined automatically based on the *sourc
 
 1.  **TRUE (Expected/Operational):**
    * **Source:** The `api.ts` wrapper.
-   * **Mechanism:** When the API returns a 4xx/5xx status, the wrapper explicitly throws `new AppError(..., true)`.
+   * **Mechanism:** When the API returns a 4xx/5xx status with a structured error body (`{ success: false }`), the wrapper returns it as data. The Thunk factory then rejects with `isOperational: true`.
    * **Meaning:** "We anticipated this might happen (e.g., Validation Failed)."
 
 2.  **FALSE (Unexpected/Bug):**
@@ -76,7 +76,8 @@ Use `try/catch` with `handleError`. You do not need to check `isOperational` man
 ```typescript
 const handleSave = async () => {
   try {
-    await api.post("/lawn-care", data); // Throws AppError(true) on 400
+    const res = await api.post("/lawn-care", data); 
+    if (!res.success) throw new AppError(res); // Or handle manually
   } catch (err) {
     // If API error: Toasts "Invalid Data"
     // If Code bug: Toasts "Unexpected Error"
@@ -90,44 +91,34 @@ Catch the error, handle side effects, and reject with a clean string.
 
 **Standard Pattern (Toasts on Error):**
 ```typescript
-const getEmployees = createAsyncThunk(..., async (params, { rejectWithValue }) => {
-  try {
-    return await api("/employee", ...);
-  } catch (e) {
-    const error = handleError(e);
-    return rejectWithValue(error.message);
-  }
-});
+const getEmployees = createStandardThunk<...>(...);
+// The factory automatically handles:
+// 1. Calling api()
+// 2. Checking res.success
+// 3. Calling handleError() (Toasting)
+// 4. Rejecting with res.message
 ```
 
 **Silent Pattern (No Toast):**
 Use this when failure is expected (e.g., checking auth status on load).
 ```typescript
-const checkAuth = createAsyncThunk(..., async (params, { rejectWithValue }) => {
-  try {
-    return await api("/auth/check", ...);
-  } catch (e) {
-    // Pass silent: true to suppress the toast
-    const error = handleError(e, { silent: true });
-    return rejectWithValue(error.message);
-  }
-});
+dispatch(checkAuth({ config: { silentError: true } }));
 ```
 
 ### C. Server-Side Routes (The Two-Hop)
 1.  `rgApi` (Server-only) throws `EXTERNAL_ERROR`.
-2.  Route Handler catches it, logs it, and returns HTTP 502.
-3.  Client receives 502, throws `API_ERROR`.
+2.  `createRpcHandler` catches it, logs it with the `op` name, and returns a JSON response (even for 500s).
+3.  Client receives JSON, `api()` returns it as `{ success: false }`.
 
 ```typescript
 // src/app/api/route.ts
-export async function POST() {
-   try {
-      await rgApi(...);
-   } catch (e) {
-      const error = normalizeError(e);
-      console.error(`[${error.type}]`, error); // Log real error
-      return Response.json({ success: false }, { status: 502 }); // Return safe error
-   }
-}
+export const POST = createRpcHandler({
+  myOp: {
+    roles: ['admin'],
+    handler: async () => {
+       // If this throws, createRpcHandler catches it
+       await rgApi(...); 
+    }
+  }
+});
 ```

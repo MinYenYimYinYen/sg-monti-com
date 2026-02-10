@@ -60,6 +60,7 @@
 
 - **Reference**: See `src/lib/errors/errors.readme.md`.
 - **Summary**: Uses a **Unified Error Class** (`AppError`) and functional handler (`handleError`). Distinguishes between **Operational errors** (safe to show user) and **Non-Operational bugs** (sanitized).
+- **API Integration**: API Routes use `createRpcHandler` to catch errors and return structured JSON (even for 500s). The client `api()` wrapper returns these errors as data (`{ success: false }`) instead of throwing, allowing Redux Thunks to handle them gracefully.
 
 ## Data Modeling (Mongoose)
 
@@ -106,6 +107,7 @@
 - **Data Sanitization**: API Routes **must never** return raw Mongoose documents.
     - Use `cleanMongoObject(doc)` or `cleanMongoArray(docs)` from `@/lib/mongoose/cleanMongoObj` to strip `_id` and `__v`.
     - Ensure sensitive fields are removed before returning.
+- **Universal Handler**: All API routes must use `createRpcHandler(handlers)` to ensure consistent logging, auth, and error formatting.
 
 ## RealGreen Customer Module
 - **Reference**: See `src/app/realGreen/customer/customer.readme.md`.

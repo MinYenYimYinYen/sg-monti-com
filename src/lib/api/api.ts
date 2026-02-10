@@ -114,29 +114,41 @@ async function fetchWithRetry(
   }
 }
 
-async function handleApiError(res: Response) {
-  const errorData = (await res
-    .json()
-    .catch(() => ({}))) as Partial<ErrorResponse>;
+/**
+ * Parses the response body. If it's a structured ErrorResponse, returns it.
+ * If it's an unstructured error (e.g. HTML 500), throws AppError.
+ */
+async function parseOrThrow(res: Response): Promise<any> {
+  let data: any;
+  try {
+    data = await res.json();
+  } catch (e) {
+    // JSON Parse Failed -> Likely HTML Error Page (Nginx/Next.js default)
+    throw new AppError({
+      message: res.statusText || "Server Error (Invalid JSON)",
+      type: "SERVER_ERROR",
+      statusCode: res.status,
+      isOperational: false,
+    });
+  }
 
-  const message = errorData.message || res.statusText || "Request failed";
-  const silent = errorData.silent ?? false;
+  // If it's a structured error (success: false), return it as data
+  if (data && typeof data === "object" && data.success === false) {
+    return data as ErrorResponse;
+  }
 
-  // Map Status Code to Error Type
-  let type: ErrorType = "API_ERROR";
-  if (res.status === 400) type = "VALIDATION_ERROR";
-  if (res.status === 401 || res.status === 403) type = "AUTH_ERROR";
-  if (res.status >= 500) type = "SERVER_ERROR";
+  // If status is bad but no structured error, throw
+  if (!res.ok) {
+    throw new AppError({
+      message: data?.message || res.statusText || "Request failed",
+      type: "API_ERROR",
+      statusCode: res.status,
+      isOperational: true,
+      data: data,
+    });
+  }
 
-  // THROW WITH OBJECT
-  throw new AppError({
-    message,
-    type,
-    statusCode: res.status,
-    isOperational: true,
-    data: errorData.data,
-    silent,
-  });
+  return data;
 }
 
 export async function api<T>(
@@ -146,26 +158,11 @@ export async function api<T>(
   const fetchConfig = prepareFetchConfig(config);
   const res = await fetchWithRetry(url, fetchConfig);
 
-  if (!res.ok) {
-    // Special handling for 401s: Return ErrorResponse instead of throwing
-    // This allows the Thunk to handle it gracefully (e.g., silent failure)
-    if (res.status === 401) {
-      return {
-        success: false,
-        message: "Unauthorized",
-        code: 401,
-        silent: true, // Default to silent for 401s
-      };
-    }
-
-    await handleApiError(res);
-  }
-
   if (res.status === 204) return null as T;
 
-  // Return Data (Success or Handled Error)
-  // We assume the caller will check .success if T includes it.
-  return (await res.json()) as T | ErrorResponse;
+  // This will return T (success) OR ErrorResponse (failure)
+  // Or throw if it's a network/unstructured error
+  return await parseOrThrow(res);
 }
 
 export async function apiStream(
@@ -176,7 +173,9 @@ export async function apiStream(
   const res = await fetchWithRetry(url, fetchConfig);
 
   if (!res.ok) {
-    await handleApiError(res);
+    // For streams, we can't easily return a JSON error object since the return type is a Reader.
+    // So we must throw here.
+    await parseOrThrow(res); // This will throw
   }
 
   if (!res.body) {

@@ -1,7 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
-import { assertRole } from "@/app/auth/_lib/assertRole";
-import { normalizeError } from "@/lib/errors/errorHandler";
+import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { AuthContract } from "@/app/auth/_types/AuthContract";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { EmployeeRaw } from "@/app/realGreen/employee/types/EmployeeTypes";
@@ -26,6 +23,7 @@ import { CheckedId, TokenPayload } from "@/app/auth/_types/authTypes";
 import PasswordResetRequestModel from "@/app/auth/_models/PasswordResetRequestModel";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
 import { ROLES } from "@/lib/api/types/roles";
+import { createRpcHandler } from "@/lib/api/createRpcHandler";
 
 /**
  * 1. DEFINE HANDLERS
@@ -456,67 +454,4 @@ const handlers: HandlerMap<AuthContract> = {
   },
 };
 
-/**
- * 2. THE GATEWAY (Generic POST)
- * Handles Deserialization, Validation, Auth, and Error Normalization.
- */
-export async function POST(req: NextRequest) {
-  let opName = "unknown";
-  try {
-    // A. Parse Body & Validate Op
-    const body = (await req.json()) as OpMap<AuthContract>;
-    const { op, ...params } = body;
-    opName = op; // Capture op for error logging
-    const config = handlers[op];
-
-    if (!config) {
-      return NextResponse.json(
-        { success: false, message: `Operation '${op}' not supported` },
-        { status: 400 },
-      );
-    }
-
-    // B. Security Check
-    await assertRole(config.roles);
-
-    // C. Execution
-    const result = await config.handler(params as any);
-    return NextResponse.json(result);
-  } catch (e) {
-    // D. "TWO-HOP" ERROR HANDLING
-    const error = normalizeError(e);
-
-    // 1. Log the REAL error (with stack trace) for the developer
-    console.error(`[API] Op: ${opName} - ${error.type}: ${error.message}`, {
-      stack: error.stack,
-      data: error.data,
-    });
-
-    // --- REFACTOR: Return 200 for Operational Errors ---
-    if (error.isOperational) {
-      // Exception: Auth Errors should remain 401/403 for client handling
-      const status = error.type === "AUTH_ERROR" ? error.statusCode : 200;
-
-      return NextResponse.json(
-        {
-          success: false,
-          message: error.message,
-          silent: error.silent,
-          code: error.statusCode,
-          op: opName, // Include op in response for debugging
-        },
-        { status }, // 200 OK for handled errors, 401 for Auth
-      );
-    }
-
-    // Keep 500 for unexpected crashes
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Internal Server Error",
-        op: opName,
-      },
-      { status: 500 },
-    );
-  }
-}
+export const POST = createRpcHandler(handlers);
