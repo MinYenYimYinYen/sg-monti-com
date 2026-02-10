@@ -7,7 +7,8 @@ import {
   EditAlwaysAsap,
   EditServCodeDates,
 } from "@/app/realGreen/progServ/_lib/components/servCodeEditor/servCodeEditor";
-import {Pencil} from "lucide-react";
+import { Pencil } from "lucide-react";
+import { Button } from "@/style/components/button";
 
 export const createServiceCodeColumns: (
   setEditServCodeId: (servCodeId: string) => void,
@@ -60,12 +61,23 @@ export const createServiceCodeColumns: (
       <DataGridColumnHeader column={column} title={"Default Products"} />
     ),
     cell: ({ row }) => {
-      return <div className="text-center flex justify-center">
-        <Pencil 
-          className={"h-4 w-4 cursor-pointer hover:text-primary transition-colors"} 
-          onClick={() => setEditServCodeId(row.original.servCodeId)}
-        />
-      </div>;
+      const ruleCount = row.original.productRuleDocs.length;
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            {ruleCount} {ruleCount === 1 ? "Rule" : "Rules"}
+          </span>
+          <Button
+            variant="primary"
+            intensity="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => setEditServCodeId(row.original.servCodeId)}
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+        </div>
+      );
     },
     size: 200,
     meta: {

@@ -52,7 +52,7 @@ import {
 import { useEffect, useState } from "react";
 import { selectPrograms } from "@/app/realGreen/customer/selectors/centralTerminatingSelectors";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
-import { useProgServ } from "@/app/realGreen/progServ/_lib/useProgServ";
+import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useTaxCode } from "@/app/realGreen/taxCode/useTaxCode";
 import { taxCodeSelect } from "@/app/realGreen/taxCode/taxCodeSelectors";
 import { DatePicker } from "@/components/DatePicker";

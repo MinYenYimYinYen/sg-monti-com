@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { Container } from "@/components/Containers";
-import { useProgServ } from "@/app/realGreen/progServ/_lib/useProgServ";
+import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useSelector } from "react-redux";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { DataGrid } from "@/components/DataGrid";
@@ -9,7 +9,7 @@ import { createServiceCodeColumns } from "@/app/realGreen/progServ/list/serviceC
 import { Button } from "@/style/components/button";
 import { servCodeLookup } from "@/app/realGreen/progServ/_lib/selectors/servCodeLookups";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
-import { EditDefaultProducts } from "@/app/realGreen/progServ/_lib/components/servCodeEditor/servCodeEditor";
+import { EditProductRules } from "@/app/realGreen/progServ/_lib/components/servCodeEditor/servCodeEditor";
 
 export default function ListServiceCodes() {
   const {saveServCodeChanges} = useProgServ({ autoLoad: true });
@@ -58,7 +58,7 @@ export default function ListServiceCodes() {
         enableColumnResizing={true}
       />
       {editServCodeId && (
-        <EditDefaultProducts 
+        <EditProductRules
           key={editServCodeId} 
           servCodeId={editServCodeId} 
           onClose={() => setEditServCodeId("")}

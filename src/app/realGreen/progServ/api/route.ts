@@ -16,7 +16,7 @@ import {
   remapServCode,
 } from "@/app/realGreen/progServ/_lib/func/servCodeServerFunc";
 import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
-import ServCodeModel from "@/app/realGreen/progServ/_lib/models/ServCodeModel";
+import ServCodeDocPropsModel from "@/app/realGreen/progServ/_lib/models/ServCodeDocPropsModel";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 
 type UpdatableServCodeProps = Omit<
@@ -91,8 +91,8 @@ ListServiceCodes[handleSave]	@	page.tsx:22
             change.updated.alwaysAsap !== undefined
               ? change.updated.alwaysAsap
               : change.original.alwaysAsap,
-          serviceProducts:
-            change.updated.serviceProducts || change.original.serviceProducts,
+          productRuleDocs:
+            change.updated.productRuleDocs || change.original.productRuleDocs,
         };
 
         return {
@@ -109,7 +109,7 @@ ListServiceCodes[handleSave]	@	page.tsx:22
       });
 
       if (ops.length > 0) {
-        await ServCodeModel.bulkWrite(ops);
+        await ServCodeDocPropsModel.bulkWrite(ops);
       }
 
       return { success: true, payload: true };

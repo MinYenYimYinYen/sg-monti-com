@@ -1,15 +1,15 @@
 import mongoose from "mongoose";
 import { ServCodeDocProps } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { ServCodeProductDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeProduct";
+import { ProductRuleDoc } from "@/app/realGreen/progServ/_lib/types/ProductRule";
 
 interface ServCodeDocPropsDoc extends ServCodeDocProps, mongoose.Document {}
 
-const ServCodeProductSchema = new mongoose.Schema<ServCodeProductDoc>({
+const ServCodeProductSchema = new mongoose.Schema<ProductRuleDoc>({
   size: { type: Number, required: true },
   sizeOperator: { type: String, required: true },
   productSingleIds: { type: [Number], required: true },
   productMasterIds: { type: [Number], required: true },
-});
+}, { _id: false });
 
 const DateRangeSchema = new mongoose.Schema(
   {
@@ -24,13 +24,13 @@ const ServCodeSchema = new mongoose.Schema<ServCodeDocPropsDoc>(
     servCodeId: { type: String, required: true, unique: true },
     dateRange: { type: DateRangeSchema, default: () => ({ min: "", max: "" }) },
     alwaysAsap: { type: Boolean },
-    serviceProducts: [ServCodeProductSchema],
+    productRuleDocs: [ServCodeProductSchema],
   },
   { timestamps: true },
 );
 
-const ServCodeModel =
+const ServCodeDocPropsModel =
   (mongoose.models?.ServCodeDocProps as mongoose.Model<ServCodeDocPropsDoc>) ||
   mongoose.model<ServCodeDocPropsDoc>("ServCodeDocProps", ServCodeSchema);
 
-export default ServCodeModel;
+export default ServCodeDocPropsModel;

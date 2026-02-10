@@ -2,8 +2,8 @@ import { createSlice } from "@reduxjs/toolkit";
 import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import {
-  handleRevertServCode,
-  handleUpdateServCode,
+  progServActionHandlers
+
 } from "@/app/realGreen/progServ/_lib/slice/progServActions";
 import { ProgServState } from "@/app/realGreen/progServ/_lib/types/ProgServState";
 
@@ -45,8 +45,21 @@ const progServSlice = createSlice({
   name: "progServ",
   initialState,
   reducers: {
-    updateServCode: handleUpdateServCode,
-    revertServCode: handleRevertServCode,
+    updateServCode: progServActionHandlers.updateServCode,
+    revertServCode: progServActionHandlers.revertServCode,
+    addProductRule: progServActionHandlers.addProductRule,
+    removeProductRule: progServActionHandlers.removeProductRule,
+    updateProductRuleSize: progServActionHandlers.updateProductRuleSize,
+    updateProductRuleOperator:
+      progServActionHandlers.updateProductRuleOperator,
+    addProductRuleProductMaster:
+      progServActionHandlers.addProductRuleProductMaster,
+    removeProductRuleProductMaster:
+      progServActionHandlers.removeProductRuleProductMaster,
+    addProductRuleProductSingle:
+      progServActionHandlers.addProductRuleProductSingle,
+    removeProductRuleSingle:
+      progServActionHandlers.removeProductRuleSingle,
   },
   extraReducers: (builder) => {
     builder.addCase(getProgCodeDocs.fulfilled, (state, action) => {

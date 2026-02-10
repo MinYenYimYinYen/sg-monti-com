@@ -14,6 +14,7 @@ import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
+import { useIsClient } from "@/lib/hooks/useIsClient";
 
 // ... (Types and Data objects remain the same) ...
 
@@ -80,8 +81,11 @@ const realGreenParams: NavSection = {
 const menuSections = [schedulingSection, prepaySection, realGreenParams];
 
 export default function NavMenu() {
+  const isClient = useIsClient();
   const user = useSelector(authSelect.user);
   const role = user?.role || "public";
+
+  if (!isClient) return null;
 
   const userSections = menuSections
     .filter((section) => section.roles.includes(role))

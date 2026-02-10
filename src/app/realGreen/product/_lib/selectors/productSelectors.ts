@@ -10,11 +10,25 @@ const selectProductMasterDocs = (state: AppState) =>
   state.product.productMasterDocs;
 const selectProductSingleDocs = (state: AppState) =>
   state.product.productSingleDocs;
+
+const selectProductMasterDocMap = createSelector(
+  [selectProductMasterDocs],
+  (masterDocs) => {
+    return new Grouper(masterDocs).toUniqueMap((m) => m.productId);
+  },
+);
+
+const selectProductSingleDocMap = createSelector(
+  [selectProductSingleDocs],
+  (singleDocs) => {
+    return new Grouper(singleDocs).toUniqueMap((s) => s.productId);
+  },
+);
+
 const selectProductSubDocs = (state: AppState) => state.product.productSubDocs;
 
-const selectProductSubs = createSelector([selectProductSubDocs], (subs) => {
-  return subs as ProductSubDoc[];
-});
+const selectProductSubs = (state: AppState) =>
+  selectProductSubDocs(state) as ProductSubDoc[];
 
 const selectProductSubsMap = createSelector([selectProductSubs], (subs) => {
   return new Grouper(subs).toUniqueMap((s) => s.productId);
@@ -35,12 +49,8 @@ const selectProductMasters = createSelector(
   },
 );
 
-const selectProductSingles = createSelector(
-  [selectProductSingleDocs],
-  (singles) => {
-    return singles as ProductSingle[];
-  },
-);
+const selectProductSingles = (state: AppState) =>
+  selectProductSingleDocs(state) as ProductSingle[];
 
 const selectProductMastersMap = createSelector(
   [selectProductMasters],
@@ -57,6 +67,11 @@ const selectProductSinglesMap = createSelector(
 );
 
 export const productSelect = {
+  productMasterDocs: selectProductMasterDocs,
+  productSingleDocs: selectProductSingleDocs,
+  productMasterDocMap: selectProductMasterDocMap,
+  productSingleDocMap: selectProductSingleDocMap,
+
   productMasters: selectProductMasters,
   productSingles: selectProductSingles,
   productSubs: selectProductSubs,

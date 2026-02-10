@@ -20,7 +20,7 @@ export const baseServCodeDocProps: ServCodeDocProps = {
   servCodeId: baseStrId,
   dateRange: { min: "", max: "" },
   alwaysAsap: false,
-  serviceProducts: [],
+  productRuleDocs: [],
   createdAt: "",
   updatedAt: "",
 }
@@ -35,6 +35,7 @@ export const baseServCodeProps: ServCodeProps = {
   progCodeId: baseStrId,
   services: [],
   isSpecial: false,
+  productRules: [],
 }
 
 export const baseServCode: ServCode = {

@@ -3,6 +3,9 @@ import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/Grouper";
 import { ProgCode } from "../types/ProgCodeTypes";
 import { ServCode } from "../types/ServCodeTypes";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
+import { ProductRule } from "@/app/realGreen/progServ/_lib/types/ProductRule";
+import { typeGuard } from "@/lib/typeGuard";
 
 export const selectProgCodeDocs = (state: AppState) =>
   state.progServ.progCodeDocs;
@@ -27,8 +30,20 @@ export const selectServCodeDocMap = createSelector(
 );
 
 export const selectBasicProgCodes = createSelector(
-  [selectProgCodeDocs, selectProgServMap, selectServCodeDocMap],
-  (progCodeDocs, progServMap, servCodeMap) => {
+  [
+    selectProgCodeDocs,
+    selectProgServMap,
+    selectServCodeDocMap,
+    productSelect.productMastersMap,
+    productSelect.productSinglesMap,
+  ],
+  (
+    progCodeDocs,
+    progServMap,
+    servCodeMap,
+    productMasterMap,
+    productSingleMap,
+  ) => {
     // 1. Hydrate all programs
     const progCodes: ProgCode[] = progCodeDocs.map((progDoc) => {
       const progServLinks = progServMap.get(progDoc.progDefId) || [];
@@ -52,12 +67,33 @@ export const selectBasicProgCodes = createSelector(
 
           const servDoc = servCodeMap.get(link.servCodeId);
           if (!servDoc) return null;
+
+          const productRuleDocs = servDoc.productRuleDocs;
+          const productRules: ProductRule[] = productRuleDocs.map((rule) => {
+            const productSinglesMaybe = rule.productSingleIds.map((id) => {
+              return productSingleMap.get(id);
+            });
+            const productMastersMaybe = rule.productMasterIds.map((id) => {
+              return productMasterMap.get(id);
+            });
+
+            const productSingles = typeGuard.definedArray(productSinglesMaybe)
+            const productMasters = typeGuard.definedArray(productMastersMaybe);
+
+            return {
+              ...rule,
+              productSingles,
+              productMasters,
+            };
+          });
+
           const servCode: ServCode = {
             ...servDoc,
             progCode,
             progCodeId: progCode.progCodeId,
             services: [], // Initialize empty
             isSpecial: progCode.progCodeId === link.servCodeId,
+            productRules,
           };
 
           return servCode;
@@ -102,8 +138,8 @@ export const selectBasicServCodeMap = createSelector(
   [selectBasicServCodes],
   (servCodes) => {
     return new Grouper(servCodes).toUniqueMap((s) => s.servCodeId);
-  }
-)
+  },
+);
 
 export const progServBaseSelect = {
   progCodeDocs: selectProgCodeDocs,

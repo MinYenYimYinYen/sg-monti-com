@@ -4,7 +4,7 @@ import {
   ServCodeRaw,
 } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import ServCodeModel from "@/app/realGreen/progServ/_lib/models/ServCodeModel";
+import ServCodeDocPropsModel from "@/app/realGreen/progServ/_lib/models/ServCodeDocPropsModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { Grouper } from "@/lib/Grouper";
 import { baseServCodeDocProps } from "@/app/realGreen/progServ/_lib/baseServCode";
@@ -23,7 +23,7 @@ export async function extendServCodes(
   servCodesCore: ServCodeCore[],
 ): Promise<ServCodeDoc[]> {
   await connectToMongoDB();
-  const servCodeDocPropDocs = await ServCodeModel.find().lean();
+  const servCodeDocPropDocs = await ServCodeDocPropsModel.find().lean();
   const servCodeDocProps = cleanMongoArray(servCodeDocPropDocs);
 
 

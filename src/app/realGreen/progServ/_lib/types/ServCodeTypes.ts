@@ -20,7 +20,10 @@ import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { ServCodeProductDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeProduct";
+import {
+  ProductRule,
+  ProductRuleDoc,
+} from "@/app/realGreen/progServ/_lib/types/ProductRule";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export type ServCodeRaw = {
@@ -106,7 +109,7 @@ export type ServCodeDocProps = CreatedUpdated & {
   servCodeId: string;
   dateRange: TRange<string>;
   alwaysAsap: boolean;
-  serviceProducts: ServCodeProductDoc[];
+  productRuleDocs: ProductRuleDoc[];
 };
 
 export type ServCodeDoc = ServCodeCore & ServCodeDocProps;
@@ -116,6 +119,7 @@ export type ServCodeProps = {
   progCodeId: string;
   services: Service[];
   isSpecial: boolean;
+  productRules: ProductRule[];
 };
 
 export type ServCode = ServCodeDoc & ServCodeProps;
@@ -133,6 +137,7 @@ export const baseServCode: ServCode = {
   services: [],
   createdAt: "",
   updatedAt: "",
-  serviceProducts: [],
+  productRuleDocs: [],
+  productRules: [],
   isSpecial: false,
 };
