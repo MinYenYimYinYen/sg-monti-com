@@ -6,11 +6,12 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import {
   EditAlwaysAsap,
   EditServCodeDates,
-} from "@/app/realGreen/progServ/_lib/components/servCodeEditor";
+} from "@/app/realGreen/progServ/_lib/components/servCodeEditor/servCodeEditor";
+import {Pencil} from "lucide-react";
 
 export const createServiceCodeColumns: (
-  onEdit: (servCode: ServCode) => void,
-) => ColumnDef<ServCode>[] = (onEdit) => [
+  setEditServCodeId: (servCodeId: string) => void,
+) => ColumnDef<ServCode>[] = (setEditServCodeId) => [
   {
     accessorKey: "servCodeId",
     header: ({ column }) => <DataGridColumnHeader column={column} title="ID" />,
@@ -59,7 +60,12 @@ export const createServiceCodeColumns: (
       <DataGridColumnHeader column={column} title={"Default Products"} />
     ),
     cell: ({ row }) => {
-      return <div className="text-center">{row.getValue("productDocs")}</div>;
+      return <div className="text-center flex justify-center">
+        <Pencil 
+          className={"h-4 w-4 cursor-pointer hover:text-primary transition-colors"} 
+          onClick={() => setEditServCodeId(row.original.servCodeId)}
+        />
+      </div>;
     },
     size: 200,
     meta: {

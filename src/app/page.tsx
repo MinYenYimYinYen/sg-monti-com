@@ -60,9 +60,9 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export default function Home() {
-  usePrintedCustomers({ autoLoad: true });
-  useProgServ({ autoLoad: true });
-  useTaxCode({autoLoad: true})
+  // usePrintedCustomers({ autoLoad: true });
+  // useProgServ({ autoLoad: true });
+  // useTaxCode({autoLoad: true})
   const customers = useSelector(centralSelect.customers);
   const programs = useSelector(centralSelect.programs);
   const progCodes = useSelector(progServSelect.progCodes);

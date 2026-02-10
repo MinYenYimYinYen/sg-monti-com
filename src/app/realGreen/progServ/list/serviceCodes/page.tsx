@@ -9,6 +9,7 @@ import { createServiceCodeColumns } from "@/app/realGreen/progServ/list/serviceC
 import { Button } from "@/style/components/button";
 import { servCodeLookup } from "@/app/realGreen/progServ/_lib/selectors/servCodeLookups";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
+import {EditDefaultProducts} from "@/app/realGreen/progServ/_lib/components/servCodeEditor/servCodeEditor";
 
 export default function ListServiceCodes() {
   const {saveServCodeChanges} = useProgServ({ autoLoad: true });
@@ -27,11 +28,12 @@ export default function ListServiceCodes() {
       setSaveStatus("idle")
     }
   }
+  
+  const [editServCodeId, setEditServCodeId] = useState<string>("");
+
   const columns = useMemo(() => {
-    return createServiceCodeColumns((servCode) => {});
+    return createServiceCodeColumns((servCode) => setEditServCodeId(servCode));
   }, []);
-
-
 
   return (
     <Container variant={"page"} className={"relative"} >
@@ -55,6 +57,13 @@ export default function ListServiceCodes() {
         columns={columns}
         enableColumnResizing={true}
       />
+      {editServCodeId && (
+        <EditDefaultProducts 
+          key={editServCodeId} 
+          servCodeId={editServCodeId} 
+          onClose={() => setEditServCodeId("")}
+        />
+      )}
     </Container>
   );
 }
