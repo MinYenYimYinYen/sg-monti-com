@@ -196,6 +196,7 @@ const handlers: HandlerMap<AuthContract> = {
           message: "No refresh token found",
           type: "AUTH_ERROR",
           statusCode: 401,
+          silent: true, // Silent on server logs
         });
       }
 
@@ -236,6 +237,7 @@ const handlers: HandlerMap<AuthContract> = {
           message: "No token",
           type: "AUTH_ERROR",
           statusCode: 401,
+          silent: true, // Silent on server logs
         });
       }
 

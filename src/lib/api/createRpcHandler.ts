@@ -51,11 +51,25 @@ export function createRpcHandler<T extends ApiContract>(
       // 6. Error Handling
       const error = normalizeError(e);
 
-      // Log the REAL error (with stack trace) for the developer
-      console.error(`[API] Op: ${opName} - ${error.type}: ${error.message}`, {
-        stack: error.stack,
-        data: error.data,
-      });
+      // Log based on severity (unless silent)
+      if (!error.silent) {
+        if (error.isOperational) {
+          console.warn(
+            `[API] Op: ${opName} - ${error.type}: ${error.message}`,
+            {
+              data: error.data,
+            },
+          );
+        } else {
+          console.error(
+            `[API] Op: ${opName} - ${error.type}: ${error.message}`,
+            {
+              stack: error.stack,
+              data: error.data,
+            },
+          );
+        }
+      }
 
       // Return 200 for Operational Errors (Client handles them as data)
       if (error.isOperational) {

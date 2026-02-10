@@ -15,7 +15,10 @@ export default function AuthInitializer({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isInitialized && !isAuthenticated) {
       dispatch(
-        authActions.checkAuth({ config: { showLoading: false }, params: {} }),
+        authActions.checkAuth({
+          config: { showLoading: false, silentError: true },
+          params: {},
+        }),
       );
     }
   }, [dispatch, isInitialized, isAuthenticated]);

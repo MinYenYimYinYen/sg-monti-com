@@ -3,13 +3,17 @@ import { AppError } from "./AppError";
 
 export function normalizeError(error: unknown): AppError {
   if (error instanceof AppError) return error;
-  if (error instanceof Error)
-    return new AppError({
+  if (error instanceof Error) {
+    const appError = new AppError({
       message: error.message,
       type: "UNKNOWN_ERROR",
       statusCode: 500,
       isOperational: false,
     });
+    // Preserve the original stack trace
+    appError.stack = error.stack;
+    return appError;
+  }
   return new AppError({
     message: "An unknown error occurred",
     type: "UNKNOWN_ERROR",
