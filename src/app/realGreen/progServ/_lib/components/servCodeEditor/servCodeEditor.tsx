@@ -32,7 +32,7 @@ import {
 } from "@/style/components/select";
 import { ProductRuleDoc } from "@/app/realGreen/progServ/_lib/types/ProductRule";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { Card, CardContent, CardHeader, CardTitle } from "@/style/components/card";
+import { Card, CardContent } from "@/style/components/card";
 import { Badge } from "@/style/components/badge";
 
 interface EditServCodeProps {

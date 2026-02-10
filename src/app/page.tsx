@@ -60,29 +60,29 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export default function Home() {
-  // usePrintedCustomers({ autoLoad: true });
-  // useProgServ({ autoLoad: true });
-  // useTaxCode({autoLoad: true})
+  usePrintedCustomers({ autoLoad: true });
+  useProgServ({ autoLoad: true });
+  useTaxCode({autoLoad: true})
   const customers = useSelector(centralSelect.customers);
   const programs = useSelector(centralSelect.programs);
   const progCodes = useSelector(progServSelect.progCodes);
   const taxCodes = useSelector(taxCodeSelect.taxCodes)
 
-  // useEffect(() => {
-  //   console.log("Customers:", customers);
-  // }, [customers]);
-  //
-  // useEffect(() => {
-  //   console.log("Programs:", programs);
-  // }, [programs]);
-  //
-  // useEffect(() => {
-  //   console.log("ProgCodes:", progCodes);
-  // }, [progCodes]);
-  //
-  // useEffect(() => {
-  //   console.log("TaxCodes:", taxCodes)
-  // }, [taxCodes]);
+  useEffect(() => {
+    console.log("Customers:", customers);
+  }, [customers]);
+
+  useEffect(() => {
+    console.log("Programs:", programs);
+  }, [programs]);
+
+  useEffect(() => {
+    console.log("ProgCodes:", progCodes);
+  }, [progCodes]);
+
+  useEffect(() => {
+    console.log("TaxCodes:", taxCodes)
+  }, [taxCodes]);
 
 
   const [date, setDate] = useState("");
