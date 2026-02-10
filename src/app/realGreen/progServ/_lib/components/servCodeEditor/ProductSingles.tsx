@@ -1,6 +1,6 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { ListBox } from "@/components/ListBox";
 
 interface ProductSinglesProps {

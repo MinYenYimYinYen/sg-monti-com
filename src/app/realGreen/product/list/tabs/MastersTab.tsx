@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useSelector } from "react-redux";
-import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
 import { Row } from "@tanstack/react-table";
 import { MasterEditSheet } from "./MasterEditSheet";

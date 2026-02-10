@@ -13,7 +13,7 @@ export type ServCodeProduct = ServCodeProductDoc & {
   productMasters: ProductMaster[];
 };
 
-const baseServCodeProduct: ServCodeProduct = {
+export const baseServCodeProduct: ServCodeProduct = {
   size: 0,
   sizeOperator: "all",
   productSingleIds: [],

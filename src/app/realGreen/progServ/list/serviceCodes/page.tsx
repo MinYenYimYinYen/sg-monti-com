@@ -9,7 +9,7 @@ import { createServiceCodeColumns } from "@/app/realGreen/progServ/list/serviceC
 import { Button } from "@/style/components/button";
 import { servCodeLookup } from "@/app/realGreen/progServ/_lib/selectors/servCodeLookups";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
-import {EditDefaultProducts} from "@/app/realGreen/progServ/_lib/components/servCodeEditor/servCodeEditor";
+import { EditDefaultProducts } from "@/app/realGreen/progServ/_lib/components/servCodeEditor/servCodeEditor";
 
 export default function ListServiceCodes() {
   const {saveServCodeChanges} = useProgServ({ autoLoad: true });

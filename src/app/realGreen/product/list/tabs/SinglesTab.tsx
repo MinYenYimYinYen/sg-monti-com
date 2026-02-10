@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useSelector } from "react-redux";
-import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
 
 import { createSinglesColumns } from "@/app/realGreen/product/list/tabs/singlesColumns";

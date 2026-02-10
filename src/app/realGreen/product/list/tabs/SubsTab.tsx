@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { DataGrid } from "@/components/DataGrid";
 import { useSelector } from "react-redux";
-import { productSelect } from "@/app/realGreen/product/_lib/productSelectors";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { createSubsColumns } from "@/app/realGreen/product/list/tabs/subsColumns";
 import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";

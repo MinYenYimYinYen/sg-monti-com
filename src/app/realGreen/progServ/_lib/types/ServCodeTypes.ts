@@ -106,7 +106,7 @@ export type ServCodeDocProps = CreatedUpdated & {
   servCodeId: string;
   dateRange: TRange<string>;
   alwaysAsap: boolean;
-  productDocs: ServCodeProductDoc[];
+  serviceProducts: ServCodeProductDoc[];
 };
 
 export type ServCodeDoc = ServCodeCore & ServCodeDocProps;
@@ -133,6 +133,6 @@ export const baseServCode: ServCode = {
   services: [],
   createdAt: "",
   updatedAt: "",
-  productDocs: [],
+  serviceProducts: [],
   isSpecial: false,
 };

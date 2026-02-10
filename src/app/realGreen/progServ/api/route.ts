@@ -91,8 +91,8 @@ ListServiceCodes[handleSave]	@	page.tsx:22
             change.updated.alwaysAsap !== undefined
               ? change.updated.alwaysAsap
               : change.original.alwaysAsap,
-          productDocs:
-            change.updated.productDocs || change.original.productDocs,
+          serviceProducts:
+            change.updated.serviceProducts || change.original.serviceProducts,
         };
 
         return {

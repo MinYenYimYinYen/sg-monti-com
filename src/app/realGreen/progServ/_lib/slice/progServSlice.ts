@@ -3,7 +3,6 @@ import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract"
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import {
   handleRevertServCode,
-  handleSetServCodeProductSelection,
   handleUpdateServCode,
 } from "@/app/realGreen/progServ/_lib/slice/progServActions";
 import { ProgServState } from "@/app/realGreen/progServ/_lib/types/ProgServState";
@@ -48,7 +47,6 @@ const progServSlice = createSlice({
   reducers: {
     updateServCode: handleUpdateServCode,
     revertServCode: handleRevertServCode,
-    setServCodeProductSelection: handleSetServCodeProductSelection,
   },
   extraReducers: (builder) => {
     builder.addCase(getProgCodeDocs.fulfilled, (state, action) => {
