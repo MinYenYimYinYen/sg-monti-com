@@ -461,10 +461,12 @@ const handlers: HandlerMap<AuthContract> = {
  * Handles Deserialization, Validation, Auth, and Error Normalization.
  */
 export async function POST(req: NextRequest) {
+  let opName = "unknown";
   try {
     // A. Parse Body & Validate Op
     const body = (await req.json()) as OpMap<AuthContract>;
     const { op, ...params } = body;
+    opName = op; // Capture op for error logging
     const config = handlers[op];
 
     if (!config) {
@@ -485,7 +487,7 @@ export async function POST(req: NextRequest) {
     const error = normalizeError(e);
 
     // 1. Log the REAL error (with stack trace) for the developer
-    console.error(`[API] ${error.type}: ${error.message}`, {
+    console.error(`[API] Op: ${opName} - ${error.type}: ${error.message}`, {
       stack: error.stack,
       data: error.data,
     });
@@ -501,6 +503,7 @@ export async function POST(req: NextRequest) {
           message: error.message,
           silent: error.silent,
           code: error.statusCode,
+          op: opName, // Include op in response for debugging
         },
         { status }, // 200 OK for handled errors, 401 for Auth
       );
@@ -511,6 +514,7 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         message: "Internal Server Error",
+        op: opName,
       },
       { status: 500 },
     );
