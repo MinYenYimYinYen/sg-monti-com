@@ -100,3 +100,10 @@ export const getEmployees = createStandardThunk<EmployeeContract, "getAll">({
   opName: "getAll",
 });
 ```
+
+## 4. Logging & Debugging
+*   **Server Logs**:
+    *   `[API] Op: <opName> - ...`
+    *   **Warnings**: Operational errors (e.g., Auth failed, Validation failed).
+    *   **Errors**: Unexpected bugs (with stack traces).
+*   **Silent Errors**: If an error is marked `silent: true` (e.g., background auth check), it will **not** be logged to the server console, keeping logs clean.

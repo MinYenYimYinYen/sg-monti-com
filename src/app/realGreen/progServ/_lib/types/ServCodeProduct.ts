@@ -13,6 +13,15 @@ export type ServCodeProduct = ServCodeProductDoc & {
   productMasters: ProductMaster[];
 };
 
+const baseServCodeProduct: ServCodeProduct = {
+  size: 0,
+  sizeOperator: "all",
+  productSingleIds: [],
+  productMasterIds: [],
+  productSingles: [],
+  productMasters: [],
+}
+
 // Here's the idea:
 // ServCodeProductDoc allows for services to access which products should be
 // used based on the service size.

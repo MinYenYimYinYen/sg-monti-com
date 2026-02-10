@@ -19,25 +19,25 @@ We use a single custom error class that carries context via properties rather th
 | `VALIDATION_ERROR` | 400 | Invalid user input or bad request data. |
 | `NETWORK_ERROR` | 0 | DNS resolution, Offline status, or Request Timeouts. |
 | `SERVER_ERROR` | 500 | Unexpected crashes or database failures. |
+| `UNKNOWN_ERROR` | 500 | Uncaught JS exceptions (Bugs). |
 
 ---
 
 ## 2. Operational vs. Non-Operational Errors
 
-We use the `isOperational` boolean to distinguish between **Expected Runtime Errors** and **Bugs**. This flag dictates UI sanitization.
+We use the `isOperational` boolean to distinguish between **Expected Runtime Errors** and **Bugs**. This flag dictates UI sanitization and Logging levels.
 
 ### Logic Flow: How is it set?
-You rarely set this manually. It is determined automatically based on the *source* of the error.
-
 1.  **TRUE (Expected/Operational):**
-   * **Source:** The `api.ts` wrapper.
-   * **Mechanism:** When the API returns a 4xx/5xx status with a structured error body (`{ success: false }`), the wrapper returns it as data. The Thunk factory then rejects with `isOperational: true`.
-   * **Meaning:** "We anticipated this might happen (e.g., Validation Failed)."
+   * **Source:** The `api.ts` wrapper or manual `throw new AppError(...)`.
+   * **Meaning:** "We anticipated this might happen (e.g., Validation Failed, Wrong Password)."
+   * **Logging:** Server logs these as `console.warn`.
 
 2.  **FALSE (Unexpected/Bug):**
    * **Source:** The `normalizeError` function in `errorHandler.ts`.
-   * **Mechanism:** If the handler catches a generic JS `Error` (e.g., `TypeError`, `ReferenceError`), it wraps it in a new `AppError` with `isOperational: false`.
-   * **Meaning:** "Something broke in the code (e.g., cannot read property of undefined)."
+   * **Mechanism:** If the handler catches a generic JS `Error` (e.g., `TypeError`, `MongoServerError`), it wraps it in a new `AppError` with `isOperational: false`.
+   * **Stack Trace:** `normalizeError` **preserves the original stack trace** of the wrapped error, ensuring debugging points to the crash source.
+   * **Logging:** Server logs these as `console.error` with full stack traces.
 
 ---
 
@@ -47,23 +47,20 @@ You rarely set this manually. It is determined automatically based on the *sourc
 
 This pure function handles side effects (Logging & Toasting) based on the environment and the `isOperational` flag.
 
-### A. Normalization
-It converts any input (`unknown`) into an `AppError`. If the input is already an `AppError` (from `api.ts`), it is passed through unchanged (preserving `isOperational: true`).
-
-### B. Logging (Server & Client)
-* **Server:** Always logs full stack traces and data for debugging.
-* **Client:** Logs clean messages to the console.
-
-### C. Toasting (UI Sanitization)
-This is where `isOperational` is critical.
+### A. Toasting (UI Sanitization)
 * **If `isOperational: true`:** The user sees the actual message (e.g., "Email is required").
-* **If `isOperational: false`:** The user sees a sanitized generic message ("An unexpected error occurred") to prevent leaking technical details or confusing non-technical users.
+* **If `isOperational: false`:** The user sees a sanitized generic message ("An unexpected error occurred") to prevent leaking technical details.
 
-### D. Silent Handling
-You can suppress the toast notification for expected errors (e.g., 401 on initial load) by passing an options object.
+### B. Silent Handling Strategy
+You can suppress the toast notification by passing `{ silent: true }`.
+
+**Rule of Thumb:**
+*   **Interactive Actions (Login, Save, Submit):** `silent: false` (Default). The user initiated an action and expects feedback, even if it failed.
+*   **Background Actions (Check Auth, Refresh Token):** `silent: true`. If these fail (e.g., user is anonymous), we should not annoy the user with a red toast.
 
 ```typescript
-handleError(error, { silent: true });
+// Example: Background check
+dispatch(checkAuth({ config: { silentError: true } }));
 ```
 
 ---
@@ -71,54 +68,28 @@ handleError(error, { silent: true });
 ## 4. Usage Patterns
 
 ### A. Client-Side Components
-Use `try/catch` with `handleError`. You do not need to check `isOperational` manually; the handler does it for you.
+Use `try/catch` with `handleError`.
 
 ```typescript
 const handleSave = async () => {
   try {
     const res = await api.post("/lawn-care", data); 
-    if (!res.success) throw new AppError(res); // Or handle manually
+    if (!res.success) throw new AppError(res); 
   } catch (err) {
-    // If API error: Toasts "Invalid Data"
-    // If Code bug: Toasts "Unexpected Error"
-    handleError(err);
+    handleError(err); // Toasts automatically
   }
 };
 ```
 
 ### B. Redux Async Thunks
-Catch the error, handle side effects, and reject with a clean string.
-
-**Standard Pattern (Toasts on Error):**
-```typescript
-const getEmployees = createStandardThunk<...>(...);
-// The factory automatically handles:
-// 1. Calling api()
-// 2. Checking res.success
-// 3. Calling handleError() (Toasting)
-// 4. Rejecting with res.message
-```
-
-**Silent Pattern (No Toast):**
-Use this when failure is expected (e.g., checking auth status on load).
-```typescript
-dispatch(checkAuth({ config: { silentError: true } }));
-```
+The `createStandardThunk` factory automatically handles errors.
+*   If API returns `success: false`, it calls `handleError` (Toasts).
+*   It then `rejects` the thunk, allowing `extraReducers` to handle state changes.
 
 ### C. Server-Side Routes (The Two-Hop)
 1.  `rgApi` (Server-only) throws `EXTERNAL_ERROR`.
-2.  `createRpcHandler` catches it, logs it with the `op` name, and returns a JSON response (even for 500s).
-3.  Client receives JSON, `api()` returns it as `{ success: false }`.
-
-```typescript
-// src/app/api/route.ts
-export const POST = createRpcHandler({
-  myOp: {
-    roles: ['admin'],
-    handler: async () => {
-       // If this throws, createRpcHandler catches it
-       await rgApi(...); 
-    }
-  }
-});
-```
+2.  `createRpcHandler` catches it.
+3.  **Logging:**
+    *   If Operational: `console.warn` (Cleaner logs).
+    *   If Bug: `console.error` (Full stack).
+4.  **Response:** Returns JSON `{ success: false }` (even for 500s).
