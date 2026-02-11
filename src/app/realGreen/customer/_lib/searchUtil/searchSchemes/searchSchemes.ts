@@ -103,4 +103,37 @@ const printedCustomers = ({ season }: SearchSchemeParams): SearchScheme => {
   };
 };
 
-export const searchScheme = { activeCustomers, printedCustomers };
+const lastSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => {
+  return {
+    schemeName: "lastSeasonProduction",
+    steps: [
+      createPaginationStep({
+        stepName: "services",
+        optimizerKey: "initialServices",
+        searchCriteria: {
+          servStats: getServiceStatuses(["completed"]),
+          season: season - 1,
+        },
+      }),
+      createBatchSizeStep({
+        stepName: "programs",
+        getIds: (pipelineData) =>
+          (pipelineData as ServiceDoc[]).map((s) => s.progId),
+        getSearchCriteria: (ids) => ({
+          progIds: ids,
+          season: season - 1,
+        }),
+      }),
+      createBatchSizeStep({
+        stepName: "customers",
+        getIds: (pipelineData) =>
+          (pipelineData as ProgramDoc[]).map((p) => p.custId),
+        getSearchCriteria: (ids) => ({
+          custIds: ids,
+        }),
+      }),
+    ],
+  };
+};
+
+export const searchScheme = { activeCustomers, printedCustomers, lastSeasonProduction };

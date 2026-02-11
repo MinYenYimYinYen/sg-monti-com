@@ -3,13 +3,26 @@ import {
   BaseCustomerState,
   baseInitialState,
 } from "@/app/realGreen/customer/slices/SliceTypes";
-import { activeCustomersSlice, activeCustomersActions } from "./activeCustomersSlice";
-import { printedCustomersSlice, printedCustomersActions } from "./printedCustomersSlice";
+import {
+  activeCustomersSlice,
+  activeCustomersActions,
+} from "./activeCustomersSlice";
+import {
+  printedCustomersSlice,
+  printedCustomersActions,
+} from "./printedCustomersSlice";
+import {
+  lastSeasonProductionSlice,
+  lastSeasonProductionActions,
+} from "./lastSeasonProductionSlice";
 import { StreamChunk } from "@/app/realGreen/customer/api/CustomerContract";
-import { Grouper } from "@/lib/Grouper";
 import { AppState, AppThunk } from "@/store";
 
-export type CustomerContextMode = "active" | "printed" | null;
+export type CustomerContextMode =
+  | "active"
+  | "printed"
+  | "lastSeasonProduction"
+  | null;
 
 interface CentralCustomerState extends BaseCustomerState {
   context: CustomerContextMode;
@@ -64,6 +77,7 @@ export const centralCustomerSlice = createSlice({
     // This slice MUST mirror all data-mutating actions from:
     // 1. activeCustomersSlice
     // 2. printedCustomersSlice
+    // 3. lastSeasonProductionSlice
     //
     // Current Monitored Actions:
     // - receiveChunk
@@ -103,14 +117,26 @@ export const centralCustomerSlice = createSlice({
         state.serviceDocs = [];
       }
     });
-  },
-  selectors: {
-    customerDocMap: (state) =>
-      new Grouper(state.customerDocs).toUniqueMap((e) => e.custId),
-    programDocMap: (state) =>
-      new Grouper(state.programDocs).toUniqueMap((e) => e.progId),
-    serviceDocMap: (state) =>
-      new Grouper(state.serviceDocs).toUniqueMap((e) => e.servId),
+
+    // Listen to Last Season Production updates
+    builder.addCase(
+      lastSeasonProductionSlice.actions.receiveChunk,
+      (state, action) => {
+        if (state.context === "lastSeasonProduction") {
+          applyChunk(state, action.payload);
+        }
+      },
+    );
+    builder.addCase(
+      lastSeasonProductionActions.getCustDocs.pending,
+      (state) => {
+        if (state.context === "lastSeasonProduction") {
+          state.customerDocs = [];
+          state.programDocs = [];
+          state.serviceDocs = [];
+        }
+      },
+    );
   },
 });
 
@@ -127,6 +153,8 @@ export const setCustomerContext =
       sourceData = state.customer.active;
     } else if (mode === "printed") {
       sourceData = state.customer.printed;
+    } else if (mode === "lastSeasonProduction") {
+      sourceData = state.customer.lastSeasonProduction;
     } else {
       // If null or unknown, reset to empty
       sourceData = baseInitialState;
