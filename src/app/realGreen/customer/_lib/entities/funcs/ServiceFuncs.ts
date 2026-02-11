@@ -13,7 +13,7 @@ import {
   DoneByRemapped,
   remapDoneBys,
 } from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
-import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProductionRemapped } from "@/app/realGreen/_lib/subTypes/Production";
 import { AppError } from "@/lib/errors/AppError";
 import { ServiceCore, ServiceRaw } from "../types/ServiceTypes";
@@ -65,9 +65,9 @@ function remapService(raw: ServiceRaw): ServiceCore {
   return {
     servId: raw.id,
     asapSince: raw.asapDate || "",
-    callAheadId: raw.callAhead || null,
+    callAheadId: raw.callAhead || baseNumId,
     custId: raw.customerNumber,
-    discountId: raw.discountCode || null,
+    discountId: raw.discountCode || baseStrId,
     invoice: raw.invoiceNumber || null,
     isPromised: raw.isPromised,
     nextPrice: raw.nextPrice,

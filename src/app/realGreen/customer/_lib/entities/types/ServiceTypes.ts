@@ -13,6 +13,8 @@ import {
 } from "@/app/realGreen/_lib/subTypes/Production";
 import { Program } from "./ProgramTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import { DiscountDoc } from "@/app/realGreen/discount/Discount.types";
 
 export type ServiceRaw = {
   // actualManHours?: number;
@@ -88,9 +90,9 @@ export type ServiceRaw = {
 export type ServiceCore = {
   servId: number;
   asapSince: string;
-  callAheadId: number | null;
+  callAheadId: number;
   custId: number;
-  discountId: string | null;
+  discountId: string;
   invoice: number | null;
   isPromised: boolean;
   nextPrice: number;
@@ -114,6 +116,8 @@ export type ServiceDoc = ServiceCore & ServiceDocProps;
 export type ServiceProps = {
   program: Program;
   servCode: ServCode;
+  callAhead: CallAheadDoc | null;
+  discount: DiscountDoc | null;
 };
 
 export type Service = ServiceDoc & ServiceProps;

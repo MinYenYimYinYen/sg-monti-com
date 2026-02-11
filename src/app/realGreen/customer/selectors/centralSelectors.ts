@@ -9,6 +9,8 @@ import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { basicTaxCodeSelect } from "@/app/realGreen/taxCode/taxCodeBaseSelectors";
 import { baseTaxCode } from "@/app/realGreen/taxCode/_lib/baseTaxCode";
+import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
+import { discountSelect } from "../../discount/selectors/discountSelect";
 
 const selectCustomerContext = (state: AppState) =>
   state.customer.central.context;
@@ -63,6 +65,8 @@ export const selectCustomers = createSelector(
     selectProgCodeMapByDefId,
     selectServCodeMap,
     basicTaxCodeSelect.basicTaxCodeMap,
+    callAheadSelect.callAheadDocMap,
+    discountSelect.discountDocMap,
   ],
   (
     customerDocs,
@@ -71,6 +75,8 @@ export const selectCustomers = createSelector(
     progCodeMap,
     servCodeMap,
     basicTaxCodeMap,
+    callAheadDocMap,
+    discountDocMap,
   ) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
       const taxCodes = custDoc.taxIds
@@ -80,6 +86,8 @@ export const selectCustomers = createSelector(
         ...custDoc,
         programs: [],
         taxCodes,
+        callAhead: callAheadDocMap.get(custDoc.callAheadId) || null,
+        discount: discountDocMap.get(custDoc.discountId) || null,
       };
 
       const progDocs = programDocMap.get(custDoc.custId) || [];
@@ -92,6 +100,8 @@ export const selectCustomers = createSelector(
           customer,
           services: [],
           progCode,
+          callAhead: callAheadDocMap.get(progDoc.callAheadId) || null,
+          discount: discountDocMap.get(progDoc.discountId) || null,
         };
 
         const serviceDocs = serviceDocMap.get(progDoc.progId) || [];
@@ -103,6 +113,8 @@ export const selectCustomers = createSelector(
             ...servDoc,
             program,
             servCode,
+            callAhead: callAheadDocMap.get(servDoc.callAheadId) || null,
+            discount: discountDocMap.get(servDoc.discountId) || null,
           };
 
           return service;

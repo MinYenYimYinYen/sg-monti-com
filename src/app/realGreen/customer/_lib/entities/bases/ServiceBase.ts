@@ -25,4 +25,6 @@ export const baseService: Service = {
   updatedAt: "",
   program: baseProgram,
   servCode: baseServCode,
+  callAhead: null,
+  discount: null,
 };

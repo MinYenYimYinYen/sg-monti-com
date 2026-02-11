@@ -2,6 +2,8 @@ import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Service } from "./ServiceTypes";
 import { Customer } from "./CustomerTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import { DiscountDoc } from "@/app/realGreen/discount/Discount.types";
 
 export type ProgramRaw = {
   averagePrice: number;
@@ -117,6 +119,8 @@ export type ProgramProps = {
   services: Service[];
   customer: Customer;
   progCode: ProgCode;
+  callAhead: CallAheadDoc | null;
+  discount: DiscountDoc | null;
 };
 
 export type Program = ProgramDoc & ProgramProps;

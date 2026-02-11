@@ -50,7 +50,6 @@ import {
   selectCustomers,
 } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { useEffect, useState } from "react";
-import { selectPrograms } from "@/app/realGreen/customer/selectors/centralTerminatingSelectors";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useTaxCode } from "@/app/realGreen/taxCode/useTaxCode";
@@ -58,15 +57,24 @@ import { taxCodeSelect } from "@/app/realGreen/taxCode/taxCodeSelectors";
 import { DatePicker } from "@/components/DatePicker";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
+import { callAheadSelect } from "@/app/realGreen/callAhead/selectors/callAheadSelect";
+import { useDiscount } from "@/app/realGreen/discount/useDiscount";
+import { discountSelect } from "@/app/realGreen/discount/selectors/discountSelect";
 
 export default function Home() {
   usePrintedCustomers({ autoLoad: true });
   useProgServ({ autoLoad: true });
-  useTaxCode({autoLoad: true})
+  useTaxCode({ autoLoad: true });
+  useCallAhead({ autoLoad: true });
+  useDiscount({autoLoad: true});
   const customers = useSelector(centralSelect.customers);
   const programs = useSelector(centralSelect.programs);
   const progCodes = useSelector(progServSelect.progCodes);
-  const taxCodes = useSelector(taxCodeSelect.taxCodes)
+  const taxCodes = useSelector(taxCodeSelect.taxCodes);
+  const callAheadDocs = useSelector(callAheadSelect.callAheadDocs);
+  const discountDocs = useSelector(discountSelect.discountDocs);
+
 
   useEffect(() => {
     console.log("Customers:", customers);
@@ -81,13 +89,24 @@ export default function Home() {
   }, [progCodes]);
 
   useEffect(() => {
-    console.log("TaxCodes:", taxCodes)
+    console.log("TaxCodes:", taxCodes);
   }, [taxCodes]);
+
+  useEffect(() => {
+    console.log("CallAheadDocs:", callAheadDocs);
+  }, [callAheadDocs]);
+
+  useEffect(() => {
+    console.log("DiscountDocs:", discountDocs);
+  }, [discountDocs]);
+
 
 
   const [date, setDate] = useState("");
-  const [dateRange, setDateRange] = useState<TRange<string>>({ min: "", max: "" });
-
+  const [dateRange, setDateRange] = useState<TRange<string>>({
+    min: "",
+    max: "",
+  });
 
   return (
     <div className="container mx-auto p-8 space-y-12">
@@ -106,7 +125,9 @@ export default function Home() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold">Date Range Picker ({dateRange.min} - {dateRange.max})</h2>
+        <h2 className="text-2xl font-semibold">
+          Date Range Picker ({dateRange.min} - {dateRange.max})
+        </h2>
         <DateRangePicker value={dateRange} onChange={setDateRange} />
       </section>
 

@@ -32,7 +32,9 @@ function remapCustomer(raw: CustomerRaw): CustomerCore {
     size: raw.size,
     status: raw.statusCharacter,
     subdivisionId: raw.subdivisionID || baseNumId,
-    taxIds: typeGuard.definedArray([raw.taxID1, raw.taxID2, raw.taxID3]),
+    taxIds: typeGuard
+      .definedArray([raw.taxID1, raw.taxID2, raw.taxID3])
+      .filter((t) => t.length > 0),
     techNote: raw.techNote,
     useBilling: raw.useBillingInfo,
   };

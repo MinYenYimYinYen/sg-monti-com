@@ -34,4 +34,6 @@ export const baseCustomer: Customer = {
   createdAt: "",
   updatedAt: "",
   programs: [],
+  callAhead: null,
+  discount: null,
 };

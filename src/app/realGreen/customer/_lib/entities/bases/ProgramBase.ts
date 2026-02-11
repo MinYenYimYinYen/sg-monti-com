@@ -28,4 +28,6 @@ export const baseProgram: Program = {
   services: [],
   customer: baseCustomer,
   progCode: baseProgCode,
+  callAhead: null,
+  discount: null,
 };

@@ -70,6 +70,8 @@ export async function extendEntities<TCore, TDocProps, TDoc extends TCore & TDoc
     const doc: TDoc = {
       ...core,
       ...(docPropMap.get(core[idField] as string | number) || baseDocProps),
+      // Ensure the ID from core is preserved (baseDocProps might have a default/invalid ID)
+      [idField]: core[idField],
     } as TDoc;
     return doc;
   });
