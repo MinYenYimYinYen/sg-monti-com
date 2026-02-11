@@ -1,4 +1,5 @@
 import { combineReducers } from "redux";
+import globalSettingsReducer from "@/app/globalSettings/_lib/globalSettingsSlice";
 import uiReducer from "@/store/reduxUtil/uiSlice";
 import authReducer from "@/app/auth/authSlice";
 import companyReducer from "@/app/realGreen/company/companySlice";
@@ -14,6 +15,7 @@ import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
 
 const rootReducer = combineReducers({
+  globalSettings: globalSettingsReducer,
   ui: uiReducer,
   auth: authReducer,
   callAhead: callAheadReducer,

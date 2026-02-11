@@ -29,7 +29,7 @@ export type ErrorChunk = {
 
 export interface CustomerContract extends ApiContract {
   runSearchScheme: {
-    params: { schemeName: keyof typeof searchScheme };
+    params: { schemeName: keyof typeof searchScheme; season: number };
     result: DataResponse<StreamChunk[]>; // In streaming, this represents the chunk structure
   };
 }

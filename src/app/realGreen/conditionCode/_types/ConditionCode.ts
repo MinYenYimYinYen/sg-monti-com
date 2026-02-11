@@ -41,12 +41,4 @@ export type ConditionProps = {};
 
 export type Condition = ConditionDoc & ConditionProps;
 
-// export function extendConditionCodes({
-//   remapped,
-//   mongo,
-// }: {
-//   remapped: ConditionCodeCore[];
-//   mongo: ConditionCodeDocProps[];
-// }): ConditionCode[] {
-//
-// }
+
