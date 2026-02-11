@@ -3,8 +3,8 @@ import {
   BaseCustomerState,
   baseInitialState,
 } from "@/app/realGreen/customer/slices/SliceTypes";
-import { activeCustomersSlice } from "./activeCustomersSlice";
-import { printedCustomersSlice } from "./printedCustomersSlice";
+import { activeCustomersSlice, activeCustomersActions } from "./activeCustomersSlice";
+import { printedCustomersSlice, printedCustomersActions } from "./printedCustomersSlice";
 import { StreamChunk } from "@/app/realGreen/customer/api/CustomerContract";
 import { Grouper } from "@/lib/Grouper";
 import { AppState, AppThunk } from "@/store";
@@ -79,6 +79,13 @@ export const centralCustomerSlice = createSlice({
         }
       },
     );
+    builder.addCase(activeCustomersActions.getCustDocs.pending, (state) => {
+      if (state.context === "active") {
+        state.customerDocs = [];
+        state.programDocs = [];
+        state.serviceDocs = [];
+      }
+    });
 
     // Listen to Printed Customers updates
     builder.addCase(
@@ -89,6 +96,13 @@ export const centralCustomerSlice = createSlice({
         }
       },
     );
+    builder.addCase(printedCustomersActions.getCustDocs.pending, (state) => {
+      if (state.context === "printed") {
+        state.customerDocs = [];
+        state.programDocs = [];
+        state.serviceDocs = [];
+      }
+    });
   },
   selectors: {
     customerDocMap: (state) =>

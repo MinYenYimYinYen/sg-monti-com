@@ -5,12 +5,12 @@ import {
   TaxCodeDocProps,
   TaxCodeProps,
 } from "@/app/realGreen/taxCode/TaxCodeTypes";
-import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export const baseTaxCodeCore: TaxCodeCore = {
   taxCodeId: baseStrId,
   available: true,
-  taxRate: baseNumId,
+  taxRate: 0,
 };
 
 export const baseTaxCodeDocProps: TaxCodeDocProps = {

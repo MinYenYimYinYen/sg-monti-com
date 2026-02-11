@@ -23,14 +23,24 @@ const selectServiceDocs = (state: AppState) =>
 const selectProgramDocMap = createSelector(
   [selectProgramDocs],
   (programDocs) => {
-    return new Grouper(programDocs).groupBy((prog) => prog.custId).toMap();
+    // Deduplicate programs by progId to prevent hydration duplicates
+    const uniqueProgramDocs = Array.from(
+      new Map(programDocs.map((p) => [p.progId, p])).values(),
+    );
+    return new Grouper(uniqueProgramDocs)
+      .groupBy((prog) => prog.custId)
+      .toMap();
   },
 );
 
 const selectServiceDocMap = createSelector(
   [selectServiceDocs],
   (serviceDocs) => {
-    return new Grouper(serviceDocs).groupBy((s) => s.progId).toMap();
+    // Deduplicate services by servId to prevent hydration duplicates
+    const uniqueServiceDocs = Array.from(
+      new Map(serviceDocs.map((s) => [s.servId, s])).values(),
+    );
+    return new Grouper(uniqueServiceDocs).groupBy((s) => s.progId).toMap();
   },
 );
 
@@ -63,9 +73,9 @@ export const selectCustomers = createSelector(
     basicTaxCodeMap,
   ) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
-      const taxCodes = custDoc.taxIds.map(
-        (taxId) => basicTaxCodeMap.get(taxId) || baseTaxCode,
-      );
+      const taxCodes = custDoc.taxIds
+        .map((taxId) => basicTaxCodeMap.get(taxId) || baseTaxCode)
+        .filter((tc) => tc.taxCodeId !== baseTaxCode.taxCodeId);
       const customer: Customer = {
         ...custDoc,
         programs: [],
@@ -123,7 +133,6 @@ const selectServices = createSelector([selectPrograms], (programs) => {
 const customerMap = createSelector([selectCustomers], (customers) => {
   return new Grouper(customers).toUniqueMap((c) => c.custId);
 });
-
 
 export const centralSelect = {
   context: selectCustomerContext,

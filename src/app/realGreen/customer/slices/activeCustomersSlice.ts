@@ -9,13 +9,7 @@ import {
   StreamChunk,
 } from "@/app/realGreen/customer/api/CustomerContract";
 import { uiActions } from "@/store/reduxUtil/uiSlice";
-import { Grouper } from "@/lib/Grouper";
 import { AppState } from "@/store";
-// import {
-//   createSelectCustomers,
-//   createSelectPrograms,
-//   createSelectServices,
-// } from "../_lib/deprecated/contextSelectors";
 
 // Ensure the slice state satisfies the requirements for the selectors
 type ActiveCustomersState = BaseCustomerState;
@@ -39,14 +33,13 @@ export const activeCustomersSlice = createSlice({
       }
     },
   },
-  // selectors: {
-  //   customerDocMap: (state) =>
-  //     new Grouper(state.customerDocs).toUniqueMap((e) => e.custId),
-  //   programDocMap: (state) =>
-  //     new Grouper(state.programDocs).toUniqueMap((e) => e.progId),
-  //   serviceDocMap: (state) =>
-  //     new Grouper(state.serviceDocs).toUniqueMap((e) => e.servId),
-  // },
+  extraReducers: (builder) => {
+    builder.addCase("activeCustomers/getCustDocs/pending", (state) => {
+      state.customerDocs = [];
+      state.programDocs = [];
+      state.serviceDocs = [];
+    });
+  },
 });
 
 const getCustDocs = createStreamThunk<CustomerContract, "runSearchScheme">({
@@ -71,13 +64,6 @@ export const activeCustomersActions = {
   getCustDocs,
 };
 
-// // Define the slice selector
-// const selectSlice = (state: AppState) => state.customer.active;
-
 export const activeCustomersSelect = {
   ...activeCustomersSlice.selectors,
-  // Use factories to create specific selectors for this slice
-  // customers: createSelectCustomers(selectSlice),
-  // programs: createSelectPrograms(selectSlice),
-  // services: createSelectServices(selectSlice),
 };
