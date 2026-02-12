@@ -4,8 +4,12 @@ import {
   ThunkDispatch,
   UnknownAction,
 } from "@reduxjs/toolkit";
+import { enableMapSet } from "immer";
 import rootReducer from "./reducers";
 // import debounceMiddleware from "@/store/middleware/debounce";
+
+// Enable Immer's MapSet plugin for Map/Set support in Redux state
+enableMapSet();
 
 export const makeStore = () =>
   configureStore({

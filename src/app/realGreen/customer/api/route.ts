@@ -35,7 +35,10 @@ const handlers: HandlerMap<CustomerContract> = {
             let pipelineData: PipelineData | null = null;
 
             for (const step of steps) {
-              const { stepName, run, optimizationStrategy, optimizerKey } = step;
+              const { stepName, run, optimizationStrategy, optimizerKey } =
+                step;
+
+              console.log('[route.ts] Processing step:', stepName, 'optimizer key:', optimizerKey);
 
               const optimizer = await getSearchOptimizer({
                 optimizationStrategy: optimizationStrategy,
@@ -43,11 +46,14 @@ const handlers: HandlerMap<CustomerContract> = {
                 schemeName: schemeName,
               });
 
+              console.log('[route.ts] Optimizer loaded:', optimizer);
+
               const stepContext: StepContext = {
                 pipelineData: pipelineData || [],
                 optimizer,
               };
 
+              console.log('[route.ts] Starting step generator for:', stepName);
               const generator = run(stepContext);
 
               const nextStepInput: any[] = [];
@@ -80,6 +86,7 @@ const handlers: HandlerMap<CustomerContract> = {
                     data: chunkData,
                     metrics: result.metrics,
                   };
+
 
                   controller.enqueue(
                     encoder.encode(JSON.stringify(streamChunk) + "\n"),
@@ -140,6 +147,8 @@ const handlers: HandlerMap<CustomerContract> = {
             controller.close();
           } catch (e) {
             console.error("Streaming Error:", e);
+            console.error('[route.ts] Error stack:', e instanceof Error ? e.stack : 'No stack');
+            console.error('[route.ts] Error details:', JSON.stringify(e, null, 2));
             const errorChunk = {
               success: false,
               message:

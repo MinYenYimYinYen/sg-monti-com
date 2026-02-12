@@ -44,11 +44,9 @@ import {
   SheetDescription,
 } from "@/style/components/sheet";
 import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCustomers";
+import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useSelector } from "react-redux";
-import {
-  centralSelect,
-  selectCustomers,
-} from "@/app/realGreen/customer/selectors/centralSelectors";
+import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { useEffect, useState } from "react";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
@@ -61,20 +59,33 @@ import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 import { callAheadSelect } from "@/app/realGreen/callAhead/selectors/callAheadSelect";
 import { useDiscount } from "@/app/realGreen/discount/useDiscount";
 import { discountSelect } from "@/app/realGreen/discount/selectors/discountSelect";
+import { useActiveCustomers } from "@/app/realGreen/customer/hooks/useActiveCustomers";
+import {useLastSeasonProduction} from "@/app/realGreen/customer/hooks/useLastSeasonProduction";
 
 export default function Home() {
-  usePrintedCustomers({ autoLoad: true });
+  // NEW: Declare contexts first
+  useCustomerContext({ contexts: ["printed", "active"] });
+
+  // Then declare data fetching with autoLoad
+  // usePrintedCustomers({ autoLoad: true });
+  // useActiveCustomers({ autoLoad: true });
+  useLastSeasonProduction({autoLoad: true});
   useProgServ({ autoLoad: true });
+
   useTaxCode({ autoLoad: true });
   useCallAhead({ autoLoad: true });
-  useDiscount({autoLoad: true});
+  useDiscount({ autoLoad: true });
   const customers = useSelector(centralSelect.customers);
   const programs = useSelector(centralSelect.programs);
+  const services = useSelector(centralSelect.services);
   const progCodes = useSelector(progServSelect.progCodes);
   const taxCodes = useSelector(taxCodeSelect.taxCodes);
   const callAheadDocs = useSelector(callAheadSelect.callAheadDocs);
   const discountDocs = useSelector(discountSelect.discountDocs);
 
+  // Debug: Check slice states directly
+  const printedSliceState = useSelector((state: any) => state.customer.printed);
+  const centralSliceState = useSelector((state: any) => state.customer.central);
 
   useEffect(() => {
     console.log("Customers:", customers);
@@ -85,22 +96,25 @@ export default function Home() {
   }, [programs]);
 
   useEffect(() => {
-    console.log("ProgCodes:", progCodes);
+    console.log("Services:", services);
+  }, [services]);
+
+
+  useEffect(() => {
+    // console.log("ProgCodes:", progCodes);
   }, [progCodes]);
 
   useEffect(() => {
-    console.log("TaxCodes:", taxCodes);
+    // console.log("TaxCodes:", taxCodes);
   }, [taxCodes]);
 
   useEffect(() => {
-    console.log("CallAheadDocs:", callAheadDocs);
+    // console.log("CallAheadDocs:", callAheadDocs);
   }, [callAheadDocs]);
 
   useEffect(() => {
-    console.log("DiscountDocs:", discountDocs);
+    // console.log("DiscountDocs:", discountDocs);
   }, [discountDocs]);
-
-
 
   const [date, setDate] = useState("");
   const [dateRange, setDateRange] = useState<TRange<string>>({

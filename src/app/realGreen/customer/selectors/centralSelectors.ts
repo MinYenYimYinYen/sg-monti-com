@@ -12,37 +12,45 @@ import { baseTaxCode } from "@/app/realGreen/taxCode/_lib/baseTaxCode";
 import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
 import { discountSelect } from "../../discount/selectors/discountSelect";
 
-const selectCustomerContext = (state: AppState) =>
-  state.customer.central.context;
+const selectActiveContexts = (state: AppState) =>
+  state.customer.central.activeContexts;
 
-const selectCustomerDocs = (state: AppState) =>
-  state.customer.central.customerDocs;
-const selectProgramDocs = (state: AppState) =>
-  state.customer.central.programDocs;
-const selectServiceDocs = (state: AppState) =>
-  state.customer.central.serviceDocs;
+// Base selectors read Maps from state
+const selectCustDocMap = (state: AppState) =>
+  state.customer.central.CustDocMap;
+const selectProgDocMap = (state: AppState) =>
+  state.customer.central.ProgDocMap;
+const selectServDocMap = (state: AppState) =>
+  state.customer.central.ServDocMap;
 
+// Convert Maps to arrays for hydration logic
+const selectCustomerDocs = createSelector(
+  [selectCustDocMap],
+  (map) => Array.from(map.values()),
+);
+
+const selectProgramDocs = createSelector(
+  [selectProgDocMap],
+  (map) => Array.from(map.values()),
+);
+
+const selectServiceDocs = createSelector(
+  [selectServDocMap],
+  (map) => Array.from(map.values()),
+);
+
+// Build relationship maps from arrays (deduplication already handled in slice)
 const selectProgramDocMap = createSelector(
   [selectProgramDocs],
   (programDocs) => {
-    // Deduplicate programs by progId to prevent hydration duplicates
-    const uniqueProgramDocs = Array.from(
-      new Map(programDocs.map((p) => [p.progId, p])).values(),
-    );
-    return new Grouper(uniqueProgramDocs)
-      .groupBy((prog) => prog.custId)
-      .toMap();
+    return new Grouper(programDocs).groupBy((prog) => prog.custId).toMap();
   },
 );
 
 const selectServiceDocMap = createSelector(
   [selectServiceDocs],
   (serviceDocs) => {
-    // Deduplicate services by servId to prevent hydration duplicates
-    const uniqueServiceDocs = Array.from(
-      new Map(serviceDocs.map((s) => [s.servId, s])).values(),
-    );
-    return new Grouper(uniqueServiceDocs).groupBy((s) => s.progId).toMap();
+    return new Grouper(serviceDocs).groupBy((s) => s.progId).toMap();
   },
 );
 
@@ -147,7 +155,7 @@ const customerMap = createSelector([selectCustomers], (customers) => {
 });
 
 export const centralSelect = {
-  context: selectCustomerContext,
+  context: selectActiveContexts,
   customers: selectCustomers,
   programs: selectPrograms,
   services: selectServices,

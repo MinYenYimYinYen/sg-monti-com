@@ -1,40 +1,33 @@
 import { printedCustomersActions } from "@/app/realGreen/customer/slices/printedCustomersSlice";
 import { realGreenConst } from "../../_lib/realGreenConst";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { centralCustomerActions } from "@/app/realGreen/customer/slices/centralCustomerSlice";
 import { useSelector } from "react-redux";
-import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 
-export function usePrintedCustomers({ autoLoad }: { autoLoad?: boolean }) {
+export function usePrintedCustomers({ autoLoad = false }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
-  const context = useSelector(centralSelect.context);
   const season = useSelector(globalSettingsSelect.season);
 
-  useEffect(() => {
-    if (context === "printed") return;
-    dispatch(centralCustomerActions.setCustomerContext("printed"));
-  }, [dispatch, context]);
 
   useEffect(() => {
-    if (!season) return;
-    if (autoLoad) {
-      dispatch(
-        printedCustomersActions.getCustDocs({
-          params: {
-            schemeName: "printedCustomers",
-            season,
-          },
-          config: { staleTime: realGreenConst.paramTypesCacheTime },
-        }),
-      );
+    if (!autoLoad || !season) {
+      return;
     }
+    dispatch(
+      printedCustomersActions.getCustDocs({
+        params: {
+          schemeName: "printedCustomers",
+          season,
+        },
+        config: { staleTime: realGreenConst.paramTypesCacheTime },
+      }),
+    );
   }, [autoLoad, dispatch, season]);
 
-  const refresh = useCallback(() => {
+  const refresh = () => {
     if (!season) return;
     dispatch(
       printedCustomersActions.getCustDocs({
@@ -45,9 +38,7 @@ export function usePrintedCustomers({ autoLoad }: { autoLoad?: boolean }) {
         config: { staleTime: realGreenConst.paramTypesCacheTime, force: true },
       }),
     );
-  }, [dispatch, season]);
+  };
 
-  const canRefresh = !!season;
-
-  return { refresh, canRefresh };
+  return { refresh, canRefresh: !!season };
 }

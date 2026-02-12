@@ -18,12 +18,8 @@ const handlers: HandlerMap<CallAheadContract> = {
       });
 
       const callAheadCores = remapCallAheads(rawCallAheads);
-      const coreIds = callAheadCores.map((c) => c.callAheadId);
-      console.log("coreIds", coreIds);
 
       const callAheadDocs = await extendCallAheads(callAheadCores);
-      const docIds = callAheadDocs.map((doc) => doc.callAheadId)
-      console.log("docIds", docIds);
 
 
       return { success: true, payload: callAheadDocs };
