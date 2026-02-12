@@ -43,7 +43,6 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/style/components/sheet";
-import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCustomers";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useSelector } from "react-redux";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
@@ -64,12 +63,11 @@ import {useLastSeasonProduction} from "@/app/realGreen/customer/hooks/useLastSea
 
 export default function Home() {
   // NEW: Declare contexts first
-  useCustomerContext({ contexts: ["printed", "active"] });
+  useCustomerContext({ contexts: ["printed", "active", "lastSeasonProduction"] });
 
-  // Then declare data fetching with autoLoad
-  // usePrintedCustomers({ autoLoad: true });
+
   // useActiveCustomers({ autoLoad: true });
-  useLastSeasonProduction({autoLoad: true});
+  // useLastSeasonProduction({autoLoad: true});
   useProgServ({ autoLoad: true });
 
   useTaxCode({ autoLoad: true });
@@ -83,9 +81,6 @@ export default function Home() {
   const callAheadDocs = useSelector(callAheadSelect.callAheadDocs);
   const discountDocs = useSelector(discountSelect.discountDocs);
 
-  // Debug: Check slice states directly
-  const printedSliceState = useSelector((state: any) => state.customer.printed);
-  const centralSliceState = useSelector((state: any) => state.customer.central);
 
   useEffect(() => {
     console.log("Customers:", customers);

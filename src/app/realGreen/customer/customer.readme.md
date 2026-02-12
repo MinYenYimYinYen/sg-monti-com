@@ -194,3 +194,121 @@ const printedCustomers: SearchScheme = {
   ],
 };
 ```
+
+---
+
+## Handling Bad Records from RealGreen API (Error Thrown)
+
+### The Problem
+
+During production use, we discovered that the RealGreen API occasionally returns a `400 Bad Request` error with the message:
+
+```
+"Nullable object must have a value."
+```
+
+This error occurs when a specific record in their database has corrupted or malformed data. The error doesn't provide details about which record is problematic - it simply fails the entire batch request.
+
+**Example Scenario:**
+- Fetching services for 100 programs (progIds: 1-100)
+- ProgId `42` has a corrupted service record
+- The entire batch request fails, blocking access to all 100 programs' services
+
+### The Solution: Binary Search Error Recovery
+
+We implemented a two-tier binary search mechanism that isolates and skips only the corrupted record while recovering all valid data:
+
+#### 1. **ID-Based Binary Search** (`binaryIdSearch.ts`)
+
+Used when searching by IDs (e.g., progIds, custIds) in batch steps:
+
+**How it works:**
+1. When a batch of IDs causes an error, perform binary search on the ID array
+2. Split the IDs in half and test each subset
+3. Narrow down to the exact problematic ID (~9 steps for 500 IDs)
+4. Fetch all records before the corrupted ID
+5. Skip the corrupted ID
+6. Fetch all records after the corrupted ID
+
+**Implementation:** Applied in `createBatchSizeStep` (stepFactories.ts:363-409)
+
+#### 2. **Offset-Based Binary Search** (`binaryOffsetSearch.ts`)
+
+Used when pagination encounters corrupted data at specific offsets:
+
+**How it works:**
+1. When an offset-based request fails, perform binary search on the offset range
+2. Narrow down to the exact corrupted offset position
+3. Fetch all records before the corrupted offset
+4. Skip the corrupted record
+5. Fetch all records after the corrupted offset
+
+**Implementation:** Applied in `fetchOverflow` (stepFactories.ts:128-153)
+
+### Error Detection
+
+Both binary search mechanisms only activate for the specific corrupted data error:
+
+```typescript
+const isCorruptedDataError =
+  error instanceof Error &&
+  error.message === "Nullable object must have a value.";
+```
+
+Other errors are immediately re-thrown (fail fast).
+
+### Where This Happens
+
+**Files:**
+- `src/app/realGreen/customer/_lib/searchUtil/searchSchemes/schemeExecution/binaryIdSearch.ts`
+- `src/app/realGreen/customer/_lib/searchUtil/searchSchemes/schemeExecution/binaryOffsetSearch.ts`
+- `src/app/realGreen/customer/_lib/searchUtil/searchSchemes/schemeExecution/stepFactories.ts`
+
+**Error Handling Locations:**
+- Main batch fetch: `stepFactories.ts:363-409`
+- Overflow fetch: `stepFactories.ts:128-153`
+
+### Logging
+
+When a corrupted record is encountered, the console will log:
+- The corrupted ID (e.g., progId, custId) or offset
+- The binary search process (each test iteration)
+- How many valid records were recovered
+
+**Example output:**
+```
+[binaryIdSearch] Starting binary search for corrupted ID in array of 100 IDs
+[binaryIdSearch] Testing 50 IDs from index 50 to 99
+[binaryIdSearch] Error! Corrupted ID is in second half (indices 50 to 99)
+...
+[binaryIdSearch] Corrupted ID isolated: 42 at index 41
+[binaryIdSearch] Fetching records for 41 IDs before corrupted ID
+[binaryIdSearch] Successfully fetched 205 records before corrupted ID
+[binaryIdSearch] Skipping corrupted ID: 42
+[binaryIdSearch] Fetching records for 58 IDs after corrupted ID
+[binaryIdSearch] Successfully fetched 291 records after corrupted ID
+```
+
+### Future Enhancement (TODO)
+
+Currently, the system only logs the corrupted ID. A future enhancement should:
+1. Look up the program's `progCode` and `custId` from the pipelineData
+2. Log these identifiers for easy lookup in the RealGreen CRM
+3. Allow manual investigation and fixing of the corrupted record
+
+See TODO comment in `binaryIdSearch.ts:71-74`.
+
+### Performance Impact
+
+- **Binary search steps:** ~log₂(N) API calls to isolate corruption
+  - 500 records: ~9 additional calls
+  - 1000 records: ~10 additional calls
+- **Recovery:** 2 additional calls (before + after corrupted record)
+- **Total overhead:** Minimal compared to blocking the entire batch
+
+### Result
+
+✅ The search scheme completes successfully, skipping only the corrupted record
+✅ All valid data is fetched and displayed to the user
+✅ The application remains functional despite data quality issues in the RealGreen API
+✅ Developers can identify and report problematic records to RealGreen support

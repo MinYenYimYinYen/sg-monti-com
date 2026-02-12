@@ -42,6 +42,8 @@ import {extendServices} from "@/app/realGreen/customer/_lib/entities/serverFuncs
 import {remapCustSearch} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapCustSearch";
 import {remapProgSearch} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapProgSearch";
 import {remapServSearch} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapServSearch";
+import {binarySearchCorruptedRecord} from "./binaryOffsetSearch";
+import {binarySearchCorruptedId} from "./binaryIdSearch";
 
 // Helper to map criteria based on step name
 function mapCriteria(
@@ -92,7 +94,7 @@ function getMongoFn(
 }
 
 // Helper to fetch remaining records
-async function* fetchOverflow<TRawData>(
+async function* fetchOverflow<TRawData extends RawData>(
   baseSearchCriteria: SearchCriteriaRaw,
   startOffset: number,
 ) {
@@ -106,19 +108,46 @@ async function* fetchOverflow<TRawData>(
       offset: currentOffset,
     };
 
-    const res = await rgSearch<TRawData>(body);
+    try {
+      const res = await rgSearch<TRawData>(body);
 
-    const duration = Date.now() - start;
+      const duration = Date.now() - start;
 
-    const items = (res as any)?.items || (Array.isArray(res) ? res : []);
+      const items = (res as any)?.items || (Array.isArray(res) ? res : []);
 
-    if (!items || items.length === 0) break;
+      if (!items || items.length === 0) break;
 
-    yield { items: items as TRawData, duration }; // Yield duration too
+      yield { items: items as TRawData, duration }; // Yield duration too
 
-    if (items.length < realGreenConst.CustProgServRecordsMax) break;
+      if (items.length < realGreenConst.CustProgServRecordsMax) break;
 
-    currentOffset += realGreenConst.CustProgServRecordsMax;
+      currentOffset += realGreenConst.CustProgServRecordsMax;
+    } catch (error) {
+      // Check if this is the specific corrupted data error
+      const isCorruptedDataError =
+        error instanceof Error &&
+        error.message === "Nullable object must have a value.";
+
+      if (isCorruptedDataError) {
+        // Hit corrupted data. Use binary search to isolate and skip only the corrupted record
+        console.error(`[stepFactories] fetchOverflow - Corrupted data error at offset ${currentOffset}. Using binary search to isolate corrupted record.`);
+        console.error('[stepFactories] fetchOverflow - Error details:', error);
+
+        // Use binary search to recover all valid records, skipping only the corrupted one
+        yield* binarySearchCorruptedRecord<TRawData>(
+          baseSearchCriteria,
+          currentOffset,
+          realGreenConst.CustProgServRecordsMax,
+        );
+
+        // Move to next batch after recovery
+        currentOffset += realGreenConst.CustProgServRecordsMax;
+        console.log(`[stepFactories] fetchOverflow - Binary search complete, moving to offset ${currentOffset}`);
+      } else {
+        // Different error - rethrow
+        throw error;
+      }
+    }
   }
 }
 
@@ -309,30 +338,72 @@ export function createBatchSizeStep<TRawData extends RawData>(
 
         const body = { ...rawCriteria };
 
-        const res = await rgSearch<TRawData>(body);
+        let rawData: TRawData;
+        let batchTotalRecords = 0;
 
-        const items = (res as any)?.items || (Array.isArray(res) ? res : []);
-        const rawData = items as TRawData;
+        try {
+          const res = await rgSearch<TRawData>(body);
 
-        // Track total records for this batch (including overflow)
-        let batchTotalRecords = rawData.length;
+          const items = (res as any)?.items || (Array.isArray(res) ? res : []);
+          rawData = items as TRawData;
+          batchTotalRecords = rawData.length;
 
-        const remapped = remapFn(rawData);
-        let mongoData = await mongoFn(remapped);
+          const remapped = remapFn(rawData);
+          let mongoData = await mongoFn(remapped);
 
-        if (config.filterFn) {
-          mongoData = config.filterFn(mongoData, pipelineData || []);
+          if (config.filterFn) {
+            mongoData = config.filterFn(mongoData, pipelineData || []);
+          }
+
+          cumulativeRecords += mongoData.length;
+
+          yield {
+            data: mongoData,
+            metrics: { calls: 1, durationMs: Date.now() - start, cumulativeRecords },
+          };
+        } catch (error) {
+          // Check if this is the specific corrupted data error
+          const isCorruptedDataError =
+            error instanceof Error &&
+            error.message === "Nullable object must have a value.";
+
+          if (isCorruptedDataError) {
+            console.error(`[createBatchSizeStep] Corrupted data error in batch with ${batchIds.length} IDs. Using binary search to isolate corrupted ID.`);
+            console.error('[createBatchSizeStep] Error details:', error);
+
+            // Use binary search on IDs to isolate and skip only the corrupted ID
+            for await (const { items: rawItems, duration } of binarySearchCorruptedId<TRawData>(
+              batchIds,
+              config.getSearchCriteria,
+              (criteria) => mapCriteria(config.stepName, criteria),
+            )) {
+              batchTotalRecords += rawItems.length;
+
+              const remapped = remapFn(rawItems as TRawData);
+              let mongoData = await mongoFn(remapped);
+
+              if (config.filterFn) {
+                mongoData = config.filterFn(mongoData, pipelineData || []);
+              }
+
+              cumulativeRecords += mongoData.length;
+
+              yield {
+                data: mongoData,
+                metrics: { calls: 1, durationMs: duration, cumulativeRecords },
+              };
+            }
+          } else {
+            // Different error - rethrow
+            throw error;
+          }
         }
 
-        cumulativeRecords += mongoData.length;
+        // For overflow handling, only if we got data without error
+        if (batchTotalRecords === 0) continue;
 
-        yield {
-          data: mongoData,
-          metrics: { calls: 1, durationMs: Date.now() - start, cumulativeRecords },
-        };
-
-        // Check for overflow
-        if (rawData.length === realGreenConst.CustProgServRecordsMax) {
+        // Check for overflow (only if rawData was successfully fetched)
+        if (rawData! && rawData.length === realGreenConst.CustProgServRecordsMax) {
           for await (const {
             items: rawItems,
             duration,
@@ -350,7 +421,7 @@ export function createBatchSizeStep<TRawData extends RawData>(
               mongoOverflow = config.filterFn(mongoOverflow, pipelineData || []);
             }
 
-            cumulativeRecords += mongoData.length;
+            cumulativeRecords += mongoOverflow.length;
 
             yield {
               data: mongoOverflow,

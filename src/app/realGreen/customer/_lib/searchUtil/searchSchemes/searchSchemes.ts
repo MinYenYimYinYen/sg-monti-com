@@ -108,26 +108,28 @@ const lastSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => {
     schemeName: "lastSeasonProduction",
     steps: [
       createPaginationStep({
-        stepName: "services",
-        optimizerKey: "initialServices",
+        stepName: "programs",
+        optimizerKey: "lastSeasonPrograms",
         searchCriteria: {
-          servStats: getServiceStatuses(["completed"]),
           season: season - 1,
         },
       }),
       createBatchSizeStep({
-        stepName: "programs",
+        stepName: "services",
         getIds: (pipelineData) =>
-          (pipelineData as ServiceDoc[]).map((s) => s.progId),
+          (pipelineData as ProgramDoc[]).map((p) => p.progId),
         getSearchCriteria: (ids) => ({
           progIds: ids,
-          season: season - 1,
+          season: season -1,
+          servStats: getServiceStatuses(["completed"])
         }),
       }),
       createBatchSizeStep({
         stepName: "customers",
-        getIds: (pipelineData) =>
-          (pipelineData as ProgramDoc[]).map((p) => p.custId),
+        getIds: (pipelineData) => {
+          const dupedIds = (pipelineData as ServiceDoc[]).map((s) => s.custId);
+          return [...new Set(dupedIds)];
+        },
         getSearchCriteria: (ids) => ({
           custIds: ids,
         }),
@@ -136,4 +138,8 @@ const lastSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => {
   };
 };
 
-export const searchScheme = { activeCustomers, printedCustomers, lastSeasonProduction };
+export const searchScheme = {
+  activeCustomers,
+  printedCustomers,
+  lastSeasonProduction,
+};
