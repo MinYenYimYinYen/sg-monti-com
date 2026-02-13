@@ -1,9 +1,9 @@
-import { Service } from "../types/ServiceTypes";
+import { Service, ServiceCore, ServiceDoc } from "../types/ServiceTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseProgram } from "./ProgramBase";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
-export const baseService: Service = {
+export const baseServiceCore: ServiceCore = {
   servId: baseNumId,
   asapSince: "",
   callAheadId: baseNumId,
@@ -16,15 +16,24 @@ export const baseService: Service = {
   price: 0,
   size: 0,
   progId: baseNumId,
+  season: 0,
   servCodeId: baseStrId,
   status: "",
-  season: 0,
   techNote: "",
-  production: null,
+  productionCore: null,
+};
+
+export const baseServiceDoc: ServiceDoc = {
+  ...baseServiceCore,
   createdAt: "",
   updatedAt: "",
+};
+
+export const baseService: Service = {
+  ...baseServiceDoc,
   program: baseProgram,
   servCode: baseServCode,
   callAhead: null,
   discount: null,
+  // production: null,
 };

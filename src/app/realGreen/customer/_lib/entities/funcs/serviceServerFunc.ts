@@ -1,8 +1,8 @@
 import {
-  remapUsedProducts,
-  UsedProductRaw,
-  UsedProductRemapped,
-} from "@/app/realGreen/_lib/subTypes/UsedProduct";
+  remapAppProducts,
+  AppProductRaw,
+  AppProductCore,
+} from "@/app/realGreen/_lib/subTypes/AppProduct";
 import {
   remapServiceHistory,
   ServiceHistory,
@@ -14,7 +14,7 @@ import {
   remapDoneBys,
 } from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
-import { ProductionRemapped } from "@/app/realGreen/_lib/subTypes/Production";
+import { ProductionCore } from "@/app/realGreen/_lib/subTypes/Production";
 import { AppError } from "@/lib/errors/AppError";
 import { ServiceCore, ServiceRaw } from "../types/ServiceTypes";
 
@@ -23,37 +23,38 @@ function remapProduction({
   servId,
   servStatus,
   historyRaw,
-  usedProductsRaw,
+  rawAppProducts,
   doneBysRaw,
+  doneDate,
 }: {
   invoice: number | null;
   servId: number;
   servStatus: string;
   historyRaw: ServiceHistoryRaw | undefined;
-  usedProductsRaw: UsedProductRaw[] | undefined;
+  rawAppProducts: AppProductRaw[] | undefined;
   doneBysRaw: DoneByRaw[] | undefined;
-}): ProductionRemapped | null {
+  doneDate: string;
+}): ProductionCore | null {
   if (!(servStatus === "S")) return null;
-  if (!historyRaw || !usedProductsRaw || !doneBysRaw || !invoice) {
+  if (!historyRaw || !rawAppProducts || !doneBysRaw || !invoice) {
     throw new AppError({
       message:
         "Completed service has missing data! Please contact your department lead.",
       data: {
         history: !!historyRaw,
-        usedProducts: !!usedProductsRaw,
+        usedProducts: !!rawAppProducts,
         doneBys: !!doneBysRaw,
         invoice: !!invoice,
       },
     });
   }
-  const history: ServiceHistory = remapServiceHistory(historyRaw);
-  const usedProducts: UsedProductRemapped[] =
-    remapUsedProducts(usedProductsRaw);
+  const history: ServiceHistory = remapServiceHistory(historyRaw, doneDate);
+  const usedAppProductCores: AppProductCore[] = remapAppProducts(rawAppProducts);
   const doneBys: DoneByRemapped[] = remapDoneBys(doneBysRaw);
 
-  const production: ProductionRemapped = {
+  const production: ProductionCore = {
     ...history,
-    usedProducts,
+    usedAppProductCores,
     doneBys,
     servId,
     invoice,
@@ -79,13 +80,14 @@ function remapService(raw: ServiceRaw): ServiceCore {
     servCodeId: raw.serviceCode || baseStrId,
     status: raw.serviceStatus,
     techNote: raw.technicianNote,
-    production: remapProduction({
+    productionCore: remapProduction({
       invoice: raw.invoiceNumber,
       servId: raw.id,
       doneBysRaw: raw.doneByEmployees,
       historyRaw: raw.serviceHistory,
-      usedProductsRaw: raw.productsUsed,
+      rawAppProducts: raw.productsUsed,
       servStatus: raw.serviceStatus,
+      doneDate: raw.doneDate,
     }),
   };
 }

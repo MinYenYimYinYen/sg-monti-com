@@ -1,3 +1,5 @@
+import { TRange } from "@/lib/primatives/tRange/TRange";
+
 /**
  * realGreen gives start/end in numeric format, but as military time
  * @example: start: 1430
@@ -33,23 +35,26 @@ export type ServiceHistoryRaw = {
   customerNumber: number;
 };
 
-export type ServiceHistoryRemapped = {
+export type ServiceHistoryCore = {
   postedBy: string;
   feedback: string;
   minutes: number;
   temperature: number;
   windSpeed: number;
-  start: string;
-  end: string;
+  timeRange: TRange<string>;
   crewSize: number;
-  
 };
 
-export type ServiceHistoryHydrate = {}
 
-export type ServiceHistory = ServiceHistoryRemapped & ServiceHistoryHydrate;
 
-export function remapServiceHistory(raw: ServiceHistoryRaw): ServiceHistory {
+export type ServiceHistoryProps = {};
+
+export type ServiceHistory = ServiceHistoryCore & ServiceHistoryProps;
+
+export function remapServiceHistory(
+  raw: ServiceHistoryRaw,
+  date: string,
+): ServiceHistory {
   let startInt = raw.start;
   let endInt = raw.end;
 
@@ -63,14 +68,28 @@ export function remapServiceHistory(raw: ServiceHistoryRaw): ServiceHistory {
     startInt = endInt;
   }
 
+  const timeRange: TRange<string> = {
+    min:
+      date +
+      "T" +
+      (startInt !== undefined ? timeIntToMilitaryString(startInt) : "00:00:00"),
+    max:
+      date +
+      "T" +
+      (endInt !== undefined ? timeIntToMilitaryString(endInt) : "00:00:00"),
+  };
+
   return {
     postedBy: raw.postBy || "",
     feedback: raw.feedback || "",
     minutes: raw.actualManHours || 0,
     temperature: raw.temperature || 0,
     windSpeed: raw.windSpeed || 0,
-    start: startInt !== undefined ? timeIntToMilitaryString(startInt) : "00:00:00",
-    end: endInt !== undefined ? timeIntToMilitaryString(endInt) : "00:00:00",
+    // start:
+    //   startInt !== undefined ? timeIntToMilitaryString(startInt) : "00:00:00",
+    // end: endInt !== undefined ? timeIntToMilitaryString(endInt) : "00:00:00",
+    timeRange,
+
     crewSize: raw.crewSize || 0,
-  }
+  };
 }

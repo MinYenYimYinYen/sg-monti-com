@@ -11,6 +11,7 @@ import { basicTaxCodeSelect } from "@/app/realGreen/taxCode/taxCodeBaseSelectors
 import { baseTaxCode } from "@/app/realGreen/taxCode/_lib/baseTaxCode";
 import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
 import { discountSelect } from "../../discount/selectors/discountSelect";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -75,6 +76,8 @@ export const selectCustomers = createSelector(
     basicTaxCodeSelect.basicTaxCodeMap,
     callAheadSelect.callAheadDocMap,
     discountSelect.discountDocMap,
+    // productSelect.productMap,
+
   ],
   (
     customerDocs,

@@ -1,15 +1,14 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import {
-  UsedProductRaw,
-} from "@/app/realGreen/_lib/subTypes/UsedProduct";
+  AppProductRaw,
+} from "@/app/realGreen/_lib/subTypes/AppProduct";
 import {
   ServiceHistoryRaw,
 } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
-import {
-  DoneByRaw,
-} from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
+import { DoneByRaw } from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
 import {
   Production,
+  ProductionCore,
 } from "@/app/realGreen/_lib/subTypes/Production";
 import { Program } from "./ProgramTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
@@ -56,7 +55,7 @@ export type ServiceRaw = {
   // prepaymentDiscountAmount: number;
   price: number;
   // productionValue?: number;
-  productsUsed?: UsedProductRaw[];
+  productsUsed?: AppProductRaw[];
   // programCodeAndDescription?: string;
   programDiscountAmount: number;
   // programDiscountCodeId?: string;
@@ -104,7 +103,7 @@ export type ServiceCore = {
   status: string;
   season: number;
   techNote: string;
-  production: Production | null;
+  productionCore: ProductionCore | null;
 };
 
 export type ServiceDocProps = CreatedUpdated & {
@@ -118,6 +117,8 @@ export type ServiceProps = {
   servCode: ServCode;
   callAhead: CallAheadDoc | null;
   discount: DiscountDoc | null;
+  // production: Production | null;
+  // todo: hydrate Production
 };
 
 export type Service = ServiceDoc & ServiceProps;

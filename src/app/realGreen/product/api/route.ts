@@ -81,6 +81,7 @@ const handlers: HandlerMap<ProductContract> = {
         productMasterDocs: masterDocs,
         productSingleDocs: singleDocs,
         productSubDocs: subDocs,
+        productCores: productCores,
       };
 
       return { success: true, payload: productsResponse };

@@ -6,6 +6,7 @@ import {
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingleDoc } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
+import { ProductCore } from "@/app/realGreen/product/_lib/types/ProductTypes";
 
 export const getProducts = createStandardThunk<ProductContract, "getAll">({
   typePrefix: "product/getProducts",
@@ -35,12 +36,14 @@ interface ProductState {
   productMasterDocs: ProductMasterDoc[];
   productSingleDocs: ProductSingleDoc[];
   productSubDocs: ProductSubDoc[];
+  productCores: ProductCore[];
 }
 
 const initialState: ProductState = {
   productMasterDocs: [],
   productSingleDocs: [],
   productSubDocs: [],
+  productCores: [],
 };
 
 const productSlice = createSlice({
@@ -88,6 +91,7 @@ const productSlice = createSlice({
       state.productMasterDocs = action.payload.productMasterDocs;
       state.productSingleDocs = action.payload.productSingleDocs;
       state.productSubDocs = action.payload.productSubDocs;
+      state.productCores = action.payload.productCores;
     });
   },
 });

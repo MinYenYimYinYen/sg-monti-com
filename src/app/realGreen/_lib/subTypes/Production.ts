@@ -1,14 +1,20 @@
-import { UsedProductRemapped } from "@/app/realGreen/_lib/subTypes/UsedProduct";
+import {
+  AppProduct,
+  AppProductCore,
+} from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { DoneByRemapped } from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
 import { ServiceHistory } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 
-export type ProductionRemapped = ServiceHistory & {
+export type ProductionCore = ServiceHistory & {
   servId: number;
-  usedProducts: UsedProductRemapped[];
+  usedAppProductCores: AppProductCore[];
   doneBys: DoneByRemapped[];
   invoice: number;
 };
 
-export type ProductionHydrate = {};
+export type ProductionProps = {
+  usedAppProducts: AppProduct;
 
-export type Production = ProductionRemapped & ProductionHydrate;
+};
+
+export type Production = ProductionCore & ProductionProps;

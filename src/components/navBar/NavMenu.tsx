@@ -78,7 +78,15 @@ const realGreenParams: NavSection = {
   ],
 };
 
-const menuSections = [schedulingSection, prepaySection, realGreenParams];
+const bizPlanSection: NavSection = {
+  title: "Biz Plan",
+  roles: ["admin"],
+  navItems: [
+    { title: "Products", href: "/bizPlan/products", roles: ["admin"] },
+  ],
+};
+
+const menuSections = [schedulingSection, prepaySection, realGreenParams, bizPlanSection];
 
 export default function NavMenu() {
   const isClient = useIsClient();

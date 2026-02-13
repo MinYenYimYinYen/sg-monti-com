@@ -31,7 +31,7 @@ import {
 } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import {
   remapServices,
-} from "@/app/realGreen/customer/_lib/entities/funcs/ServiceFuncs";
+} from "@/app/realGreen/customer/_lib/entities/funcs/serviceServerFunc";
 import {
   calculateNextBatchSize,
   calculateNextPagination
