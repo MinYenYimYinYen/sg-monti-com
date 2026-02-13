@@ -30,6 +30,8 @@ import { ProductSingleDocProps } from "@/app/realGreen/product/_lib/types/Produc
 import { ProductSubDocProps } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Grouper } from "@/lib/Grouper";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { UnitModel } from "@/app/realGreen/product/_lib/models/UnitModel";
+import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {
@@ -41,9 +43,6 @@ const handlers: HandlerMap<ProductContract> = {
       });
 
       const { masterCores, singleCores, subCores, productCores } =
-        // product Cores is unused.  I'm leaving it available here in case
-        // it is needed in the future.
-        // productCores is just raw products remapped.
         remapRawProducts(rawProducts);
 
       await connectToMongoDB();
@@ -81,21 +80,33 @@ const handlers: HandlerMap<ProductContract> = {
         (c) => c.categoryId,
       );
 
+      const unitDocs = await UnitModel.find().lean();
+      const units: Unit[] = cleanMongoArray(unitDocs) as Unit[];
+      const unitMap = new Grouper(units).toUniqueMap((u) => u.unitId);
+
       const masterDocs = extendProductMasters(
         masterCores,
         masterDocProps,
         categoryMap,
+        unitMap,
       );
       const singleDocs = extendProductSingles(
         singleCores,
         singleDocProps,
         categoryMap,
+        unitMap,
       );
-      const subDocs = extendProductSubs(subCores, subDocProps, categoryMap);
+      const subDocs = extendProductSubs(
+        subCores,
+        subDocProps,
+        categoryMap,
+        unitMap,
+      );
       const commonDocs = extendProductCores(
         productCores,
         commonDocProps,
         categoryMap,
+        unitMap,
       );
 
       const productsResponse: ProductsResponse = {

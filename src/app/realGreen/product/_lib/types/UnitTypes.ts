@@ -1,3 +1,5 @@
+import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
+
 export enum UL {
   lbs = "Lbs",
   flOz = "Fl Oz",
@@ -7,8 +9,14 @@ export enum UL {
   sec = "Seconds",
   bulb = "Bulb Charge",
   ft = "Feet",
+  unknown = "?",
 }
 
+export type UnitStorage = {
+  unitId: number;
+  metric: string;
+  desc: string;
+}
 
 export type AreaUnit = {
   unitId: number;
@@ -38,7 +46,7 @@ export type VolumeUnit = {
   unitId: number;
   metric: "volume";
   desc: UL.mGal | UL.flOz;
-}
+};
 
 export type WeightUnit = {
   unitId: number;
@@ -46,4 +54,22 @@ export type WeightUnit = {
   desc: UL.lbs;
 };
 
-export type Unit = AreaUnit | CountUnit | LengthUnit | TimeUnit | WeightUnit;
+type UnknownUnit = {
+  unitId: number;
+  metric: "unknown";
+  desc: UL.unknown;
+};
+
+export type Unit =
+  | AreaUnit
+  | CountUnit
+  | LengthUnit
+  | TimeUnit
+  | WeightUnit
+  | UnknownUnit;
+
+export const baseUnit: Unit = {
+  unitId: baseNumId,
+  metric: "unknown",
+  desc: UL.unknown,
+};

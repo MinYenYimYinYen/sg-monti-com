@@ -28,6 +28,8 @@ import {
   baseProductSingleDocProps,
 } from "@/app/realGreen/product/_lib/baseProduct";
 import { ProductCategoryStored } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
+import { baseUnit, Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export function remapRawProducts(raw: ProductRaw[]) {
   const cores: ProductCore[] = raw.map((p) => {
@@ -40,7 +42,7 @@ export function remapRawProducts(raw: ProductRaw[]) {
       isProduction: p.isProduction,
       isMobile: p.availableOnHandheld,
       isWorkOrder: p.isWorkOrder,
-      categoryId: p.productCategoryId,
+      categoryId: p.productCategoryId || baseNumId,
       productCode: p.productCode,
       unitId: p.unitofMeasure,
     };
@@ -66,18 +68,20 @@ export function remapRawProducts(raw: ProductRaw[]) {
 }
 
 export function extendProducts<
-  TCore extends { productId: number; categoryId: number },
-  TDocProps extends { productId: number; category: string },
+  TCore extends { productId: number; categoryId: number; unitId: number },
+  TDocProps extends { productId: number; category: string; unit: Unit },
 >({
   cores,
   docProps,
   baseDocProps,
   categoryMap,
+  unitMap,
 }: {
   cores: TCore[];
   docProps: TDocProps[];
   baseDocProps: TDocProps;
   categoryMap: Map<number, ProductCategoryStored>;
+  unitMap: Map<number, Unit>;
 }): (TCore & TDocProps)[] {
   const docPropsMap = new Grouper(docProps).toUniqueMap((p) => p.productId);
   return cores.map((core) => {
@@ -88,7 +92,9 @@ export function extendProducts<
       ...props,
       category:
         categoryMap.get(core.categoryId)?.category ||
-        core.categoryId.toString(),
+        core.categoryId?.toString() ||
+        baseStrId,
+      unit: unitMap.get(core.unitId) || baseUnit,
     } as TCore & TDocProps;
   });
 }
@@ -97,12 +103,14 @@ export function extendProductMasters(
   cores: ProductMasterCore[],
   docProps: ProductMasterDocProps[],
   categoryMap: Map<number, ProductCategoryStored>,
+  unitMap: Map<number, Unit>,
 ): ProductMasterDoc[] {
   return extendProducts({
     cores,
     docProps,
     baseDocProps: baseProductMasterDocProps,
     categoryMap,
+    unitMap,
   });
 }
 
@@ -110,12 +118,14 @@ export function extendProductSingles(
   cores: ProductSingleCore[],
   docProps: ProductSingleDocProps[],
   categoryMap: Map<number, ProductCategoryStored>,
+  unitMap: Map<number, Unit>,
 ): ProductSingleDoc[] {
   return extendProducts({
     cores,
     docProps,
     baseDocProps: baseProductSingleDocProps,
     categoryMap,
+    unitMap,
   });
 }
 
@@ -123,12 +133,14 @@ export function extendProductSubs(
   cores: ProductSubCore[],
   docProps: ProductSubDocProps[],
   categoryMap: Map<number, ProductCategoryStored>,
+  unitMap: Map<number, Unit>,
 ): ProductSubDoc[] {
   return extendProducts({
     cores,
     docProps,
     baseDocProps: baseProductMasterDocProps,
     categoryMap,
+    unitMap,
   });
 }
 
@@ -136,11 +148,13 @@ export function extendProductCores(
   cores: ProductCore[],
   docProps: ProductCommonDocProps[],
   categoryMap: Map<number, ProductCategoryStored>,
-):ProductCommonDoc[] {
+  unitMap: Map<number, Unit>,
+): ProductCommonDoc[] {
   return extendProducts({
     cores,
     docProps,
     baseDocProps: baseProductMasterDocProps,
     categoryMap,
-  })
+    unitMap,
+  });
 }

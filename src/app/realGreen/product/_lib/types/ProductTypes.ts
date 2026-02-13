@@ -1,3 +1,5 @@
+import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+
 export type ProductRaw = {
   anyBranch: boolean;
   availableOnHandheld: boolean;
@@ -20,7 +22,7 @@ export type ProductRaw = {
   markup: number | null;
   onHand: number | null;
   onHold: number | null;
-  productCategoryId: number;
+  productCategoryId: number | null;
   productCode: string;
   proposalNotes: string;
   reorderPoint: number | null;
@@ -49,6 +51,7 @@ export type ProductCore = {
 export type ProductCommonDocProps = {
   productId: number;
   category: string;
+  unit: Unit;
 }
 
 export type ProductCommonDoc = ProductCore & ProductCommonDocProps;

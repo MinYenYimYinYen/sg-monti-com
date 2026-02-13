@@ -52,6 +52,19 @@ export const createMastersColumns: (
     size: 180,
   },
   {
+    accessorKey: "unitId",
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="Unit" />
+    ),
+    cell: ({ row }) => (
+      <span>{row.original.unit.desc}</span>
+      // TODO: Left off here
+      //  Make the pencil button,
+      //  Make the unit editor,
+      //  Make the saveUnit contract
+    ),
+  },
+  {
     accessorKey: "subProductIds",
     header: "Subs",
     cell: ({ row }) => {
