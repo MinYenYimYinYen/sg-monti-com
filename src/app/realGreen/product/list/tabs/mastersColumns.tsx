@@ -52,7 +52,7 @@ export const createMastersColumns: (
     size: 180,
   },
   {
-    accessorKey: "unitId",
+    accessorKey: "unit",
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="Unit" />
     ),
