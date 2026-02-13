@@ -1,4 +1,3 @@
-import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 
 export type AppProductRaw = {
   actAmount?: number;

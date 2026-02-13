@@ -30,7 +30,7 @@ export async function* binarySearchCorruptedRecord<TRawData extends RawData>(
   console.log(`[binaryOffsetSearch] Starting binary search for corrupted record at offset ${errorOffset} with batch size ${batchSize}`);
 
   // Phase 1: Binary search to isolate the corrupted record
-  let corruptedOffset = await findCorruptedOffset(
+  const corruptedOffset = await findCorruptedOffset(
     baseSearchCriteria,
     errorOffset,
     batchSize,

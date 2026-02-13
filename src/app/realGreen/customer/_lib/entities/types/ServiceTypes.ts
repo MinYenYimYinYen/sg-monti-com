@@ -7,7 +7,6 @@ import {
 } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import { DoneByRaw } from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
 import {
-  Production,
   ProductionCore,
 } from "@/app/realGreen/_lib/subTypes/Production";
 import { Program } from "./ProgramTypes";

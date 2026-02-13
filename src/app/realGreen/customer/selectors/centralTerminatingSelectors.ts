@@ -39,7 +39,7 @@
 //     // Helper to create a "Base" object (terminator)
 //     // These objects satisfy the type but have no navigation properties or empty ones
 //     const createBaseCustomer = (doc: any): Customer =>
-//       ({ ...doc, programs: [] }) as Customer; //todo: these should be replaced with baseEntities defined in _lib
+//       ({ ...doc, programs: [] }) as Customer;  these should be replaced with baseEntities defined in _lib
 //     const createBaseProgram = (doc: any): Program =>
 //       ({ ...doc, services: [], customer: {} as Customer }) as Program;
 //     const createBaseService = (doc: any): Service =>
@@ -49,7 +49,7 @@
 //       // 1. Main Customer Node
 //       const customer = {
 //         ...custDoc,
-//         // TODO: RESOLVE TYPESCRIPT ERRORS HERE BY HYDRATING CUSTOMER OBJECTS
+//         / RESOLVE TYPESCRIPT ERRORS HERE BY HYDRATING CUSTOMER OBJECTS
 //       } as Customer;
 //
 //       const progDocs = programDocMap.get(custDoc.custId) || [];
@@ -58,7 +58,7 @@
 //         // 2. Main Program Node
 //         const program = {
 //           ...progDoc,
-//           // TODO: RESOLVE TYPESCRIPT ERRORS HERE BY HYDRATING PROGRAM OBJECTS
+//           / RESOLVE TYPESCRIPT ERRORS HERE BY HYDRATING PROGRAM OBJECTS
 //         } as Program;
 //
 //         // 2a. Program -> Customer Context (Up)
@@ -69,14 +69,14 @@
 //
 //         const customerContext = {
 //           ...custDoc,
-//           // TODO: HYDRATE CUSTOMER CONTEXT
+//           / HYDRATE CUSTOMER CONTEXT
 //         } as Customer;
 //
 //         // Populate siblings for the context
 //         customerContext.programs = progDocs.map((siblingDoc) => {
 //           const sibling = {
 //             ...siblingDoc,
-//             // TODO: HYDRATE SIBLING PROGRAM
+//             / HYDRATE SIBLING PROGRAM
 //           } as Program;
 //           sibling.customer = createBaseCustomer(custDoc); // TERMINATOR
 //
@@ -85,7 +85,7 @@
 //           sibling.services = siblingServiceDocs.map(servDoc => {
 //              const siblingService = {
 //                ...servDoc,
-//                // TODO: HYDRATE SIBLING SERVICE
+//                / HYDRATE SIBLING SERVICE
 //              } as Service;
 //              siblingService.program = createBaseProgram(siblingDoc); // TERMINATOR
 //              return siblingService;
@@ -102,21 +102,21 @@
 //           // 3. Main Service Node
 //           const service = {
 //             ...servDoc,
-//             // TODO: RESOLVE TYPESCRIPT ERRORS HERE BY HYDRATING SERVICE OBJECTS
+//             / RESOLVE TYPESCRIPT ERRORS HERE BY HYDRATING SERVICE OBJECTS
 //           } as Service;
 //
 //           // 3a. Service -> Program Context (Up)
 //           // Service -> ProgramContext -> Services -> ServiceSibling -> BaseProgram
 //           const programContext = {
 //             ...progDoc,
-//             // TODO: HYDRATE PROGRAM CONTEXT
+//             / HYDRATE PROGRAM CONTEXT
 //           } as Program;
 //
 //           // Populate siblings for the context
 //           programContext.services = serviceDocs.map((siblingDoc) => {
 //             const sibling = {
 //               ...siblingDoc,
-//               // TODO: HYDRATE SIBLING SERVICE
+//               / HYDRATE SIBLING SERVICE
 //             } as Service;
 //             sibling.program = createBaseProgram(progDoc); // TERMINATOR
 //             return sibling;

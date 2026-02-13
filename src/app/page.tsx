@@ -63,16 +63,16 @@ import {useLastSeasonProduction} from "@/app/realGreen/customer/hooks/useLastSea
 
 export default function Home() {
   // NEW: Declare contexts first
-  useCustomerContext({ contexts: ["printed", "active", "lastSeasonProduction"] });
+  // useCustomerContext({ contexts: ["printed", "active", "lastSeasonProduction"] });
 
 
   // useActiveCustomers({ autoLoad: true });
   // useLastSeasonProduction({autoLoad: true});
-  useProgServ({ autoLoad: true });
-
-  useTaxCode({ autoLoad: true });
-  useCallAhead({ autoLoad: true });
-  useDiscount({ autoLoad: true });
+  // useProgServ({ autoLoad: true });
+  //
+  // useTaxCode({ autoLoad: true });
+  // useCallAhead({ autoLoad: true });
+  // useDiscount({ autoLoad: true });
   const customers = useSelector(centralSelect.customers);
   const programs = useSelector(centralSelect.programs);
   const services = useSelector(centralSelect.services);
