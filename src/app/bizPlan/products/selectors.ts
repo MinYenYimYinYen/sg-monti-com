@@ -20,21 +20,21 @@ const tyServices = createSelector(
 
 const lyProductions = createSelector([lyServices], (lyServices) => {
   const productions = typeGuard.definedArray(
-    lyServices.map((service) => service.productionCore),
+    lyServices.map((service) => service.production),
   );
   return productions;
 });
 
 const tyProductions = createSelector([tyServices], (tyServices) => {
   const productions = typeGuard.definedArray(
-    tyServices.map((service) => service.productionCore),
+    tyServices.map((service) => service.production),
   );
   return productions;
 });
 
-const usedProducts = createSelector([lyProductions], (lyProductions) => {
+const lyusedProducts = createSelector([lyProductions], (lyProductions) => {
   const usedProducts = lyProductions.flatMap((prod) => {
-    return prod.usedAppProductCores;
+    return prod.usedAppProducts;
   });
   return usedProducts;
 });

@@ -66,6 +66,16 @@ const selectProductSinglesMap = createSelector(
   },
 );
 
+const selectProductCommonDocs = (state: AppState) =>
+  state.product.productCommonDocs;
+
+const selectProductCommonDocMap = createSelector(
+  [selectProductCommonDocs],
+  (commonDocs) => {
+    return new Grouper(commonDocs).toUniqueMap((c) => c.productId);
+  }
+)
+
 export const productSelect = {
   productMasterDocs: selectProductMasterDocs,
   productSingleDocs: selectProductSingleDocs,
@@ -78,4 +88,6 @@ export const productSelect = {
   productMastersMap: selectProductMastersMap,
   productSinglesMap: selectProductSinglesMap,
   productSubsMap: selectProductSubsMap,
+  productCommonDocs: selectProductCommonDocs,
+  productCommonDocMap: selectProductCommonDocMap,
 };

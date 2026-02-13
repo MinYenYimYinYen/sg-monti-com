@@ -1,3 +1,4 @@
+import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 
 export type AppProductRaw = {
   actAmount?: number;
@@ -18,6 +19,7 @@ export type AppProductCore = {
 };
 
 export type AppProductProps = {
+  productCommon: ProductCommon;
 };
 
 export type AppProduct = AppProductCore & AppProductProps;

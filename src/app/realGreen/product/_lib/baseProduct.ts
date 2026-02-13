@@ -1,4 +1,10 @@
-import { ProductCore } from "@/app/realGreen/product/_lib/types/ProductTypes";
+import {
+  ProductCommon,
+  ProductCommonDoc,
+  ProductCommonDocProps,
+  ProductCommonProps,
+  ProductCore,
+} from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import {
   ProductMaster,
@@ -95,24 +101,40 @@ export const baseProductSubCore: ProductSubCore = {
   isMaster: false,
   isProduction: true,
   isMobile: false,
-}
+};
 
 export const baseProductSubDocProps: ProductSubDocProps = {
   productId: baseNumId,
   category: baseStrId,
   createdAt: "",
   updatedAt: "",
-}
+};
 
 export const baseProductSubDoc: ProductSubDoc = {
   ...baseProductSubCore,
   ...baseProductSubDocProps,
-}
+};
 
-export const baseProductSubProps: ProductSubProps = {}
+export const baseProductSubProps: ProductSubProps = {};
 
 export const baseProductSub: ProductSub = {
   ...baseProductSubDoc,
   ...baseProductSubProps,
-}
+};
 
+export const baseProductCommonDocProps: ProductCommonDocProps = {
+  productId: baseNumId,
+  category: baseStrId,
+};
+
+export const baseProductCommonDoc: ProductCommonDoc = {
+  ...baseProductCore,
+  ...baseProductCommonDocProps,
+};
+
+export const baseProductCommonProps: ProductCommonProps = {};
+
+export const baseProductCommon: ProductCommon = {
+  ...baseProductCommonDoc,
+  ...baseProductCommonProps,
+};

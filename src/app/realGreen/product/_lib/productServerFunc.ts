@@ -1,4 +1,6 @@
 import {
+  ProductCommonDoc,
+  ProductCommonDocProps,
   ProductCore,
   ProductRaw,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
@@ -128,4 +130,17 @@ export function extendProductSubs(
     baseDocProps: baseProductMasterDocProps,
     categoryMap,
   });
+}
+
+export function extendProductCores(
+  cores: ProductCore[],
+  docProps: ProductCommonDocProps[],
+  categoryMap: Map<number, ProductCategoryStored>,
+):ProductCommonDoc[] {
+  return extendProducts({
+    cores,
+    docProps,
+    baseDocProps: baseProductMasterDocProps,
+    categoryMap,
+  })
 }

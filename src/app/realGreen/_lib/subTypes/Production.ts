@@ -13,8 +13,7 @@ export type ProductionCore = ServiceHistory & {
 };
 
 export type ProductionProps = {
-  usedAppProducts: AppProduct;
-
+  usedAppProducts: AppProduct[];
 };
 
 export type Production = ProductionCore & ProductionProps;

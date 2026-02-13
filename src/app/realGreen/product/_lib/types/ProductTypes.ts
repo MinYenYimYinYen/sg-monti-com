@@ -47,8 +47,16 @@ export type ProductCore = {
 };
 
 export type ProductCommonDocProps = {
+  productId: number;
   category: string;
 }
+
+export type ProductCommonDoc = ProductCore & ProductCommonDocProps;
+
+export type ProductCommonProps = {
+}
+
+export type ProductCommon = ProductCommonDoc & ProductCommonProps;
 
 
 

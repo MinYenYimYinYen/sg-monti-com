@@ -4,12 +4,16 @@ import {
   ProductContract,
   ProductsResponse,
 } from "@/app/realGreen/product/api/ProductContract";
-import { ProductRaw } from "@/app/realGreen/product/_lib/types/ProductTypes";
+import {
+  ProductCommonDocProps,
+  ProductRaw,
+} from "@/app/realGreen/product/_lib/types/ProductTypes";
 
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { ProductCategoryModel } from "@/app/realGreen/product/_lib/models/ProductCategoryModel";
 import { AppError } from "@/lib/errors/AppError";
 import {
+  extendProductCores,
   extendProductMasters,
   extendProductSingles,
   extendProductSubs,
@@ -51,6 +55,7 @@ const handlers: HandlerMap<ProductContract> = {
       const masterCoreIds = masterCores.map((p) => p.productId);
       const singleCoreIds = singleCores.map((p) => p.productId);
       const subCoreIds = subCores.map((p) => p.productId);
+      const commonCoreIds = productCores.map((p) => p.productId);
 
       const getDocProps = (coreIds: number[]) => {
         const docProps = productDocProps.filter((docProp) =>
@@ -66,6 +71,9 @@ const handlers: HandlerMap<ProductContract> = {
         singleCoreIds,
       ) as ProductSingleDocProps[];
       const subDocProps = getDocProps(subCoreIds) as ProductSubDocProps[];
+      const commonDocProps = getDocProps(
+        commonCoreIds,
+      ) as ProductCommonDocProps[];
 
       const categoryDocs = await ProductCategoryModel.find().lean();
       const categories = cleanMongoArray(categoryDocs);
@@ -73,15 +81,28 @@ const handlers: HandlerMap<ProductContract> = {
         (c) => c.categoryId,
       );
 
-      const masterDocs = extendProductMasters(masterCores, masterDocProps, categoryMap);
-      const singleDocs = extendProductSingles(singleCores, singleDocProps, categoryMap);
+      const masterDocs = extendProductMasters(
+        masterCores,
+        masterDocProps,
+        categoryMap,
+      );
+      const singleDocs = extendProductSingles(
+        singleCores,
+        singleDocProps,
+        categoryMap,
+      );
       const subDocs = extendProductSubs(subCores, subDocProps, categoryMap);
+      const commonDocs = extendProductCores(
+        productCores,
+        commonDocProps,
+        categoryMap,
+      );
 
       const productsResponse: ProductsResponse = {
         productMasterDocs: masterDocs,
         productSingleDocs: singleDocs,
         productSubDocs: subDocs,
-        productCores: productCores,
+        productCommonDocs: commonDocs,
       };
 
       return { success: true, payload: productsResponse };
@@ -110,19 +131,18 @@ const handlers: HandlerMap<ProductContract> = {
     handler: async (params) => {
       await connectToMongoDB();
       const { masterId, subProductIds } = params;
-      const result =
-        await ProductDocPropsModel.findOneAndUpdate(
-          {productId: masterId},
-          {subProductIds},
-          {upsert: true, new: true}
-        ).lean();
+      const result = await ProductDocPropsModel.findOneAndUpdate(
+        { productId: masterId },
+        { subProductIds },
+        { upsert: true, new: true },
+      ).lean();
       if (result.productId) {
         return { success: true };
       } else {
         throw new AppError({ message: "Error saving master sub products" });
       }
-    }
-  }
+    },
+  },
 };
 
 export const POST = createRpcHandler(handlers);

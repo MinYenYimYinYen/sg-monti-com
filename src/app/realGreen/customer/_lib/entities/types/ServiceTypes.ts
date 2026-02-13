@@ -7,6 +7,7 @@ import {
 } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import { DoneByRaw } from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
 import {
+  Production,
   ProductionCore,
 } from "@/app/realGreen/_lib/subTypes/Production";
 import { Program } from "./ProgramTypes";
@@ -116,7 +117,7 @@ export type ServiceProps = {
   servCode: ServCode;
   callAhead: CallAheadDoc | null;
   discount: DiscountDoc | null;
-  // production: Production | null;
+  production: Production | null;
   // todo: hydrate Production
 };
 

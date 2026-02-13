@@ -12,6 +12,7 @@ import { baseTaxCode } from "@/app/realGreen/taxCode/_lib/baseTaxCode";
 import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
 import { discountSelect } from "../../discount/selectors/discountSelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
+import { hydrateProduction } from "@/app/realGreen/customer/selectors/hydrateProduction";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -76,7 +77,7 @@ export const selectCustomers = createSelector(
     basicTaxCodeSelect.basicTaxCodeMap,
     callAheadSelect.callAheadDocMap,
     discountSelect.discountDocMap,
-    // productSelect.productMap,
+    productSelect.productCommonDocMap,
 
   ],
   (
@@ -88,6 +89,7 @@ export const selectCustomers = createSelector(
     basicTaxCodeMap,
     callAheadDocMap,
     discountDocMap,
+    productDocMap,
   ) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
       const taxCodes = custDoc.taxIds
@@ -120,12 +122,14 @@ export const selectCustomers = createSelector(
         const services = serviceDocs.map((servDoc) => {
           const servCode = servCodeMap.get(servDoc.servCodeId) || baseServCode;
 
+
           const service: Service = {
             ...servDoc,
             program,
             servCode,
             callAhead: callAheadDocMap.get(servDoc.callAheadId) || null,
             discount: discountDocMap.get(servDoc.discountId) || null,
+            production: hydrateProduction(servDoc.productionCore, productDocMap)
           };
 
           return service;
