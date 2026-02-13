@@ -2,6 +2,7 @@ import { productActions } from "@/app/realGreen/product/_lib/slices/productSlice
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
+import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 
 export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();
@@ -50,6 +51,20 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
     ).unwrap();
   };
 
+  const updateUnit = (newUnit: Unit) => {
+    dispatch(productActions.updateUnit({ newUnit }));
+
+    return dispatch(
+      productActions.saveUnit({
+        params: { unit: newUnit },
+        config: {
+          force: true,
+          showLoading: false,
+        },
+      }),
+    ).unwrap();
+  };
+
   const updateMasterSubProducts = (params: {
     masterId: number;
     subProductIds: number[];
@@ -77,5 +92,6 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
     refresh,
     updateCategory,
     updateMasterSubProducts,
+    updateUnit,
   };
 }

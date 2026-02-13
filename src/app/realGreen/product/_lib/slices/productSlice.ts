@@ -1,15 +1,14 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { ProductContract } from "@/app/realGreen/product/api/ProductContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
-import {
-  ProductMasterDoc,
-} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingleDoc } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import {
   ProductCommonDoc,
   ProductCore,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
+import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 
 export const getProducts = createStandardThunk<ProductContract, "getAll">({
   typePrefix: "product/getProducts",
@@ -33,6 +32,12 @@ export const saveMasterSubProducts = createStandardThunk<
   typePrefix: "product/saveMasterSubProducts",
   apiPath: "/realGreen/product/api",
   opName: "saveMasterSubProducts",
+});
+
+export const saveUnit = createStandardThunk<ProductContract, "saveUnit">({
+  typePrefix: "product/saveUnit",
+  apiPath: "/realGreen/product/api",
+  opName: "saveUnit",
 });
 
 interface ProductState {
@@ -63,18 +68,53 @@ const productSlice = createSlice({
       matchingMasters.forEach((master) => {
         master.category = action.payload.newCategory;
       });
+
       const matchingSingles = state.productSingleDocs.filter(
         (single) => single.categoryId === action.payload.categoryId,
       );
       matchingSingles.forEach((single) => {
         single.category = action.payload.newCategory;
       });
-      const matchingDocs = state.productSubDocs.filter(
+
+      const matchingSubProductDocs = state.productSubDocs.filter(
         (doc) => doc.categoryId === action.payload.categoryId,
       );
-      matchingDocs.forEach((doc) => {
+      matchingSubProductDocs.forEach((doc) => {
         doc.category = action.payload.newCategory;
       });
+
+      const matchingCommonDocs = state.productCommonDocs.filter(
+        (common) => common.categoryId === action.payload.categoryId,
+      );
+      matchingCommonDocs.forEach((common) => {
+        common.category = action.payload.newCategory;
+      });
+    },
+    updateUnit: (state, action: PayloadAction<{ newUnit: Unit }>) => {
+      const matchingMasters = state.productMasterDocs.filter(
+        (master) => master.unitId === action.payload.newUnit.unitId
+      )
+      matchingMasters.forEach((master) => {
+        master.unit = action.payload.newUnit;
+      })
+      const matchingSingles = state.productSingleDocs.filter(
+        (single) => single.unitId === action.payload.newUnit.unitId
+      )
+      matchingSingles.forEach((single) => {
+        single.unit = action.payload.newUnit;
+      })
+      const matchingSubs = state.productSubDocs.filter(
+        (sub) => sub.unitId === action.payload.newUnit.unitId
+      )
+      matchingSubs.forEach((sub) => {
+        sub.unit = action.payload.newUnit;
+      })
+      const matchingCommons = state.productCommonDocs.filter(
+        (common) => common.unitId === action.payload.newUnit.unitId
+      )
+      matchingCommons.forEach((common) => {
+        common.unit = action.payload.newUnit;
+      })
     },
     updateMasterSubProducts: (
       state,
@@ -104,5 +144,6 @@ export const productActions = {
   getProducts,
   saveCategory,
   saveMasterSubProducts,
+  saveUnit,
 };
 export default productSlice.reducer;

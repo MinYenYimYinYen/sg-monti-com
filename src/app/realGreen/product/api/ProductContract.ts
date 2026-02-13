@@ -8,6 +8,7 @@ import {
   ProductCommonDoc,
   ProductCore,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
+import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 
 
 
@@ -32,6 +33,11 @@ export interface ProductContract extends ApiContract {
 
   saveMasterSubProducts: {
     params: {masterId: number, subProductIds: number[]}
+    result: SuccessResponse;
+  }
+
+  saveUnit: {
+    params: {unit: Unit}
     result: SuccessResponse;
   }
 }
