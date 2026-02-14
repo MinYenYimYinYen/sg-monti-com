@@ -8,8 +8,10 @@ import { Row } from "@tanstack/react-table";
 import { MasterEditSheet } from "./MasterEditSheet";
 import { createMastersColumns } from "@/app/realGreen/product/list/tabs/mastersColumns";
 import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
+import EditUnitSheet from "@/app/realGreen/product/list/tabs/EditUnitSheet";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 
 export default function MastersTab() {
   const masters = useSelector(productSelect.productMasters);
@@ -20,7 +22,8 @@ export default function MastersTab() {
     categoryId: number;
     categoryName: string;
   } | null>(null);
-  
+  const [editingUnit, setEditingUnit] = React.useState<Unit | null>(null);
+
   /*DEBUG*/
   // useEffect(() => {
   //   console.log("masters", masters)
@@ -32,6 +35,7 @@ export default function MastersTab() {
       setEditingMaster,
       (categoryId, categoryName) =>
         setEditCategoryState({ categoryId, categoryName }),
+      setEditingUnit,
     );
   }, []);
 
@@ -101,6 +105,11 @@ export default function MastersTab() {
         categoryName={editCategoryState?.categoryName || ""}
         open={editCategoryState !== null}
         onOpenChange={(open) => !open && setEditCategoryState(null)}
+      />
+      <EditUnitSheet
+        unit={editingUnit}
+        open={editingUnit !== null}
+        onOpenChange={(open) => !open && setEditingUnit(null)}
       />
     </div>
   );

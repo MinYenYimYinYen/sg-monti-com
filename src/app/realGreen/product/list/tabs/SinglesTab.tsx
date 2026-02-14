@@ -7,7 +7,9 @@ import { DataGrid } from "@/components/DataGrid";
 
 import { createSinglesColumns } from "@/app/realGreen/product/list/tabs/singlesColumns";
 import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
+import EditUnitSheet from "@/app/realGreen/product/list/tabs/EditUnitSheet";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
+import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 
 export default function SinglesTab() {
   const singles = useSelector(productSelect.productSingles);
@@ -16,12 +18,16 @@ export default function SinglesTab() {
     categoryId: number;
     categoryName: string;
   } | null>(null);
+  const [editingUnit, setEditingUnit] = React.useState<Unit | null>(null);
 
   const singlesColumns = React.useMemo(
     () =>
-      createSinglesColumns((categoryId, categoryName) => {
-        setEditCategoryState({ categoryId, categoryName });
-      }),
+      createSinglesColumns(
+        (categoryId, categoryName) => {
+          setEditCategoryState({ categoryId, categoryName });
+        },
+        (unit) => setEditingUnit(unit),
+      ),
     [],
   );
 
@@ -51,6 +57,11 @@ export default function SinglesTab() {
         categoryName={editCategoryState?.categoryName || ""}
         open={editCategoryState !== null}
         onOpenChange={(open) => !open && setEditCategoryState(null)}
+      />
+      <EditUnitSheet
+        unit={editingUnit}
+        open={editingUnit !== null}
+        onOpenChange={(open) => !open && setEditingUnit(null)}
       />
     </div>
   );

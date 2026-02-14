@@ -6,10 +6,13 @@ import { Button } from "@/style/components/button";
 import { Pencil } from "lucide-react";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
+import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+
 export const createMastersColumns: (
   onEdit: (master: ProductMaster) => void,
   onEditCategory: (categoryId: number, categoryName: string) => void,
-) => ColumnDef<ProductMaster>[] = (onEdit, onEditCategory) => [
+  onEditUnit: (unit: Unit) => void,
+) => ColumnDef<ProductMaster>[] = (onEdit, onEditCategory, onEditUnit) => [
   {
     accessorKey: "productCode",
     header: ({ column }) => (
@@ -57,11 +60,20 @@ export const createMastersColumns: (
       <DataGridColumnHeader column={column} title="Unit" />
     ),
     cell: ({ row }) => (
-      <span>{row.original.unit.desc}</span>
-      // TODO: Left off here
-      //  Make the pencil button,
-      //  Make the unit editor,
-      //  Make the saveUnit contract
+      <div className={"flex items-center gap-2"}>
+        <span>{row.original.unit.desc}</span>
+        <Button
+          variant={"outline"}
+          size={"icon"}
+          className="h-6 w-6"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditUnit?.(row.original.unit);
+          }}
+        >
+          <Pencil className="h-3 w-3" />
+        </Button>
+      </div>
     ),
   },
   {
