@@ -73,6 +73,12 @@ export default function EditCategorySheet({
         <form onSubmit={handleSave}>
           <FieldGroup>
             <Field orientation={"grid"}>
+              <FieldLabel>Category ID:</FieldLabel>
+              <FieldContent>
+                <Input value={categoryId.toString()} disabled />
+              </FieldContent>
+            </Field>
+            <Field orientation={"grid"}>
               <FieldLabel>Category Name:</FieldLabel>
               <FieldContent>
                 <Input

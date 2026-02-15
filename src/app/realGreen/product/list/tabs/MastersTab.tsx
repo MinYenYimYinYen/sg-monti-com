@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
 import { Row } from "@tanstack/react-table";
-import { MasterEditSheet } from "./MasterEditSheet";
+import { EditSubProductsSheet } from "./EditSubProductsSheet";
 import { createMastersColumns } from "@/app/realGreen/product/list/tabs/mastersColumns";
 import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
 import EditUnitSheet from "@/app/realGreen/product/list/tabs/EditUnitSheet";
@@ -94,7 +94,7 @@ export default function MastersTab() {
         globalFilterColumns={["description", "productCode"]}
         globalFilterPlaceholder="Search products..."
       />
-      <MasterEditSheet
+      <EditSubProductsSheet
         key={editingMaster?.productId ?? "closed"}
         master={editingMaster}
         open={editingMaster !== null}

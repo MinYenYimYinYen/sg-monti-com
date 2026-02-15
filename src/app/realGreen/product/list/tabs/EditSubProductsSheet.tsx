@@ -26,7 +26,7 @@ interface MasterEditSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function MasterEditSheet({
+export function EditSubProductsSheet({
   master,
   open,
   onOpenChange,
