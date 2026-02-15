@@ -16,7 +16,11 @@ import { Badge } from "@/style/components/badge";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { Checkbox } from "@/style/components/checkbox";
 import { Label } from "@/style/components/label";
-import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { Input } from "@/style/components/input";
+import {
+  ProductMaster,
+  SubProductConfigDoc,
+} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 
@@ -33,8 +37,8 @@ export function EditSubProductsSheet({
 }: MasterEditSheetProps) {
   const { updateMasterSubProducts } = useProduct({});
   const productSubs = useSelector(productSelect.productSubs);
-  const [selectedSubIds, setSelectedSubIds] = React.useState<number[]>(
-    master?.subProductConfigs.map((config) => config.subId) || [],
+  const [configs, setConfigs] = React.useState<SubProductConfigDoc[]>(
+    master?.subProductConfigs || [],
   );
 
   // Filter cores to show only products that can be subs
@@ -44,10 +48,16 @@ export function EditSubProductsSheet({
   );
 
   const toggleSub = (productId: number) => {
-    setSelectedSubIds((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId],
+    setConfigs((prev) =>
+      prev.some((c) => c.subId === productId)
+        ? prev.filter((c) => c.subId !== productId)
+        : [...prev, { subId: productId, rate: 0 }],
+    );
+  };
+
+  const updateRate = (productId: number, rate: number) => {
+    setConfigs((prev) =>
+      prev.map((c) => (c.subId === productId ? { ...c, rate } : c)),
     );
   };
 
@@ -56,26 +66,16 @@ export function EditSubProductsSheet({
     if (master) {
       await updateMasterSubProducts({
         masterId: master.productId,
-        //todo: Placeholder.  Need to modify such that we also edit rates.
-        subProductConfigs: selectedSubIds.map((id) => ({ subId: id, rate: 0})),
+        subProductConfigs: configs,
       });
       setStatus("success");
     }
-
-    // console.log(
-    //   "Saving master:",
-    //   master?.productId,
-    //   "with subs:",
-    //   selectedSubIds,
-    // );
   };
 
   const handleCancel = () => {
     // Reset to original state
     if (master) {
-      //todo: Placeholder.  Need to modify such that we also edit rates.
-      // I think the way is to
-      setSelectedSubIds(master.subProductConfigs.map((config) => config.subId));
+      setConfigs(master.subProductConfigs);
     }
     onOpenChange(false);
   };
@@ -84,11 +84,11 @@ export function EditSubProductsSheet({
 
   return (
     <Sheet key={master.productId} open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-[540px]">
+      <SheetContent className="sm:max-w-[800px]">
         <SheetHeader>
           <SheetTitle>Edit Master Product</SheetTitle>
           <SheetDescription>
-            Configure sub-products for this master product
+            Configure sub-products and rates for this master product
           </SheetDescription>
         </SheetHeader>
 
@@ -109,57 +109,117 @@ export function EditSubProductsSheet({
             </div>
           </div>
 
-          {/* Sub-Products Selection */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">
-                Sub-Products ({selectedSubIds.length} selected)
-              </Label>
-              {selectedSubIds.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedSubIds([])}
-                >
-                  Clear All
-                </Button>
-              )}
-            </div>
-            <ScrollArea className="h-[400px] rounded-md border">
-              <div className="p-4 space-y-2">
-                {availableSubs.length === 0 ? (
-                  <div className="text-sm text-muted-foreground text-center py-8">
-                    No available sub-products found
-                  </div>
-                ) : (
-                  availableSubs.map((sub) => (
-                    <div
-                      key={sub.productId}
-                      className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/10 cursor-pointer"
-                      onClick={() => toggleSub(sub.productId)}
-                    >
-                      <Checkbox
-                        checked={selectedSubIds.includes(sub.productId)}
-                        onCheckedChange={() => toggleSub(sub.productId)}
-                      />
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm text-muted-foreground">
-                            {sub.productCode}
-                          </span>
-                          <span className="text-sm font-medium">
-                            {sub.description}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Category: {sub.category}
+          <div className="grid grid-cols-2 gap-6">
+            {/* Sub-Products Selection */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">
+                  Available Sub-Products
+                </Label>
+              </div>
+              <ScrollArea className="h-[400px] rounded-md border">
+                <div className="p-4 space-y-2">
+                  {availableSubs.length === 0 ? (
+                    <div className="text-sm text-muted-foreground text-center py-8">
+                      No available sub-products found
+                    </div>
+                  ) : (
+                    availableSubs.map((sub) => (
+                      <div
+                        key={sub.productId}
+                        className="flex items-center space-x-3 rounded-md border p-3 hover:bg-accent/10 cursor-pointer"
+                        onClick={() => toggleSub(sub.productId)}
+                      >
+                        <Checkbox
+                          checked={configs.some((c) => c.subId === sub.productId)}
+                          onCheckedChange={() => toggleSub(sub.productId)}
+                        />
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm text-muted-foreground">
+                              {sub.productCode}
+                            </span>
+                            <span className="text-sm font-medium">
+                              {sub.description}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Selected Sub-Products & Rates */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">
+                  Selected ({configs.length})
+                </Label>
+                {configs.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConfigs([])}
+                  >
+                    Clear All
+                  </Button>
                 )}
               </div>
-            </ScrollArea>
+              <ScrollArea className="h-[400px] rounded-md border">
+                <div className="p-4 space-y-2">
+                  {configs.length === 0 ? (
+                    <div className="text-sm text-muted-foreground text-center py-8">
+                      No sub-products selected
+                    </div>
+                  ) : (
+                    configs.map((config) => {
+                      const sub = availableSubs.find(
+                        (s) => s.productId === config.subId,
+                      );
+                      return (
+                        <div
+                          key={config.subId}
+                          className="space-y-2 rounded-md border p-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">
+                              {sub?.description || `Sub ID: ${config.subId}`}
+                            </span>
+                            <Button
+                              variant="outline"
+                              intensity={"ghost"}
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => toggleSub(config.subId)}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                              Rate:
+                            </Label>
+                            <Input
+                              type="number"
+                              className="h-8"
+                              value={config.rate}
+                              onChange={(e) =>
+                                updateRate(
+                                  config.subId,
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         </div>
 

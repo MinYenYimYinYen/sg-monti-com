@@ -17,8 +17,13 @@ const ProductDocPropsSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true, unique: true },
 
-    subProductIds: {
-      type: [Number],
+    subProductConfigs: {
+      type: [
+        {
+          subId: { type: Number, required: true },
+          rate: { type: Number, required: true },
+        },
+      ],
       required: false,
       default: undefined,
     },
