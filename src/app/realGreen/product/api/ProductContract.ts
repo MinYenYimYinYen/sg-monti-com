@@ -1,7 +1,10 @@
 import { DataResponse, SuccessResponse } from "@/lib/api/types/responses";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { ProductCategoryStored } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
-import { ProductMasterDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import {
+  ProductMasterDoc,
+  SubProductConfigDoc,
+} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingleDoc } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import {
@@ -32,7 +35,7 @@ export interface ProductContract extends ApiContract {
   }
 
   saveMasterSubProducts: {
-    params: {masterId: number, subProductIds: number[]}
+    params: {masterId: number, subProductConfigs: SubProductConfigDoc[]}
     result: SuccessResponse;
   }
 

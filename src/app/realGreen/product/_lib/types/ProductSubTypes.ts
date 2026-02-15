@@ -17,12 +17,6 @@ export function isProductSubCore(
   return isProduction && !isMaster && !isMobile;
 }
 
-
-export type MasterRate = {
-  masterId: number,
-  rate: number,
-}
-
 export type ProductSubDocProps = CreatedUpdated & ProductCommonDocProps & {
   productId: number;
 };

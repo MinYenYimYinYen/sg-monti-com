@@ -51,7 +51,7 @@ export const baseProductMasterCore: ProductMasterCore = {
 
 export const baseProductMasterDocProps: ProductMasterDocProps = {
   productId: baseNumId,
-  subProductIds: [],
+  subProductConfigs: [],
   category: baseStrId,
   unit: baseUnit,
   createdAt: "",

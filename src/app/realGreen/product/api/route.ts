@@ -141,10 +141,10 @@ const handlers: HandlerMap<ProductContract> = {
     roles: ["admin"],
     handler: async (params) => {
       await connectToMongoDB();
-      const { masterId, subProductIds } = params;
+      const { masterId, subProductConfigs } = params;
       const result = await ProductDocPropsModel.findOneAndUpdate(
         { productId: masterId },
-        { subProductIds },
+        { subProductConfigs },
         { upsert: true, new: true },
       ).lean();
       if (result.productId) {

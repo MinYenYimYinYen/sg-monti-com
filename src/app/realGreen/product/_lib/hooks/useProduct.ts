@@ -3,6 +3,7 @@ import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { SubProductConfigDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
 export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();
@@ -67,13 +68,13 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
 
   const updateMasterSubProducts = (params: {
     masterId: number;
-    subProductIds: number[];
+    subProductConfigs: SubProductConfigDoc[];
   }) => {
-    const { masterId, subProductIds } = params;
+    const { masterId, subProductConfigs } = params;
     dispatch(
       productActions.updateMasterSubProducts({
         masterId,
-        subProductIds,
+        subProductConfigs,
       }),
     );
 

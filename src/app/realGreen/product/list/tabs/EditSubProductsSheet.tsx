@@ -34,7 +34,7 @@ export function EditSubProductsSheet({
   const { updateMasterSubProducts } = useProduct({});
   const productSubs = useSelector(productSelect.productSubs);
   const [selectedSubIds, setSelectedSubIds] = React.useState<number[]>(
-    master?.subProductIds || [],
+    master?.subProductConfigs.map((config) => config.subId) || [],
   );
 
   // Filter cores to show only products that can be subs
@@ -56,7 +56,8 @@ export function EditSubProductsSheet({
     if (master) {
       await updateMasterSubProducts({
         masterId: master.productId,
-        subProductIds: selectedSubIds,
+        //todo: Placeholder.  Need to modify such that we also edit rates.
+        subProductConfigs: selectedSubIds.map((id) => ({ subId: id, rate: 0})),
       });
       setStatus("success");
     }
@@ -72,7 +73,9 @@ export function EditSubProductsSheet({
   const handleCancel = () => {
     // Reset to original state
     if (master) {
-      setSelectedSubIds(master.subProductIds);
+      //todo: Placeholder.  Need to modify such that we also edit rates.
+      // I think the way is to 
+      setSelectedSubIds(master.subProductConfigs.map((config) => config.subId));
     }
     onOpenChange(false);
   };

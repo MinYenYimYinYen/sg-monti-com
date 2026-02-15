@@ -18,9 +18,14 @@ export function isProductMasterCore(
   return isProduction && isMaster && isMobile;
 }
 
+export type SubProductConfigDoc = {
+  subId: number,
+  rate: number,
+}
+
 export type ProductMasterDocProps = CreatedUpdated & ProductCommonDocProps & {
   productId: number,
-  subProductIds: number[];
+  subProductConfigs: SubProductConfigDoc[],
 }
 
 export type ProductMasterDoc = ProductMasterCore & ProductMasterDocProps;

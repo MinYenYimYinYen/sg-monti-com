@@ -40,8 +40,8 @@ const selectProductMasters = createSelector(
     const masters: ProductMaster[] = masterDocs.map((doc) => {
       return {
         ...doc,
-        subProducts: doc.subProductIds.map((subId) => {
-          return subsMap.get(subId) || baseProductSub;
+        subProducts: doc.subProductConfigs.map((config) => {
+          return subsMap.get(config.subId) || baseProductSub;
         }),
       };
     });
