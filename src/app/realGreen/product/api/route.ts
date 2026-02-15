@@ -151,7 +151,7 @@ const handlers: HandlerMap<ProductContract> = {
           { upsert: true, new: true },
         ).lean();
 
-        if (result.productId) {
+        if (result && result.productId) {
           return { success: true };
         } else {
           throw new AppError({
@@ -160,7 +160,7 @@ const handlers: HandlerMap<ProductContract> = {
             data: {
               masterId,
               subProductConfigs,
-              resultKeys: Object.keys(result || {})
+              resultKeys: Object.keys(result || {}),
             },
           });
         }
@@ -177,11 +177,14 @@ const handlers: HandlerMap<ProductContract> = {
           data: {
             masterId,
             subProductConfigs,
-            originalError: error instanceof Error ? {
-              name: error.name,
-              message: error.message,
-              stack: error.stack,
-            } : error,
+            originalError:
+              error instanceof Error
+                ? {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack,
+                  }
+                : error,
           },
         });
       }
