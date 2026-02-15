@@ -110,7 +110,6 @@ export const baseProductSubDocProps: ProductSubDocProps = {
   productId: baseNumId,
   category: baseStrId,
   unit: baseUnit,
-  masterRates: [],
   createdAt: "",
   updatedAt: "",
 };

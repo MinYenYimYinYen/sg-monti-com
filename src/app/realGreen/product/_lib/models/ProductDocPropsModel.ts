@@ -10,12 +10,8 @@ export type ProductDocPropsStorage = (Partial<ProductMasterDocProps> &
   CreatedUpdated;
 
 interface ProductDocPropsDoc
-  extends ProductDocPropsStorage, mongoose.Document {}
-
-const MasterRateSchema = new mongoose.Schema({
-  masterId: { type: Number, required: true },
-  rate: { type: Number, required: true },
-})
+  extends ProductDocPropsStorage,
+    mongoose.Document {}
 
 const ProductDocPropsSchema = new mongoose.Schema(
   {
@@ -26,7 +22,6 @@ const ProductDocPropsSchema = new mongoose.Schema(
       required: false,
       default: undefined,
     },
-    masterRates: [MasterRateSchema]
   },
   { timestamps: true },
 );

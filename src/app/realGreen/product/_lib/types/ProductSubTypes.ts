@@ -25,8 +25,6 @@ export type MasterRate = {
 
 export type ProductSubDocProps = CreatedUpdated & ProductCommonDocProps & {
   productId: number;
-  masterRates: MasterRate[],
-
 };
 
 export type ProductSubDoc = ProductSubCore & ProductSubDocProps;
