@@ -56,6 +56,8 @@ const handlers: HandlerMap<ProductContract> = {
       const subCoreIds = subCores.map((p) => p.productId);
       const commonCoreIds = productCores.map((p) => p.productId);
 
+      console.log("subCoreIds", subCoreIds);
+
       const getDocProps = (coreIds: number[]) => {
         const docProps = productDocProps.filter((docProp) =>
           coreIds.includes(docProp.productId || baseNumId),
@@ -90,6 +92,7 @@ const handlers: HandlerMap<ProductContract> = {
         categoryMap,
         unitMap,
       );
+      console.log("masterDocs", masterDocs);
       const singleDocs = extendProductSingles(
         singleCores,
         singleDocProps,
@@ -102,6 +105,7 @@ const handlers: HandlerMap<ProductContract> = {
         categoryMap,
         unitMap,
       );
+      console.log("subDocs", subDocs);
       const commonDocs = extendProductCores(
         productCores,
         commonDocProps,

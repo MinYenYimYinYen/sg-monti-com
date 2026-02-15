@@ -4,7 +4,10 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataGridColumnHeader } from "@/components/DataGrid";
 import { Button } from "@/style/components/button";
 import { Pencil } from "lucide-react";
-import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import {
+  ProductMaster,
+  SubProductConfigDoc,
+} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
 import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 
@@ -77,18 +80,18 @@ export const createMastersColumns: (
     ),
   },
   {
-    accessorKey: "subProductIds",
+    accessorKey: "subProductConfigs",
     header: "Subs",
     cell: ({ row }) => {
-      const subProductIds = row.getValue("subProductIds") as number[];
+      const subProductIds = row.getValue("subProductConfigs") as SubProductConfigDoc[];
       return <div className="text-center">{subProductIds.length}</div>;
     },
     enableSorting: false,
     size: 80,
   },
   {
-    id: "actions",
-    header: "Actions",
+    id: "editSubs",
+    header: "Edit Subs",
     cell: ({ row }) => (
       <Button
         variant="outline"

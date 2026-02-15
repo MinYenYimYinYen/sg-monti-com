@@ -74,7 +74,7 @@ export function EditSubProductsSheet({
     // Reset to original state
     if (master) {
       //todo: Placeholder.  Need to modify such that we also edit rates.
-      // I think the way is to 
+      // I think the way is to
       setSelectedSubIds(master.subProductConfigs.map((config) => config.subId));
     }
     onOpenChange(false);

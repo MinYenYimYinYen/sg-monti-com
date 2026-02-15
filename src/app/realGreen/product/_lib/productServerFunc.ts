@@ -139,16 +139,13 @@ export function extendProductSubs(
   categoryMap: Map<number, ProductCategoryStored>,
   unitMap: Map<number, Unit>,
 ): ProductSubDoc[] {
-  return {
-    ...extendProducts({
-      cores,
-      docProps,
-      baseDocProps: baseProductSubDocProps,
-      categoryMap,
-      unitMap,
-    }),
-    // masterRates: [],
-  };
+  return extendProducts({
+    cores,
+    docProps,
+    baseDocProps: baseProductSubDocProps,
+    categoryMap,
+    unitMap,
+  });
 }
 
 export function extendProductCores(
