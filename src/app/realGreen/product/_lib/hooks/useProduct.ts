@@ -68,13 +68,13 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
 
   const updateMasterSubProducts = (params: {
     masterId: number;
-    subProductConfigs: SubProductConfigDoc[];
+    subProductConfigDocs: SubProductConfigDoc[];
   }) => {
-    const { masterId, subProductConfigs } = params;
+    const { masterId, subProductConfigDocs } = params;
     dispatch(
       productActions.updateMasterSubProducts({
         masterId,
-        subProductConfigs,
+        subProductConfigDocs,
       }),
     );
 

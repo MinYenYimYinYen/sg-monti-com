@@ -35,7 +35,7 @@ export interface ProductContract extends ApiContract {
   }
 
   saveMasterSubProducts: {
-    params: {masterId: number, subProductConfigs: SubProductConfigDoc[]}
+    params: {masterId: number, subProductConfigDocs: SubProductConfigDoc[]}
     result: SuccessResponse;
   }
 

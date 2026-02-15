@@ -45,7 +45,7 @@ export default function MastersTab() {
   // which the sub-products are consumed per master unit.
   const renderSubComponent = (row: Row<ProductMaster>) => {
     const master = row.original;
-    const subProducts = master.subProductConfigs
+    const subProducts = master.subProductConfigDocs
       .map((config) => subsMap.get(config.subId))
       .filter(Boolean);
 

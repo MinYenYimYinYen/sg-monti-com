@@ -1,6 +1,9 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
-import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import {
+  ProductMaster,
+  SubProductConfig,
+} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Grouper } from "@/lib/Grouper";
@@ -40,8 +43,17 @@ const selectProductMasters = createSelector(
     const masters: ProductMaster[] = masterDocs.map((doc) => {
       return {
         ...doc,
-        subProducts: doc.subProductConfigs.map((config) => {
-          return subsMap.get(config.subId) || baseProductSub;
+        subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
+          const subProduct = subsMap.get(configDoc.subId);
+          const config: SubProductConfig = {
+            subId: configDoc.subId,
+            rate: configDoc.rate,
+            subProduct: subProduct || {
+              ...baseProductSub,
+              productId: configDoc.subId,
+            },
+          };
+          return config;
         }),
       };
     });
@@ -50,16 +62,17 @@ const selectProductMasters = createSelector(
 );
 
 const selectProductSingles = createSelector(
-  [selectProductSingleDocs], (singleDocs) => {
+  [selectProductSingleDocs],
+  (singleDocs) => {
     const hydrated: ProductSingle[] = singleDocs.map((doc) => {
       return {
         ...doc,
         // unit: doc.unitId,
-      }
-    })
+      };
+    });
     return hydrated;
-  }
-)
+  },
+);
 
 const selectProductMastersMap = createSelector(
   [selectProductMasters],
@@ -82,8 +95,8 @@ const selectProductCommonDocMap = createSelector(
   [selectProductCommonDocs],
   (commonDocs) => {
     return new Grouper(commonDocs).toUniqueMap((c) => c.productId);
-  }
-)
+  },
+);
 
 export const productSelect = {
   productMasterDocs: selectProductMasterDocs,

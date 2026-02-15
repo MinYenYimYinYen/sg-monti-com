@@ -23,15 +23,21 @@ export type SubProductConfigDoc = {
   rate: number,
 }
 
+export type SubProductConfig = {
+  subId: number,
+  subProduct: ProductSub,
+  rate: number,
+}
+
 export type ProductMasterDocProps = CreatedUpdated & ProductCommonDocProps & {
   productId: number,
-  subProductConfigs: SubProductConfigDoc[],
+  subProductConfigDocs: SubProductConfigDoc[],
 }
 
 export type ProductMasterDoc = ProductMasterCore & ProductMasterDocProps;
 
 export type ProductMasterProps = {
-  subProducts: ProductSub[];
+  subProductConfigs: SubProductConfig[]
 };
 
 export type ProductMaster = ProductMasterDoc & ProductMasterProps;

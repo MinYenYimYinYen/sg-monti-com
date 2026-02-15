@@ -16,6 +16,7 @@ export type AppProductCore = {
   servId: number;
   amount: number;
   size: number;
+  //todo: this should include productCommonDoc
 };
 
 export type AppProductProps = {

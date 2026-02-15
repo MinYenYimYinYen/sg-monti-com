@@ -37,8 +37,8 @@ export function EditSubProductsSheet({
 }: MasterEditSheetProps) {
   const { updateMasterSubProducts } = useProduct({});
   const productSubs = useSelector(productSelect.productSubs);
-  const [configs, setConfigs] = React.useState<SubProductConfigDoc[]>(
-    master?.subProductConfigs || [],
+  const [configDocs, setConfigDocs] = React.useState<SubProductConfigDoc[]>(
+    master?.subProductConfigDocs || [],
   );
 
   // Filter cores to show only products that can be subs
@@ -48,7 +48,7 @@ export function EditSubProductsSheet({
   );
 
   const toggleSub = (productId: number) => {
-    setConfigs((prev) =>
+    setConfigDocs((prev) =>
       prev.some((c) => c.subId === productId)
         ? prev.filter((c) => c.subId !== productId)
         : [...prev, { subId: productId, rate: 0 }],
@@ -56,7 +56,7 @@ export function EditSubProductsSheet({
   };
 
   const updateRate = (productId: number, rate: number) => {
-    setConfigs((prev) =>
+    setConfigDocs((prev) =>
       prev.map((c) => (c.subId === productId ? { ...c, rate } : c)),
     );
   };
@@ -66,7 +66,7 @@ export function EditSubProductsSheet({
     if (master) {
       await updateMasterSubProducts({
         masterId: master.productId,
-        subProductConfigs: configs,
+        subProductConfigDocs: configDocs,
       });
       setStatus("success");
     }
@@ -75,7 +75,7 @@ export function EditSubProductsSheet({
   const handleCancel = () => {
     // Reset to original state
     if (master) {
-      setConfigs(master.subProductConfigs);
+      setConfigDocs(master.subProductConfigDocs);
     }
     onOpenChange(false);
   };
@@ -131,7 +131,7 @@ export function EditSubProductsSheet({
                         onClick={() => toggleSub(sub.productId)}
                       >
                         <Checkbox
-                          checked={configs.some(
+                          checked={configDocs.some(
                             (c) => c.subId === sub.productId,
                           )}
                           onCheckedChange={() => toggleSub(sub.productId)}
@@ -157,13 +157,13 @@ export function EditSubProductsSheet({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">
-                  Selected ({configs.length})
+                  Selected ({configDocs.length})
                 </Label>
-                {configs.length > 0 && (
+                {configDocs.length > 0 && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setConfigs([])}
+                    onClick={() => setConfigDocs([])}
                   >
                     Clear All
                   </Button>
@@ -171,12 +171,12 @@ export function EditSubProductsSheet({
               </div>
               <ScrollArea className="h-[400px] rounded-md border">
                 <div className="p-4 space-y-2">
-                  {configs.length === 0 ? (
+                  {configDocs.length === 0 ? (
                     <div className="text-sm text-muted-foreground text-center py-8">
                       No sub-products selected
                     </div>
                   ) : (
-                    configs.map((config) => {
+                    configDocs.map((config) => {
                       const sub = availableSubs.find(
                         (s) => s.productId === config.subId,
                       );

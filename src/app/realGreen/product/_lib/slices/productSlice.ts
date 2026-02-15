@@ -121,13 +121,13 @@ const productSlice = createSlice({
     },
     updateMasterSubProducts: (
       state,
-      action: PayloadAction<{ masterId: number; subProductConfigs: SubProductConfigDoc[] }>,
+      action: PayloadAction<{ masterId: number; subProductConfigDocs: SubProductConfigDoc[] }>,
     ) => {
       const matchingMaster = state.productMasterDocs.find(
         (master) => master.productId === action.payload.masterId,
       );
       if (matchingMaster) {
-        matchingMaster.subProductConfigs = action.payload.subProductConfigs;
+        matchingMaster.subProductConfigDocs = action.payload.subProductConfigDocs;
       }
     },
   },

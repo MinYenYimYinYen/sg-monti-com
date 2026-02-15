@@ -36,4 +36,6 @@ export const baseService: Service = {
   callAhead: null,
   discount: null,
   production: null,
+  productsPlanned: [],
+  // productsUsed: [],
 };

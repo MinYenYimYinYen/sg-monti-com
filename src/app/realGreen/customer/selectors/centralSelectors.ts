@@ -13,32 +13,27 @@ import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
 import { discountSelect } from "../../discount/selectors/discountSelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { hydrateProduction } from "@/app/realGreen/customer/selectors/hydrateProduction";
+import { hydrateProductsPlanned } from "@/app/realGreen/customer/selectors/hydrateProductsPlanned";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
 
 // Base selectors read Maps from state
-const selectCustDocMap = (state: AppState) =>
-  state.customer.central.CustDocMap;
-const selectProgDocMap = (state: AppState) =>
-  state.customer.central.ProgDocMap;
-const selectServDocMap = (state: AppState) =>
-  state.customer.central.ServDocMap;
+const selectCustDocMap = (state: AppState) => state.customer.central.CustDocMap;
+const selectProgDocMap = (state: AppState) => state.customer.central.ProgDocMap;
+const selectServDocMap = (state: AppState) => state.customer.central.ServDocMap;
 
 // Convert Maps to arrays for hydration logic
-const selectCustomerDocs = createSelector(
-  [selectCustDocMap],
-  (map) => Array.from(map.values()),
+const selectCustomerDocs = createSelector([selectCustDocMap], (map) =>
+  Array.from(map.values()),
 );
 
-const selectProgramDocs = createSelector(
-  [selectProgDocMap],
-  (map) => Array.from(map.values()),
+const selectProgramDocs = createSelector([selectProgDocMap], (map) =>
+  Array.from(map.values()),
 );
 
-const selectServiceDocs = createSelector(
-  [selectServDocMap],
-  (map) => Array.from(map.values()),
+const selectServiceDocs = createSelector([selectServDocMap], (map) =>
+  Array.from(map.values()),
 );
 
 // Build relationship maps from arrays (deduplication already handled in slice)
@@ -78,7 +73,8 @@ export const selectCustomers = createSelector(
     callAheadSelect.callAheadDocMap,
     discountSelect.discountDocMap,
     productSelect.productCommonDocMap,
-
+    productSelect.productMastersMap,
+    productSelect.productSinglesMap,
   ],
   (
     customerDocs,
@@ -89,7 +85,9 @@ export const selectCustomers = createSelector(
     basicTaxCodeMap,
     callAheadDocMap,
     discountDocMap,
-    productDocMap,
+    productCommonDocMap,
+    productMastersMap,
+    productSinglesMap,
   ) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
       const taxCodes = custDoc.taxIds
@@ -122,14 +120,23 @@ export const selectCustomers = createSelector(
         const services = serviceDocs.map((servDoc) => {
           const servCode = servCodeMap.get(servDoc.servCodeId) || baseServCode;
 
-
           const service: Service = {
             ...servDoc,
             program,
             servCode,
             callAhead: callAheadDocMap.get(servDoc.callAheadId) || null,
             discount: discountDocMap.get(servDoc.discountId) || null,
-            production: hydrateProduction(servDoc.productionCore, productDocMap)
+            production: hydrateProduction(
+              servDoc.productionCore,
+              productCommonDocMap,
+            ),
+            productsPlanned: hydrateProductsPlanned(
+              servDoc,
+              servCodeMap,
+              productMastersMap,
+              productSinglesMap,
+              productCommonDocMap,
+            ),
           };
 
           return service;

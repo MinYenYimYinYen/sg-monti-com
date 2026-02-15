@@ -1,5 +1,6 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import {
+  AppProduct,
   AppProductRaw,
 } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import {
@@ -118,7 +119,8 @@ export type ServiceProps = {
   callAhead: CallAheadDoc | null;
   discount: DiscountDoc | null;
   production: Production | null;
-  // todo: hydrate Production
+  productsPlanned: AppProduct[];
+  // productsUsed: AppProductRaw[];
 };
 
 export type Service = ServiceDoc & ServiceProps;

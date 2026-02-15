@@ -141,13 +141,13 @@ const handlers: HandlerMap<ProductContract> = {
   saveMasterSubProducts: {
     roles: ["admin"],
     handler: async (params) => {
-      const { masterId, subProductConfigs } = params;
+      const { masterId, subProductConfigDocs } = params;
 
       try {
         await connectToMongoDB();
         const result = await ProductDocPropsModel.findOneAndUpdate(
           { productId: masterId },
-          { subProductConfigs },
+          { subProductConfigDocs },
           { upsert: true, new: true },
         ).lean();
 
@@ -159,7 +159,7 @@ const handlers: HandlerMap<ProductContract> = {
             isOperational: true,
             data: {
               masterId,
-              subProductConfigs,
+              subProductConfigDocs,
               resultKeys: Object.keys(result || {}),
             },
           });
@@ -176,7 +176,7 @@ const handlers: HandlerMap<ProductContract> = {
           isOperational: true,
           data: {
             masterId,
-            subProductConfigs,
+            subProductConfigDocs,
             originalError:
               error instanceof Error
                 ? {
