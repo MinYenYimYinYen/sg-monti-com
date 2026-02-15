@@ -31,7 +31,7 @@ export type ProductRaw = {
   target: string;
   unitCost: number | null;
   unitPrice: number | null;
-  unitofMeasure: number;
+  unitofMeasure: number | null;
 };
 
 export type ProductCore = {

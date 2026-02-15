@@ -5,7 +5,7 @@ import {
 
 interface UnitDoc extends mongoose.Document, UnitStorage {}
 
-const UnitSchema = new mongoose.Schema({
+const UnitSchema = new mongoose.Schema<UnitDoc>({
   unitId: { type: Number, required: true, unique: true },
   metric: { type: String, required: true },
   desc: { type: String, required: true },
@@ -14,4 +14,3 @@ const UnitSchema = new mongoose.Schema({
 export const UnitModel =
   (mongoose.models?.Unit as mongoose.Model<UnitDoc>) ||
   mongoose.model<UnitDoc>("Unit", UnitSchema);
-

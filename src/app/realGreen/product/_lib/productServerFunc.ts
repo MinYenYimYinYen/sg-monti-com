@@ -44,7 +44,7 @@ export function remapRawProducts(raw: ProductRaw[]) {
       isWorkOrder: p.isWorkOrder,
       categoryId: p.productCategoryId || baseNumId,
       productCode: p.productCode,
-      unitId: p.unitofMeasure,
+      unitId: p.unitofMeasure === null ? baseNumId : p.unitofMeasure,
     };
   });
 
@@ -94,7 +94,10 @@ export function extendProducts<
         categoryMap.get(core.categoryId)?.category ||
         core.categoryId?.toString() ||
         baseStrId,
-      unit: unitMap.get(core.unitId) || baseUnit,
+      unit: unitMap.get(core.unitId) || {
+        ...baseUnit,
+        unitId: core.unitId,
+      },
     } as TCore & TDocProps;
   });
 }

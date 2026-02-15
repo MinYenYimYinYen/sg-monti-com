@@ -49,8 +49,17 @@ const selectProductMasters = createSelector(
   },
 );
 
-const selectProductSingles = (state: AppState) =>
-  selectProductSingleDocs(state) as ProductSingle[];
+const selectProductSingles = createSelector(
+  [selectProductSingleDocs], (singleDocs) => {
+    const hydrated: ProductSingle[] = singleDocs.map((doc) => {
+      return {
+        ...doc,
+        // unit: doc.unitId,
+      }
+    })
+    return hydrated;
+  }
+)
 
 const selectProductMastersMap = createSelector(
   [selectProductMasters],

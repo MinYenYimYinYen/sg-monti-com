@@ -47,7 +47,7 @@ export default function EditUnitSheet({
   const [newDesc, setNewDesc] = React.useState<UL>(unit?.desc || UL.unknown);
   const [status, setStatus] = React.useState<SaveStatus>("idle");
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (unit) {
       setNewDesc(unit.desc as UL);
     }

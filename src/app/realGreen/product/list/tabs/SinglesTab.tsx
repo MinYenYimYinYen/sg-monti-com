@@ -34,9 +34,17 @@ export default function SinglesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          Single Products
-        </h2>
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Single Products
+          </h2>
+          <div className={"text-sm text-muted-foreground"}>
+            <p>Singles are recognized by the following settings in SA5:</p>
+            <p>For Production: True</p>
+            <p>Mobile Device: True</p>
+            <p>Master Product: False</p>
+          </div>
+        </div>
         <p className="text-sm text-muted-foreground">
           {singles.length} product{singles.length !== 1 ? "s" : ""}
         </p>

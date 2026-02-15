@@ -159,19 +159,20 @@ const handlers: HandlerMap<ProductContract> = {
     roles: ["admin"],
     handler: async (params) => {
       await connectToMongoDB();
-      const {unit} = params;
+      const { unit } = params;
+      console.log("Saving unit:", unit);
       const result = await UnitModel.findOneAndUpdate(
-        {unitId: unit.unitId},
-        {unit},
-        {upsert: true, new: true}
-      ).lean()
+        { unitId: unit.unitId },
+        { ...unit },
+        { upsert: true, new: true },
+      ).lean();
       if (result.unitId) {
         return { success: true };
       } else {
         throw new AppError({ message: "Error saving unit" });
       }
-    }
-  }
+    },
+  },
 };
 
 export const POST = createRpcHandler(handlers);

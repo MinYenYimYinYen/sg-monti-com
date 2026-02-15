@@ -10,4 +10,4 @@ const ProductCategorySchema = new mongoose.Schema<ProductCategoryDoc>({
 
 export const ProductCategoryModel =
   (mongoose.models?.ProductCategory as mongoose.Model<ProductCategoryDoc>) ||
-  mongoose.model<ProductCategoryDoc>("ProductCategoryStored", ProductCategorySchema);
+  mongoose.model<ProductCategoryDoc>("ProductCategory", ProductCategorySchema);

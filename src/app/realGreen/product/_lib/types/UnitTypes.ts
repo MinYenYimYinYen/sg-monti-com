@@ -13,7 +13,15 @@ export enum UL {
   unknown = "?",
 }
 
-export type Metric = "area" | "count" | "length" | "time" | "volume" | "weight" | "unknown";
+export type Metric =
+  | "area"
+  | "count"
+  | "length"
+  | "time"
+  | "volume"
+  | "weight"
+  | "unknown"
+  | "none";
 
 export const UL_METRIC_MAP: Record<UL, Metric> = {
   [UL.ksf]: "area",
