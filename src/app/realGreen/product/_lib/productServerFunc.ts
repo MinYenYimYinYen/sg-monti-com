@@ -26,6 +26,7 @@ import { Grouper } from "@/lib/Grouper";
 import {
   baseProductMasterDocProps,
   baseProductSingleDocProps,
+  baseProductSubDocProps,
 } from "@/app/realGreen/product/_lib/baseProduct";
 import { ProductCategoryStored } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
 import { baseUnit, Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
@@ -138,13 +139,16 @@ export function extendProductSubs(
   categoryMap: Map<number, ProductCategoryStored>,
   unitMap: Map<number, Unit>,
 ): ProductSubDoc[] {
-  return extendProducts({
-    cores,
-    docProps,
-    baseDocProps: baseProductMasterDocProps,
-    categoryMap,
-    unitMap,
-  });
+  return {
+    ...extendProducts({
+      cores,
+      docProps,
+      baseDocProps: baseProductSubDocProps,
+      categoryMap,
+      unitMap,
+    }),
+    // masterRates: [],
+  };
 }
 
 export function extendProductCores(
