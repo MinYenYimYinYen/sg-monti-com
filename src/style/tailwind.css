@@ -35,6 +35,8 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
 }
 /*---break---*/
 :root {
@@ -67,6 +69,10 @@
   --destructive-foreground: oklch(0.98 0 0); /* Light text */
 
   --ring: oklch(0.534 0.042 239.5); /* Blue for focus rings */
+
+  --popover: var(--card);
+  --popover-foreground: var(--card-foreground);
+
 
   /* Chart Colors - Brand Palette */
   --chart-1: oklch(0.534 0.042 239.5); /* Blue */
@@ -107,6 +113,9 @@
   --destructive-foreground: oklch(0.98 0 0); /* Light text */
 
   --ring: oklch(0.60 0.08 239.5); /* Brighter blue for focus */
+
+  --popover: var(--card);
+  --popover-foreground: var(--card-foreground);
 
   /* Chart Colors - Adjusted for Dark Mode */
   --chart-1: oklch(0.60 0.08 239.5); /* Brighter Blue */

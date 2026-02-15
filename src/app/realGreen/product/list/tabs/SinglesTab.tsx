@@ -4,6 +4,7 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
+import { TabInfo } from "./TabInfo";
 
 import { createSinglesColumns } from "@/app/realGreen/product/list/tabs/singlesColumns";
 import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
@@ -34,16 +35,16 @@ export default function SinglesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-2">
           <h2 className="text-2xl font-semibold tracking-tight">
             Single Products
           </h2>
-          <div className={"text-sm text-muted-foreground"}>
-            <p>Singles are recognized by the following settings in SA5:</p>
-            <p>For Production: True</p>
-            <p>Mobile Device: True</p>
-            <p>Master Product: False</p>
-          </div>
+          <TabInfo
+            title="Singles"
+            isProduction={true}
+            isMobile={true}
+            isMaster={false}
+          />
         </div>
         <p className="text-sm text-muted-foreground">
           {singles.length} product{singles.length !== 1 ? "s" : ""}

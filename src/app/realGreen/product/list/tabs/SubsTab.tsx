@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { DataGrid } from "@/components/DataGrid";
+import { TabInfo } from "./TabInfo";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { createSubsColumns } from "@/app/realGreen/product/list/tabs/subsColumns";
@@ -32,7 +33,15 @@ export default function SubsTab() {
   return (
     <div className={"space-y-4"}>
       <div className={"flex items-center justify-between"}>
-        <h2 className={"text-2xl font-semibold tracking-tight"}>Subs</h2>
+        <div className="flex items-center gap-2">
+          <h2 className={"text-2xl font-semibold tracking-tight"}>Subs</h2>
+          <TabInfo
+            title="Subs"
+            isProduction={true}
+            isMobile={false}
+            isMaster={false}
+          />
+        </div>
         <p className={"text-sm text-muted-foreground"}>
           Available Sub-Products
         </p>

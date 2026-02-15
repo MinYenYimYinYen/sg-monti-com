@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { DataGrid } from "@/components/DataGrid";
+import { TabInfo } from "./TabInfo";
 import { Row } from "@tanstack/react-table";
 import { EditSubProductsSheet } from "./EditSubProductsSheet";
 import { createMastersColumns } from "@/app/realGreen/product/list/tabs/mastersColumns";
@@ -39,6 +40,9 @@ export default function MastersTab() {
     );
   }, []);
 
+  //todo: Right now this just displays the sub-products.
+  // It is not sufficient because we must define the rate at
+  // which the sub-products are consumed per master unit.
   const renderSubComponent = (row: Row<ProductMaster>) => {
     const master = row.original;
     const subProducts = master.subProductIds
@@ -73,9 +77,17 @@ export default function MastersTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          Master Products
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Master Products
+          </h2>
+          <TabInfo
+            title="Masters"
+            isProduction={true}
+            isMobile={true}
+            isMaster={true}
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           {masters.length} product{masters.length !== 1 ? "s" : ""}
         </p>
