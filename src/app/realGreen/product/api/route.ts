@@ -56,8 +56,6 @@ const handlers: HandlerMap<ProductContract> = {
       const subCoreIds = subCores.map((p) => p.productId);
       const commonCoreIds = productCores.map((p) => p.productId);
 
-      console.log("subCoreIds", subCoreIds);
-
       const getDocProps = (coreIds: number[]) => {
         const docProps = productDocProps.filter((docProp) =>
           coreIds.includes(docProp.productId || baseNumId),
@@ -92,7 +90,6 @@ const handlers: HandlerMap<ProductContract> = {
         categoryMap,
         unitMap,
       );
-      console.log("masterDocs", masterDocs);
       const singleDocs = extendProductSingles(
         singleCores,
         singleDocProps,
@@ -144,17 +141,49 @@ const handlers: HandlerMap<ProductContract> = {
   saveMasterSubProducts: {
     roles: ["admin"],
     handler: async (params) => {
-      await connectToMongoDB();
       const { masterId, subProductConfigs } = params;
-      const result = await ProductDocPropsModel.findOneAndUpdate(
-        { productId: masterId },
-        { subProductConfigs },
-        { upsert: true, new: true },
-      ).lean();
-      if (result.productId) {
-        return { success: true };
-      } else {
-        throw new AppError({ message: "Error saving master sub products" });
+
+      try {
+        await connectToMongoDB();
+        const result = await ProductDocPropsModel.findOneAndUpdate(
+          { productId: masterId },
+          { subProductConfigs },
+          { upsert: true, new: true },
+        ).lean();
+
+        if (result.productId) {
+          return { success: true };
+        } else {
+          throw new AppError({
+            message: `Failed to save master sub products for masterId ${masterId}: findOneAndUpdate returned null productId`,
+            isOperational: true,
+            data: {
+              masterId,
+              subProductConfigs,
+              resultKeys: Object.keys(result || {})
+            },
+          });
+        }
+      } catch (error) {
+        // If it's already an AppError, re-throw it
+        if (error instanceof AppError) {
+          throw error;
+        }
+
+        // Wrap MongoDB or other errors with context
+        throw new AppError({
+          message: `MongoDB error saving master sub products for masterId ${masterId}: ${error instanceof Error ? error.message : String(error)}`,
+          isOperational: true,
+          data: {
+            masterId,
+            subProductConfigs,
+            originalError: error instanceof Error ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            } : error,
+          },
+        });
       }
     },
   },

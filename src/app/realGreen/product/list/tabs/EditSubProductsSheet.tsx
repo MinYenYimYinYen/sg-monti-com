@@ -23,6 +23,7 @@ import {
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
+import { normalizeError } from "@/lib/errors/errorHandler";
 
 interface MasterEditSheetProps {
   master: ProductMaster | null;
@@ -131,7 +132,9 @@ export function EditSubProductsSheet({
                         onClick={() => toggleSub(sub.productId)}
                       >
                         <Checkbox
-                          checked={configs.some((c) => c.subId === sub.productId)}
+                          checked={configs.some(
+                            (c) => c.subId === sub.productId,
+                          )}
                           onCheckedChange={() => toggleSub(sub.productId)}
                         />
                         <div className="flex-1 space-y-1">

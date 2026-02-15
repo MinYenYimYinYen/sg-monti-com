@@ -60,15 +60,17 @@ import { useDiscount } from "@/app/realGreen/discount/useDiscount";
 import { discountSelect } from "@/app/realGreen/discount/selectors/discountSelect";
 import { useActiveCustomers } from "@/app/realGreen/customer/hooks/useActiveCustomers";
 import {useLastSeasonProduction} from "@/app/realGreen/customer/hooks/useLastSeasonProduction";
+import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCustomers";
 
 export default function Home() {
   // NEW: Declare contexts first
-  // useCustomerContext({ contexts: ["printed", "active", "lastSeasonProduction"] });
+  useCustomerContext({ contexts: ["printed", "active", "lastSeasonProduction"] });
 
 
   // useActiveCustomers({ autoLoad: true });
   // useLastSeasonProduction({autoLoad: true});
-  // useProgServ({ autoLoad: true });
+  usePrintedCustomers({autoLoad: true})
+  useProgServ({ autoLoad: true });
   //
   // useTaxCode({ autoLoad: true });
   // useCallAhead({ autoLoad: true });
