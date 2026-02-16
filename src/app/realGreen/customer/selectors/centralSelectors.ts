@@ -129,6 +129,7 @@ export const selectCustomers = createSelector(
               servDoc.productionCore,
               productCommonDocMap,
               employeeMap,
+              servDoc,
             ),
             productsPlanned: hydrateProductsPlanned(
               servDoc,

@@ -12,7 +12,6 @@ export function hydrateProductsPlanned(
   const { size, servCodeId } = servDoc;
   const servCode = servCodeMap.get(servCodeId);
   if (!servCode) return [];
-  if (!(servDoc.servId === 5962033)) return [];
   // console.log("servCodeId", servCodeId);
 
   // console.log("productRules", servCode.productRules);
