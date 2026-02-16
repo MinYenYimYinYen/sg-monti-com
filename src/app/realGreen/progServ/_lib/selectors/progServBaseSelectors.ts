@@ -35,14 +35,12 @@ export const selectBasicProgCodes = createSelector(
     selectProgServMap,
     selectServCodeDocMap,
     productSelect.productMastersMap,
-    productSelect.productSinglesMap,
   ],
   (
     progCodeDocs,
     progServMap,
     servCodeMap,
     productMasterMap,
-    productSingleMap,
   ) => {
     // 1. Hydrate all programs
     const progCodes: ProgCode[] = progCodeDocs.map((progDoc) => {

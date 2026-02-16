@@ -1,4 +1,3 @@
-import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
 export type ProductRuleDoc = {
