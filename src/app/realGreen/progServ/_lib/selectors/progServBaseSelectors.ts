@@ -72,19 +72,15 @@ export const selectBasicProgCodes = createSelector(
 
 
           const productRules: ProductRule[] = productRuleDocs.map((rule) => {
-            const productSinglesMaybe = rule.productSingleIds.map((id) => {
-              return productSingleMap.get(id);
-            });
+
             const productMastersMaybe = rule.productMasterIds.map((id) => {
               return productMasterMap.get(id);
             });
 
-            const productSingles = typeGuard.definedArray(productSinglesMaybe)
             const productMasters = typeGuard.definedArray(productMastersMaybe);
 
             return {
               ...rule,
-              productSingles,
               productMasters,
             };
           });

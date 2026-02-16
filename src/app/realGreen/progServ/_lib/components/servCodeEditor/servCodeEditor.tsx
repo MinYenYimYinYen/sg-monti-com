@@ -13,12 +13,6 @@ import {
 } from "@/style/components/sheet";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/style/components/tabs";
 import { useState } from "react";
 import { Button } from "@/style/components/button";
 import { useProductRules } from "@/app/realGreen/progServ/_lib/hooks/useProductRules";
@@ -94,12 +88,9 @@ export function EditProductRules({
     updateRuleOperator,
     addProductRuleProductMaster,
     removeProductRuleProductMaster,
-    addProductRuleProductSingle,
-    removeProductRuleProductSingle,
   } = useProductRules({ servCodeId });
 
   const productMasters = useSelector(productSelect.productMasters);
-  const productSingles = useSelector(productSelect.productSingles);
 
   const [selectedRuleIndex, setSelectedRuleIndex] = useState<number | null>(
     null,
@@ -190,7 +181,9 @@ export function EditProductRules({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="lte">Less Than or Equal</SelectItem>
+                          <SelectItem value="lte">
+                            Less Than or Equal
+                          </SelectItem>
                           <SelectItem value="gt">Greater Than</SelectItem>
                           <SelectItem value="all">All</SelectItem>
                         </SelectContent>
@@ -211,26 +204,6 @@ export function EditProductRules({
                           </Badge>
                         );
                       })}
-                      {rule.productSingleIds.map((id) => {
-                        const single = productSingles.find(
-                          (s) => s.productId === id,
-                        );
-                        return (
-                          <Badge
-                            key={`s-${id}`}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {single?.description || id}
-                          </Badge>
-                        );
-                      })}
-                      {rule.productMasterIds.length === 0 &&
-                        rule.productSingleIds.length === 0 && (
-                          <span className="text-xs text-muted-foreground italic">
-                            No products selected
-                          </span>
-                        )}
                     </div>
                   </CardContent>
                 </Card>
@@ -241,102 +214,48 @@ export function EditProductRules({
           <div id={"Products"} className="space-y-4">
             <h3 className="text-lg font-semibold">
               {selectedRule
-                ? "Select Products"
+                ? "Select Master Products"
                 : "Select a rule to add products"}
             </h3>
             {selectedRule ? (
-              <Tabs defaultValue="masters" className="w-full">
-                <TabsList className="w-full">
-                  <TabsTrigger value="masters" className="flex-1">
-                    Masters
-                  </TabsTrigger>
-                  <TabsTrigger value="singles" className="flex-1">
-                    Singles
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent
-                  value="masters"
-                  className="space-y-2 max-h-[60vh] overflow-y-auto pr-2"
-                >
-                  {productMasters.map((master) => {
-                    const isSelected = selectedRule.productMasterIds.includes(
-                      master.productId,
-                    );
-                    return (
-                      <div
-                        key={master.productId}
-                        className="flex items-center justify-between p-2 rounded-md border hover:bg-accent/50"
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                {productMasters.map((master) => {
+                  const isSelected = selectedRule.productMasterIds.includes(
+                    master.productId,
+                  );
+                  return (
+                    <div
+                      key={master.productId}
+                      className="flex items-center justify-between p-2 rounded-md border hover:bg-accent/50"
+                    >
+                      <span className="text-sm truncate mr-2">
+                        {master.description}
+                      </span>
+                      <Toggle
+                        pressed={isSelected}
+                        onPressedChange={() => {
+                          if (isSelected) {
+                            removeProductRuleProductMaster(
+                              selectedRule,
+                              master.productId,
+                            );
+                          } else {
+                            addProductRuleProductMaster(
+                              selectedRule,
+                              master.productId,
+                            );
+                          }
+                        }}
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                       >
-                        <span className="text-sm truncate mr-2">
-                          {master.description}
-                        </span>
-                        <Toggle
-                          pressed={isSelected}
-                          onPressedChange={() => {
-                            if (isSelected) {
-                              removeProductRuleProductMaster(
-                                selectedRule,
-                                master.productId,
-                              );
-                            } else {
-                              addProductRuleProductMaster(
-                                selectedRule,
-                                master.productId,
-                              );
-                            }
-                          }}
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                        >
-                          {isSelected ? "Selected" : "Select"}
-                        </Toggle>
-                      </div>
-                    );
-                  })}
-                </TabsContent>
-                <TabsContent
-                  value="singles"
-                  className="space-y-2 max-h-[60vh] overflow-y-auto pr-2"
-                >
-                  {productSingles.map((single) => {
-                    const isSelected = selectedRule.productSingleIds.includes(
-                      single.productId,
-                    );
-                    return (
-                      <div
-                        key={single.productId}
-                        className="flex items-center justify-between p-2 rounded-md border hover:bg-accent/50"
-                      >
-                        <span className="text-sm truncate mr-2">
-                          {single.description}
-                        </span>
-                        <Toggle
-                          pressed={isSelected}
-                          onPressedChange={() => {
-                            if (isSelected) {
-                              removeProductRuleProductSingle(
-                                selectedRule,
-                                single.productId,
-                              );
-                            } else {
-                              addProductRuleProductSingle(
-                                selectedRule,
-                                single.productId,
-                              );
-                            }
-                          }}
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                        >
-                          {isSelected ? "Selected" : "Select"}
-                        </Toggle>
-                      </div>
-                    );
-                  })}
-                </TabsContent>
-              </Tabs>
+                        {isSelected ? "Selected" : "Select"}
+                      </Toggle>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
               <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg text-muted-foreground">
                 Select a rule to configure products

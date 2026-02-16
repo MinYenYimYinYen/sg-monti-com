@@ -56,10 +56,6 @@ const progServSlice = createSlice({
       progServActionHandlers.addProductRuleProductMaster,
     removeProductRuleProductMaster:
       progServActionHandlers.removeProductRuleProductMaster,
-    addProductRuleProductSingle:
-      progServActionHandlers.addProductRuleProductSingle,
-    removeProductRuleSingle:
-      progServActionHandlers.removeProductRuleSingle,
   },
   extraReducers: (builder) => {
     builder.addCase(getProgCodeDocs.fulfilled, (state, action) => {

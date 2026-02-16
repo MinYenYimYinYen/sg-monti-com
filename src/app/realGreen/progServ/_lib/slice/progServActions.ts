@@ -91,7 +91,10 @@ const handleAddProductRule = (
   );
   if (!servCodeDoc) return;
 
-  const newProductRuleDocs = [...servCodeDoc.productRuleDocs, { ...baseProductRule }];
+  const newProductRuleDocs = [
+    ...servCodeDoc.productRuleDocs,
+    { ...baseProductRule },
+  ];
 
   executeUpdateServCode(
     state.servCodeDocs,
@@ -101,7 +104,8 @@ const handleAddProductRule = (
   );
 };
 
-export const getRuleId = (rule: ProductRuleDoc) => `${rule.size}${rule.sizeOperator}`;
+export const getRuleId = (rule: ProductRuleDoc) =>
+  `${rule.size}${rule.sizeOperator}`;
 
 const executeUpdateProductRule = (
   servCodeDocs: ServCodeDoc[],
@@ -128,12 +132,9 @@ const executeUpdateProductRule = (
     newProductRuleDocs[ruleIndex] = updatedRule;
   }
 
-  executeUpdateServCode(
-    servCodeDocs,
-    unsavedServCodeChanges,
-    servCodeId,
-    { productRuleDocs: newProductRuleDocs },
-  );
+  executeUpdateServCode(servCodeDocs, unsavedServCodeChanges, servCodeId, {
+    productRuleDocs: newProductRuleDocs,
+  });
 };
 
 const handleRemoveProductRule = (
@@ -226,50 +227,6 @@ const handleRemoveProductRuleProductMaster = (
   );
 };
 
-const handleAddProductRuleProductSingle = (
-  state: Draft<ProgServState>,
-  action: PayloadAction<{
-    servCodeId: string;
-    ruleId: string;
-    productSingleId: number;
-  }>,
-) => {
-  const { servCodeId, ruleId, productSingleId } = action.payload;
-  executeUpdateProductRule(
-    state.servCodeDocs,
-    state.unsavedServCodeChanges,
-    servCodeId,
-    ruleId,
-    (rule) => ({
-      ...rule,
-      productSingleIds: [...rule.productSingleIds, productSingleId],
-    }),
-  );
-};
-
-const handleRemoveProductRuleSingle = (
-  state: Draft<ProgServState>,
-  action: PayloadAction<{
-    servCodeId: string;
-    ruleId: string;
-    productSingleId: number;
-  }>,
-) => {
-  const { servCodeId, ruleId, productSingleId } = action.payload;
-  executeUpdateProductRule(
-    state.servCodeDocs,
-    state.unsavedServCodeChanges,
-    servCodeId,
-    ruleId,
-    (rule) => ({
-      ...rule,
-      productSingleIds: rule.productSingleIds.filter(
-        (id) => id !== productSingleId,
-      ),
-    }),
-  );
-};
-
 export const progServActionHandlers = {
   updateServCode: handleUpdateServCode,
   revertServCode: handleRevertServCode,
@@ -279,6 +236,4 @@ export const progServActionHandlers = {
   updateProductRuleOperator: handleUpdateProductRuleOperator,
   addProductRuleProductMaster: handleAddProductRuleProductMaster,
   removeProductRuleProductMaster: handleRemoveProductRuleProductMaster,
-  addProductRuleProductSingle: handleAddProductRuleProductSingle,
-  removeProductRuleSingle: handleRemoveProductRuleSingle,
-}
+};

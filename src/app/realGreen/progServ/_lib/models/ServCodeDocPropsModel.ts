@@ -7,7 +7,6 @@ interface ServCodeDocPropsDoc extends ServCodeDocProps, mongoose.Document {}
 const ServCodeProductSchema = new mongoose.Schema<ProductRuleDoc>({
   size: { type: Number, required: true },
   sizeOperator: { type: String, required: true },
-  productSingleIds: { type: [Number], required: true },
   productMasterIds: { type: [Number], required: true },
 }, { _id: false });
 

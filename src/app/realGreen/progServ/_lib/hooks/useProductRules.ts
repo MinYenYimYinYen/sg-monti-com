@@ -1,9 +1,7 @@
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { progServActions } from "@/app/realGreen/progServ/_lib/slice/progServSlice";
-import {
-  ProductRuleDoc,
-} from "@/app/realGreen/progServ/_lib/types/ProductRule";
+import { ProductRuleDoc } from "@/app/realGreen/progServ/_lib/types/ProductRule";
 import { getRuleId } from "@/app/realGreen/progServ/_lib/slice/progServActions";
 
 type UseProductRulesProps = {
@@ -82,32 +80,6 @@ export function useProductRules({ servCodeId }: UseProductRulesProps) {
     );
   };
 
-  const addProductRuleProductSingle = (
-    rule: ProductRuleDoc,
-    productSingleId: number,
-  ) => {
-    dispatch(
-      progServActions.addProductRuleProductSingle({
-        servCodeId,
-        ruleId: getRuleId(rule),
-        productSingleId,
-      }),
-    );
-  };
-
-  const removeProductRuleProductSingle = (
-    rule: ProductRuleDoc,
-    productSingleId: number,
-  ) => {
-    dispatch(
-      progServActions.removeProductRuleSingle({
-        servCodeId,
-        ruleId: getRuleId(rule),
-        productSingleId,
-      }),
-    );
-  };
-
   return {
     addProductRule,
     removeProductRule,
@@ -115,7 +87,5 @@ export function useProductRules({ servCodeId }: UseProductRulesProps) {
     updateRuleOperator,
     addProductRuleProductMaster,
     removeProductRuleProductMaster,
-    addProductRuleProductSingle,
-    removeProductRuleProductSingle,
   };
 }
