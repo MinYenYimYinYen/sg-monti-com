@@ -2,18 +2,19 @@ import {
   AppProduct,
   AppProductCore,
 } from "@/app/realGreen/_lib/subTypes/AppProduct";
-import { DoneByRemapped } from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
+import { DoneBy, DoneByCore } from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import { ServiceHistory } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 
 export type ProductionCore = ServiceHistory & {
   servId: number;
   usedAppProductCores: AppProductCore[];
-  doneBys: DoneByRemapped[];
+  doneByCores: DoneByCore[];
   invoice: number;
 };
 
 export type ProductionProps = {
   usedAppProducts: AppProduct[];
+  doneBys: DoneBy[];
 };
 
 export type Production = ProductionCore & ProductionProps;

@@ -10,9 +10,9 @@ import {
 } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import {
   DoneByRaw,
-  DoneByRemapped,
+  DoneByCore,
   remapDoneBys,
-} from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
+} from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProductionCore } from "@/app/realGreen/_lib/subTypes/Production";
 import { AppError } from "@/lib/errors/AppError";
@@ -50,12 +50,12 @@ function remapProduction({
   }
   const history: ServiceHistory = remapServiceHistory(historyRaw, doneDate);
   const usedAppProductCores: AppProductCore[] = remapAppProducts(rawAppProducts);
-  const doneBys: DoneByRemapped[] = remapDoneBys(doneBysRaw);
+  const doneByCores: DoneByCore[] = remapDoneBys(doneBysRaw);
 
   const production: ProductionCore = {
     ...history,
     usedAppProductCores,
-    doneBys,
+    doneByCores,
     servId,
     invoice,
   };
