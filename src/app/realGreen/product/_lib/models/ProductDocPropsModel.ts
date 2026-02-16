@@ -17,7 +17,7 @@ const ProductDocPropsSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true, unique: true },
 
-    subProductConfigs: {
+    subProductConfigDocs: {
       type: [
         {
           subId: { type: Number, required: true },
@@ -25,7 +25,7 @@ const ProductDocPropsSchema = new mongoose.Schema(
         },
       ],
       required: false,
-      default: undefined,
+      default: [],
     },
   },
   { timestamps: true },
@@ -33,4 +33,4 @@ const ProductDocPropsSchema = new mongoose.Schema(
 
 export const ProductDocPropsModel =
   (mongoose.models?.Product as mongoose.Model<ProductDocPropsDoc>) ||
-  mongoose.model<ProductDocPropsDoc>("Product", ProductDocPropsSchema);
+  mongoose.model<ProductDocPropsDoc>("ProductDocProps", ProductDocPropsSchema);

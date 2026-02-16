@@ -19,6 +19,7 @@ export type AppProductCore = {
   //todo: this should include productCommonDoc
 };
 
+
 export type AppProductProps = {
   productCommon: ProductCommon;
 };

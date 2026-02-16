@@ -43,7 +43,7 @@ const selectProductMasters = createSelector(
     const masters: ProductMaster[] = masterDocs.map((doc) => {
       return {
         ...doc,
-        subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
+        subProductConfigs: (doc.subProductConfigDocs).map((configDoc) => {
           const subProduct = subsMap.get(configDoc.subId);
           const config: SubProductConfig = {
             subId: configDoc.subId,

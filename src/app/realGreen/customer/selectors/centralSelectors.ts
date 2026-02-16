@@ -133,8 +133,6 @@ export const selectCustomers = createSelector(
             productsPlanned: hydrateProductsPlanned(
               servDoc,
               servCodeMap,
-              productMastersMap,
-              productSinglesMap,
               productCommonDocMap,
             ),
           };

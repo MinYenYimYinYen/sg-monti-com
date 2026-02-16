@@ -102,7 +102,6 @@ const handlers: HandlerMap<ProductContract> = {
         categoryMap,
         unitMap,
       );
-      console.log("subDocs", subDocs);
       const commonDocs = extendProductCores(
         productCores,
         commonDocProps,
@@ -116,6 +115,7 @@ const handlers: HandlerMap<ProductContract> = {
         productSubDocs: subDocs,
         productCommonDocs: commonDocs,
       };
+
 
       return { success: true, payload: productsResponse };
     },

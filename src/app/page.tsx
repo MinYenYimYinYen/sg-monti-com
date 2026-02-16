@@ -84,16 +84,21 @@ export default function Home() {
   const discountDocs = useSelector(discountSelect.discountDocs);
 
 
-  useEffect(() => {
-    console.log("Customers:", customers);
-  }, [customers]);
+  // useEffect(() => {
+  //   if(!customers.length) return;
+  //   console.log("Customers:", customers);
+  // }, [customers]);
+  //
+  // useEffect(() => {
+  //   if(!programs.length) return;
+  //   console.log("Programs:", programs);
+  // }, [programs]);
 
   useEffect(() => {
-    console.log("Programs:", programs);
-  }, [programs]);
-
-  useEffect(() => {
-    console.log("Services:", services);
+    if(!services.length) return;
+    const serv = services.find((s) => s.servId === 5962033);
+    console.log("serv", serv);
+    // console.log("Services:", services);
   }, [services]);
 
 

@@ -40,12 +40,21 @@ export function EditSubProductsSheet({
   const [configDocs, setConfigDocs] = React.useState<SubProductConfigDoc[]>(
     master?.subProductConfigDocs || [],
   );
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Filter cores to show only products that can be subs
   // (isProduction=true, isMobile=false)
-  const availableSubs = productSubs.filter(
-    (doc) => doc.isProduction && !doc.isMobile,
-  );
+  const availableSubs = productSubs
+    .filter((doc) => doc.isProduction && !doc.isMobile)
+    .filter((doc) => {
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      return (
+        doc.productCode.toLowerCase().includes(term) ||
+        doc.description.toLowerCase().includes(term)
+      );
+    })
+    .sort((a, b) => a.productCode.localeCompare(b.productCode));
 
   const toggleSub = (productId: number) => {
     setConfigDocs((prev) =>
@@ -64,11 +73,15 @@ export function EditSubProductsSheet({
   const [status, setStatus] = useState<SaveStatus>("idle");
   const handleSave = async () => {
     if (master) {
-      await updateMasterSubProducts({
-        masterId: master.productId,
-        subProductConfigDocs: configDocs,
-      });
-      setStatus("success");
+      try {
+        await updateMasterSubProducts({
+          masterId: master.productId,
+          subProductConfigDocs: configDocs,
+        });
+        setStatus("success");
+      } catch (e) {
+        console.error("Error updating master sub-products:", e);
+      }
     }
   };
 
@@ -112,10 +125,16 @@ export function EditSubProductsSheet({
           <div className="grid grid-cols-2 gap-6">
             {/* Sub-Products Selection */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-sm font-medium whitespace-nowrap">
                   Available Sub-Products
                 </Label>
+                <Input
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-8"
+                />
               </div>
               <ScrollArea className="h-[400px] rounded-md border">
                 <div className="p-4 space-y-2">
