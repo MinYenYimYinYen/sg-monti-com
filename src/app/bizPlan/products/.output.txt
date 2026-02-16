@@ -1,0 +1,265 @@
+export type Address = {
+  addressLine1?: string;
+  addressLine2?: string;
+  addressLine3?: string;
+  city?: string;
+  countryCode?: string;
+  formattedAddress: string;
+  formattedAddressWithCulture: string | null;
+  formattedZip?: string;
+  formattedZipWithCulture: string | null;
+  houseNumber: string;
+  latitude: number | null;
+  longitude: number | null;
+  postDirection: string;
+  preDirection: string;
+  state?: string;
+  streetName: string;
+  streetSuffix: string;
+  zip?: string;
+};
+export const baseAddress: Address = {
+  formattedAddress: "",
+  formattedAddressWithCulture: "",
+  formattedZip: "",
+  formattedZipWithCulture: "",
+  houseNumber: "",
+  latitude: null,
+  longitude: null,
+  postDirection: "",
+  preDirection: "",
+  streetName: "",
+  streetSuffix: "",
+};
+export type PhoneType = "Home" | "Work" | "Cell" | "Other" | "Fax" | "Text";
+export type Phone = {
+  isPreferred: boolean;
+  number: string;
+  phoneType: number;
+  type: PhoneType;
+  typeDescription: string | null;
+};
+import {baseStrId} from "@/app/realGreen/_lib/realGreenConst";
+export type ContactPreferenceRaw = {
+  amaAdministrative: boolean;
+  amaMarket: boolean;
+  amaService: boolean;
+  autoPay: boolean;
+  cawRegisteredUser: boolean;
+  contAllow: string | null;
+  contactPreferred: string;
+  contactPreferredDesc: string;
+  customerNumber: number;
+  dontDirectMail: boolean;
+  dontEmail: boolean;
+  dontEmailInvoice: boolean;
+  dontFollowupByEmail: boolean;
+  dontTelemarket: boolean;
+  dontTelemarketCustomerRequest: boolean;
+  dontTelemarketLocal: boolean;
+  dontText: boolean;
+  dontUpsell: boolean;
+  emailPrenotification: boolean;
+  emailStatements: boolean;
+  noKnock: boolean;
+  preferredLanguage: string;
+  preferredLanguageDesc: string;
+  preferredPhone: string;
+  preferredPhoneDesc: string;
+  textPrenotification: boolean;
+};
+export type ContactPreference = {
+  autoPay: boolean;
+  prefContactId: string;
+  prefContactDesc: string;
+  dontDirectMail: boolean;
+  dontEmailInvoice: boolean;
+  dontFollowUpEmail: boolean;
+  dontKnock: boolean;
+  dontText: boolean;
+  dontUpsell: boolean;
+  emailPrenotify: boolean;
+  emailStatements: boolean;
+  prefPhoneId: string;
+  prefPhoneDesc: string;
+  textPrenotify: boolean;
+};
+export function remapContactPreference(
+  raw: ContactPreferenceRaw | null,
+): ContactPreference {
+  if (!raw) return baseContactPreference;
+  return {
+    autoPay: raw.autoPay,
+    prefContactId: raw.contactPreferred,
+    prefContactDesc: raw.contactPreferredDesc,
+    dontDirectMail: raw.dontDirectMail,
+    dontEmailInvoice: raw.dontEmailInvoice,
+    dontFollowUpEmail: raw.dontFollowupByEmail,
+    dontKnock: raw.noKnock,
+    dontUpsell: raw.dontUpsell,
+    emailPrenotify: raw.emailPrenotification,
+    emailStatements: raw.emailStatements,
+    prefPhoneId: raw.preferredPhone, //could refer to PhoneType
+    prefPhoneDesc: raw.preferredPhoneDesc,
+    textPrenotify: raw.textPrenotification,
+    dontText: raw.dontText,
+  };
+}
+export const baseContactPreference: ContactPreference = {
+  autoPay: false,
+  prefContactId: baseStrId,
+  prefContactDesc: "",
+  dontDirectMail: false,
+  dontKnock: false,
+  dontEmailInvoice: false,
+  dontFollowUpEmail: false,
+  dontText: false,
+  dontUpsell: false,
+  emailPrenotify: false,
+  emailStatements: false,
+  prefPhoneDesc: "",
+  prefPhoneId: baseStrId,
+  // We'll default this to true, in case we use this in pre-notify feature
+  textPrenotify: true,
+};
+import {
+  ProductCommonDocProps,
+  ProductCore,
+} from "@/app/realGreen/product/_lib/types/ProductTypes";
+import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
+export type ProductMasterCore = ProductCore & {
+  isProduction: true;
+  isMaster: true;
+  isMobile: true;
+};
+export function isProductMasterCore(
+  productCore: ProductCore,
+): productCore is ProductMasterCore {
+  const { isProduction, isMaster, isMobile } = productCore;
+  return isProduction && isMaster && isMobile;
+}
+export type SubProductConfigDoc = {
+  subId: number,
+  rate: number,
+}
+export type SubProductConfig = {
+  subId: number,
+  subProduct: ProductSub,
+  rate: number,
+}
+export type ProductMasterDocProps = CreatedUpdated & ProductCommonDocProps & {
+  productId: number,
+  subProductConfigDocs: SubProductConfigDoc[],
+}
+export type ProductMasterDoc = ProductMasterCore & ProductMasterDocProps;
+export type ProductMasterProps = {
+  subProductConfigs: SubProductConfig[]
+};
+export type ProductMaster = ProductMasterDoc & ProductMasterProps;
+import {
+  AppProduct,
+  AppProductCore,
+} from "@/app/realGreen/_lib/subTypes/AppProduct";
+import { DoneByRemapped } from "@/app/realGreen/_lib/subTypes/DoneByRemapped";
+import { ServiceHistory } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
+export type ProductionCore = ServiceHistory & {
+  servId: number;
+  usedAppProductCores: AppProductCore[];
+  doneBys: DoneByRemapped[];
+  invoice: number;
+};
+export type ProductionProps = {
+  usedAppProducts: AppProduct[];
+};
+export type Production = ProductionCore & ProductionProps;
+import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+export enum NotificationType {
+  Text = "T",
+  Manual = "U",
+  Phone = "P",
+  Email = "E",
+}
+export type CallAheadRaw = {
+  available: boolean;
+  callAheadDescription: string;
+  callDescFrench: string;
+  callDescSpanish: string;
+  highlight: boolean;
+  id: number;
+  notificationType: NotificationType;
+  renewable: boolean;
+};
+export type CallAheadCore = {
+  available: boolean;
+  callAheadId: number;
+  description: string;
+  type: NotificationType;
+};
+export type CallAheadDocProps = CreatedUpdated & {
+  callAheadId: number;
+};
+export type CallAheadDoc = CallAheadCore & CallAheadDocProps;
+export type CallAheadProps = {};
+export type CallAhead = CallAheadDoc & CallAheadProps;
+export enum DiscountType {
+  PERCENT = 1,
+  DOLLAR = 2,
+}
+export type DiscountRaw = {
+  anybranch: boolean;
+  available: boolean;
+  availableOnHandheld: boolean;
+  availableOnWeb: boolean;
+  branches?: number[];
+  commercialAccount?: string;
+  discountAmount: number; // percent is whole number (10% off = 10)
+  discountDescFrench?: string;
+  discountDescSpanish?: string;
+  discountDescription: string;
+  dollarDiscount: DiscountType; //enum not provided by api docs, but this reflects the api response
+  id: string;
+  isSurcharge: boolean;
+  permanent: boolean;
+  promoCode?: string;
+  residentialAccount?: string;
+};
+export type DiscountCore = {
+  discountId: string;
+  discountType: DiscountType;
+  available: boolean;
+  isPermanent: boolean;
+  amount: number;
+  isSurcharge: boolean;
+};
+export type DiscountDocProps = {
+  discountId: string;
+};
+export type DiscountDoc = DiscountCore & DiscountDocProps;
+export type DiscountProps = {};
+export type Discount = DiscountDoc & DiscountProps;
+import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
+export type TaxCodeCore = {
+  taxCodeId: string;
+  available: boolean;
+  taxRate: number;
+};
+export type TaxCodeRaw = {
+  anyBranch: boolean;
+  available: boolean;
+  description: string;
+  descriptionFrench: string;
+  descriptionSpanish: string;
+  id: string;
+  invoiceDescription: string;
+  taxRate: number;
+};
+export type TaxCodeDocProps = CreatedUpdated & {
+  taxCodeId: string;
+};
+export type TaxCodeDoc = TaxCodeCore & TaxCodeDocProps;
+export type TaxCodeProps = {
+  customers: Customer[]
+};
+export type TaxCode = TaxCodeDoc & TaxCodeProps;
