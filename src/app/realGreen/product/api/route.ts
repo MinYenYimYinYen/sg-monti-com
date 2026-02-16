@@ -142,52 +142,35 @@ const handlers: HandlerMap<ProductContract> = {
     roles: ["admin"],
     handler: async (params) => {
       const { masterId, subProductConfigDocs } = params;
+      let result;
 
+      // 1. Attempt the DB Operation
       try {
         await connectToMongoDB();
-        const result = await ProductDocPropsModel.findOneAndUpdate(
+        result = await ProductDocPropsModel.findOneAndUpdate(
           { productId: masterId },
           { subProductConfigDocs },
           { upsert: true, new: true },
         ).lean();
-
-        if (result && result.productId) {
-          return { success: true };
-        } else {
-          throw new AppError({
-            message: `Failed to save master sub products for masterId ${masterId}: findOneAndUpdate returned null productId`,
-            isOperational: true,
-            data: {
-              masterId,
-              subProductConfigDocs,
-              resultKeys: Object.keys(result || {}),
-            },
-          });
-        }
       } catch (error) {
-        // If it's already an AppError, re-throw it
-        if (error instanceof AppError) {
-          throw error;
-        }
-
-        // Wrap MongoDB or other errors with context
+        // Catching system-level errors (MongoDB connection, etc.)
         throw new AppError({
-          message: `MongoDB error saving master sub products for masterId ${masterId}: ${error instanceof Error ? error.message : String(error)}`,
+          message: `MongoDB error saving master sub products: ${error instanceof Error ? error.message : String(error)}`,
           isOperational: true,
-          data: {
-            masterId,
-            subProductConfigDocs,
-            originalError:
-              error instanceof Error
-                ? {
-                    name: error.name,
-                    message: error.message,
-                    stack: error.stack,
-                  }
-                : error,
-          },
+          data: { originalError: error },
         });
       }
+
+      // 2. Business Logic Validation (Now OUTSIDE the try block)
+      if (!result || !result.productId) {
+        throw new AppError({
+          message: `Failed to save master sub products for masterId ${masterId}: result was null`,
+          isOperational: true,
+          data: { masterId, subProductConfigDocs },
+        });
+      }
+
+      return { success: true };
     },
   },
 

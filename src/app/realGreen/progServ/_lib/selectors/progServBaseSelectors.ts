@@ -69,6 +69,8 @@ export const selectBasicProgCodes = createSelector(
           if (!servDoc) return null;
 
           const productRuleDocs = servDoc.productRuleDocs;
+
+
           const productRules: ProductRule[] = productRuleDocs.map((rule) => {
             const productSinglesMaybe = rule.productSingleIds.map((id) => {
               return productSingleMap.get(id);

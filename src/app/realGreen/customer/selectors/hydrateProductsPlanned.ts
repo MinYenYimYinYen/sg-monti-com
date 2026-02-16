@@ -13,9 +13,9 @@ export function hydrateProductsPlanned(
   const servCode = servCodeMap.get(servCodeId);
   if (!servCode) return [];
   if (!(servDoc.servId === 5962033)) return [];
-  console.log("servCodeId", servCodeId);
+  // console.log("servCodeId", servCodeId);
 
-  console.log("productRules", servCode.productRules);
+  // console.log("productRules", servCode.productRules);
   const productRules = servCode.productRules.filter((rule) => {
     const operator = rule.sizeOperator;
     switch (operator) {
@@ -30,15 +30,15 @@ export function hydrateProductsPlanned(
       }
     }
   });
-  console.log("filtered productRules", productRules);
+  // console.log("filtered productRules", productRules);
   if (productRules.length === 0) return [];
 
   const productMasters = productRules.flatMap((rule) => rule.productMasters);
-  console.log("productMasters", productMasters);
+  // console.log("productMasters", productMasters);
   const subConfigs = productMasters.flatMap(
     (master) => master.subProductConfigs,
   );
-  console.log("subConfigs", subConfigs);
+  // console.log("subConfigs", subConfigs);
 
   const appProducts: AppProduct[] = subConfigs.map((subConfig) => {
     return {

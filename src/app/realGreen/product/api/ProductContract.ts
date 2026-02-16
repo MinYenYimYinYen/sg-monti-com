@@ -9,7 +9,6 @@ import { ProductSingleDoc } from "@/app/realGreen/product/_lib/types/ProductSing
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import {
   ProductCommonDoc,
-  ProductCore,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 

@@ -73,8 +73,6 @@ export const selectCustomers = createSelector(
     callAheadSelect.callAheadDocMap,
     discountSelect.discountDocMap,
     productSelect.productCommonDocMap,
-    productSelect.productMastersMap,
-    productSelect.productSinglesMap,
   ],
   (
     customerDocs,
@@ -86,8 +84,6 @@ export const selectCustomers = createSelector(
     callAheadDocMap,
     discountDocMap,
     productCommonDocMap,
-    productMastersMap,
-    productSinglesMap,
   ) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
       const taxCodes = custDoc.taxIds
