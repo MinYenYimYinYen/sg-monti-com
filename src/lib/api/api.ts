@@ -9,9 +9,89 @@ interface ApiConfig extends Omit<RequestInit, "body"> {
   body?: unknown;
 }
 
+// --- JWT DECODE UTILITY ---
+/**
+ * Decodes a JWT token WITHOUT verification to extract the expiration time.
+ * Used to check if a token is about to expire before making a request.
+ * Returns null if the token is invalid or cannot be decoded.
+ */
+function decodeJwtExpiration(token: string): number | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const payload = JSON.parse(atob(parts[1]));
+    return payload.exp || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Gets the access token from document.cookie.
+ * Returns null if not found.
+ */
+function getAccessTokenFromCookie(): string | null {
+  if (typeof document === "undefined") return null;
+
+  const cookies = document.cookie.split("; ");
+  const tokenCookie = cookies.find((c) => c.startsWith("sg_access_token="));
+  if (!tokenCookie) return null;
+
+  return tokenCookie.split("=")[1] || null;
+}
+
 // --- MUTEX FOR REFRESH ---
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
+
+/**
+ * Proactively refreshes the access token if it's expiring within the threshold.
+ * This prevents 401 errors by ensuring the token is valid before making requests.
+ *
+ * @param thresholdSeconds - Refresh if token expires within this many seconds (default: 120)
+ */
+async function ensureValidToken(thresholdSeconds: number = 120): Promise<void> {
+  // Skip if we're already refreshing
+  if (isRefreshing && refreshPromise) {
+    await refreshPromise;
+    return;
+  }
+
+  const token = getAccessTokenFromCookie();
+  if (!token) return; // No token means public request or logged out
+
+  const exp = decodeJwtExpiration(token);
+  if (!exp) return; // Cannot decode token, let the request proceed (will fail if invalid)
+
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  const timeUntilExpiry = exp - nowInSeconds;
+
+  // If token is expiring soon (or already expired), refresh it
+  if (timeUntilExpiry < thresholdSeconds) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = (async () => {
+        try {
+          const refreshBody: OpMap<AuthContract> = { op: "refresh" };
+          const refreshRes = await fetch("/auth/api", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(refreshBody),
+          });
+          return refreshRes.ok;
+        } catch (e) {
+          return false;
+        } finally {
+          isRefreshing = false;
+          refreshPromise = null;
+        }
+      })();
+    }
+
+    await refreshPromise;
+  }
+}
 
 /**
  * Handles the 401 Refresh Token flow with a Mutex to prevent parallel refreshes.
@@ -155,6 +235,9 @@ export async function api<T>(
   url: string,
   config: ApiConfig = {},
 ): Promise<T | ErrorResponse> {
+  // Proactively refresh token if expiring soon (prevents 401 errors)
+  await ensureValidToken();
+
   const fetchConfig = prepareFetchConfig(config);
   const res = await fetchWithRetry(url, fetchConfig);
 
@@ -169,6 +252,9 @@ export async function apiStream(
   url: string,
   config: ApiConfig = {},
 ): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+  // Proactively refresh token if expiring soon (prevents 401 errors)
+  await ensureValidToken();
+
   const fetchConfig = prepareFetchConfig(config);
   const res = await fetchWithRetry(url, fetchConfig);
 

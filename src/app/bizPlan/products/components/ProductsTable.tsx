@@ -23,6 +23,8 @@ import {
   convertQuantity,
 } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 import { unitConfigSelect } from "@/app/realGreen/product/_lib/selectors/unitConfigSelectors";
+import { useViewport } from "@/lib/hooks/useViewport";
+import { cn } from "@/style/utils";
 
 interface ProductsTableProps {
   products: ProductUsagePlanned[];
@@ -30,6 +32,7 @@ interface ProductsTableProps {
 }
 
 export function ProductsTable({ products, unitContext }: ProductsTableProps) {
+  const { isNarrow } = useViewport();
   const unitConfigMap = useSelector(unitConfigSelect.unitConfigMap);
   const [expandedProductId, setExpandedProductId] = useState<number | null>(
     null,
@@ -112,12 +115,20 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
         <CardTitle>Products ({products.length})</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
+        <Table variant={"scroll"}>
           <TableHeader>
             <TableRow>
-              <TableHead>Product</TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead className="text-right">Total Quantity</TableHead>
+              {!isNarrow && (
+                <TableHead className="sticky left-0 bg-background z-20">
+                  Product
+                </TableHead>
+              )}
+              <TableHead
+                className={cn(isNarrow && "sticky left-0 bg-background z-20")}
+              >
+                Code
+              </TableHead>
+              <TableHead className="text-right">Quantity</TableHead>
               <TableHead>Unit</TableHead>
               <TableHead className="text-right">Services</TableHead>
               <TableHead></TableHead>
@@ -137,10 +148,18 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => toggleExpand(product.productId)}
                   >
-                    <TableCell className="font-medium">
-                      {product.productCommon.description}
+                    {!isNarrow && (
+                      <TableCell className="font-medium sticky left-0 bg-background z-10">
+                        {product.productCommon.description}
+                      </TableCell>
+                    )}
+                    <TableCell
+                      className={cn(
+                        isNarrow && "sticky left-0 bg-background z-10",
+                      )}
+                    >
+                      {product.productCommon.productCode}
                     </TableCell>
-                    <TableCell>{product.productCommon.productCode}</TableCell>
                     <TableCell className="text-right">
                       {formatNumber(quantity)}
                     </TableCell>
@@ -164,20 +183,16 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
                             Breakdown by Service Code
                           </h4>
                           <div className="max-h-64 overflow-y-auto">
-                            <table className="w-full text-sm">
+                            <table className="text-sm">
                               <thead>
                                 <tr className="border-b">
-                                  <th className="text-left py-1 px-2">
-                                    Service Code
-                                  </th>
+                                  <th className="text-left py-1 px-2">Code</th>
+                                    <th className="text-right py-1 px-2">
+                                      Count
+                                    </th>
+                                  <th className="text-right py-1 px-2">Size</th>
                                   <th className="text-right py-1 px-2">
-                                    Services
-                                  </th>
-                                  <th className="text-right py-1 px-2">
-                                    Total Size (sqft)
-                                  </th>
-                                  <th className="text-right py-1 px-2">
-                                    Total Amount ({displayUnit})
+                                    {displayUnit}
                                   </th>
                                 </tr>
                               </thead>
@@ -226,11 +241,11 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
                                           className="border-b"
                                         >
                                           <td className="py-1 px-2">
-                                            {data.servCode.longName}
+                                            {data.servCode.servCodeId}
                                           </td>
-                                          <td className="text-right py-1 px-2">
-                                            {data.services}
-                                          </td>
+                                            <td className="text-right py-1 px-2">
+                                              {data.services}
+                                            </td>
                                           <td className="text-right py-1 px-2">
                                             {formatNumber(data.totalSize)}
                                           </td>

@@ -48,7 +48,8 @@ export async function proxy(request: NextRequest) {
   const isPublic = Array.from(AUTH_CONST.PUBLIC_PATHS).some((path) =>
     pathname.startsWith(path),
   );
-  const isApi = pathname.startsWith("/auth/api");
+  // Match ALL Next.js API routes (*/api or /api/*), not just /auth/api
+  const isApi = pathname.includes("/api");
   const isStatic = pathname.startsWith("/_next") || pathname === "/favicon.ico";
   const isAppliedPage = pathname === "/auth/applied";
   const isChangePasswordPage = pathname === "/auth/changePassword";

@@ -107,7 +107,7 @@ const handlers: HandlerMap<ProductContract> = {
         commonDocProps,
         categoryMap,
         unitMap,
-      );
+      ).filter((p) => !masterCoreIds.includes(p.productId));
 
       const productsResponse: ProductsResponse = {
         productMasterDocs: masterDocs,

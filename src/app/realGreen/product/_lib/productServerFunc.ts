@@ -69,7 +69,7 @@ export function remapRawProducts(raw: ProductRaw[]) {
 }
 
 export function extendProducts<
-  TCore extends { productId: number; categoryId: number; unitId: number },
+  TCore extends { productId: number; categoryId: number; unitId: number; productCode: string },
   TDocProps extends { productId: number; category: string; unit: Unit },
 >({
   cores,
@@ -100,7 +100,8 @@ export function extendProducts<
         unitId: core.unitId,
       },
     } as TCore & TDocProps;
-  });
+  })
+    .sort((a: TCore,b: TCore) => a.productCode.localeCompare(b.productCode))
 }
 
 export function extendProductMasters(

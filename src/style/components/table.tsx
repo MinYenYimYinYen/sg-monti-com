@@ -3,19 +3,37 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/style/utils";
 
-const Table = React.forwardRef<
-  HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, style, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
-      style={{ tableLayout: "fixed", ...style }}
-      {...props}
-    />
-  </div>
-))
+const tableVariants = cva(
+  "w-full caption-bottom text-sm",
+  {
+    variants: {
+      variant: {
+        default: "",
+        scroll: "min-w-max",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
+
+interface TableProps
+  extends React.HTMLAttributes<HTMLTableElement>,
+    VariantProps<typeof tableVariants> {}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, variant, style, ...props }, ref) => (
+    <div className="relative w-full overflow-auto">
+      <table
+        ref={ref}
+        className={cn(tableVariants({ variant }), className)}
+        style={{ tableLayout: variant === "scroll" ? "auto" : "fixed", ...style }}
+        {...props}
+      />
+    </div>
+  )
+);
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<
@@ -122,32 +140,35 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
 );
 TableHead.displayName = "TableHead"
 
-const TableCell = React.forwardRef<
-  HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, children, ...props }, ref) => {
-  // Extract text content for title attribute
-  const textContent = React.useMemo(() => {
-    if (typeof children === 'string' || typeof children === 'number') {
-      return String(children);
-    }
-    return undefined;
-  }, [children]);
+interface TableCellProps extends React.TdHTMLAttributes<HTMLTableCellElement> {
+  noTruncate?: boolean;
+}
 
-  return (
-    <td
-      ref={ref}
-      className={cn(
-        "p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-        className
-      )}
-      title={textContent}
-      {...props}
-    >
-      <div className="truncate">{children}</div>
-    </td>
-  );
-})
+const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
+  ({ className, children, noTruncate, ...props }, ref) => {
+    // Extract text content for title attribute
+    const textContent = React.useMemo(() => {
+      if (typeof children === 'string' || typeof children === 'number') {
+        return String(children);
+      }
+      return undefined;
+    }, [children]);
+
+    return (
+      <td
+        ref={ref}
+        className={cn(
+          "p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+          className
+        )}
+        title={textContent}
+        {...props}
+      >
+        <div className={noTruncate ? "" : "truncate"}>{children}</div>
+      </td>
+    );
+  }
+);
 TableCell.displayName = "TableCell"
 
 const TableCaption = React.forwardRef<
@@ -172,4 +193,5 @@ export {
   TableCell,
   TableCaption,
   tableRowVariants,
+  tableVariants,
 };

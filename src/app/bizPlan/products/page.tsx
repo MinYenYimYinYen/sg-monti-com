@@ -31,6 +31,7 @@ import {
 } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import { UnitContext } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+import { Container } from "@/components/Containers";
 
 export default function BizPlanProductsPage() {
   useCustomerContext({ contexts: ["active"] });
@@ -83,12 +84,17 @@ export default function BizPlanProductsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <Container variant={"page"}>
       {/* Header Section */}
       <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Product Inventory Analysis</h1>
-          <div className="flex gap-2">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">Product Inventory Analysis</h1>
+            <p className="text-muted-foreground mt-1">
+              Season {currentSeason} - {summaryStats.totalServices} services loaded
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
             <RadioGroup
               variant="button-group"
               value={unitContext}
@@ -108,14 +114,10 @@ export default function BizPlanProductsPage() {
             </RadioGroup>
           </div>
         </div>
-
-        <p className="text-muted-foreground">
-          Season {currentSeason} - {summaryStats.totalServices} services loaded
-        </p>
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 mb-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -162,7 +164,7 @@ export default function BizPlanProductsPage() {
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto md:h-9">
           <TabsTrigger value="product">By Product</TabsTrigger>
           <TabsTrigger value="servCode">By Service Code</TabsTrigger>
           <TabsTrigger value="employee">By Employee</TabsTrigger>
@@ -193,6 +195,6 @@ export default function BizPlanProductsPage() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </Container>
   );
 }

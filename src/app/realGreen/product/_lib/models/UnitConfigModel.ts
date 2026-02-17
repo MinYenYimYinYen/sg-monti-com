@@ -30,8 +30,6 @@ const UnitConfigSchema = new mongoose.Schema<UnitConfigDoc>(
   },
 );
 
-// Index for efficient lookups
-UnitConfigSchema.index({ productId: 1 });
 
 export const UnitConfigModel =
   (mongoose.models?.UnitConfig as mongoose.Model<UnitConfigDoc>) ||

@@ -25,7 +25,7 @@ export default function NavBar() {
   // Dark Mode State
   const [isDark, setIsDark] = useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Check initial theme
     setIsDark(document.documentElement.classList.contains("dark"));
   }, []);
