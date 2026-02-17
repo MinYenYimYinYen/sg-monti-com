@@ -29,6 +29,7 @@ import {
   ServiceStatusType,
 } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { Button } from "@/style/components/button";
+import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 
 export default function BizPlanProductsPage() {
   useCustomerContext({ contexts: ["active"] });
@@ -85,18 +86,14 @@ export default function BizPlanProductsPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Product Inventory Analysis</h1>
           <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              intensity={"solid"}
-              size="sm"
-              onClick={() =>
-                setServStatMode(
-                  servStatMode === "unfinished" ? "all" : "unfinished",
-                )
-              }
+            <RadioGroup
+              variant="button-group"
+              value={servStatMode}
+              onValueChange={(v) => setServStatMode(v as "unfinished" | "all")}
             >
-              {servStatMode === "unfinished" ? "Show All" : "Show Unfinished"}
-            </Button>
+              <RadioGroupItem value="unfinished">Unfinished</RadioGroupItem>
+              <RadioGroupItem value="all">All</RadioGroupItem>
+            </RadioGroup>
           </div>
         </div>
 
