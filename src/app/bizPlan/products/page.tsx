@@ -23,23 +23,27 @@ import { useActiveCustomers } from "@/app/realGreen/customer/hooks/useActiveCust
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
+import { useUnitConfig } from "@/app/realGreen/product/_lib/hooks/useUnitConfig";
 import { LandPlot } from "lucide-react";
 import {
   getServiceStatuses,
   ServiceStatusType,
 } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
+import { UnitContext } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 
 export default function BizPlanProductsPage() {
   useCustomerContext({ contexts: ["active"] });
   useActiveCustomers({ autoLoad: true });
   useProgServ({ autoLoad: true });
   useProduct({ autoLoad: true });
+  useUnitConfig({ autoLoad: true });
 
   const summaryStats = useSelector(inventorySelectors.summaryStats);
   const currentSeason = useSelector(globalSettingsSelect.season);
 
   const [activeTab, setActiveTab] = useState("product");
+  const [unitContext, setUnitContext] = useState<UnitContext>("app");
 
   const unfinishedServStats: ServiceStatusType[] = [
     "active",
@@ -85,6 +89,15 @@ export default function BizPlanProductsPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Product Inventory Analysis</h1>
           <div className="flex gap-2">
+            <RadioGroup
+              variant="button-group"
+              value={unitContext}
+              onValueChange={(v) => setUnitContext(v as UnitContext)}
+            >
+              <RadioGroupItem value="app">Application</RadioGroupItem>
+              <RadioGroupItem value="load">Loading</RadioGroupItem>
+              <RadioGroupItem value="purchase">Purchasing</RadioGroupItem>
+            </RadioGroup>
             <RadioGroup
               variant="button-group"
               value={servStatMode}
@@ -158,7 +171,7 @@ export default function BizPlanProductsPage() {
 
         <TabsContent value="product">
           <div className="mt-4">
-            <ProductsTable products={productsPlanned} />
+            <ProductsTable products={productsPlanned} unitContext={unitContext} />
           </div>
         </TabsContent>
 

@@ -1,6 +1,6 @@
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 
-export enum UL {
+export enum AppUnit {
   lbs = "Lbs",
   flOz = "Fl Oz",
   ksf = "1000 SF",
@@ -23,20 +23,20 @@ export type Metric =
   | "unknown"
   | "none";
 
-export const UL_METRIC_MAP: Record<UL, Metric> = {
-  [UL.ksf]: "area",
-  [UL.ea]: "count",
-  [UL.bulb]: "count",
-  [UL.dot]: "count",
-  [UL.ft]: "length",
-  [UL.sec]: "time",
-  [UL.mGal]: "volume",
-  [UL.flOz]: "volume",
-  [UL.lbs]: "weight",
-  [UL.unknown]: "unknown",
+export const UL_METRIC_MAP: Record<AppUnit, Metric> = {
+  [AppUnit.ksf]: "area",
+  [AppUnit.ea]: "count",
+  [AppUnit.bulb]: "count",
+  [AppUnit.dot]: "count",
+  [AppUnit.ft]: "length",
+  [AppUnit.sec]: "time",
+  [AppUnit.mGal]: "volume",
+  [AppUnit.flOz]: "volume",
+  [AppUnit.lbs]: "weight",
+  [AppUnit.unknown]: "unknown",
 };
 
-export function getMetricForUL(ul: UL): Metric {
+export function getMetricForUL(ul: AppUnit): Metric {
   return UL_METRIC_MAP[ul] || "unknown";
 }
 
@@ -49,43 +49,43 @@ export type UnitStorage = {
 export type AreaUnit = {
   unitId: number;
   metric: "area";
-  desc: UL.ksf;
+  desc: AppUnit.ksf;
 };
 
 export type CountUnit = {
   unitId: number;
   metric: "count";
-  desc: UL.ea | UL.bulb | UL.dot;
+  desc: AppUnit.ea | AppUnit.bulb | AppUnit.dot;
 };
 
 export type LengthUnit = {
   unitId: number;
   metric: "length";
-  desc: UL.ft;
+  desc: AppUnit.ft;
 };
 
 export type TimeUnit = {
   unitId: number;
   metric: "time";
-  desc: UL.sec;
+  desc: AppUnit.sec;
 };
 
 export type VolumeUnit = {
   unitId: number;
   metric: "volume";
-  desc: UL.mGal | UL.flOz;
+  desc: AppUnit.mGal | AppUnit.flOz;
 };
 
 export type WeightUnit = {
   unitId: number;
   metric: "weight";
-  desc: UL.lbs;
+  desc: AppUnit.lbs;
 };
 
 type UnknownUnit = {
   unitId: number;
   metric: "unknown";
-  desc: UL.unknown;
+  desc: AppUnit.unknown;
 };
 
 export type Unit =
@@ -99,5 +99,5 @@ export type Unit =
 export const baseUnit: Unit = {
   unitId: baseNumId,
   metric: "unknown",
-  desc: UL.unknown,
+  desc: AppUnit.unknown,
 };
