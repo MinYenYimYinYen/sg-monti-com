@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { inventorySelectors } from "@/app/bizPlan/selectors/inventorySelectors";
+import { createInventorySelectors } from "@/app/bizPlan/selectors/createInventorySelectors";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import {
   Card,
@@ -23,6 +24,11 @@ import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerCo
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { LandPlot } from "lucide-react";
+import {
+  getServiceStatuses,
+  ServiceStatusType,
+} from "@/app/realGreen/_lib/subTypes/serviceStatus";
+import { Button } from "@/style/components/button";
 
 export default function BizPlanProductsPage() {
   useCustomerContext({ contexts: ["active"] });
@@ -32,10 +38,40 @@ export default function BizPlanProductsPage() {
 
   const summaryStats = useSelector(inventorySelectors.summaryStats);
   const currentSeason = useSelector(globalSettingsSelect.season);
-  const productsPlanned = useSelector(inventorySelectors.productUsagePlanned);
-  const productsByServCode = useSelector(inventorySelectors.productsByServCode);
 
   const [activeTab, setActiveTab] = useState("product");
+
+  const unfinishedServStats: ServiceStatusType[] = [
+    "active",
+    "printed",
+    "asap",
+  ];
+  const allServStats: ServiceStatusType[] = [
+    "active",
+    "printed",
+    "asap",
+    "completed",
+  ];
+
+  const [servStatMode, setServStatMode] = useState<"unfinished" | "all">(
+    "unfinished",
+  );
+
+  const servStats =
+    servStatMode === "unfinished" ? unfinishedServStats : allServStats;
+
+  // Create filtered selectors based on servStatMode toggle
+  // This ensures ALL views (By Product, By Service Code) use the same filtered dataset
+  const filteredSelectors = useMemo(
+    () =>
+      createInventorySelectors({
+        serviceStatuses: getServiceStatuses(servStats),
+      }),
+    [servStats],
+  );
+
+  const productsPlanned = useSelector(filteredSelectors.productsPlanned);
+  const productsByServCode = useSelector(filteredSelectors.productsByServCode);
 
   // Format large numbers with commas
   const formatNumber = (num: number) => {
@@ -46,7 +82,24 @@ export default function BizPlanProductsPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Header Section */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Product Inventory Analysis</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Product Inventory Analysis</h1>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              intensity={"solid"}
+              size="sm"
+              onClick={() =>
+                setServStatMode(
+                  servStatMode === "unfinished" ? "all" : "unfinished",
+                )
+              }
+            >
+              {servStatMode === "unfinished" ? "Show All" : "Show Unfinished"}
+            </Button>
+          </div>
+        </div>
+
         <p className="text-muted-foreground">
           Season {currentSeason} - {summaryStats.totalServices} services loaded
         </p>

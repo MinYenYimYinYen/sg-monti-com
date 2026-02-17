@@ -18,8 +18,10 @@ export type EnrichedAppProduct = AppProduct & {
   servCodeId: string;
   customer: Customer;
   program: Program;
+  service: Service;
   season: number;
   source?: 'actual' | 'planned'; // For mixed actual/planned selectors
+
 };
 
 /**

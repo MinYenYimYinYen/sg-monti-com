@@ -27,22 +27,24 @@ const selectProductUsagePlanned = createSelector(
   [centralSelect.services],
   (services): ProductUsagePlanned[] => {
     // Step 1: Flatten and enrich all productsPlanned from all services
-    const enrichedAppProducts: EnrichedAppProduct[] = services.flatMap(service =>
-      service.productsPlanned.map(appProduct => ({
-        ...appProduct, // Reuse existing AppProduct structure
-        servId: service.servId,
-        servCode: service.servCode,
-        servCodeId: service.servCodeId,
-        customer: service.program.customer,
-        program: service.program,
-        season: service.season,
-        source: 'planned' as const,
-      }))
+    const enrichedAppProducts: EnrichedAppProduct[] = services.flatMap(
+      (service) =>
+        service.productsPlanned.map((appProduct) => ({
+          ...appProduct, // Reuse existing AppProduct structure
+          servId: service.servId,
+          servCode: service.servCode,
+          servCodeId: service.servCodeId,
+          customer: service.program.customer,
+          program: service.program,
+          service,
+          season: service.season,
+          source: "planned" as const,
+        })),
     );
 
     // Step 2: Group by productId and summarize
     return new Grouper(enrichedAppProducts)
-      .groupBy(ap => ap.productId)
+      .groupBy((ap) => ap.productId)
       .summarize((productId, products) => {
         // All products in this group share the same productId, so they have the same productCommon
         // We use the first product to extract this shared metadata
@@ -51,12 +53,14 @@ const selectProductUsagePlanned = createSelector(
         return {
           productId,
           productCommon: firstProduct.productCommon,
-          totalQuantity: Math.round(products.reduce((sum, p) => sum + p.amount, 0)),
-          unitOfMeasure: firstProduct.productCommon.unit.desc || '',
+          totalQuantity: Math.round(
+            products.reduce((sum, p) => sum + p.amount, 0),
+          ),
+          unitOfMeasure: firstProduct.productCommon.unit.desc || "",
           enrichedAppProducts: products,
         };
       });
-  }
+  },
 );
 
 /**
@@ -69,9 +73,9 @@ const selectProductUsageActual = createSelector(
   (services): ProductUsageActual[] => {
     // Step 1: Flatten all usedAppProducts from productions
     const allUsedProducts = services
-      .filter(service => service.production !== null)
-      .flatMap(service =>
-        service.production!.usedAppProducts.map(appProduct => ({
+      .filter((service) => service.production !== null)
+      .flatMap((service) =>
+        service.production!.usedAppProducts.map((appProduct) => ({
           ...appProduct,
           servId: service.servId,
           custId: service.program.customer.custId,
@@ -80,12 +84,12 @@ const selectProductUsageActual = createSelector(
           customer: service.program.customer,
           program: service.program,
           season: service.season,
-        }))
+        })),
       );
 
     // Step 2: Group by productId and summarize
     return new Grouper(allUsedProducts)
-      .groupBy(ap => ap.productId)
+      .groupBy((ap) => ap.productId)
       .summarize((productId, products) => {
         // All products in this group share the same productId, so they have the same productCommon
         // We use the first product to extract this shared metadata
@@ -94,9 +98,11 @@ const selectProductUsageActual = createSelector(
         return {
           productId,
           productCommon: firstProduct.productCommon,
-          totalQuantity: Math.round(products.reduce((sum, p) => sum + p.amount, 0)),
-          unitOfMeasure: firstProduct.productCommon.unit.desc || '',
-          productionDetails: products.map(p => ({
+          totalQuantity: Math.round(
+            products.reduce((sum, p) => sum + p.amount, 0),
+          ),
+          unitOfMeasure: firstProduct.productCommon.unit.desc || "",
+          productionDetails: products.map((p) => ({
             servId: p.servId,
             custId: p.custId,
             progId: p.progId,
@@ -108,7 +114,7 @@ const selectProductUsageActual = createSelector(
           })),
         };
       });
-  }
+  },
 );
 
 /**
@@ -116,57 +122,70 @@ const selectProductUsageActual = createSelector(
  *
  * Groups products by ServCode for route planning view
  */
-const selectProductsByServCode = createSelector(
-  [selectProductUsagePlanned, centralSelect.services],
-  (productsPlanned, services): ProductsByServCode[] => {
-    // Group services by servCodeId for area calculations
-    const servicesByServCode = new Grouper(services)
-      .groupBy(s => s.servCodeId)
-      .toMap();
+const selectProductsByServCode = (servStats: string[]) =>
+  createSelector(
+    [selectProductUsagePlanned, centralSelect.services],
+    (productsPlanned, services): ProductsByServCode[] => {
+      const servicesWithServStats = services.filter((s) =>
+        servStats.includes(s.status),
+      );
 
-    // Group products by servCodeId
-    const productsByServCode = new Map<string, ProductUsagePlanned[]>();
+      // Group services by servCodeId for area calculations
+      const servicesByServCode = new Grouper(servicesWithServStats)
+        .groupBy((s) => s.servCodeId)
+        .toMap();
 
-    productsPlanned.forEach(product => {
-      product.enrichedAppProducts.forEach(enriched => {
-        if (!productsByServCode.has(enriched.servCodeId)) {
-          productsByServCode.set(enriched.servCodeId, []);
-        }
+      // Group products by servCodeId
+      const productsByServCode = new Map<string, ProductUsagePlanned[]>();
 
-        const existingProducts = productsByServCode.get(enriched.servCodeId)!;
-        const existingProduct = existingProducts.find(p => p.productId === product.productId);
+      productsPlanned.forEach((product) => {
+        product.enrichedAppProducts.forEach((enriched) => {
+          if (!productsByServCode.has(enriched.servCodeId)) {
+            productsByServCode.set(enriched.servCodeId, []);
+          }
 
-        if (!existingProduct) {
-          // Add product with only relevant enriched products for this servCode
-          existingProducts.push({
-            ...product,
-            enrichedAppProducts: product.enrichedAppProducts.filter(
-              e => e.servCodeId === enriched.servCodeId
-            ),
-            totalQuantity: Math.round(product.enrichedAppProducts
-              .filter(e => e.servCodeId === enriched.servCodeId)
-              .reduce((sum, e) => sum + e.amount, 0)),
-          });
-        }
+          const existingProducts = productsByServCode.get(enriched.servCodeId)!;
+          const existingProduct = existingProducts.find(
+            (p) => p.productId === product.productId,
+          );
+
+          if (!existingProduct) {
+            // Add product with only relevant enriched products for this servCode
+            existingProducts.push({
+              ...product,
+              enrichedAppProducts: product.enrichedAppProducts.filter(
+                (e) => e.servCodeId === enriched.servCodeId,
+              ),
+              totalQuantity: Math.round(
+                product.enrichedAppProducts
+                  .filter((e) => e.servCodeId === enriched.servCodeId)
+                  .reduce((sum, e) => sum + e.amount, 0),
+              ),
+            });
+          }
+        });
       });
-    });
 
-    // Summarize by servCodeId
-    return Array.from(productsByServCode.entries()).map(([servCodeId, products]) => {
-      const services = servicesByServCode.get(servCodeId) || [];
-      const totalArea = Math.round(services.reduce((sum, s) => sum + s.size, 0));
-      const firstService = services[0];
+      // Summarize by servCodeId
+      return Array.from(productsByServCode.entries()).map(
+        ([servCodeId, products]) => {
+          const services = servicesByServCode.get(servCodeId) || [];
+          const totalArea = Math.round(
+            services.reduce((sum, s) => sum + s.size, 0),
+          );
+          const firstService = services[0];
 
-      return {
-        servCodeId,
-        servCode: firstService?.servCode || baseServCode,
-        totalServices: services.length,
-        totalArea,
-        products,
-      };
-    });
-  }
-);
+          return {
+            servCodeId,
+            servCode: firstService?.servCode || baseServCode,
+            totalServices: services.length,
+            totalArea,
+            products,
+          };
+        },
+      );
+    },
+  );
 
 /**
  * 1.5 Products Grouped by Customer
@@ -179,8 +198,8 @@ const selectProductsByCustomer = createSelector(
     // Group products by customer
     const productsByCustomer = new Map<number, ProductUsagePlanned[]>();
 
-    productsPlanned.forEach(product => {
-      product.enrichedAppProducts.forEach(enriched => {
+    productsPlanned.forEach((product) => {
+      product.enrichedAppProducts.forEach((enriched) => {
         const custId = enriched.customer.custId;
 
         if (!productsByCustomer.has(custId)) {
@@ -188,49 +207,59 @@ const selectProductsByCustomer = createSelector(
         }
 
         const existingProducts = productsByCustomer.get(custId)!;
-        const existingProduct = existingProducts.find(p => p.productId === product.productId);
+        const existingProduct = existingProducts.find(
+          (p) => p.productId === product.productId,
+        );
 
         if (!existingProduct) {
           existingProducts.push({
             ...product,
             enrichedAppProducts: product.enrichedAppProducts.filter(
-              e => e.customer.custId === custId
+              (e) => e.customer.custId === custId,
             ),
-            totalQuantity: Math.round(product.enrichedAppProducts
-              .filter(e => e.customer.custId === custId)
-              .reduce((sum, e) => sum + e.amount, 0)),
+            totalQuantity: Math.round(
+              product.enrichedAppProducts
+                .filter((e) => e.customer.custId === custId)
+                .reduce((sum, e) => sum + e.amount, 0),
+            ),
           });
         }
       });
     });
 
     // Summarize by customer
-    return Array.from(productsByCustomer.entries()).map(([custId, products]) => {
-      const customer = customerMap.get(custId);
-      const allEnrichedProducts = products.flatMap(p => p.enrichedAppProducts);
-      const totalArea = Math.round(allEnrichedProducts.reduce((sum, e) => sum + e.size, 0));
+    return Array.from(productsByCustomer.entries()).map(
+      ([custId, products]) => {
+        const customer = customerMap.get(custId);
+        const allEnrichedProducts = products.flatMap(
+          (p) => p.enrichedAppProducts,
+        );
+        const totalArea = Math.round(
+          allEnrichedProducts.reduce((sum, e) => sum + e.size, 0),
+        );
 
-      return {
-        custId,
-        customer: customer!,
-        products: products.map(p => ({
-          productId: p.productId,
-          productCommon: p.productCommon,
-          totalQuantity: p.totalQuantity,
-          unitOfMeasure: p.unitOfMeasure,
-          services: p.enrichedAppProducts.map(e => ({
-            servId: e.servId,
-            amount: Math.round(e.amount),
-            size: Math.round(e.size),
-            servCodeId: e.servCodeId,
-            progId: e.program.progId,
+        return {
+          custId,
+          customer: customer!,
+          products: products.map((p) => ({
+            productId: p.productId,
+            productCommon: p.productCommon,
+            totalQuantity: p.totalQuantity,
+            unitOfMeasure: p.unitOfMeasure,
+            services: p.enrichedAppProducts.map((e) => ({
+              servId: e.servId,
+              amount: Math.round(e.amount),
+              size: Math.round(e.size),
+              servCodeId: e.servCodeId,
+              progId: e.program.progId,
+            })),
           })),
-        })),
-        totalServices: new Set(allEnrichedProducts.map(e => e.servId)).size,
-        totalArea,
-      };
-    });
-  }
+          totalServices: new Set(allEnrichedProducts.map((e) => e.servId)).size,
+          totalArea,
+        };
+      },
+    );
+  },
 );
 
 /**
@@ -241,11 +270,13 @@ const selectProductsByCustomer = createSelector(
 const selectProductsByProgCode = createSelector(
   [selectProductUsagePlanned, progServSelect.progCodes],
   (productsPlanned, progCodes): ProductsByProgCode[] => {
-    const progCodeMap = new Grouper(progCodes).toUniqueMap(pc => pc.progCodeId);
+    const progCodeMap = new Grouper(progCodes).toUniqueMap(
+      (pc) => pc.progCodeId,
+    );
     const productsByProgCode = new Map<string, ProductUsagePlanned[]>();
 
-    productsPlanned.forEach(product => {
-      product.enrichedAppProducts.forEach(enriched => {
+    productsPlanned.forEach((product) => {
+      product.enrichedAppProducts.forEach((enriched) => {
         const progCodeId = enriched.program.progCode.progCodeId;
 
         if (!productsByProgCode.has(progCodeId)) {
@@ -253,40 +284,52 @@ const selectProductsByProgCode = createSelector(
         }
 
         const existingProducts = productsByProgCode.get(progCodeId)!;
-        const existingProduct = existingProducts.find(p => p.productId === product.productId);
+        const existingProduct = existingProducts.find(
+          (p) => p.productId === product.productId,
+        );
 
         if (!existingProduct) {
           existingProducts.push({
             ...product,
             enrichedAppProducts: product.enrichedAppProducts.filter(
-              e => e.program.progCode.progCodeId === progCodeId
+              (e) => e.program.progCode.progCodeId === progCodeId,
             ),
-            totalQuantity: Math.round(product.enrichedAppProducts
-              .filter(e => e.program.progCode.progCodeId === progCodeId)
-              .reduce((sum, e) => sum + e.amount, 0)),
+            totalQuantity: Math.round(
+              product.enrichedAppProducts
+                .filter((e) => e.program.progCode.progCodeId === progCodeId)
+                .reduce((sum, e) => sum + e.amount, 0),
+            ),
           });
         }
       });
     });
 
     // Summarize by progCode
-    return Array.from(productsByProgCode.entries()).map(([progCodeId, products]) => {
-      const progCode = progCodeMap.get(progCodeId);
-      const allEnrichedProducts = products.flatMap(p => p.enrichedAppProducts);
-      const totalArea = Math.round(allEnrichedProducts.reduce((sum, e) => sum + e.size, 0));
-      const uniquePrograms = new Set(allEnrichedProducts.map(e => e.program.progId)).size;
+    return Array.from(productsByProgCode.entries()).map(
+      ([progCodeId, products]) => {
+        const progCode = progCodeMap.get(progCodeId);
+        const allEnrichedProducts = products.flatMap(
+          (p) => p.enrichedAppProducts,
+        );
+        const totalArea = Math.round(
+          allEnrichedProducts.reduce((sum, e) => sum + e.size, 0),
+        );
+        const uniquePrograms = new Set(
+          allEnrichedProducts.map((e) => e.program.progId),
+        ).size;
 
-      return {
-        progCodeId,
-        progCode: progCode!,
-        season: allEnrichedProducts[0]?.season || 0,
-        products,
-        totalServices: new Set(allEnrichedProducts.map(e => e.servId)).size,
-        totalPrograms: uniquePrograms,
-        totalArea,
-      };
-    });
-  }
+        return {
+          progCodeId,
+          progCode: progCode!,
+          season: allEnrichedProducts[0]?.season || 0,
+          products,
+          totalServices: new Set(allEnrichedProducts.map((e) => e.servId)).size,
+          totalPrograms: uniquePrograms,
+          totalArea,
+        };
+      },
+    );
+  },
 );
 
 /**
@@ -300,9 +343,9 @@ const selectProductsByEmployee = createSelector(
   (productsActual): ProductsByEmployee[] => {
     // Step 1: Flatten to employee-product pairs with percent attribution
     // This creates one entry for each (employee, service, product) combination
-    const allEmployeeWork = productsActual.flatMap(product =>
-      product.productionDetails.flatMap(pd =>
-        pd.production.doneBys.map(doneBy => ({
+    const allEmployeeWork = productsActual.flatMap((product) =>
+      product.productionDetails.flatMap((pd) =>
+        pd.production.doneBys.map((doneBy) => ({
           employeeId: doneBy.employeeId,
           employee: doneBy.employee,
           percent: doneBy.percent, // Decimal: 1 = 100%, 0.5 = 50%
@@ -311,19 +354,21 @@ const selectProductsByEmployee = createSelector(
           amount: Math.round(pd.amount),
           attributedAmount: Math.round(pd.amount * doneBy.percent), // KEY: Apply percent
           size: Math.round(pd.production.serviceDoc.size || 0),
-          attributedSize: Math.round((pd.production.serviceDoc.size || 0) * doneBy.percent), // KEY: Apply percent
+          attributedSize: Math.round(
+            (pd.production.serviceDoc.size || 0) * doneBy.percent,
+          ), // KEY: Apply percent
           servId: pd.servId,
           custId: pd.custId,
           production: pd.production,
           customer: pd.customer,
-        }))
-      )
+        })),
+      ),
     );
 
     // Step 2: First grouping - by employeeId
     // Groups all work done by each employee
     return new Grouper(allEmployeeWork)
-      .groupBy(work => work.employeeId)
+      .groupBy((work) => work.employeeId)
       .summarize((employeeId, workByOneEmployee) => {
         // workByOneEmployee = all services this one employee worked on
         const firstWork = workByOneEmployee[0];
@@ -331,7 +376,7 @@ const selectProductsByEmployee = createSelector(
         // Step 3: Second grouping - by productId within this employee
         // Groups multiple uses of the same product by this employee
         const productGroups = new Grouper(workByOneEmployee)
-          .groupBy(work => work.productId)
+          .groupBy((work) => work.productId)
           .summarize((productId, usesOfThisProduct) => {
             // usesOfThisProduct = all times this employee used this specific product
             // All uses share the same productId, so they have the same productCommon
@@ -340,12 +385,14 @@ const selectProductsByEmployee = createSelector(
             return {
               productId,
               productCommon: firstUse.productCommon,
-              totalQuantity: Math.round(usesOfThisProduct.reduce(
-                (sum, use) => sum + use.attributedAmount, // Sum attributed amounts
-                0
-              )),
-              unitOfMeasure: firstUse.productCommon.unit.desc || '',
-              productions: usesOfThisProduct.map(use => ({
+              totalQuantity: Math.round(
+                usesOfThisProduct.reduce(
+                  (sum, use) => sum + use.attributedAmount, // Sum attributed amounts
+                  0,
+                ),
+              ),
+              unitOfMeasure: firstUse.productCommon.unit.desc || "",
+              productions: usesOfThisProduct.map((use) => ({
                 servId: use.servId,
                 custId: use.custId,
                 amount: use.amount,
@@ -363,14 +410,14 @@ const selectProductsByEmployee = createSelector(
           employeeId,
           employee: firstWork.employee,
           products: productGroups,
-          totalProductions: new Set(workByOneEmployee.map(w => w.servId)).size,
-          totalAttributedArea: Math.round(workByOneEmployee.reduce(
-            (sum, w) => sum + w.attributedSize,
-            0
-          )),
+          totalProductions: new Set(workByOneEmployee.map((w) => w.servId))
+            .size,
+          totalAttributedArea: Math.round(
+            workByOneEmployee.reduce((sum, w) => sum + w.attributedSize, 0),
+          ),
         };
       });
-  }
+  },
 );
 
 /**
@@ -382,7 +429,9 @@ const selectSummaryStats = createSelector(
   [centralSelect.services, selectProductUsagePlanned],
   (services, productsPlanned): SummaryStats => {
     const totalArea = Math.round(services.reduce((sum, s) => sum + s.size, 0));
-    const totalQuantity = Math.round(productsPlanned.reduce((sum, p) => sum + p.totalQuantity, 0));
+    const totalQuantity = Math.round(
+      productsPlanned.reduce((sum, p) => sum + p.totalQuantity, 0),
+    );
 
     return {
       totalServices: services.length,
@@ -390,7 +439,7 @@ const selectSummaryStats = createSelector(
       totalProducts: productsPlanned.length,
       totalQuantity,
     };
-  }
+  },
 );
 
 /**
@@ -403,51 +452,58 @@ const selectProductsMixedActualPlanned = createSelector(
   [centralSelect.services],
   (services): ProductUsageMixed[] => {
     // Step 1: Flatten all products, choosing actual or planned based on status
-    const mixedProducts: EnrichedAppProduct[] = services.flatMap(service => {
+    const mixedProducts: EnrichedAppProduct[] = services.flatMap((service) => {
       const isComplete = service.status === "S";
       const products = isComplete
         ? service.production?.usedAppProducts || []
         : service.productsPlanned;
 
-      return products.map(p => ({
+      return products.map((p) => ({
         ...p,
         servId: service.servId,
         servCode: service.servCode,
         servCodeId: service.servCodeId,
         customer: service.program.customer,
         program: service.program,
+        service,
         season: service.season,
-        source: isComplete ? 'actual' as const : 'planned' as const,
+        source: isComplete ? ("actual" as const) : ("planned" as const),
       }));
     });
 
     // Step 2: Group by productId and summarize
     return new Grouper(mixedProducts)
-      .groupBy(p => p.productId)
+      .groupBy((p) => p.productId)
       .summarize((productId, products) => {
         // All products in this group share the same productId, so they have the same productCommon
         // We use the first product to extract this shared metadata
         const firstProduct = products[0];
-        const actualProducts = products.filter(p => p.source === 'actual');
-        const plannedProducts = products.filter(p => p.source === 'planned');
+        const actualProducts = products.filter((p) => p.source === "actual");
+        const plannedProducts = products.filter((p) => p.source === "planned");
 
         return {
           productId,
           productCommon: firstProduct.productCommon,
-          totalQuantity: Math.round(products.reduce((sum, p) => sum + p.amount, 0)),
-          unitOfMeasure: firstProduct.productCommon.unit.desc || '',
+          totalQuantity: Math.round(
+            products.reduce((sum, p) => sum + p.amount, 0),
+          ),
+          unitOfMeasure: firstProduct.productCommon.unit.desc || "",
           actual: {
-            quantity: Math.round(actualProducts.reduce((sum, p) => sum + p.amount, 0)),
-            services: new Set(actualProducts.map(p => p.servId)).size,
+            quantity: Math.round(
+              actualProducts.reduce((sum, p) => sum + p.amount, 0),
+            ),
+            services: new Set(actualProducts.map((p) => p.servId)).size,
           },
           planned: {
-            quantity: Math.round(plannedProducts.reduce((sum, p) => sum + p.amount, 0)),
-            services: new Set(plannedProducts.map(p => p.servId)).size,
+            quantity: Math.round(
+              plannedProducts.reduce((sum, p) => sum + p.amount, 0),
+            ),
+            services: new Set(plannedProducts.map((p) => p.servId)).size,
           },
           mixedProducts: products,
         };
       });
-  }
+  },
 );
 
 /**
@@ -458,16 +514,24 @@ const selectProductsMixedActualPlanned = createSelector(
  */
 const selectProductComparison = createSelector(
   [centralSelect.services, globalSettingsSelect.season],
-  (allServices, currentSeason = baseGlobalSettings.season): ProductComparison[] => {
-    const lyServices = allServices.filter(s => s.season === currentSeason - 1);
-    const tyServices = allServices.filter(s => s.season === currentSeason);
+  (
+    allServices,
+    currentSeason = baseGlobalSettings.season,
+  ): ProductComparison[] => {
+    const lyServices = allServices.filter(
+      (s) => s.season === currentSeason - 1,
+    );
+    const tyServices = allServices.filter((s) => s.season === currentSeason);
 
     // Build usage maps for LY and TY
     const buildUsageMap = (services: typeof allServices) => {
       const map = new Map<number, { quantity: number; serviceCount: number }>();
-      services.forEach(service => {
-        service.productsPlanned.forEach(appProduct => {
-          const existing = map.get(appProduct.productId) || { quantity: 0, serviceCount: 0 };
+      services.forEach((service) => {
+        service.productsPlanned.forEach((appProduct) => {
+          const existing = map.get(appProduct.productId) || {
+            quantity: 0,
+            serviceCount: 0,
+          };
           map.set(appProduct.productId, {
             quantity: existing.quantity + appProduct.amount,
             serviceCount: existing.serviceCount + 1,
@@ -483,35 +547,44 @@ const selectProductComparison = createSelector(
     // Get all unique productIds
     const allProductIds = new Set([...lyUsage.keys(), ...tyUsage.keys()]);
 
-    return Array.from(allProductIds).map(productId => {
-      const ly = lyUsage.get(productId) || { quantity: 0, serviceCount: 0 };
-      const ty = tyUsage.get(productId) || { quantity: 0, serviceCount: 0 };
+    return Array.from(allProductIds)
+      .map((productId) => {
+        const ly = lyUsage.get(productId) || { quantity: 0, serviceCount: 0 };
+        const ty = tyUsage.get(productId) || { quantity: 0, serviceCount: 0 };
 
-      const quantityDiff = ty.quantity - ly.quantity;
-      const quantityPercent = ly.quantity > 0 ? (quantityDiff / ly.quantity) * 100 : 0;
-      const serviceDiff = ty.serviceCount - ly.serviceCount;
+        const quantityDiff = ty.quantity - ly.quantity;
+        const quantityPercent =
+          ly.quantity > 0 ? (quantityDiff / ly.quantity) * 100 : 0;
+        const serviceDiff = ty.serviceCount - ly.serviceCount;
 
-      // Get productCommon from first available service
-      const firstService = [...lyServices, ...tyServices].find(s =>
-        s.productsPlanned.some(ap => ap.productId === productId)
-      );
-      const productCommon = firstService?.productsPlanned.find(
-        ap => ap.productId === productId
-      )?.productCommon;
+        // Get productCommon from first available service
+        const firstService = [...lyServices, ...tyServices].find((s) =>
+          s.productsPlanned.some((ap) => ap.productId === productId),
+        );
+        const productCommon = firstService?.productsPlanned.find(
+          (ap) => ap.productId === productId,
+        )?.productCommon;
 
-      return {
-        productId,
-        productCommon: productCommon!,
-        lastYear: { quantity: Math.round(ly.quantity), services: ly.serviceCount },
-        thisYear: { quantity: Math.round(ty.quantity), services: ty.serviceCount },
-        variance: {
-          quantityDiff: Math.round(quantityDiff),
-          quantityPercent: Math.round(quantityPercent * 100) / 100, // Round to 2 decimals
-          serviceDiff
-        },
-      };
-    }).filter(p => p.productCommon); // Filter out any missing productCommon
-  }
+        return {
+          productId,
+          productCommon: productCommon!,
+          lastYear: {
+            quantity: Math.round(ly.quantity),
+            services: ly.serviceCount,
+          },
+          thisYear: {
+            quantity: Math.round(ty.quantity),
+            services: ty.serviceCount,
+          },
+          variance: {
+            quantityDiff: Math.round(quantityDiff),
+            quantityPercent: Math.round(quantityPercent * 100) / 100, // Round to 2 decimals
+            serviceDiff,
+          },
+        };
+      })
+      .filter((p) => p.productCommon); // Filter out any missing productCommon
+  },
 );
 
 export const inventorySelectors = {
