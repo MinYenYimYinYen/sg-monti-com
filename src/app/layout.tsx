@@ -28,6 +28,7 @@ export default function RootLayout({
           {children}
         </Providers>
         <ToastContainer />
+        <div id="footer-portal" />
       </body>
     </html>
   );

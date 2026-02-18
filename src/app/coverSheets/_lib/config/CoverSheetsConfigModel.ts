@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { CoverSheetsConfig } from "@/app/coverSheets/_lib/CoverSheetsTypes";
+import { CoverSheetsConfig } from "@/app/coverSheets/_lib/config/CoverSheetsTypes";
 import { createModel } from "@/lib/mongoose/createModel";
 
 interface CoverSheetsConfigModelDoc extends mongoose.Document, CoverSheetsConfig {}

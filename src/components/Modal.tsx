@@ -101,7 +101,7 @@ export function Modal({
       {/* Backdrop */}
       <div
         ref={overlayRef}
-        className="absolute inset-0 bg-background/80 opacity-0 backdrop-blur-sm"
+        className="absolute inset-0 bg-background/80 opacity-0 backdrop-blur-[1px]"
         onClick={onClose}
       />
 
