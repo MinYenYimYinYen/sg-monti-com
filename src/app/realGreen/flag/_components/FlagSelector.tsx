@@ -31,12 +31,12 @@ export default function FlagSelector({
   groupClassName,
 }: FlagSelectorProps) {
   useFlag({ autoLoad: true });
-  const flags = useSelector(flagSelect.flags);
-  const flagMap = useSelector(flagSelect.flagMap);
+  const flagDocs = useSelector(flagSelect.flagDocs);
+  const flagDocMap = useSelector(flagSelect.flagDocMap);
 
   const handleValueChange = (value: string) => {
     const flagId: number = Number(value);
-    const flag = flagMap.get(flagId)!;
+    const flag = flagDocMap.get(flagId)!;
     onValueChange(flagId, flag);
   };
 
@@ -48,7 +48,7 @@ export default function FlagSelector({
         </SelectTrigger>
         <SelectContent className={cn(contentClassName)}>
           <SelectGroup className={groupClassName}>
-            {flags.map((flag) => (
+            {flagDocs.map((flag) => (
               <SelectItem
                 key={flag.flagId}
                 value={flag.flagId.toString()}

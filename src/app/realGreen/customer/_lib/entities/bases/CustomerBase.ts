@@ -36,4 +36,5 @@ export const baseCustomer: Customer = {
   programs: [],
   callAhead: null,
   discount: null,
+  flags: [],
 };

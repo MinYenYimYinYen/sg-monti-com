@@ -7,6 +7,7 @@ import callAheadReducer from "@/app/realGreen/callAhead/callAheadSlice";
 import discountReducer from "@/app/realGreen/discount/discountSlice";
 import employeeReducer from "@/app/realGreen/employee/employeeSlice";
 import flagReducer from "@/app/realGreen/flag/flagSlice";
+import custFlagReducer from "@/app/realGreen/custFlag/_lib/custFlagSlice";
 import progServReducer from "@/app/realGreen/progServ/_lib/slice/progServSlice";
 import productReducer from "@/app/realGreen/product/_lib/slices/productSlice";
 import unitConfigReducer from "@/app/realGreen/product/_lib/slices/unitConfigSlice";
@@ -26,6 +27,7 @@ const rootReducer = combineReducers({
   discount: discountReducer,
   employee: employeeReducer,
   flag: flagReducer,
+  custFlag: custFlagReducer,
   priceTable: priceTableReducer,
   product: productReducer,
   unitConfig: unitConfigReducer,

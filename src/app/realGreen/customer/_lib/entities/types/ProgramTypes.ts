@@ -3,7 +3,7 @@ import { Service } from "./ServiceTypes";
 import { Customer } from "./CustomerTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
-import { DiscountDoc } from "@/app/realGreen/discount/Discount.types";
+import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 
 export type ProgramRaw = {
   averagePrice: number;

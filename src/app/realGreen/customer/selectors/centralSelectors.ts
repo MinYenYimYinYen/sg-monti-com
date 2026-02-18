@@ -15,6 +15,9 @@ import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSel
 import hydrateProduction from "@/app/realGreen/customer/selectors/hydrateProduction";
 import { hydrateProductsPlanned } from "@/app/realGreen/customer/selectors/hydrateProductsPlanned";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
+import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
+import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
+import { hydrateFlags } from "@/app/realGreen/customer/selectors/hydrateFlags";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -75,6 +78,8 @@ export const selectCustomers = createSelector(
     discountSelect.discountDocMap,
     productSelect.productCommonDocMap,
     employeeSelect.employeeMap,
+    flagSelect.flagDocMap,
+    custFlagSelect.custIdFlagIds,
   ],
   (
     customerDocs,
@@ -87,6 +92,8 @@ export const selectCustomers = createSelector(
     discountDocMap,
     productCommonDocMap,
     employeeMap,
+    flagDocMap,
+    custIdFlagIds,
   ) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
       const taxCodes = custDoc.taxIds
@@ -98,6 +105,7 @@ export const selectCustomers = createSelector(
         taxCodes,
         callAhead: callAheadDocMap.get(custDoc.callAheadId) || null,
         discount: discountDocMap.get(custDoc.discountId) || null,
+        flags: hydrateFlags(custDoc.custId, custIdFlagIds, flagDocMap),
       };
 
       const progDocs = programDocMap.get(custDoc.custId) || [];

@@ -8,7 +8,8 @@ import { Phone } from "@/app/realGreen/_lib/subTypes/Phone";
 import { Program } from "./ProgramTypes";
 import { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
-import { DiscountDoc } from "@/app/realGreen/discount/Discount.types";
+import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
+import { Flag } from "@/app/realGreen/flag/FlagTypes";
 
 export type CustomerRaw = {
   address: Address;
@@ -171,6 +172,7 @@ export type CustomerProps = {
   taxCodes: TaxCode[];
   callAhead: CallAheadDoc | null;
   discount: DiscountDoc | null;
+  flags: Flag[];
 };
 
 export type Customer = CustomerDoc & CustomerProps;

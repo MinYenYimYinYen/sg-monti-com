@@ -3,7 +3,7 @@ import {
   DiscountDoc,
   DiscountDocProps,
   DiscountRaw,
-} from "@/app/realGreen/discount/Discount.types";
+} from "@/app/realGreen/discount/DiscountTypes";
 import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
 
 function remapDiscount(raw: DiscountRaw): DiscountCore {

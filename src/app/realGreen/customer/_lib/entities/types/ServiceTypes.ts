@@ -14,7 +14,7 @@ import {
 import { Program } from "./ProgramTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
-import { DiscountDoc } from "@/app/realGreen/discount/Discount.types";
+import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 
 export type ServiceRaw = {
   // actualManHours?: number;

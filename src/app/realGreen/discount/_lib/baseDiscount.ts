@@ -5,7 +5,7 @@ import {
   DiscountDocProps,
   DiscountProps,
   DiscountType,
-} from "@/app/realGreen/discount/Discount.types";
+} from "@/app/realGreen/discount/DiscountTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export const baseDiscountCore: DiscountCore = {

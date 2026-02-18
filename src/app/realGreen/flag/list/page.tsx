@@ -9,7 +9,7 @@ import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 
 export default function ListFlags() {
   useFlag({ autoLoad: true });
-  const flags = useSelector(flagSelect.flags);
+  const flagDocs = useSelector(flagSelect.flagDocs);
   const [selected, setSelected] = useState<Flag | null>(null);
 
   return (
@@ -17,7 +17,7 @@ export default function ListFlags() {
       {/* Responsive grid: 1 column on mobile, 300px sidebar + fluid content on desktop */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[300px_1fr]">
         <EntitySelector
-          items={flags}
+          items={flagDocs}
           getItemId={(f) => f.flagId}
           getItemLabel={(f) => f.desc}
           onValueChange={(_, flag) => setSelected(flag)}

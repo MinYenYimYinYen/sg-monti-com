@@ -1,6 +1,6 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { DataResponse } from "@/lib/api/types/responses";
-import { DiscountDoc } from "@/app/realGreen/discount/Discount.types";
+import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 
 export interface DiscountContract extends ApiContract {
   getAll: {

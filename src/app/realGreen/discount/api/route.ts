@@ -1,7 +1,7 @@
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { DiscountContract } from "@/app/realGreen/discount/api/DiscountContract";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
-import { DiscountDoc, DiscountRaw } from "@/app/realGreen/discount/Discount.types";
+import { DiscountDoc, DiscountRaw } from "@/app/realGreen/discount/DiscountTypes";
 import { extendDiscounts, remapDiscounts } from "@/app/realGreen/discount/_lib/discountServerFunc";
 import { DataResponse } from "@/lib/api/types/responses";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";

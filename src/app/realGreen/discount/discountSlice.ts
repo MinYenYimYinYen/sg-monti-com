@@ -1,6 +1,6 @@
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { DiscountContract } from "@/app/realGreen/discount/api/DiscountContract";
-import { DiscountDoc } from "@/app/realGreen/discount/Discount.types";
+import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { createSlice } from "@reduxjs/toolkit";
 
 export const getDiscountDocs = createStandardThunk<DiscountContract, "getAll">({
