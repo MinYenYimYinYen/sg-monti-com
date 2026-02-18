@@ -12,39 +12,39 @@ import { Input } from "@/style/components/input";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 
-type GlobalSettingsFormProps = {
-  season: number | undefined;
-};
-
-export function GlobalSettingsForm({ season }: GlobalSettingsFormProps) {
-  const { updateSettings, canUpdateSettings } = useGlobalSettings({
+export function GlobalSettingsForm() {
+  const {
+    updateSettings,
+    canUpdate,
+    localSeason,
+    setLocalSeason,
+    localSettings,
+  } = useGlobalSettings({
     autoLoad: true,
   });
-  const [localSeason, setLocalSeason] = useState<string>(
-    season?.toString() || "",
-  );
   const [status, setStatus] = useState<SaveStatus>("idle");
 
   const handleSeasonChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalSeason(e.target.value);
+    const value = e.target.value;
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      setLocalSeason(parsed);
+    }
     if (status !== "idle") setStatus("idle");
   };
 
   const handleSave = async () => {
-    const newSeason = parseInt(localSeason, 10);
-    if (isNaN(newSeason)) return;
+    if (!localSettings) return;
 
     setStatus("saving");
     try {
-      await updateSettings({ season: newSeason });
+      await updateSettings(localSettings);
       setStatus("success");
     } catch (e) {
       console.error("Failed to save settings", e);
       setStatus("idle");
     }
   };
-
-  const hasChanges = season !== undefined && localSeason !== season.toString();
 
   return (
     <div className="p-6">
@@ -55,7 +55,7 @@ export function GlobalSettingsForm({ season }: GlobalSettingsFormProps) {
             <SaveButton
               onClick={handleSave}
               status={status}
-              disabled={!canUpdateSettings || !hasChanges}
+              disabled={!canUpdate}
               variant="primary"
               intensity="solid"
             >
@@ -70,13 +70,13 @@ export function GlobalSettingsForm({ season }: GlobalSettingsFormProps) {
               <Input
                 type="number"
                 id="season"
-                value={localSeason}
+                value={localSeason ?? ""}
                 onChange={handleSeasonChange}
-                disabled={!canUpdateSettings}
+                disabled={localSeason === undefined}
                 className="w-32"
               />
             </div>
-            {!canUpdateSettings && (
+            {localSeason === undefined && (
               <span className="text-sm text-muted-foreground">
                 Loading settings...
               </span>

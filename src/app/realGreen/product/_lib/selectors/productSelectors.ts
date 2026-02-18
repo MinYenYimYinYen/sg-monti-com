@@ -6,7 +6,7 @@ import {
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { baseProductSub } from "@/app/realGreen/product/_lib/baseProduct";
 
 const selectProductMasterDocs = (state: AppState) =>

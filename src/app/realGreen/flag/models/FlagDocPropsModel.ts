@@ -6,7 +6,6 @@ interface FlagDocPropsDoc extends mongoose.Document, FlagDocProps {}
 const flagDocPropsSchema = new mongoose.Schema<FlagDocPropsDoc>(
   {
     flagId: { type: Number, required: true, unique: true },
-    isOnCoverSheet: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

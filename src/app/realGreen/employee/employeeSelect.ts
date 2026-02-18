@@ -1,7 +1,7 @@
 import { AppState } from "@/store";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { createSelector } from "@reduxjs/toolkit";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 
 const selectEmployeeDocs = (state: AppState) => state.employee.employeeDocs;
 const selectEmployees = createSelector([selectEmployeeDocs], (employeeDocs) => {

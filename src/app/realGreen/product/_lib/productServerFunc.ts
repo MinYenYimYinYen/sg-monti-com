@@ -22,7 +22,7 @@ import {
   ProductSubDoc,
   ProductSubDocProps,
 } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import {
   baseProductMasterDocProps,
   baseProductSingleDocProps,

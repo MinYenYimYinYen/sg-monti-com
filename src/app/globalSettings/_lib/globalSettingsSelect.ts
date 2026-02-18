@@ -8,9 +8,15 @@ const selectSeason = createSelector(
   (settings) => settings?.season,
 );
 
+const selectCoverSheetsConfig = createSelector(
+  [selectSettings],
+  (settings) => settings?.coverSheetsConfig,
+);
+
 export const globalSettingsSelect = {
   settings: selectSettings,
   season: selectSeason,
+  coverSheetsConfig: selectCoverSheetsConfig,
 };
 
 

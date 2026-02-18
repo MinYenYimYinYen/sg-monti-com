@@ -7,7 +7,7 @@ import {
   PayloadAction,
 } from "@reduxjs/toolkit";
 import { ThunkConfig, WithConfig } from "@/store/reduxUtil/reduxTypes";
-import { typeGuard } from "@/lib/typeGuard";
+import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { toast } from "react-toastify";
 
 type UIState = {

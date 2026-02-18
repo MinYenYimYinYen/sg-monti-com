@@ -7,8 +7,8 @@ import {
   SelectValue,
 } from "@/style/components/select";
 import { SelectGroup } from "@radix-ui/react-select";
-import { cn } from "@/lib/utils";
-import { Grouper } from "@/lib/Grouper";
+import { cn } from "@/lib/tailwindUtils";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 
 type EntitySelectorProps<TEntity, TId extends string | number> = {
   // Data

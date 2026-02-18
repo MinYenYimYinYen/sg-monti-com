@@ -15,7 +15,6 @@ export const baseFlagCore: FlagCore = {
 
 export const baseFlagDocProps: FlagDocProps = {
   flagId: baseNumId,
-  isOnCoverSheet: false,
   createdAt: "",
   updatedAt: "",
 };

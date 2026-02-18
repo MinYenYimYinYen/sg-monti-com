@@ -1,6 +1,6 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 
 const selectCallAheadDocs = (state: AppState) => state.callAhead.callAheadDocs;
 const selectCallAheadDocMap = createSelector(

@@ -37,7 +37,11 @@ const handlers: HandlerMap<GlobalSettingsContract> = {
         return { success: true, payload: baseGlobalSettings };
       }
 
-      return { success: true, payload: cleanMongoObject(result) };
+      // Merge with baseGlobalSettings to ensure any missing fields have defaults
+      return {
+        success: true,
+        payload: cleanMongoObject({ ...baseGlobalSettings, ...result })
+      };
     },
   },
 };

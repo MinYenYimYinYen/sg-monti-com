@@ -6,7 +6,7 @@ import {
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import ServCodeDocPropsModel from "@/app/realGreen/progServ/_lib/models/ServCodeDocPropsModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { baseServCodeDocProps } from "@/app/realGreen/progServ/_lib/baseServCode";
 
 export function remapServCode(raw: ServCodeRaw): ServCodeCore {

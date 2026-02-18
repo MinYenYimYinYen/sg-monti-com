@@ -109,14 +109,14 @@ export function Modal({
       <div
         ref={contentRef}
         className={cn(
-          "relative z-10 w-full max-w-lg rounded-lg bg-background border border-border shadow-xl opacity-0",
+          "relative z-10  rounded-lg bg-background border border-accent/40 shadow-xl opacity-0 bg-accent/10",
           className,
         )}
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-b-accent/40 px-6 py-4 bg-accent/30 rounded-t-lg  ">
           <h2 className="text-lg font-semibold text-foreground">
             {title || "Modal"}
           </h2>
@@ -126,7 +126,7 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="p-0">{children}</div>
+        <div className="p-2">{children}</div>
       </div>
     </div>,
     document.body,

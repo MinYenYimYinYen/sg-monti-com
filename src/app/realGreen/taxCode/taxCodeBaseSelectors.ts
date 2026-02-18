@@ -1,7 +1,7 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 
 const selectTaxCodeDocs = (state: AppState) => state.taxCode.taxCodeDocs;
 

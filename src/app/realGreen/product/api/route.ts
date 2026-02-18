@@ -28,7 +28,7 @@ import { baseNumId } from "../../_lib/realGreenConst";
 import { ProductMasterDocProps } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingleDocProps } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDocProps } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { UnitModel } from "@/app/realGreen/product/_lib/models/UnitModel";
 import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
@@ -179,7 +179,6 @@ const handlers: HandlerMap<ProductContract> = {
     handler: async (params) => {
       await connectToMongoDB();
       const { unit } = params;
-      console.log("Saving unit:", unit);
       const result = await UnitModel.findOneAndUpdate(
         { unitId: unit.unitId },
         { ...unit },

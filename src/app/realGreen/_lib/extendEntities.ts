@@ -1,6 +1,6 @@
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { Model } from "mongoose";
 
 /**

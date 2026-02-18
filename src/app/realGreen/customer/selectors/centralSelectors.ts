@@ -1,6 +1,6 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";

@@ -1,11 +1,11 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { ProgCode } from "../types/ProgCodeTypes";
 import { ServCode } from "../types/ServCodeTypes";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { ProductRule } from "@/app/realGreen/progServ/_lib/types/ProductRule";
-import { typeGuard } from "@/lib/typeGuard";
+import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 
 export const selectProgCodeDocs = (state: AppState) =>
   state.progServ.progCodeDocs;

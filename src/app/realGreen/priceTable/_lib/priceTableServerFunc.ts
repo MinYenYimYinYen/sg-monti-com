@@ -9,7 +9,7 @@ import {
   PriceRangeRaw,
 } from "@/app/realGreen/priceTable/_types/PriceRangeType";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { PriceTableDocModel } from "@/app/realGreen/priceTable/_models/PriceTableDocModel";
 import { dateCompare } from "@/lib/primatives/dates/dateCompare";

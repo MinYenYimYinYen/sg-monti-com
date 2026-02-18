@@ -1,4 +1,4 @@
-import { typeGuard } from "@/lib/typeGuard";
+import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import {
   baseContactPreference,
   remapContactPreference,

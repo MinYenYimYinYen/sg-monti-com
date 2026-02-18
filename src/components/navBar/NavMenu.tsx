@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import { Role } from "@/lib/api/types/roles";
 import { Menu } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/tailwindUtils";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
 import { useIsClient } from "@/lib/hooks/useIsClient";

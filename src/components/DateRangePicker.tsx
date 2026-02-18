@@ -3,7 +3,7 @@
 import * as React from "react";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { DatePicker } from "@/components/DatePicker";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/tailwindUtils";
 import { validateDateRange } from "@/lib/primatives/dates/dateRangeSchema";
 
 interface DateRangePickerProps {

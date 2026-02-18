@@ -26,7 +26,6 @@ export type FlagCore = {
 
 export type FlagDocProps = CreatedUpdated & {
   flagId: number;
-  isOnCoverSheet: boolean;
 };
 
 export type FlagDoc = FlagDocProps & FlagCore;

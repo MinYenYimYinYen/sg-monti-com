@@ -17,7 +17,9 @@ const handlers: HandlerMap<FlagContract> = {
         method: "GET",
       });
 
-      const flagCores = remapFlags(rawFlags);
+      const flagCores = remapFlags(rawFlags)
+        .filter((flag) => flag.available)
+        .sort((a,b) => a.desc.localeCompare(b.desc))
       const flagDocs = await extendFlags(flagCores);
 
       return { success: true, payload: flagDocs };

@@ -7,7 +7,7 @@ import {
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProgCodeDocPropsModel } from "../models/ProgCodeDocPropsModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { baseProgCodeDocProps } from "../baseProgCode";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 

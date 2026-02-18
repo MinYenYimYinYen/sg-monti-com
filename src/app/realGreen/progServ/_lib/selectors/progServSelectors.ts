@@ -1,5 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
-import { Grouper } from "@/lib/Grouper";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { progServBaseSelect } from "./progServBaseSelectors";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { ProgCode } from "../types/ProgCodeTypes";
