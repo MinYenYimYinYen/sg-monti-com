@@ -55,8 +55,6 @@ export default function EditUnitSheet({
 
   const canSave = unit && newDesc !== unit.desc && unit.unitId !== baseNumId;
 
-  //todo: error on save.  This component was created by AI.
-  // Investigate.
   const handleSave = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (canSave) {
