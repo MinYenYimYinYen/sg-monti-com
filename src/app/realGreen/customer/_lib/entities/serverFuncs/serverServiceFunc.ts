@@ -1,17 +1,19 @@
 import {
   ServiceCore,
   ServiceDoc,
+  ServiceDocProps,
 } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
+import { baseServiceDocProps } from "@/app/realGreen/customer/_lib/entities/bases/baseService";
+import { ServiceDocPropsModel } from "@/app/realGreen/customer/_lib/models/ServiceDocPropsModel";
 
 export async function extendServices(
-  remapped: ServiceCore[],
+  cores: ServiceCore[],
 ): Promise<ServiceDoc[]> {
-  //MOCKED
-  //code the actual mongo lookup here.
-  const withMongo: ServiceDoc[] = remapped.map((serv) => ({
-    ...serv,
-    createdAt: "",
-    updatedAt: "",
-  }));
-  return withMongo;
+  return extendEntities<ServiceCore, ServiceDocProps, ServiceDoc>({
+    cores,
+    model: ServiceDocPropsModel,
+    idField: "servId",
+    baseDocProps: baseServiceDocProps,
+  });
 }

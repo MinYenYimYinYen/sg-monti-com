@@ -1,6 +1,6 @@
 import { Program } from "../types/ProgramTypes";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
-import { baseCustomer } from "./CustomerBase";
+import { baseCustomer } from "./baseCustomer";
 
 import {baseProgCode} from "@/app/realGreen/progServ/_lib/baseProgCode";
 

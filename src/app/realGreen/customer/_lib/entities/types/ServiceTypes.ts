@@ -3,9 +3,7 @@ import {
   AppProduct,
   AppProductRaw,
 } from "@/app/realGreen/_lib/subTypes/AppProduct";
-import {
-  ServiceHistoryRaw,
-} from "@/app/realGreen/_lib/subTypes/ServiceHistory";
+import { ServiceHistoryRaw } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import { DoneByRaw } from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import {
   Production,
@@ -107,8 +105,17 @@ export type ServiceCore = {
   productionCore: ProductionCore | null;
 };
 
+export type Assignment = {
+  employeeId: string;
+  date: string;
+};
+//todo: Left off here.  Need to add handlers for reading/writing assignments.
+// Need to make a CSV importer.
+// Need to make a CSV configurator for parsing assignment data from unserviced report.
+
 export type ServiceDocProps = CreatedUpdated & {
   servId: number;
+  assignments: Assignment[];
 };
 
 export type ServiceDoc = ServiceCore & ServiceDocProps;

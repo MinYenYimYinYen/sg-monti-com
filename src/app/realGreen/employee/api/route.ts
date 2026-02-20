@@ -18,6 +18,7 @@ const handlers: HandlerMap<EmployeeContract> = {
         path: "/Employee/Active/true",
         method: "GET",
       });
+
       const employeeCores = remapEmployees(rawEmployees);
       const employeeDocs = await extendEmployees(employeeCores);
 

@@ -1,6 +1,11 @@
-import { Service, ServiceCore, ServiceDoc } from "../types/ServiceTypes";
+import {
+  Service,
+  ServiceCore,
+  ServiceDoc,
+  ServiceDocProps,
+} from "../types/ServiceTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
-import { baseProgram } from "./ProgramBase";
+import { baseProgram } from "./baseProgram";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
 export const baseServiceCore: ServiceCore = {
@@ -23,10 +28,17 @@ export const baseServiceCore: ServiceCore = {
   productionCore: null,
 };
 
-export const baseServiceDoc: ServiceDoc = {
-  ...baseServiceCore,
+export const baseServiceDocProps: ServiceDocProps = {
+  servId: baseNumId,
+  assignments: [],
   createdAt: "",
   updatedAt: "",
+}
+
+export const baseServiceDoc: ServiceDoc = {
+  ...baseServiceCore,
+  ...baseServiceDocProps,
+
 };
 
 export const baseService: Service = {
