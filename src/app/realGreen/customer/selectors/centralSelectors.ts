@@ -171,14 +171,19 @@ const selectServices = createSelector([selectPrograms], (programs) => {
   return programs.flatMap((p) => p.services);
 });
 
-const customerMap = createSelector([selectCustomers], (customers) => {
+const selectCustomerMap = createSelector([selectCustomers], (customers) => {
   return new Grouper(customers).toUniqueMap((c) => c.custId);
 });
+
+// const selectCustIds = createSelector([selectCustDocMap], (custDocMap) => [
+//   ...custDocMap.keys(),
+// ]);
 
 export const centralSelect = {
   context: selectActiveContexts,
   customers: selectCustomers,
   programs: selectPrograms,
   services: selectServices,
-  customerMap: customerMap,
+  customerMap: selectCustomerMap,
+  // custIds: selectCustIds,
 };

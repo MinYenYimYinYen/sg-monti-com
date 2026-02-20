@@ -8,6 +8,7 @@ const selectFlagDocMap = createSelector([selectFlagDocs], (flagDocs) =>
   new Grouper(flagDocs).toUniqueMap((c) => c.flagId),
 );
 
+
 export const flagSelect = {
   flagDocs: selectFlagDocs,
   flagDocMap: selectFlagDocMap,

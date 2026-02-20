@@ -14,15 +14,18 @@ const handlers: HandlerMap<CustFlagContract> = {
   loadFlagIdCustIds: {
     roles: ["office", "admin", "tech"],
     handler: async ({ searches }) => {
-      const promises = searches.map((search) => {
-        return rgApi<FlagIdCustIds>({
+      const promises = searches.map((search) =>
+        rgApi<number[]>({
           path: "/Customer/Flag/IDs",
           method: "POST",
           body: search,
-        });
-      });
+        }).then((custIds) => ({
+          flagId: search.flagID,
+          custIds,
+        })),
+      );
 
-      const results = await Promise.all(promises);
+      const results: FlagIdCustIds[] = await Promise.all(promises);
 
       return { success: true, payload: results };
     },
