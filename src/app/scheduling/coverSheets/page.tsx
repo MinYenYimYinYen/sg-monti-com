@@ -8,14 +8,15 @@ import { Container } from "@/components/Containers";
 import { useCoverSheets } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheets";
 import { useSelector } from "react-redux";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 
 export default function CoverSheetsPage() {
   useCoverSheets();
-  const services = useSelector(centralSelect.services);
+  const printedByDate = useSelector(coverSheetsSelect.printedByDate);
 
   useEffect(() => {
-    console.log("services", services);
-  }, [services]);
+    console.log(printedByDate);
+  }, [printedByDate]);
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
 
