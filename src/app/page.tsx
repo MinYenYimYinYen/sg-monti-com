@@ -43,10 +43,11 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/style/components/sheet";
-import {  useState } from "react";
+import { useState } from "react";
 import { DatePicker } from "@/components/DatePicker";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { CSVDropzone } from "@/components/dropZone";
 
 export default function Home() {
   // NEW: Declare contexts first
@@ -54,8 +55,6 @@ export default function Home() {
   // usePrintedCustomers({autoLoad: true})
   // useProgServ({ autoLoad: true });
   // useProduct({autoLoad: true})
-
-
 
   const [date, setDate] = useState("");
   const [dateRange, setDateRange] = useState<TRange<string>>({
@@ -73,6 +72,11 @@ export default function Home() {
           Testing all installed components with current theme
         </p>
       </div>
+
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold">CSV Dropzone</h2>
+        <CSVDropzone className={"w-96 h-48"} />
+      </section>
 
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold">Date Picker ({date})</h2>
