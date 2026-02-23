@@ -3,7 +3,7 @@ import activeCustomerReducer from "@/app/realGreen/customer/slices/activeCustome
 import printedCustomerReducer from "@/app/realGreen/customer/slices/printedCustomersSlice";
 import centralCustomerReducer from "@/app/realGreen/customer/slices/centralCustomerSlice";
 import lastSeasonProductionReducer from "@/app/realGreen/customer/slices/lastSeasonProductionSlice";
-import csvReducer from "@/app/csv/csvSlice";
+import csvReducer from "@/app/csv/_lib/csvSlice";
 
 export const customerReducer = combineReducers({
   active: activeCustomerReducer,

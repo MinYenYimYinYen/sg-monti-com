@@ -18,6 +18,8 @@ import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { hydrateFlags } from "@/app/realGreen/customer/selectors/hydrateFlags";
+import { hydrateLastAssigned } from "@/app/realGreen/customer/selectors/hydrateLastAssigned";
+import { csvSelect } from "@/app/csv/_lib/csvSelect";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -80,6 +82,7 @@ export const selectCustomers = createSelector(
     employeeSelect.employeeMap,
     flagSelect.flagDocMap,
     custFlagSelect.custIdFlagIds,
+    csvSelect.assignments,
   ],
   (
     customerDocs,
@@ -94,6 +97,7 @@ export const selectCustomers = createSelector(
     employeeMap,
     flagDocMap,
     custIdFlagIds,
+    newAssignments,
   ) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
       const taxCodes = custDoc.taxIds
@@ -127,6 +131,7 @@ export const selectCustomers = createSelector(
         const services = serviceDocs.map((servDoc) => {
           const servCode = servCodeMap.get(servDoc.servCodeId) || baseServCode;
 
+          const lastAssigned = hydrateLastAssigned(servDoc, newAssignments, progDoc)
           const service: Service = {
             ...servDoc,
             program,
@@ -144,6 +149,7 @@ export const selectCustomers = createSelector(
               servCodeMap,
               productCommonDocMap,
             ),
+            lastAssigned,
           };
 
           return service;

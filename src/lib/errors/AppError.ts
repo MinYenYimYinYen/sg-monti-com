@@ -10,7 +10,7 @@ export type ErrorType =
 
 interface AppErrorParams {
   message: string;
-  type?: ErrorType;
+  type: ErrorType;
   statusCode?: number;
   isOperational?: boolean;
   data?: unknown;

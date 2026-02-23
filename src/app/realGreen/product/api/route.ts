@@ -133,7 +133,7 @@ const handlers: HandlerMap<ProductContract> = {
       if (result.categoryId) {
         return { success: true };
       } else {
-        throw new AppError({ message: "Error saving category" });
+        throw new AppError({ message: "Error saving category", type: "SERVER_ERROR" });
       }
     },
   },
@@ -156,6 +156,7 @@ const handlers: HandlerMap<ProductContract> = {
         // Catching system-level errors (MongoDB connection, etc.)
         throw new AppError({
           message: `MongoDB error saving master sub products: ${error instanceof Error ? error.message : String(error)}`,
+          type: "SERVER_ERROR",
           isOperational: true,
           data: { originalError: error },
         });
@@ -165,6 +166,7 @@ const handlers: HandlerMap<ProductContract> = {
       if (!result || !result.productId) {
         throw new AppError({
           message: `Failed to save master sub products for masterId ${masterId}: result was null`,
+          type: "SERVER_ERROR",
           isOperational: true,
           data: { masterId, subProductConfigDocs },
         });
@@ -187,7 +189,7 @@ const handlers: HandlerMap<ProductContract> = {
       if (result.unitId) {
         return { success: true };
       } else {
-        throw new AppError({ message: "Error saving unit" });
+        throw new AppError({ message: "Error saving unit", type: "SERVER_ERROR" });
       }
     },
   },

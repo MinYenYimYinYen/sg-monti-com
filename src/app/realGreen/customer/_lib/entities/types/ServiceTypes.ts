@@ -106,12 +106,11 @@ export type ServiceCore = {
 };
 
 export type Assignment = {
+  servId: number;
   employeeId: string;
-  date: string;
+  schedDate: string;
+  status: string;
 };
-//todo: Left off here.  Need to add handlers for reading/writing assignments.
-// Need to make a CSV importer.
-// Need to make a CSV configurator for parsing assignment data from unserviced report.
 
 export type ServiceDocProps = CreatedUpdated & {
   servId: number;
@@ -119,13 +118,6 @@ export type ServiceDocProps = CreatedUpdated & {
 };
 
 export type ServiceDoc = ServiceCore & ServiceDocProps;
-
-export type ServiceUnserviced = {
-  servId: number;
-  status: string;
-  employeeId: string;
-  schedDate: string;
-};
 
 export type ServiceProps = {
   program: Program;
@@ -135,6 +127,7 @@ export type ServiceProps = {
   production: Production | null;
   productsPlanned: AppProduct[];
   // productsUsed: AppProductRaw[];
+  lastAssigned: Assignment;
 };
 
 export type Service = ServiceDoc & ServiceProps;

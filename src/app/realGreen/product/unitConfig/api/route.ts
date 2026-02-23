@@ -38,6 +38,7 @@ const handlers: HandlerMap<UnitConfigContract> = {
       if (!config.conversions || config.conversions.length === 0) {
         throw new AppError({
           message: "Unit config must have at least one conversion",
+          type: "VALIDATION_ERROR",
           statusCode: 400,
         });
       }
@@ -70,6 +71,7 @@ const handlers: HandlerMap<UnitConfigContract> = {
       if (result.deletedCount === 0) {
         throw new AppError({
           message: `No unit config found for product ${productId}`,
+          type: "VALIDATION_ERROR",
           statusCode: 404,
         });
       }

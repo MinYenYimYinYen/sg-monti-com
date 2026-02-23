@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { ServiceUnserviced } from "../realGreen/customer/_lib/entities/types/ServiceTypes";
+import { Assignment } from "../../realGreen/customer/_lib/entities/types/ServiceTypes";
 import { dateParser } from "@/lib/primatives/dates/dateParse";
 import { ParseConfig } from "./ParserTypes";
-import { createCSVParser } from "@/app/csv/parserFactory";
+import { createCSVParser } from "@/app/csv/_lib/parserFactory";
 
 // Zod schema for ServiceUnserviced validation
 const ServiceUnservicedSchema = z.object({
@@ -12,7 +12,7 @@ const ServiceUnservicedSchema = z.object({
   status: z.string().min(1, "Status cannot be empty"),
 });
 
-const UNSERVICED_PARSE_CONFIG: ParseConfig<ServiceUnserviced> = {
+const UNSERVICED_PARSE_CONFIG: ParseConfig<Assignment> = {
   columnMappings: {
     ServiceId: "servId",
     AssignedToEmployeeId: "employeeId",
@@ -48,7 +48,7 @@ const UNSERVICED_PARSE_CONFIG: ParseConfig<ServiceUnserviced> = {
  * @param file - CSV file to parse
  * @returns Promise with ParseResult containing validated data or errors
  */
-export const parseServiceCSV = createCSVParser<ServiceUnserviced>(
+export const parseAssignmentFromUnservicedReport = createCSVParser<Assignment>(
   UNSERVICED_PARSE_CONFIG,
 );
 

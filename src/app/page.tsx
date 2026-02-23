@@ -49,7 +49,7 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { CSVDropzone } from "@/components/dropZone/dropZone";
 import { useDispatch } from "react-redux";
-import { parseServiceCSV } from "@/app/csv/unservicedParser";
+import { parseAssignmentFromUnservicedReport } from "@/app/csv/_lib/unservicedParser";
 
 export default function Home() {
   // NEW: Declare contexts first
@@ -74,7 +74,7 @@ export default function Home() {
   const handleFileDrop = async (file: File) => {
     console.log("Parsing file:", file.name);
 
-    const result = await parseServiceCSV(file);
+    const result = await parseAssignmentFromUnservicedReport(file);
     setParseResult(result);
 
     if (result.success) {

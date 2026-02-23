@@ -170,6 +170,9 @@ export function createPaginationStep<TRawData extends RawData>(
       if (optimizer.type !== "pagination") {
         throw new AppError({
           message: `Invalid optimizer type for pagination step: ${optimizer.type}`,
+          type: "SERVER_ERROR",
+          statusCode: 500,
+
         });
       }
 
@@ -185,6 +188,9 @@ export function createPaginationStep<TRawData extends RawData>(
               `Previous data is null for ${config.stepName}. ` +
               "If this was the first step, do not use the function type for" +
               "getSearchCriteria. If this does not make sense, notify the developer.",
+            type: "SERVER_ERROR",
+            statusCode: 500,
+            data: { pipelineData },
           });
         }
         if (!pipelineData.length) {
@@ -193,6 +199,9 @@ export function createPaginationStep<TRawData extends RawData>(
               `Previous data is empty for ${config.stepName}. ` +
               "Aborting search scheme. Check the searchScheme. If this does not" +
               "make sense, notify the developer.",
+            type: "SERVER_ERROR",
+            statusCode: 500,
+            data: { pipelineData },
           });
         }
         searchCriteria = config.getSearchCriteria(pipelineData);
@@ -315,6 +324,8 @@ export function createBatchSizeStep<TRawData extends RawData>(
       if (optimizer.type !== "batchSize") {
         throw new AppError({
           message: `Invalid optimizer type for batchSize step: ${optimizer.type}`,
+          type: "SERVER_ERROR",
+          statusCode: 500,
         });
       }
 

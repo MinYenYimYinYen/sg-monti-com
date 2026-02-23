@@ -11,29 +11,38 @@ import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelecto
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 import { Card, CardDescription, CardTitle } from "@/style/components/card";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
+import { CSVDropzone } from "@/components/dropZone/dropZone";
+import { useCSV } from "@/app/csv/_lib/useCSV";
 
 export default function CoverSheetsPage() {
   useCoverSheets();
-  const printedByDate = useSelector(coverSheetsSelect.printedByDate);
+  const { parseAssignments } = useCSV();
+  const servicesByDate = useSelector(coverSheetsSelect.servicesByDate);
+  const servicesByDateAndEmployee = useSelector(
+    coverSheetsSelect.servicesByDateAndEmployee,
+  );
 
   useEffect(() => {
-    console.log(printedByDate);
-  }, [printedByDate]);
+    console.log("by date", servicesByDate);
+    console.log("by date/employee", servicesByDateAndEmployee);
+  }, [servicesByDate, servicesByDateAndEmployee]);
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
 
   return (
-    <Container variant={"page"}>
-      <div>Cover Sheets</div>
+    <Container variant={"page"} className={"flex flex-col gap-4"}>
+      <div className={"text-2xl font-bold"}>Cover Sheets</div>
+      <section>
+        <h2 className={"text-lg font-medium"}>Upload Unserviced Report</h2>
+        <CSVDropzone onFileDrop={(file) => parseAssignments(file)} />
+      </section>
       <div className={"flex gap-4 flex-wrap"}>
-        {[...printedByDate.keys()].map((date) => {
-          const services = printedByDate.get(date)!;
+        {[...servicesByDate.keys()].map((date) => {
+          const services = servicesByDate.get(date)!;
 
           return (
             <Card key={date}>
-              <CardTitle>
-                {prettyDate(date, "EEE, MMM d")}
-              </CardTitle>
+              <CardTitle>{prettyDate(date, "EEE, MMM d")}</CardTitle>
               <CardDescription>{services.length} services</CardDescription>
             </Card>
           );

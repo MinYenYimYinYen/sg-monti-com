@@ -9,8 +9,10 @@ interface ServiceDocPropsDoc extends mongoose.Document, ServiceDocProps {}
 
 const assignmentSchema = new mongoose.Schema<Assignment>(
   {
+    servId: { type: Number, required: true },
     employeeId: { type: String, required: true },
-    date: { type: String, required: true },
+    schedDate: { type: String, required: true },
+    status: { type: String, required: true },
   },
   {
     _id: false,

@@ -16,7 +16,7 @@ import priceTableReducer from "@/app/realGreen/priceTable/priceTableSlice";
 import taxCodeReducer from "@/app/realGreen/taxCode/taxCodeSlice";
 import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
-import csvReducer from "@/app/csv/csvSlice";
+import csvReducer from "@/app/csv/_lib/csvSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,

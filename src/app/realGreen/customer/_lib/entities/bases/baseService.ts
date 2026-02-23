@@ -1,4 +1,5 @@
 import {
+  Assignment,
   Service,
   ServiceCore,
   ServiceDoc,
@@ -41,6 +42,13 @@ export const baseServiceDoc: ServiceDoc = {
 
 };
 
+export const baseAssignment: Assignment = {
+  servId: baseNumId,
+  employeeId: "",
+  schedDate: "",
+  status: "",
+}
+
 export const baseService: Service = {
   ...baseServiceDoc,
   program: baseProgram,
@@ -50,4 +58,5 @@ export const baseService: Service = {
   production: null,
   productsPlanned: [],
   // productsUsed: [],
+  lastAssigned: baseAssignment,
 };

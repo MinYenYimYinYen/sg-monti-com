@@ -36,6 +36,8 @@ function remapProduction({
     throw new AppError({
       message:
         "Completed service has missing data! Please contact your department lead.",
+      type: "VALIDATION_ERROR",
+      statusCode: 400,
       data: {
         history: !!historyRaw,
         usedProducts: !!rawAppProducts,
