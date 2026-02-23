@@ -17,7 +17,7 @@ const assignmentSchema = new mongoose.Schema<Assignment>(
   },
 );
 
-const serviceDocPropsSchema = new mongoose.Schema<ServiceDocProps>(
+const serviceDocPropsSchema = new mongoose.Schema<ServiceDocPropsDoc>(
   {
     servId: { type: Number, required: true, unique: true },
     assignments: { type: [assignmentSchema], required: true, default: [] },
