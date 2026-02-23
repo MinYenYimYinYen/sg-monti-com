@@ -3,12 +3,14 @@ import activeCustomerReducer from "@/app/realGreen/customer/slices/activeCustome
 import printedCustomerReducer from "@/app/realGreen/customer/slices/printedCustomersSlice";
 import centralCustomerReducer from "@/app/realGreen/customer/slices/centralCustomerSlice";
 import lastSeasonProductionReducer from "@/app/realGreen/customer/slices/lastSeasonProductionSlice";
+import csvReducer from "@/app/csv/csvSlice";
 
 export const customerReducer = combineReducers({
   active: activeCustomerReducer,
   printed: printedCustomerReducer,
   central: centralCustomerReducer,
   lastSeasonProduction: lastSeasonProductionReducer,
+  csv: csvReducer,
 });
 
 export type CustomerState = ReturnType<typeof customerReducer>;

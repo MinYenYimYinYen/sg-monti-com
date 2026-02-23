@@ -1,8 +1,15 @@
 import { FileRejection, useDropzone } from "react-dropzone";
 
-export function CSVDropzone({ className }: { className?: string }) {
+export function CSVDropzone({
+  className,
+  onFileDrop,
+}: {
+  className?: string;
+  onFileDrop: (file: File) => void;
+}) {
   const onDrop = (acceptedFiles: File[], fileRejections: FileRejection[]) => {
     console.log(acceptedFiles);
+    onFileDrop(acceptedFiles[0]);
     if (fileRejections.length > 0) {
       console.log(fileRejections);
     }

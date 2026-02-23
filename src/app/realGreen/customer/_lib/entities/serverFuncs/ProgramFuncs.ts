@@ -1,5 +1,5 @@
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
-import { ProgramCore, ProgramRaw } from "../types/ProgramTypes";
+import { ProgramCore, ProgramDoc, ProgramRaw } from "../types/ProgramTypes";
 
 function remapProgram(raw: ProgramRaw): ProgramCore {
   return {
@@ -26,4 +26,14 @@ function remapProgram(raw: ProgramRaw): ProgramCore {
 
 export function remapPrograms(raw: ProgramRaw[]) {
   return raw.map((r) => remapProgram(r));
+}
+export async function extendPrograms(
+  remapped: ProgramCore[],
+): Promise<ProgramDoc[]> {
+  const withMongo = remapped.map((prog) => ({
+    ...prog,
+    createdAt: "",
+    updatedAt: "",
+  }));
+  return withMongo;
 }

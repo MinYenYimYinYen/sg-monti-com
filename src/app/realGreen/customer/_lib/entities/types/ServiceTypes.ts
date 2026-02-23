@@ -120,6 +120,13 @@ export type ServiceDocProps = CreatedUpdated & {
 
 export type ServiceDoc = ServiceCore & ServiceDocProps;
 
+export type ServiceUnserviced = {
+  servId: number;
+  status: string;
+  employeeId: string;
+  schedDate: string;
+};
+
 export type ServiceProps = {
   program: Program;
   servCode: ServCode;

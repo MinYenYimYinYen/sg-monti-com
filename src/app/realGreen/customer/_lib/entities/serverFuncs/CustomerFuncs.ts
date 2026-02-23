@@ -4,7 +4,7 @@ import {
   remapContactPreference,
 } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
-import { CustomerCore, CustomerRaw } from "../types/CustomerTypes";
+import { CustomerCore, CustomerDoc, CustomerRaw } from "../types/CustomerTypes";
 
 function remapCustomer(raw: CustomerRaw): CustomerCore {
   return {
@@ -42,4 +42,15 @@ function remapCustomer(raw: CustomerRaw): CustomerCore {
 
 export function remapCustomers(raw: CustomerRaw[]) {
   return raw.map((r) => remapCustomer(r));
+}
+export async function extendCustomers(
+  remapped: CustomerCore[],
+): Promise<CustomerDoc[]> {
+  //MOCKED for now
+  const withMongo = remapped.map((cust) => ({
+    ...cust,
+    createdAt: "",
+    updatedAt: "",
+  }));
+  return withMongo;
 }

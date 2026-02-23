@@ -16,29 +16,29 @@ import {
   CustomerRaw,
 } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import {
+  extendCustomers,
   remapCustomers,
-} from "@/app/realGreen/customer/_lib/entities/funcs/CustomerFuncs";
+} from "@/app/realGreen/customer/_lib/entities/serverFuncs/CustomerFuncs";
 import {
   ProgramCore,
   ProgramRaw,
 } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import {
+  extendPrograms,
   remapPrograms,
-} from "@/app/realGreen/customer/_lib/entities/funcs/ProgramFuncs";
+} from "@/app/realGreen/customer/_lib/entities/serverFuncs/ProgramFuncs";
 import {
   ServiceCore,
   ServiceRaw,
 } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import {
+  extendServices,
   remapServices,
-} from "@/app/realGreen/customer/_lib/entities/funcs/serviceServerFunc";
+} from "@/app/realGreen/customer/_lib/entities/serverFuncs/serviceServerFunc";
 import {
   calculateNextBatchSize,
   calculateNextPagination
 } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/searchOptimizer/optimizerCalculations";
-import {extendCustomers} from "@/app/realGreen/customer/_lib/entities/serverFuncs/serverCustomerFunc";
-import {extendPrograms} from "@/app/realGreen/customer/_lib/entities/serverFuncs/serverProgramFunc";
-import {extendServices} from "@/app/realGreen/customer/_lib/entities/serverFuncs/serverServiceFunc";
 import {remapCustSearch} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapCustSearch";
 import {remapProgSearch} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapProgSearch";
 import {remapServSearch} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapServSearch";

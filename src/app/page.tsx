@@ -47,7 +47,9 @@ import { useState } from "react";
 import { DatePicker } from "@/components/DatePicker";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { TRange } from "@/lib/primatives/tRange/TRange";
-import { CSVDropzone } from "@/components/dropZone";
+import { CSVDropzone } from "@/components/dropZone/dropZone";
+import { useDispatch } from "react-redux";
+import { parseServiceCSV } from "@/app/csv/unservicedParser";
 
 export default function Home() {
   // NEW: Declare contexts first
@@ -56,11 +58,16 @@ export default function Home() {
   // useProgServ({ autoLoad: true });
   // useProduct({autoLoad: true})
 
+  const dispatch = useDispatch();
   const [date, setDate] = useState("");
   const [dateRange, setDateRange] = useState<TRange<string>>({
     min: "",
     max: "",
   });
+
+  const handleFileDrop = async (file: File) => {
+    console.log("file", file);
+  };
 
   return (
     <div className="container mx-auto p-8 space-y-12">
@@ -75,7 +82,7 @@ export default function Home() {
 
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold">CSV Dropzone</h2>
-        <CSVDropzone className={"w-96 h-48"} />
+        <CSVDropzone className={"w-96 h-48"} onFileDrop={handleFileDrop} />
       </section>
 
       <section className="space-y-4">
