@@ -64,9 +64,27 @@ export default function Home() {
     min: "",
     max: "",
   });
+  const [parseResult, setParseResult] = useState<{
+    success: boolean;
+    data?: any[];
+    errors?: string[];
+    partialData?: any[];
+  } | null>(null);
 
   const handleFileDrop = async (file: File) => {
-    console.log("file", file);
+    console.log("Parsing file:", file.name);
+
+    const result = await parseServiceCSV(file);
+    setParseResult(result);
+
+    if (result.success) {
+      console.log("✅ Parsed data:", result.data);
+    } else {
+      console.error("❌ Parse errors:", result.errors);
+      if (result.partialData) {
+        console.warn("⚠️ Partial data:", result.partialData);
+      }
+    }
   };
 
   return (
@@ -81,8 +99,74 @@ export default function Home() {
       </div>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold">CSV Dropzone</h2>
+        <h2 className="text-2xl font-semibold">Unserviced CSV Dropzone</h2>
         <CSVDropzone className={"w-96 h-48"} onFileDrop={handleFileDrop} />
+
+        {parseResult && (
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>
+                {parseResult.success ? "✅ Parse Success" : "❌ Parse Failed"}
+              </CardTitle>
+              <CardDescription>
+                {parseResult.success
+                  ? `Successfully parsed ${parseResult.data?.length || 0} rows`
+                  : `Failed with ${parseResult.errors?.length || 0} errors${parseResult.partialData ? ` (${parseResult.partialData.length} rows partially parsed)` : ""}`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!parseResult.success && parseResult.errors && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-destructive">Errors:</h3>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {parseResult.errors.map((error, idx) => (
+                      <li key={idx} className="text-destructive">
+                        {error}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {(parseResult.success
+                ? parseResult.data
+                : parseResult.partialData) && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold">
+                    {parseResult.success ? "Parsed Data:" : "Partial Data:"}
+                  </h3>
+                  <div className="max-h-96 overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Service ID</TableHead>
+                          <TableHead>Employee ID</TableHead>
+                          <TableHead>Scheduled Date</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(parseResult.success
+                          ? parseResult.data
+                          : parseResult.partialData
+                        )?.map((row: any, idx: number) => (
+                          <TableRow key={idx}>
+                            <TableCell>{row.servId}</TableCell>
+                            <TableCell>{row.employeeId}</TableCell>
+                            <TableCell>{row.schedDate}</TableCell>
+                            <TableCell>
+                              <Badge>{row.status}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </section>
 
       <section className="space-y-4">
