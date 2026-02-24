@@ -7,20 +7,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/style/components/card";
-import { DollarSign, Hash, LandPlot } from "lucide-react";
+import { LandPlot } from "lucide-react";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { useSelector } from "react-redux";
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 import { Fragment } from "react";
 import { Number } from "@/components/Number";
-import { useViewport } from "@/lib/hooks/useViewport";
 import { useAppProducts } from "@/app/realGreen/customer/_lib/hooks/useAppProducts";
 
 export function CardProducts() {
   const servicesByDateAndEmployee = useSelector(
     coverSheetsSelect.servicesByDateAndEmployee,
   );
-  const { isNarrow } = useViewport();
   const { getPlannedAppProductTotal } = useAppProducts();
 
   return (
@@ -35,7 +33,7 @@ export function CardProducts() {
             key={date}
             className={"flex flex-col gap-1 w-full md:w-auto min-w-[250px]"}
           >
-            <CardHeader className={"p-1 border-b"}>
+            <CardHeader className={"p-1 bg-primary/20 rounded-t-lg "}>
               <CardTitle className={"border-b text-center pb-1"}>
                 {prettyDate(date, "EEE, MMM d")}
               </CardTitle>
@@ -68,7 +66,7 @@ export function CardProducts() {
 
                 return (
                   <Fragment key={employeeId}>
-                    <div className={"flex flex-col gap-1 border-b pb-1 mb-1"}>
+                    <div className={"flex flex-col gap-1 border-1 p-1 mb-1 rounded-sm bg-accent/20"}>
                       <div className={"flex items-center justify-between"}>
                         <p className={"font-semibold"}>{employeeId}</p>
                       </div>

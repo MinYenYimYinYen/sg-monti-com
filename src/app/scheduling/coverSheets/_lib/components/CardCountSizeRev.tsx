@@ -27,7 +27,7 @@ export function CardCountSizeRev() {
             key={date}
             className={"flex flex-col gap-1 w-full md:w-auto min-w-[250px]"}
           >
-            <CardHeader className={"p-1 border-b"}>
+            <CardHeader className={"p-1 bg-primary/20 rounded-t-lg "}>
               <CardTitle className={"border-b text-center pb-1"}>
                 {prettyDate(date, "EEE, MMM d")}
               </CardTitle>
@@ -54,11 +54,11 @@ export function CardCountSizeRev() {
                 return (
                   <div
                     className={
-                      "grid grid-cols-[max-content_1fr_1fr_1fr] gap-2 grow-0"
+                      "grid grid-cols-[max-content_1fr_1fr_1fr] gap-2 grow-0 border-1 p-1 mb-1 rounded-sm bg-accent/20"
                     }
                     key={employeeId}
                   >
-                    <p>{employeeId}</p>
+                    <p className={"font-semibold"}>{employeeId}</p>
                     <div className={"flex items-center justify-center"}>
                       <Hash className={"size-4"} />
                       {eServs.length}
