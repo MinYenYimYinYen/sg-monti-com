@@ -16,7 +16,7 @@ export function useCSV() {
       if (result.success) {
         dispatch(
           csvActions.saveAssignments({
-            params: result.data,
+            params: {assignments: result.data},
             config: { force: true, showLoading: false },
           }),
         );

@@ -2,13 +2,16 @@ import { Assignment } from "@/app/realGreen/customer/_lib/entities/types/Service
 import { createSlice } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { CSVContract } from "@/app/csv/api/csvContract";
+import { WriteError } from "mongodb";
 
 type CSVState = {
   assignments: Assignment[];
+  assignmentWriteErrors: WriteError[] | null;
 };
 
 const initialState: CSVState = {
   assignments: [],
+  assignmentWriteErrors: null,
 };
 
 export const csvSlice = createSlice({
@@ -17,7 +20,8 @@ export const csvSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(saveAssignments.fulfilled, (state, action) => {
-      state.assignments = action.payload;
+      state.assignments = action.payload.assignments;
+      state.assignmentWriteErrors = action.payload.errors;
     });
   },
 });
