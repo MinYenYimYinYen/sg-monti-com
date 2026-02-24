@@ -253,6 +253,7 @@ const authSlice = createSlice({
   },
   selectors: {
     user: (state) => state.user,
+    role: (state) => state.user?.role,
     isAuthenticated: (state) => state.isAuthenticated,
     isInitialized: (state) => state.isInitialized,
     invalidCredentialsEntered: (state) => state.invalidCredentialsEntered,

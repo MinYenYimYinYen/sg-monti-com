@@ -1,52 +1,75 @@
 "use client";
 import { CoverSheetsConfigEditor } from "@/app/scheduling/coverSheets/_lib/config/CoverSheetsConfigEditor";
 import { FooterPortal } from "@/components/FooterPortal";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Modal } from "@/components/Modal";
-import { Settings } from "lucide-react";
+import { DollarSign, Hash, LandPlot, Settings } from "lucide-react";
 import { Container } from "@/components/Containers";
 import { useCoverSheets } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheets";
 import { useSelector } from "react-redux";
-import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
-import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
-import { Card, CardDescription, CardTitle } from "@/style/components/card";
-import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { CSVDropzone } from "@/components/dropZone/dropZone";
 import { useCSV } from "@/app/csv/_lib/useCSV";
+import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
+import { useViewport } from "@/lib/hooks/useViewport";
+import { authSelect } from "@/app/auth/authSlice";
+import { CardCountSizeRev } from "@/app/scheduling/coverSheets/_lib/components/CardCountSizeRev";
+import { CardServCodes } from "@/app/scheduling/coverSheets/_lib/components/CardServCodes";
+import { CardProducts } from "@/app/scheduling/coverSheets/_lib/components/CardProducts";
+
+type ViewState = "countSizeRev" | "servCodes" | "products";
 
 export default function CoverSheetsPage() {
   useCoverSheets();
+  const { isNarrow } = useViewport();
+  const role = useSelector(authSelect.role);
+  const canUpload = ["admin", "office"].includes(role ?? "");
   const { parseAssignments } = useCSV();
-  const servicesByDate = useSelector(coverSheetsSelect.servicesByDate);
-  const servicesByDateAndEmployee = useSelector(
-    coverSheetsSelect.servicesByDateAndEmployee,
-  );
-
-  useEffect(() => {
-    console.log("by date", servicesByDate);
-    console.log("by date/employee", servicesByDateAndEmployee);
-  }, [servicesByDate, servicesByDateAndEmployee]);
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [view, setView] = useState<ViewState>("countSizeRev");
 
   return (
     <Container variant={"page"} className={"flex flex-col gap-4"}>
-      <div className={"text-2xl font-bold"}>Cover Sheets</div>
-      <section>
-        <h2 className={"text-lg font-medium"}>Upload Unserviced Report</h2>
-        <CSVDropzone onFileDrop={(file) => parseAssignments(file)} />
-      </section>
+      <div className={"flex justify-between items-center"}>
+        <div className={"text-2xl font-bold"}>Cover Sheets</div>
+      </div>
+      {canUpload && !isNarrow && (
+        <section>
+          <h2 className={"text-lg font-medium"}>Upload Unserviced Report</h2>
+          <CSVDropzone onFileDrop={(file) => parseAssignments(file)} />
+        </section>
+      )}
+      <RadioGroup
+        variant={"button-group"}
+        value={view}
+        onValueChange={(v) => setView(v as ViewState)}
+        className={"w-full md:w-auto"}
+      >
+        <RadioGroupItem
+          value="countSizeRev"
+          className="flex flex-1 md:flex-none justify-center"
+        >
+          <Hash className={"size-3.5"} />
+          <LandPlot className={"size-3.5"} />
+          <DollarSign className={"size-3.5"} />
+        </RadioGroupItem>
+        <RadioGroupItem
+          value="servCodes"
+          className={"text-xs flex-1 md:flex-none text-center"}
+        >
+          Service Codes
+        </RadioGroupItem>
+        <RadioGroupItem
+          value="products"
+          className={"text-xs flex-1 md:flex-none text-center"}
+        >
+          Products
+        </RadioGroupItem>
+      </RadioGroup>
       <div className={"flex gap-4 flex-wrap"}>
-        {[...servicesByDate.keys()].map((date) => {
-          const services = servicesByDate.get(date)!;
-
-          return (
-            <Card key={date}>
-              <CardTitle>{prettyDate(date, "EEE, MMM d")}</CardTitle>
-              <CardDescription>{services.length} services</CardDescription>
-            </Card>
-          );
-        })}
+        {view === "countSizeRev" && <CardCountSizeRev />}
+        {view === "servCodes" && <CardServCodes />}
+        {view === "products" && <CardProducts />}
       </div>
       <FooterPortal>
         <Settings onClick={() => setIsConfigOpen(true)} className={"size-4"} />
