@@ -55,7 +55,12 @@ export const selectServicesByDateAndEmployee = createSelector(
       const sortedEmployeeIds = Array.from(employeeMap.keys()).sort();
       const sortedEmployeeMap = new Map<string, Service[]>();
       sortedEmployeeIds.forEach((employeeId) => {
-        sortedEmployeeMap.set(employeeId, employeeMap.get(employeeId)!);
+        const services = employeeMap.get(employeeId)!;
+        // Sort services by program.tempSeq in ascending order
+        const sortedServices = services.sort((a, b) =>
+          (a.program.tempSeq ?? 0) - (b.program.tempSeq ?? 0)
+        );
+        sortedEmployeeMap.set(employeeId, sortedServices);
       });
       result.set(date, sortedEmployeeMap);
     });

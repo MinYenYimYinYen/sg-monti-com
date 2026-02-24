@@ -6,10 +6,15 @@ import {
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { CustomerCore, CustomerDoc, CustomerRaw } from "../types/CustomerTypes";
 
+
+
 function remapCustomer(raw: CustomerRaw): CustomerCore {
   return {
     custId: raw.id,
-    address: raw.address,
+    address: {
+      ...raw.address,
+      zip: raw.address.zip?.slice(0, 5) ?? "",
+    },
     billingAddress: raw.billingAddress,
     billingCompanyName: raw.billingCompanyName,
     billingFirstName: raw.billingFirstName,

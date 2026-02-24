@@ -1,17 +1,21 @@
 import {
   Assignment,
+  AssignmentDoc,
   ServiceDoc,
 } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { baseAssignment } from "@/app/realGreen/customer/_lib/entities/bases/baseService";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProgramDoc } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
+import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
+import { baseEmployee } from "@/app/realGreen/employee/_lib/baseEmployee";
 
 export function hydrateLastAssigned(
   serviceDoc: ServiceDoc,
-  newAssignments: Assignment[],
+  newAssignments: AssignmentDoc[],
   programDoc: ProgramDoc,
+  employeeMap: Map<string, Employee>,
 ): Assignment {
-  let lastAssignedFromDoc: Assignment | null = null;
+  let lastAssignedFromDoc: AssignmentDoc | null = null;
 
   if (serviceDoc.assignments.length > 0) {
     lastAssignedFromDoc = [...serviceDoc.assignments].sort(
@@ -23,7 +27,7 @@ export function hydrateLastAssigned(
   const lastAssignedFromNew =
     newAssignments.find((a) => a.servId === serviceDoc.servId) ?? null;
 
-  const modifiedBaseAssignment: Assignment = {
+  const modifiedBaseAssignmentDoc: AssignmentDoc = {
     ...baseAssignment,
     servId: serviceDoc.servId,
     status: serviceDoc.status,
@@ -37,9 +41,16 @@ export function hydrateLastAssigned(
     return isPrinted && hasNextDate;
   };
 
-  return {
-    ...(shouldHaveAssignment() ? modifiedBaseAssignment : baseAssignment),
+  const doc: AssignmentDoc = {
+    ...(shouldHaveAssignment() ? modifiedBaseAssignmentDoc : baseAssignment),
     ...lastAssignedFromDoc,
     ...lastAssignedFromNew,
+  };
+
+  const employee = employeeMap.get(doc.employeeId) ?? baseEmployee;
+
+  return {
+    ...doc,
+    employee,
   };
 }

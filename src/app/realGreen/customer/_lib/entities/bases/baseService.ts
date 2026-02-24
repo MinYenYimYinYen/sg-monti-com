@@ -1,5 +1,7 @@
 import {
   Assignment,
+  AssignmentDoc,
+  AssignmentProps,
   Service,
   ServiceCore,
   ServiceDoc,
@@ -8,6 +10,7 @@ import {
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseProgram } from "./baseProgram";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import { baseEmployee } from "@/app/realGreen/employee/_lib/baseEmployee";
 
 export const baseServiceCore: ServiceCore = {
   servId: baseNumId,
@@ -42,11 +45,20 @@ export const baseServiceDoc: ServiceDoc = {
 
 };
 
-export const baseAssignment: Assignment = {
+export const baseAssignmentDoc: AssignmentDoc = {
   servId: baseNumId,
   employeeId: "",
   schedDate: "",
   status: "",
+}
+
+export const baseAssignmentProps: AssignmentProps = {
+  employee: baseEmployee,
+}
+
+export const baseAssignment: Assignment = {
+  ...baseAssignmentDoc,
+  ...baseAssignmentProps,
 }
 
 export const baseService: Service = {
@@ -57,6 +69,6 @@ export const baseService: Service = {
   discount: null,
   production: null,
   productsPlanned: [],
-  // productsUsed: [],
   lastAssigned: baseAssignment,
+  // productsUsed: [],
 };

@@ -20,7 +20,7 @@ function remapProgram(raw: ProgramRaw): ProgramCore {
     sourceCodeId: raw.sourceCode,
     status: raw.status,
     techNote: raw.technicianNote,
-    tempSeq: raw.temporarySequence,
+    tempSeq: raw.temporarySequence / 10,
   };
 }
 

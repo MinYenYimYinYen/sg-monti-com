@@ -131,7 +131,7 @@ export const selectCustomers = createSelector(
         const services = serviceDocs.map((servDoc) => {
           const servCode = servCodeMap.get(servDoc.servCodeId) || baseServCode;
 
-          const lastAssigned = hydrateLastAssigned(servDoc, newAssignments, progDoc)
+          const lastAssigned = hydrateLastAssigned(servDoc, newAssignments, progDoc, employeeMap)
           const service: Service = {
             ...servDoc,
             program,

@@ -13,6 +13,7 @@ import { Program } from "./ProgramTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
+import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 
 export type ServiceRaw = {
   // actualManHours?: number;
@@ -105,16 +106,22 @@ export type ServiceCore = {
   productionCore: ProductionCore | null;
 };
 
-export type Assignment = {
+export type AssignmentDoc = {
   servId: number;
   employeeId: string;
   schedDate: string;
   status: string;
 };
 
+export type AssignmentProps = {
+  employee: Employee;
+};
+
+export type Assignment = AssignmentDoc & AssignmentProps;
+
 export type ServiceDocProps = CreatedUpdated & {
   servId: number;
-  assignments: Assignment[];
+  assignments: AssignmentDoc[];
 };
 
 export type ServiceDoc = ServiceCore & ServiceDocProps;

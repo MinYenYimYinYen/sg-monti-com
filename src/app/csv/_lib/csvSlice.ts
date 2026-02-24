@@ -1,11 +1,11 @@
-import { Assignment } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import { AssignmentDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { createSlice } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { CSVContract } from "@/app/csv/api/csvContract";
 import { WriteError } from "mongodb";
 
 type CSVState = {
-  assignments: Assignment[];
+  assignments: AssignmentDoc[];
   assignmentWriteErrors: WriteError[] | null;
 };
 
