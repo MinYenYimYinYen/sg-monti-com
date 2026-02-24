@@ -1,73 +1,223 @@
+"use client";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/style/components/card";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
-import { useSelector } from "react-redux";
-import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
-import { ReactNode } from "react";
+import { DollarSign, Hash, LandPlot } from "lucide-react";
+import { Fragment } from "react";
+import { Number } from "@/components/Number";
+import { useAppProducts } from "@/app/realGreen/customer/_lib/hooks/useAppProducts";
+import { useServCodes } from "@/app/realGreen/customer/_lib/hooks/useServCodes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 
+type ViewVariant = "countSizeRev" | "servCodes" | "products";
+
 interface CoverSheetCardProps {
-  onClick?: (date: string, employeeId?: string) => void;
-  renderDateHeader: (services: Service[]) => ReactNode;
-  renderEmployeeContent: (employeeId: string, services: Service[]) => ReactNode;
+  variant: ViewVariant;
+  date: string;
+  employeeMap: Map<string, Service[]>;
 }
 
 export function CoverSheetCard({
-  onClick,
-  renderDateHeader,
-  renderEmployeeContent,
+  variant,
+  date,
+  employeeMap,
 }: CoverSheetCardProps) {
-  const servicesByDateAndEmployee = useSelector(
-    coverSheetsSelect.servicesByDateAndEmployee,
-  );
+  const { getPlannedAppProductTotal } = useAppProducts();
+  const { getServCodeCounts } = useServCodes();
+
+  // Aggregate all services for the date header
+  const allServices = Array.from(employeeMap.values()).flat();
+
+  const renderDateHeader = () => {
+    if (variant === "countSizeRev") {
+      return (
+        <CardDescription className={"grid grid-cols-3 gap-1 items-center"}>
+          <div className={"flex items-center justify-center"}>
+            <Hash className={"size-4"} />
+            {allServices.length}
+          </div>
+          <div className={"flex items-center justify-center"}>
+            <LandPlot className={"size-4"} />
+            {allServices.reduce((acc, service) => acc + service.size, 0)}
+          </div>
+          <div className={"flex items-center justify-center"}>
+            <DollarSign className={"size-4"} />
+            {allServices.reduce((acc, service) => acc + service.price, 0)}
+          </div>
+        </CardDescription>
+      );
+    }
+
+    if (variant === "products") {
+      const appProducts = getPlannedAppProductTotal(allServices);
+      return (
+        <CardDescription className={"flex flex-col"}>
+          <div
+            className={"grid grid-cols-3 gap-1 items-center justify-between"}
+          >
+            {appProducts.map((product) => (
+              <Fragment key={product.productId}>
+                <p>{product.productCommon.productCode}</p>
+                <div className={"flex items-center gap-1"}>
+                  <Number>{product.amount}</Number>
+                  <p>{product.productCommon.unit.desc}</p>
+                </div>
+                <div className={"flex items-center"}>
+                  <LandPlot className={"size-4"} />
+                  <p>{product.size}</p>
+                </div>
+              </Fragment>
+            ))}
+          </div>
+        </CardDescription>
+      );
+    }
+
+    if (variant === "servCodes") {
+      const servCodeCounts = getServCodeCounts(allServices);
+      return (
+        <CardDescription className={"grid grid-cols-4 gap-1 items-center"}>
+          {servCodeCounts.map((servCodeCount) => (
+            <Fragment key={servCodeCount.servCodeId}>
+              <div className={"flex"}>
+                <p>{servCodeCount.servCodeId}</p>
+              </div>
+              <div className={"flex"}>
+                <Hash className={"size-4"} />
+                <Number>{servCodeCount.count}</Number>
+              </div>
+              <div className={"flex"}>
+                <LandPlot className={"size-4"} />
+                <Number>{servCodeCount.size}</Number>
+              </div>
+              <div className={"flex"}>
+                <DollarSign className={"size-4"} />
+                <Number>{servCodeCount.price}</Number>
+              </div>
+            </Fragment>
+          ))}
+        </CardDescription>
+      );
+    }
+
+    return null;
+  };
+
+  const renderEmployeeContent = () => {
+    return [...employeeMap.keys()].map((employeeId) => {
+      const eServs = employeeMap.get(employeeId)!;
+
+      if (variant === "countSizeRev") {
+        return (
+          <div
+            key={employeeId}
+            className={
+              "grid grid-cols-[max-content_1fr_1fr_1fr] gap-2 grow-0 border-1 p-1 mb-1 rounded-sm bg-accent/20"
+            }
+          >
+            <p className={"font-semibold"}>{employeeId}</p>
+            <div className={"flex items-center justify-center"}>
+              <Hash className={"size-4"} />
+              {eServs.length}
+            </div>
+            <div className={"flex items-center justify-center"}>
+              <LandPlot className={"size-4"} />
+              {eServs.reduce((acc, service) => acc + service.size, 0)}
+            </div>
+            <div className={"flex items-center justify-center"}>
+              <DollarSign className={"size-4"} />
+              {eServs.reduce((acc, service) => acc + service.price, 0)}
+            </div>
+          </div>
+        );
+      }
+
+      if (variant === "products") {
+        const eAppProducts = getPlannedAppProductTotal(eServs);
+        return (
+          <div
+            key={employeeId}
+            className={
+              "flex flex-col gap-1 border-1 p-1 mb-1 rounded-sm bg-accent/20"
+            }
+          >
+            <div className={"flex items-center justify-between"}>
+              <p className={"font-semibold"}>{employeeId}</p>
+            </div>
+            <div className={"grid grid-cols-3 gap-1 items-center text-sm"}>
+              {eAppProducts.map((product) => (
+                <Fragment key={product.productId}>
+                  <p>{product.productCommon.productCode}</p>
+                  <div className={"flex items-center gap-1"}>
+                    <Number>{product.amount}</Number>
+                    <p>{product.productCommon.unit.desc}</p>
+                  </div>
+                  <div className={"flex items-center"}>
+                    <LandPlot className={"size-4"} />
+                    <p>{product.size}</p>
+                  </div>
+                </Fragment>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      if (variant === "servCodes") {
+        const eServCodeCounts = getServCodeCounts(eServs);
+        return (
+          <div
+            key={employeeId}
+            className={
+              "flex flex-col gap-1 border-1 p-1 mb-1 rounded-sm bg-accent/20"
+            }
+          >
+            <div className={"flex items-center justify-between"}>
+              <p className={"font-semibold"}>{employeeId}</p>
+            </div>
+            <div className={"grid grid-cols-4 gap-1 items-center text-sm"}>
+              {eServCodeCounts.map((servCodeCount) => (
+                <Fragment key={servCodeCount.servCodeId}>
+                  <p>{servCodeCount.servCodeId}</p>
+                  <div className={"flex items-center"}>
+                    <Hash className={"size-4"} />
+                    <Number>{servCodeCount.count}</Number>
+                  </div>
+                  <div className={"flex items-center"}>
+                    <LandPlot className={"size-4"} />
+                    <Number>{servCodeCount.size}</Number>
+                  </div>
+                  <div className={"flex items-center"}>
+                    <DollarSign className={"size-4"} />
+                    <Number>{servCodeCount.price}</Number>
+                  </div>
+                </Fragment>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      return null;
+    });
+  };
 
   return (
-    <div className={"flex gap-4 flex-wrap"}>
-      {[...servicesByDateAndEmployee.keys()].map((date) => {
-        const employeeMap = servicesByDateAndEmployee.get(date)!;
-        const services = Array.from(employeeMap.values()).flat();
-
-        return (
-          <Card
-            key={date}
-            className={"flex flex-col gap-1 w-full md:w-auto min-w-[250px]"}
-            onClick={onClick ? () => onClick(date) : undefined}
-          >
-            <CardHeader className={"p-1 bg-primary/20 rounded-t-lg "}>
-              <CardTitle className={"border-b text-center pb-1"}>
-                {prettyDate(date, "EEE, MMM d")}
-              </CardTitle>
-              {renderDateHeader(services)}
-            </CardHeader>
-            <CardContent className={"p-1"}>
-              {[...employeeMap.keys()].map((employeeId) => {
-                const eServs = employeeMap.get(employeeId)!;
-                return (
-                  <div
-                    key={employeeId}
-                    onClick={
-                      onClick
-                        ? (e) => {
-                            e.stopPropagation();
-                            onClick(date, employeeId);
-                          }
-                        : undefined
-                    }
-                  >
-                    {renderEmployeeContent(employeeId, eServs)}
-                  </div>
-                );
-              })}
-            </CardContent>
-            <CardFooter></CardFooter>
-          </Card>
-        );
-      })}
-    </div>
+    <Card className={"flex flex-col gap-1 w-full md:w-auto min-w-[250px]"}>
+      <CardHeader className={"p-1 bg-primary/20 rounded-t-lg "}>
+        <CardTitle className={"border-b text-center pb-1"}>
+          {prettyDate(date, "EEE, MMM d")}
+        </CardTitle>
+        {renderDateHeader()}
+      </CardHeader>
+      <CardContent className={"p-1"}>{renderEmployeeContent()}</CardContent>
+      <CardFooter></CardFooter>
+    </Card>
   );
 }

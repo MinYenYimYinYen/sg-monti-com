@@ -12,9 +12,9 @@ import { useCSV } from "@/app/csv/_lib/useCSV";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import { useViewport } from "@/lib/hooks/useViewport";
 import { authSelect } from "@/app/auth/authSlice";
-import { CardCountSizeRev } from "@/app/scheduling/coverSheets/_lib/components/CardCountSizeRev";
-import { CardServCodes } from "@/app/scheduling/coverSheets/_lib/components/CardServCodes";
-import { CardProducts } from "@/app/scheduling/coverSheets/_lib/components/CardProducts";
+import { CoverSheetCard } from "@/app/scheduling/coverSheets/_lib/components/CoverSheetCard";
+import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
+import Link from "next/link";
 
 type ViewState = "countSizeRev" | "servCodes" | "products";
 
@@ -24,6 +24,9 @@ export default function CoverSheetsPage() {
   const role = useSelector(authSelect.role);
   const canUpload = ["admin", "office"].includes(role ?? "");
   const { parseAssignments } = useCSV();
+  const servicesByDateAndEmployee = useSelector(
+    coverSheetsSelect.servicesByDateAndEmployee,
+  );
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [view, setView] = useState<ViewState>("countSizeRev");
@@ -66,10 +69,24 @@ export default function CoverSheetsPage() {
           Products
         </RadioGroupItem>
       </RadioGroup>
-      <div>
-        {view === "countSizeRev" && <CardCountSizeRev />}
-        {view === "servCodes" && <CardServCodes />}
-        {view === "products" && <CardProducts />}
+      <div className={"flex gap-4 flex-wrap"}>
+        {[...servicesByDateAndEmployee.keys()].map((date) => {
+          const employeeMap = servicesByDateAndEmployee.get(date)!;
+
+          return (
+            <Link
+              key={date}
+              href={`/scheduling/coverSheets/${date}`}
+              className={"contents"}
+            >
+              <CoverSheetCard
+                variant={view}
+                date={date}
+                employeeMap={employeeMap}
+              />
+            </Link>
+          );
+        })}
       </div>
       <FooterPortal>
         <Settings onClick={() => setIsConfigOpen(true)} className={"size-4"} />
