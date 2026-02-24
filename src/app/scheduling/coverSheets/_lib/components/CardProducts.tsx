@@ -22,7 +22,7 @@ export function CardProducts() {
   const { getPlannedAppProductTotal } = useAppProducts();
 
   return (
-    <>
+    <div className={"flex gap-4 flex-wrap"}>
       {[...servicesByDateAndEmployee.keys()].map((date) => {
         const employeeMap = servicesByDateAndEmployee.get(date)!;
         const services = Array.from(employeeMap.values()).flat();
@@ -66,7 +66,11 @@ export function CardProducts() {
 
                 return (
                   <Fragment key={employeeId}>
-                    <div className={"flex flex-col gap-1 border-1 p-1 mb-1 rounded-sm bg-accent/20"}>
+                    <div
+                      className={
+                        "flex flex-col gap-1 border-1 p-1 mb-1 rounded-sm bg-accent/20"
+                      }
+                    >
                       <div className={"flex items-center justify-between"}>
                         <p className={"font-semibold"}>{employeeId}</p>
                       </div>
@@ -98,6 +102,6 @@ export function CardProducts() {
           </Card>
         );
       })}
-    </>
+    </div>
   );
 }

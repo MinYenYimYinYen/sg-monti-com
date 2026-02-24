@@ -21,7 +21,7 @@ export function CardServCodes() {
   const { getServCodeCounts } = useServCodes();
 
   return (
-    <>
+    <div className={"flex gap-4 flex-wrap"}>
       {[...servicesByDateAndEmployee.keys()].map((date) => {
         const employeeMap = servicesByDateAndEmployee.get(date)!;
         const services = Array.from(employeeMap.values()).flat();
@@ -66,10 +66,13 @@ export function CardServCodes() {
 
                 return (
                   <Fragment key={employeeId}>
-                    <div className={"flex flex-col gap-1 border-1 p-1 mb-1 rounded-sm bg-accent/20"}>
+                    <div
+                      className={
+                        "flex flex-col gap-1 border-1 p-1 mb-1 rounded-sm bg-accent/20"
+                      }
+                    >
                       <div className={"flex items-center justify-between"}>
                         <p className={"font-semibold"}>{employeeId}</p>
-
                       </div>
                       <div
                         className={
@@ -103,6 +106,6 @@ export function CardServCodes() {
           </Card>
         );
       })}
-    </>
+    </div>
   );
 }

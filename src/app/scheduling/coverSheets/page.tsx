@@ -66,7 +66,7 @@ export default function CoverSheetsPage() {
           Products
         </RadioGroupItem>
       </RadioGroup>
-      <div className={"flex gap-4 flex-wrap"}>
+      <div>
         {view === "countSizeRev" && <CardCountSizeRev />}
         {view === "servCodes" && <CardServCodes />}
         {view === "products" && <CardProducts />}

@@ -17,7 +17,7 @@ export function CardCountSizeRev() {
   );
 
   return (
-    <>
+    <div className={"flex gap-4 flex-wrap"}>
       {[...servicesByDateAndEmployee.keys()].map((date) => {
         const employeeMap = servicesByDateAndEmployee.get(date)!;
         const services = Array.from(employeeMap.values()).flat();
@@ -69,10 +69,7 @@ export function CardCountSizeRev() {
                     </div>
                     <div className={"flex items-center justify-center"}>
                       <DollarSign className={"size-4"} />
-                      {eServs.reduce(
-                        (acc, service) => acc + service.price,
-                        0,
-                      )}
+                      {eServs.reduce((acc, service) => acc + service.price, 0)}
                     </div>
                   </div>
                 );
@@ -82,6 +79,6 @@ export function CardCountSizeRev() {
           </Card>
         );
       })}
-    </>
+    </div>
   );
 }
