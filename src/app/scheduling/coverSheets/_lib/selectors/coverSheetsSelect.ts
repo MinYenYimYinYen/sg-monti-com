@@ -16,7 +16,7 @@ export const selectServicesByDateAndEmployee = createSelector(
   [centralSelect.services],
   (services): Map<string, Map<string, Service[]>> => {
     const printed = services.filter((service) => service.status === "$");
-    const result = new Map<string, Map<string, Service[]>>();
+    const tempResult = new Map<string, Map<string, Service[]>>();
 
     printed.forEach((service) => {
       const date = service.program.nextDate;
@@ -27,25 +27,37 @@ export const selectServicesByDateAndEmployee = createSelector(
           message:
             "Unexpected: Assignment schedDate does not match program nextDate." +
             "Report this up the chain of command.",
-          type: "SERVER_ERROR",
-          statusCode: 500,
+          type: "VALIDATION_ERROR",
           data: service,
         });
       }
 
       if (!date || !employeeId) return;
 
-      if (!result.has(date)) {
-        result.set(date, new Map<string, Service[]>());
+      if (!tempResult.has(date)) {
+        tempResult.set(date, new Map<string, Service[]>());
       }
 
-      const dateMap = result.get(date)!;
+      const dateMap = tempResult.get(date)!;
 
       if (!dateMap.has(employeeId)) {
         dateMap.set(employeeId, []);
       }
 
       dateMap.get(employeeId)!.push(service);
+    });
+
+    // Sort dates and create new Map with sorted order
+    const sortedDates = Array.from(tempResult.keys()).sort();
+    const result = new Map<string, Map<string, Service[]>>();
+    sortedDates.forEach((date) => {
+      const employeeMap = tempResult.get(date)!;
+      const sortedEmployeeIds = Array.from(employeeMap.keys()).sort();
+      const sortedEmployeeMap = new Map<string, Service[]>();
+      sortedEmployeeIds.forEach((employeeId) => {
+        sortedEmployeeMap.set(employeeId, employeeMap.get(employeeId)!);
+      });
+      result.set(date, sortedEmployeeMap);
     });
 
     return result;
