@@ -6,6 +6,7 @@ import { ServCode } from "../types/ServCodeTypes";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { ProductRule } from "@/app/realGreen/progServ/_lib/types/ProductRule";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
+import { AppError } from "@/lib/errors/AppError";
 
 export const selectProgCodeDocs = (state: AppState) =>
   state.progServ.progCodeDocs;
@@ -36,12 +37,7 @@ export const selectBasicProgCodes = createSelector(
     selectServCodeDocMap,
     productSelect.productMastersMap,
   ],
-  (
-    progCodeDocs,
-    progServMap,
-    servCodeMap,
-    productMasterMap,
-  ) => {
+  (progCodeDocs, progServMap, servCodeMap, productMasterMap) => {
     // 1. Hydrate all programs
     const progCodes: ProgCode[] = progCodeDocs.map((progDoc) => {
       const progServLinks = progServMap.get(progDoc.progDefId) || [];
@@ -68,18 +64,40 @@ export const selectBasicProgCodes = createSelector(
 
           const productRuleDocs = servDoc.productRuleDocs;
 
-
           const productRules: ProductRule[] = productRuleDocs.map((rule) => {
-
             const productMastersMaybe = rule.productMasterIds.map((id) => {
               return productMasterMap.get(id);
             });
 
             const productMasters = typeGuard.definedArray(productMastersMaybe);
 
+            let desc: string;
+            switch (rule.sizeOperator) {
+              case "all": {
+                desc = "All";
+                break;
+              }
+              case "gt": {
+                desc = `GT ${rule.size}`;
+                break;
+              }
+              case "lte": {
+                desc = `LTE ${rule.size}`;
+                break;
+              }
+              default: {
+                throw new AppError({
+                  message: `Missing desc for ${rule.sizeOperator}`,
+                  type: "VALIDATION_ERROR",
+                });
+              }
+
+            }
+
             return {
               ...rule,
               productMasters,
+              desc
             };
           });
 

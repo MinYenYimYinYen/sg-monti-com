@@ -117,6 +117,9 @@ function CoverSheetsPDF({
               const flags = customer.flags;
               const products = service.productsPlanned;
 
+
+
+
               return (
                 <View
                   id={"SERVICE"}
@@ -181,6 +184,9 @@ function CoverSheetsPDF({
                       </Text>
                     </View>
                     <PDFNumber isMoney={true} decimals={2}>{service.price}</PDFNumber>
+                  </View>
+                  <View id={"PRODUCTS"} style={tw("flex flex-col")}>
+
                   </View>
                 </View>
               );

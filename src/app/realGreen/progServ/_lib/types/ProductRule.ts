@@ -8,6 +8,7 @@ export type ProductRuleDoc = {
 
 export type ProductRule = ProductRuleDoc & {
   productMasters: ProductMaster[];
+  desc: string;
 };
 
 export const baseProductRuleDoc: ProductRuleDoc = {
@@ -19,4 +20,5 @@ export const baseProductRuleDoc: ProductRuleDoc = {
 export const baseProductRule: ProductRule = {
   ...baseProductRuleDoc,
   productMasters: [],
+  desc: "",
 };
