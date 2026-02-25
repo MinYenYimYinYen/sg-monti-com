@@ -18,8 +18,9 @@ import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTyp
 import { useServCodes } from "@/app/realGreen/customer/_lib/hooks/useServCodes";
 import { useAppProducts } from "@/app/realGreen/customer/_lib/hooks/useAppProducts";
 import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
-import { Header } from "@/app/scheduling/coverSheets/[routeDate]/views/Header";
 import { tw } from "@/lib/pdf/tw";
+import { prettyDate } from "@/lib/primatives/dates/prettyDate";
+import { HashPDFIcon } from "@/lib/pdf/pdfIcons";
 import { truncate } from "@/lib/primatives/string/truncate";
 import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
 import { PDFNumber } from "@/components/Number";
@@ -39,7 +40,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
     coverSheetsSelect.servicesByDateAndEmployee,
   );
   const serviceByEmployee = servicesByDateAndEmployee.get(routeDate);
-  const { getServCodeCounts } = useServCodes();
+  const { getServCodeCounts, getServicesByRuleDesc } = useServCodes();
   const { getPlannedAppProductTotal } = useAppProducts();
 
   if (!isClient || !serviceByEmployee) return null;
@@ -47,20 +48,20 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   return (
     <Container variant={"page"}>
       <div>{routeDate}</div>
-      <div className={"flex gap-4"}>
-        <PDFDownloadLink
-          document={
-            <CoverSheetsPDF
-              routeDate={routeDate}
-              serviceByEmployee={serviceByEmployee}
-              getPlannedAppProductTotal={getPlannedAppProductTotal}
-              getServCodeCounts={getServCodeCounts}
-            />
-          }
-        >
-          Download
-        </PDFDownloadLink>
-      </div>
+      {/*<div className={"flex gap-4"}>*/}
+      {/*  <PDFDownloadLink*/}
+      {/*    document={*/}
+      {/*      <CoverSheetsPDF*/}
+      {/*        routeDate={routeDate}*/}
+      {/*        serviceByEmployee={serviceByEmployee}*/}
+      {/*        getPlannedAppProductTotal={getPlannedAppProductTotal}*/}
+      {/*        getServCodeCounts={getServCodeCounts}*/}
+      {/*      />*/}
+      {/*    }*/}
+      {/*  >*/}
+      {/*    Download*/}
+      {/*  </PDFDownloadLink>*/}
+      {/*</div>*/}
       <div className={"w-full h-[75vh] overflow-y-auto"}>
         <PDFViewer style={{ width: "100%", height: "100%" }}>
           <CoverSheetsPDF
@@ -68,6 +69,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
             serviceByEmployee={serviceByEmployee}
             getPlannedAppProductTotal={getPlannedAppProductTotal}
             getServCodeCounts={getServCodeCounts}
+            getServicesByRuleDesc={getServicesByRuleDesc}
           />
         </PDFViewer>
       </div>
@@ -85,6 +87,10 @@ type CoverSheetsPDFProps = {
     size: number;
     price: number;
   }[];
+  getServicesByRuleDesc: (services: Service[]) => {
+    idWithRule: string;
+    services: Service[];
+  }[];
 };
 
 const cs = coverSheetsStyles;
@@ -94,31 +100,75 @@ function CoverSheetsPDF({
   routeDate,
   getServCodeCounts,
   getPlannedAppProductTotal,
+  getServicesByRuleDesc,
 }: CoverSheetsPDFProps) {
   return (
     <Document>
       {[...serviceByEmployee.keys()].map((employeeId) => {
         const services = serviceByEmployee.get(employeeId)!;
         const employee = services[0].lastAssigned.employee;
+        const servCodesByRule = getServicesByRuleDesc(services);
+
         const servCodeCounts = getServCodeCounts(services);
         const plannedAppProducts = getPlannedAppProductTotal(services);
 
+
         return (
-          <Page key={employeeId} size={"LETTER"} style={cs.page}>
-            <Header
-              routeDate={routeDate}
-              employeeId={employeeId}
-              employeeName={employee.name}
-              servCodeCounts={servCodeCounts}
-            />
+          <Page
+            key={employeeId}
+            size={"LETTER"}
+            style={tw("p-[16px] text-[12px]")}
+          >
+            <View
+              id={"HEADER"}
+              style={tw(
+                "p-1 w-full border border-b-2 flex flex-row justify-between gap-2",
+              )}
+            >
+              <View>
+                <Text>{prettyDate(routeDate, "EEE, MMM d")}</Text>
+                <Text>
+                  {employeeId} - {employee.name}
+                </Text>
+              </View>
+              <View>
+                {servCodeCounts.map((servCodeCount) => {
+                  const { servCodeId, count, size, price } = servCodeCount;
+                  return (
+                    <View
+                      key={servCodeId}
+                      style={tw(
+                        "flex flex-row justify-between gap-2 flex-wrap",
+                      )}
+                    >
+                      <Text style={tw("text-right")}>{servCodeId}</Text>
+                      <View
+                        style={tw("flex flex-row justify-end items-center w-5")}
+                      >
+                        <HashPDFIcon size={10} />
+                        <PDFNumber>{count}</PDFNumber>
+                      </View>
+                      <View
+                        style={tw("flex flex-row justify-end items-center w-5")}
+                      >
+                        <LandPlotPDFIcon size={10} />
+                        <PDFNumber>{size}</PDFNumber>
+                      </View>
+                      <View
+                        style={tw("flex flex-row justify-end items-center w-5")}
+                      >
+                        <PDFNumber isMoney={true}>{price}</PDFNumber>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
             {services.map((service) => {
               const customer = service.program.customer;
               const address = customer.address;
               const flags = customer.flags;
               const products = service.productsPlanned;
-
-
-
 
               return (
                 <View
@@ -178,16 +228,16 @@ function CoverSheetsPDF({
                       {service.servCode.servCodeId}
                     </Text>
                     <View style={tw("flex flex-row items-center")}>
-                      <LandPlotPDFIcon size={12}  />
+                      <LandPlotPDFIcon size={12} />
                       <Text style={tw("text-lg leading-none")}>
                         {service.size}
                       </Text>
                     </View>
-                    <PDFNumber isMoney={true} decimals={2}>{service.price}</PDFNumber>
+                    <PDFNumber isMoney={true} decimals={2}>
+                      {service.price}
+                    </PDFNumber>
                   </View>
-                  <View id={"PRODUCTS"} style={tw("flex flex-col")}>
-
-                  </View>
+                  <View id={"PRODUCTS"} style={tw("flex flex-col")}></View>
                 </View>
               );
             })}
