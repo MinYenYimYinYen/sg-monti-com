@@ -20,6 +20,9 @@ import { useAppProducts } from "@/app/realGreen/customer/_lib/hooks/useAppProduc
 import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { Header } from "@/app/scheduling/coverSheets/[routeDate]/views/Header";
 import { tw } from "@/lib/pdf/tw";
+import { truncate } from "@/lib/primatives/string/truncate";
+import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
+import { PDFNumber } from "@/components/Number";
 
 type RouteDatePageProps = {
   params: Promise<{
@@ -109,13 +112,22 @@ function CoverSheetsPDF({
               servCodeCounts={servCodeCounts}
             />
             {services.map((service) => {
-              const address = service.program.customer.address;
+              const customer = service.program.customer;
+              const address = customer.address;
+              const flags = customer.flags;
+              const products = service.productsPlanned;
+
               return (
                 <View
+                  id={"SERVICE"}
                   key={service.servId}
-                  style={tw("flex flex-row gap-2 border-b border-black pt-1 pb-1")}
+                  style={tw(
+                    "flex flex-row gap-2 border-b border-black pt-1 pb-1",
+                  )}
+                  wrap={false}
                 >
                   <View
+                    id={"TEMP_SEQ"}
                     style={tw(
                       "border border-black rounded-full w-12 h-12 flex items-center justify-center",
                     )}
@@ -126,12 +138,49 @@ function CoverSheetsPDF({
                       {service.program.tempSeq}
                     </Text>
                   </View>
-                  <View style={tw("flex flex-col text-sm")}>
+                  <View id={"ADDRESS"} style={tw("flex flex-col text-sm w-48")}>
                     <Text style={tw("")}>
-                      {service.program.customer.custId} - {service.program.customer.displayName}
+                      {truncate(
+                        customer.custId + " - " + customer.displayName,
+                        30,
+                      )}
                     </Text>
                     <Text style={tw("font-bold")}>{address.addressLine1}</Text>
-                    <Text style={tw("")}>{address.city}, {address.state} {address.zip}</Text>
+                    <Text style={tw("")}>
+                      {address.city}, {address.state} {address.zip}
+                    </Text>
+                  </View>
+                  <View
+                    id={"FLAGS"}
+                    style={tw(
+                      "flex flex-row flex-wrap items-center justify-center w-36",
+                    )}
+                  >
+                    {flags.map((flag) => (
+                      <Text
+                        key={flag.flagId}
+                        style={tw(
+                          "text-xs border px-2 rounded-full leading-none",
+                        )}
+                      >
+                        {flag.desc}
+                      </Text>
+                    ))}
+                  </View>
+                  <View
+                    id={"SERVCODE"}
+                    style={tw("flex flex-col items-center justify-center")}
+                  >
+                    <Text style={tw("text-lg font-bold leading-none ")}>
+                      {service.servCode.servCodeId}
+                    </Text>
+                    <View style={tw("flex flex-row items-center")}>
+                      <LandPlotPDFIcon size={12}  />
+                      <Text style={tw("text-lg leading-none")}>
+                        {service.size}
+                      </Text>
+                    </View>
+                    <PDFNumber isMoney={true} decimals={2}>{service.price}</PDFNumber>
                   </View>
                 </View>
               );

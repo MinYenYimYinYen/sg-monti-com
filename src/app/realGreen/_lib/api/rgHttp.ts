@@ -1,5 +1,5 @@
 // src/lib/api/rgHttp.ts
-import { trimStringValues } from "@/lib/primatives/trimStringValues";
+import { trimStringValues } from "@/lib/primatives/string/trimStringValues";
 import {AppError} from "@/lib/errors/AppError";
 
 export const realGreenBaseUrl = "https://saapi.realgreen.com";
