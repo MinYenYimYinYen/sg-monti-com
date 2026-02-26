@@ -3,17 +3,9 @@ import { use } from "react";
 import { useSelector } from "react-redux";
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 import { Container } from "@/components/Containers";
-import {
-  Document,
-  Page,
-  PDFDownloadLink,
-  PDFViewer,
-  View,
-  Text,
-} from "@react-pdf/renderer";
+import { Document, Page, PDFViewer, View, Text } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { useCoverSheets } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheets";
-import { coverSheetsStyles } from "@/app/scheduling/coverSheets/[routeDate]/style";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { useServCodes } from "@/app/realGreen/customer/_lib/hooks/useServCodes";
 import { useAppProducts } from "@/app/realGreen/customer/_lib/hooks/useAppProducts";
@@ -24,6 +16,8 @@ import { HashPDFIcon } from "@/lib/pdf/pdfIcons";
 import { truncate } from "@/lib/primatives/string/truncate";
 import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
 import { PDFNumber } from "@/components/Number";
+import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
+import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 
 type RouteDatePageProps = {
   params: Promise<{
@@ -93,8 +87,6 @@ type CoverSheetsPDFProps = {
   }[];
 };
 
-const cs = coverSheetsStyles;
-
 function CoverSheetsPDF({
   serviceByEmployee,
   routeDate,
@@ -108,9 +100,6 @@ function CoverSheetsPDF({
         const services = serviceByEmployee.get(employeeId)!;
         const employee = services[0].lastAssigned.employee;
         const servCodesByRule = getServicesByRuleDesc(services);
-
-        const servCodeCounts = getServCodeCounts(services);
-        const plannedAppProducts = getPlannedAppProductTotal(services);
 
         return (
           <Page
@@ -130,8 +119,8 @@ function CoverSheetsPDF({
                   {employeeId} - {employee.name}
                 </Text>
               </View>
-              <View id={"SERV_CODE_PRODUCTS"}>
-                {servCodesByRule.map((group) => {
+              <View id={"SERV_CODE_PRODUCTS"} style={tw("text-sm")}>
+                {servCodesByRule.map((group, index) => {
                   const { idWithRule, services: groupServices } = group;
                   const { count, size, price } =
                     getServCodeCounts(groupServices)[0];
@@ -140,11 +129,15 @@ function CoverSheetsPDF({
                   const ruleDesc = split[1] ?? "";
                   console.log("group", group);
 
+                  const borderT = index > 0 ? " border-t" : "";
+
                   return (
                     <View
                       id={"SERV_CODE_PRODUCTS"}
                       key={idWithRule}
-                      style={tw("flex flex-row gap-2 flex-wrap items-start")}
+                      style={tw(
+                        "flex flex-row gap-2 flex-wrap items-start" + borderT,
+                      )}
                     >
                       <Text style={tw("w-[30px] border-r")}>{servCodeId}</Text>
                       <Text style={tw("w-[40px] border-r")}>{ruleDesc}</Text>
@@ -155,13 +148,17 @@ function CoverSheetsPDF({
                         <PDFNumber>{count}</PDFNumber>
                       </View>
                       <View
-                        style={tw("flex flex-row justify-end items-center w-10")}
+                        style={tw(
+                          "flex flex-row justify-end items-center w-10",
+                        )}
                       >
                         <LandPlotPDFIcon size={12} />
                         <PDFNumber>{size}</PDFNumber>
                       </View>
                       <View
-                        style={tw("flex flex-row justify-end items-center w-12")}
+                        style={tw(
+                          "flex flex-row justify-end items-center w-12",
+                        )}
                       >
                         <PDFNumber isMoney={true}>{price}</PDFNumber>
                       </View>
@@ -221,10 +218,7 @@ function CoverSheetsPDF({
                   </View>
                   <View id={"ADDRESS"} style={tw("flex flex-col text-sm w-48")}>
                     <Text style={tw("")}>
-                      {truncate(
-                        customer.custId + " - " + customer.displayName,
-                        30,
-                      )}
+                      {truncate(customer.displayName, 25)}
                     </Text>
                     <Text style={tw("font-bold")}>{address.addressLine1}</Text>
                     <Text style={tw("")}>
@@ -261,9 +255,11 @@ function CoverSheetsPDF({
                         {service.size}
                       </Text>
                     </View>
-                    <PDFNumber isMoney={true} decimals={2}>
-                      {service.price}
-                    </PDFNumber>
+                    <View style={tw("text-sm")}>
+                      <PDFNumber isMoney={true} decimals={2}>
+                        {service.price}
+                      </PDFNumber>
+                    </View>
                   </View>
                   <View id={"PRODUCTS"} style={tw("flex flex-col")}></View>
                 </View>

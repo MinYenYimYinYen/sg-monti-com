@@ -60,16 +60,37 @@ export function remapRawProducts(raw: ProductRaw[]) {
     if (isProductSubCore(core)) subCores.push(core);
     productCores.push(core);
   }
+
+  const water: ProductSubCore = {
+    productId: -2,
+    categoryId: -2,
+    unitId: 20, // Mixed Gallons
+    productCode: ".Water",
+    isProduction: true,
+    isNonInventory: true,
+    isMaster: false,
+    isWorkOrder: false,
+    isLabor: false,
+    isMobile: false,
+    description: "Water",
+  };
+
   return {
     masterCores,
     singleCores,
-    subCores,
-    productCores,
+    // subCores,
+    subCores: [...subCores, water],
+    productCores: [...productCores, water],
   };
 }
 
 export function extendProducts<
-  TCore extends { productId: number; categoryId: number; unitId: number; productCode: string },
+  TCore extends {
+    productId: number;
+    categoryId: number;
+    unitId: number;
+    productCode: string;
+  },
   TDocProps extends { productId: number; category: string; unit: Unit },
 >({
   cores,
@@ -85,23 +106,24 @@ export function extendProducts<
   unitMap: Map<number, Unit>;
 }): (TCore & TDocProps)[] {
   const docPropsMap = new Grouper(docProps).toUniqueMap((p) => p.productId);
-  return cores.map((core) => {
-    const docProps = docPropsMap.get(core.productId) || baseDocProps;
-    const { productId, ...props } = docProps;
-    return {
-      ...core,
-      ...props,
-      category:
-        categoryMap.get(core.categoryId)?.category ||
-        core.categoryId?.toString() ||
-        baseStrId,
-      unit: unitMap.get(core.unitId) || {
-        ...baseUnit,
-        unitId: core.unitId,
-      },
-    } as TCore & TDocProps;
-  })
-    .sort((a: TCore,b: TCore) => a.productCode.localeCompare(b.productCode))
+  return cores
+    .map((core) => {
+      const docProps = docPropsMap.get(core.productId) || baseDocProps;
+      const { productId, ...props } = docProps;
+      return {
+        ...core,
+        ...props,
+        category:
+          categoryMap.get(core.categoryId)?.category ||
+          core.categoryId?.toString() ||
+          baseStrId,
+        unit: unitMap.get(core.unitId) || {
+          ...baseUnit,
+          unitId: core.unitId,
+        },
+      } as TCore & TDocProps;
+    })
+    .sort((a: TCore, b: TCore) => a.productCode.localeCompare(b.productCode));
 }
 
 export function extendProductMasters(

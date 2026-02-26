@@ -40,15 +40,17 @@ export function CoverSheetCard({
         <CardDescription className={"grid grid-cols-3 gap-1 items-center"}>
           <div className={"flex items-center justify-center"}>
             <Hash className={"size-4"} />
-            {allServices.length}
+            <Number>{allServices.length}</Number>
           </div>
           <div className={"flex items-center justify-center"}>
             <LandPlot className={"size-4"} />
+           <Number>
+
             {allServices.reduce((acc, service) => acc + service.size, 0)}
+           </Number>
           </div>
           <div className={"flex items-center justify-center"}>
-            <DollarSign className={"size-4"} />
-            {allServices.reduce((acc, service) => acc + service.price, 0)}
+            <Number isMoney={true}>{allServices.reduce((acc, service) => acc + service.price, 0)}</Number>
           </div>
         </CardDescription>
       );
@@ -70,7 +72,7 @@ export function CoverSheetCard({
                 </div>
                 <div className={"flex items-center"}>
                   <LandPlot className={"size-4"} />
-                  <p>{product.size}</p>
+                  <Number>{product.size}</Number>
                 </div>
               </Fragment>
             ))}
@@ -124,15 +126,15 @@ export function CoverSheetCard({
             <p className={"font-semibold"}>{employeeId}</p>
             <div className={"flex items-center justify-center"}>
               <Hash className={"size-4"} />
-              {eServs.length}
+              <Number>{eServs.length}</Number>
             </div>
             <div className={"flex items-center justify-center"}>
               <LandPlot className={"size-4"} />
-              {eServs.reduce((acc, service) => acc + service.size, 0)}
+              <Number>{eServs.reduce((acc, service) => acc + service.size, 0)}</Number>
             </div>
             <div className={"flex items-center justify-center"}>
               <DollarSign className={"size-4"} />
-              {eServs.reduce((acc, service) => acc + service.price, 0)}
+              <Number>{eServs.reduce((acc, service) => acc + service.price, 0)}</Number>
             </div>
           </div>
         );
@@ -160,7 +162,7 @@ export function CoverSheetCard({
                   </div>
                   <div className={"flex items-center"}>
                     <LandPlot className={"size-4"} />
-                    <p>{product.size}</p>
+                    <Number>{product.size}</Number>
                   </div>
                 </Fragment>
               ))}
@@ -194,8 +196,7 @@ export function CoverSheetCard({
                     <Number>{servCodeCount.size}</Number>
                   </div>
                   <div className={"flex items-center"}>
-                    <DollarSign className={"size-4"} />
-                    <Number>{servCodeCount.price}</Number>
+                    <Number isMoney={true}>{servCodeCount.price}</Number>
                   </div>
                 </Fragment>
               ))}
