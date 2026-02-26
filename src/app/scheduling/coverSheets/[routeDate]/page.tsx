@@ -112,7 +112,6 @@ function CoverSheetsPDF({
         const servCodeCounts = getServCodeCounts(services);
         const plannedAppProducts = getPlannedAppProductTotal(services);
 
-
         return (
           <Page
             key={employeeId}
@@ -131,33 +130,62 @@ function CoverSheetsPDF({
                   {employeeId} - {employee.name}
                 </Text>
               </View>
-              <View>
-                {servCodeCounts.map((servCodeCount) => {
-                  const { servCodeId, count, size, price } = servCodeCount;
+              <View id={"SERV_CODE_PRODUCTS"}>
+                {servCodesByRule.map((group) => {
+                  const { idWithRule, services: groupServices } = group;
+                  const { count, size, price } =
+                    getServCodeCounts(groupServices)[0];
+                  const split = idWithRule.split("-");
+                  const servCodeId = split[0];
+                  const ruleDesc = split[1] ?? "";
+                  console.log("group", group);
+
                   return (
                     <View
-                      key={servCodeId}
-                      style={tw(
-                        "flex flex-row justify-between gap-2 flex-wrap",
-                      )}
+                      id={"SERV_CODE_PRODUCTS"}
+                      key={idWithRule}
+                      style={tw("flex flex-row gap-2 flex-wrap items-start")}
                     >
-                      <Text style={tw("text-right")}>{servCodeId}</Text>
+                      <Text style={tw("w-[30px] border-r")}>{servCodeId}</Text>
+                      <Text style={tw("w-[40px] border-r")}>{ruleDesc}</Text>
                       <View
-                        style={tw("flex flex-row justify-end items-center w-5")}
+                        style={tw("flex flex-row justify-end items-center w-7")}
                       >
-                        <HashPDFIcon size={10} />
+                        <HashPDFIcon size={12} />
                         <PDFNumber>{count}</PDFNumber>
                       </View>
                       <View
-                        style={tw("flex flex-row justify-end items-center w-5")}
+                        style={tw("flex flex-row justify-end items-center w-10")}
                       >
-                        <LandPlotPDFIcon size={10} />
+                        <LandPlotPDFIcon size={12} />
                         <PDFNumber>{size}</PDFNumber>
                       </View>
                       <View
-                        style={tw("flex flex-row justify-end items-center w-5")}
+                        style={tw("flex flex-row justify-end items-center w-12")}
                       >
                         <PDFNumber isMoney={true}>{price}</PDFNumber>
+                      </View>
+                      <View style={tw("flex flex-col")}>
+                        {getPlannedAppProductTotal(groupServices).map(
+                          (totals, index) => {
+                            console.log("groupServices", groupServices);
+                            console.log("totals", totals);
+                            return (
+                              <View
+                                key={index}
+                                style={tw("flex flex-row gap-1")}
+                              >
+                                <Text style={tw("w-[80px] text-left ")}>
+                                  {totals.productCommon.productCode}
+                                </Text>
+                                <View style={tw("w-[25px] ")}>
+                                  <PDFNumber>{totals.amount}</PDFNumber>
+                                </View>
+                                <Text>{totals.productCommon.unit.desc}</Text>
+                              </View>
+                            );
+                          },
+                        )}
                       </View>
                     </View>
                   );

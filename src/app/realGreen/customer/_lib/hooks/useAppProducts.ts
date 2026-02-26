@@ -11,7 +11,8 @@ export function useAppProducts() {
 
     return [...productMap.keys()].map((productId) => {
       const products = productMap.get(productId)!;
-      const appProduct: AppProduct = products.reduce(
+      // Start from index 1 since products[0] is already used as the initial accumulator
+      const appProduct: AppProduct = products.slice(1).reduce(
         (acc, product) => ({
           ...acc,
           amount: acc.amount + product.amount,

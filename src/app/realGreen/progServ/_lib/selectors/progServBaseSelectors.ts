@@ -83,6 +83,7 @@ export const selectBasicProgCodes = createSelector(
               }
               case "lte": {
                 desc = `LTE ${rule.size}`;
+                desc = `LTE ${rule.size}`;
                 break;
               }
               default: {

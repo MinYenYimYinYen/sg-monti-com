@@ -30,9 +30,24 @@ export function useServCodes() {
     });
 
     // Pivot to flatten services -> productRules relationship
+    // Filter rules to only include those that match the service's size
     const pivoted = new Grouper(servicesWithRules)
       .pivot(
-        (service) => service.servCode.productRules,
+        (service) => {
+          return service.servCode.productRules.filter((rule) => {
+            const operator = rule.sizeOperator;
+            switch (operator) {
+              case "all":
+                return true;
+              case "lte":
+                return service.size <= rule.size;
+              case "gt":
+                return service.size > rule.size;
+              default:
+                return false;
+            }
+          });
+        },
         "services",
         "desc"
       );

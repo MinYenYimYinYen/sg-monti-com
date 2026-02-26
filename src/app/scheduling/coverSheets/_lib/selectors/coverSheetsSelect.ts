@@ -22,15 +22,15 @@ export const selectServicesByDateAndEmployee = createSelector(
       const date = service.program.nextDate;
       const employeeId = service.lastAssigned.employeeId;
 
-      if (!validateProgramNextDateMatches(service)) {
-        throw new AppError({
-          message:
-            "Unexpected: Assignment schedDate does not match program nextDate." +
-            "Report this up the chain of command.",
-          type: "VALIDATION_ERROR",
-          data: service,
-        });
-      }
+      // if (!validateProgramNextDateMatches(service)) {
+      //   throw new AppError({
+      //     message:
+      //       "Unexpected: Assignment schedDate does not match program nextDate." +
+      //       "Report this up the chain of command.",
+      //     type: "VALIDATION_ERROR",
+      //     data: service,
+      //   });
+      // }
 
       if (!date || !employeeId) return;
 
