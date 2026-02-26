@@ -154,14 +154,15 @@ function MixChartPDF({ master, chartData }: MixChartPDFProps) {
               >
                 <Text>{row.size}</Text>
               </View>
-              {row.amounts.map((amount, idx) => (
+              {row.amounts.map((amountData, idx) => (
                 <View
                   key={idx}
                   style={tw(
                     "flex-1 border-r border-black p-2 flex flex-row gap-1 items-center justify-center",
                   )}
                 >
-                  <PDFNumber>{amount}</PDFNumber>
+                  <PDFNumber decimals={2}>{amountData.amount}</PDFNumber>
+                  <Text>{amountData.unit}</Text>
                 </View>
               ))}
             </View>

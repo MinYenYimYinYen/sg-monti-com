@@ -1,8 +1,13 @@
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
+export type MixChartAmount = {
+  amount: number;
+  unit: string;
+};
+
 export type MixChartRow = {
   size: number;
-  amounts: number[];
+  amounts: MixChartAmount[];
 };
 
 export function generateMixChartData(
@@ -17,6 +22,9 @@ export function generateMixChartData(
 
   return sizes.map((size) => ({
     size,
-    amounts: master.subProductConfigs.map((config) => size * config.rate),
+    amounts: master.subProductConfigs.map((config) => ({
+      amount: size * config.rate,
+      unit: config.subProduct.unit.desc,
+    })),
   }));
 }
