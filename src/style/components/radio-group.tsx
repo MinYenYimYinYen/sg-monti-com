@@ -38,14 +38,14 @@ const radioGroupItemVariants = cva(
         classic:
           "aspect-square h-4 w-4 rounded-full border border-primary text-primary shadow",
         "button-group":
-          "relative inline-flex items-center justify-center border border-primary/50 bg-background px-3 py-2 text-sm font-medium transition-all hover:bg-muted focus:z-10 data-[state=checked]:z-10 data-[state=checked]:border-primary data-[state=checked]:bg-primary/20 data-[state=checked]:text-primary first:rounded-l-md last:rounded-r-md rounded-none",
+          "relative inline-flex items-center justify-center border border-primary/50 bg-background px-3 py-2 text-sm font-medium transition-all hover:bg-muted focus:z-10 data-[state=checked]:z-10 data-[state=checked]:border-primary data-[state=checked]:bg-primary/20 data-[state=checked]:text-primary rounded-none first:rounded-l-md last:rounded-r-md",
       },
     },
     defaultVariants: {
       variant: "classic",
     },
-  }
-)
+  },
+);
 
 const RadioGroupItem = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Item>,
