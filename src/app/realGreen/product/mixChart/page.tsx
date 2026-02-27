@@ -3,13 +3,9 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { Container } from "@/components/Containers";
-import { Document, Page, PDFViewer, View, Text } from "@react-pdf/renderer";
+import { PDFViewer } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
-import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { tw } from "@/lib/pdf/tw";
-import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
-import { PDFNumber } from "@/components/Number";
 import {
   Select,
   SelectContent,
@@ -19,10 +15,14 @@ import {
 } from "@/style/components/select";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
+import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import {
   generateMixChartData,
-  MixChartRow,
+  generateMixChartByProductAmount,
 } from "@/app/realGreen/product/_lib/utils/mixChartUtils";
+import { MixChartPDF } from "./chartLayouts/mixChartBySize";
+import { MixChartByProductAmountPDF } from "./chartLayouts/mixChartByProductAmount";
+import { UnitContext } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 
 export default function MixChartPage() {
   useProduct({ autoLoad: true });
@@ -30,12 +30,29 @@ export default function MixChartPage() {
   const masters = useSelector(productSelect.productMasters);
 
   const [selectedMasterId, setSelectedMasterId] = useState<number | null>(null);
+  const [selectedSubId, setSelectedSubId] = useState<number | null>(null);
+  const [unitContext, setUnitContext] = useState<UnitContext>("load");
   const [increment, setIncrement] = useState<number>(10);
+  const [rowCount, setRowCount] = useState<number>(17);
 
   const selectedMaster = masters.find((m) => m.productId === selectedMasterId);
-  const chartData = selectedMaster
-    ? generateMixChartData(selectedMaster, increment, 170)
+  const selectedSubConfig = selectedMaster?.subProductConfigs.find(
+    (config) => config.subId === selectedSubId
+  );
+
+  // Calculate max values based on increment and row count
+  const maxSize = increment * rowCount;
+  const maxUnits = increment * rowCount;
+
+  // Generate chart data based on layout type
+  const chartDataBySize = selectedMaster
+    ? generateMixChartData(selectedMaster, increment, maxSize)
     : [];
+
+  const chartDataByProductAmount =
+    selectedMaster && selectedSubId
+      ? generateMixChartByProductAmount(selectedMaster, selectedSubId, increment, maxUnits, unitContext)
+      : [];
 
   if (!isClient) return null;
 
@@ -44,142 +61,124 @@ export default function MixChartPage() {
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">Mix Chart</h1>
 
+        {/* Controls Row */}
         <div className="flex gap-4 items-end">
-          <div className="flex flex-col gap-2">
-            <Label>Master Product</Label>
-            <Select
-              value={selectedMasterId?.toString() || ""}
-              onValueChange={(value) => setSelectedMasterId(Number(value))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Master Product" />
-              </SelectTrigger>
-              <SelectContent>
-                {masters.map((master) => (
-                  <SelectItem
-                    key={master.productId}
-                    value={master.productId.toString()}
-                  >
-                    {master.productCode} - {master.description}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <Label>Master Product</Label>
+              <Select
+                value={selectedMasterId?.toString() || ""}
+                onValueChange={(value) => setSelectedMasterId(Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Master Product" />
+                </SelectTrigger>
+                <SelectContent>
+                  {masters.map((master) => (
+                    <SelectItem
+                      key={master.productId}
+                      value={master.productId.toString()}
+                    >
+                      {master.productCode} - {master.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sub Product Selector - optional */}
+            {selectedMaster && (
+              <div className="flex flex-col gap-2">
+                <Label>Key Product (Optional)</Label>
+                <Select
+                  value={selectedSubId?.toString() || "none"}
+                  onValueChange={(value) =>
+                    setSelectedSubId(value === "none" ? null : Number(value))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="None - Chart by Size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None - Chart by Size</SelectItem>
+                    {selectedMaster.subProductConfigs.map((config) => (
+                      <SelectItem
+                        key={config.subId}
+                        value={config.subId.toString()}
+                      >
+                        {config.subProduct.description}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Unit Context Selector - only shown when Key Product selected */}
+            {selectedSubConfig && (
+              <div className="flex flex-col gap-2">
+                <Label>Unit Type</Label>
+                <RadioGroup
+                  variant="button-group"
+                  value={unitContext}
+                  onValueChange={(value) => setUnitContext(value as UnitContext)}
+                >
+                  <RadioGroupItem value="load">
+                    {selectedSubConfig.subProduct.unitConfig.conversions.load.unitLabel}
+                  </RadioGroupItem>
+                  <RadioGroupItem value="app">
+                    {selectedSubConfig.subProduct.unitConfig.conversions.app.unitLabel}
+                  </RadioGroupItem>
+                </RadioGroup>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <Label>
+                {selectedSubId ? "Increment" : "Size Increment"}
+              </Label>
+              <Input
+                type="number"
+                value={increment}
+                onChange={(e) => setIncrement(Number(e.target.value) || 1)}
+                className="w-32"
+                min={1}
+                max={50}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label>Row Count</Label>
+              <Input
+                type="number"
+                value={rowCount}
+                onChange={(e) => setRowCount(Number(e.target.value) || 1)}
+                className="w-32"
+                min={1}
+                max={100}
+              />
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label>Size Increment</Label>
-            <Input
-              type="number"
-              value={increment}
-              onChange={(e) => setIncrement(Number(e.target.value) || 1)}
-              className="w-32"
-              min={1}
-              max={50}
-            />
-          </div>
-        </div>
-
+        {/* PDF Viewer */}
         {selectedMaster && (
           <div className={"w-full h-[75vh] overflow-y-auto"}>
             <PDFViewer style={{ width: "100%", height: "100%" }}>
-              <MixChartPDF master={selectedMaster} chartData={chartData} />
+              {selectedSubId ? (
+                <MixChartByProductAmountPDF
+                  master={selectedMaster}
+                  selectedSubId={selectedSubId}
+                  chartData={chartDataByProductAmount}
+                />
+              ) : (
+                <MixChartPDF
+                  master={selectedMaster}
+                  chartData={chartDataBySize}
+                />
+              )}
             </PDFViewer>
           </div>
         )}
       </div>
     </Container>
-  );
-}
-
-type MixChartPDFProps = {
-  master: ProductMaster;
-  chartData: MixChartRow[];
-};
-
-function MixChartPDF({ master, chartData }: MixChartPDFProps) {
-  return (
-    <Document>
-      <Page size={"LETTER"} style={tw("p-4 text-xs")}>
-        {/* Header */}
-        <View style={tw("mb-4")}>
-          <Text style={tw("text-lg font-bold")}>
-            {master.productCode} - {master.description}
-          </Text>
-        </View>
-
-        {/* Table */}
-        <View style={tw("border border-black")}>
-          {/* Header Row */}
-          <View
-            style={tw("flex flex-row border-b-2 border-black bg-[#f5f5f5]")}
-          >
-            <View
-              style={tw(
-                `w-14 border-r border-black p-2 flex flex-row gap-1 items-center justify-center`,
-              )}
-            >
-              <LandPlotPDFIcon size={12} />
-              <Text>Size</Text>
-            </View>
-            {master.subProductConfigs.map((config) => (
-              <View
-                key={config.subId}
-                style={tw(
-                  "flex-1 border-r border-black p-2 flex flex-row gap-2 items-center justify-center",
-                )}
-              >
-                <Text style={tw("font-bold")}>
-                  {config.subProduct.description}
-                </Text>
-                {/*<Text style={tw("text-[10px]")}>*/}
-                {/*  ({config.subProduct.unit.desc})*/}
-                {/*</Text>*/}
-              </View>
-            ))}
-          </View>
-
-          {/* Data Rows */}
-          {chartData.map((row, index) => (
-            <View
-              key={row.size}
-              style={tw(
-                `flex flex-row border-b border-black ${index % 2 === 0 ? "bg-[#e5e5e5]" : ""}`,
-              )}
-            >
-              <View
-                style={tw(
-                  "w-14 border-r border-black p-2 flex items-center justify-center",
-                )}
-              >
-                <Text>{row.size}</Text>
-              </View>
-              {row.amounts.map((amountData, idx) => (
-                <View
-                  key={idx}
-                  style={tw(
-                    "flex-1 border-r border-black p-2 flex flex-col items-center justify-center",
-                  )}
-                >
-                  {amountData.parts.map((part, partIdx) => (
-                    <View
-                      key={partIdx}
-                      style={tw("flex flex-row gap-1 items-center justify-center")}
-                    >
-                      <PDFNumber>
-                        {part.amount}
-                      </PDFNumber>
-                      <Text style={tw(part.isWhole ? "font-bold" : "text-[10px]")}>
-                        {part.unit}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              ))}
-            </View>
-          ))}
-        </View>
-      </Page>
-    </Document>
   );
 }
