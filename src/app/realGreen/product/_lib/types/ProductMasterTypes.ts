@@ -1,5 +1,6 @@
 import {
   ProductCommonDocProps,
+  ProductCommonProps,
   ProductCore,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
@@ -19,26 +20,26 @@ export function isProductMasterCore(
 }
 
 export type SubProductConfigDoc = {
-  subId: number,
-  rate: number,
-}
+  subId: number;
+  rate: number;
+};
 
 export type SubProductConfig = {
-  subId: number,
-  subProduct: ProductSub,
-  rate: number,
-}
+  subId: number;
+  subProduct: ProductSub;
+  rate: number;
+};
 
-export type ProductMasterDocProps = CreatedUpdated & ProductCommonDocProps & {
-  productId: number,
-  subProductConfigDocs: SubProductConfigDoc[],
-}
+export type ProductMasterDocProps = CreatedUpdated &
+  ProductCommonDocProps & {
+    productId: number;
+    subProductConfigDocs: SubProductConfigDoc[];
+  };
 
 export type ProductMasterDoc = ProductMasterCore & ProductMasterDocProps;
 
-export type ProductMasterProps = {
-  subProductConfigs: SubProductConfig[]
+export type ProductMasterProps = ProductCommonProps & {
+  subProductConfigs: SubProductConfig[];
 };
 
 export type ProductMaster = ProductMasterDoc & ProductMasterProps;
-

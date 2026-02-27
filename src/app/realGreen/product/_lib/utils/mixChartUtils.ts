@@ -1,9 +1,7 @@
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { CompoundUnitDisplay } from "@/app/realGreen/product/_lib/utils/unitConfigDisplay";
 
-export type MixChartAmount = {
-  amount: number;
-  unit: string;
-};
+export type MixChartAmount = CompoundUnitDisplay;
 
 export type MixChartRow = {
   size: number;
@@ -22,9 +20,14 @@ export function generateMixChartData(
 
   return sizes.map((size) => ({
     size,
-    amounts: master.subProductConfigs.map((config) => ({
-      amount: size * config.rate,
-      unit: config.subProduct.unit.desc,
-    })),
+    amounts: master.subProductConfigs.map((config) => {
+      const appAmount = size * config.rate;
+      console.log("master", master);
+      // Use unitConfigDisplay to format compound units
+      return config.subProduct.unitConfigDisplay.format({
+        amount: appAmount,
+        targetContexts: ["load", "app"],
+      });
+    }),
   }));
 }

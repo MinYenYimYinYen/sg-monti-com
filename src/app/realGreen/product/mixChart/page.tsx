@@ -132,9 +132,9 @@ function MixChartPDF({ master, chartData }: MixChartPDFProps) {
                 <Text style={tw("font-bold")}>
                   {config.subProduct.description}
                 </Text>
-                <Text style={tw("text-[10px]")}>
-                  ({config.subProduct.unit.desc})
-                </Text>
+                {/*<Text style={tw("text-[10px]")}>*/}
+                {/*  ({config.subProduct.unit.desc})*/}
+                {/*</Text>*/}
               </View>
             ))}
           </View>
@@ -158,11 +158,22 @@ function MixChartPDF({ master, chartData }: MixChartPDFProps) {
                 <View
                   key={idx}
                   style={tw(
-                    "flex-1 border-r border-black p-2 flex flex-row gap-1 items-center justify-center",
+                    "flex-1 border-r border-black p-2 flex flex-col items-center justify-center",
                   )}
                 >
-                  <PDFNumber decimals={2}>{amountData.amount}</PDFNumber>
-                  <Text>{amountData.unit}</Text>
+                  {amountData.parts.map((part, partIdx) => (
+                    <View
+                      key={partIdx}
+                      style={tw("flex flex-row gap-1 items-center justify-center")}
+                    >
+                      <PDFNumber>
+                        {part.amount}
+                      </PDFNumber>
+                      <Text style={tw(part.isWhole ? "font-bold" : "text-[10px]")}>
+                        {part.unit}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
               ))}
             </View>

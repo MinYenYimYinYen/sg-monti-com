@@ -4,9 +4,11 @@ import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 import { SubProductConfigDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { useUnitConfig } from "@/app/realGreen/product/_lib/hooks/useUnitConfig";
 
 export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();
+  useUnitConfig({autoLoad})
 
   useEffect(() => {
     if (autoLoad) {

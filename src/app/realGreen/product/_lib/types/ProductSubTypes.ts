@@ -1,5 +1,6 @@
 import {
   ProductCommonDocProps,
+  ProductCommonProps,
   ProductCore,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
@@ -23,6 +24,6 @@ export type ProductSubDocProps = CreatedUpdated & ProductCommonDocProps & {
 
 export type ProductSubDoc = ProductSubCore & ProductSubDocProps;
 
-export type ProductSubProps = {};
+export type ProductSubProps = ProductCommonProps;
 
 export type ProductSub = ProductSubDoc & ProductSubProps;

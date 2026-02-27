@@ -28,6 +28,7 @@ import {
 } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { baseUnit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 import {baseProductUnitConfig} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+import { UnitConfigDisplay } from "@/app/realGreen/product/_lib/utils/unitConfigDisplay";
 
 export const baseProductCore: ProductCore = {
   productId: baseNumId,
@@ -66,6 +67,8 @@ export const baseProductMasterDoc: ProductMasterDoc = {
 
 export const baseProductMasterProps: ProductMasterProps = {
   subProductConfigs: [],
+  unitConfig: baseProductUnitConfig,
+  unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
 };
 
 export const baseProductMaster: ProductMaster = {
@@ -93,7 +96,10 @@ export const baseProductSingleDoc: ProductSingleDoc = {
   ...baseProductSingleDocProps,
 };
 
-export const baseProductSingleProps: ProductSingleProps = {};
+export const baseProductSingleProps: ProductSingleProps = {
+  unitConfig: baseProductUnitConfig,
+  unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
+};
 
 export const baseProductSingle: ProductSingleDoc = {
   ...baseProductSingleDoc,
@@ -120,7 +126,10 @@ export const baseProductSubDoc: ProductSubDoc = {
   ...baseProductSubDocProps,
 };
 
-export const baseProductSubProps: ProductSubProps = {};
+export const baseProductSubProps: ProductSubProps = {
+  unitConfig: baseProductUnitConfig,
+  unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
+};
 
 export const baseProductSub: ProductSub = {
   ...baseProductSubDoc,
@@ -140,6 +149,7 @@ export const baseProductCommonDoc: ProductCommonDoc = {
 
 export const baseProductCommonProps: ProductCommonProps = {
   unitConfig: baseProductUnitConfig,
+  unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
 };
 
 export const baseProductCommon: ProductCommon = {
