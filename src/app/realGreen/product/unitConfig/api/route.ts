@@ -62,28 +62,6 @@ const handlers: HandlerMap<UnitConfigContract> = {
       };
     },
   },
-
-  deleteConfig: {
-    roles: ["office", "admin"],
-    handler: async ({ productId }) => {
-      await connectToMongoDB();
-
-      const result = await UnitConfigModel.deleteOne({ productId });
-
-      if (result.deletedCount === 0) {
-        throw new AppError({
-          message: `No unit config found for product ${productId}`,
-          type: "VALIDATION_ERROR",
-          statusCode: 404,
-        });
-      }
-
-      return {
-        success: true,
-        payload: { productId },
-      };
-    },
-  },
 };
 
 export const POST = createRpcHandler<UnitConfigContract>(handlers);

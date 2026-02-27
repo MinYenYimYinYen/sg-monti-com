@@ -19,12 +19,11 @@ import {
 } from "@/style/components/card";
 import {
   UnitContext,
-  getConversionForContext,
   convertQuantity,
 } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
-import { unitConfigSelect } from "@/app/realGreen/product/_lib/selectors/unitConfigSelectors";
 import { useViewport } from "@/lib/hooks/useViewport";
 import { cn } from "@/style/utils";
+import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 
 interface ProductsTableProps {
   products: ProductUsagePlanned[];
@@ -33,7 +32,6 @@ interface ProductsTableProps {
 
 export function ProductsTable({ products, unitContext }: ProductsTableProps) {
   const { isNarrow } = useViewport();
-  const unitConfigMap = useSelector(unitConfigSelect.unitConfigMap);
   const [expandedProductId, setExpandedProductId] = useState<number | null>(
     null,
   );
@@ -51,51 +49,20 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
 
   // Helper to get converted quantity and unit label for a product
   const getDisplayQuantityAndUnit = (
-    productId: number,
+    productCommon: ProductCommon,
     baseQuantity: number,
   ) => {
-    const config = unitConfigMap.get(productId);
+    const conversion = productCommon.unitConfig.conversions[unitContext];
+    const convertedQty = convertQuantity(
+      baseQuantity,
+      "app",
+      unitContext,
+      productCommon.unitConfig,
+    );
 
-    // If no config, return base quantity
-    if (!config) {
-      return {
-        quantity: baseQuantity,
-        unit: "", // Will use product.unitOfMeasure as fallback
-      };
-    }
-
-    const conversion = getConversionForContext(config, unitContext);
-
-    // If we have a conversion for the current context, use it
-    if (conversion) {
-      // Get the app context conversion to know the base unit
-      const appConversion = getConversionForContext(config, "app");
-
-      if (appConversion && unitContext !== "app") {
-        // Convert from app to target context
-        const convertedQuantity = convertQuantity(
-          baseQuantity,
-          "app",
-          unitContext,
-          config,
-        );
-        return {
-          quantity: convertedQuantity,
-          unit: conversion.unitLabel,
-        };
-      }
-
-      // If in app context, just use the app conversion label
-      return {
-        quantity: baseQuantity,
-        unit: conversion.unitLabel,
-      };
-    }
-
-    // No conversion for this context, return base quantity
     return {
-      quantity: baseQuantity,
-      unit: "", // Will use product.unitOfMeasure as fallback
+      quantity: convertedQty,
+      unit: conversion.unitLabel,
     };
   };
 
@@ -137,10 +104,9 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
           <TableBody>
             {products.map((product) => {
               const { quantity, unit } = getDisplayQuantityAndUnit(
-                product.productId,
+                product.productCommon,
                 product.totalQuantity,
               );
-              const displayUnit = unit || product.unitOfMeasure;
 
               return (
                 <React.Fragment key={product.productId}>
@@ -163,7 +129,7 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
                     <TableCell className="text-right">
                       {formatNumber(quantity)}
                     </TableCell>
-                    <TableCell>{displayUnit}</TableCell>
+                    <TableCell>{unit}</TableCell>
                     <TableCell className="text-right">
                       {product.enrichedAppProducts.length}
                     </TableCell>
@@ -192,7 +158,7 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
                                     </th>
                                   <th className="text-right py-1 px-2">Size</th>
                                   <th className="text-right py-1 px-2">
-                                    {displayUnit}
+                                    {unit}
                                   </th>
                                 </tr>
                               </thead>
@@ -231,7 +197,7 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
                                     ([servCodeId, data]) => {
                                       const { quantity: convertedAmount } =
                                         getDisplayQuantityAndUnit(
-                                          product.productId,
+                                          product.productCommon,
                                           data.totalAmount,
                                         );
 

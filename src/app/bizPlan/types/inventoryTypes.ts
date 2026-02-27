@@ -31,7 +31,6 @@ export type ProductUsagePlanned = {
   productId: number;
   productCommon: ProductCommon;
   totalQuantity: number;
-  unitOfMeasure: string;
   enrichedAppProducts: EnrichedAppProduct[];
 };
 
@@ -39,7 +38,6 @@ export type ProductUsageActual = {
   productId: number;
   productCommon: ProductCommon;
   totalQuantity: number;
-  unitOfMeasure: string;
   productionDetails: Array<{
     servId: number;
     custId: number;
@@ -56,7 +54,6 @@ export type ProductUsageMixed = {
   productId: number;
   productCommon: ProductCommon;
   totalQuantity: number;
-  unitOfMeasure: string;
   actual: { quantity: number; services: number };
   planned: { quantity: number; services: number };
   mixedProducts: EnrichedAppProduct[]; // Tagged with source: 'actual' | 'planned'
@@ -83,7 +80,6 @@ export type ProductsByCustomer = {
     productId: number;
     productCommon: ProductCommon;
     totalQuantity: number;
-    unitOfMeasure: string;
     services: Array<{
       servId: number;
       amount: number;
@@ -119,7 +115,6 @@ export type ProductsByEmployee = {
     productId: number;
     productCommon: ProductCommon;
     totalQuantity: number; // Sum of (amount * percent)
-    unitOfMeasure: string;
     productions: Array<{
       servId: number;
       custId: number;

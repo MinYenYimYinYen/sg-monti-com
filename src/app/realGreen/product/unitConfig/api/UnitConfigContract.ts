@@ -18,12 +18,4 @@ export interface UnitConfigContract extends ApiContract {
     params: { config: ProductUnitConfig };
     result: DataResponse<{config: ProductUnitConfig}>;
   };
-
-  /**
-   * Delete unit configuration for a product
-   */
-  deleteConfig: {
-    params: { productId: number };
-    result: DataResponse<{productId: number}>;
-  };
 }

@@ -5,17 +5,8 @@ import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { ProductSelector } from "./components/ProductSelector";
 import { ConversionList } from "./components/ConversionList";
-import { ConversionEditor } from "./components/ConversionEditor";
 import { useUnitConfig } from "@/app/realGreen/product/_lib/hooks/useUnitConfig";
-import {
-  UnitConversion,
-  UnitContext,
-  createDefaultAppConversion,
-  baseProductUnitConfig,
-} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
-import {
-  getMetricForUL,
-} from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { UnitConversion } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 import { Alert, AlertDescription } from "@/style/components/alert";
 import { Info } from "lucide-react";
 import { unitConfigSelect } from "@/app/realGreen/product/_lib/selectors/unitConfigSelectors";
@@ -25,80 +16,31 @@ export default function ConversionsTab() {
   const productCommonMap = useSelector(productSelect.productCommonMap);
   const unitConfigsByProductId = useSelector(unitConfigSelect.unitConfigMap);
 
-  const { saveConfig, deleteConfig } = useUnitConfig({});
+  const { saveConfig } = useUnitConfig({});
 
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editingConversion, setEditingConversion] = useState<UnitConversion | null>(null);
-  const [editorMode, setEditorMode] = useState<"add" | "edit">("add");
 
   const selectedProduct = selectedProductId
     ? productCommonMap.get(selectedProductId)
     : null;
 
-  const currentConfig = selectedProductId
-    ? unitConfigsByProductId.get(selectedProductId)
-    : null;
-
-  const conversions = currentConfig?.conversions
-    ? Object.values(currentConfig.conversions)
+  // Get conversions from selectedProduct.unitConfig, which has smart defaults applied
+  const conversions = selectedProduct?.unitConfig.conversions
+    ? Object.values(selectedProduct.unitConfig.conversions)
     : [];
 
-  const baseMetric = selectedProduct
-    ? getMetricForUL(selectedProduct.unit.desc)
-    : "unknown";
-
-  const handleAddConversion = () => {
-    setEditingConversion(null);
-    setEditorMode("add");
-    setEditorOpen(true);
-  };
-
-  const handleEditConversion = (conversion: UnitConversion) => {
-    setEditingConversion(conversion);
-    setEditorMode("edit");
-    setEditorOpen(true);
-  };
-
-  const handleDeleteConversion = async (context: UnitContext) => {
-    if (!selectedProductId || !currentConfig) return;
-
-    const updatedConversions = { ...currentConfig.conversions };
-    delete updatedConversions[context];
-
-    try {
-      if (Object.keys(updatedConversions).length === 0) {
-        // If no conversions left, delete the entire config
-        await deleteConfig(selectedProductId);
-      } else {
-        // Otherwise save with updated conversions
-        await saveConfig({
-          productId: selectedProductId,
-          conversions: updatedConversions,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to delete conversion", error);
-    }
-  };
-
-  const handleSaveConversion = async (newConversion: UnitConversion) => {
+  const handleSaveConversion = async (updatedConversion: UnitConversion) => {
     if (!selectedProductId || !selectedProduct) return;
 
-    const updatedConversions = currentConfig?.conversions
-      ? { ...currentConfig.conversions }
-      : { ...baseProductUnitConfig.conversions };
+    // Get the stored config (not the one with smart defaults)
+    const storedConfig = unitConfigsByProductId.get(selectedProductId);
 
-    // Add or update conversion using context as key
-    updatedConversions[newConversion.context] = newConversion;
+    const updatedConversions = storedConfig?.conversions
+      ? { ...storedConfig.conversions }
+      : { ...selectedProduct.unitConfig.conversions };
 
-    // Ensure app context conversion exists
-    if (!updatedConversions.app) {
-      updatedConversions.app = createDefaultAppConversion(
-        selectedProduct.unit.desc,
-        baseMetric,
-      );
-    }
+    // Update the specific conversion
+    updatedConversions[updatedConversion.context] = updatedConversion;
 
     await saveConfig({
       productId: selectedProductId,
@@ -133,9 +75,7 @@ export default function ConversionsTab() {
             <ConversionList
               conversions={conversions}
               productName={`${selectedProduct.productCode} - ${selectedProduct.description}`}
-              onAdd={handleAddConversion}
-              onEdit={handleEditConversion}
-              onDelete={handleDeleteConversion}
+              onSave={handleSaveConversion}
             />
           ) : (
             <div className="flex items-center justify-center h-[600px] border-2 border-dashed border-muted rounded-lg">
@@ -146,19 +86,6 @@ export default function ConversionsTab() {
           )}
         </div>
       </div>
-
-      {/* Conversion Editor Sheet */}
-      {selectedProductId && (
-        <ConversionEditor
-          open={editorOpen}
-          onOpenChange={setEditorOpen}
-          conversion={editingConversion}
-          baseMetric={baseMetric}
-          product={selectedProduct || null}
-          onSave={handleSaveConversion}
-          mode={editorMode}
-        />
-      )}
     </div>
   );
 }

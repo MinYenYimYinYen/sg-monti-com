@@ -48,23 +48,8 @@ export function useUnitConfig({ autoLoad }: { autoLoad?: boolean }) {
 
   };
 
-  const deleteConfig = (productId: number) => {
-    dispatch(unitConfigActions.removeConfig(productId))
-
-    return dispatch(
-      unitConfigActions.deleteUnitConfig({
-        params: { productId },
-        config: {
-          force: true,
-          showLoading: false,
-        },
-      }),
-    ).unwrap();
-  };
-
   return {
     refresh,
     saveConfig,
-    deleteConfig,
   };
 }

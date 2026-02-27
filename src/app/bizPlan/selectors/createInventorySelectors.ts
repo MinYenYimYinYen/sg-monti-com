@@ -94,7 +94,6 @@ export const createProductUsagePlannedSelector = (
             totalQuantity: Math.round(
               products.reduce((sum, p) => sum + p.amount, 0),
             ),
-            unitOfMeasure: firstProduct.productCommon.unit.desc || "",
             enrichedAppProducts: products,
           };
         });

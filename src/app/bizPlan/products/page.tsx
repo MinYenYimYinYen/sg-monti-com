@@ -179,7 +179,10 @@ export default function BizPlanProductsPage() {
 
         <TabsContent value="servCode">
           <div className="mt-4">
-            <ServiceCodeTable servCodes={productsByServCode} />
+            <ServiceCodeTable
+              servCodes={productsByServCode}
+              unitContext={unitContext}
+            />
           </div>
         </TabsContent>
 

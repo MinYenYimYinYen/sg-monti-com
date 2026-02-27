@@ -17,12 +17,21 @@ import {
   CardTitle,
 } from "@/style/components/card";
 import { useViewport } from "@/lib/hooks/useViewport";
+import {
+  UnitContext,
+  convertQuantity,
+} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 
 interface ServiceCodeTableProps {
   servCodes: ProductsByServCode[];
+  unitContext: UnitContext;
 }
 
-export function ServiceCodeTable({ servCodes }: ServiceCodeTableProps) {
+export function ServiceCodeTable({
+  servCodes,
+  unitContext,
+}: ServiceCodeTableProps) {
   const { isNarrow } = useViewport();
   const [expandedServCodeId, setExpandedServCodeId] = useState<string | null>(
     null,
@@ -39,6 +48,25 @@ export function ServiceCodeTable({ servCodes }: ServiceCodeTableProps) {
     setExpandedServCodeId(
       expandedServCodeId === servCodeId ? null : servCodeId,
     );
+  };
+
+  // Helper to get converted quantity and unit label for a product
+  const getDisplayQuantityAndUnit = (
+    productCommon: ProductCommon,
+    baseQuantity: number,
+  ) => {
+    const conversion = productCommon.unitConfig.conversions[unitContext];
+    const convertedQty = convertQuantity(
+      baseQuantity,
+      "app",
+      unitContext,
+      productCommon.unitConfig,
+    );
+
+    return {
+      quantity: convertedQty,
+      unit: conversion.unitLabel,
+    };
   };
 
   if (servCodes.length === 0) {
@@ -123,27 +151,33 @@ export function ServiceCodeTable({ servCodes }: ServiceCodeTableProps) {
                                 </tr>
                               </thead>
                               <tbody>
-                                {servCodeData.products.map((product) => (
-                                  <tr
-                                    key={product.productId}
-                                    className="border-b"
-                                  >
-                                    {!isNarrow && (
+                                {servCodeData.products.map((product) => {
+                                  const { quantity, unit } =
+                                    getDisplayQuantityAndUnit(
+                                      product.productCommon,
+                                      product.totalQuantity,
+                                    );
+
+                                  return (
+                                    <tr
+                                      key={product.productId}
+                                      className="border-b"
+                                    >
+                                      {!isNarrow && (
+                                        <td className="py-1 px-2">
+                                          {product.productCommon.description}
+                                        </td>
+                                      )}
                                       <td className="py-1 px-2">
-                                        {product.productCommon.description}
+                                        {product.productCommon.productCode}
                                       </td>
-                                    )}
-                                    <td className="py-1 px-2">
-                                      {product.productCommon.productCode}
-                                    </td>
-                                    <td className="text-right py-1 px-2">
-                                      {formatNumber(product.totalQuantity)}
-                                    </td>
-                                    <td className="py-1 px-2">
-                                      {product.unitOfMeasure}
-                                    </td>
-                                  </tr>
-                                ))}
+                                      <td className="text-right py-1 px-2">
+                                        {formatNumber(quantity)}
+                                      </td>
+                                      <td className="py-1 px-2">{unit}</td>
+                                    </tr>
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </div>

@@ -10,7 +10,13 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { baseProductSub } from "@/app/realGreen/product/_lib/baseProduct";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { unitConfigSelect } from "@/app/realGreen/product/_lib/selectors/unitConfigSelectors";
-import { baseProductUnitConfig } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+import {
+  baseProductUnitConfig,
+  ProductUnitConfig,
+  UnitConversion,
+  UnitContext,
+} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 const selectProductMasterDocs = (state: AppState) =>
   state.product.productMasterDocs;
@@ -105,22 +111,64 @@ const selectProductCommons = createSelector(
   [selectProductCommonDocs, unitConfigSelect.unitConfigMap],
   (commonDocs, unitConfigMap) => {
     const productCommons: ProductCommon[] = commonDocs.map((doc) => {
-      const storedUitConfig =
-        unitConfigMap.get(doc.productId) ?? baseProductUnitConfig;
+      const storedUnitConfig = unitConfigMap.get(doc.productId);
+
+      let unitConfig: ProductUnitConfig;
+
+      if (storedUnitConfig) {
+        // Config exists - check each context for defaults that need replacement
+
+        const needsDefaults = (conversion: UnitConversion) =>
+          conversion.unitLabel === baseStrId;
+
+        const createRealConversion = (
+          context: UnitContext,
+        ): UnitConversion => ({
+          context,
+          unitLabel: doc.unit.desc,
+          conversionFactor: 1,
+          baseMetric: doc.unit.metric,
+        });
+
+        unitConfig = {
+          ...storedUnitConfig,
+          productId: doc.productId,
+          conversions: {
+            app: needsDefaults(storedUnitConfig.conversions.app)
+              ? createRealConversion("app")
+              : storedUnitConfig.conversions.app,
+            load: needsDefaults(storedUnitConfig.conversions.load)
+              ? createRealConversion("load")
+              : storedUnitConfig.conversions.load,
+            purchase: needsDefaults(storedUnitConfig.conversions.purchase)
+              ? createRealConversion("purchase")
+              : storedUnitConfig.conversions.purchase,
+          },
+        };
+      } else {
+        // No config exists - create all defaults from doc.unit
+        const createRealConversion = (
+          context: UnitContext,
+        ): UnitConversion => ({
+          context,
+          unitLabel: doc.unit.desc,
+          conversionFactor: 1,
+          baseMetric: doc.unit.metric,
+        });
+
+        unitConfig = {
+          productId: doc.productId,
+          conversions: {
+            app: createRealConversion("app"),
+            load: createRealConversion("load"),
+            purchase: createRealConversion("purchase"),
+          },
+        };
+      }
 
       const productCommon: ProductCommon = {
         ...doc,
-        unitConfig: {
-          ...storedUitConfig,
-          productId: doc.productId,
-          conversions: {
-            ...storedUitConfig.conversions,
-            load: {
-              context: "load",
-
-            }
-          }
-        },
+        unitConfig,
       };
       return productCommon;
     });

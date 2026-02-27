@@ -56,7 +56,6 @@ const selectProductUsagePlanned = createSelector(
           totalQuantity: Math.round(
             products.reduce((sum, p) => sum + p.amount, 0),
           ),
-          unitOfMeasure: firstProduct.productCommon.unit.desc || "",
           enrichedAppProducts: products,
         };
       });
@@ -101,7 +100,6 @@ const selectProductUsageActual = createSelector(
           totalQuantity: Math.round(
             products.reduce((sum, p) => sum + p.amount, 0),
           ),
-          unitOfMeasure: firstProduct.productCommon.unit.desc || "",
           productionDetails: products.map((p) => ({
             servId: p.servId,
             custId: p.custId,
@@ -245,7 +243,6 @@ const selectProductsByCustomer = createSelector(
             productId: p.productId,
             productCommon: p.productCommon,
             totalQuantity: p.totalQuantity,
-            unitOfMeasure: p.unitOfMeasure,
             services: p.enrichedAppProducts.map((e) => ({
               servId: e.servId,
               amount: Math.round(e.amount),
@@ -391,7 +388,6 @@ const selectProductsByEmployee = createSelector(
                   0,
                 ),
               ),
-              unitOfMeasure: firstUse.productCommon.unit.desc || "",
               productions: usesOfThisProduct.map((use) => ({
                 servId: use.servId,
                 custId: use.custId,
@@ -487,7 +483,6 @@ const selectProductsMixedActualPlanned = createSelector(
           totalQuantity: Math.round(
             products.reduce((sum, p) => sum + p.amount, 0),
           ),
-          unitOfMeasure: firstProduct.productCommon.unit.desc || "",
           actual: {
             quantity: Math.round(
               actualProducts.reduce((sum, p) => sum + p.amount, 0),

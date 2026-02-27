@@ -60,19 +60,10 @@ const saveUnitConfig = createStandardThunk<UnitConfigContract, "saveConfig">({
   opName: "saveConfig",
 });
 
-const deleteUnitConfig = createStandardThunk<
-  UnitConfigContract,
-  "deleteConfig"
->({
-  typePrefix: "unitConfig/deleteUnitConfig",
-  apiPath: "/realGreen/product/unitConfig/api",
-  opName: "deleteConfig",
-});
 export const unitConfigActions = {
   ...unitConfigSlice.actions,
   getAllUnitConfigs,
   getUnitConfigByProductId,
   saveUnitConfig,
-  deleteUnitConfig,
 };
 export default unitConfigSlice.reducer;
