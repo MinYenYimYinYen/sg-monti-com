@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -31,17 +31,16 @@ import {
   UnitContext,
   UNIT_CONTEXTS,
 } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
-import { Metric, Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { Metric,  } from "@/app/realGreen/product/_lib/types/UnitTypes";
 import {
   ProductCommon,
-  ProductCommonDoc,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 
 interface ConversionEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   conversion: UnitConversion | null;
-  product: ProductCommonDoc | null;
+  product: ProductCommon | null;
   baseMetric: Metric;
   onSave: (conversion: UnitConversion) => Promise<void>;
   mode: "add" | "edit";
@@ -148,6 +147,7 @@ export function ConversionEditor({
                 <Select
                   value={context}
                   onValueChange={(value) => setContext(value as UnitContext)}
+                  disabled={mode === "edit"}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -166,7 +166,9 @@ export function ConversionEditor({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Application context is automatically set to base units
+                  {mode === "edit"
+                    ? "Context cannot be changed when editing"
+                    : "Application context is automatically set to base units"}
                 </p>
               </FieldContent>
             </Field>

@@ -8,6 +8,9 @@ import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleT
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { baseProductSub } from "@/app/realGreen/product/_lib/baseProduct";
+import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
+import { unitConfigSelect } from "@/app/realGreen/product/_lib/selectors/unitConfigSelectors";
+import { baseProductUnitConfig } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 
 const selectProductMasterDocs = (state: AppState) =>
   state.product.productMasterDocs;
@@ -43,7 +46,7 @@ const selectProductMasters = createSelector(
     const masters: ProductMaster[] = masterDocs.map((doc) => {
       return {
         ...doc,
-        subProductConfigs: (doc.subProductConfigDocs).map((configDoc) => {
+        subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
           const subProduct = subsMap.get(configDoc.subId);
           const config: SubProductConfig = {
             subId: configDoc.subId,
@@ -98,6 +101,39 @@ const selectProductCommonDocMap = createSelector(
   },
 );
 
+const selectProductCommons = createSelector(
+  [selectProductCommonDocs, unitConfigSelect.unitConfigMap],
+  (commonDocs, unitConfigMap) => {
+    const productCommons: ProductCommon[] = commonDocs.map((doc) => {
+      const storedUitConfig =
+        unitConfigMap.get(doc.productId) ?? baseProductUnitConfig;
+
+      const productCommon: ProductCommon = {
+        ...doc,
+        unitConfig: {
+          ...storedUitConfig,
+          productId: doc.productId,
+          conversions: {
+            ...storedUitConfig.conversions,
+            load: {
+              context: "load",
+
+            }
+          }
+        },
+      };
+      return productCommon;
+    });
+    return productCommons;
+  },
+);
+
+const selectProductCommonMap = createSelector(
+  [selectProductCommons],
+  (productCommons) =>
+    new Grouper(productCommons).toUniqueMap((c) => c.productId),
+);
+
 export const productSelect = {
   productMasterDocs: selectProductMasterDocs,
   productSingleDocs: selectProductSingleDocs,
@@ -110,6 +146,10 @@ export const productSelect = {
   productMastersMap: selectProductMastersMap,
   productSinglesMap: selectProductSinglesMap,
   productSubsMap: selectProductSubsMap,
+
   productCommonDocs: selectProductCommonDocs,
   productCommonDocMap: selectProductCommonDocMap,
+
+  productCommons: selectProductCommons,
+  productCommonMap: selectProductCommonMap,
 };

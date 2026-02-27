@@ -9,7 +9,9 @@ import { ConversionEditor } from "./components/ConversionEditor";
 import { useUnitConfig } from "@/app/realGreen/product/_lib/hooks/useUnitConfig";
 import {
   UnitConversion,
+  UnitContext,
   createDefaultAppConversion,
+  baseProductUnitConfig,
 } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 import {
   getMetricForUL,
@@ -20,28 +22,27 @@ import { unitConfigSelect } from "@/app/realGreen/product/_lib/selectors/unitCon
 
 export default function ConversionsTab() {
   const productCommonDocs = useSelector(productSelect.productCommonDocs);
-  const productCommonDocMap = useSelector(productSelect.productCommonDocMap);
+  const productCommonMap = useSelector(productSelect.productCommonMap);
   const unitConfigsByProductId = useSelector(unitConfigSelect.unitConfigMap);
 
   const { saveConfig, deleteConfig } = useUnitConfig({});
 
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [editingConversion, setEditingConversion] = useState<{
-    conversion: UnitConversion;
-    index: number;
-  } | null>(null);
+  const [editingConversion, setEditingConversion] = useState<UnitConversion | null>(null);
   const [editorMode, setEditorMode] = useState<"add" | "edit">("add");
 
   const selectedProduct = selectedProductId
-    ? productCommonDocMap.get(selectedProductId)
+    ? productCommonMap.get(selectedProductId)
     : null;
 
   const currentConfig = selectedProductId
     ? unitConfigsByProductId.get(selectedProductId)
     : null;
 
-  const conversions = currentConfig?.conversions || [];
+  const conversions = currentConfig?.conversions
+    ? Object.values(currentConfig.conversions)
+    : [];
 
   const baseMetric = selectedProduct
     ? getMetricForUL(selectedProduct.unit.desc)
@@ -53,19 +54,20 @@ export default function ConversionsTab() {
     setEditorOpen(true);
   };
 
-  const handleEditConversion = (conversion: UnitConversion, index: number) => {
-    setEditingConversion({ conversion, index });
+  const handleEditConversion = (conversion: UnitConversion) => {
+    setEditingConversion(conversion);
     setEditorMode("edit");
     setEditorOpen(true);
   };
 
-  const handleDeleteConversion = async (index: number) => {
-    if (!selectedProductId) return;
+  const handleDeleteConversion = async (context: UnitContext) => {
+    if (!selectedProductId || !currentConfig) return;
 
-    const updatedConversions = conversions.filter((_, i) => i !== index);
+    const updatedConversions = { ...currentConfig.conversions };
+    delete updatedConversions[context];
 
     try {
-      if (updatedConversions.length === 0) {
+      if (Object.keys(updatedConversions).length === 0) {
         // If no conversions left, delete the entire config
         await deleteConfig(selectedProductId);
       } else {
@@ -83,39 +85,18 @@ export default function ConversionsTab() {
   const handleSaveConversion = async (newConversion: UnitConversion) => {
     if (!selectedProductId || !selectedProduct) return;
 
-    let updatedConversions: UnitConversion[];
+    const updatedConversions = currentConfig?.conversions
+      ? { ...currentConfig.conversions }
+      : { ...baseProductUnitConfig.conversions };
 
-    if (editorMode === "add") {
-      // Check if conversion for this context already exists
-      const existingIndex = conversions.findIndex(
-        (conv) => conv.context === newConversion.context,
-      );
-
-      if (existingIndex >= 0) {
-        // Replace existing conversion for this context
-        updatedConversions = conversions.map((conv, i) =>
-          i === existingIndex ? newConversion : conv,
-        );
-      } else {
-        // Add new conversion
-        updatedConversions = [...conversions, newConversion];
-      }
-    } else if (editingConversion !== null) {
-      // Edit existing conversion
-      updatedConversions = conversions.map((conv, i) =>
-        i === editingConversion.index ? newConversion : conv,
-      );
-    } else {
-      return;
-    }
+    // Add or update conversion using context as key
+    updatedConversions[newConversion.context] = newConversion;
 
     // Ensure app context conversion exists
-    const hasAppConversion = updatedConversions.some(
-      (conv) => conv.context === "app",
-    );
-    if (!hasAppConversion) {
-      updatedConversions.unshift(
-        createDefaultAppConversion(selectedProduct.unit.desc, baseMetric),
+    if (!updatedConversions.app) {
+      updatedConversions.app = createDefaultAppConversion(
+        selectedProduct.unit.desc,
+        baseMetric,
       );
     }
 
@@ -171,7 +152,7 @@ export default function ConversionsTab() {
         <ConversionEditor
           open={editorOpen}
           onOpenChange={setEditorOpen}
-          conversion={editingConversion?.conversion || null}
+          conversion={editingConversion}
           baseMetric={baseMetric}
           product={selectedProduct || null}
           onSave={handleSaveConversion}

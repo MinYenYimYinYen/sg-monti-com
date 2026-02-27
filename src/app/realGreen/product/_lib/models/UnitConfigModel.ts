@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import {
   ProductUnitConfigStorage,
   UnitConversion,
+  baseProductUnitConfig,
 } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 
 interface UnitConfigDoc extends mongoose.Document, ProductUnitConfigStorage {}
@@ -14,7 +15,7 @@ const UnitConversionSchema = new mongoose.Schema<UnitConversion>(
     baseMetric: {
       type: String,
       required: true,
-      enum: ["area", "count", "length", "time", "volume", "weight", "unknown", "none"],
+      enum: ["area", "count", "length", "time", "volume", "weight", "unknown"],
     },
   },
   { _id: false },
@@ -23,10 +24,12 @@ const UnitConversionSchema = new mongoose.Schema<UnitConversion>(
 const UnitConfigSchema = new mongoose.Schema<UnitConfigDoc>(
   {
     productId: { type: Number, required: true, unique: true, index: true },
-    conversions: { type: [UnitConversionSchema], required: true, default: [] },
-  },
-  {
-    timestamps: true, // Automatically adds createdAt and updatedAt
+    conversions: {
+      type: Map,
+      of: UnitConversionSchema,
+      required: true,
+      default: () => new Map(Object.entries(baseProductUnitConfig.conversions)),
+    } as any, // Mongoose Map type conflicts with Record type - handled at runtime
   },
 );
 

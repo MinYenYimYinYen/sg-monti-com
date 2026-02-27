@@ -27,6 +27,7 @@ import {
   ProductSubProps,
 } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { baseUnit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import {baseProductUnitConfig} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 
 export const baseProductCore: ProductCore = {
   productId: baseNumId,
@@ -92,11 +93,11 @@ export const baseProductSingleDoc: ProductSingleDoc = {
   ...baseProductSingleDocProps,
 };
 
-export const baseProductSingeProps: ProductSingleProps = {};
+export const baseProductSingleProps: ProductSingleProps = {};
 
 export const baseProductSingle: ProductSingleDoc = {
   ...baseProductSingleDoc,
-  ...baseProductSingeProps,
+  ...baseProductSingleProps,
 };
 
 export const baseProductSubCore: ProductSubCore = {
@@ -137,7 +138,9 @@ export const baseProductCommonDoc: ProductCommonDoc = {
   ...baseProductCommonDocProps,
 };
 
-export const baseProductCommonProps: ProductCommonProps = {};
+export const baseProductCommonProps: ProductCommonProps = {
+  unitConfig: baseProductUnitConfig,
+};
 
 export const baseProductCommon: ProductCommon = {
   ...baseProductCommonDoc,

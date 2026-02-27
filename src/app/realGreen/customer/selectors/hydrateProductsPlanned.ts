@@ -2,12 +2,15 @@ import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/Service
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { baseProductCommonDoc } from "@/app/realGreen/product/_lib/baseProduct";
+import {
+  baseProductCommon,
+  baseProductCommonDoc,
+} from "@/app/realGreen/product/_lib/baseProduct";
 
 export function hydrateProductsPlanned(
   servDoc: ServiceDoc,
   servCodeMap: Map<string, ServCode>,
-  productCommonDocMap: Map<number, ProductCommon>,
+  productCommonMap: Map<number, ProductCommon>,
 ): AppProduct[] {
   const { size, servCodeId } = servDoc;
   const servCode = servCodeMap.get(servCodeId);
@@ -46,7 +49,7 @@ export function hydrateProductsPlanned(
       size,
       servId: servDoc.servId,
       productCommon:
-        productCommonDocMap.get(subConfig.subId) || baseProductCommonDoc,
+        productCommonMap.get(subConfig.subId) || baseProductCommon,
     };
   });
   return appProducts;

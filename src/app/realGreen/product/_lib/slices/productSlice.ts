@@ -12,35 +12,6 @@ import {
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 
-export const getProducts = createStandardThunk<ProductContract, "getAll">({
-  typePrefix: "product/getProducts",
-  apiPath: "/realGreen/product/api",
-  opName: "getAll",
-});
-
-export const saveCategory = createStandardThunk<
-  ProductContract,
-  "saveCategory"
->({
-  typePrefix: "product/saveCategory",
-  apiPath: "/realGreen/product/api",
-  opName: "saveCategory",
-});
-
-export const saveMasterSubProducts = createStandardThunk<
-  ProductContract,
-  "saveMasterSubProducts"
->({
-  typePrefix: "product/saveMasterSubProducts",
-  apiPath: "/realGreen/product/api",
-  opName: "saveMasterSubProducts",
-});
-
-export const saveUnit = createStandardThunk<ProductContract, "saveUnit">({
-  typePrefix: "product/saveUnit",
-  apiPath: "/realGreen/product/api",
-  opName: "saveUnit",
-});
 
 interface ProductState {
   productMasterDocs: ProductMasterDoc[];
@@ -94,39 +65,43 @@ const productSlice = createSlice({
     },
     updateUnit: (state, action: PayloadAction<{ newUnit: Unit }>) => {
       const matchingMasters = state.productMasterDocs.filter(
-        (master) => master.unitId === action.payload.newUnit.unitId
-      )
+        (master) => master.unitId === action.payload.newUnit.unitId,
+      );
       matchingMasters.forEach((master) => {
         master.unit = action.payload.newUnit;
-      })
+      });
       const matchingSingles = state.productSingleDocs.filter(
-        (single) => single.unitId === action.payload.newUnit.unitId
-      )
+        (single) => single.unitId === action.payload.newUnit.unitId,
+      );
       matchingSingles.forEach((single) => {
         single.unit = action.payload.newUnit;
-      })
+      });
       const matchingSubs = state.productSubDocs.filter(
-        (sub) => sub.unitId === action.payload.newUnit.unitId
-      )
+        (sub) => sub.unitId === action.payload.newUnit.unitId,
+      );
       matchingSubs.forEach((sub) => {
         sub.unit = action.payload.newUnit;
-      })
+      });
       const matchingCommons = state.productCommonDocs.filter(
-        (common) => common.unitId === action.payload.newUnit.unitId
-      )
+        (common) => common.unitId === action.payload.newUnit.unitId,
+      );
       matchingCommons.forEach((common) => {
         common.unit = action.payload.newUnit;
-      })
+      });
     },
     updateMasterSubProducts: (
       state,
-      action: PayloadAction<{ masterId: number; subProductConfigDocs: SubProductConfigDoc[] }>,
+      action: PayloadAction<{
+        masterId: number;
+        subProductConfigDocs: SubProductConfigDoc[];
+      }>,
     ) => {
       const matchingMaster = state.productMasterDocs.find(
         (master) => master.productId === action.payload.masterId,
       );
       if (matchingMaster) {
-        matchingMaster.subProductConfigDocs = action.payload.subProductConfigDocs;
+        matchingMaster.subProductConfigDocs =
+          action.payload.subProductConfigDocs;
       }
     },
   },
@@ -141,6 +116,35 @@ const productSlice = createSlice({
   },
 });
 
+export const getProducts = createStandardThunk<ProductContract, "getAll">({
+  typePrefix: "product/getProducts",
+  apiPath: "/realGreen/product/api",
+  opName: "getAll",
+});
+
+export const saveCategory = createStandardThunk<
+  ProductContract,
+  "saveCategory"
+>({
+  typePrefix: "product/saveCategory",
+  apiPath: "/realGreen/product/api",
+  opName: "saveCategory",
+});
+
+export const saveMasterSubProducts = createStandardThunk<
+  ProductContract,
+  "saveMasterSubProducts"
+>({
+  typePrefix: "product/saveMasterSubProducts",
+  apiPath: "/realGreen/product/api",
+  opName: "saveMasterSubProducts",
+});
+
+export const saveUnit = createStandardThunk<ProductContract, "saveUnit">({
+  typePrefix: "product/saveUnit",
+  apiPath: "/realGreen/product/api",
+  opName: "saveUnit",
+});
 export const productActions = {
   ...productSlice.actions,
   getProducts,

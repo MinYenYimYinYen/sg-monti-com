@@ -1,4 +1,5 @@
 import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import {ProductUnitConfig} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 
 export type ProductRaw = {
   anyBranch: boolean;
@@ -57,6 +58,7 @@ export type ProductCommonDocProps = {
 export type ProductCommonDoc = ProductCore & ProductCommonDocProps;
 
 export type ProductCommonProps = {
+  unitConfig: ProductUnitConfig
 }
 
 export type ProductCommon = ProductCommonDoc & ProductCommonProps;

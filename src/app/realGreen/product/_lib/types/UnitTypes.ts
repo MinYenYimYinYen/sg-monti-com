@@ -21,7 +21,6 @@ export type Metric =
   | "volume"
   | "weight"
   | "unknown"
-  | "none";
 
 export const UL_METRIC_MAP: Record<AppUnit, Metric> = {
   [AppUnit.ksf]: "area",

@@ -3,36 +3,6 @@ import { UnitConfigContract } from "@/app/realGreen/product/unitConfig/api/UnitC
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { ProductUnitConfig } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 
-const getAllUnitConfigs = createStandardThunk<UnitConfigContract, "getAll">({
-  typePrefix: "unitConfig/getAllUnitConfigs",
-  apiPath: "/realGreen/product/unitConfig/api",
-  opName: "getAll",
-});
-
-const getUnitConfigByProductId = createStandardThunk<
-  UnitConfigContract,
-  "getByProductId"
->({
-  typePrefix: "unitConfig/getUnitConfigByProductId",
-  apiPath: "/realGreen/product/unitConfig/api",
-  opName: "getByProductId",
-});
-
-const saveUnitConfig = createStandardThunk<UnitConfigContract, "saveConfig">({
-  typePrefix: "unitConfig/saveUnitConfig",
-  apiPath: "/realGreen/product/unitConfig/api",
-  opName: "saveConfig",
-});
-
-const deleteUnitConfig = createStandardThunk<
-  UnitConfigContract,
-  "deleteConfig"
->({
-  typePrefix: "unitConfig/deleteUnitConfig",
-  apiPath: "/realGreen/product/unitConfig/api",
-  opName: "deleteConfig",
-});
-
 interface UnitConfigState {
   configs: ProductUnitConfig[];
 }
@@ -69,6 +39,35 @@ const unitConfigSlice = createSlice({
   },
 });
 
+const getAllUnitConfigs = createStandardThunk<UnitConfigContract, "getAll">({
+  typePrefix: "unitConfig/getAllUnitConfigs",
+  apiPath: "/realGreen/product/unitConfig/api",
+  opName: "getAll",
+});
+
+const getUnitConfigByProductId = createStandardThunk<
+  UnitConfigContract,
+  "getByProductId"
+>({
+  typePrefix: "unitConfig/getUnitConfigByProductId",
+  apiPath: "/realGreen/product/unitConfig/api",
+  opName: "getByProductId",
+});
+
+const saveUnitConfig = createStandardThunk<UnitConfigContract, "saveConfig">({
+  typePrefix: "unitConfig/saveUnitConfig",
+  apiPath: "/realGreen/product/unitConfig/api",
+  opName: "saveConfig",
+});
+
+const deleteUnitConfig = createStandardThunk<
+  UnitConfigContract,
+  "deleteConfig"
+>({
+  typePrefix: "unitConfig/deleteUnitConfig",
+  apiPath: "/realGreen/product/unitConfig/api",
+  opName: "deleteConfig",
+});
 export const unitConfigActions = {
   ...unitConfigSlice.actions,
   getAllUnitConfigs,

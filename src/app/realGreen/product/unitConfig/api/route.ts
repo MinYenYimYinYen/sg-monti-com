@@ -18,6 +18,8 @@ const handlers: HandlerMap<UnitConfigContract> = {
     roles: ["office", "admin"],
     handler: async () => {
       await connectToMongoDB();
+
+
       const configDocs = await UnitConfigModel.find({}).lean();
       const configs: ProductUnitConfig[] =
         cleanMongoArray<ProductUnitConfigStorage>(configDocs);
@@ -35,7 +37,7 @@ const handlers: HandlerMap<UnitConfigContract> = {
       await connectToMongoDB();
 
       // Validate that at least one conversion exists
-      if (!config.conversions || config.conversions.length === 0) {
+      if (!config.conversions || Object.keys(config.conversions).length === 0) {
         throw new AppError({
           message: "Unit config must have at least one conversion",
           type: "VALIDATION_ERROR",

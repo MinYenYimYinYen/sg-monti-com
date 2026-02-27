@@ -44,7 +44,7 @@ export default function BizPlanProductsPage() {
   const currentSeason = useSelector(globalSettingsSelect.season);
 
   const [activeTab, setActiveTab] = useState("product");
-  const [unitContext, setUnitContext] = useState<UnitContext>("app");
+  const [unitContext, setUnitContext] = useState<UnitContext>("purchase");
 
   const unfinishedServStats: ServiceStatusType[] = [
     "active",

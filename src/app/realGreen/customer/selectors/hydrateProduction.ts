@@ -2,7 +2,10 @@ import {
   Production,
   ProductionCore,
 } from "@/app/realGreen/_lib/subTypes/Production";
-import { ProductCommonDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
+import {
+  ProductCommon,
+  ProductCommonDoc,
+} from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
@@ -15,7 +18,7 @@ import {
 
 function hydrateProduction(
   productionCore: ProductionCore | null,
-  productDocMap: Map<number, ProductCommonDoc>,
+  productCommonMap: Map<number, ProductCommon>,
   employeeMap: Map<string, Employee>,
   serviceDoc: ServiceDoc
 ): Production | null {
@@ -25,7 +28,7 @@ function hydrateProduction(
       const appProduct: AppProduct = {
         ...appProductCore,
         productCommon:
-          productDocMap.get(appProductCore.productId) || baseProductCommon,
+          productCommonMap.get(appProductCore.productId) || baseProductCommon,
       };
       return appProduct;
     },

@@ -1,16 +1,17 @@
 import { Metric } from "./UnitTypes";
+import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 /**
  * Unit Context Types
  * Defines the different contexts in which products are measured/handled
  */
-export type UnitContext = "app" | "load" | "purchase";
-
-export const UNIT_CONTEXTS: Record<UnitContext, string> = {
+export const UNIT_CONTEXTS = {
   app: "Application",
   load: "Loading",
   purchase: "Purchasing",
-};
+} as const;
+
+export type UnitContext = keyof typeof UNIT_CONTEXTS;
 
 /**
  * Unit Conversion Configuration
@@ -24,23 +25,37 @@ export type UnitConversion = {
   baseMetric: Metric; // Links to the underlying metric type
 };
 
+export const baseUnitConversion: UnitConversion = {
+  context: "app",
+  unitLabel: baseStrId,
+  conversionFactor: 1,
+  baseMetric: "unknown",
+};
+
 /**
  * Product Unit Configuration
  * Stores all unit conversion configurations for a specific product
  */
 export type ProductUnitConfig = {
   productId: number;
-  conversions: UnitConversion[];
-  createdAt?: Date;
-  updatedAt?: Date;
+  conversions: Record<UnitContext, UnitConversion>;
 };
+
+export const baseProductUnitConfig: ProductUnitConfig = {
+  productId: baseNumId,
+  conversions: {
+    app: baseUnitConversion,
+    load: baseUnitConversion,
+    purchase: baseUnitConversion,
+  }
+}
 
 /**
  * Storage type for MongoDB
  */
 export type ProductUnitConfigStorage = {
   productId: number;
-  conversions: UnitConversion[];
+  conversions: Record<UnitContext, UnitConversion>;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -54,7 +69,7 @@ export function getConversionForContext(
   context: UnitContext,
 ): UnitConversion | null {
   if (!config) return null;
-  return config.conversions.find((c) => c.context === context) || null;
+  return config.conversions[context] || null;
 }
 
 /**
@@ -99,48 +114,48 @@ export function createDefaultAppConversion(
 export const EXAMPLE_CONFIGS = {
   fertilizer50lbBags: {
     productId: 0, // placeholder
-    conversions: [
-      {
+    conversions: {
+      app: {
         context: "app" as UnitContext,
         unitLabel: "Lbs",
         conversionFactor: 1,
         baseMetric: "weight" as Metric,
       },
-      {
+      load: {
         context: "load" as UnitContext,
         unitLabel: "50lb Bag",
         conversionFactor: 50,
         baseMetric: "weight" as Metric,
       },
-      {
+      purchase: {
         context: "purchase" as UnitContext,
         unitLabel: "Pallet (40 bags)",
         conversionFactor: 2000, // 50 * 40
         baseMetric: "weight" as Metric,
       },
-    ],
+    },
   },
   liquidConcentrate: {
     productId: 0, // placeholder
-    conversions: [
-      {
+    conversions: {
+      app: {
         context: "app" as UnitContext,
         unitLabel: "Fl Oz",
         conversionFactor: 1,
         baseMetric: "volume" as Metric,
       },
-      {
+      load: {
         context: "load" as UnitContext,
         unitLabel: "1 Gal Jug",
         conversionFactor: 128, // 128 fl oz per gallon
         baseMetric: "volume" as Metric,
       },
-      {
+      purchase: {
         context: "purchase" as UnitContext,
         unitLabel: "Case (4 jugs)",
         conversionFactor: 512, // 128 * 4
         baseMetric: "volume" as Metric,
       },
-    ],
+    },
   },
 };

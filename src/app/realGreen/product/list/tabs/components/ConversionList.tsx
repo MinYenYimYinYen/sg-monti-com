@@ -3,6 +3,7 @@
 import React from "react";
 import {
   UnitConversion,
+  UnitContext,
   UNIT_CONTEXTS,
 } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/style/components/card";
@@ -20,8 +21,8 @@ import {
 interface ConversionListProps {
   conversions: UnitConversion[];
   onAdd: () => void;
-  onEdit: (conversion: UnitConversion, index: number) => void;
-  onDelete: (index: number) => void;
+  onEdit: (conversion: UnitConversion) => void;
+  onDelete: (context: UnitContext) => void;
   productName?: string;
 }
 
@@ -68,8 +69,8 @@ export function ConversionList({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {conversions.map((conversion, index) => (
-                <TableRow key={index}>
+              {conversions.map((conversion) => (
+                <TableRow key={conversion.context}>
                   <TableCell className="font-medium">
                     {UNIT_CONTEXTS[conversion.context]}
                   </TableCell>
@@ -86,7 +87,7 @@ export function ConversionList({
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => onEdit(conversion, index)}
+                        onClick={() => onEdit(conversion)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -95,7 +96,7 @@ export function ConversionList({
                         intensity="soft"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => onDelete(index)}
+                        onClick={() => onDelete(conversion.context)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
