@@ -22,7 +22,6 @@ export function generateMixChartData(
     size,
     amounts: master.subProductConfigs.map((config) => {
       const appAmount = size * config.rate;
-      console.log("master", master);
       // Use unitConfigDisplay to format compound units
       return config.subProduct.unitConfigDisplay.format({
         amount: appAmount,

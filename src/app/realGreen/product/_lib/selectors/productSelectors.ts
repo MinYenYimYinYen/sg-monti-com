@@ -157,7 +157,6 @@ function hydrateUnitConfig(
       baseMetric: doc.unit.metric as any,
     });
 
-    console.log("storedUnitConfig", storedUnitConfig);
 
     unitConfig = {
       ...storedUnitConfig,

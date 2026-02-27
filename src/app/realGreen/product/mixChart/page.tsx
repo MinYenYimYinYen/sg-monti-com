@@ -30,7 +30,7 @@ export default function MixChartPage() {
   const masters = useSelector(productSelect.productMasters);
 
   const [selectedMasterId, setSelectedMasterId] = useState<number | null>(null);
-  const [increment, setIncrement] = useState<number>(5);
+  const [increment, setIncrement] = useState<number>(10);
 
   const selectedMaster = masters.find((m) => m.productId === selectedMasterId);
   const chartData = selectedMaster

@@ -136,11 +136,32 @@ export class UnitConfigDisplay {
 
     // Add final remainder in app units if significant
     if (remainingAmount >= REMAINDER_THRESHOLD) {
-      parts.push({
-        amount: Math.round(remainingAmount * 100) / 100,
-        unit: appConversion.unitLabel,
-        isWhole: false,
-      });
+      // Check if app unit matches any existing part's unit
+      const matchingPartIndex = parts.findIndex(p => p.unit === appConversion.unitLabel);
+
+      if (matchingPartIndex >= 0) {
+        // Combine with existing part - return unrounded total
+        const existingPart = parts[matchingPartIndex];
+        const conversion = this.unitConfig.conversions[validContexts[matchingPartIndex]];
+        const totalInContext = (existingPart.amount * conversion.conversionFactor + remainingAmount) / conversion.conversionFactor;
+
+        // Replace parts array with single unrounded part
+        return {
+          parts: [{
+            amount: totalInContext,
+            unit: appConversion.unitLabel,
+            isWhole: false,
+          }],
+          formattedString: `${totalInContext} ${appConversion.unitLabel}`,
+        };
+      } else {
+        // Different units - add as separate remainder part
+        parts.push({
+          amount: Math.round(remainingAmount * 100) / 100,
+          unit: appConversion.unitLabel,
+          isWhole: false,
+        });
+      }
     }
 
     // If no parts were added (amount too small), show in app units
