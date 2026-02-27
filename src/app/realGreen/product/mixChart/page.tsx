@@ -5,6 +5,7 @@ import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSel
 import { Container } from "@/components/Containers";
 import { PDFViewer } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
+import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import {
   Select,
@@ -35,23 +36,27 @@ export default function MixChartPage() {
   const [increment, setIncrement] = useState<number>(10);
   const [rowCount, setRowCount] = useState<number>(17);
 
+  // Debounce increment and row count to avoid re-rendering PDF on every keystroke
+  const debouncedIncrement = useDebounce(increment, 100);
+  const debouncedRowCount = useDebounce(rowCount, 100);
+
   const selectedMaster = masters.find((m) => m.productId === selectedMasterId);
   const selectedSubConfig = selectedMaster?.subProductConfigs.find(
     (config) => config.subId === selectedSubId
   );
 
-  // Calculate max values based on increment and row count
-  const maxSize = increment * rowCount;
-  const maxUnits = increment * rowCount;
+  // Calculate max values based on debounced increment and row count
+  const maxSize = debouncedIncrement * debouncedRowCount;
+  const maxUnits = debouncedIncrement * debouncedRowCount;
 
-  // Generate chart data based on layout type
+  // Generate chart data based on layout type (uses debounced values)
   const chartDataBySize = selectedMaster
-    ? generateMixChartData(selectedMaster, increment, maxSize)
+    ? generateMixChartData(selectedMaster, debouncedIncrement, maxSize)
     : [];
 
   const chartDataByProductAmount =
     selectedMaster && selectedSubId
-      ? generateMixChartByProductAmount(selectedMaster, selectedSubId, increment, maxUnits, unitContext)
+      ? generateMixChartByProductAmount(selectedMaster, selectedSubId, debouncedIncrement, maxUnits, unitContext)
       : [];
 
   if (!isClient) return null;
