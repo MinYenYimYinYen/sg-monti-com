@@ -28,12 +28,33 @@ export type CompoundUnitDisplay = {
 export type FormatCompoundUnitParams = {
   amount: number; // Quantity in app/base units
   targetContexts: UnitContext[]; // Waterfall array, e.g., ["load", "app"]
+  rounding?: "round" | "floor" | "ceil" | "none";
 };
 
 /**
  * Threshold below which remainders are not displayed (0.01 base units)
  */
 const REMAINDER_THRESHOLD = 0.01;
+
+/**
+ * Apply rounding based on the specified mode
+ * @param value - The value to round
+ * @param mode - The rounding mode
+ * @returns The rounded value
+ */
+function applyRounding(value: number, mode: "round" | "floor" | "ceil" | "none"): number {
+  switch (mode) {
+    case "ceil":
+      return Math.ceil(value);  // Rounds up to whole number
+    case "floor":
+      return Math.floor(value);  // Rounds down to whole number
+    case "round":
+      return Math.round(value);  // Rounds to nearest whole number
+    case "none":
+    default:
+      return Math.round(value * 100) / 100;  // 2 decimal places
+  }
+}
 
 /**
  * UnitConfigDisplay class provides display formatting methods for product unit conversions.
@@ -69,7 +90,11 @@ export class UnitConfigDisplay {
    * // Amount less than 1 major unit: "58 Fl Oz"
    * format({ amount: 58, targetContexts: ["load", "app"] })
    */
-  format({ amount, targetContexts }: FormatCompoundUnitParams): CompoundUnitDisplay {
+  format({
+    amount,
+    targetContexts,
+    rounding = "none",
+  }: FormatCompoundUnitParams): CompoundUnitDisplay {
     const appConversion = this.unitConfig.conversions.app;
 
     // Simple case: no contexts or only app context
@@ -77,8 +102,10 @@ export class UnitConfigDisplay {
       targetContexts.length === 0 ||
       (targetContexts.length === 1 && targetContexts[0] === "app")
     ) {
+      const roundedAmount = applyRounding(amount, rounding);
+
       const part: CompoundUnitPart = {
-        amount: Math.round(amount * 100) / 100,
+        amount: roundedAmount,
         unit: appConversion.unitLabel,
         isWhole: false,
       };
@@ -97,8 +124,9 @@ export class UnitConfigDisplay {
 
     if (validContexts.length === 0) {
       // Fallback to app units if no valid contexts
+      const roundedAmount = applyRounding(amount, rounding);
       const part: CompoundUnitPart = {
-        amount: Math.round(amount * 100) / 100,
+        amount: roundedAmount,
         unit: appConversion.unitLabel,
         isWhole: false,
       };
@@ -111,6 +139,7 @@ export class UnitConfigDisplay {
     // Process waterfall: calculate whole units for each context
     const parts: CompoundUnitPart[] = [];
     let remainingAmount = amount;
+    let lastProcessedContext: UnitContext | null = null;
 
     for (const context of validContexts) {
       const conversion = this.unitConfig.conversions[context];
@@ -130,44 +159,102 @@ export class UnitConfigDisplay {
         isWhole: true,
       });
 
+      lastProcessedContext = context;
+
       // Calculate remainder in base units
-      remainingAmount = remainingAmount - wholeUnits * conversion.conversionFactor;
+      remainingAmount =
+        remainingAmount - wholeUnits * conversion.conversionFactor;
     }
 
-    // Add final remainder in app units if significant
+    // Handle remainders based on whether "app" is in targetContexts
+    const includesAppContext = validContexts.includes("app");
+
     if (remainingAmount >= REMAINDER_THRESHOLD) {
-      // Check if app unit matches any existing part's unit
-      const matchingPartIndex = parts.findIndex(p => p.unit === appConversion.unitLabel);
+      if (includesAppContext) {
+        // App context IS in targetContexts - add remainder as separate part
+        // Check if app unit matches any existing part's unit
+        const matchingPartIndex = parts.findIndex(
+          (p) => p.unit === appConversion.unitLabel,
+        );
 
-      if (matchingPartIndex >= 0) {
-        // Combine with existing part - return unrounded total
-        const existingPart = parts[matchingPartIndex];
-        const conversion = this.unitConfig.conversions[validContexts[matchingPartIndex]];
-        const totalInContext = (existingPart.amount * conversion.conversionFactor + remainingAmount) / conversion.conversionFactor;
+        if (matchingPartIndex >= 0) {
+          // Combine with existing part - return total with rounding applied
+          const existingPart = parts[matchingPartIndex];
+          const conversion =
+            this.unitConfig.conversions[validContexts[matchingPartIndex]];
+          const totalInContext =
+            (existingPart.amount * conversion.conversionFactor +
+              remainingAmount) /
+            conversion.conversionFactor;
 
-        // Replace parts array with single unrounded part
-        return {
-          parts: [{
-            amount: totalInContext,
+          const roundedTotal = applyRounding(totalInContext, rounding);
+
+          // Replace parts array with single rounded part
+          return {
+            parts: [
+              {
+                amount: roundedTotal,
+                unit: appConversion.unitLabel,
+                isWhole: false,
+              },
+            ],
+            formattedString: `${roundedTotal} ${appConversion.unitLabel}`,
+          };
+        } else {
+          // Different units - add as separate remainder part
+          const roundedRemainder = applyRounding(remainingAmount, rounding);
+          parts.push({
+            amount: roundedRemainder,
             unit: appConversion.unitLabel,
             isWhole: false,
-          }],
-          formattedString: `${totalInContext} ${appConversion.unitLabel}`,
+          });
+        }
+      } else if (parts.length > 0 && lastProcessedContext) {
+        // App context NOT in targetContexts - return rounded total in last processed context
+        const lastConversion =
+          this.unitConfig.conversions[lastProcessedContext];
+        const totalInLastContext = amount / lastConversion.conversionFactor;
+        const roundedTotal = applyRounding(totalInLastContext, rounding);
+
+        return {
+          parts: [
+            {
+              amount: roundedTotal,
+              unit: lastConversion.unitLabel,
+              isWhole: false,
+            },
+          ],
+          formattedString: `${roundedTotal} ${lastConversion.unitLabel}`,
         };
-      } else {
-        // Different units - add as separate remainder part
-        parts.push({
-          amount: Math.round(remainingAmount * 100) / 100,
-          unit: appConversion.unitLabel,
-          isWhole: false,
-        });
       }
     }
 
-    // If no parts were added (amount too small), show in app units
+    // If no parts were added (amount too small for any whole units)
     if (parts.length === 0) {
+      // If user specified a non-app context, use the first one even if < 1 unit
+      const firstNonAppContext = validContexts.find((ctx) => ctx !== "app");
+
+      if (firstNonAppContext) {
+        const conversion = this.unitConfig.conversions[firstNonAppContext];
+        const amountInContext = amount / conversion.conversionFactor;
+        const roundedAmount = applyRounding(amountInContext, rounding);
+
+        return {
+          parts: [
+            {
+              amount: roundedAmount,
+              unit: conversion.unitLabel,
+              isWhole: false,
+            },
+          ],
+          formattedString: `${roundedAmount} ${conversion.unitLabel}`,
+        };
+      }
+
+      // Fallback to app units only if no other context was specified
+      const roundedAmount = applyRounding(amount, rounding);
       const part: CompoundUnitPart = {
-        amount: Math.round(amount * 100) / 100,
+        amount: roundedAmount,
         unit: appConversion.unitLabel,
         isWhole: false,
       };

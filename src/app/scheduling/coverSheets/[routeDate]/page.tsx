@@ -16,7 +16,6 @@ import { HashPDFIcon } from "@/lib/pdf/pdfIcons";
 import { truncate } from "@/lib/primatives/string/truncate";
 import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
 import { PDFNumber } from "@/components/Number";
-import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 
 type RouteDatePageProps = {
@@ -127,9 +126,23 @@ function CoverSheetsPDF({
                   const split = idWithRule.split("-");
                   const servCodeId = split[0];
                   const ruleDesc = split[1] ?? "";
-                  console.log("group", group);
 
                   const borderT = index > 0 ? " border-t" : "";
+
+                  const plannedAppProductTotal =
+                    getPlannedAppProductTotal(groupServices);
+
+                  let filtered: AppProduct[] = plannedAppProductTotal;
+                  if (
+                    plannedAppProductTotal
+                      .map((appProduct) => appProduct.productCommon.description)
+                      .includes("Water")
+                  ) {
+                    filtered = plannedAppProductTotal.filter(
+                      (appProduct) =>
+                        appProduct.productCommon.description === "Water",
+                    );
+                  }
 
                   return (
                     <View
@@ -163,26 +176,27 @@ function CoverSheetsPDF({
                         <PDFNumber isMoney={true}>{price}</PDFNumber>
                       </View>
                       <View style={tw("flex flex-col")}>
-                        {getPlannedAppProductTotal(groupServices).map(
-                          (totals, index) => {
-                            console.log("groupServices", groupServices);
-                            console.log("totals", totals);
-                            return (
-                              <View
-                                key={index}
-                                style={tw("flex flex-row gap-1")}
-                              >
-                                <Text style={tw("w-[80px] text-left ")}>
-                                  {totals.productCommon.productCode}
-                                </Text>
-                                <View style={tw("w-[25px] ")}>
-                                  <PDFNumber>{totals.amount}</PDFNumber>
-                                </View>
-                                <Text>{totals.productCommon.unit.desc}</Text>
-                              </View>
-                            );
-                          },
-                        )}
+                        {filtered.map((appProduct, index) => {
+                          const loadDisplay =
+                            appProduct.productCommon.unitConfigDisplay.format({
+                              amount: appProduct.amount,
+                              targetContexts: ["load"],
+                              rounding: "ceil",
+                            }).formattedString;
+
+                          return (
+                            <View key={index} style={tw("flex flex-row gap-1")}>
+                              <Text style={tw("w-[80px] text-left")}>
+                                {appProduct.productCommon.productCode}
+                              </Text>
+                              <Text>{loadDisplay}</Text>
+                              {/*<View style={tw("w-[25px] ")}>*/}
+                              {/*  <PDFNumber>{appProduct.amount}</PDFNumber>*/}
+                              {/*</View>*/}
+                              {/*<Text>{appProduct.productCommon.unit.desc}</Text>*/}
+                            </View>
+                          );
+                        })}
                       </View>
                     </View>
                   );
@@ -194,6 +208,34 @@ function CoverSheetsPDF({
               const address = customer.address;
               const flags = customer.flags;
               const products = service.productsPlanned;
+              console.log("products", products);
+              let filtered: AppProduct[] = products;
+              if (
+                products
+                  .map((appProduct) => appProduct.productCommon.description)
+                  .includes("Water")
+              ) {
+                filtered = products.filter(
+                  (appProduct) =>
+                    appProduct.productCommon.description === "Water",
+                );
+              }
+
+              const preNotify = typeGuard
+                .definedArray([
+                  service.callAhead,
+                  service.program.callAhead,
+                  service.program.customer.callAhead,
+                ]).map((ca) => ca.description)
+                .join(", ");
+
+              const asap = service.asapSince && "ASAP";
+              const promised = service.isPromised && "PROMISED";
+
+              const servNote = service.techNote;
+              const progNote = service.program.techNote;
+              const custNote = service.program.customer.techNote;
+              //todo: Left off here.
 
               return (
                 <View
@@ -217,11 +259,9 @@ function CoverSheetsPDF({
                     </Text>
                   </View>
                   <View id={"ADDRESS"} style={tw("flex flex-col text-sm w-48")}>
-                    <Text style={tw("")}>
-                      {truncate(customer.displayName, 25)}
-                    </Text>
+                    <Text>{truncate(customer.displayName, 25)}</Text>
                     <Text style={tw("font-bold")}>{address.addressLine1}</Text>
-                    <Text style={tw("")}>
+                    <Text>
                       {address.city}, {address.state} {address.zip}
                     </Text>
                   </View>
@@ -244,9 +284,9 @@ function CoverSheetsPDF({
                   </View>
                   <View
                     id={"SERVCODE"}
-                    style={tw("flex flex-col items-center justify-center")}
+                    style={tw("flex flex-col items-center justify-center w-[50px]")}
                   >
-                    <Text style={tw("text-lg font-bold leading-none ")}>
+                    <Text style={tw("text-lg font-bold leading-none")}>
                       {service.servCode.servCodeId}
                     </Text>
                     <View style={tw("flex flex-row items-center")}>
@@ -261,8 +301,40 @@ function CoverSheetsPDF({
                       </PDFNumber>
                     </View>
                   </View>
-                  <View id={"PRODUCTS"} style={tw("flex flex-col")}></View>
+                  <View id={"PRODUCTS"} style={tw("flex flex-col w-[100px] ")}>
+                    {filtered.map((appProduct) => {
+                      const appDisplay =
+                        appProduct.productCommon.unitConfigDisplay.format({
+                          amount: appProduct.amount,
+                          targetContexts: ["app"],
+                          rounding: "round",
+                        }).formattedString;
+                      return (
+                        <View
+                          key={appProduct.productCommon.productCode}
+                          style={tw("flex flex-row gap-1 text-xs")}
+                        >
+                          <Text style={tw("text-left")}>
+                            {appProduct.productCommon.productCode}
+                          </Text>
+                          <Text>{appDisplay}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                  <View id={"PRIORITY"} style={tw("flex flex-col text-sm text-right w-[120px] self-center")}>
+                    {preNotify && (
+                      <Text>{preNotify}</Text>
+                    )}
+                    {asap && (
+                      <Text>{asap}</Text>
+                    )}
+                    {promised && (
+                      <Text>{promised}</Text>
+                    )}
+                  </View>
                 </View>
+
               );
             })}
           </Page>
