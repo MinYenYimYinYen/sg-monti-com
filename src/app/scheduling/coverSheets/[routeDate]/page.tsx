@@ -226,7 +226,8 @@ function CoverSheetsPDF({
                   service.callAhead,
                   service.program.callAhead,
                   service.program.customer.callAhead,
-                ]).map((ca) => ca.description)
+                ])
+                .map((ca) => ca.description)
                 .join(", ");
 
               const asap = service.asapSince && "ASAP";
@@ -235,106 +236,147 @@ function CoverSheetsPDF({
               const servNote = service.techNote;
               const progNote = service.program.techNote;
               const custNote = service.program.customer.techNote;
+              const hasNotes = [
+                servNote.length ? 1 : 0,
+                progNote.length ? 1 : 0,
+                custNote.length ? 1 : 0,
+              ];
+              const widthCalc = (
+                (1 / hasNotes.reduce((acc, curr) => acc + curr, 0)) *
+                100
+              ).toFixed(0);
+
               //todo: Left off here.
 
               return (
                 <View
                   id={"SERVICE"}
                   key={service.servId}
-                  style={tw(
-                    "flex flex-row gap-2 border-b border-black pt-1 pb-1",
-                  )}
+                  style={tw(" border-b border-black ")}
                   wrap={false}
                 >
                   <View
-                    id={"TEMP_SEQ"}
-                    style={tw(
-                      "border border-black rounded-full w-12 h-12 flex items-center justify-center",
-                    )}
+                    id={"SPECS"}
+                    style={tw("flex flex-row gap-2 pt-1 pb-1")}
                   >
-                    <Text
-                      style={tw("text-xl font-bold text-center leading-none")}
+                    <View
+                      id={"TEMP_SEQ"}
+                      style={tw(
+                        "border border-black rounded-full w-12 h-12 flex items-center justify-center",
+                      )}
                     >
-                      {service.program.tempSeq}
-                    </Text>
-                  </View>
-                  <View id={"ADDRESS"} style={tw("flex flex-col text-sm w-48")}>
-                    <Text>{truncate(customer.displayName, 25)}</Text>
-                    <Text style={tw("font-bold")}>{address.addressLine1}</Text>
-                    <Text>
-                      {address.city}, {address.state} {address.zip}
-                    </Text>
-                  </View>
-                  <View
-                    id={"FLAGS"}
-                    style={tw(
-                      "flex flex-row flex-wrap items-center justify-center w-36",
-                    )}
-                  >
-                    {flags.map((flag) => (
                       <Text
-                        key={flag.flagId}
-                        style={tw(
-                          "text-xs border px-2 rounded-full leading-none",
-                        )}
+                        style={tw("text-xl font-bold text-center leading-none")}
                       >
-                        {flag.desc}
-                      </Text>
-                    ))}
-                  </View>
-                  <View
-                    id={"SERVCODE"}
-                    style={tw("flex flex-col items-center justify-center w-[50px]")}
-                  >
-                    <Text style={tw("text-lg font-bold leading-none")}>
-                      {service.servCode.servCodeId}
-                    </Text>
-                    <View style={tw("flex flex-row items-center")}>
-                      <LandPlotPDFIcon size={12} />
-                      <Text style={tw("text-lg leading-none")}>
-                        {service.size}
+                        {service.program.tempSeq}
                       </Text>
                     </View>
-                    <View style={tw("text-sm")}>
-                      <PDFNumber isMoney={true} decimals={2}>
-                        {service.price}
-                      </PDFNumber>
+                    <View
+                      id={"ADDRESS"}
+                      style={tw("flex flex-col text-sm w-48")}
+                    >
+                      <Text>{truncate(customer.displayName, 25)}</Text>
+                      <Text style={tw("font-bold")}>
+                        {address.addressLine1}
+                      </Text>
+                      <Text>
+                        {address.city}, {address.state} {address.zip}
+                      </Text>
                     </View>
-                  </View>
-                  <View id={"PRODUCTS"} style={tw("flex flex-col w-[100px] ")}>
-                    {filtered.map((appProduct) => {
-                      const appDisplay =
-                        appProduct.productCommon.unitConfigDisplay.format({
-                          amount: appProduct.amount,
-                          targetContexts: ["app"],
-                          rounding: "round",
-                        }).formattedString;
-                      return (
-                        <View
-                          key={appProduct.productCommon.productCode}
-                          style={tw("flex flex-row gap-1 text-xs")}
+                    <View
+                      id={"FLAGS"}
+                      style={tw(
+                        "flex flex-row flex-wrap items-center justify-center w-36",
+                      )}
+                    >
+                      {flags.map((flag) => (
+                        <Text
+                          key={flag.flagId}
+                          style={tw(
+                            "text-xs border px-2 rounded-full leading-none",
+                          )}
                         >
-                          <Text style={tw("text-left")}>
-                            {appProduct.productCommon.productCode}
-                          </Text>
-                          <Text>{appDisplay}</Text>
-                        </View>
-                      );
-                    })}
+                          {flag.desc}
+                        </Text>
+                      ))}
+                    </View>
+                    <View
+                      id={"SERVCODE"}
+                      style={tw(
+                        "flex flex-col items-center justify-center w-[50px]",
+                      )}
+                    >
+                      <Text style={tw("text-lg font-bold leading-none")}>
+                        {service.servCode.servCodeId}
+                      </Text>
+                      <View style={tw("flex flex-row items-center")}>
+                        <LandPlotPDFIcon size={12} />
+                        <Text style={tw("text-lg leading-none")}>
+                          {service.size}
+                        </Text>
+                      </View>
+                      <View style={tw("text-sm")}>
+                        <PDFNumber isMoney={true} decimals={2}>
+                          {service.price}
+                        </PDFNumber>
+                      </View>
+                    </View>
+                    <View
+                      id={"PRODUCTS"}
+                      style={tw("flex flex-col w-[100px] ")}
+                    >
+                      {filtered.map((appProduct) => {
+                        const appDisplay =
+                          appProduct.productCommon.unitConfigDisplay.format({
+                            amount: appProduct.amount,
+                            targetContexts: ["app"],
+                            rounding: "round",
+                          }).formattedString;
+                        return (
+                          <View
+                            key={appProduct.productCommon.productCode}
+                            style={tw("flex flex-row gap-1 text-xs")}
+                          >
+                            <Text style={tw("text-left")}>
+                              {appProduct.productCommon.productCode}
+                            </Text>
+                            <Text>{appDisplay}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                    <View
+                      id={"PRIORITY"}
+                      style={tw(
+                        "flex flex-col text-sm text-right w-[120px] self-center",
+                      )}
+                    >
+                      {preNotify && <Text>{preNotify}</Text>}
+                      {asap && <Text>{asap}</Text>}
+                      {promised && <Text>{promised}</Text>}
+                    </View>
                   </View>
-                  <View id={"PRIORITY"} style={tw("flex flex-col text-sm text-right w-[120px] self-center")}>
-                    {preNotify && (
-                      <Text>{preNotify}</Text>
+                  <View id={"NOTES"} style={tw("flex flex-row gap-1 text-xs")}>
+                    {custNote && (
+                      <View style={tw(`flex flex-col max-w-[${widthCalc}%]`)}>
+                        <Text style={tw("font-bold")}>Customer Note:</Text>
+                        <Text style={tw("p-1")}>{custNote}</Text>
+                      </View>
                     )}
-                    {asap && (
-                      <Text>{asap}</Text>
+                    {progNote && (
+                      <View style={tw(`flex flex-col max-w-[${widthCalc}%]`)}>
+                        <Text style={tw("font-bold")}>Program Note:</Text>
+                        <Text style={tw("p-1")}>{progNote}</Text>
+                      </View>
                     )}
-                    {promised && (
-                      <Text>{promised}</Text>
+                    {servNote && (
+                      <View style={tw(`flex flex-col max-w-[${widthCalc}%]`)}>
+                        <Text style={tw("font-bold")}>Service Note:</Text>
+                        <Text style={tw("p-1")}>{servNote}</Text>
+                      </View>
                     )}
                   </View>
                 </View>
-
               );
             })}
           </Page>

@@ -67,8 +67,8 @@ export const baseProductMasterDoc: ProductMasterDoc = {
 
 export const baseProductMasterProps: ProductMasterProps = {
   subProductConfigs: [],
-  unitConfig: baseProductUnitConfig,
-  unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
+  // unitConfig: baseProductUnitConfig,
+  // unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
 };
 
 export const baseProductMaster: ProductMaster = {
