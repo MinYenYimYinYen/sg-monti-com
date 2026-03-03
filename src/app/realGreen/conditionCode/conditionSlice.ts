@@ -31,5 +31,5 @@ export const conditionSlice = createSlice({
   },
 });
 
-export default conditionSlice.reducer;
+export const conditionReducer = conditionSlice.reducer;
 export const conditionActions = { ...conditionSlice.actions, getConditionDocs };

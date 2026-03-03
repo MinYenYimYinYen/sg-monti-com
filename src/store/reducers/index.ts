@@ -19,6 +19,7 @@ import taxCodeReducer from "@/app/realGreen/taxCode/taxCodeSlice";
 import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
 import csvReducer from "@/app/csv/_lib/csvSlice";
+import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -26,6 +27,7 @@ const rootReducer = combineReducers({
   auth: authReducer,
   callAhead: callAheadReducer,
   company: companyReducer,
+  condition: conditionReducer,
   discount: discountReducer,
   employee: employeeReducer,
   flag: flagReducer,
