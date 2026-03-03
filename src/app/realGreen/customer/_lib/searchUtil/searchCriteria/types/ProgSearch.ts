@@ -85,5 +85,5 @@ export type ProgramSearchCriteria = {
   soldRange?: TRange<string>;
   progIds?: number[];
   statuses?: ProgStat[];
-  season?: number;
+  season?: TRange<number>;
 };

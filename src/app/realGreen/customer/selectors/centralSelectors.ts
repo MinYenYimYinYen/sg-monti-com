@@ -20,6 +20,9 @@ import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { hydrateFlags } from "@/app/realGreen/customer/selectors/hydrateFlags";
 import { hydrateLastAssigned } from "@/app/realGreen/customer/selectors/hydrateLastAssigned";
 import { csvSelect } from "@/app/csv/_lib/csvSelect";
+import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
+import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
+import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -103,7 +106,7 @@ export const selectCustomers = createSelector(
       const taxCodes = custDoc.taxIds
         .map((taxId) => basicTaxCodeMap.get(taxId) || baseTaxCode)
         .filter((tc) => tc.taxCodeId !== baseTaxCode.taxCodeId);
-      const customer: Customer = {
+      const customerNoX: Omit<Customer, "x"> = {
         ...custDoc,
         programs: [],
         taxCodes,
@@ -111,13 +114,17 @@ export const selectCustomers = createSelector(
         discount: discountDocMap.get(custDoc.discountId) || null,
         flags: hydrateFlags(custDoc.custId, custIdFlagIds, flagDocMap),
       };
+      const customer: Customer = {
+        ...customerNoX,
+        x: new CustomerUtils(customerNoX),
+      };
 
       const progDocs = programDocMap.get(custDoc.custId) || [];
 
       const programs = progDocs.map((progDoc) => {
         const progCode = progCodeMap.get(progDoc.progDefId) || baseProgCode;
 
-        const program: Program = {
+        const programNoX: Omit<Program, "x"> = {
           ...progDoc,
           customer,
           services: [],
@@ -126,13 +133,23 @@ export const selectCustomers = createSelector(
           discount: discountDocMap.get(progDoc.discountId) || null,
         };
 
+        const program: Program = {
+          ...programNoX,
+          x: new ProgramUtils(programNoX),
+        };
+
         const serviceDocs = serviceDocMap.get(progDoc.progId) || [];
 
         const services = serviceDocs.map((servDoc) => {
           const servCode = servCodeMap.get(servDoc.servCodeId) || baseServCode;
 
-          const lastAssigned = hydrateLastAssigned(servDoc, newAssignments, progDoc, employeeMap)
-          const service: Service = {
+          const lastAssigned = hydrateLastAssigned(
+            servDoc,
+            newAssignments,
+            progDoc,
+            employeeMap,
+          );
+          const serviceXProps: Omit<Service, "x"> = {
             ...servDoc,
             program,
             servCode,
@@ -150,6 +167,11 @@ export const selectCustomers = createSelector(
               productCommonMap,
             ),
             lastAssigned,
+          };
+
+          const service: Service = {
+            ...serviceXProps,
+            x: new ServiceUtils(serviceXProps),
           };
 
           return service;

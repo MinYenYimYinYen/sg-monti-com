@@ -9,6 +9,7 @@ import { CustomerDoc } from "../../entities/types/CustomerTypes";
 import { ProgramDoc } from "../../entities/types/ProgramTypes";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServiceSearchCriteria } from "../searchCriteria/types/ServSearch";
+import * as sea from "node:sea";
 
 type SearchSchemeParams = {
   season: number;
@@ -28,7 +29,7 @@ const activeCustomers = ({ season }: SearchSchemeParams): SearchScheme => {
           (pipelineData as CustomerDoc[]).map((c) => c.custId),
         getSearchCriteria: (ids) => ({
           custIds: ids,
-          season,
+          season: { min: season, max: season },
           statuses: ["9"],
         }),
       }),
@@ -38,7 +39,7 @@ const activeCustomers = ({ season }: SearchSchemeParams): SearchScheme => {
           (pipelineData as ProgramDoc[]).map((p) => p.progId),
         getSearchCriteria: (ids) => ({
           progIds: ids,
-          season,
+          season: { min: season, max: season },
           servStats: getServiceStatuses([
             "active",
             "asap",
@@ -60,7 +61,7 @@ const printedCustomers = ({ season }: SearchSchemeParams): SearchScheme => {
         optimizerKey: "initialServices",
         searchCriteria: {
           servStats: getServiceStatuses(["printed"]),
-          season,
+          season: { min: season, max: season },
         } as ServiceSearchCriteria,
       }),
       createBatchSizeStep({
@@ -79,7 +80,7 @@ const printedCustomers = ({ season }: SearchSchemeParams): SearchScheme => {
           (pipelineData as CustomerDoc[]).map((c) => c.custId),
         getSearchCriteria: (ids) => ({
           custIds: ids,
-          season,
+          season: { min: season - 1, max: season },
           statuses: ["9"],
         }),
       }),
@@ -90,12 +91,14 @@ const printedCustomers = ({ season }: SearchSchemeParams): SearchScheme => {
           (pipelineData as ProgramDoc[]).map((p) => p.progId),
         getSearchCriteria: (ids) => ({
           progIds: ids,
-          season,
+          season: { min: season - 1, max: season },
           servStats: getServiceStatuses([
             "active",
             "asap",
             "printed",
             "completed",
+            "skips",
+            "never",
           ]),
         }),
       }),
@@ -111,7 +114,7 @@ const lastSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => {
         stepName: "programs",
         optimizerKey: "lastSeasonPrograms",
         searchCriteria: {
-          season: season - 1,
+          season: { min: season - 1, max: season - 1 },
         },
       }),
       createBatchSizeStep({
@@ -120,8 +123,8 @@ const lastSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => {
           (pipelineData as ProgramDoc[]).map((p) => p.progId),
         getSearchCriteria: (ids) => ({
           progIds: ids,
-          season: season -1,
-          servStats: getServiceStatuses(["completed"])
+          season: { min: season - 1, max: season - 1 },
+          servStats: getServiceStatuses(["completed"]),
         }),
       }),
       createBatchSizeStep({

@@ -1,5 +1,6 @@
 import { RGSearchBase } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/types/RGSearchBase";
 import { RGStringRange } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export type ServiceSearchRaw = RGSearchBase & {
   searchType: "service";
@@ -62,5 +63,5 @@ export type ServiceSearchCriteria = {
   servIds?: number[];
   progIds?: number[];
   servStats?: string[];
-  season: number;
+  season: TRange<number>;
 };

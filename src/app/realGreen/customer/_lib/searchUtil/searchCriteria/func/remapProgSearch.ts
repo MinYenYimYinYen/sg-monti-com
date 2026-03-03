@@ -15,6 +15,9 @@ export function remapProgSearch(
     };
   if (search.progIds) rgSearch.id = search.progIds;
   if (search.season)
-    rgSearch.serviceYear = { minValue: search.season, maxValue: search.season };
+    rgSearch.serviceYear = {
+      minValue: search.season.min,
+      maxValue: search.season.max,
+    };
   return rgSearch;
 }

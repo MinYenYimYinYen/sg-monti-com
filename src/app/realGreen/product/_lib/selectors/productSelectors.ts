@@ -20,7 +20,7 @@ import {
   UnitContext,
 } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
-import { UnitConfigDisplay } from "@/app/realGreen/product/_lib/utils/unitConfigDisplay";
+import { UnitConfigDisplay } from "@/app/realGreen/product/_lib/utils/UnitConfigDisplay";
 
 const selectProductMasterDocs = (state: AppState) =>
   state.product.productMasterDocs;

@@ -4,6 +4,7 @@ import { Customer } from "./CustomerTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
+import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
 
 export type ProgramRaw = {
   averagePrice: number;
@@ -116,6 +117,7 @@ export type ProgramDocProps = CreatedUpdated & {
 export type ProgramDoc = ProgramCore & ProgramDocProps;
 
 export type ProgramProps = {
+  x: ProgramUtils;
   services: Service[];
   customer: Customer;
   progCode: ProgCode;

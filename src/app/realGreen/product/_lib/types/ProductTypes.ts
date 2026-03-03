@@ -1,6 +1,6 @@
 import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 import { ProductUnitConfig } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
-import { UnitConfigDisplay } from "@/app/realGreen/product/_lib/utils/unitConfigDisplay";
+import { UnitConfigDisplay } from "@/app/realGreen/product/_lib/utils/UnitConfigDisplay";
 
 export type ProductRaw = {
   anyBranch: boolean;

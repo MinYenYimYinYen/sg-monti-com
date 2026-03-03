@@ -14,6 +14,7 @@ import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
+import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 
 export type ServiceRaw = {
   // actualManHours?: number;
@@ -127,6 +128,7 @@ export type ServiceDocProps = CreatedUpdated & {
 export type ServiceDoc = ServiceCore & ServiceDocProps;
 
 export type ServiceProps = {
+  x: ServiceUtils;
   program: Program;
   servCode: ServCode;
   callAhead: CallAheadDoc | null;
@@ -135,6 +137,7 @@ export type ServiceProps = {
   productsPlanned: AppProduct[];
   // productsUsed: AppProductRaw[];
   lastAssigned: Assignment;
+
 };
 
 export type Service = ServiceDoc & ServiceProps;

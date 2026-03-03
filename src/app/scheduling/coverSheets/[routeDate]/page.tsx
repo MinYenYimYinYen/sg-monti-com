@@ -17,6 +17,8 @@ import { truncate } from "@/lib/primatives/string/truncate";
 import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
 import { PDFNumber } from "@/components/Number";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
+import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
+import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 type RouteDatePageProps = {
   params: Promise<{
@@ -221,6 +223,7 @@ function CoverSheetsPDF({
                 );
               }
 
+              // PRIORITIES
               const preNotify = typeGuard
                 .definedArray([
                   service.callAhead,
@@ -229,24 +232,82 @@ function CoverSheetsPDF({
                 ])
                 .map((ca) => ca.description)
                 .join(", ");
-
               const asap = service.asapSince && "ASAP";
               const promised = service.isPromised && "PROMISED";
 
+              // TECH NOTES
               const servNote = service.techNote;
               const progNote = service.program.techNote;
               const custNote = service.program.customer.techNote;
-              const hasNotes = [
+              const hasNotesArray = [
                 servNote.length ? 1 : 0,
                 progNote.length ? 1 : 0,
                 custNote.length ? 1 : 0,
               ];
+              const notesCount = hasNotesArray.reduce(
+                (acc, curr) => acc + curr,
+                0,
+              );
+
+              const hasNotes = notesCount > 0;
               const widthCalc = (
-                (1 / hasNotes.reduce((acc, curr) => acc + curr, 0)) *
+                (1 / hasNotesArray.reduce((acc, curr) => acc + curr, 0)) *
                 100
               ).toFixed(0);
 
-              //todo: Left off here.
+              //REMAINING SERVICES
+              const remainingServices =
+                service.program.customer.x.serviceQuery.byStatus(
+                  "asap",
+                  "active",
+                  "printed",
+                ).results;
+
+              const remaining = remainingServices.map((service) => {
+                const isPrinted = service.status === "$";
+                const currentAssignedDate = isPrinted
+                  ? service.lastAssigned.schedDate
+                  : "";
+                const currentAssignedTo = isPrinted
+                  ? service.lastAssigned.employee.name
+                  : "";
+
+                return {
+                  servCodeId: service.servCodeId,
+                  isPrinted,
+                  currentAssignedDate,
+                  currentAssignedTo,
+                };
+              });
+              console.log("remaining", remaining);
+
+              //HISTORY
+              // history for program going back how far? appCount? Dates?
+              // history for other programs for this season?
+              // What to display?
+              //  - servCodeId, doneDate, doneBy, conditionCodes, products used
+              const historyServices =
+                service.x.customer.x.serviceQuery.byDoneDate(
+                  dateStrings.yearsAgo(1),
+                  dateStrings.today(),
+                ).results;
+
+              const historyYear = historyServices.map((service) => {
+                return {
+                  servCodeId: service.servCodeId,
+                  doneDate: service.x.doneDate,
+                  doneBy: service.x
+                    .doneBys!.map((db) => db.employeeId)
+                    .join("/"),
+                  // conditionCodes: service.x.conditionCodes,
+                  productsUsed: service.x.productsUsed,
+                };
+              });
+
+              const maxHistoryRecords = 6;
+              const history = historyYear.slice(0, maxHistoryRecords);
+
+
 
               return (
                 <View
@@ -356,6 +417,19 @@ function CoverSheetsPDF({
                       {promised && <Text>{promised}</Text>}
                     </View>
                   </View>
+                  {hasNotes && (
+                    <View
+                      style={tw("flex flex-row items-center justify-center")}
+                    >
+                      <View
+                        id={"DIVIDER-1"}
+                        style={tw(
+                          "w-[90%] h-[1px] border-t border-gray-300 border-dashed",
+                        )}
+                      />
+                    </View>
+                  )}
+
                   <View id={"NOTES"} style={tw("flex flex-row gap-1 text-xs")}>
                     {custNote && (
                       <View style={tw(`flex flex-col max-w-[${widthCalc}%]`)}>
@@ -375,6 +449,14 @@ function CoverSheetsPDF({
                         <Text style={tw("p-1")}>{servNote}</Text>
                       </View>
                     )}
+                  </View>
+                  <View style={tw("flex flex-row items-center justify-center")}>
+                    <View
+                      id={"DIVIDER-1"}
+                      style={tw(
+                        "w-[90%] h-[1px] border-t border-gray-300 border-dashed",
+                      )}
+                    />
                   </View>
                 </View>
               );

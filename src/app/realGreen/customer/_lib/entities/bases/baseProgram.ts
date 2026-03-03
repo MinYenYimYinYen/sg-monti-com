@@ -3,8 +3,9 @@ import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseCustomer } from "./baseCustomer";
 
 import {baseProgCode} from "@/app/realGreen/progServ/_lib/baseProgCode";
+import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
 
-export const baseProgram: Program = {
+export const baseProgramNoX: Omit<Program, "x"> = {
   avgPrice: 0,
   billingType: "",
   callAheadId: baseNumId,
@@ -30,4 +31,9 @@ export const baseProgram: Program = {
   progCode: baseProgCode,
   callAhead: null,
   discount: null,
+};
+
+export const baseProgram: Program = {
+  ...baseProgramNoX,
+  x: new ProgramUtils(baseProgramNoX),
 };

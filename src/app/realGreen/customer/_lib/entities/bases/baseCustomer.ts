@@ -2,8 +2,9 @@ import { Customer } from "../types/CustomerTypes";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseAddress } from "@/app/realGreen/_lib/subTypes/Address";
 import { baseContactPreference } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
+import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
 
-export const baseCustomer: Customer = {
+export const baseCustomerNoX: Omit<Customer, "x"> = {
   custId: baseNumId,
   address: baseAddress,
   billingAddress: baseAddress,
@@ -37,4 +38,9 @@ export const baseCustomer: Customer = {
   callAhead: null,
   discount: null,
   flags: [],
+};
+
+export const baseCustomer: Customer = {
+  ...baseCustomerNoX,
+  x: new CustomerUtils(baseCustomerNoX),
 };
