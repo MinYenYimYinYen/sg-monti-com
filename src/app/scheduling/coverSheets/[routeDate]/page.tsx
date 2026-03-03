@@ -20,6 +20,7 @@ import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
+import { AppState } from "@/store";
 
 
 
@@ -34,7 +35,10 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   useCoverSheets();
 
   const serviceConditions = useSelector(serviceConditionSelect.serviceConditionsByServId);
-  console.log("serviceConditions", serviceConditions);
+  // console.log("serviceConditions", serviceConditions);
+  const serviceConditionDocs = useSelector((state: AppState) => state.serviceCondition.serviceConditionDocs)
+  console.log("serviceConditionDocs", serviceConditionDocs);
+
 
   const isClient = useIsClient();
   const { routeDate: encodedRouteDate } = use(params);

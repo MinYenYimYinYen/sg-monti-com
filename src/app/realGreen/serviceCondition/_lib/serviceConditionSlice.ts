@@ -36,7 +36,6 @@ const getServiceConditions = createStandardThunk<
   typePrefix: "serviceCondition/getServiceConditions",
   apiPath: "/realGreen/serviceCondition/api",
   opName: "getServiceConditions",
-  // debug: true, // Enable for troubleshooting
   transformParams: (params, getState) => {
     const state = getState() as AppState;
     const serviceConditionDocs = state.serviceCondition.serviceConditionDocs;

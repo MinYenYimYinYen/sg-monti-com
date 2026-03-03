@@ -49,7 +49,9 @@ function getRequestId(action: AsyncThunkAction): string {
   const arg = action.meta?.arg as Partial<WithConfig<unknown>> | undefined;
 
   if (arg?.params) {
-    const hash = hashParams(arg.params);
+    // Use transformed params if available (matches deduplication logic in smartThunkOptions)
+    const paramsForHash = arg.__transformedParams ?? arg.params;
+    const hash = hashParams(paramsForHash);
     return `${typePrefix}-${hash}`;
   }
 
@@ -105,8 +107,8 @@ const uiSlice = createSlice({
         const index = state.activeRequests.indexOf(requestId);
         if (index !== -1) state.activeRequests.splice(index, 1);
 
-        // Record History (still by typePrefix for backward compat with staleTime)
-        state.lastFetched[typePrefix] = Date.now();
+        // Record History using requestId (typePrefix-paramsHash) for param-specific caching
+        state.lastFetched[requestId] = Date.now();
 
         // Show success toast if configured
         const arg = action.meta.arg as Partial<WithConfig<unknown>>;

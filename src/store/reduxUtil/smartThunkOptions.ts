@@ -64,14 +64,18 @@ export const smartDispatchCondition = <T>(
   // "Is this exact thunk with these exact params already flying?"
   // This solves the "Multiple Components Mounting" race condition.
   // Now checks both typePrefix AND params hash for precise deduplication
-  const paramsHash = args.params ? hashParams(args.params) : undefined;
+  // Use transformed params if available to ensure hash matches actual request
+  const paramsForHash = args.__transformedParams ?? args.params;
+  const paramsHash = paramsForHash ? hashParams(paramsForHash) : undefined;
   if (uiSelect.isLoadingType(state, typePrefix, paramsHash)) {
     return false; // Cancel duplicate!
   }
 
   // --- RULE 4: CACHING (History) ---
   // This block only runs if you provide a cacheDuration > 0
-  const lastFetched = state.ui.lastFetched?.[typePrefix];
+  // Use same requestId format as deduplication for param-specific caching
+  const requestId = paramsHash ? `${typePrefix}-${paramsHash}` : typePrefix;
+  const lastFetched = state.ui.lastFetched?.[requestId];
   if (lastFetched && staleTime > 0) {
     const age = Date.now() - lastFetched;
 
