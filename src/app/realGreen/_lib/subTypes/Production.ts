@@ -5,6 +5,7 @@ import {
 import { DoneBy, DoneByCore } from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import { ServiceHistory } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import { ServiceCondition } from "@/app/realGreen/serviceCondition/_lib/ServiceConditionTypes";
 
 export type ProductionCore = ServiceHistory & {
   servId: number;
@@ -17,6 +18,7 @@ export type ProductionProps = {
   usedAppProducts: AppProduct[];
   doneBys: DoneBy[];
   serviceDoc: ServiceDoc;
+  serviceConditions: ServiceCondition[];
 };
 
 export type Production = ProductionCore & ProductionProps;

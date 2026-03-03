@@ -23,6 +23,8 @@ type StandardThunkConfig<TParams> = {
     params: TParams,
     getState: () => unknown,
   ) => TParams;
+  // Optional: Enable debug logging
+  debug?: boolean;
 };
 
 export function createStandardThunk<
@@ -37,12 +39,18 @@ export function createStandardThunk<
     { rejectValue: string; state: AppState }
   >(
     config.typePrefix,
-    async ({ params, config: thunkConfig }, { rejectWithValue, getState }) => {
+    async (arg, { rejectWithValue }) => {
       try {
-        // Transform params if a transform function is provided
-        const finalParams = config.transformParams
-          ? config.transformParams(params, getState)
-          : params;
+        // Use cached transformed params if available (set by condition), otherwise use original
+        const finalParams = arg.__transformedParams ?? arg.params;
+
+        if (config.debug) {
+          console.log(`[${config.typePrefix}] Payload Creator:`, {
+            originalParams: arg.params,
+            transformedParams: arg.__transformedParams,
+            finalParams,
+          });
+        }
 
         const body: OpMap<TContract> = {
           op: config.opName,
@@ -67,7 +75,7 @@ export function createStandardThunk<
           });
 
           // Client Override wins
-          const isSilent = thunkConfig?.silentError ?? error.silent;
+          const isSilent = arg.config?.silentError ?? error.silent;
           handleError(error, { silent: isSilent });
 
           return rejectWithValue(res.message);
@@ -77,7 +85,7 @@ export function createStandardThunk<
         return res.payload;
       } catch (e) {
         // Path C: Hard Error (Network / Crash)
-        const isSilent = thunkConfig?.silentError;
+        const isSilent = arg.config?.silentError;
         const error = handleError(e, { silent: isSilent });
         return rejectWithValue(error.message);
       }
@@ -85,6 +93,8 @@ export function createStandardThunk<
     smartThunkOptions({
       typePrefix: config.typePrefix,
       customCondition: config.customCondition as any,
+      transformParams: config.transformParams,
+      debug: config.debug,
     }),
   );
 }
@@ -110,11 +120,11 @@ export function createStreamThunk<
     { rejectValue: string; state: AppState }
   >(
     config.typePrefix,
-    async ({ params, config: thunkConfig }, { dispatch, rejectWithValue }) => {
+    async (arg, { dispatch, rejectWithValue }) => {
       try {
         const body: OpMap<TContract> = {
           op: config.opName,
-          ...params,
+          ...arg.params,
         } as any;
 
         // apiStream still throws on error because it returns a Reader
@@ -129,7 +139,7 @@ export function createStreamThunk<
 
         return;
       } catch (e) {
-        const isSilent = thunkConfig?.silentError;
+        const isSilent = arg.config?.silentError;
         const error = handleError(e, { silent: isSilent });
         return rejectWithValue(error.message);
       }

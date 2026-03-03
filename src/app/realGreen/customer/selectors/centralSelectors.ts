@@ -23,6 +23,7 @@ import { csvSelect } from "@/app/csv/_lib/csvSelect";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
+import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -86,6 +87,7 @@ export const selectCustomers = createSelector(
     flagSelect.flagDocMap,
     custFlagSelect.custIdFlagIds,
     csvSelect.assignments,
+    serviceConditionSelect.serviceConditionsByServId,
   ],
   (
     customerDocs,
@@ -101,6 +103,7 @@ export const selectCustomers = createSelector(
     flagDocMap,
     custIdFlagIds,
     newAssignments,
+    serviceConditionsByServId,
   ) => {
     const customers: Customer[] = customerDocs.map((custDoc) => {
       const taxCodes = custDoc.taxIds
@@ -155,11 +158,13 @@ export const selectCustomers = createSelector(
             servCode,
             callAhead: callAheadDocMap.get(servDoc.callAheadId) || null,
             discount: discountDocMap.get(servDoc.discountId) || null,
-            production: hydrateProduction(
-              servDoc.productionCore,
+            production: hydrateProduction({
+              productionCore: servDoc.productionCore,
               productCommonMap,
               employeeMap,
-              servDoc,
+              serviceDoc: servDoc,
+              serviceConditions: serviceConditionsByServId.get(servDoc.servId) || [],
+              }
             ),
             productsPlanned: hydrateProductsPlanned(
               servDoc,

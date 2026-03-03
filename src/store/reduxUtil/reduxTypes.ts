@@ -15,4 +15,6 @@ export type ThunkConfig = {
 export type WithConfig<T> = {
   config?: ThunkConfig;
   params: T;
+  // Internal cache for transformed params (set by smartThunkOptions condition)
+  __transformedParams?: T;
 };

@@ -37,7 +37,8 @@ export type ConditionDocProps = CreatedUpdated & {
 
 export type ConditionDoc = ConditionCore & ConditionDocProps;
 
-export type ConditionProps = {};
+export type ConditionProps = {
+};
 
 export type Condition = ConditionDoc & ConditionProps;
 

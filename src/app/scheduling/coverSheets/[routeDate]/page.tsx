@@ -209,7 +209,6 @@ function CoverSheetsPDF({
               const address = customer.address;
               const flags = customer.flags;
               const products = service.productsPlanned;
-              console.log("products", products);
               let filtered: AppProduct[] = products;
               if (
                 products
@@ -278,7 +277,7 @@ function CoverSheetsPDF({
                   currentAssignedTo,
                 };
               });
-              console.log("remaining", remaining);
+              // console.log("remaining", remaining);
 
               //HISTORY
               // history for program going back how far? appCount? Dates?

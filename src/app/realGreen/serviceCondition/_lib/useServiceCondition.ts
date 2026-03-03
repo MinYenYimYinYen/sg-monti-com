@@ -6,16 +6,17 @@ import { serviceConditionActions } from "@/app/realGreen/serviceCondition/_lib/s
 
 export function useServiceCondition() {
   const dispatch = useAppDispatch();
-  const serviceDocs = useSelector(centralSelect.serviceDocs)
+  const serviceDocs = useSelector(centralSelect.serviceDocs);
   useEffect(() => {
-    dispatch(serviceConditionActions.getServiceConditions({
-      params: {
-        serviceIds: serviceDocs.map(s => s.servId)
-      },
-      config: {
-        force: true,
-        loadingMsg: "Fetching Service Conditions",
-      }
-    }))
+    dispatch(
+      serviceConditionActions.getServiceConditions({
+        params: {
+          serviceIds: serviceDocs.map((s) => s.servId),
+        },
+        config: {
+          loadingMsg: "Fetching Service Conditions",
+        },
+      }),
+    );
   }, [dispatch, serviceDocs]);
 }

@@ -1,28 +1,28 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
+import { hydrateServiceConditions } from "@/app/realGreen/serviceCondition/_lib/selectors/hydrateServiceConditions";
+import { conditionSelect } from "@/app/realGreen/conditionCode/_selectors/conditionSelect";
 
 const selectServiceConditionDocs = (state: AppState) =>
   state.serviceCondition.serviceConditionDocs;
 
-const selectConditionDocs = (state: AppState) => state.condition.conditionDocs;
-
-const selectConditionDocMap = createSelector(
-  [selectConditionDocs],
-  (conditionDocs) => {
-    return new Grouper(conditionDocs).toUniqueMap((c) => c.conditionId);
+const selectServiceConditions = createSelector(
+  [selectServiceConditionDocs, conditionSelect.conditionDocMap],
+  (serviceConditionDocs, conditionDocMap) => {
+    return hydrateServiceConditions({ serviceConditionDocs, conditionDocMap });
   },
 );
 
-const selectServiceConditions = createSelector(
-  [selectServiceConditionDocs, selectConditionDocMap],
-  (serviceConditionDocs, conditionDocMap) => {
-    const serviceConditions = serviceConditionDocs.map((serviceConditionDoc) => {
-      const conditionDoc = conditionDocMap.get(serviceConditionDoc.conditionId);
-      return { ...serviceConditionDoc, conditionDoc };
-    });
-  }
+const selectServiceConditionsByServId = createSelector(
+  [selectServiceConditions],
+  (serviceConditions) => {
+    return new Grouper(serviceConditions)
+      .groupBy((doc) => doc.serviceId)
+      .toMap();
+  },
 );
 
 export const serviceConditionSelect = {
+  serviceConditionsByServId: selectServiceConditionsByServId,
 };

@@ -7,7 +7,7 @@ const selectConditionDocs = (state: AppState) => state.condition.conditionDocs;
 const selectConditionDocMap = createSelector(
   [selectConditionDocs],
   (conditionDocs) => {
-    return new Grouper(conditionDocs).toUniqueMap;
+    return new Grouper(conditionDocs).toUniqueMap((c) => c.conditionId);
   },
 );
 

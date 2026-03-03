@@ -44,6 +44,8 @@ type ThunkConfig = {
 type WithConfig<T> = {
   config?: ThunkConfig;
   params: T;
+  // Internal cache for transformed params (set by smartThunkOptions condition)
+  __transformedParams?: T;
 };
 ```
 
@@ -58,7 +60,8 @@ A helper function that generates the `condition` logic for `createAsyncThunk`. I
 * **Concurrency:** If `activeRequests` includes this thunk type, the new request is cancelled (prevents double-fetching).
 * **Caching:** If `staleTime` is set and the data is fresh (checked against `lastFetched`), the request is cancelled.
 * **Force:** If `force: true` is passed, all checks are bypassed.
-* **Custom Condition:** You can pass a `customCondition` function to inject specific logic (e.g., checking a specific ID cache).
+* **Transform Params:** If `transformParams` is provided, it runs during the `condition` phase and caches the result in `arg.__transformedParams` for use in the payload creator.
+* **Custom Condition:** You can pass a `customCondition` function to inject specific logic (e.g., checking a specific ID cache). The `customCondition` has access to transformed params via `arg.__transformedParams`.
 
 ---
 
@@ -99,6 +102,41 @@ const checkEligibility = createStandardThunk<AuthContract, "checkEligibility">({
   },
 });
 ```
+
+### Using Transform Params with Custom Conditions
+When you need to filter or modify params before sending to the API AND validate those transformed params:
+
+```typescript
+const getServiceConditions = createStandardThunk<ServiceConditionContract, "getServiceConditions">({
+  typePrefix: "serviceCondition/getServiceConditions",
+  apiPath: "/realGreen/serviceCondition/api",
+  opName: "getServiceConditions",
+
+  // Transform runs first - filters out IDs already in state
+  transformParams: (params, getState) => {
+    const state = getState() as AppState;
+    const existingServiceIds = new Set(
+      state.serviceCondition.serviceConditionDocs.map(doc => doc.serviceId)
+    );
+    const newServiceIds = params.serviceIds.filter(id => !existingServiceIds.has(id));
+    return { serviceIds: newServiceIds };
+  },
+
+  // Condition runs after transform - checks the FILTERED params
+  customCondition: (arg, { getState }) => {
+    // Use transformed params (after filtering) if available
+    const params = arg.__transformedParams ?? arg.params;
+    // Prevent dispatch if no new IDs to fetch (avoids SQL error: WHERE IN ())
+    return params.serviceIds.length !== 0;
+  },
+});
+```
+
+**Key Points:**
+- `transformParams` runs during the `condition` phase and caches result in `arg.__transformedParams`
+- `customCondition` can access both original (`arg.params`) and transformed (`arg.__transformedParams`) params
+- The payload creator automatically uses `arg.__transformedParams` if available
+- This prevents redundant transformation and allows validation of transformed params
 
 ### How to Dispatch (Usage)
 You can now control the caching and UI behavior directly from your components (or Facade Hooks).

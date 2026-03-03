@@ -34,8 +34,9 @@ const getServiceConditions = createStandardThunk<
   "getServiceConditions"
 >({
   typePrefix: "serviceCondition/getServiceConditions",
-  apiPath: "/realGreen/serviceConditions/api",
+  apiPath: "/realGreen/serviceCondition/api",
   opName: "getServiceConditions",
+  debug: true, // Enable debug logging
   transformParams: (params, getState) => {
     const state = getState() as AppState;
     const serviceConditionDocs = state.serviceCondition.serviceConditionDocs;
@@ -50,6 +51,22 @@ const getServiceConditions = createStandardThunk<
     );
 
     return { serviceIds: newServiceIds };
+  },
+  customCondition: (arg) => {
+    // Check transformed params if available (after filtering), otherwise use original
+    const params = arg.__transformedParams ?? arg.params;
+    const shouldDispatch = params.serviceIds.length !== 0;
+
+    console.log('[serviceCondition customCondition]', {
+      'arg.__transformedParams': arg.__transformedParams,
+      'arg.params': arg.params,
+      'params used': params,
+      'serviceIds.length': params.serviceIds.length,
+      'shouldDispatch': shouldDispatch,
+    });
+
+    // Only dispatch if there are serviceIds to fetch (prevents SQL error: WHERE IN ())
+    return shouldDispatch;
   },
 });
 

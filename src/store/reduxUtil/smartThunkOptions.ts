@@ -1,4 +1,4 @@
-import { ThunkConfig, WithConfig } from "@/store/reduxUtil/reduxTypes";
+import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
 
@@ -22,6 +22,11 @@ type CustomCondition<T> = (
   arg: WithConfig<T>,
   api: { getState: () => unknown },
 ) => boolean;
+
+type TransformParams<T> = (
+  params: T,
+  getState: () => unknown,
+) => T;
 
 /**
  * Universal Condition for Smart Thunks.
@@ -80,6 +85,8 @@ export const smartDispatchCondition = <T>(
 type SmartThunkOptionsParams<T> = {
   typePrefix: string;
   customCondition?: CustomCondition<T>;
+  transformParams?: TransformParams<T>;
+  debug?: boolean;
 };
 
 /**
@@ -89,12 +96,35 @@ type SmartThunkOptionsParams<T> = {
 export const smartThunkOptions = <T>({
   typePrefix,
   customCondition,
+  transformParams,
+  debug,
 }: SmartThunkOptionsParams<T>) => ({
   condition: (
     // We explicitly type the argument here so it matches the expected signature
     arg: WithConfig<T>,
     { getState }: { getState: () => unknown },
-  ) => smartDispatchCondition(typePrefix, arg, getState, customCondition),
+  ) => {
+    if (debug) {
+      console.log(`[${typePrefix}] Condition - Original params:`, arg.params);
+    }
+
+    // Transform params and cache on arg if transformParams is provided
+    if (transformParams) {
+      arg.__transformedParams = transformParams(arg.params, getState);
+
+      if (debug) {
+        console.log(`[${typePrefix}] Condition - Transformed params:`, arg.__transformedParams);
+      }
+    }
+
+    const shouldDispatch = smartDispatchCondition(typePrefix, arg, getState, customCondition);
+
+    if (debug) {
+      console.log(`[${typePrefix}] Condition - Should dispatch:`, shouldDispatch);
+    }
+
+    return shouldDispatch;
+  },
 
   getPendingMeta: getUIMeta,
 });
