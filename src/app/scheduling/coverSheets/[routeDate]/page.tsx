@@ -19,6 +19,7 @@ import { PDFNumber } from "@/components/Number";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
+import { uiSelect } from "@/store/reduxUtil/uiSlice";
 
 
 
@@ -29,6 +30,7 @@ type RouteDatePageProps = {
 };
 
 export default function RouteDatePage({ params }: RouteDatePageProps) {
+  const loadingCount = useSelector(uiSelect.loadingCount);
   useCoverSheets();
 
   const serviceConditions = useSelector(serviceConditionSelect.serviceConditionsByServId);
@@ -63,7 +65,10 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
       {/*    Download*/}
       {/*  </PDFDownloadLink>*/}
       {/*</div>*/}
+
       <div className={"w-full h-[75vh] overflow-y-auto"}>
+      {loadingCount > 0 && <div>Loading...</div>}
+      {loadingCount === 0 && (
         <PDFViewer style={{ width: "100%", height: "100%" }}>
           <CoverSheetsPDF
             routeDate={routeDate}
@@ -73,6 +78,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
             getServicesByRuleDesc={getServicesByRuleDesc}
           />
         </PDFViewer>
+      )}
       </div>
     </Container>
   );
@@ -101,6 +107,7 @@ function CoverSheetsPDF({
   getPlannedAppProductTotal,
   getServicesByRuleDesc,
 }: CoverSheetsPDFProps) {
+
   return (
     <Document>
       {[...serviceByEmployee.keys()].map((employeeId) => {
@@ -135,8 +142,6 @@ function CoverSheetsPDF({
                   const servCodeId = split[0];
                   const ruleDesc = split[1] ?? "";
 
-                  const borderT = index > 0 ? " border-t" : "";
-
                   const plannedAppProductTotal =
                     getPlannedAppProductTotal(groupServices);
 
@@ -157,7 +162,9 @@ function CoverSheetsPDF({
                       id={"SERV_CODE_PRODUCTS"}
                       key={idWithRule}
                       style={tw(
-                        "flex flex-row gap-2 flex-wrap items-start" + borderT,
+                        index > 0
+                          ? "flex flex-row gap-2 flex-wrap items-start border-t"
+                          : "flex flex-row gap-2 flex-wrap items-start",
                       )}
                     >
                       <Text style={tw("w-[30px] border-r")}>{servCodeId}</Text>
@@ -316,7 +323,7 @@ function CoverSheetsPDF({
                 <View
                   id={"SERVICE"}
                   key={service.servId}
-                  style={tw(" border-b border-black ")}
+                  style={tw("border-b border-black")}
                   wrap={false}
                 >
                   <View
@@ -387,7 +394,7 @@ function CoverSheetsPDF({
                     </View>
                     <View
                       id={"PRODUCTS"}
-                      style={tw("flex flex-col w-[100px] ")}
+                      style={tw("flex flex-col w-[100px]")}
                     >
                       {filtered.map((appProduct) => {
                         const appDisplay =
@@ -435,19 +442,19 @@ function CoverSheetsPDF({
 
                   <View id={"NOTES"} style={tw("flex flex-row gap-1 text-xs")}>
                     {custNote && (
-                      <View style={tw(`flex flex-col max-w-[${widthCalc}%]`)}>
+                      <View style={tw("flex flex-col flex-1")}>
                         <Text style={tw("font-bold")}>Customer Note:</Text>
                         <Text style={tw("p-1")}>{custNote}</Text>
                       </View>
                     )}
                     {progNote && (
-                      <View style={tw(`flex flex-col max-w-[${widthCalc}%]`)}>
+                      <View style={tw("flex flex-col flex-1")}>
                         <Text style={tw("font-bold")}>Program Note:</Text>
                         <Text style={tw("p-1")}>{progNote}</Text>
                       </View>
                     )}
                     {servNote && (
-                      <View style={tw(`flex flex-col max-w-[${widthCalc}%]`)}>
+                      <View style={tw("flex flex-col flex-1")}>
                         <Text style={tw("font-bold")}>Service Note:</Text>
                         <Text style={tw("p-1")}>{servNote}</Text>
                       </View>
@@ -507,7 +514,7 @@ function CoverSheetsPDF({
                             "flex flex-row border rounded-full p-1 items-center justify-center gap-2",
                           )}
                         >
-                          <Text style={tw("")}>{serv.servCodeId}</Text>
+                          <Text>{serv.servCodeId}</Text>
                           {serv.isPrinted &&
                             serv.servCodeId !== service.servCodeId && (
                               <Text>
