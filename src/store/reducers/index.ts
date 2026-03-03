@@ -13,6 +13,8 @@ import productReducer from "@/app/realGreen/product/_lib/slices/productSlice";
 import unitConfigReducer from "@/app/realGreen/product/_lib/slices/unitConfigSlice";
 
 import priceTableReducer from "@/app/realGreen/priceTable/priceTableSlice";
+import { serviceConditionReducer } from "@/app/realGreen/serviceCondition/serviceConditionSlice";
+
 import taxCodeReducer from "@/app/realGreen/taxCode/taxCodeSlice";
 import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
@@ -32,6 +34,7 @@ const rootReducer = combineReducers({
   product: productReducer,
   unitConfig: unitConfigReducer,
   progServ: progServReducer,
+  serviceCondition: serviceConditionReducer,
   taxCode: taxCodeReducer,
   zipCode: zipCodeReducer,
   customer: customerReducer,
