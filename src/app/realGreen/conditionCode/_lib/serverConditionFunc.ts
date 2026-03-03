@@ -3,7 +3,7 @@ import {
   ConditionCore,
   ConditionDoc,
   ConditionDocProps,
-} from "@/app/realGreen/conditionCode/_types/ConditionCode";
+} from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
 import { ConditionDocPropsModel } from "@/app/realGreen/conditionCode/_models/ConditionDocPropsModel";
 import { baseConditionDocProps } from "./baseCondition";
 import { extendEntities } from "@/app/realGreen/_lib/extendEntities";

@@ -12,7 +12,7 @@ export function remapServiceConditions(
   return raw.map((sc) => {
     const core: ServiceConditionCore = {
       serviceConditionId: sc.id,
-      conditionCodeId: sc.conditionCodeID,
+      conditionId: sc.conditionCodeID,
       serviceId: sc.serviceID,
       isPreCondition: sc.isPreCondition,
     };

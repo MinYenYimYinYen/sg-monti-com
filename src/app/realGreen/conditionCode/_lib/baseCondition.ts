@@ -5,7 +5,7 @@ import {
   ConditionDoc,
   ConditionDocProps,
   ConditionProps,
-} from "@/app/realGreen/conditionCode/_types/ConditionCode";
+} from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
 
 export const baseConditionCore: ConditionCore = {
   conditionId: baseStrId,

@@ -13,7 +13,7 @@ import productReducer from "@/app/realGreen/product/_lib/slices/productSlice";
 import unitConfigReducer from "@/app/realGreen/product/_lib/slices/unitConfigSlice";
 
 import priceTableReducer from "@/app/realGreen/priceTable/priceTableSlice";
-import { serviceConditionReducer } from "@/app/realGreen/serviceCondition/serviceConditionSlice";
+import { serviceConditionReducer } from "@/app/realGreen/serviceCondition/_lib/serviceConditionSlice";
 
 import taxCodeReducer from "@/app/realGreen/taxCode/taxCodeSlice";
 import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";

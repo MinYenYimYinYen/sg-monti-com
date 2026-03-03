@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { ConditionDoc } from "@/app/realGreen/conditionCode/_types/ConditionCode";
+import { ConditionDoc } from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
 import { ConditionContract } from "./api/ConditionContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 

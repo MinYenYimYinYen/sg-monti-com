@@ -209,6 +209,7 @@ const selectCustomerMap = createSelector([selectCustomers], (customers) => {
 
 export const centralSelect = {
   context: selectActiveContexts,
+  serviceDocs: selectServiceDocs,
   customers: selectCustomers,
   programs: selectPrograms,
   services: selectServices,

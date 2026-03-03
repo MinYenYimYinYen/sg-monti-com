@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { ConditionDocProps } from "@/app/realGreen/conditionCode/_types/ConditionCode";
+import { ConditionDocProps } from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
 
 interface ConditionDocPropsDoc extends mongoose.Document, ConditionDocProps {}
 

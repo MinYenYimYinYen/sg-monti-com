@@ -1,7 +1,7 @@
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { ConditionContract } from "./ConditionContract";
 import { rgApi } from "../../_lib/api/rgApi";
-import { ConditionRaw } from "@/app/realGreen/conditionCode/_types/ConditionCode";
+import { ConditionRaw } from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
 import { extendConditions, remapConditions } from "../_lib/serverConditionFunc";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 

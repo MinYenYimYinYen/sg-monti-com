@@ -18,6 +18,11 @@ type StandardThunkConfig<TParams> = {
     arg: WithConfig<TParams>,
     api: { getState: () => unknown },
   ) => boolean;
+  // Optional: Transform params before sending to API
+  transformParams?: (
+    params: TParams,
+    getState: () => unknown,
+  ) => TParams;
 };
 
 export function createStandardThunk<
@@ -32,11 +37,16 @@ export function createStandardThunk<
     { rejectValue: string; state: AppState }
   >(
     config.typePrefix,
-    async ({ params, config: thunkConfig }, { rejectWithValue }) => {
+    async ({ params, config: thunkConfig }, { rejectWithValue, getState }) => {
       try {
+        // Transform params if a transform function is provided
+        const finalParams = config.transformParams
+          ? config.transformParams(params, getState)
+          : params;
+
         const body: OpMap<TContract> = {
           op: config.opName,
-          ...params,
+          ...finalParams,
         } as any;
 
         // api() now returns DataResponse<TResult> | ErrorResponse
