@@ -1,6 +1,7 @@
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
+import { hashParams } from "@/store/reduxUtil/hashParams";
 
 /**
  * Standardizes UI metadata extraction for createAsyncThunk.
@@ -60,9 +61,11 @@ export const smartDispatchCondition = <T>(
   }
 
   // --- RULE 3: CONCURRENCY (Deduplication) ---
-  // "Is this exact thunk already flying?"
+  // "Is this exact thunk with these exact params already flying?"
   // This solves the "Multiple Components Mounting" race condition.
-  if (uiSelect.isLoadingType(state, typePrefix)) {
+  // Now checks both typePrefix AND params hash for precise deduplication
+  const paramsHash = args.params ? hashParams(args.params) : undefined;
+  if (uiSelect.isLoadingType(state, typePrefix, paramsHash)) {
     return false; // Cancel duplicate!
   }
 

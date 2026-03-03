@@ -2,6 +2,7 @@ import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTyp
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { DoneBy } from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
+import { Condition } from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
 
 export class ServiceUtils {
   constructor(private readonly service: Omit<Service, "x">) {}
@@ -21,5 +22,14 @@ export class ServiceUtils {
 
   public get productsUsed(): AppProduct[] | null {
     return this.service.production?.usedAppProducts || null;
+  }
+
+  public get conditions(): Condition[] | null {
+    const serviceConditions =  this.service.production?.serviceConditions || null;
+    if (serviceConditions) {
+      return serviceConditions.map((sc) => sc.condition);
+    } else {
+      return null;
+    }
   }
 }

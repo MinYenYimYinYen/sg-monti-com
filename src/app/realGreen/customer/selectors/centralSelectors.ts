@@ -105,11 +105,18 @@ export const selectCustomers = createSelector(
     newAssignments,
     serviceConditionsByServId,
   ) => {
+    // Builder types for type-safe construction without 'x'
+    type CustomerBuilder = Omit<Customer, "x">;
+    type ProgramBuilder = Omit<Program, "x">;
+    type ServiceBuilder = Omit<Service, "x">;
+
     const customers: Customer[] = customerDocs.map((custDoc) => {
       const taxCodes = custDoc.taxIds
         .map((taxId) => basicTaxCodeMap.get(taxId) || baseTaxCode)
         .filter((tc) => tc.taxCodeId !== baseTaxCode.taxCodeId);
-      const customerNoX: Omit<Customer, "x"> = {
+
+      // Phase 1: Build customer without x, empty programs array
+      const customerBuilder: CustomerBuilder = {
         ...custDoc,
         programs: [],
         taxCodes,
@@ -117,32 +124,25 @@ export const selectCustomers = createSelector(
         discount: discountDocMap.get(custDoc.discountId) || null,
         flags: hydrateFlags(custDoc.custId, custIdFlagIds, flagDocMap),
       };
-      const customer: Customer = {
-        ...customerNoX,
-        x: new CustomerUtils(customerNoX),
-      };
 
       const progDocs = programDocMap.get(custDoc.custId) || [];
 
+      // Phase 2: Build programs referencing the customer builder
       const programs = progDocs.map((progDoc) => {
         const progCode = progCodeMap.get(progDoc.progDefId) || baseProgCode;
 
-        const programNoX: Omit<Program, "x"> = {
+        const programBuilder: ProgramBuilder = {
           ...progDoc,
-          customer,
+          customer: customerBuilder as Customer,
           services: [],
           progCode,
           callAhead: callAheadDocMap.get(progDoc.callAheadId) || null,
           discount: discountDocMap.get(progDoc.discountId) || null,
         };
 
-        const program: Program = {
-          ...programNoX,
-          x: new ProgramUtils(programNoX),
-        };
-
         const serviceDocs = serviceDocMap.get(progDoc.progId) || [];
 
+        // Phase 3: Build services referencing the program builder
         const services = serviceDocs.map((servDoc) => {
           const servCode = servCodeMap.get(servDoc.servCodeId) || baseServCode;
 
@@ -152,9 +152,10 @@ export const selectCustomers = createSelector(
             progDoc,
             employeeMap,
           );
-          const serviceXProps: Omit<Service, "x"> = {
+
+          const serviceBuilder: ServiceBuilder = {
             ...servDoc,
-            program,
+            program: programBuilder as Program,
             servCode,
             callAhead: callAheadDocMap.get(servDoc.callAheadId) || null,
             discount: discountDocMap.get(servDoc.discountId) || null,
@@ -174,22 +175,28 @@ export const selectCustomers = createSelector(
             lastAssigned,
           };
 
-          const service: Service = {
-            ...serviceXProps,
-            x: new ServiceUtils(serviceXProps),
-          };
+          // Add x after all other properties are set - mutate in place to preserve references
+          (serviceBuilder as Service).x = new ServiceUtils(serviceBuilder);
 
-          return service;
+          return serviceBuilder as Service;
         });
 
-        program.services = services;
+        // Populate services array before adding x
+        programBuilder.services = services;
 
-        return program;
+        // Add x after services are populated - mutate in place to preserve references
+        (programBuilder as Program).x = new ProgramUtils(programBuilder);
+
+        return programBuilder as Program;
       });
 
-      customer.programs = programs;
+      // Populate programs array before adding x
+      customerBuilder.programs = programs;
 
-      return customer;
+      // Add x after programs are populated - mutate in place to preserve references
+      (customerBuilder as Customer).x = new CustomerUtils(customerBuilder);
+
+      return customerBuilder as Customer;
     });
 
     return customers;

@@ -14,6 +14,8 @@ export function hydrateServiceConditions({
 }): ServiceCondition[] {
   const serviceConditions: ServiceCondition[] = serviceConditionDocs.map(
     (doc) => {
+      console.log("doc", doc);
+      console.log("conditionDocMap", conditionDocMap);
       const serviceCondition: ServiceCondition = {
         ...doc,
         condition: conditionDocMap.get(doc.conditionId) ?? baseCondition,

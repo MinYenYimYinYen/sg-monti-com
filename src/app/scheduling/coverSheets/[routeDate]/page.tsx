@@ -18,6 +18,9 @@ import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
 import { PDFNumber } from "@/components/Number";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
+
+
 
 type RouteDatePageProps = {
   params: Promise<{
@@ -27,6 +30,10 @@ type RouteDatePageProps = {
 
 export default function RouteDatePage({ params }: RouteDatePageProps) {
   useCoverSheets();
+
+  const serviceConditions = useSelector(serviceConditionSelect.serviceConditionsByServId);
+  console.log("serviceConditions", serviceConditions);
+
   const isClient = useIsClient();
   const { routeDate: encodedRouteDate } = use(params);
   const routeDate = decodeURIComponent(encodedRouteDate);
@@ -205,7 +212,7 @@ function CoverSheetsPDF({
               </View>
             </View>
             {services.map((service) => {
-              const customer = service.program.customer;
+              const customer = service.x.customer;
               const address = customer.address;
               const flags = customer.flags;
               const products = service.productsPlanned;
@@ -254,12 +261,11 @@ function CoverSheetsPDF({
               ).toFixed(0);
 
               //REMAINING SERVICES
-              const remainingServices =
-                service.program.customer.x.serviceQuery.byStatus(
-                  "asap",
-                  "active",
-                  "printed",
-                ).results;
+              const remainingServices = customer.x.serviceQuery.byStatus(
+                "asap",
+                "active",
+                "printed",
+              ).results;
 
               const remaining = remainingServices.map((service) => {
                 const isPrinted = service.status === "$";
@@ -267,7 +273,7 @@ function CoverSheetsPDF({
                   ? service.lastAssigned.schedDate
                   : "";
                 const currentAssignedTo = isPrinted
-                  ? service.lastAssigned.employee.name
+                  ? service.lastAssigned.employee.employeeId
                   : "";
 
                 return {
@@ -277,7 +283,6 @@ function CoverSheetsPDF({
                   currentAssignedTo,
                 };
               });
-              // console.log("remaining", remaining);
 
               //HISTORY
               // history for program going back how far? appCount? Dates?
@@ -290,22 +295,22 @@ function CoverSheetsPDF({
                   dateStrings.today(),
                 ).results;
 
-              const historyYear = historyServices.map((service) => {
-                return {
-                  servCodeId: service.servCodeId,
-                  doneDate: service.x.doneDate,
-                  doneBy: service.x
-                    .doneBys!.map((db) => db.employeeId)
-                    .join("/"),
-                  // conditionCodes: service.x.conditionCodes,
-                  productsUsed: service.x.productsUsed,
-                };
-              });
+              const historyYear = historyServices
+                .map((service) => {
+                  return {
+                    servCodeId: service.servCodeId,
+                    doneDate: service.x.doneDate?.split("T")[0] || "",
+                    doneBy: service.x
+                      .doneBys!.map((db) => db.employeeId)
+                      .join("/"),
+                    conditions: service.x.conditions,
+                    productsUsed: service.x.productsUsed,
+                  };
+                })
+                .sort((a, b) => a.doneDate.localeCompare(b.doneDate));
 
               const maxHistoryRecords = 6;
-              const history = historyYear.slice(0, maxHistoryRecords);
-
-
+              const history = historyYear.slice(-maxHistoryRecords);
 
               return (
                 <View
@@ -455,6 +460,67 @@ function CoverSheetsPDF({
                         "w-[90%] h-[1px] border-t border-gray-300 border-dashed",
                       )}
                     />
+                  </View>
+                  <View
+                    style={tw("flex flex-row items-center justify-start gap-1")}
+                  >
+                    <Text style={tw("font-bold")}>History:</Text>
+                    {history.map((hist) => {
+                      return (
+                        <View
+                          key={hist.servCodeId + hist.doneDate}
+                          style={tw(
+                            "flex flex-col text-xs text-left border rounded-lg p-1",
+                          )}
+                        >
+                          <Text>
+                            {hist.servCodeId}-{hist.doneBy}
+                          </Text>
+                          <Text>
+                            {hist.doneDate
+                              ? prettyDate(hist.doneDate, "M/d/yy")
+                              : ""}
+                          </Text>
+                          <View style={tw("flex flex-row gap-1")}>
+                            {hist.conditions?.map((condition) => {
+                              return (
+                                <Text key={condition.conditionId}>
+                                  {condition.desc}
+                                </Text>
+                              );
+                            })}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                  <View
+                    id={"REMAINING"}
+                    style={tw("flex flex-row gap-1 flex-wrap text-xs")}
+                  >
+                    <Text style={tw("font-bold")}>Remaining:</Text>
+                    {remaining.map((serv) => {
+                      return (
+                        <View
+                          key={serv.servCodeId}
+                          style={tw(
+                            "flex flex-row border rounded-full p-1 items-center justify-center gap-2",
+                          )}
+                        >
+                          <Text style={tw("")}>{serv.servCodeId}</Text>
+                          {serv.isPrinted &&
+                            serv.servCodeId !== service.servCodeId && (
+                              <Text>
+                                {prettyDate(
+                                  serv.currentAssignedDate,
+                                  "EEE MMM d",
+                                )}
+                                -{serv.currentAssignedTo}
+                              </Text>
+                            )}
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               );

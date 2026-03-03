@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { serviceConditionActions } from "@/app/realGreen/serviceCondition/_lib/serviceConditionSlice";
+import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
 export function useServiceCondition() {
   const dispatch = useAppDispatch();
@@ -15,6 +16,7 @@ export function useServiceCondition() {
         },
         config: {
           loadingMsg: "Fetching Service Conditions",
+          staleTime: realGreenConst.paramTypesCacheTime,
         },
       }),
     );

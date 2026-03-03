@@ -10,9 +10,10 @@ export class ServiceQuery {
 
   byStatus(...keys: ServiceStatusType[]) {
     const statuses = getServiceStatuses(keys);
-    return new ServiceQuery(
+    const serviceQuery =  new ServiceQuery(
       this.services.filter((s) => statuses.includes(s.status)),
     );
+    return serviceQuery;
   }
 
   byDoneDate(min: string, max: string) {

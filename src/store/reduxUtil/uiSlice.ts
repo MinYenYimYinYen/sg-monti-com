@@ -24,9 +24,37 @@ const initialState: UIState = {
   lastFetched: {},
 };
 
+import { hashParams } from "@/store/reduxUtil/hashParams";
+
+// Type for async thunk actions that includes meta with arg
+// Note: meta.arg is 'unknown' from Redux Toolkit, we narrow it internally
+type AsyncThunkAction = PayloadAction<unknown> & {
+  meta?: {
+    arg?: unknown;
+    requestId?: string;
+    [key: string]: any;
+  };
+};
+
 // Helper: Extracts "employee/getAll" from "employee/getAll/pending"
-function getTypePrefix(action: PayloadAction<unknown>): string {
+function getTypePrefix(action: { type: string }): string {
   return action.type.replace(/\/(pending|fulfilled|rejected)$/, "");
+}
+
+// Helper: Creates a unique request ID from typePrefix and params
+function getRequestId(action: AsyncThunkAction): string {
+  const typePrefix = getTypePrefix(action);
+
+  // Type guard: check if arg looks like WithConfig
+  const arg = action.meta?.arg as Partial<WithConfig<unknown>> | undefined;
+
+  if (arg?.params) {
+    const hash = hashParams(arg.params);
+    return `${typePrefix}-${hash}`;
+  }
+
+  // Fallback for actions without params
+  return typePrefix;
 }
 
 const uiSlice = createSlice({
@@ -50,8 +78,8 @@ const uiSlice = createSlice({
     builder
       // A. START
       .addMatcher(isPending, (state, action) => {
-        const typePrefix = getTypePrefix(action);
-        state.activeRequests.push(typePrefix);
+        const requestId = getRequestId(action);
+        state.activeRequests.push(requestId);
 
         // The 'meta' property here is populated by getPendingMeta in smartThunkOptions
         // It contains { showLoading, loadingMsg } directly.
@@ -70,13 +98,14 @@ const uiSlice = createSlice({
 
       // B. SUCCESS
       .addMatcher(isFulfilled, (state, action) => {
+        const requestId = getRequestId(action);
         const typePrefix = getTypePrefix(action);
 
         // Remove from active
-        const index = state.activeRequests.indexOf(typePrefix);
+        const index = state.activeRequests.indexOf(requestId);
         if (index !== -1) state.activeRequests.splice(index, 1);
 
-        // Record History
+        // Record History (still by typePrefix for backward compat with staleTime)
         state.lastFetched[typePrefix] = Date.now();
 
         // Show success toast if configured
@@ -90,9 +119,9 @@ const uiSlice = createSlice({
 
       // C. FAIL
       .addMatcher(isRejected, (state, action) => {
-        const typePrefix = getTypePrefix(action);
+        const requestId = getRequestId(action);
 
-        const index = state.activeRequests.indexOf(typePrefix);
+        const index = state.activeRequests.indexOf(requestId);
         if (index !== -1) state.activeRequests.splice(index, 1);
       })
 
@@ -121,8 +150,32 @@ const uiSlice = createSlice({
   selectors: {
     loadingCount: (state) => state.loadingCount,
     loadingMessage: (state) => state.loadingMessage,
-    isLoadingType: (state, typePrefix: string) =>
-      state.activeRequests.includes(typePrefix),
+    /**
+     * Check if a thunk type is currently loading.
+     *
+     * @param state - UI state
+     * @param typePrefix - The thunk type prefix (e.g., "employee/getAll")
+     * @param paramsHash - Optional hash to check for specific params
+     * @returns True if the thunk (with optional specific params) is loading
+     *
+     * @example
+     * // Check if ANY getServiceConditions is loading (any params):
+     * isLoadingType(state, "serviceCondition/getServiceConditions")
+     *
+     * // Check if THIS SPECIFIC request is loading:
+     * const hash = hashParams({ serviceIds: [1, 2, 3] });
+     * isLoadingType(state, "serviceCondition/getServiceConditions", hash)
+     */
+    isLoadingType: (state, typePrefix: string, paramsHash?: string) => {
+      if (paramsHash) {
+        // Exact match: check for specific params
+        const requestId = `${typePrefix}-${paramsHash}`;
+        return state.activeRequests.includes(requestId);
+      } else {
+        // Prefix match: check if ANY request with this typePrefix is loading
+        return state.activeRequests.some((req) => req.startsWith(`${typePrefix}-`));
+      }
+    },
     lastFetched: (state) => state.lastFetched,
   },
 });

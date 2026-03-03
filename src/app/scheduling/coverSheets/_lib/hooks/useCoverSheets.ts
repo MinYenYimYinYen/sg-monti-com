@@ -9,16 +9,18 @@ import { useUnitConfig } from "@/app/realGreen/product/_lib/hooks/useUnitConfig"
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 import { useServiceCondition } from "@/app/realGreen/serviceCondition/_lib/useServiceCondition";
+import { useCondition } from "@/app/realGreen/conditionCode/useCondition";
 
 export function useCoverSheets() {
   useCustomerContext({ contexts: ["printed"] });
   usePrintedCustomers({ autoLoad: true });
-  useProgServ({ autoLoad: true })
-  useUnitConfig({autoLoad: true})
-  useProduct({ autoLoad: true })
+  useProgServ({ autoLoad: true });
+  useUnitConfig({ autoLoad: true });
+  useProduct({ autoLoad: true });
   useFlag({ autoLoad: true });
-  useEmployee({autoLoad: true})
-  useCallAhead({autoLoad: true})
+  useEmployee({ autoLoad: true });
+  useCallAhead({ autoLoad: true });
+  useCondition({ autoLoad: true });
   useServiceCondition();
   const { localCoverSheetsConfig } = useGlobalSettings({ autoLoad: true });
 
