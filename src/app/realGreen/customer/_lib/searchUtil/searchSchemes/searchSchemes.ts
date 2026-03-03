@@ -9,7 +9,6 @@ import { CustomerDoc } from "../../entities/types/CustomerTypes";
 import { ProgramDoc } from "../../entities/types/ProgramTypes";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServiceSearchCriteria } from "../searchCriteria/types/ServSearch";
-import * as sea from "node:sea";
 
 type SearchSchemeParams = {
   season: number;

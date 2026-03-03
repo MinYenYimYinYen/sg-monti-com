@@ -17,7 +17,6 @@ import { truncate } from "@/lib/primatives/string/truncate";
 import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
 import { PDFNumber } from "@/components/Number";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
-import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 type RouteDatePageProps = {

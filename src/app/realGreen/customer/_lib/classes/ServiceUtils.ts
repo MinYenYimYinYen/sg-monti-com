@@ -1,6 +1,5 @@
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
-import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { DoneBy } from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
 
