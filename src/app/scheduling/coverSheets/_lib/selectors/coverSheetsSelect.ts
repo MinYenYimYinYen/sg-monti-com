@@ -1,31 +1,46 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
-import { AppError } from "@/lib/errors/AppError";
 
-const validateProgramNextDateMatches = (service: Service) => {
-  return (
-    service.lastAssigned.schedDate.split("T")[0] ===
-    service.program.nextDate.split("T")[0]
-  );
-};
+// const validateProgramNextDateMatches = (service: Service) => {
+//   return (
+//     service.lastAssigned.schedDate.split("T")[0] ===
+//     service.program.nextDate.split("T")[0]
+//   );
+// };
 
-// Base selector: fully expanded data structure
 export const selectServicesByDateAndEmployee = createSelector(
   [centralSelect.services],
   (services): Map<string, Map<string, Service[]>> => {
     const printed = services.filter((service) => service.status === "$");
+
+    console.log(
+      "printed",
+      printed
+        .filter((p) => p.lastAssigned.employeeId === "1AL")
+        .map((p) => p.x.customer.displayName),
+    );
+
     const tempResult = new Map<string, Map<string, Service[]>>();
 
     printed.forEach((service) => {
-      const date = service.program.nextDate;
+      const date = service.lastAssigned.schedDate;
+
+      if(!date) {
+        console.log("lastAssigned", service.lastAssigned);
+      }
+
+
       const employeeId = service.lastAssigned.employeeId;
 
-      if (!validateProgramNextDateMatches(service)) {
-        return;
-
-      }
+      // SO YOU KNOW ***
+      // program.nextDate is not reliable.  If later services have a schedule date, it will
+      // use the schedule date for the next service instead.  So, the source of the
+      // schedule date has to be from the unserviced report CSV.
+      // if (!validateProgramNextDateMatches(service)) {
+      //   console.log(service.x.customer.displayName, service.program.nextDate, service.lastAssigned.schedDate, service.servId);
+      //
+      // }
 
       if (!date || !employeeId) return;
 
@@ -52,13 +67,15 @@ export const selectServicesByDateAndEmployee = createSelector(
       sortedEmployeeIds.forEach((employeeId) => {
         const services = employeeMap.get(employeeId)!;
         // Sort services by program.tempSeq in ascending order
-        const sortedServices = services.sort((a, b) =>
-          (a.program.tempSeq ?? 0) - (b.program.tempSeq ?? 0)
+        const sortedServices = services.sort(
+          (a, b) => (a.program.tempSeq ?? 0) - (b.program.tempSeq ?? 0),
         );
         sortedEmployeeMap.set(employeeId, sortedServices);
       });
       result.set(date, sortedEmployeeMap);
     });
+
+    console.log("result", result);
 
     return result;
   },

@@ -1,12 +1,15 @@
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
+
+type ErrorHandling = 'throw' | { fallback: string };
 
 /**
  * Formats an ISO date string using date-fns format tokens.
  *
  * @param dateString - ISO 8601 date string (e.g., "2026-02-20T14:30:00")
  * @param formatString - date-fns format string
+ * @param onError - How to handle unparsable input: "throw" or { fallback: string }
  *
- * @returns Formatted date string
+ * @returns Formatted date string, or fallback if parsing fails
  *
  * @example
  * prettyDate("2026-02-20", "MMM d, yyyy")           // "Feb 20, 2026"
@@ -14,6 +17,8 @@ import { format, parseISO } from 'date-fns';
  * prettyDate("2026-02-20", "EEEE, MMMM d")          // "Thursday, February 20"
  * prettyDate("2026-02-20T14:30:00", "h:mm a")       // "2:30 PM"
  * prettyDate("2026-02-20T14:30:00", "MMM d, h:mm a") // "Feb 20, 2:30 PM"
+ * prettyDate("invalid", "MMM d, yyyy", { fallback: "N/A" }) // "N/A"
+ * prettyDate("invalid", "MMM d, yyyy", "throw")     // throws Error
  *
  * Common format tokens:
  *
@@ -48,7 +53,19 @@ import { format, parseISO } from 'date-fns';
  * See date-fns documentation for all format tokens:
  * https://date-fns.org/docs/format
  */
-export function prettyDate(dateString: string, formatString: string): string {
+export function prettyDate(
+  dateString: string,
+  formatString: string,
+  onError: ErrorHandling = 'throw'
+): string {
   const date = parseISO(dateString);
+
+  if (!isValid(date)) {
+    if (onError === 'throw') {
+      throw new Error(`Invalid date string: ${dateString}`);
+    }
+    return onError.fallback;
+  }
+
   return format(date, formatString);
 }

@@ -33,11 +33,9 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   const loadingCount = useSelector(uiSelect.loadingCount);
   useCoverSheets();
 
-
   const serviceConditionDocs = useSelector(
     (state: AppState) => state.serviceCondition.serviceConditionDocs,
   );
-  console.log("serviceConditionDocs", serviceConditionDocs);
 
   const isClient = useIsClient();
   const { routeDate: encodedRouteDate } = use(params);
@@ -294,11 +292,9 @@ function CoverSheetsPDF({
               // history for other programs for this season?
               // What to display?
               //  - servCodeId, doneDate, doneBy, conditionCodes, products used
-              const historyServices =
-                service.x.customer.x.serviceQuery.byDoneDate(
-                  dateStrings.yearsAgo(1),
-                  dateStrings.today(),
-                ).isPest(false).results;
+              const historyServices = service.x.customer.x.serviceQuery
+                .byDoneDate(dateStrings.yearsAgo(1), dateStrings.today())
+                .isPest(false).results;
 
               const historyYear = historyServices
                 .map((service) => {
@@ -310,7 +306,6 @@ function CoverSheetsPDF({
                         product.productCommon.productType === "master" ||
                         product.productCommon.productType === "single",
                     );
-                    console.log("mastersAndOrSingles", mastersAndOrSingles);
                   }
                   return {
                     servCodeId: service.servCodeId,
@@ -330,10 +325,32 @@ function CoverSheetsPDF({
               //Pest Control History
               const isPest = service.x.isPest;
 
-              const pestHistory =
-                service.x.customer.x.serviceQuery.isPest(true).results;
-              // todo: Left off here.  Build pest history view and this is done.
+              const pestServices = service.x.customer.x.serviceQuery
+                .isPest(true)
+                .byStatus("completed").results;
 
+              const pestInfo = pestServices.map((service) => {
+                return {
+                  servId: service.servId,
+                  servCodeId: service.servCodeId,
+                  doneDate: service.x.doneDate?.split("T")[0] || "",
+                  doneBy:
+                    service.x.doneBys?.map((db) => db.employeeId).join("/") ??
+                    "",
+                  progCodeId: service.program.progCode.progCodeId,
+                  products: service.x.productsUsed?.filter(
+                    (p) =>
+                      ["single", "master"].includes(
+                        p.productCommon.productType,
+                      ) ?? [],
+                  ),
+                  progNote: service.program.techNote,
+                  servNote: service.techNote,
+                  feedback:
+                    service.production?.feedback.split("\n").join(" ") ?? "",
+                  conditions: service.x.conditions?.map((c) => c.desc) ?? [],
+                };
+              });
 
               return (
                 <View
@@ -530,6 +547,120 @@ function CoverSheetsPDF({
                       );
                     })}
                   </View>
+                  {isPest && (
+                    <View
+                      id={"PEST_HISTORY"}
+                      style={tw(
+                        "flex flex-col items-start justify-start text-xs",
+                      )}
+                    >
+                      <Text style={tw("font-bold")}>Pest Control History:</Text>
+                      {pestInfo.map((pest) => {
+                        return (
+                          <View
+                            key={pest.servId}
+                            style={tw("flex flex-col max-w-[85%]")}
+                          >
+                            <View style={tw("flex flex-row gap-1 font-bold")}>
+                              <Text>
+                                {prettyDate(pest.doneDate, "M/d/yy", {
+                                  fallback: "?/??/??",
+                                })}
+                              </Text>
+                              <Text>
+                                {pest.progCodeId}-{pest.servCodeId}
+                              </Text>
+                              <Text>{pest.doneBy}</Text>
+                            </View>
+                            <View style={tw("ml-4 flex flex-col")}>
+                              {pest.progNote &&
+                                pest.progNote !== service.program.techNote && (
+                                  <View
+                                    id={"PROG_NOTE"}
+                                    style={tw(
+                                      "flex flex-row items-start justify-start",
+                                    )}
+                                  >
+                                    <Text style={tw("w-[65px]")}>
+                                      Prog Note:
+                                    </Text>
+                                    <Text>{pest.progNote}</Text>
+                                  </View>
+                                )}
+                              {pest.servNote && (
+                                <View
+                                  id={"SERV_NOTE"}
+                                  style={tw(
+                                    "flex flex-row items-start justify-start",
+                                  )}
+                                >
+                                  <Text style={tw("w-[65px]")}>
+                                    Service Note:
+                                  </Text>
+                                  <Text>{pest.servNote}</Text>
+                                </View>
+                              )}
+                              {pest.feedback && (
+                                <View
+                                  id={"FEEDBACK"}
+                                  style={tw(
+                                    "flex flex-row items-start justify-start",
+                                  )}
+                                >
+                                  <Text style={tw("w-[65px]")}>Feedback:</Text>
+                                  <Text>{pest.feedback}</Text>
+                                </View>
+                              )}
+                              {pest.products?.length && (
+                                <View
+                                  id={"PRODUCTS"}
+                                  style={tw(
+                                    "flex flex-row items-start justify-start gap-1",
+                                  )}
+                                >
+                                  <Text style={tw("w-[65px]")}>Products:</Text>
+                                  {pest.products.map((appProduct) => {
+                                    const code =
+                                      appProduct.productCommon.productCode;
+                                    const amt = appProduct.amount;
+                                    const unit =
+                                      appProduct.productCommon.unit.desc;
+                                    return (
+                                      <View
+                                        key={appProduct.productId}
+                                        style={tw(
+                                          "flex flex-row gap-1 items-start justify-start border border-gray-200 rounded-lg p-1 flex-wrap",
+                                        )}
+                                      >
+                                        <Text>{code}</Text>
+                                        <Text>
+                                          {amt} {unit}
+                                        </Text>
+                                      </View>
+                                    );
+                                  })}
+                                </View>
+                              )}
+                              {pest.conditions.length && (
+                                <View
+                                  id={"CONDITIONS"}
+                                  style={tw(
+                                    "flex flex-row gap-1 items-start justify-start border border-gray-200 rounded-lg p-1 flex-wrap",
+                                  )}
+                                >
+                                  {pest.conditions.map((condition) => {
+                                    return (
+                                      <Text key={condition}>{condition}</Text>
+                                    );
+                                  })}
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
                   <View
                     id={"REMAINING"}
                     style={tw("flex flex-row gap-1 flex-wrap text-xs")}
