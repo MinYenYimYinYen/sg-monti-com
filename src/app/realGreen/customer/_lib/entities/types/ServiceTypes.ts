@@ -135,7 +135,6 @@ export type ServiceProps = {
   discount: DiscountDoc | null;
   production: Production | null;
   productsPlanned: AppProduct[];
-  // productsUsed: AppProductRaw[];
   lastAssigned: Assignment;
 
 };

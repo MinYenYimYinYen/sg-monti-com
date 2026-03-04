@@ -305,14 +305,18 @@ function CoverSheetsPDF({
                 service.x.customer.x.serviceQuery.byDoneDate(
                   dateStrings.yearsAgo(1),
                   dateStrings.today(),
-                ).results;
+                ).isPest(false).results;
 
               const historyYear = historyServices
                 .map((service) => {
                   const productsUsed = service.x.productsUsed;
                   let mastersAndOrSingles: AppProduct[] = [];
-                  if(productsUsed) {
-                    mastersAndOrSingles = productsUsed.filter((product) => product.productCommon.productType === "master" || product.productCommon.productType === "single");
+                  if (productsUsed) {
+                    mastersAndOrSingles = productsUsed.filter(
+                      (product) =>
+                        product.productCommon.productType === "master" ||
+                        product.productCommon.productType === "single",
+                    );
                     console.log("mastersAndOrSingles", mastersAndOrSingles);
                   }
                   return {
@@ -322,13 +326,21 @@ function CoverSheetsPDF({
                       .doneBys!.map((db) => db.employeeId)
                       .join("/"),
                     conditions: service.x.conditions,
-                    productsUsed: service.x.productsUsed,
+                    productsUsed: mastersAndOrSingles,
                   };
                 })
                 .sort((a, b) => a.doneDate.localeCompare(b.doneDate));
 
               const maxHistoryRecords = 6;
               const history = historyYear.slice(-maxHistoryRecords);
+
+              //Pest Control History
+              const isPest = service.x.isPest;
+
+              const pestHistory =
+                service.x.customer.x.serviceQuery.isPest(true).results;
+              // todo: Left off here.  Build pest history view and this is done.
+
 
               return (
                 <View
@@ -480,17 +492,16 @@ function CoverSheetsPDF({
                         <View
                           key={hist.servCodeId + hist.doneDate}
                           style={tw(
-                            "flex flex-row gap-1 border rounded-lg p-1",
+                            "flex flex-row gap-1 border border-gray-200 rounded-lg p-1",
                           )}
                         >
                           <View style={tw("flex flex-col text-left")}>
-                            <Text>
-                              {hist.servCodeId}-{hist.doneBy}
-                            </Text>
+                            <Text>{hist.servCodeId}</Text>
                             <Text>
                               {hist.doneDate
                                 ? prettyDate(hist.doneDate, "M/d/yy")
-                                : ""}
+                                : ""}{" "}
+                              - {hist.doneBy}
                             </Text>
                             {hist.productsUsed?.map((prod, prodIndex) => {
                               if (
@@ -515,7 +526,7 @@ function CoverSheetsPDF({
                                   {condition.desc
                                     .split(" ")
                                     .map((word, index) => {
-                                      const abbr = word.slice(0, 5 - index);
+                                      const abbr = word.slice(0, 6 - index * 2);
                                       return <Text key={index}>{abbr}</Text>;
                                     })}
                                 </View>
@@ -536,7 +547,7 @@ function CoverSheetsPDF({
                         <View
                           key={serv.servCodeId}
                           style={tw(
-                            "flex flex-row border rounded-full p-1 items-center justify-center gap-2",
+                            "flex flex-row border border-gray-200 rounded-full p-1 items-center justify-center gap-2",
                           )}
                         >
                           <Text>{serv.servCodeId}</Text>

@@ -32,4 +32,8 @@ export class ServiceUtils {
       return null;
     }
   }
+
+  public get isPest(): boolean {
+    return this.service.program.progCode.programType === "H";
+  }
 }
