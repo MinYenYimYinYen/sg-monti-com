@@ -33,10 +33,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   const loadingCount = useSelector(uiSelect.loadingCount);
   useCoverSheets();
 
-  const serviceConditions = useSelector(
-    serviceConditionSelect.serviceConditionsByServId,
-  );
-  // console.log("serviceConditions", serviceConditions);
+
   const serviceConditionDocs = useSelector(
     (state: AppState) => state.serviceCondition.serviceConditionDocs,
   );
@@ -267,10 +264,6 @@ function CoverSheetsPDF({
               );
 
               const hasNotes = notesCount > 0;
-              const widthCalc = (
-                (1 / hasNotesArray.reduce((acc, curr) => acc + curr, 0)) *
-                100
-              ).toFixed(0);
 
               //REMAINING SERVICES
               const remainingServices = customer.x.serviceQuery.byStatus(
