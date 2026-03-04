@@ -309,6 +309,12 @@ function CoverSheetsPDF({
 
               const historyYear = historyServices
                 .map((service) => {
+                  const productsUsed = service.x.productsUsed;
+                  let mastersAndOrSingles: AppProduct[] = [];
+                  if(productsUsed) {
+                    mastersAndOrSingles = productsUsed.filter((product) => product.productCommon.productType === "master" || product.productCommon.productType === "single");
+                    console.log("mastersAndOrSingles", mastersAndOrSingles);
+                  }
                   return {
                     servCodeId: service.servCodeId,
                     doneDate: service.x.doneDate?.split("T")[0] || "",
@@ -486,14 +492,14 @@ function CoverSheetsPDF({
                                 ? prettyDate(hist.doneDate, "M/d/yy")
                                 : ""}
                             </Text>
-                            {hist.productsUsed?.map((prod) => {
+                            {hist.productsUsed?.map((prod, prodIndex) => {
                               if (
                                 prod.productCommon.productCode === baseStrId
                               ) {
                                 console.log(prod.productCommon);
                               }
                               return (
-                                <Text key={prod.productId}>
+                                <Text key={`${prod.productId}-${prodIndex}`}>
                                   {prod.productCommon.productCode}
                                 </Text>
                               );

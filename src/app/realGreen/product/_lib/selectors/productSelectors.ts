@@ -51,6 +51,7 @@ const selectProductSubs = createSelector(
         ...doc,
         unitConfig,
         unitConfigDisplay,
+        productType: "sub",
       };
     });
     return productSubs;
@@ -69,6 +70,7 @@ const selectProductMasters = createSelector(
 
       return {
         ...doc,
+        productType: "master",
         unitConfig,
         unitConfigDisplay,
         subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
@@ -97,6 +99,7 @@ const selectProductSingles = createSelector(
 
       return {
         ...doc,
+        productType: "single",
         unitConfig,
         unitConfigDisplay,
       };
@@ -206,6 +209,7 @@ const selectProductCommons = createSelector(
 
       return {
         ...doc,
+        productType: "other",
         unitConfig,
         unitConfigDisplay,
       };
@@ -218,6 +222,18 @@ const selectProductCommonMap = createSelector(
   [selectProductCommons],
   (productCommons) =>
     new Grouper(productCommons).toUniqueMap((c) => c.productId),
+);
+
+/**
+ * Unified map containing all product types (masters, singles, and subs).
+ * Used for hydrating historical production data where any product type may have been used.
+ */
+const selectAllProductsMap = createSelector(
+  [selectProductMasters, selectProductSingles, selectProductSubs],
+  (masters, singles, subs) => {
+    const allProducts: ProductCommon[] = [...masters, ...singles, ...subs];
+    return new Grouper(allProducts).toUniqueMap((p) => p.productId);
+  },
 );
 
 export const productSelect = {
@@ -238,4 +254,5 @@ export const productSelect = {
 
   productCommons: selectProductCommons,
   productCommonMap: selectProductCommonMap,
+  allProductsMap: selectAllProductsMap,
 };

@@ -59,6 +59,7 @@ export type ProductCommonDocProps = {
 export type ProductCommonDoc = ProductCore & ProductCommonDocProps;
 
 export type ProductCommonProps = {
+  productType: "master" | "single" | "sub" | "other";
   unitConfig: ProductUnitConfig;
   unitConfigDisplay: UnitConfigDisplay;
 }

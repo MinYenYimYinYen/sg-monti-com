@@ -69,6 +69,7 @@ export const baseProductMasterProps: ProductMasterProps = {
   subProductConfigs: [],
   unitConfig: baseProductUnitConfig,
   unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
+  productType: "master",
 };
 
 export const baseProductMaster: ProductMaster = {
@@ -99,6 +100,7 @@ export const baseProductSingleDoc: ProductSingleDoc = {
 export const baseProductSingleProps: ProductSingleProps = {
   unitConfig: baseProductUnitConfig,
   unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
+  productType: "single",
 };
 
 export const baseProductSingle: ProductSingleDoc = {
@@ -129,6 +131,7 @@ export const baseProductSubDoc: ProductSubDoc = {
 export const baseProductSubProps: ProductSubProps = {
   unitConfig: baseProductUnitConfig,
   unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
+  productType: "sub",
 };
 
 export const baseProductSub: ProductSub = {
@@ -150,6 +153,7 @@ export const baseProductCommonDoc: ProductCommonDoc = {
 export const baseProductCommonProps: ProductCommonProps = {
   unitConfig: baseProductUnitConfig,
   unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
+  productType: "other",
 };
 
 export const baseProductCommon: ProductCommon = {

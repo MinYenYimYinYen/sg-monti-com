@@ -13,13 +13,13 @@ import { ServiceCondition } from "@/app/realGreen/serviceCondition/_lib/ServiceC
 
 function hydrateProduction({
   productionCore,
-  productCommonMap,
+  allProductsMap,
   employeeMap,
   serviceDoc,
   serviceConditions,
 }: {
   productionCore: ProductionCore | null;
-  productCommonMap: Map<number, ProductCommon>;
+  allProductsMap: Map<number, ProductCommon>;
   employeeMap: Map<string, Employee>;
   serviceDoc: ServiceDoc;
   serviceConditions: ServiceCondition[];
@@ -30,7 +30,7 @@ function hydrateProduction({
       const appProduct: AppProduct = {
         ...appProductCore,
         productCommon:
-          productCommonMap.get(appProductCore.productId) || baseProductCommon,
+          allProductsMap.get(appProductCore.productId) || baseProductCommon,
       };
       return appProduct;
     },
