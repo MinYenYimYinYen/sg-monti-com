@@ -21,8 +21,7 @@ import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
 import { AppState } from "@/store";
-
-
+import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 type RouteDatePageProps = {
   params: Promise<{
@@ -34,11 +33,14 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   const loadingCount = useSelector(uiSelect.loadingCount);
   useCoverSheets();
 
-  const serviceConditions = useSelector(serviceConditionSelect.serviceConditionsByServId);
+  const serviceConditions = useSelector(
+    serviceConditionSelect.serviceConditionsByServId,
+  );
   // console.log("serviceConditions", serviceConditions);
-  const serviceConditionDocs = useSelector((state: AppState) => state.serviceCondition.serviceConditionDocs)
+  const serviceConditionDocs = useSelector(
+    (state: AppState) => state.serviceCondition.serviceConditionDocs,
+  );
   console.log("serviceConditionDocs", serviceConditionDocs);
-
 
   const isClient = useIsClient();
   const { routeDate: encodedRouteDate } = use(params);
@@ -71,18 +73,18 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
       {/*</div>*/}
 
       <div className={"w-full h-[75vh] overflow-y-auto"}>
-      {loadingCount > 0 && <div>Loading...</div>}
-      {loadingCount === 0 && (
-        <PDFViewer style={{ width: "100%", height: "100%" }}>
-          <CoverSheetsPDF
-            routeDate={routeDate}
-            serviceByEmployee={serviceByEmployee}
-            getPlannedAppProductTotal={getPlannedAppProductTotal}
-            getServCodeCounts={getServCodeCounts}
-            getServicesByRuleDesc={getServicesByRuleDesc}
-          />
-        </PDFViewer>
-      )}
+        {loadingCount > 0 && <div>Loading...</div>}
+        {loadingCount === 0 && (
+          <PDFViewer style={{ width: "100%", height: "100%" }}>
+            <CoverSheetsPDF
+              routeDate={routeDate}
+              serviceByEmployee={serviceByEmployee}
+              getPlannedAppProductTotal={getPlannedAppProductTotal}
+              getServCodeCounts={getServCodeCounts}
+              getServicesByRuleDesc={getServicesByRuleDesc}
+            />
+          </PDFViewer>
+        )}
       </div>
     </Container>
   );
@@ -111,7 +113,6 @@ function CoverSheetsPDF({
   getPlannedAppProductTotal,
   getServicesByRuleDesc,
 }: CoverSheetsPDFProps) {
-
   return (
     <Document>
       {[...serviceByEmployee.keys()].map((employeeId) => {
@@ -396,10 +397,7 @@ function CoverSheetsPDF({
                         </PDFNumber>
                       </View>
                     </View>
-                    <View
-                      id={"PRODUCTS"}
-                      style={tw("flex flex-col w-[100px]")}
-                    >
+                    <View id={"PRODUCTS"} style={tw("flex flex-col w-[100px]")}>
                       {filtered.map((appProduct) => {
                         const appDisplay =
                           appProduct.productCommon.unitConfigDisplay.format({
@@ -464,16 +462,11 @@ function CoverSheetsPDF({
                       </View>
                     )}
                   </View>
-                  <View style={tw("flex flex-row items-center justify-center")}>
-                    <View
-                      id={"DIVIDER-1"}
-                      style={tw(
-                        "w-[90%] h-[1px] border-t border-gray-300 border-dashed",
-                      )}
-                    />
-                  </View>
                   <View
-                    style={tw("flex flex-row items-center justify-start gap-1")}
+                    id={"HISTORY"}
+                    style={tw(
+                      "flex flex-row items-start justify-start text-xs",
+                    )}
                   >
                     <Text style={tw("font-bold")}>History:</Text>
                     {history.map((hist) => {
@@ -481,23 +474,45 @@ function CoverSheetsPDF({
                         <View
                           key={hist.servCodeId + hist.doneDate}
                           style={tw(
-                            "flex flex-col text-xs text-left border rounded-lg p-1",
+                            "flex flex-row gap-1 border rounded-lg p-1",
                           )}
                         >
-                          <Text>
-                            {hist.servCodeId}-{hist.doneBy}
-                          </Text>
-                          <Text>
-                            {hist.doneDate
-                              ? prettyDate(hist.doneDate, "M/d/yy")
-                              : ""}
-                          </Text>
-                          <View style={tw("flex flex-row gap-1")}>
+                          <View style={tw("flex flex-col text-left")}>
+                            <Text>
+                              {hist.servCodeId}-{hist.doneBy}
+                            </Text>
+                            <Text>
+                              {hist.doneDate
+                                ? prettyDate(hist.doneDate, "M/d/yy")
+                                : ""}
+                            </Text>
+                            {hist.productsUsed?.map((prod) => {
+                              if (
+                                prod.productCommon.productCode === baseStrId
+                              ) {
+                                console.log(prod.productCommon);
+                              }
+                              return (
+                                <Text key={prod.productId}>
+                                  {prod.productCommon.productCode}
+                                </Text>
+                              );
+                            })}
+                          </View>
+                          <View style={tw("flex flex-col text-xs")}>
                             {hist.conditions?.map((condition) => {
                               return (
-                                <Text key={condition.conditionId}>
-                                  {condition.desc}
-                                </Text>
+                                <View
+                                  key={condition.conditionId}
+                                  style={tw("flex flex-row gap-1")}
+                                >
+                                  {condition.desc
+                                    .split(" ")
+                                    .map((word, index) => {
+                                      const abbr = word.slice(0, 5 - index);
+                                      return <Text key={index}>{abbr}</Text>;
+                                    })}
+                                </View>
                               );
                             })}
                           </View>

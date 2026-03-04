@@ -11,6 +11,14 @@ export const createSubsColumns = (
   onEditUnit: (unit: Unit) => void,
 ): ColumnDef<ProductSub>[] => [
   {
+    accessorKey: "productId",
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="Product ID" />
+    ),
+    cell: ({ row }) => <div>{row.getValue("productId")}</div>,
+    size: 50,
+  },
+  {
     accessorKey: "productCode",
     header: ({ column }) => (
       <DataGridColumnHeader column={column} title="Product Code" />
