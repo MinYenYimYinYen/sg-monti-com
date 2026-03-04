@@ -1,13 +1,14 @@
 "use client";
 
 import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuItem,
-} from "@/style/components/navigation-menu";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/style/components/dropdown-menu";
+import { Button } from "@/style/components/button";
 import Link from "next/link";
 import { Role } from "@/lib/api/types/roles";
 import { Menu } from "lucide-react";
@@ -71,6 +72,11 @@ const realGreenParams: NavSection = {
   navItems: [
     { title: "Products", href: "/realGreen/product/list", roles: ["admin"] },
     {
+      title: "Mix Charts",
+      href: "/realGreen/product/mixChart",
+      roles: ["admin", "office", "tech"],
+    },
+    {
       title: "Service Codes",
       href: "/realGreen/progServ/list/serviceCodes",
       roles: ["admin"],
@@ -86,7 +92,12 @@ const bizPlanSection: NavSection = {
   ],
 };
 
-const menuSections = [schedulingSection, prepaySection, realGreenParams, bizPlanSection];
+const menuSections = [
+  schedulingSection,
+  prepaySection,
+  realGreenParams,
+  bizPlanSection,
+];
 
 export default function NavMenu() {
   const isClient = useIsClient();
@@ -105,54 +116,35 @@ export default function NavMenu() {
     });
 
   return (
-    <NavigationMenu>
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          {/* 1. Single Trigger Icon */}
-          <NavigationMenuTrigger>
-            <Menu className="h-4 w-4 mr-2" />
-            <span className="sr-only">Open Menu</span>
-          </NavigationMenuTrigger>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="icon">
+          <Menu className="h-4 w-4" />
+          <span className="sr-only">Open Menu</span>
+        </Button>
+      </DropdownMenuTrigger>
 
-          {/* 2. Content Wrapper */}
-          <NavigationMenuContent className={""}>
-            {/* THE KEY CHANGE:
-                grid-cols-2 -> Places sections side-by-side
-                w-[600px]   -> Makes the menu wide enough to fit them
-            */}
-            <div className={"grid grid-cols-1 md:grid-cols-2 w-[600px] gap-4"}>
-              {userSections.map((section) => (
-                <div key={section.title} className="flex flex-col space-y-3">
-                  {/* Section Title */}
-                  <div className="font-bold text-lg leading-none mb-1 text-primary border-b pb-2">
-                    {section.title}
-                  </div>
-
-                  {/* Links for this column */}
-                  <ul className="grid gap-2">
-                    {section.navItems.map((item) => (
-                      <li key={item.href}>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href={item.href}
-                            className={cn(
-                              "block select-none rounded-md p-1 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                            )}
-                          >
-                            <div className="text-sm font-medium leading-none mb-1">
-                              {item.title}
-                            </div>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+      <DropdownMenuContent className="w-[600px] p-4" align="start">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {userSections.map((section, idx) => (
+            <div key={section.title}>
+              <DropdownMenuLabel className="text-lg font-bold text-primary border-b pb-2 mb-2">
+                {section.title}
+              </DropdownMenuLabel>
+              {section.navItems.map((item) => (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link href={item.href} className="w-full cursor-pointer">
+                    {item.title}
+                  </Link>
+                </DropdownMenuItem>
               ))}
+              {idx < userSections.length - 1 && (
+                <DropdownMenuSeparator className="mt-2" />
+              )}
             </div>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
+          ))}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
