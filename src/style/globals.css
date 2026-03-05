@@ -1,6 +1,10 @@
 @import "./fonts.css";
 @import "./spinner.css";
 
+.dev-border {
+    border: 1px solid red;
+}
+
 /**, *::before, *::after {*/
 /*  box-sizing: border-box;*/
 /*}*/

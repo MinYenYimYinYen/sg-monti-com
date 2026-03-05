@@ -21,11 +21,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>
+      <body suppressHydrationWarning className={"h-screen flex flex-col"}>
         <Providers>
           <NavBar />
           <GlobalLoader />
-          {children}
+          <main className="flex-1 flex flex-col overflow-hidden">
+            {children}
+          </main>
         </Providers>
         <ToastContainer />
         <div id="footer-portal" />

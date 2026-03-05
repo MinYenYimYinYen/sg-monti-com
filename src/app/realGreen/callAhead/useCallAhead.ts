@@ -10,26 +10,57 @@ export function useCallAhead({ autoLoad }: { autoLoad: boolean }) {
     if (autoLoad) {
       dispatch(
         callAheadActions.getCallAheads({
-          params: {
-            showLoading: true,
+          params: {},
+          config: {
+            loadingMsg: "Loading call aheads...",
             staleTime: realGreenConst.paramTypesCacheTime,
           },
-          config: { loadingMsg: "Loading call aheads..." },
+        }),
+      );
+      dispatch(
+        callAheadActions.getKeywords({
+          params: {},
+          config: {
+            loadingMsg: "Loading keywords...",
+            staleTime: realGreenConst.paramTypesCacheTime,
+          },
         }),
       );
     }
   }, [autoLoad, dispatch]);
 
-  const refresh = () =>
+  const refresh = () => {
     dispatch(
       callAheadActions.getCallAheads({
-        params: {
-          showLoading: true,
-          force: true,
-        },
-        config: { loadingMsg: "Loading call aheads..." },
+        params: {},
+        config: { loadingMsg: "Loading call aheads...", force: true },
       }),
     );
+    dispatch(
+      callAheadActions.getKeywords({
+        params: {},
+        config: { loadingMsg: "Loading keywords...", force: true },
+      }),
+    );
+  };
 
-  return { refresh };
+  const upsertKeyword = (keywordId: string, message: string) => {
+    dispatch(
+      callAheadActions.upsertKeyword({
+        params: { keyword: { keywordId, message } },
+        config: { showLoading: false, force: true },
+      }),
+    );
+  };
+
+  const deleteKeyword = (keywordId: string) => {
+    dispatch(
+      callAheadActions.deleteKeyword({
+        params: { keywordId },
+        config: { showLoading: false, force: true },
+      }),
+    );
+  };
+
+  return { refresh, upsertKeyword, deleteKeyword };
 }

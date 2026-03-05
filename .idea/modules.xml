@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../next-sg/.idea/next-sg.iml" filepath="$PROJECT_DIR$/../next-sg/.idea/next-sg.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/sg-monti-com.iml" filepath="$PROJECT_DIR$/.idea/sg-monti-com.iml" />
     </modules>
   </component>

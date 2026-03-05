@@ -7,7 +7,7 @@ const containerVariants = cva("w-full", {
     variant: {
       centered:
         "flex min-h-screen items-center justify-center bg-background p-4",
-      page: "mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8",
+      page: "mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex-1",
       fluid: "w-full px-4 py-8 sm:px-6 lg:px-8",
     },
   },

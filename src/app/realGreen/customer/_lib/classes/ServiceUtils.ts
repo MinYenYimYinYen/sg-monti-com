@@ -3,6 +3,8 @@ import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerT
 import { DoneBy } from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { Condition } from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
+import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
+import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 
 export class ServiceUtils {
   constructor(private readonly service: Omit<Service, "x">) {}
@@ -25,13 +27,28 @@ export class ServiceUtils {
   }
 
   public get conditions(): Condition[] | null {
-    const serviceConditions =  this.service.production?.serviceConditions || null;
+    const serviceConditions =
+      this.service.production?.serviceConditions || null;
     if (serviceConditions) {
       return serviceConditions.map((sc) => sc.condition);
     } else {
       return null;
     }
   }
+
+  public get callAheads(): CallAhead[] {
+    const servCallAhead = this.service.callAhead;
+    const progCallAhead = this.service.program.callAhead;
+    const custCallAhead = this.service.program.customer.callAhead;
+    const callAheads = typeGuard.definedArray([
+      servCallAhead,
+      progCallAhead,
+      custCallAhead,
+    ]);
+    return callAheads;
+  }
+
+
 
   public get isPest(): boolean {
     return this.service.program.progCode.programType === "H";

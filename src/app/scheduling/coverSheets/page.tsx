@@ -7,23 +7,16 @@ import { DollarSign, Hash, LandPlot, Settings } from "lucide-react";
 import { Container } from "@/components/Containers";
 import { useCoverSheets } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheets";
 import { useSelector } from "react-redux";
-import { CSVDropzone } from "@/components/dropZone/dropZone";
-import { useCSV } from "@/app/csv/_lib/useCSV";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
-import { useViewport } from "@/lib/hooks/useViewport";
-import { authSelect } from "@/app/auth/authSlice";
 import { CoverSheetCard } from "@/app/scheduling/coverSheets/_lib/components/CoverSheetCard";
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 import Link from "next/link";
+import { UnservDropZone } from "@/app/scheduling/_libShared/UnservDropZone";
 
 type ViewState = "countSizeRev" | "servCodes" | "products";
 
 export default function CoverSheetsPage() {
   useCoverSheets();
-  const { isNarrow } = useViewport();
-  const role = useSelector(authSelect.role);
-  const canUpload = ["admin", "office"].includes(role ?? "");
-  const { parseAssignments } = useCSV();
   const servicesByDateAndEmployee = useSelector(
     coverSheetsSelect.servicesByDateAndEmployee,
   );
@@ -36,12 +29,7 @@ export default function CoverSheetsPage() {
       <div className={"flex justify-between items-center"}>
         <div className={"text-2xl font-bold"}>Cover Sheets</div>
       </div>
-      {canUpload && !isNarrow && (
-        <section>
-          <h2 className={"text-lg font-medium"}>Upload Unserviced Report</h2>
-          <CSVDropzone onFileDrop={(file) => parseAssignments(file)} />
-        </section>
-      )}
+      <UnservDropZone />
       <RadioGroup
         variant={"button-group"}
         value={view}

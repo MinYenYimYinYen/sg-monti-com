@@ -217,9 +217,7 @@ const selectCustomerMap = createSelector([selectCustomers], (customers) => {
   return new Grouper(customers).toUniqueMap((c) => c.custId);
 });
 
-// const selectCustIds = createSelector([selectCustDocMap], (custDocMap) => [
-//   ...custDocMap.keys(),
-// ]);
+
 
 export const centralSelect = {
   context: selectActiveContexts,

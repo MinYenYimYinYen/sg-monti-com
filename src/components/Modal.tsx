@@ -10,11 +10,11 @@ import { X } from "lucide-react";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { Button } from "@/style/components/button";
 
-interface ModalProps {
+export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
 }
 
@@ -109,7 +109,7 @@ export function Modal({
       <div
         ref={contentRef}
         className={cn(
-          "relative z-10  rounded-lg bg-background border border-accent/40 shadow-xl opacity-0 bg-accent/10",
+          "relative z-10  rounded-lg bg-background border border-accent/40 shadow-xl opacity-0 bg-accent/10 backdrop-blur-[10px]",
           className,
         )}
         role="dialog"

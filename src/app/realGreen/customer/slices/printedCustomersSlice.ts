@@ -10,7 +10,6 @@ import {
   StreamChunk,
 } from "@/app/realGreen/customer/api/CustomerContract";
 import { uiActions } from "@/store/reduxUtil/uiSlice";
-import { AppState } from "@/store";
 import { AppError } from "@/lib/errors/AppError";
 
 // Ensure the slice state satisfies the requirements for the selectors
@@ -77,9 +76,4 @@ export const printedCustomersActions = {
   getCustDocs,
 };
 
-// Define the slice selector
-const selectSlice = (state: AppState) => state.customer.printed;
 
-export const printedCustomersSelect = {
-  ...printedCustomersSlice.selectors,
-};
