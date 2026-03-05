@@ -1,0 +1,1 @@
+Agents: You are to think of proxy.ts in the same way you would think about a middleware.ts file. This project uses proxy.ts instead of middleware.ts, but it behaves in the same way.  Do not look for a middleware.ts file and do not create a middleware.ts file.  For anything you'd regard as middlware workflow, we will use proxy.ts.
