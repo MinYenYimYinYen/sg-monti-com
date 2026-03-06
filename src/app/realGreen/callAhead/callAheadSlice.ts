@@ -25,6 +25,18 @@ const callAheadSlice = createSlice({
     builder.addCase(getKeywords.fulfilled, (state, action) => {
       state.callAheadKeywords = action.payload;
     });
+    builder.addCase(upsertDocProps.fulfilled, (state, action) => {
+      const docProps = action.meta.arg.params.docProps;
+      const existingIndex = state.callAheadDocs.findIndex(
+        (doc) => doc.callAheadId === docProps.callAheadId,
+      );
+      if (existingIndex >= 0) {
+        state.callAheadDocs[existingIndex] = {
+          ...state.callAheadDocs[existingIndex],
+          ...docProps,
+        };
+      }
+    });
     builder.addCase(upsertKeyword.fulfilled, (state, action) => {
       const upsertedKeyword = action.payload;
       const existingIndex = state.callAheadKeywords.findIndex(
