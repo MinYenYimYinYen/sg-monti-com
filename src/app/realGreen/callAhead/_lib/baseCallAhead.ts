@@ -17,6 +17,7 @@ export const baseCallAheadCore: CallAheadCore = {
 };
 export const baseCallAheadDocProps: CallAheadDocProps = {
   callAheadId: baseNumId,
+  keywordIds: [],
   createdAt: "",
   updatedAt: "",
 };

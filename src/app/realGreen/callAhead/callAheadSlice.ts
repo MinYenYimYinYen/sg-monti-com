@@ -28,7 +28,7 @@ const callAheadSlice = createSlice({
     builder.addCase(upsertKeyword.fulfilled, (state, action) => {
       const upsertedKeyword = action.payload;
       const existingIndex = state.callAheadKeywords.findIndex(
-        (kw) => kw.keywordId === upsertedKeyword.keywordId
+        (kw) => kw.keywordId === upsertedKeyword.keywordId,
       );
       if (existingIndex >= 0) {
         state.callAheadKeywords[existingIndex] = upsertedKeyword;
@@ -39,7 +39,7 @@ const callAheadSlice = createSlice({
     builder.addCase(deleteKeyword.fulfilled, (state, action) => {
       const deletedKeyword = action.payload;
       state.callAheadKeywords = state.callAheadKeywords.filter(
-        (kw) => kw.keywordId !== deletedKeyword.keywordId
+        (kw) => kw.keywordId !== deletedKeyword.keywordId,
       );
     });
   },
@@ -50,6 +50,14 @@ const getCallAheads = createStandardThunk<CallAheadContract, "getAll">({
   apiPath: "/realGreen/callAhead/api",
   opName: "getAll",
 });
+
+const upsertDocProps = createStandardThunk<CallAheadContract, "upsertDocProps">(
+  {
+    typePrefix: "callAhead/upsertDocProps",
+    apiPath: "/realGreen/callAhead/api",
+    opName: "upsertDocProps",
+  },
+);
 
 const getKeywords = createStandardThunk<CallAheadContract, "getKeywords">({
   typePrefix: "callAhead/getKeywords",
@@ -72,6 +80,7 @@ const deleteKeyword = createStandardThunk<CallAheadContract, "deleteKeyword">({
 export const callAheadActions = {
   ...callAheadSlice.actions,
   getCallAheads,
+  upsertDocProps,
   getKeywords,
   upsertKeyword,
   deleteKeyword,

@@ -9,4 +9,5 @@ const selectKeywordMap = createSelector([selectKeywords], (keywords) =>
 
 export const keywordSelect = {
   keywordMap: selectKeywordMap,
+  keywords: selectKeywords,
 };

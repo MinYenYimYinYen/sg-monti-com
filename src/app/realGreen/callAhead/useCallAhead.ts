@@ -2,6 +2,7 @@ import { callAheadActions } from "@/app/realGreen/callAhead/callAheadSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
+import { CallAheadDocProps } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 
 export function useCallAhead({ autoLoad }: { autoLoad: boolean }) {
   const dispatch = useAppDispatch();
@@ -44,6 +45,15 @@ export function useCallAhead({ autoLoad }: { autoLoad: boolean }) {
     );
   };
 
+  const upsertDocProps = (docProps: CallAheadDocProps) => {
+    dispatch(
+      callAheadActions.upsertDocProps({
+        params: { docProps },
+        config: { showLoading: false, force: true},
+      }),
+    );
+  };
+
   const upsertKeyword = (keywordId: string, message: string) => {
     dispatch(
       callAheadActions.upsertKeyword({
@@ -62,5 +72,5 @@ export function useCallAhead({ autoLoad }: { autoLoad: boolean }) {
     );
   };
 
-  return { refresh, upsertKeyword, deleteKeyword };
+  return { refresh, upsertDocProps, upsertKeyword, deleteKeyword };
 }

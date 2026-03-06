@@ -1,5 +1,4 @@
 
-import CallAheadModel from "@/app/realGreen/callAhead/models/CallAheadModel";
 import { baseCallAheadDocProps } from "@/app/realGreen/callAhead/_lib/baseCallAhead";
 import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
 import {
@@ -8,6 +7,7 @@ import {
   CallAheadDocProps,
   CallAheadRaw,
 } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import { CallAheadDocPropsModel } from "@/app/realGreen/callAhead/models/CallAheadDocPropsModel";
 
 function remapCallAhead(raw: CallAheadRaw): CallAheadCore {
   return {
@@ -27,7 +27,7 @@ export async function extendCallAheads(
 ): Promise<CallAheadDoc[]> {
   return extendEntities<CallAheadCore, CallAheadDocProps, CallAheadDoc>({
     cores,
-    model: CallAheadModel,
+    model: CallAheadDocPropsModel,
     idField: "callAheadId",
     baseDocProps: baseCallAheadDocProps,
   });

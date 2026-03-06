@@ -15,6 +15,7 @@ import {
 } from "@/lib/mongoose/cleanMongoObj";
 import { AppError } from "@/lib/errors/AppError";
 import { CallAheadKeyword } from "@/app/realGreen/callAhead/_lib/ext/CallAheadExtTypes";
+import { CallAheadDocPropsModel } from "@/app/realGreen/callAhead/models/CallAheadDocPropsModel";
 
 const handlers: HandlerMap<CallAheadContract> = {
   getAll: {
@@ -30,6 +31,20 @@ const handlers: HandlerMap<CallAheadContract> = {
       const callAheadDocs = await extendCallAheads(callAheadCores);
 
       return { success: true, payload: callAheadDocs };
+    },
+  },
+
+  upsertDocProps: {
+    roles: ["office", "admin"],
+    handler: async ({ docProps }) => {
+      await connectToMongoDB();
+
+      await CallAheadDocPropsModel.findOneAndUpdate(
+        { callAheadId: docProps.callAheadId },
+        { $set: docProps },
+        { upsert: true, new: true },
+      );
+      return { success: true, payload: null };
     },
   },
 

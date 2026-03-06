@@ -117,7 +117,7 @@ export default function EntityMultiSelector<
               onClick={() => handleToggle(id)}
               onMouseEnter={() => setFocusedIndex(index)}
               className={cn(
-                "px-3  cursor-pointer transition-colors",
+                "px-3 cursor-pointer transition-colors",
                 "hover:bg-accent/50 hover:text-accent-foreground",
                 isFocused && "bg-accent/30",
                 isSelected
