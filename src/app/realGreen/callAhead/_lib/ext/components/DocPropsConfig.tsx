@@ -13,6 +13,7 @@ import EntityMultiSelector from "@/components/EntityMultiSelector";
 import { Button } from "@/style/components/button";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
+import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 
 export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
   const { upsertDocProps } = useCallAhead({ autoLoad: false });
@@ -22,7 +23,7 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
 
   const [isKeywordsOpen, setIsKeywordsOpen] = useState(false);
   const [selectedKeywordIds, setSelectedKeywordIds] = useState<string[]>(
-    doc?.keywordIds || []
+    doc?.keywordIds || [],
   );
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
@@ -62,6 +63,8 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
     setSaveStatus("idle");
   };
 
+
+
   return (
     <div className={"flex items-center gap-2"}>
       <div className="w-24">{doc.callAheadId}</div>
@@ -71,12 +74,10 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
         onOpenChange={setIsKeywordsOpen}
         className={"relative"}
       >
-        <CollapsibleTrigger asChild>
-          <Button variant={"outline"}>
-            {selectedKeywordIds.length} selected
-          </Button>
+        <CollapsibleTrigger asChild className={"capitalize flex items-center justify-center w-60"}>
+          <Button variant={"outline"}>{doc.keywordIds.length ? doc.keywordIds.join(", ") : "none"}</Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="absolute right-0 top-full z-50 mt-2 w-[500px] rounded-md border bg-popover p-4 shadow-md">
+        <CollapsibleContent className="absolute right-0 top-full z-50 mt-2 w-125 rounded-md border bg-popover p-4 shadow-md">
           <EntityMultiSelector
             items={keywords}
             getItemId={(keyword) => keyword.keywordId}

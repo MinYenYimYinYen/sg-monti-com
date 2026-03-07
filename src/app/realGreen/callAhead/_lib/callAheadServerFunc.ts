@@ -19,7 +19,9 @@ function remapCallAhead(raw: CallAheadRaw): CallAheadCore {
 }
 
 export function remapCallAheads(raw: CallAheadRaw[]) {
-  return raw.map((raw) => remapCallAhead(raw));
+  return raw.map((raw) => remapCallAhead(raw))
+    .filter((core) => core.available)
+    .sort((a,b) => a.description.localeCompare(b.description))
 }
 
 export async function extendCallAheads(
