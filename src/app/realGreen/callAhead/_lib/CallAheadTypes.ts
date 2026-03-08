@@ -1,4 +1,5 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { ContactType } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 
 export enum NotificationType {
   Text = "T",

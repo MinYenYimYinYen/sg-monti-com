@@ -24,6 +24,7 @@ import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils
 import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
 import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
+import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;

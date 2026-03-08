@@ -223,7 +223,7 @@ export interface Team {
   updated_at: string;
 }
 
-// ========== Channel/Source Types ==========
+// ========== ContactPoint/Source Types ==========
 
 export interface Source {
   id: string;

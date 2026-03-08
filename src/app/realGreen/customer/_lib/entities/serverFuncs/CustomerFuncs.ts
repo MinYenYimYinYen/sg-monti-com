@@ -5,8 +5,21 @@ import {
 } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { CustomerCore, CustomerDoc, CustomerRaw } from "../types/CustomerTypes";
+import { ContactPoint } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 
+function mapContactPoints(raw: CustomerRaw): ContactPoint[] {
+  const phoneContacts = raw.phones.map((phone) => ({
+    point: phone.number,
+    type: phone.type,
+  }));
 
+  const emailContacts: ContactPoint[] = raw.email.split(";").map((email) => ({
+    point: email,
+    type: "Email",
+  }));
+
+  return [...phoneContacts, ...emailContacts];
+}
 
 function remapCustomer(raw: CustomerRaw): CustomerCore {
   return {
@@ -33,7 +46,8 @@ function remapCustomer(raw: CustomerRaw): CustomerCore {
     isMasterAcct: raw.isMasterAccount,
     masterAcctId: raw.masterAccountID || baseNumId,
     netBalance: raw.netBalance,
-    phones: raw.phones,
+    // phones: raw.phones,
+    contactPoints: mapContactPoints(raw),
     size: raw.size,
     status: raw.statusCharacter,
     subdivisionId: raw.subdivisionID || baseNumId,

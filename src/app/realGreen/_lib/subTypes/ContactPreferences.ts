@@ -61,7 +61,7 @@ export function remapContactPreference(
     dontUpsell: raw.dontUpsell,
     emailPrenotify: raw.emailPrenotification,
     emailStatements: raw.emailStatements,
-    prefPhoneId: raw.preferredPhone, //could refer to PhoneType
+    prefPhoneId: raw.preferredPhone, //could refer to ContactType
     prefPhoneDesc: raw.preferredPhoneDesc,
     textPrenotify: raw.textPrenotification,
     dontText: raw.dontText,

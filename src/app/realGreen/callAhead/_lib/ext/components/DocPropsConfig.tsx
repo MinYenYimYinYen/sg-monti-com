@@ -18,7 +18,7 @@ import {
 const notificationTypeLabels: Record<NotificationType, string> = {
   [NotificationType.Text]: "Text",
   [NotificationType.Manual]: "Manual",
-  [NotificationType.Phone]: "Phone",
+  [NotificationType.Phone]: "PhoneRaw",
   [NotificationType.Email]: "Email",
 };
 

@@ -4,13 +4,18 @@ import {
   ContactPreference,
   ContactPreferenceRaw,
 } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
-import { Phone } from "@/app/realGreen/_lib/subTypes/Phone";
+import { ContactPoint, PhoneRaw } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 import { Program } from "./ProgramTypes";
 import { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
-import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import {
+  CallAhead,
+  CallAheadDoc,
+} from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { Flag } from "@/app/realGreen/flag/FlagTypes";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
+
+
 
 export type CustomerRaw = {
   address: Address;
@@ -95,7 +100,7 @@ export type CustomerRaw = {
   // pH: number | null;
   // password: string;
   // payAlert: boolean;
-  phones: Phone[];
+  phones: PhoneRaw[];
   // preferredEmail: string;
   // preferredLanguage: string;
   // preferredPhone: PreferredPhoneType;
@@ -153,7 +158,8 @@ export type CustomerCore = {
   isMasterAcct: boolean;
   masterAcctId: number;
   netBalance: number;
-  phones: Phone[];
+  // phones: PhoneRaw[];
+  contactPoints: ContactPoint[];
   size: number;
   status: string;
   subdivisionId: number;
