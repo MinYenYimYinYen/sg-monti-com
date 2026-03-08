@@ -5,7 +5,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/style/components/tabs";
-import EntityMultiSelector from "@/components/EntityMultiSelector";
 import { useFlag } from "@/app/realGreen/flag/useFlag";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { useSelector } from "react-redux";
@@ -14,6 +13,7 @@ import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { useState } from "react";
 import { Badge } from "@/style/components/badge";
 import { XIcon } from "lucide-react";
+import { EntityMultiSelector } from "@/components/MultiSelect";
 
 export function CoverSheetsConfigEditor() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");

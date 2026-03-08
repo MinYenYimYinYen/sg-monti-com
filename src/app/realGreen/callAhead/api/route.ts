@@ -21,6 +21,17 @@ const handlers: HandlerMap<CallAheadContract> = {
   getAll: {
     roles: ["office", "admin"],
     handler: async () => {
+      //Write a script to add notification types empty array to pre-existing
+      // docs
+      // await connectToMongoDB();
+      // await CallAheadDocPropsModel.updateMany(
+      //   {},
+      //   { $set: { notificationTypes: [] } },
+      // );
+      //
+      // console.log("done");
+      // return;
+
       const rawCallAheads = await rgApi<CallAheadRaw[]>({
         path: "/CallAhead",
         method: "GET",

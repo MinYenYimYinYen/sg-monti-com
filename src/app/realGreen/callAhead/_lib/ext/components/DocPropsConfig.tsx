@@ -2,18 +2,24 @@
 
 import { callAheadSelect } from "@/app/realGreen/callAhead/selectors/callAheadSelect";
 import { useSelector } from "react-redux";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "@/style/components/collapsible";
 import React, { useState } from "react";
 import { keywordSelect } from "@/app/realGreen/callAhead/selectors/keywordSelect";
-import EntityMultiSelector from "@/components/EntityMultiSelector";
-import { Button } from "@/style/components/button";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
-import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
+import { NotificationType } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import {
+  CollapsibleMultiSelector,
+  MultiSelect,
+} from "@/components/MultiSelect";
+
+const notificationTypeLabels: Record<NotificationType, string> = {
+  [NotificationType.Text]: "Text",
+  [NotificationType.Manual]: "Manual",
+  [NotificationType.Phone]: "Phone",
+  [NotificationType.Email]: "Email",
+};
+
+const allNotificationTypes = Object.values(NotificationType);
 
 export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
   const { upsertDocProps } = useCallAhead({ autoLoad: false });
@@ -21,16 +27,19 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
   const doc = docMap.get(callAheadId);
   const keywords = useSelector(keywordSelect.keywords);
 
-  const [isKeywordsOpen, setIsKeywordsOpen] = useState(false);
   const [selectedKeywordIds, setSelectedKeywordIds] = useState<string[]>(
     doc?.keywordIds || [],
   );
+  const [selectedNotificationTypes, setSelectedNotificationTypes] = useState<NotificationType[]>(
+    doc?.notificationTypes || [],
+  );
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
-  // Update local state if doc keywordIds change externally
+  // Update local state if doc properties change externally
   React.useEffect(() => {
     if (doc) {
       setSelectedKeywordIds(doc.keywordIds);
+      setSelectedNotificationTypes(doc.notificationTypes);
     }
   }, [doc]);
 
@@ -38,7 +47,9 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
 
   const hasChanges =
     JSON.stringify([...selectedKeywordIds].sort()) !==
-    JSON.stringify([...doc.keywordIds].sort());
+      JSON.stringify([...doc.keywordIds].sort()) ||
+    JSON.stringify([...selectedNotificationTypes].sort()) !==
+      JSON.stringify([...doc.notificationTypes].sort());
   const canSave = hasChanges;
 
   const handleSave = async () => {
@@ -49,6 +60,7 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
       upsertDocProps({
         callAheadId: doc.callAheadId,
         keywordIds: selectedKeywordIds,
+        notificationTypes: selectedNotificationTypes,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
       });
@@ -69,29 +81,34 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
     <div className={"flex items-center gap-2"}>
       <div className="w-24">{doc.callAheadId}</div>
       <div className="flex-1">{doc.description}</div>
-      <Collapsible
-        open={isKeywordsOpen}
-        onOpenChange={setIsKeywordsOpen}
-        className={"relative"}
-      >
-        <CollapsibleTrigger asChild className={"capitalize flex items-center justify-center w-60"}>
-          <Button variant={"outline"}>{doc.keywordIds.length ? doc.keywordIds.join(", ") : "none"}</Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="absolute right-0 top-full z-50 mt-2 w-125 rounded-md border bg-popover p-4 shadow-md">
-          <EntityMultiSelector
-            items={keywords}
-            getItemId={(keyword) => keyword.keywordId}
-            getItemLabel={(keyword) => (
-              <div className={"grid grid-cols-[10rem_1fr] gap-2"}>
-                <div>{keyword.keywordId}</div>
-                <div>{keyword.message}</div>
-              </div>
-            )}
-            selectedIds={selectedKeywordIds}
-            onChange={(ids) => setSelectedKeywordIds(ids)}
-          />
-        </CollapsibleContent>
-      </Collapsible>
+      <MultiSelect
+        collapsible={true}
+        items={keywords}
+        selectedIds={selectedKeywordIds}
+        getItemId={(keyword) => keyword.keywordId}
+        getItemLabel={(keyword) => (
+          <div className={"grid grid-cols-[10rem_1fr] gap-2"}>
+            <div>{keyword.keywordId}</div>
+            <div>{keyword.message}</div>
+          </div>
+        )}
+        getTriggerLabel={(keyword) => keyword.keywordId}
+        onChange={(ids) => setSelectedKeywordIds(ids)}
+        triggerClassName="w-60"
+        popoverClassName="w-125"
+      />
+      <MultiSelect
+        collapsible={true}
+
+        items={allNotificationTypes}
+        selectedIds={selectedNotificationTypes}
+        getItemId={(type) => type}
+        getItemLabel={(type) => <div>{notificationTypeLabels[type]}</div>}
+        getTriggerLabel={(type) => notificationTypeLabels[type]}
+        onChange={(types) => setSelectedNotificationTypes(types as NotificationType[])}
+        triggerClassName="w-40"
+        popoverClassName="w-60"
+      />
       <SaveButton
         status={saveStatus}
         onClick={handleSave}
