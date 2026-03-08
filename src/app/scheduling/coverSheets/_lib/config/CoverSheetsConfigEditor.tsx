@@ -13,7 +13,13 @@ import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { useState } from "react";
 import { Badge } from "@/style/components/badge";
 import { XIcon } from "lucide-react";
-import { EntityMultiSelector } from "@/components/MultiSelect";
+import {
+  MultiSelect,
+  MultiSelectTrigger,
+  MultiSelectContent,
+  MultiSelectItem,
+  MultiSelectValue,
+} from "@/components/MultiSelect";
 
 export function CoverSheetsConfigEditor() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -46,19 +52,28 @@ export function CoverSheetsConfigEditor() {
         <TabsContent value={"showFlags"}>
           <div className={"flex gap-2 md:gap-6 w-full"}>
             <div className={"space-y-2"}>
-              <EntityMultiSelector
-                className={"max-h-[50vh] overflow-y-auto w-[20rem] truncate"}
-                items={flagDocs}
-                getItemId={(f) => f.flagId}
-                getItemLabel={(f) => f.desc}
-                selectedIds={localCoverSheetsConfig.flagIds}
-                onChange={(ids) =>
+              <MultiSelect
+                value={localCoverSheetsConfig.flagIds}
+                onValueChange={(ids) =>
                   setLocalCoverSheetsConfig({
                     ...localCoverSheetsConfig,
                     flagIds: ids,
                   })
                 }
-              />
+              >
+                <MultiSelectTrigger className="w-[20rem]">
+                  <MultiSelectValue placeholder="Select flags...">
+                    {(values) => `${values.length} flag${values.length !== 1 ? 's' : ''} selected`}
+                  </MultiSelectValue>
+                </MultiSelectTrigger>
+                <MultiSelectContent className="w-[20rem] max-h-[50vh]">
+                  {flagDocs.map((flag) => (
+                    <MultiSelectItem key={flag.flagId} value={flag.flagId}>
+                      {flag.desc}
+                    </MultiSelectItem>
+                  ))}
+                </MultiSelectContent>
+              </MultiSelect>
               <div className={"w-[20rem] flex justify-between"}>
                 <Button onClick={cancelChanges} variant={"destructive"} intensity={"soft"}>Cancel</Button>
                 <SaveButton

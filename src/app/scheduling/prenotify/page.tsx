@@ -12,6 +12,12 @@ import { FooterPortal } from "@/components/FooterPortal";
 import { Settings } from "lucide-react";
 import { useState } from "react";
 import { CallAheadConfig } from "@/app/realGreen/callAhead/_lib/ext/components/CallAheadConfig";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/style/components/card";
 
 const selectPrintedByDate = createSelector(
   [centralSelect.services],
@@ -50,7 +56,14 @@ export default function Prenotify() {
           {dates.map((date) => {
             const services = printedByDate.get(date)!;
 
-            return <div key={date}></div>;
+            return (
+              <Card key={date}>
+                <CardHeader className={"p-1"}>
+                  <CardTitle>{date}</CardTitle>
+                </CardHeader>
+                <CardContent>Routes</CardContent>
+              </Card>
+            );
           })}
         </ScrollArea>
       </div>

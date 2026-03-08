@@ -8,8 +8,11 @@ import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 import { NotificationType } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import {
-  CollapsibleMultiSelector,
   MultiSelect,
+  MultiSelectTrigger,
+  MultiSelectContent,
+  MultiSelectItem,
+  MultiSelectValue,
 } from "@/components/MultiSelect";
 
 const notificationTypeLabels: Record<NotificationType, string> = {
@@ -81,34 +84,50 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
     <div className={"flex items-center gap-2"}>
       <div className="w-24">{doc.callAheadId}</div>
       <div className="flex-1">{doc.description}</div>
-      <MultiSelect
-        collapsible={true}
-        items={keywords}
-        selectedIds={selectedKeywordIds}
-        getItemId={(keyword) => keyword.keywordId}
-        getItemLabel={(keyword) => (
-          <div className={"grid grid-cols-[10rem_1fr] gap-2"}>
-            <div>{keyword.keywordId}</div>
-            <div>{keyword.message}</div>
-          </div>
-        )}
-        getTriggerLabel={(keyword) => keyword.keywordId}
-        onChange={(ids) => setSelectedKeywordIds(ids)}
-        triggerClassName="w-60"
-        popoverClassName="w-125"
-      />
-      <MultiSelect
-        collapsible={true}
 
-        items={allNotificationTypes}
-        selectedIds={selectedNotificationTypes}
-        getItemId={(type) => type}
-        getItemLabel={(type) => <div>{notificationTypeLabels[type]}</div>}
-        getTriggerLabel={(type) => notificationTypeLabels[type]}
-        onChange={(types) => setSelectedNotificationTypes(types as NotificationType[])}
-        triggerClassName="w-40"
-        popoverClassName="w-60"
-      />
+      <MultiSelect
+        value={selectedKeywordIds}
+        onValueChange={setSelectedKeywordIds}
+      >
+        <MultiSelectTrigger className="w-60">
+          <MultiSelectValue placeholder="none">
+            {(values) => values.join(", ") || "none"}
+          </MultiSelectValue>
+        </MultiSelectTrigger>
+        <MultiSelectContent className="w-125">
+          {keywords.map((keyword) => (
+            <MultiSelectItem key={keyword.keywordId} value={keyword.keywordId}>
+              <div className={"grid grid-cols-[10rem_1fr] gap-2"}>
+                <div>{keyword.keywordId}</div>
+                <div>{keyword.message}</div>
+              </div>
+            </MultiSelectItem>
+          ))}
+        </MultiSelectContent>
+      </MultiSelect>
+
+      <MultiSelect
+        value={selectedNotificationTypes}
+        onValueChange={setSelectedNotificationTypes}
+      >
+        <MultiSelectTrigger className="w-40">
+          <MultiSelectValue placeholder="none">
+            {(values) =>
+              values.length > 0
+                ? values.map((v) => notificationTypeLabels[v as NotificationType]).join(", ")
+                : "none"
+            }
+          </MultiSelectValue>
+        </MultiSelectTrigger>
+        <MultiSelectContent className="w-60">
+          {allNotificationTypes.map((type) => (
+            <MultiSelectItem key={type} value={type}>
+              {notificationTypeLabels[type]}
+            </MultiSelectItem>
+          ))}
+        </MultiSelectContent>
+      </MultiSelect>
+
       <SaveButton
         status={saveStatus}
         onClick={handleSave}

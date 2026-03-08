@@ -6,4 +6,10 @@ export const baseGlobalSettings: GlobalSettings = {
   updatedAt: "",
   season: new Date().getFullYear(),
   coverSheetsConfig: baseCoverSheetsConfig,
+  phoneMap: {
+    "P": ["Home", "Cell", "Other"],
+    "T": ["Home", "Cell", "Other", "Text"],
+    "E": [],
+    "U": ["Home", "Cell", "Other"]
+  }
 };

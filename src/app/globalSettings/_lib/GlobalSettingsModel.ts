@@ -13,6 +13,11 @@ const GlobalSettingsSchema = new mongoose.Schema<GlobalSettings>(
       required: true,
       default: baseGlobalSettings.coverSheetsConfig,
     },
+    phoneMap: {
+      type: Object,
+      required: true,
+      default: baseGlobalSettings.phoneMap,
+    }
   },
   { timestamps: true },
 );

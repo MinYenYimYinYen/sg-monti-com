@@ -5,6 +5,7 @@ import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { Condition } from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import { baseGlobalSettings } from "@/app/globalSettings/_lib/baseGlobalSettings";
 
 export class ServiceUtils {
   constructor(private readonly service: Omit<Service, "x">) {}
@@ -48,7 +49,18 @@ export class ServiceUtils {
     return callAheads;
   }
 
-
+  //todo
+  // public get prenotifies() {
+  //   const phoneMap = baseGlobalSettings.phoneMap;
+  //   return this.callAheads.map((callAhead) => {
+  //
+  //     const x = callAhead.notificationTypes.map((notificationtype) => {
+  //       const phoneTypes = phoneMap[notificationtype];
+  //
+  //
+  //     });
+  //   });
+  // }
 
   public get isPest(): boolean {
     return this.service.program.progCode.programType === "H";
