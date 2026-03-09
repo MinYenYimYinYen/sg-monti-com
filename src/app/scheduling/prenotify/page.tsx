@@ -1,16 +1,12 @@
 "use client";
 import { usePrenotify } from "@/app/scheduling/prenotify/_lib/usePrenotify";
 import { useSelector } from "react-redux";
-import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
-import { createSelector } from "@reduxjs/toolkit";
-import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
-import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { Container } from "@/components/Containers";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { UnservDropZone } from "@/app/scheduling/_libShared/UnservDropZone";
 import { FooterPortal } from "@/components/FooterPortal";
 import { Settings } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { CallAheadConfig } from "@/app/realGreen/callAhead/_lib/ext/components/CallAheadConfig";
 import {
   Card,
@@ -18,32 +14,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/style/components/card";
-
-const selectPrintedByDate = createSelector(
-  [centralSelect.services],
-  (services) => {
-    const servicesByDate = new Grouper(services)
-      .groupBy((s) => {
-        const schedDate = prettyDate(s.lastAssigned.schedDate, "EEE, MMM d", {
-          fallback: "Need CSV",
-        });
-        return schedDate;
-      })
-      .toMap();
-    return servicesByDate;
-  },
-);
-
-const selectDateKeys = createSelector([selectPrintedByDate], (servicesByDate) =>
-  Array.from(servicesByDate.keys()),
-);
+import { prenotifySelect } from "@/app/scheduling/prenotify/_lib/prenotifySelect";
+import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 
 export default function Prenotify() {
   usePrenotify();
   const [isConfigOpen, setIsConfigOpen] = useState(false);
-
-  const printedByDate = useSelector(selectPrintedByDate);
-  const dates = useSelector(selectDateKeys);
+  const prenotifications = useSelector(prenotifySelect.prenotifications);
+  const summaries = useSelector(prenotifySelect.summaries);
+  const dates = Array.from(prenotifications.keys()).sort((a, b) =>
+    a.localeCompare(b),
+  );
 
   return (
     <Container variant={"page"} className="h-full flex flex-col flex-1">
@@ -54,14 +35,24 @@ export default function Prenotify() {
       <div className={"flex-1 flex flex-row items-start justify-start"}>
         <ScrollArea className={"dev-border w-[20%] h-full"}>
           {dates.map((date) => {
-            const services = printedByDate.get(date)!;
-
+            const summary = summaries.get(date)!;
             return (
               <Card key={date}>
                 <CardHeader className={"p-1"}>
-                  <CardTitle>{date}</CardTitle>
+                  <CardTitle>{prettyDate(date,"EEE, MMM d")}</CardTitle>
                 </CardHeader>
-                <CardContent>Routes</CardContent>
+                <CardContent>
+                  <div className={"grid grid-cols-[1fr_4rem] gap-1"}>
+                    {Array.from(summary.notificationCounts.entries()).map(
+                      ([type, count]) => (
+                        <Fragment key={type}>
+                          <p>{type}:</p>
+                          <p className={"text-right"}>{count}</p>
+                        </Fragment>
+                      ),
+                    )}
+                  </div>
+                </CardContent>
               </Card>
             );
           })}

@@ -5,10 +5,10 @@ import {
 } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 
 export enum NotificationType {
-  Text = "T",
-  Manual = "U",
-  Phone = "P",
-  Email = "E",
+  Text = "Text",
+  Manual = "Manual",
+  Phone = "Phone",
+  Email = "Email",
 }
 
 export type CallAheadRaw = {

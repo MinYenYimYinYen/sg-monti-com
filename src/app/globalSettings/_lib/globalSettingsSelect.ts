@@ -1,7 +1,8 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
+import { baseGlobalSettings } from "@/app/globalSettings/_lib/baseGlobalSettings";
 
-const selectSettings = (state: AppState) => state.globalSettings.settings;
+const selectSettings = (state: AppState) => state.globalSettings.settings ?? baseGlobalSettings;
 
 const selectSeason = createSelector(
   [selectSettings],

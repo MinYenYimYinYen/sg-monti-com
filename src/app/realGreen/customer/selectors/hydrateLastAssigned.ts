@@ -51,6 +51,7 @@ export function hydrateLastAssigned(
 
   return {
     ...doc,
+    schedDate: doc.schedDate.split('T')[0], // Normalize to YYYY-MM-DD format
     employee,
   };
 }
