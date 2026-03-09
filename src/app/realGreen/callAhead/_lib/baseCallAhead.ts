@@ -28,7 +28,9 @@ export const baseCallAheadDoc: CallAheadDoc = {
   ...baseCallAheadDocProps,
 };
 
-export const baseCallAheadProps: CallAheadProps = {};
+export const baseCallAheadProps: CallAheadProps = {
+  contactTypes: [],
+};
 
 export const baseCallAhead: CallAhead = {
   ...baseCallAheadDoc,

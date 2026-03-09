@@ -11,7 +11,9 @@ import {
 } from "@/app/realGreen/_lib/subTypes/Production";
 import { Program } from "./ProgramTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { CallAheadDoc } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import {
+  CallAhead,
+} from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
@@ -131,7 +133,7 @@ export type ServiceProps = {
   x: ServiceUtils;
   program: Program;
   servCode: ServCode;
-  callAhead: CallAheadDoc | null;
+  callAhead: CallAhead | null;
   discount: DiscountDoc | null;
   production: Production | null;
   productsPlanned: AppProduct[];

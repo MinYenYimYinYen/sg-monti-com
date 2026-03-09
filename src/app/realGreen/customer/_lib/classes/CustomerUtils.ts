@@ -4,7 +4,7 @@ import { ProgramQuery } from "@/app/realGreen/customer/_lib/classes/ProgramQuery
 import { getPrenotifications, Prenotification } from "@/app/realGreen/customer/_lib/classes/helpers/xCustPrenotifications";
 
 export class CustomerUtils {
-  constructor(private readonly customer: Omit<Customer, "x">) {}
+  constructor(public readonly customer: Omit<Customer, "x">) {}
   public get programs() {
     return this.customer.programs;
   }

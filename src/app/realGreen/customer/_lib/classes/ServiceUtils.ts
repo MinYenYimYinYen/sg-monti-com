@@ -49,19 +49,6 @@ export class ServiceUtils {
     return callAheads;
   }
 
-  //todo
-  // public get prenotifies() {
-  //   const phoneMap = baseGlobalSettings.phoneMap;
-  //   return this.callAheads.map((callAhead) => {
-  //
-  //     const x = callAhead.notificationTypes.map((notificationtype) => {
-  //       const phoneTypes = phoneMap[notificationtype];
-  //
-  //
-  //     });
-  //   });
-  // }
-
   public get isPest(): boolean {
     return this.service.program.progCode.programType === "H";
   }

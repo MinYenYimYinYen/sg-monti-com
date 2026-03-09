@@ -81,7 +81,7 @@ export const selectCustomers = createSelector(
     selectProgCodeMapByDefId,
     selectServCodeMap,
     basicTaxCodeSelect.basicTaxCodeMap,
-    callAheadSelect.callAheadDocMap,
+    callAheadSelect.callAheadMap,
     discountSelect.discountDocMap,
     productSelect.productCommonMap,
     productSelect.allProductsMap,

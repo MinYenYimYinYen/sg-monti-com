@@ -7,15 +7,10 @@ import {
 import { ContactPoint, PhoneRaw } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 import { Program } from "./ProgramTypes";
 import { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
-import {
-  CallAhead,
-  CallAheadDoc,
-} from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { Flag } from "@/app/realGreen/flag/FlagTypes";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
-
-
 
 export type CustomerRaw = {
   address: Address;
@@ -178,7 +173,7 @@ export type CustomerProps = {
   x: CustomerUtils;
   programs: Program[];
   taxCodes: TaxCode[];
-  callAhead: CallAheadDoc | null;
+  callAhead: CallAhead | null;
   discount: DiscountDoc | null;
   flags: Flag[];
 };
