@@ -2,10 +2,12 @@ import { ContactPoint } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 
 export type Prenotification = {
   contactPoints: ContactPoint[];
-  service: Service;
+  services: Service[];
+  callAheads: CallAhead[];
 };
 
 export function getPrenotifications(
@@ -24,7 +26,8 @@ export function getPrenotifications(
         //todo: I'm not sure if this needs to be unique at this point.
         const prenotification: Prenotification = {
           contactPoints,
-          service,
+          services,
+          callAheads,
         };
         return prenotification;
       });

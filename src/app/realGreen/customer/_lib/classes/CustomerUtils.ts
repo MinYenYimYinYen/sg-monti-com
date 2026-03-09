@@ -12,6 +12,14 @@ export class CustomerUtils {
     return this.programs.flatMap((program) => program.services);
   }
 
+  public get printedServices() {
+    return this.serviceQuery.byStatus("printed").results;
+  }
+
+  public get hasPrintedServices() {
+    return this.printedServices.length > 0;
+  }
+
   public get serviceQuery(): ServiceQuery {
     return new ServiceQuery(this.services);
   }
@@ -20,7 +28,7 @@ export class CustomerUtils {
     return new ProgramQuery(this.programs);
   }
 
-  public get prenotifications(): Prenotification[] {
-    return getPrenotifications(this);
-  }
+  // public get prenotifications(): Prenotification[] {
+  //   return getPrenotifications(this);
+  // }
 }
