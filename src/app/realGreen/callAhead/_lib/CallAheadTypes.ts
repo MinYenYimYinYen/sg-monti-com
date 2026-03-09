@@ -1,8 +1,5 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import {
-  ContactPoint,
-  ContactType,
-} from "@/app/realGreen/_lib/subTypes/PhoneRaw";
+import { ContactType } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 
 export enum NotificationType {
   Text = "Text",
@@ -42,5 +39,3 @@ export type CallAheadProps = {
 };
 
 export type CallAhead = CallAheadDoc & CallAheadProps;
-
-

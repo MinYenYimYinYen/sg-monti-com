@@ -1,7 +1,6 @@
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { ServiceQuery } from "@/app/realGreen/customer/_lib/classes/ServiceQuery";
 import { ProgramQuery } from "@/app/realGreen/customer/_lib/classes/ProgramQuery";
-import { getPrenotifications, Prenotification } from "@/app/realGreen/customer/_lib/classes/helpers/xCustPrenotifications";
 
 export class CustomerUtils {
   constructor(public readonly customer: Omit<Customer, "x">) {}
@@ -27,8 +26,4 @@ export class CustomerUtils {
   public get programQuery(): ProgramQuery {
     return new ProgramQuery(this.programs);
   }
-
-  // public get prenotifications(): Prenotification[] {
-  //   return getPrenotifications(this);
-  // }
 }
