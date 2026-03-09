@@ -4,21 +4,28 @@ import {
 } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
+import { BaseQuery } from "@/lib/primatives/typeUtils/BaseQuery";
 
-export class ServiceQuery {
-  constructor(private services: Service[]) {}
+export class ServiceQuery extends BaseQuery<Service> {
+  constructor(services: Service[]) {
+    super(services);
+  }
+
+  protected createInstance(items: Service[]): this {
+    return new ServiceQuery(items) as this;
+  }
 
   byStatus(...keys: ServiceStatusType[]) {
     const statuses = getServiceStatuses(keys);
     const serviceQuery = new ServiceQuery(
-      this.services.filter((s) => statuses.includes(s.status)),
+      this.items.filter((s) => statuses.includes(s.status)),
     );
     return serviceQuery;
   }
 
   byDoneDate(min: string, max: string) {
     const doneServices = typeGuard.definedArray(
-      this.services.filter((s) => s.x.doneDate),
+      this.items.filter((s) => s.x.doneDate),
     );
     return new ServiceQuery(
       doneServices.filter((s) => s.x.doneDate! >= min && s.x.doneDate! <= max),
@@ -27,15 +34,13 @@ export class ServiceQuery {
 
   byPriceRange(min: number, max: number) {
     return new ServiceQuery(
-      this.services.filter((s) => s.price >= min && s.price <= max),
+      this.items.filter((s) => s.price >= min && s.price <= max),
     );
   }
 
   isPest(bool: boolean) {
-    return new ServiceQuery(this.services.filter((s) => s.x.isPest === bool));
+    return new ServiceQuery(this.items.filter((s) => s.x.isPest === bool));
   }
 
-  get results() {
-    return this.services;
-  }
+
 }
