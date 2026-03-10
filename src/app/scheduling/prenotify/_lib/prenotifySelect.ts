@@ -194,7 +194,7 @@ export const getMessages = {
     const keywordIdToMessage = new Map<string, string>();
 
     prenotificationData.forEach((pnData) => {
-      const { customer, services, callAheads, contactPoints } = pnData;
+      const { services, callAheads, contactPoints } = pnData;
       const serviceName = services.map((s) => s.servCode.longName).join(", ");
 
       // Build keyword ID to message mapping and collect unique keyword IDs
@@ -246,7 +246,7 @@ export const getMessages = {
     const keywordIdToMessage = new Map<string, string>();
 
     prenotificationData.forEach((pnData) => {
-      const { customer, services, callAheads, contactPoints } = pnData;
+      const { services, callAheads, contactPoints } = pnData;
       const serviceName = services.map((s) => s.servCode.longName).join(", ");
 
       // Build keyword ID to message mapping and collect unique keyword IDs
