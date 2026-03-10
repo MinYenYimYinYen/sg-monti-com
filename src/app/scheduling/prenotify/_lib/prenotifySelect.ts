@@ -141,18 +141,18 @@ const selectPrenotificationsByDateAndType = (
     return prenotifications.get(date)?.get(type);
   });
 
-type RoboPreNotifData = {
+export type RoboPreNotifData = {
   serviceName: string;
   points: string[];
 };
 
-type EmailPreNotifData = {
+export type EmailPreNotifData = {
   subject: string;
   message: string;
   points: string[];
 };
 
-type TextPreNotifData = {
+export type TextPreNotifData = {
   message: string;
   points: string[];
 }
@@ -284,4 +284,5 @@ const selectPrenotificationMessagePoints = (
 export const prenotifySelect = {
   prenotifications: selectPrenotifications,
   summaries: selectPrenotificationSummaries,
+  messagePoints: selectPrenotificationMessagePoints,
 };

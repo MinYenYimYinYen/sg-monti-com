@@ -25,6 +25,7 @@ import {
 import { MultiSelect, MultiSelectItem } from "@/components/MultiSelect";
 import { Prenotification } from "@/app/realGreen/customer/_lib/classes/helpers/xCustPrenotifications";
 import { NotificationType } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import { PrenotifyByType } from "@/app/scheduling/prenotify/_lib/PrenotifyByType";
 
 export default function Prenotify() {
   usePrenotify();
@@ -93,7 +94,9 @@ export default function Prenotify() {
         <div className={"w-full h-full"}>
           <Tabs
             value={selectedNotificationType}
-            onValueChange={(value) => setSelectedNotificationType(value as NotificationType)}
+            onValueChange={(value) =>
+              setSelectedNotificationType(value as NotificationType)
+            }
           >
             <TabsList>
               {selectedDate.length > 0 &&
@@ -110,11 +113,10 @@ export default function Prenotify() {
                   );
                 })}
             </TabsList>
-            {selectedPrenotifies.map(([key, value]) => {
-
+            {selectedPrenotifies.map(([notificationType, value]) => {
               return (
-                <TabsContent key={key} value={key}>
-                  Component will go here. It will use selectPrenotificationMessagePoints params as props.
+                <TabsContent key={notificationType} value={notificationType}>
+                  <PrenotifyByType date={selectedDate[0] ?? ""} type={notificationType} />
                 </TabsContent>
               );
             })}
