@@ -7,8 +7,6 @@ import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTyp
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { ContactPoint } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
-import { prettyDate } from "@/lib/primatives/dates/prettyDate";
-import { hashParams } from "@/store/reduxUtil/hashParams";
 import { chunkObjectArray } from "@/lib/primatives/typeUtils/chunkArray";
 
 export type PrenotificationData = {
@@ -62,10 +60,16 @@ const selectPrenotifications = createSelector(
           }
           const dateMap = result.get(scheduleDate)!;
 
+          // Deduplicate callAheads by callAheadId before grouping
+          const allCallAheads = services.flatMap((s) => s.x.callAheads);
+          const uniqueCallAheadsMap = new Map<number, CallAhead>();
+          allCallAheads.forEach((ca) => {
+            uniqueCallAheadsMap.set(ca.callAheadId, ca);
+          });
+          const uniqueCallAheads = Array.from(uniqueCallAheadsMap.values());
+
           // Level 2: Group callAheads by NotificationType
-          const callAheadsByType = new Grouper(
-            services.flatMap((s) => s.x.callAheads),
-          )
+          const callAheadsByType = new Grouper(uniqueCallAheads)
             .groupBy((ca) => ca.type)
             .toMap();
 
@@ -150,14 +154,16 @@ export type EmailPreNotifData = {
   subject: string;
   message: string;
   points: string[];
+  hashKey: string;
 };
 
 export type TextPreNotifData = {
   message: string;
   points: string[];
+  hashKey: string;
 }
 
-const getMessages = {
+export const getMessages = {
   [NotificationType.Phone]: (
     _date: string,
     prenotificationData: PrenotificationData[],
@@ -165,11 +171,12 @@ const getMessages = {
     const pointsByServCode = new Map<string, string[]>();
     prenotificationData.forEach((pnData) => {
       const { customer, services, callAheads, contactPoints } = pnData;
+      console.log("contactPoints", contactPoints);
       const serviceName = services.map((s) => s.servCode.longName).join(", ");
       const existingPoints = pointsByServCode.get(serviceName) || [];
       pointsByServCode.set(serviceName, [
         ...existingPoints,
-        ...pnData.contactPoints.map((cp) => cp.point).join(","),
+        ...contactPoints.map((cp) => cp.point.slice(0,10)),
       ]);
     });
     const roboData: RoboPreNotifData[] = Array.from(
@@ -184,26 +191,43 @@ const getMessages = {
     prenotificationData: PrenotificationData[],
   ) => {
     const pointsByServCodeAndMsg = new Map<string, string[]>();
+    const keywordIdToMessage = new Map<string, string>();
+
     prenotificationData.forEach((pnData) => {
       const { customer, services, callAheads, contactPoints } = pnData;
       const serviceName = services.map((s) => s.servCode.longName).join(", ");
-      const keywordMessage = callAheads
-        .map((ca) => ca.keywordMessage)
-        .join(" ");
-      const existingPoints = pointsByServCodeAndMsg.get(serviceName) || [];
-      const hashKey = serviceName + "♪" + keywordMessage;
+
+      // Build keyword ID to message mapping and collect unique keyword IDs
+      const uniqueKeywordIds = new Set<string>();
+      callAheads.forEach((ca) => {
+        ca.keywordIds.forEach((keywordId) => {
+          uniqueKeywordIds.add(keywordId);
+          if (!keywordIdToMessage.has(keywordId)) {
+            keywordIdToMessage.set(keywordId, ca.keywordMessage);
+          }
+        });
+      });
+
+      const keywordIds = Array.from(uniqueKeywordIds).join(",");
+      const hashKey = serviceName + "♪" + keywordIds;
+      const existingPoints = pointsByServCodeAndMsg.get(hashKey) || [];
       pointsByServCodeAndMsg.set(hashKey, [
         ...existingPoints,
-        ...pnData.contactPoints.map((cp) => cp.point).join(";"),
+        ...contactPoints.map((cp) => cp.point),
       ]);
     });
     const emailDataUnchunked: EmailPreNotifData[] = Array.from(pointsByServCodeAndMsg.entries()).map(
       ([hashKey, points]) => {
-        const [serviceName, keywordMessage] = hashKey.split("♪");
+        const [serviceName, keywordIdsStr] = hashKey.split("♪");
+        const keywordIds = keywordIdsStr ? keywordIdsStr.split(",") : [];
+        const keywordMessage = keywordIds
+          .map((id) => keywordIdToMessage.get(id))
+          .filter(Boolean)
+          .join(" ");
         const baseMessage = `Hello!\nWe have your ${serviceName} scheduled for ${date}, weather permitting.\nThank You!\nSpring-Green\nFeel free to call or text us at 763-489-0007`;
-        const message = [baseMessage, keywordMessage].join(". ").trim();
+        const message = [baseMessage, keywordMessage].join(" ").trim();
         const subject = `Spring-Green: ${serviceName} scheduled for ${date}`;
-        return { subject, message, points };
+        return { subject, message, points, hashKey: hashKey.replace("♪", "-") };
       },
     );
 
@@ -219,25 +243,42 @@ const getMessages = {
     prenotificationData: PrenotificationData[],
   ) => {
     const pointsByServCodeAndMsg = new Map<string, string[]>();
+    const keywordIdToMessage = new Map<string, string>();
+
     prenotificationData.forEach((pnData) => {
       const { customer, services, callAheads, contactPoints } = pnData;
       const serviceName = services.map((s) => s.servCode.longName).join(", ");
-      const keywordMessage = callAheads
-        .map((ca) => ca.keywordMessage)
-        .join(" ");
-      const existingPoints = pointsByServCodeAndMsg.get(serviceName) || [];
-      const hashKey = serviceName + "♪" + keywordMessage;
+
+      // Build keyword ID to message mapping and collect unique keyword IDs
+      const uniqueKeywordIds = new Set<string>();
+      callAheads.forEach((ca) => {
+        ca.keywordIds.forEach((keywordId) => {
+          uniqueKeywordIds.add(keywordId);
+          if (!keywordIdToMessage.has(keywordId)) {
+            keywordIdToMessage.set(keywordId, ca.keywordMessage);
+          }
+        });
+      });
+
+      const keywordIds = Array.from(uniqueKeywordIds).join(",");
+      const hashKey = serviceName + "♪" + keywordIds;
+      const existingPoints = pointsByServCodeAndMsg.get(hashKey) || [];
       pointsByServCodeAndMsg.set(hashKey, [
         ...existingPoints,
-        ...pnData.contactPoints.map((cp) => cp.point).join(";"),
+        ...contactPoints.map((cp) => cp.point),
       ]);
     });
     const textDataUnchunked: TextPreNotifData[] = Array.from(pointsByServCodeAndMsg.entries()).map(
       ([hashKey, points]) => {
-        const [serviceName, keywordMessage] = hashKey.split("♪");
+        const [serviceName, keywordIdsStr] = hashKey.split("♪");
+        const keywordIds = keywordIdsStr ? keywordIdsStr.split(",") : [];
+        const keywordMessage = keywordIds
+          .map((id) => keywordIdToMessage.get(id))
+          .filter(Boolean)
+          .join(" ");
         const baseMessage = `Hi, this is Spring-Green! We have your ${serviceName} scheduled for ${date}, weather permitting.`;
-        const message = [baseMessage, keywordMessage].join(". ").trim();
-        return { message, points };
+        const message = [baseMessage, keywordMessage].join(" ").trim();
+        return { message, points, hashKey: hashKey.replace("♪", "-") };
       },
     );
 

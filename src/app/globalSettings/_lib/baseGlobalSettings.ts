@@ -9,7 +9,8 @@ export const baseGlobalSettings: GlobalSettings = {
   phoneMap: {
     "Phone": ["Home", "Cell", "Other"],
     "Text": ["Home", "Cell", "Other", "Text"],
-    "Email": [],
+    "Email": ["Email"],
     "Manual": ["Home", "Cell", "Other"]
-  }
+  },
+  companyId: 592421,
 };

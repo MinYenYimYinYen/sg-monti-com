@@ -41,6 +41,7 @@ export default function Prenotify() {
   const selectedPrenotifies = Array.from(
     prenotifications.get(selectedDate[0])?.entries() ?? [],
   );
+
   const [selectedNotificationType, setSelectedNotificationType] =
     useState<NotificationType>(selectedPrenotifies[0]?.[0] ?? "");
 
@@ -55,7 +56,7 @@ export default function Prenotify() {
           "flex-1 flex flex-row items-start justify-start min-h-0 gap-4"
         }
       >
-        <ScrollArea className={"w-[20%] h-full"}>
+        <ScrollArea className={"w-[20%] h-full flex-shrink-0"}>
           <div className={"flex flex-col gap-2"}>
             <MultiSelect
               mode={"single"}
@@ -71,7 +72,6 @@ export default function Prenotify() {
                         <h3 className={"font-semibold text-lg"}>
                           {prettyDate(date, "EEE, MMM d")}
                         </h3>
-                        <p>
                           <div className={"grid grid-cols-[1fr_4rem] gap-1"}>
                             {Array.from(
                               summary.notificationCounts.entries(),
@@ -82,7 +82,6 @@ export default function Prenotify() {
                               </Fragment>
                             ))}
                           </div>
-                        </p>
                       </div>
                     </MultiSelectItem>
                   );
@@ -91,7 +90,7 @@ export default function Prenotify() {
             </MultiSelect>
           </div>
         </ScrollArea>
-        <div className={"w-full h-full"}>
+        <div className={"w-full h-full max-w-[80%] flex-1"}>
           <Tabs
             value={selectedNotificationType}
             onValueChange={(value) =>

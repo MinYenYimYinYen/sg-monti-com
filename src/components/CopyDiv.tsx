@@ -10,18 +10,17 @@ type CopyDivProps = {
   children: ReactNode;
   onClick?: () => void;
   className?: string;
+  disabled?: boolean;
 };
 
-export default function CopyDiv({ children, onClick, className }: CopyDivProps) {
+export default function CopyDiv({ children, onClick, className, disabled }: CopyDivProps) {
   const divRef = useRef<HTMLDivElement>(null);
   const checkRef = useRef<HTMLDivElement>(null);
   const [showCheck, setShowCheck] = useState(false);
 
   useGSAP(() => {
     if (showCheck && checkRef.current) {
-      const tl = gsap.timeline({
-        onComplete: () => setShowCheck(false)
-      });
+      const tl = gsap.timeline();
 
       // Pop in the checkmark
       tl.fromTo(
@@ -35,28 +34,19 @@ export default function CopyDiv({ children, onClick, className }: CopyDivProps) 
           ease: "back.out(1.7)",
         }
       );
-
-      // Hold for 600ms
-      tl.to({}, { duration: 0.6 });
-
-      // Fade out
-      tl.to(checkRef.current, {
-        opacity: 0,
-        duration: 0.2,
-      });
     }
   }, [showCheck]);
 
   const handleCopy = async () => {
-    if (divRef.current) {
-      const textToCopy = divRef.current.innerText;
-      try {
-        await navigator.clipboard.writeText(textToCopy);
-        setShowCheck(true);
-        onClick?.();
-      } catch (err) {
-        console.error("Failed to copy content:", err);
-      }
+    if (disabled || !divRef.current) return;
+
+    const textToCopy = divRef.current.innerText;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setShowCheck(true);
+      onClick?.();
+    } catch (err) {
+      console.error("Failed to copy content:", err);
     }
   };
 
@@ -65,18 +55,25 @@ export default function CopyDiv({ children, onClick, className }: CopyDivProps) 
       onClick={handleCopy}
       ref={divRef}
       className={cn(
-        "relative cursor-pointer rounded-md border border-border bg-secondary/10 p-2",
+        "relative rounded-md border border-border bg-secondary/10 p-2",
         "whitespace-pre-wrap break-words",
+        disabled
+          ? "cursor-not-allowed text-muted-foreground opacity-60"
+          : "cursor-pointer",
         className
       )}
     >
       {showCheck && (
         <div
           ref={checkRef}
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          className="absolute -top-2 -left-2 cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowCheck(false);
+          }}
         >
-          <div className="rounded-full bg-accent/50 border border-accent p-3">
-            <Check className="size-4 text-white" strokeWidth={3} />
+          <div className="rounded-full bg-accent border border-accent p-1">
+            <Check className="size-2 text-white" strokeWidth={3} />
           </div>
         </div>
       )}

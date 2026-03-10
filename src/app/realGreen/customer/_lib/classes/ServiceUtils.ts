@@ -37,6 +37,22 @@ export class ServiceUtils {
     }
   }
 
+  public get allTechNotes(): string[] {
+    const check = [
+      this.service.techNote.length
+        ? `Service(${this.service.servCodeId}): ` + this.service.techNote
+        : undefined,
+      this.service.program.techNote.length
+        ? `Program(${this.service.program.progCode.progCodeId}): ` +
+          this.service.program.techNote
+        : undefined,
+      this.service.program.customer.techNote.length
+        ? "Customer: " + this.service.program.customer.techNote
+        : undefined,
+    ];
+    return typeGuard.definedArray(check);
+  }
+
   public get callAheads(): CallAhead[] {
     const servCallAhead = this.service.callAhead;
     const progCallAhead = this.service.program.callAhead;

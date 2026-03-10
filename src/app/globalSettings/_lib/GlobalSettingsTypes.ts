@@ -6,5 +6,6 @@ import { ContactType } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 export type GlobalSettings = CreatedUpdated & {
   season: number;
   coverSheetsConfig: CoverSheetsConfig;
-  phoneMap: Record<NotificationType, ContactType[]>
-}
+  phoneMap: Record<NotificationType, ContactType[]>;
+  companyId: number;
+};
