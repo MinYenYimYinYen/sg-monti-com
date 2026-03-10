@@ -5,7 +5,6 @@ import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { Condition } from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
-import { baseGlobalSettings } from "@/app/globalSettings/_lib/baseGlobalSettings";
 
 export class ServiceUtils {
   constructor(private readonly service: Omit<Service, "x">) {}

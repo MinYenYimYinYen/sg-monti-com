@@ -8,12 +8,6 @@ import { FooterPortal } from "@/components/FooterPortal";
 import { Settings } from "lucide-react";
 import { Fragment, useState } from "react";
 import { CallAheadConfig } from "@/app/realGreen/callAhead/_lib/ext/components/CallAheadConfig";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/style/components/card";
 import { prenotifySelect } from "@/app/scheduling/prenotify/_lib/prenotifySelect";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import {
@@ -23,7 +17,6 @@ import {
   TabsTrigger,
 } from "@/style/components/tabs";
 import { MultiSelect, MultiSelectItem } from "@/components/MultiSelect";
-import { Prenotification } from "@/app/realGreen/customer/_lib/classes/helpers/xCustPrenotifications";
 import { NotificationType } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { PrenotifyByType } from "@/app/scheduling/prenotify/_lib/PrenotifyByType";
 
@@ -72,16 +65,16 @@ export default function Prenotify() {
                         <h3 className={"font-semibold text-lg"}>
                           {prettyDate(date, "EEE, MMM d")}
                         </h3>
-                          <div className={"grid grid-cols-[1fr_4rem] gap-1"}>
-                            {Array.from(
-                              summary.notificationCounts.entries(),
-                            ).map(([type, count]) => (
+                        <div className={"grid grid-cols-[1fr_4rem] gap-1"}>
+                          {Array.from(summary.notificationCounts.entries()).map(
+                            ([type, count]) => (
                               <Fragment key={type}>
                                 <p>{type}:</p>
                                 <p className={"text-right"}>{count}</p>
                               </Fragment>
-                            ))}
-                          </div>
+                            ),
+                          )}
+                        </div>
                       </div>
                     </MultiSelectItem>
                   );
@@ -112,10 +105,13 @@ export default function Prenotify() {
                   );
                 })}
             </TabsList>
-            {selectedPrenotifies.map(([notificationType, value]) => {
+            {selectedPrenotifies.map(([notificationType, _value]) => {
               return (
                 <TabsContent key={notificationType} value={notificationType}>
-                  <PrenotifyByType date={selectedDate[0] ?? ""} type={notificationType} />
+                  <PrenotifyByType
+                    date={selectedDate[0] ?? ""}
+                    type={notificationType}
+                  />
                 </TabsContent>
               );
             })}

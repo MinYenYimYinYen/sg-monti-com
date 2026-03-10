@@ -1,7 +1,6 @@
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { useSelector } from "react-redux";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
-import { cn } from "@/lib/tailwindUtils";
 import Link from "next/link";
 import { ReactNode } from "react";
 

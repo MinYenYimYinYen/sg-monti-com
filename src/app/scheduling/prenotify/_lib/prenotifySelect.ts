@@ -161,7 +161,7 @@ export type TextPreNotifData = {
   message: string;
   points: string[];
   hashKey: string;
-}
+};
 
 export const getMessages = {
   [NotificationType.Phone]: (
@@ -170,13 +170,13 @@ export const getMessages = {
   ) => {
     const pointsByServCode = new Map<string, string[]>();
     prenotificationData.forEach((pnData) => {
-      const { customer, services, callAheads, contactPoints } = pnData;
+      const { services, contactPoints } = pnData;
       console.log("contactPoints", contactPoints);
       const serviceName = services.map((s) => s.servCode.longName).join(", ");
       const existingPoints = pointsByServCode.get(serviceName) || [];
       pointsByServCode.set(serviceName, [
         ...existingPoints,
-        ...contactPoints.map((cp) => cp.point.slice(0,10)),
+        ...contactPoints.map((cp) => cp.point.slice(0, 10)),
       ]);
     });
     const roboData: RoboPreNotifData[] = Array.from(
@@ -216,20 +216,20 @@ export const getMessages = {
         ...contactPoints.map((cp) => cp.point),
       ]);
     });
-    const emailDataUnchunked: EmailPreNotifData[] = Array.from(pointsByServCodeAndMsg.entries()).map(
-      ([hashKey, points]) => {
-        const [serviceName, keywordIdsStr] = hashKey.split("♪");
-        const keywordIds = keywordIdsStr ? keywordIdsStr.split(",") : [];
-        const keywordMessage = keywordIds
-          .map((id) => keywordIdToMessage.get(id))
-          .filter(Boolean)
-          .join(" ");
-        const baseMessage = `Hello!\nWe have your ${serviceName} scheduled for ${date}, weather permitting.\nThank You!\nSpring-Green\nFeel free to call or text us at 763-489-0007`;
-        const message = [baseMessage, keywordMessage].join(" ").trim();
-        const subject = `Spring-Green: ${serviceName} scheduled for ${date}`;
-        return { subject, message, points, hashKey: hashKey.replace("♪", "-") };
-      },
-    );
+    const emailDataUnchunked: EmailPreNotifData[] = Array.from(
+      pointsByServCodeAndMsg.entries(),
+    ).map(([hashKey, points]) => {
+      const [serviceName, keywordIdsStr] = hashKey.split("♪");
+      const keywordIds = keywordIdsStr ? keywordIdsStr.split(",") : [];
+      const keywordMessage = keywordIds
+        .map((id) => keywordIdToMessage.get(id))
+        .filter(Boolean)
+        .join(" ");
+      const baseMessage = `Hello!\nWe have your ${serviceName} scheduled for ${date}, weather permitting.\nThank You!\nSpring-Green\nFeel free to call or text us at 763-489-0007`;
+      const message = [baseMessage, keywordMessage].join(" ").trim();
+      const subject = `Spring-Green: ${serviceName} scheduled for ${date}`;
+      return { subject, message, points, hashKey: hashKey.replace("♪", "-") };
+    });
 
     const emailData: EmailPreNotifData[] = chunkObjectArray(
       emailDataUnchunked,
@@ -268,19 +268,19 @@ export const getMessages = {
         ...contactPoints.map((cp) => cp.point),
       ]);
     });
-    const textDataUnchunked: TextPreNotifData[] = Array.from(pointsByServCodeAndMsg.entries()).map(
-      ([hashKey, points]) => {
-        const [serviceName, keywordIdsStr] = hashKey.split("♪");
-        const keywordIds = keywordIdsStr ? keywordIdsStr.split(",") : [];
-        const keywordMessage = keywordIds
-          .map((id) => keywordIdToMessage.get(id))
-          .filter(Boolean)
-          .join(" ");
-        const baseMessage = `Hi, this is Spring-Green! We have your ${serviceName} scheduled for ${date}, weather permitting.`;
-        const message = [baseMessage, keywordMessage].join(" ").trim();
-        return { message, points, hashKey: hashKey.replace("♪", "-") };
-      },
-    );
+    const textDataUnchunked: TextPreNotifData[] = Array.from(
+      pointsByServCodeAndMsg.entries(),
+    ).map(([hashKey, points]) => {
+      const [serviceName, keywordIdsStr] = hashKey.split("♪");
+      const keywordIds = keywordIdsStr ? keywordIdsStr.split(",") : [];
+      const keywordMessage = keywordIds
+        .map((id) => keywordIdToMessage.get(id))
+        .filter(Boolean)
+        .join(" ");
+      const baseMessage = `Hi, this is Spring-Green! We have your ${serviceName} scheduled for ${date}, weather permitting.`;
+      const message = [baseMessage, keywordMessage].join(" ").trim();
+      return { message, points, hashKey: hashKey.replace("♪", "-") };
+    });
 
     const textData: TextPreNotifData[] = chunkObjectArray(
       textDataUnchunked,
