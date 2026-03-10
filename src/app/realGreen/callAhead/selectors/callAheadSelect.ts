@@ -4,6 +4,7 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { baseGlobalSettings } from "@/app/globalSettings/_lib/baseGlobalSettings";
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import { keywordSelect } from "@/app/realGreen/callAhead/selectors/keywordSelect";
 
 const selectCallAheadDocs = (state: AppState) => state.callAhead.callAheadDocs;
 const selectCallAheadDocMap = createSelector(
@@ -14,8 +15,8 @@ const selectCallAheadDocMap = createSelector(
 );
 
 const selectCallAheads = createSelector(
-  [selectCallAheadDocs, globalSettingsSelect.settings],
-  (callAheadDocs, settings) => {
+  [selectCallAheadDocs, keywordSelect.keywordMap, globalSettingsSelect.settings],
+  (callAheadDocs, keywordMap, settings) => {
     //phoneMap is currently hardcoded in baseGlobalSettings.ts
     const phoneMap = settings?.phoneMap ?? baseGlobalSettings.phoneMap;
 
@@ -25,10 +26,15 @@ const selectCallAheads = createSelector(
       );
       const contactTypeSet = new Set(contactTypesFlat);
       const contactTypes = Array.from(contactTypeSet);
+      const keywordMessage: string = doc.keywordIds.map((keywordId) => {
+        const keyword = keywordMap.get(keywordId);
+        return keyword?.message ?? "";
+      }).join(" ");
 
       const callAhead: CallAhead = {
         ...doc,
         contactTypes,
+        keywordMessage,
       };
       return callAhead;
     });

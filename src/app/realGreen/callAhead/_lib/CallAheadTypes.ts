@@ -36,6 +36,7 @@ export type CallAheadDoc = CallAheadCore & CallAheadDocProps;
 
 export type CallAheadProps = {
   contactTypes: ContactType[];
+  keywordMessage: string;
 };
 
 export type CallAhead = CallAheadDoc & CallAheadProps;

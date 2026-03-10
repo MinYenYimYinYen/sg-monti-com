@@ -30,6 +30,7 @@ export const baseCallAheadDoc: CallAheadDoc = {
 
 export const baseCallAheadProps: CallAheadProps = {
   contactTypes: [],
+  keywordMessage: "",
 };
 
 export const baseCallAhead: CallAhead = {

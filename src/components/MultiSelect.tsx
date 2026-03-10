@@ -230,7 +230,7 @@ const multiSelectItemVariants = cva(
   {
     variants: {
       variant: {
-        default: "hover:bg-accent/50 hover:text-accent-foreground data-[focused=true]:bg-accent/30",
+        default: "hover:bg-primary/10",
         ghost: "hover:bg-accent hover:text-accent-foreground",
       },
     },
@@ -261,7 +261,7 @@ export const MultiSelectItem = React.forwardRef(<TValue extends string | number 
 
     const isSelected = selectedValues.includes(value);
 
-    // Register item in map
+    // Register item in map for keyboard navigation
     React.useEffect(() => {
       if (itemRef.current) {
         items.current.set(value, itemRef.current);
@@ -309,7 +309,6 @@ export const MultiSelectItem = React.forwardRef(<TValue extends string | number 
           };
         }, [ref])}
         data-multiselect-item
-        data-focused={isFocused}
         data-selected={isSelected}
         data-disabled={disabled}
         role="option"

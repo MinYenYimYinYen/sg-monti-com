@@ -18,12 +18,10 @@ import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
 import { PDFNumber } from "@/components/Number";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
-import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
-import { AppState } from "@/store";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
-type RouteDatePageProps = {
+export type RouteDatePageProps = {
   params: Promise<{
     routeDate: string;
   }>;
@@ -33,9 +31,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   const loadingCount = useSelector(uiSelect.loadingCount);
   useCoverSheets();
 
-  const serviceConditionDocs = useSelector(
-    (state: AppState) => state.serviceCondition.serviceConditionDocs,
-  );
+
 
   const isClient = useIsClient();
   const { routeDate: encodedRouteDate } = use(params);
@@ -52,20 +48,6 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   return (
     <Container variant={"page"}>
       <div>{routeDate}</div>
-      {/*<div className={"flex gap-4"}>*/}
-      {/*  <PDFDownloadLink*/}
-      {/*    document={*/}
-      {/*      <CoverSheetsPDF*/}
-      {/*        routeDate={routeDate}*/}
-      {/*        serviceByEmployee={serviceByEmployee}*/}
-      {/*        getPlannedAppProductTotal={getPlannedAppProductTotal}*/}
-      {/*        getServCodeCounts={getServCodeCounts}*/}
-      {/*      />*/}
-      {/*    }*/}
-      {/*  >*/}
-      {/*    Download*/}
-      {/*  </PDFDownloadLink>*/}
-      {/*</div>*/}
 
       <div className={"w-full h-[75vh] overflow-y-auto"}>
         {loadingCount > 0 && <div>Loading...</div>}
@@ -205,10 +187,6 @@ function CoverSheetsPDF({
                                 {appProduct.productCommon.productCode}
                               </Text>
                               <Text>{loadDisplay}</Text>
-                              {/*<View style={tw("w-[25px] ")}>*/}
-                              {/*  <PDFNumber>{appProduct.amount}</PDFNumber>*/}
-                              {/*</View>*/}
-                              {/*<Text>{appProduct.productCommon.unit.desc}</Text>*/}
                             </View>
                           );
                         })}
