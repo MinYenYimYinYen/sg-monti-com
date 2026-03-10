@@ -1,6 +1,6 @@
 # Project Overview
 
-## Framework
+## Framework:
 
 - **Next.js**: v16.1.1
 - **React**: v19.2.3
