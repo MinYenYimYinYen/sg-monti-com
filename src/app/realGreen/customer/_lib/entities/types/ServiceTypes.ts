@@ -17,6 +17,7 @@ import {
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
+import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 
 export type ServiceRaw = {
   // actualManHours?: number;
@@ -138,6 +139,7 @@ export type ServiceProps = {
   production: Production | null;
   productsPlanned: AppProduct[];
   lastAssigned: Assignment;
+  // promise: SchedPromise;
 
 };
 
