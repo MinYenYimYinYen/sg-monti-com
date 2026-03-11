@@ -72,6 +72,111 @@
 - **Types**:
   - Prefer types over interfaces, except where interface provides necessary functionality that types cannot handle.
 
+### Model Instance Creation
+
+- **Pattern**: Use `createModel()` helper from `@/lib/mongoose/createModel` to prevent Next.js hot-reload issues.
+- **Issue**: Calling `mongoose.model()` directly multiple times (during hot-reload) throws `OverwriteModelError`.
+- **Solution**: `createModel(modelName, schema)` checks if model exists before creating it.
+- **Example**:
+```typescript
+const SchedPromiseSchema = new mongoose.Schema<SchedPromise>({...});
+const SchedPromiseModel = createModel("SchedPromise", SchedPromiseSchema);
+export default SchedPromiseModel;
+```
+
+## Data Module Pattern
+
+Use this pattern when creating a new data-driven feature that requires:
+- Backend API endpoint
+- Redux state management
+- Selector transformations
+- React hook for auto-fetching
+
+### Architecture (5 Components)
+
+1. **Contract** (`*Contract.ts`)
+   - TypeScript interface extending `ApiContract`
+   - Defines request params and response types
+   - Example: `SchedPromiseContract.ts`
+
+2. **Route** (`api/route.ts`)
+   - API handler using `createRpcHandler`
+   - MongoDB queries, data sanitization
+   - Example: `src/app/schedPromise/api/route.ts`
+
+3. **Slice** (`*Slice.ts`)
+   - Redux slice using `createStandardThunk`
+   - Feature-specific state only (no UI state)
+   - Implements deduplication via `transformParams`
+   - Example: `schedPromiseSlice.ts`
+
+4. **Selectors** (`*Select.ts`)
+   - Reselect selectors for derived state
+   - Transforms storage format to consumption format
+   - Creates maps for efficient lookups
+   - Example: `schedPromiseSelect.ts`
+
+5. **Hook** (`use*.ts`)
+   - React hook for auto-fetching data
+   - Dispatches thunk based on dependencies
+   - Example: `useSchedPromise.ts`
+
+### Key Conventions
+
+- **Auto-Deduplication**: `uiSlice.ts` automatically prevents duplicate API calls via param hashing. The slice's `transformParams` filters out already-loaded data before hashing.
+- **Storage vs Consumption**: Use storage-optimized types (e.g., discriminated unions) in state, transform to conventional types in selectors.
+- **Loading/Error States**: Handled globally by `uiSlice.ts` via `addMatcher`. Feature slices only track data.
+- **File Naming**: Follow pattern: `featureContract.ts`, `featureSlice.ts`, `featureSelect.ts`, `useFeature.ts`
+
+### Example: SchedPromise Module
+
+```typescript
+// 1. Contract
+export interface SchedPromiseContract extends ApiContract {
+  getSchedPromises: {
+    params: { serviceIds?: number[]; programIds?: number[]; customerIds?: number[]; };
+    result: DataResponse<SchedPromise[]>;
+  };
+}
+
+// 2. Route (simplified)
+const handlers: SchedPromiseContract = {
+  getSchedPromises: async ({ params }) => {
+    const docs = await SchedPromiseModel.find({ $or: queries }).lean();
+    return { success: true, payload: cleanMongoArray(docs) };
+  }
+};
+
+// 3. Slice
+export const { getSchedPromises } = createStandardThunk<SchedPromiseContract>({
+  contractName: "schedPromise",
+  transformParams: (params, { getState }) => {
+    const existingPromises = schedPromiseSelect.schedPromises(getState());
+    // Filter out already-loaded IDs, return only arrays with values
+    return transformed;
+  }
+});
+
+// 4. Selectors
+const selectCustPromiseMap = createSelector(
+  [selectCustPromises],
+  (custPromises) => new Grouper(custPromises).toUniqueMap(c => c.custId)
+);
+
+// 5. Hook
+export function useSchedPromise() {
+  const dispatch = useAppDispatch();
+  const serviceDocs = useSelector(centralSelect.serviceDocs);
+
+  useEffect(() => {
+    dispatch(getSchedPromises({
+      params: { serviceIds: serviceDocs.map(s => s.servId) },
+      config: { loadingMsg: "Fetching Schedule Promises" }
+    }));
+  }, [dispatch, serviceDocs]);
+}
+```
+
 ## Development Rules
 
 - **React Compiler**: Code must strictly adhere to the Rules of React.

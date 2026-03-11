@@ -3,13 +3,13 @@ import { SchedPromiseContract } from "@/app/schedPromise/api/SchedPromiseContrac
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import SchedPromiseModel from "@/app/schedPromise/SchedPromiseModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
-import connectDB from "@/lib/mongoose/connectDB";
+import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 
 const handlers: HandlerMap<SchedPromiseContract> = {
   getSchedPromises: {
     roles: ["office", "admin", "tech"],
     handler: async ({ serviceIds, programIds, customerIds }) => {
-      await connectDB();
+      await connectToMongoDB();
 
       // Build $or query for all requested entity types
       const queries = [];

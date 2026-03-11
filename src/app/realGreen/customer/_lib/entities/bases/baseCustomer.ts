@@ -39,6 +39,7 @@ export const baseCustomerNoX: Omit<Customer, "x"> = {
   callAhead: null,
   discount: null,
   flags: [],
+  promise: null,
 };
 
 export const baseCustomer: Customer = {

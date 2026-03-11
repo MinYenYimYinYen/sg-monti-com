@@ -25,6 +25,7 @@ import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
 import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
+import { schedPromiseSelect } from "@/app/schedPromise/schedPromiseSelect";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -90,6 +91,9 @@ export const selectCustomers = createSelector(
     custFlagSelect.custIdFlagIds,
     csvSelect.assignments,
     serviceConditionSelect.serviceConditionsByServId,
+    schedPromiseSelect.custPromiseMap,
+    schedPromiseSelect.progPromiseMap,
+    schedPromiseSelect.servPromiseMap,
   ],
   (
     customerDocs,
@@ -107,6 +111,9 @@ export const selectCustomers = createSelector(
     custIdFlagIds,
     newAssignments,
     serviceConditionsByServId,
+    custPromiseMap,
+    progPromiseMap,
+    servPromiseMap,
   ) => {
     // Builder types for type-safe construction without 'x'
     type CustomerBuilder = Omit<Customer, "x">;
@@ -123,9 +130,11 @@ export const selectCustomers = createSelector(
         ...custDoc,
         programs: [],
         taxCodes,
-        callAhead: callAheadDocMap.get(custDoc.callAheadId) || null,
-        discount: discountDocMap.get(custDoc.discountId) || null,
+        callAhead: callAheadDocMap.get(custDoc.callAheadId) ?? null,
+        discount: discountDocMap.get(custDoc.discountId) ?? null,
         flags: hydrateFlags(custDoc.custId, custIdFlagIds, flagDocMap),
+        promise: custPromiseMap.get(custDoc.custId) ?? null,
+
       };
 
       const progDocs = programDocMap.get(custDoc.custId) || [];
@@ -139,15 +148,16 @@ export const selectCustomers = createSelector(
           customer: customerBuilder as Customer,
           services: [],
           progCode,
-          callAhead: callAheadDocMap.get(progDoc.callAheadId) || null,
-          discount: discountDocMap.get(progDoc.discountId) || null,
+          callAhead: callAheadDocMap.get(progDoc.callAheadId) ?? null,
+          discount: discountDocMap.get(progDoc.discountId) ?? null,
+          promise: progPromiseMap.get(progDoc.progId) ?? null
         };
 
-        const serviceDocs = serviceDocMap.get(progDoc.progId) || [];
+        const serviceDocs = serviceDocMap.get(progDoc.progId) ?? [];
 
         // Phase 3: Build services referencing the program builder
         const services = serviceDocs.map((servDoc) => {
-          const servCode = servCodeMap.get(servDoc.servCodeId) || baseServCode;
+          const servCode = servCodeMap.get(servDoc.servCodeId) ?? baseServCode;
 
           const lastAssigned = hydrateLastAssigned(
             servDoc,
@@ -160,14 +170,14 @@ export const selectCustomers = createSelector(
             ...servDoc,
             program: programBuilder as Program,
             servCode,
-            callAhead: callAheadDocMap.get(servDoc.callAheadId) || null,
-            discount: discountDocMap.get(servDoc.discountId) || null,
+            callAhead: callAheadDocMap.get(servDoc.callAheadId) ?? null,
+            discount: discountDocMap.get(servDoc.discountId) ?? null,
             production: hydrateProduction({
               productionCore: servDoc.productionCore,
               allProductsMap,
               employeeMap,
               serviceDoc: servDoc,
-              serviceConditions: serviceConditionsByServId.get(servDoc.servId) || [],
+              serviceConditions: serviceConditionsByServId.get(servDoc.servId) ?? [],
               }
             ),
             productsPlanned: hydrateProductsPlanned(
@@ -176,6 +186,7 @@ export const selectCustomers = createSelector(
               productCommonMap,
             ),
             lastAssigned,
+            promise: servPromiseMap.get(servDoc.servId) ?? null,
           };
 
           // Add x after all other properties are set - mutate in place to preserve references
@@ -201,7 +212,6 @@ export const selectCustomers = createSelector(
 
       return customerBuilder as Customer;
     });
-
     return customers;
   },
 );
@@ -222,6 +232,8 @@ const selectCustomerMap = createSelector([selectCustomers], (customers) => {
 
 export const centralSelect = {
   context: selectActiveContexts,
+  customerDocs: selectCustomerDocs,
+  programDocs: selectProgramDocs,
   serviceDocs: selectServiceDocs,
   customers: selectCustomers,
   programs: selectPrograms,

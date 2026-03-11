@@ -87,6 +87,18 @@ export type SchedPromise = SchedPromiseDraft & (
   | { entityType: "customer"; entityId: number }
 );
 
+export type CustPromise = SchedPromiseDraft & {
+  custId: number;
+}
+
+export type ProgPromise = SchedPromiseDraft & {
+  progId: number;
+}
+
+export type ServPromise = SchedPromiseDraft & {
+  servId: number;
+}
+
 export const PromiseType: {
   [key in SelectedPromiseType]: string;
 } = {
