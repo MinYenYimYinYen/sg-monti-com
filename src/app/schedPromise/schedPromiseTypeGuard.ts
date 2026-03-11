@@ -4,6 +4,8 @@ import {
   CustPromise,
   ProgPromise,
   ServPromise,
+  PromiseValidationIssue,
+  ParseResult,
 } from "@/app/schedPromise/SchedPromiseTypes";
 
 /**
@@ -112,6 +114,24 @@ function separatePromises(params: { promises: SchedPromiseDraft[] }): {
   };
 }
 
+/**
+ * Type guard to check if ParseResult is a PromiseValidationIssue
+ */
+function isPromiseValidationIssue(
+  result: ParseResult
+): result is PromiseValidationIssue {
+  return result !== null && "type" in result && result.type === "validation_issue";
+}
+
+/**
+ * Type guard to check if ParseResult is a valid promise with issues array
+ */
+function isValidPromiseResult(
+  result: ParseResult
+): result is { promise: SchedPromiseDraft; issues: string[] } {
+  return result !== null && "promise" in result && "issues" in result;
+}
+
 export const schedPromiseTypeGuard = {
   isCustPromise,
   isProgPromise,
@@ -121,4 +141,6 @@ export const schedPromiseTypeGuard = {
   filterServPromises,
   mergePromises,
   separatePromises,
+  isPromiseValidationIssue,
+  isValidPromiseResult,
 }

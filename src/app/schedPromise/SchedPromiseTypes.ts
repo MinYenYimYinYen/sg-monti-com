@@ -1,3 +1,5 @@
+import type { TRange } from "@/lib/primatives/tRange/TRange";
+
 export enum TimeFrame {
   at = "at",
   before = "before",
@@ -24,6 +26,8 @@ export enum DayOfWeek {
   Wed = "Wed",
   Thr = "Thr",
   Fri = "Fri",
+  Odd = "Odd",
+  Even = "Even",
 }
 
 export enum GranLiq {
@@ -37,8 +41,6 @@ export enum DateScope {
   after = "after",
   weekOf = "week of",
   monthOf = "month of",
-  even = "even days",
-  odd = "odd days",
   onDate = "on",
 }
 
@@ -50,7 +52,7 @@ export enum TargetPeriod {
 }
 
 export type DateTarget =
-  | { dateScope: DateScope.before | DateScope.after; date: string }
+  | { dateScope: DateScope.before | DateScope.after; date: string; dateRange: TRange<string> }
   | {
       dateScope: DateScope.weekOf | DateScope.monthOf;
       targetPeriod:
@@ -59,9 +61,9 @@ export type DateTarget =
         | TargetPeriod.late
         | TargetPeriod.anyDay;
       date: string;
+      dateRange: TRange<string>;
     }
-  | { dateScope: DateScope.even | DateScope.odd }
-  | { dateScope: DateScope.onDate; date: string };
+  | { dateScope: DateScope.onDate; date: string; dateRange: TRange<string> };
 
 export enum SchedCondition {
   weedsUp = "weeds up",
@@ -73,10 +75,10 @@ export type SchedPromiseDraft = {
   isPermanent: "true" | "false" | "";
   tech?: string;
   equip?: string;
-  condition?: SchedCondition.weedsUp | SchedCondition.cleanupDone;
+  condition?: SchedCondition | string;
   granLiq?: GranLiq;
   dateTarget?: DateTarget;
-  timeOfDay?: TimeOfDay;
+  timeOfDay?: TimeOfDay | string;
   daysOfWeek?: DayOfWeek[];
   other?: string;
 };
@@ -116,3 +118,14 @@ export type SelectedPromiseType = keyof Omit<
   SchedPromiseDraft,
   "serviceId" | "isPermanent"
 >;
+
+export type PromiseValidationIssue = {
+  type: "validation_issue";
+  issue: string;
+  rawString: string;
+};
+
+export type ParseResult =
+  | null
+  | { promise: SchedPromiseDraft; issues: string[] }
+  | PromiseValidationIssue;
