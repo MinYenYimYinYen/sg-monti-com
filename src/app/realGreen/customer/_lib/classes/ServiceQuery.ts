@@ -42,5 +42,9 @@ export class ServiceQuery extends BaseQuery<Service> {
     return new ServiceQuery(this.items.filter((s) => s.x.isPest === bool));
   }
 
+  hasPromise(bool: boolean) {
+    return new ServiceQuery(this.items.filter((s) => s.x.promises.length > 0 === bool));
+  }
+
 
 }

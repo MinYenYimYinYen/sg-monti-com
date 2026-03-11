@@ -7,6 +7,7 @@ export enum TimeFrame {
   between = "between",
   first = "First Stop",
   last = "Last Stop",
+  custom= "Custom",
 }
 
 export type TimeOfDay =
@@ -71,7 +72,7 @@ export enum SchedCondition {
 }
 
 
-export type SchedPromiseDraft = {
+export type SchedPromise = {
   isPermanent: "true" | "false" | "";
   tech?: string;
   equip?: string;
@@ -82,24 +83,6 @@ export type SchedPromiseDraft = {
   daysOfWeek?: DayOfWeek[];
   other?: string;
 };
-
-export type SchedPromise = SchedPromiseDraft & (
-  | { entityType: "service"; entityId: number }
-  | { entityType: "program"; entityId: number }
-  | { entityType: "customer"; entityId: number }
-);
-
-export type CustPromise = SchedPromiseDraft & {
-  custId: number;
-}
-
-export type ProgPromise = SchedPromiseDraft & {
-  progId: number;
-}
-
-export type ServPromise = SchedPromiseDraft & {
-  servId: number;
-}
 
 export const PromiseType: {
   [key in SelectedPromiseType]: string;
@@ -115,17 +98,11 @@ export const PromiseType: {
 };
 
 export type SelectedPromiseType = keyof Omit<
-  SchedPromiseDraft,
-  "serviceId" | "isPermanent"
+  SchedPromise,
+  "isPermanent"
 >;
 
 export type ParseResult = {
   promise: SchedPromise | null;
   issues: string[];
-};
-
-export type PromiseIssue = {
-  entityType: "service" | "program" | "customer";
-  entityId: number;
-  messages: string[];
 };

@@ -2,8 +2,6 @@ import {
   DateScope,
   DayOfWeek,
   GranLiq,
-  SchedCondition,
-  SchedPromiseDraft,
   SchedPromise,
   TargetPeriod,
   TimeFrame,
@@ -16,7 +14,7 @@ import { parseDateRange } from "@/app/schedPromise/dateRangeParse";
  * Converts a SchedPromiseDraft object to a compact promise string notation
  * @example stringifyPromise({isPermanent: "true", tech: "John", ...}) => "p[tech: John, ...]"
  */
-export function stringifyPromise(promise: SchedPromiseDraft): string {
+export function stringifyPromise(promise: SchedPromise): string {
   if (!promise.isPermanent) return "";
 
   const wrappers = promise.isPermanent === "true" ? ["[", "]"] : ["{", "}"];
@@ -54,7 +52,10 @@ export function stringifyPromise(promise: SchedPromiseDraft): string {
       if (date) {
         parts.push(`${dateScope}: ${date}`);
       }
-    } else if (dateScope === DateScope.weekOf || dateScope === DateScope.monthOf) {
+    } else if (
+      dateScope === DateScope.weekOf ||
+      dateScope === DateScope.monthOf
+    ) {
       const { targetPeriod } = promise.dateTarget;
       if (date && targetPeriod) {
         parts.push(`${targetPeriod} ${dateScope}: ${date}`);
@@ -84,7 +85,10 @@ export function stringifyPromise(promise: SchedPromiseDraft): string {
         if (start && end) {
           parts.push(`${timeFrame}: ${start} and ${end}`);
         }
-      } else if (timeFrame === TimeFrame.first || timeFrame === TimeFrame.last) {
+      } else if (
+        timeFrame === TimeFrame.first ||
+        timeFrame === TimeFrame.last
+      ) {
         parts.push(`${timeFrame}`);
       }
     }
@@ -162,7 +166,7 @@ export function parsePromiseString(params: {
     };
   }
 
-  const promiseDraft: SchedPromiseDraft = { isPermanent };
+  const promise: SchedPromise = { isPermanent };
 
   // Split by comma, respecting nested content
   const parts = splitPromiseParts(content);
@@ -177,14 +181,14 @@ export function parsePromiseString(params: {
       // Check for time frames without values
       if (isTimeFrameKey(trimmed)) {
         if (trimmed === TimeFrame.first || trimmed === TimeFrame.last) {
-          promiseDraft.timeOfDay = { timeFrame: trimmed };
+          promise.timeOfDay = { timeFrame: trimmed };
         } else {
           issues.push(`Time frame "${trimmed}" requires a time value`);
         }
       }
       // Otherwise treat as "other"
       else {
-        promiseDraft.other = trimmed;
+        promise.other = trimmed;
       }
       continue;
     }
@@ -194,16 +198,16 @@ export function parsePromiseString(params: {
 
     // Parse based on key
     if (key === "tech") {
-      promiseDraft.tech = value;
+      promise.tech = value;
     } else if (key === "equip") {
-      promiseDraft.equip = value;
+      promise.equip = value;
     } else if (key === "condition") {
       // Accept any string, prefer enum values
-      promiseDraft.condition = value;
+      promise.condition = value;
     } else if (key === "granLiq") {
       const parsed = parseGranLiq(value);
       if (parsed) {
-        promiseDraft.granLiq = parsed;
+        promise.granLiq = parsed;
       } else {
         issues.push(`Invalid granLiq value: "${value}"`);
       }
@@ -223,24 +227,31 @@ export function parsePromiseString(params: {
 
       // TypeScript needs explicit discrimination for DateTarget union
       if (key === DateScope.before || key === DateScope.after) {
-        promiseDraft.dateTarget = {
+        promise.dateTarget = {
           dateScope: key,
           date: isoDate,
           dateRange,
         };
       } else if (key === DateScope.onDate) {
-        promiseDraft.dateTarget = {
+        promise.dateTarget = {
           dateScope: key,
           date: isoDate,
           dateRange,
         };
       }
-    } else if (key.includes(DateScope.weekOf) || key.includes(DateScope.monthOf)) {
+    } else if (
+      key.includes(DateScope.weekOf) ||
+      key.includes(DateScope.monthOf)
+    ) {
       // Handle "early week of: 12/25" or "mid month of: 01/15"
-      const targetPeriodMatch = key.match(/^(early|mid|late|any day)\s+(week of|month of)$/);
+      const targetPeriodMatch = key.match(
+        /^(early|mid|late|any day)\s+(week of|month of)$/,
+      );
       if (targetPeriodMatch) {
         const targetPeriod = targetPeriodMatch[1] as TargetPeriod;
-        const dateScope = targetPeriodMatch[2] as DateScope.weekOf | DateScope.monthOf;
+        const dateScope = targetPeriodMatch[2] as
+          | DateScope.weekOf
+          | DateScope.monthOf;
 
         const isoDate = dateParser.tryParseDate(value);
         if (!isoDate) {
@@ -254,7 +265,7 @@ export function parsePromiseString(params: {
           continue;
         }
 
-        promiseDraft.dateTarget = {
+        promise.dateTarget = {
           dateScope,
           targetPeriod,
           date: isoDate,
@@ -265,8 +276,12 @@ export function parsePromiseString(params: {
       }
     } else if (isTimeFrameKey(key)) {
       // Simple time frames: at, before, after
-      if (key === TimeFrame.at || key === TimeFrame.before || key === TimeFrame.after) {
-        promiseDraft.timeOfDay = {
+      if (
+        key === TimeFrame.at ||
+        key === TimeFrame.before ||
+        key === TimeFrame.after
+      ) {
+        promise.timeOfDay = {
           timeFrame: key,
           time: value,
         };
@@ -274,19 +289,21 @@ export function parsePromiseString(params: {
         // Parse "8:00 AM and 12:00 PM"
         const andIndex = value.indexOf(" and ");
         if (andIndex !== -1) {
-          promiseDraft.timeOfDay = {
+          promise.timeOfDay = {
             timeFrame: TimeFrame.between,
             start: value.slice(0, andIndex).trim(),
             end: value.slice(andIndex + 5).trim(),
           };
         } else {
-          issues.push(`Invalid between format: "${value}" (expected "X and Y")`);
+          issues.push(
+            `Invalid between format: "${value}" (expected "X and Y")`,
+          );
         }
       }
     } else if (key === "OK Days") {
       const parsed = parseDaysOfWeek(value);
       if (parsed.length > 0) {
-        promiseDraft.daysOfWeek = parsed;
+        promise.daysOfWeek = parsed;
       } else {
         issues.push(`Invalid days of week format: "${value}"`);
       }
@@ -296,13 +313,11 @@ export function parsePromiseString(params: {
     }
   }
 
-  // Return complete SchedPromise with entity context
+  // Check if promise has any actual content besides isPermanent
+  const hasContent = Object.keys(promise).length > 1;
+
   return {
-    promise: {
-      ...promiseDraft,
-      entityType,
-      entityId,
-    },
+    promise: hasContent ? promise : null,
     issues,
   };
 }

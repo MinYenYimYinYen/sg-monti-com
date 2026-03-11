@@ -25,7 +25,7 @@ import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
 import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
-import { schedPromiseSelect } from "@/app/schedPromise/schedPromiseSelect";
+import { parsePromiseString } from "@/app/schedPromise/parsePromise";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -91,12 +91,6 @@ export const selectCustomers = createSelector(
     custFlagSelect.custIdFlagIds,
     csvSelect.assignments,
     serviceConditionSelect.serviceConditionsByServId,
-    schedPromiseSelect.custPromiseMap,
-    schedPromiseSelect.progPromiseMap,
-    schedPromiseSelect.servPromiseMap,
-    schedPromiseSelect.custPromiseIssueMap,
-    schedPromiseSelect.custPromiseIssueMap,
-    schedPromiseSelect.servPromiseIssueMap,
   ],
   (
     customerDocs,
@@ -114,13 +108,6 @@ export const selectCustomers = createSelector(
     custIdFlagIds,
     newAssignments,
     serviceConditionsByServId,
-    custPromiseMap,
-    progPromiseMap,
-    servPromiseMap,
-    custPromiseIssueMap,
-    progPromiseIssueMap,
-    servPromiseIssueMap,
-
   ) => {
     // Builder types for type-safe construction without 'x'
     type CustomerBuilder = Omit<Customer, "x">;
@@ -132,6 +119,13 @@ export const selectCustomers = createSelector(
         .map((taxId) => basicTaxCodeMap.get(taxId) || baseTaxCode)
         .filter((tc) => tc.taxCodeId !== baseTaxCode.taxCodeId);
 
+      // Parse customer promise inline
+      const custPromiseResult = parsePromiseString({
+        techNote: custDoc.techNote,
+        entityType: "customer",
+        entityId: custDoc.custId,
+      });
+
       // Phase 1: Build customer without x, empty programs array
       const customerBuilder: CustomerBuilder = {
         ...custDoc,
@@ -140,9 +134,8 @@ export const selectCustomers = createSelector(
         callAhead: callAheadDocMap.get(custDoc.callAheadId) ?? null,
         discount: discountDocMap.get(custDoc.discountId) ?? null,
         flags: hydrateFlags(custDoc.custId, custIdFlagIds, flagDocMap),
-        promise: custPromiseMap.get(custDoc.custId) ?? null,
-        promiseIssues: custPromiseIssueMap.get(custDoc.custId)?.messages ?? [],
-
+        promise: custPromiseResult.promise,
+        promiseIssues: custPromiseResult.issues,
       };
 
       const progDocs = programDocMap.get(custDoc.custId) || [];
@@ -151,6 +144,13 @@ export const selectCustomers = createSelector(
       const programs = progDocs.map((progDoc) => {
         const progCode = progCodeMap.get(progDoc.progDefId) || baseProgCode;
 
+        // Parse program promise inline
+        const progPromiseResult = parsePromiseString({
+          techNote: progDoc.techNote,
+          entityType: "program",
+          entityId: progDoc.progId,
+        });
+
         const programBuilder: ProgramBuilder = {
           ...progDoc,
           customer: customerBuilder as Customer,
@@ -158,8 +158,8 @@ export const selectCustomers = createSelector(
           progCode,
           callAhead: callAheadDocMap.get(progDoc.callAheadId) ?? null,
           discount: discountDocMap.get(progDoc.discountId) ?? null,
-          promise: progPromiseMap.get(progDoc.progId) ?? null,
-          promiseIssues: progPromiseIssueMap.get(progDoc.progId)?.messages ?? []
+          promise: progPromiseResult.promise,
+          promiseIssues: progPromiseResult.issues,
         };
 
         const serviceDocs = serviceDocMap.get(progDoc.progId) ?? [];
@@ -174,6 +174,13 @@ export const selectCustomers = createSelector(
             progDoc,
             employeeMap,
           );
+
+          // Parse service promise inline
+          const servPromiseResult = parsePromiseString({
+            techNote: servDoc.techNote,
+            entityType: "service",
+            entityId: servDoc.servId,
+          });
 
           const serviceBuilder: ServiceBuilder = {
             ...servDoc,
@@ -195,8 +202,8 @@ export const selectCustomers = createSelector(
               productCommonMap,
             ),
             lastAssigned,
-            promise: servPromiseMap.get(servDoc.servId) ?? null,
-            promiseIssues: servPromiseIssueMap.get(servDoc.servId)?.messages ?? []
+            promise: servPromiseResult.promise,
+            promiseIssues: servPromiseResult.issues,
           };
 
           // Add x after all other properties are set - mutate in place to preserve references

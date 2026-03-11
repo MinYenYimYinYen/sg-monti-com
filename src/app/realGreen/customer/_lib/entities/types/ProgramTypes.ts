@@ -5,7 +5,7 @@ import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
-import { ProgPromise } from "@/app/schedPromise/SchedPromiseTypes";
+import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 
 export type ProgramRaw = {
   averagePrice: number;
@@ -124,7 +124,7 @@ export type ProgramProps = {
   progCode: ProgCode;
   callAhead: CallAhead | null;
   discount: DiscountDoc | null;
-  promise: ProgPromise | null;
+  promise: SchedPromise | null;
   promiseIssues: string[];
 };
 

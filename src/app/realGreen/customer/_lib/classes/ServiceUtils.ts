@@ -5,7 +5,7 @@ import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { Condition } from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
-import { SchedPromiseDraft } from "@/app/schedPromise/SchedPromiseTypes";
+import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 
 export class ServiceUtils {
   constructor(private readonly service: Omit<Service, "x">) {}
@@ -69,8 +69,8 @@ export class ServiceUtils {
     return this.service.program.progCode.programType === "H";
   }
 
-  public get promises(): SchedPromiseDraft[] {
-    const maybeNull: (SchedPromiseDraft | null)[] = [
+  public get promises(): SchedPromise[] {
+    const maybeNull: (SchedPromise | null)[] = [
       this.service.promise,
       this.service.program.promise,
       this.service.program.customer.promise,

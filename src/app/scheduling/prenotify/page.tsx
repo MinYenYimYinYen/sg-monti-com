@@ -19,6 +19,8 @@ import {
 import { MultiSelect, MultiSelectItem } from "@/components/MultiSelect";
 import { NotificationType } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { PrenotifyByType } from "@/app/scheduling/prenotify/_lib/PrenotifyByType";
+import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { ServiceQuery } from "@/app/realGreen/customer/_lib/classes/ServiceQuery";
 
 export default function Prenotify() {
   usePrenotify();
@@ -37,6 +39,26 @@ export default function Prenotify() {
 
   const [selectedNotificationType, setSelectedNotificationType] =
     useState<NotificationType>(selectedPrenotifies[0]?.[0] ?? "");
+
+
+  const services = useSelector(centralSelect.services);
+  const promised = new ServiceQuery(services).hasPromise(true).results;
+
+  console.log("promised", promised
+    .filter(s=>s.status==="$")
+    .map((s) => {
+    return {
+      custId: s.custId,
+      servCodeId: s.servCodeId,
+      combinedPromises: s.x.promises,
+      servPromise: s.promise,
+      progPromise: s.program.promise,
+      custPromise: s.program.customer.promise,
+      technotes: s.x.allTechNotes,
+
+    }
+  }));
+
 
   return (
     <Container variant={"page"} className="h-full flex flex-col flex-1">

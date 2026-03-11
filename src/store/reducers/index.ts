@@ -20,7 +20,6 @@ import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
 import csvReducer from "@/app/csv/_lib/csvSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
-import { schedPromiseReducer } from "@/app/schedPromise/schedPromiseSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -37,7 +36,6 @@ const rootReducer = combineReducers({
   product: productReducer,
   unitConfig: unitConfigReducer,
   progServ: progServReducer,
-  schedPromise: schedPromiseReducer,
   serviceCondition: serviceConditionReducer,
   taxCode: taxCodeReducer,
   zipCode: zipCodeReducer,

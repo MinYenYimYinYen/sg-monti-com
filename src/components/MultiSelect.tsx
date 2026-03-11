@@ -3,7 +3,6 @@
 import * as React from "react";
 import { cn } from "@/lib/tailwindUtils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/style/components/collapsible";
-import { Button } from "@/style/components/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Check } from "lucide-react";
 
@@ -86,31 +85,49 @@ export function MultiSelect<TValue extends string | number = string>({
 // TRIGGER COMPONENT
 // ============================================================================
 
-interface MultiSelectTriggerProps extends Omit<React.ComponentPropsWithoutRef<typeof Button>, "variant"> {
-  asChild?: boolean;
-}
-
-export const MultiSelectTrigger = React.forwardRef<HTMLButtonElement, MultiSelectTriggerProps>(
-  ({ className, children, asChild, ...props }, ref) => {
-    const { isOpen } = useMultiSelect();
-
-    return (
-      <CollapsibleTrigger asChild={asChild}>
-        <Button
-          asChild
-          ref={ref}
-          variant="outline"
-          role="combobox"
-          aria-expanded={isOpen}
-          className={cn("justify-between", className)}
-          {...props}
-        >
-          {children}
-        </Button>
-      </CollapsibleTrigger>
-    );
+const multiSelectTriggerVariants = cva(
+  "flex w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground",
+  {
+    variants: {
+      variant: {
+        default: "hover:bg-primary/10",
+        outline: "border-primary/50",
+      },
+      size: {
+        default: "h-9",
+        sm: "h-8 text-xs px-2",
+        lg: "h-10 px-4",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
   }
 );
+
+interface MultiSelectTriggerProps
+  extends React.ComponentPropsWithoutRef<typeof CollapsibleTrigger>,
+    VariantProps<typeof multiSelectTriggerVariants> {}
+
+export const MultiSelectTrigger = React.forwardRef<
+  React.ElementRef<typeof CollapsibleTrigger>,
+  MultiSelectTriggerProps
+>(({ className, variant, size, children, ...props }, ref) => {
+  const { isOpen } = useMultiSelect();
+
+  return (
+    <CollapsibleTrigger
+      ref={ref}
+      role="combobox"
+      aria-expanded={isOpen}
+      className={cn(multiSelectTriggerVariants({ variant, size }), className)}
+      {...props}
+    >
+      {children}
+    </CollapsibleTrigger>
+  );
+});
 MultiSelectTrigger.displayName = "MultiSelectTrigger";
 
 // ============================================================================
@@ -387,11 +404,13 @@ MultiSelectEmpty.displayName = "MultiSelectEmpty";
 interface MultiSelectValueProps<TValue extends string | number = string> {
   placeholder?: string;
   children?: (values: TValue[]) => React.ReactNode;
+  className?: string;
 }
 
 export function MultiSelectValue<TValue extends string | number = string>({
   placeholder = "Select...",
   children,
+  className,
 }: MultiSelectValueProps<TValue>) {
   const { value } = useMultiSelect<TValue>();
 
@@ -399,5 +418,18 @@ export function MultiSelectValue<TValue extends string | number = string>({
     return <>{children(value)}</>;
   }
 
-  return <>{value.length > 0 ? value.join(", ") : placeholder}</>;
+  const hasValue = value.length > 0;
+
+  return (
+    <span
+      className={cn(
+        "flex-1 text-left truncate",
+        !hasValue && "text-muted-foreground",
+        className
+      )}
+      data-placeholder={!hasValue}
+    >
+      {hasValue ? value.join(", ") : placeholder}
+    </span>
+  );
 }

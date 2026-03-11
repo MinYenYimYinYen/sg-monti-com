@@ -17,8 +17,34 @@ import { useState } from "react";
 import { dateParser } from "@/lib/primatives/dates/dateParse";
 import { dateConversion } from "@/lib/primatives/dates/dateConversion";
 import { clsx } from "clsx";
+import { cva, type VariantProps } from "class-variance-authority";
 
-export interface DatePickerProps {
+const datePickerVariants = cva("relative", {
+  variants: {
+    size: {
+      default: "h-9 w-[130px]",
+      sm: "h-7 w-[100px]",
+      lg: "h-10 w-[160px]",
+    },
+  },
+  defaultVariants: {
+    size: "default",
+  },
+});
+
+const inputPaddingBySize = {
+  default: "pr-9",
+  sm: "pr-7",
+  lg: "pr-10",
+};
+
+const buttonSizeBySize = {
+  default: "w-9",
+  sm: "w-7",
+  lg: "w-10",
+};
+
+export interface DatePickerProps extends VariantProps<typeof datePickerVariants> {
   value?: string;
   onChange?: (date: string) => void;
   className?: string;
@@ -32,6 +58,7 @@ export function DatePicker({
   className,
   placeholder = "MM/DD/YYYY",
   isInvalid,
+  size,
 }: DatePickerProps) {
   // Track the previous value prop to detect external changes during render
   const [prevValue, setPrevValue] = useState(value);
@@ -106,9 +133,10 @@ export function DatePicker({
   };
 
   const date = dateConversion.toJSDate(value);
+  const sizeKey = size || "default";
 
   return (
-    <div className={cn("relative w-fit", className)}>
+    <div className={cn(datePickerVariants({ size }), className)}>
       <Input
         value={inputValue}
         onChange={handleInputChange}
@@ -116,7 +144,8 @@ export function DatePicker({
         onFocus={handleFocus}
         placeholder={placeholder}
         className={cn(
-          "w-[130px] pr-9",
+          "w-full h-full truncate",
+          inputPaddingBySize[sizeKey],
           isInvalid &&
             clsx("border-destructive focus-visible:border-destructive"),
         )}
@@ -128,7 +157,8 @@ export function DatePicker({
             intensity={"ghost"}
             size="icon"
             className={cn(
-              "absolute right-0 top-0 h-full w-9 px-2",
+              "absolute right-0 top-0 h-full px-2",
+              buttonSizeBySize[sizeKey],
               !date && "text-muted-foreground",
             )}
           >
