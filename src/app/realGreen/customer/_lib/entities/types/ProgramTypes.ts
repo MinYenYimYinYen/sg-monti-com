@@ -125,6 +125,7 @@ export type ProgramProps = {
   callAhead: CallAhead | null;
   discount: DiscountDoc | null;
   promise: ProgPromise | null;
+  promiseIssues: string[];
 };
 
 export type Program = ProgramDoc & ProgramProps;

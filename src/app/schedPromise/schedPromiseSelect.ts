@@ -3,12 +3,16 @@ import {
   CustPromise,
   ProgPromise,
   ServPromise,
+  PromiseIssue,
 } from "@/app/schedPromise/SchedPromiseTypes";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 
 const selectSchedPromises = (state: AppState) =>
   state.schedPromise.schedPromises;
+
+const selectIssues = (state: AppState) =>
+  state.schedPromise.issues;
 
 const selectSchedPromiseEntities = createSelector(
   [selectSchedPromises],
@@ -79,13 +83,76 @@ const selectServPromiseMap = createSelector(
     new Grouper(servPromises).toUniqueMap((serv) => serv.servId),
 );
 
+const selectIssueEntities = createSelector(
+  [selectIssues],
+  (issues) => {
+    const custPromiseIssues: PromiseIssue[] = [];
+    const progPromiseIssues: PromiseIssue[] = [];
+    const servPromiseIssues: PromiseIssue[] = [];
+
+    issues.forEach((issue) => {
+      if (issue.entityType === "customer") {
+        custPromiseIssues.push(issue);
+      }
+      if (issue.entityType === "program") {
+        progPromiseIssues.push(issue);
+      }
+      if (issue.entityType === "service") {
+        servPromiseIssues.push(issue);
+      }
+    });
+    return { custPromiseIssues, progPromiseIssues, servPromiseIssues };
+  }
+);
+
+const selectCustPromiseIssues = createSelector(
+  [selectIssueEntities],
+  (issueEntities) => issueEntities.custPromiseIssues
+);
+
+const selectProgPromiseIssues = createSelector(
+  [selectIssueEntities],
+  (issueEntities) => issueEntities.progPromiseIssues
+);
+
+const selectServPromiseIssues = createSelector(
+  [selectIssueEntities],
+  (issueEntities) => issueEntities.servPromiseIssues
+);
+
+const selectCustPromiseIssueMap = createSelector(
+  [selectCustPromiseIssues],
+  (custIssues) =>
+    new Grouper(custIssues).toUniqueMap((issue) => issue.entityId)
+);
+
+const selectProgPromiseIssueMap = createSelector(
+  [selectProgPromiseIssues],
+  (progIssues) =>
+    new Grouper(progIssues).toUniqueMap((issue) => issue.entityId)
+);
+
+const selectServPromiseIssueMap = createSelector(
+  [selectServPromiseIssues],
+  (servIssues) =>
+    new Grouper(servIssues).toUniqueMap((issue) => issue.entityId)
+);
+
 export const schedPromiseSelect = {
   schedPromises: selectSchedPromises,
+  issues: selectIssues,
   schedPromiseEntities: selectSchedPromiseEntities,
+  issueEntities: selectIssueEntities,
   custPromises: selectCustPromises,
   progPromises: selectProgPromises,
   servPromises: selectServPromises,
+  custPromiseIssues: selectCustPromiseIssues,
+  progPromiseIssues: selectProgPromiseIssues,
+  servPromiseIssues: selectServPromiseIssues,
   custPromiseMap: selectCustPromiseMap,
   progPromiseMap: selectProgPromiseMap,
   servPromiseMap: selectServPromiseMap,
+  custPromiseIssueMap: selectCustPromiseIssueMap,
+  progPromiseIssueMap: selectProgPromiseIssueMap,
+  servPromiseIssueMap: selectServPromiseIssueMap,
 };

@@ -72,6 +72,7 @@ export const baseService: Service = {
     productsPlanned: [],
     lastAssigned: baseAssignment,
     promise: null,
+    promiseIssues: [],
   }),
 
   ...baseServiceDoc,
@@ -83,4 +84,5 @@ export const baseService: Service = {
   productsPlanned: [],
   lastAssigned: baseAssignment,
   promise: null,
+  promiseIssues: [],
 };

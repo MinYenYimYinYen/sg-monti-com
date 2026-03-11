@@ -94,6 +94,9 @@ export const selectCustomers = createSelector(
     schedPromiseSelect.custPromiseMap,
     schedPromiseSelect.progPromiseMap,
     schedPromiseSelect.servPromiseMap,
+    schedPromiseSelect.custPromiseIssueMap,
+    schedPromiseSelect.custPromiseIssueMap,
+    schedPromiseSelect.servPromiseIssueMap,
   ],
   (
     customerDocs,
@@ -114,6 +117,10 @@ export const selectCustomers = createSelector(
     custPromiseMap,
     progPromiseMap,
     servPromiseMap,
+    custPromiseIssueMap,
+    progPromiseIssueMap,
+    servPromiseIssueMap,
+
   ) => {
     // Builder types for type-safe construction without 'x'
     type CustomerBuilder = Omit<Customer, "x">;
@@ -134,6 +141,7 @@ export const selectCustomers = createSelector(
         discount: discountDocMap.get(custDoc.discountId) ?? null,
         flags: hydrateFlags(custDoc.custId, custIdFlagIds, flagDocMap),
         promise: custPromiseMap.get(custDoc.custId) ?? null,
+        promiseIssues: custPromiseIssueMap.get(custDoc.custId)?.messages ?? [],
 
       };
 
@@ -150,7 +158,8 @@ export const selectCustomers = createSelector(
           progCode,
           callAhead: callAheadDocMap.get(progDoc.callAheadId) ?? null,
           discount: discountDocMap.get(progDoc.discountId) ?? null,
-          promise: progPromiseMap.get(progDoc.progId) ?? null
+          promise: progPromiseMap.get(progDoc.progId) ?? null,
+          promiseIssues: progPromiseIssueMap.get(progDoc.progId)?.messages ?? []
         };
 
         const serviceDocs = serviceDocMap.get(progDoc.progId) ?? [];
@@ -187,6 +196,7 @@ export const selectCustomers = createSelector(
             ),
             lastAssigned,
             promise: servPromiseMap.get(servDoc.servId) ?? null,
+            promiseIssues: servPromiseIssueMap.get(servDoc.servId)?.messages ?? []
           };
 
           // Add x after all other properties are set - mutate in place to preserve references

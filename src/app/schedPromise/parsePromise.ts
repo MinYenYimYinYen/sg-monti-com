@@ -4,10 +4,10 @@ import {
   GranLiq,
   SchedCondition,
   SchedPromiseDraft,
+  SchedPromise,
   TargetPeriod,
   TimeFrame,
   type ParseResult,
-  type PromiseValidationIssue,
 } from "@/app/schedPromise/SchedPromiseTypes";
 import { dateParser } from "@/lib/primatives/dates/dateParse";
 import { parseDateRange } from "@/app/schedPromise/dateRangeParse";
@@ -111,19 +111,32 @@ export function stringifyPromise(promise: SchedPromiseDraft): string {
 
 /**
  * Parses a tech note string to extract and validate promise notation
- * @param techNote - Full CRM tech note (may contain non-promise text)
- * @returns ParseResult: null (no promise found), validation issue, or promise with issues array
+ * Uses graceful degradation - preserves valid fields even when some fail to parse
+ * @param params - Entity context and tech note
+ * @returns ParseResult with promise (if any valid fields) and array of issues
  * @example
- * parsePromiseString("Customer requested p[tech: John, before: 12/25] for service")
+ * parsePromiseString({
+ *   techNote: "Customer requested p[tech: John, before: 12/25] for service",
+ *   entityType: "service",
+ *   entityId: 123
+ * })
  * => { promise: {...}, issues: [] }
  */
-export function parsePromiseString(techNote: string): ParseResult {
+export function parsePromiseString(params: {
+  techNote: string;
+  entityType: "service" | "program" | "customer";
+  entityId: number;
+}): ParseResult {
+  const { techNote, entityType, entityId } = params;
+  const issues: string[] = [];
+
   // Extract promise pattern from tech note
   const promiseMatch = techNote.match(/p[\[{][^\]}]*[\]}]/);
-  if (!promiseMatch) return null;
+  if (!promiseMatch) {
+    return { promise: null, issues: [] };
+  }
 
   const promiseString = promiseMatch[0];
-  const issues: string[] = [];
 
   // Determine if permanent or seasonal based on brackets
   let isPermanent: "true" | "false";
@@ -132,7 +145,10 @@ export function parsePromiseString(techNote: string): ParseResult {
   } else if (promiseString.startsWith("p{") && promiseString.endsWith("}")) {
     isPermanent = "false";
   } else {
-    return createValidationIssue("Invalid promise string format", promiseString);
+    return {
+      promise: null,
+      issues: [`Invalid promise string format: ${promiseString}`],
+    };
   }
 
   // Extract content between wrappers
@@ -140,10 +156,13 @@ export function parsePromiseString(techNote: string): ParseResult {
 
   // Check for empty content
   if (content.length === 0) {
-    return createValidationIssue("Empty promise content", promiseString);
+    return {
+      promise: null,
+      issues: ["Empty promise content"],
+    };
   }
 
-  const promise: SchedPromiseDraft = { isPermanent };
+  const promiseDraft: SchedPromiseDraft = { isPermanent };
 
   // Split by comma, respecting nested content
   const parts = splitPromiseParts(content);
@@ -158,14 +177,14 @@ export function parsePromiseString(techNote: string): ParseResult {
       // Check for time frames without values
       if (isTimeFrameKey(trimmed)) {
         if (trimmed === TimeFrame.first || trimmed === TimeFrame.last) {
-          promise.timeOfDay = { timeFrame: trimmed };
+          promiseDraft.timeOfDay = { timeFrame: trimmed };
         } else {
           issues.push(`Time frame "${trimmed}" requires a time value`);
         }
       }
       // Otherwise treat as "other"
       else {
-        promise.other = trimmed;
+        promiseDraft.other = trimmed;
       }
       continue;
     }
@@ -175,16 +194,16 @@ export function parsePromiseString(techNote: string): ParseResult {
 
     // Parse based on key
     if (key === "tech") {
-      promise.tech = value;
+      promiseDraft.tech = value;
     } else if (key === "equip") {
-      promise.equip = value;
+      promiseDraft.equip = value;
     } else if (key === "condition") {
       // Accept any string, prefer enum values
-      promise.condition = value;
+      promiseDraft.condition = value;
     } else if (key === "granLiq") {
       const parsed = parseGranLiq(value);
       if (parsed) {
-        promise.granLiq = parsed;
+        promiseDraft.granLiq = parsed;
       } else {
         issues.push(`Invalid granLiq value: "${value}"`);
       }
@@ -204,13 +223,13 @@ export function parsePromiseString(techNote: string): ParseResult {
 
       // TypeScript needs explicit discrimination for DateTarget union
       if (key === DateScope.before || key === DateScope.after) {
-        promise.dateTarget = {
+        promiseDraft.dateTarget = {
           dateScope: key,
           date: isoDate,
           dateRange,
         };
       } else if (key === DateScope.onDate) {
-        promise.dateTarget = {
+        promiseDraft.dateTarget = {
           dateScope: key,
           date: isoDate,
           dateRange,
@@ -235,7 +254,7 @@ export function parsePromiseString(techNote: string): ParseResult {
           continue;
         }
 
-        promise.dateTarget = {
+        promiseDraft.dateTarget = {
           dateScope,
           targetPeriod,
           date: isoDate,
@@ -247,7 +266,7 @@ export function parsePromiseString(techNote: string): ParseResult {
     } else if (isTimeFrameKey(key)) {
       // Simple time frames: at, before, after
       if (key === TimeFrame.at || key === TimeFrame.before || key === TimeFrame.after) {
-        promise.timeOfDay = {
+        promiseDraft.timeOfDay = {
           timeFrame: key,
           time: value,
         };
@@ -255,7 +274,7 @@ export function parsePromiseString(techNote: string): ParseResult {
         // Parse "8:00 AM and 12:00 PM"
         const andIndex = value.indexOf(" and ");
         if (andIndex !== -1) {
-          promise.timeOfDay = {
+          promiseDraft.timeOfDay = {
             timeFrame: TimeFrame.between,
             start: value.slice(0, andIndex).trim(),
             end: value.slice(andIndex + 5).trim(),
@@ -267,17 +286,25 @@ export function parsePromiseString(techNote: string): ParseResult {
     } else if (key === "OK Days") {
       const parsed = parseDaysOfWeek(value);
       if (parsed.length > 0) {
-        promise.daysOfWeek = parsed;
+        promiseDraft.daysOfWeek = parsed;
       } else {
         issues.push(`Invalid days of week format: "${value}"`);
       }
     } else {
-      // Unknown key
+      // Unknown key - add to issues but continue parsing
       issues.push(`Unknown promise field: "${key}"`);
     }
   }
 
-  return { promise, issues };
+  // Return complete SchedPromise with entity context
+  return {
+    promise: {
+      ...promiseDraft,
+      entityType,
+      entityId,
+    },
+    issues,
+  };
 }
 
 /**
@@ -379,15 +406,4 @@ function parseDaysOfWeek(value: string): DayOfWeek[] {
   }
 
   return [];
-}
-
-/**
- * Helper to create validation issue object
- */
-function createValidationIssue(issue: string, rawString: string): PromiseValidationIssue {
-  return {
-    type: "validation_issue",
-    issue,
-    rawString,
-  };
 }

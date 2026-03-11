@@ -1,14 +1,19 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
-import { SchedPromise } from "../SchedPromiseTypes";
+import { SchedPromise, PromiseIssue } from "../SchedPromiseTypes";
 import { DataResponse } from "@/lib/api/types/responses";
 
 export interface SchedPromiseContract extends ApiContract {
   getSchedPromises: {
     params: {
-      serviceIds?: number[];
-      programIds?: number[];
-      customerIds?: number[];
+      entities: Array<{
+        entityType: "service" | "program" | "customer";
+        entityId: number;
+        techNote: string;
+      }>;
     };
-    result: DataResponse<SchedPromise[]>;
+    result: DataResponse<{
+      promises: SchedPromise[];
+      issues: PromiseIssue[];
+    }>;
   };
 }

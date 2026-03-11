@@ -4,34 +4,62 @@ import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import SchedPromiseModel from "@/app/schedPromise/SchedPromiseModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { parsePromiseString } from "@/app/schedPromise/parsePromise";
+import type { SchedPromise, PromiseIssue } from "@/app/schedPromise/SchedPromiseTypes";
 
 const handlers: HandlerMap<SchedPromiseContract> = {
   getSchedPromises: {
     roles: ["office", "admin", "tech"],
-    handler: async ({ serviceIds, programIds, customerIds }) => {
+    handler: async ({ entities }) => {
       await connectToMongoDB();
 
-      // Build $or query for all requested entity types
-      const queries = [];
-      if (serviceIds?.length) {
-        queries.push({ entityType: "service", entityId: { $in: serviceIds } });
-      }
-      if (programIds?.length) {
-        queries.push({ entityType: "program", entityId: { $in: programIds } });
-      }
-      if (customerIds?.length) {
-        queries.push({ entityType: "customer", entityId: { $in: customerIds } });
+      const promises: SchedPromise[] = [];
+      const issues: PromiseIssue[] = [];
+
+      for (const entity of entities) {
+        const { entityType, entityId, techNote } = entity;
+
+        // Parse the tech note
+        const parseResult = parsePromiseString({
+          techNote,
+          entityType,
+          entityId,
+        });
+
+        // Handle the result
+        if (parseResult.promise) {
+          // Valid promise (even if it has warnings) - upsert to MongoDB
+          await SchedPromiseModel.updateOne(
+            { entityType, entityId },
+            parseResult.promise,
+            { upsert: true }
+          );
+          promises.push(parseResult.promise);
+        } else {
+          // No valid promise - delete from MongoDB if it exists
+          await SchedPromiseModel.deleteOne({ entityType, entityId });
+        }
+
+        // Collect issues (both fatal and non-fatal)
+        if (parseResult.issues.length > 0) {
+          issues.push({
+            entityType,
+            entityId,
+            messages: parseResult.issues,
+          });
+        }
       }
 
-      // If no IDs provided, return empty array
-      if (queries.length === 0) {
-        return { success: true, payload: [] };
-      }
+      // Clean MongoDB artifacts from promises
+      const cleanedPromises = cleanMongoArray(promises);
 
-      const docs = await SchedPromiseModel.find({ $or: queries }).lean();
-      const cleaned = cleanMongoArray(docs);
-
-      return { success: true, payload: cleaned };
+      return {
+        success: true,
+        payload: {
+          promises: cleanedPromises,
+          issues,
+        },
+      };
     },
   },
 };

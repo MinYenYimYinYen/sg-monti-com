@@ -32,6 +32,7 @@ export const baseProgramNoX: Omit<Program, "x"> = {
   callAhead: null,
   discount: null,
   promise: null,
+  promiseIssues: [],
 };
 
 export const baseProgram: Program = {

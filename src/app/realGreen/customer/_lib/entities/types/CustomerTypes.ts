@@ -11,7 +11,9 @@ import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { Flag } from "@/app/realGreen/flag/FlagTypes";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
-import { CustPromise } from "@/app/schedPromise/SchedPromiseTypes";
+import {
+  CustPromise,
+} from "@/app/schedPromise/SchedPromiseTypes";
 
 export type CustomerRaw = {
   address: Address;
@@ -178,6 +180,7 @@ export type CustomerProps = {
   discount: DiscountDoc | null;
   flags: Flag[];
   promise: CustPromise | null;
+  promiseIssues: string[];
 };
 
 export type Customer = CustomerDoc & CustomerProps;

@@ -143,6 +143,7 @@ export type ServiceProps = {
   productsPlanned: AppProduct[];
   lastAssigned: Assignment;
   promise: ServPromise | null;
+  promiseIssues: string[];
 
 };
 

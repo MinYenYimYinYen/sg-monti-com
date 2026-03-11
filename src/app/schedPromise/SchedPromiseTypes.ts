@@ -119,13 +119,13 @@ export type SelectedPromiseType = keyof Omit<
   "serviceId" | "isPermanent"
 >;
 
-export type PromiseValidationIssue = {
-  type: "validation_issue";
-  issue: string;
-  rawString: string;
+export type ParseResult = {
+  promise: SchedPromise | null;
+  issues: string[];
 };
 
-export type ParseResult =
-  | null
-  | { promise: SchedPromiseDraft; issues: string[] }
-  | PromiseValidationIssue;
+export type PromiseIssue = {
+  entityType: "service" | "program" | "customer";
+  entityId: number;
+  messages: string[];
+};
