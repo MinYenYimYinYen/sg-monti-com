@@ -230,8 +230,8 @@ export function PromiseBuilder() {
             }))
           }
         >
-          <RadioGroupItem value="true">Permanent [ ]</RadioGroupItem>
-          <RadioGroupItem value="false">Seasonal {}</RadioGroupItem>
+          <RadioGroupItem value="true">Permanent [...]</RadioGroupItem>
+          <RadioGroupItem value="false">Seasonal {"{...}"}</RadioGroupItem>
         </RadioGroup>
       </div>
 
