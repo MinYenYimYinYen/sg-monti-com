@@ -4,14 +4,20 @@ import { Fragment, useState } from "react";
 import { useSelector } from "react-redux";
 import {
   SchedPromise,
-  SchedCondition,
-  GranLiq,
-  DateScope,
-  TargetPeriod,
-  TimeFrame,
-  DayOfWeek,
+  DATE_SCOPES,
+  TARGET_PERIODS,
+  TIME_FRAMES,
+  DAYS_OF_WEEK,
+  SCHED_CONDITIONS,
+  GRAN_LIQ_TYPES,
   DateTarget,
   TimeOfDay,
+  DateScopeValue,
+  TargetPeriodValue,
+  TimeFrameValue,
+  DayOfWeekValue,
+  GranLiqValue,
+  SchedConditionValue,
 } from "@/app/schedPromise/SchedPromiseTypes";
 import { stringifyPromise } from "@/app/schedPromise/parsePromise";
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
@@ -61,12 +67,12 @@ export function PromiseBuilder() {
   const [isCustomTimeOfDay, setIsCustomTimeOfDay] = useState(false);
 
   // DateTarget sub-state
-  const [dateScope, setDateScope] = useState<DateScope | undefined>();
+  const [dateScope, setDateScope] = useState<DateScopeValue | undefined>();
   const [dateString, setDateString] = useState("");
-  const [targetPeriod, setTargetPeriod] = useState<TargetPeriod | undefined>();
+  const [targetPeriod, setTargetPeriod] = useState<TargetPeriodValue | undefined>();
 
   // TimeOfDay sub-state
-  const [timeFrame, setTimeFrame] = useState<TimeFrame | undefined>();
+  const [timeFrame, setTimeFrame] = useState<TimeFrameValue | "Custom" | undefined>();
   const [timeValue, setTimeValue] = useState("");
   const [timeStartValue, setTimeStartValue] = useState("");
   const [timeEndValue, setTimeEndValue] = useState("");
@@ -120,9 +126,9 @@ export function PromiseBuilder() {
 
   // Update dateTarget when sub-fields change
   const updateDateTarget = (
-    scope?: DateScope,
+    scope?: DateScopeValue,
     date?: string,
-    period?: TargetPeriod,
+    period?: TargetPeriodValue,
   ) => {
     const s = scope ?? dateScope;
     const d = date ?? dateString;
@@ -140,17 +146,13 @@ export function PromiseBuilder() {
     // Build DateTarget based on scope
     let dateTarget: DateTarget | undefined;
 
-    if (
-      s === DateScope.before ||
-      s === DateScope.after ||
-      s === DateScope.onDate
-    ) {
+    if (s === "before" || s === "after" || s === "on") {
       dateTarget = {
         dateScope: s,
         date: d,
         dateRange: { min: "", max: "" }, // Will be computed by parser
       };
-    } else if (s === DateScope.weekOf || s === DateScope.monthOf) {
+    } else if (s === "week of" || s === "month of") {
       if (p) {
         dateTarget = {
           dateScope: s,
@@ -168,7 +170,7 @@ export function PromiseBuilder() {
 
   // Update timeOfDay when sub-fields change
   const updateTimeOfDay = (
-    frame?: TimeFrame,
+    frame?: TimeFrameValue | "Custom",
     value?: string,
     start?: string,
     end?: string,
@@ -187,19 +189,20 @@ export function PromiseBuilder() {
       return;
     }
 
+    // "Custom" is handled by the Input's onChange, not here
+    if (f === "Custom") {
+      return;
+    }
+
     let timeOfDay: TimeOfDay | string | undefined;
 
-    if (f === TimeFrame.first || f === TimeFrame.last) {
+    if (f === "First Stop" || f === "Last Stop") {
       timeOfDay = { timeFrame: f };
-    } else if (f === TimeFrame.between) {
+    } else if (f === "between") {
       if (s && e) {
         timeOfDay = { timeFrame: f, start: s, end: e };
       }
-    } else if (
-      f === TimeFrame.at ||
-      f === TimeFrame.before ||
-      f === TimeFrame.after
-    ) {
+    } else if (f === "at" || f === "before" || f === "after") {
       if (v) {
         timeOfDay = { timeFrame: f, time: v };
       }
@@ -253,7 +256,7 @@ export function PromiseBuilder() {
                   mode="single"
                   value={dateScope ? [dateScope] : []}
                   onValueChange={(val) => {
-                    const scope = val[0] as DateScope | undefined;
+                    const scope = val[0] as DateScopeValue | undefined;
                     setDateScope(scope);
                     updateDateTarget(scope, dateString, targetPeriod);
                   }}
@@ -262,9 +265,9 @@ export function PromiseBuilder() {
                     <MultiSelectValue placeholder="Select scope..."  />
                   </MultiSelectTrigger>
                   <MultiSelectContent>
-                    {Object.values(DateScope).map((scope) => (
-                      <MultiSelectItem key={scope} value={scope}>
-                        {scope}
+                    {Object.entries(DATE_SCOPES).map(([key, config]) => (
+                      <MultiSelectItem key={key} value={config.key}>
+                        {config.label}
                       </MultiSelectItem>
                     ))}
                   </MultiSelectContent>
@@ -282,13 +285,13 @@ export function PromiseBuilder() {
                   />
                 )}
 
-                {(dateScope === DateScope.weekOf ||
-                  dateScope === DateScope.monthOf) && (
+                {(dateScope === "week of" ||
+                  dateScope === "month of") && (
                   <MultiSelect
                     mode="single"
                     value={targetPeriod ? [targetPeriod] : []}
                     onValueChange={(val) => {
-                      const period = val[0] as TargetPeriod | undefined;
+                      const period = val[0] as TargetPeriodValue | undefined;
                       setTargetPeriod(period);
                       updateDateTarget(dateScope, dateString, period);
                     }}
@@ -297,9 +300,9 @@ export function PromiseBuilder() {
                       <MultiSelectValue placeholder="Select period..." />
                     </MultiSelectTrigger>
                     <MultiSelectContent>
-                      {Object.values(TargetPeriod).map((period) => (
-                        <MultiSelectItem key={period} value={period}>
-                          {period}
+                      {Object.entries(TARGET_PERIODS).map(([key, config]) => (
+                        <MultiSelectItem key={key} value={config.key}>
+                          {config.label}
                         </MultiSelectItem>
                       ))}
                     </MultiSelectContent>
@@ -325,7 +328,7 @@ export function PromiseBuilder() {
                 onValueChange={(val) =>
                   setPromise((prev) => ({
                     ...prev,
-                    daysOfWeek: val as DayOfWeek[],
+                    daysOfWeek: val as DayOfWeekValue[],
                   }))
                 }
               >
@@ -333,9 +336,9 @@ export function PromiseBuilder() {
                   <MultiSelectValue placeholder="Select days..." />
                 </MultiSelectTrigger>
                 <MultiSelectContent>
-                  {Object.values(DayOfWeek).map((day) => (
-                    <MultiSelectItem key={day} value={day}>
-                      {day}
+                  {Object.entries(DAYS_OF_WEEK).map(([key, config]) => (
+                    <MultiSelectItem key={key} value={config.key}>
+                      {config.label}
                     </MultiSelectItem>
                   ))}
                 </MultiSelectContent>
@@ -358,7 +361,7 @@ export function PromiseBuilder() {
                   mode="single"
                   value={timeFrame ? [timeFrame] : []}
                   onValueChange={(val) => {
-                    const frame = val[0] as TimeFrame | undefined;
+                    const frame = val[0] as TimeFrameValue | "Custom" | undefined;
                     setTimeFrame(frame);
                     updateTimeOfDay(
                       frame,
@@ -372,11 +375,13 @@ export function PromiseBuilder() {
                     <MultiSelectValue placeholder="Select time frame..." />
                   </MultiSelectTrigger>
                   <MultiSelectContent>
-                    {Object.values(TimeFrame).map((frame) => (
-                      <MultiSelectItem key={frame} value={frame}>
-                        {frame}
+                    {Object.entries(TIME_FRAMES).map(([key, config]) => (
+                      <MultiSelectItem key={key} value={config.key}>
+                        {config.label}
                       </MultiSelectItem>
                     ))}
+                    <MultiSelectSeparator />
+                    <MultiSelectItem value="Custom">Custom</MultiSelectItem>
                   </MultiSelectContent>
                 </MultiSelect>
 
@@ -396,11 +401,11 @@ export function PromiseBuilder() {
                 )}
 
                 {timeFrame &&
-                  timeFrame !== TimeFrame.first &&
-                  timeFrame !== TimeFrame.last &&
+                  timeFrame !== "First Stop" &&
+                  timeFrame !== "Last Stop" &&
                   timeFrame !== "Custom" && (
                     <>
-                      {timeFrame === TimeFrame.between ? (
+                      {timeFrame === "between" ? (
                         <>
                           <Input
                             placeholder="Start time"
@@ -488,7 +493,7 @@ export function PromiseBuilder() {
                       setIsCustomCondition(false);
                       setPromise((prev) => ({
                         ...prev,
-                        condition: selected as SchedCondition,
+                        condition: selected as SchedConditionValue,
                       }));
                     }
                   }}
@@ -497,9 +502,9 @@ export function PromiseBuilder() {
                     <MultiSelectValue placeholder="Select condition..." />
                   </MultiSelectTrigger>
                   <MultiSelectContent>
-                    {Object.values(SchedCondition).map((cond) => (
-                      <MultiSelectItem key={cond} value={cond}>
-                        {cond}
+                    {Object.entries(SCHED_CONDITIONS).map(([key, config]) => (
+                      <MultiSelectItem key={key} value={config.value}>
+                        {config.label}
                       </MultiSelectItem>
                     ))}
                     <MultiSelectSeparator />
@@ -541,7 +546,7 @@ export function PromiseBuilder() {
                 onValueChange={(val) =>
                   setPromise((prev) => ({
                     ...prev,
-                    granLiq: val[0] as GranLiq,
+                    granLiq: val[0] as GranLiqValue,
                   }))
                 }
               >
@@ -549,9 +554,9 @@ export function PromiseBuilder() {
                   <MultiSelectValue placeholder="Select type..." />
                 </MultiSelectTrigger>
                 <MultiSelectContent>
-                  {Object.values(GranLiq).map((type) => (
-                    <MultiSelectItem key={type} value={type}>
-                      {type}
+                  {Object.entries(GRAN_LIQ_TYPES).map(([key, config]) => (
+                    <MultiSelectItem key={key} value={config.value}>
+                      {config.label}
                     </MultiSelectItem>
                   ))}
                 </MultiSelectContent>

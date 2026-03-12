@@ -1,7 +1,7 @@
 import { addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, format, parse } from "date-fns";
 import { dateParser } from "@/lib/primatives/dates/dateParse";
 import type { TRange } from "@/lib/primatives/tRange/TRange";
-import { DateScope, TargetPeriod } from "@/app/schedPromise/SchedPromiseTypes";
+import { DateScopeValue, TargetPeriodValue } from "@/app/schedPromise/SchedPromiseTypes";
 
 /**
  * Parses a date string and DateScope into an ISO date range
@@ -11,9 +11,9 @@ import { DateScope, TargetPeriod } from "@/app/schedPromise/SchedPromiseTypes";
  * @returns ISO date range or undefined if date cannot be parsed
  */
 export function parseDateRange(
-  dateScope: DateScope,
+  dateScope: DateScopeValue,
   dateString: string,
-  targetPeriod?: TargetPeriod,
+  targetPeriod?: TargetPeriodValue,
 ): TRange<string> | undefined {
   // Parse the user's date string to ISO format
   const isoDate = dateParser.tryParseDate(dateString);
@@ -22,28 +22,28 @@ export function parseDateRange(
   const date = parse(isoDate, "yyyy-MM-dd", new Date());
 
   switch (dateScope) {
-    case DateScope.before:
+    case "before":
       return {
         min: "1900-01-01",
         max: isoDate,
       };
 
-    case DateScope.after:
+    case "after":
       return {
         min: isoDate,
         max: "3000-12-31",
       };
 
-    case DateScope.onDate:
+    case "on":
       return {
         min: isoDate,
         max: isoDate,
       };
 
-    case DateScope.weekOf:
+    case "week of":
       return parseWeekRange(date, targetPeriod);
 
-    case DateScope.monthOf:
+    case "month of":
       return parseMonthRange(date, targetPeriod);
 
     default:
@@ -57,33 +57,33 @@ export function parseDateRange(
  */
 function parseWeekRange(
   date: Date,
-  targetPeriod?: TargetPeriod,
+  targetPeriod?: TargetPeriodValue,
 ): TRange<string> | undefined {
   const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Monday
 
   switch (targetPeriod) {
-    case TargetPeriod.early:
+    case "early":
       // Mon or Tue (days 1-2)
       return {
         min: format(weekStart, "yyyy-MM-dd"),
         max: format(addDays(weekStart, 1), "yyyy-MM-dd"),
       };
 
-    case TargetPeriod.mid:
+    case "mid":
       // Tue, Wed, Thu (days 2-4)
       return {
         min: format(addDays(weekStart, 1), "yyyy-MM-dd"),
         max: format(addDays(weekStart, 3), "yyyy-MM-dd"),
       };
 
-    case TargetPeriod.late:
+    case "late":
       // Thu, Fri (days 4-5)
       return {
         min: format(addDays(weekStart, 3), "yyyy-MM-dd"),
         max: format(addDays(weekStart, 4), "yyyy-MM-dd"),
       };
 
-    case TargetPeriod.anyDay:
+    case "any day":
       // Mon-Fri (days 1-5)
       return {
         min: format(weekStart, "yyyy-MM-dd"),
@@ -100,34 +100,34 @@ function parseWeekRange(
  */
 function parseMonthRange(
   date: Date,
-  targetPeriod?: TargetPeriod,
+  targetPeriod?: TargetPeriodValue,
 ): TRange<string> | undefined {
   const monthStart = startOfMonth(date);
   const monthEnd = endOfMonth(date);
 
   switch (targetPeriod) {
-    case TargetPeriod.early:
+    case "early":
       // Days 1-10
       return {
         min: format(monthStart, "yyyy-MM-dd"),
         max: format(addDays(monthStart, 9), "yyyy-MM-dd"),
       };
 
-    case TargetPeriod.mid:
+    case "mid":
       // Days 11-20
       return {
         min: format(addDays(monthStart, 10), "yyyy-MM-dd"),
         max: format(addDays(monthStart, 19), "yyyy-MM-dd"),
       };
 
-    case TargetPeriod.late:
+    case "late":
       // Days 21-end
       return {
         min: format(addDays(monthStart, 20), "yyyy-MM-dd"),
         max: format(monthEnd, "yyyy-MM-dd"),
       };
 
-    case TargetPeriod.anyDay:
+    case "any day":
       // Days 1-end
       return {
         min: format(monthStart, "yyyy-MM-dd"),
