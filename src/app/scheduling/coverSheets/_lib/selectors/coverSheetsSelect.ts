@@ -9,27 +9,24 @@ import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTyp
 //   );
 // };
 
-export const selectServicesByDateAndEmployee = createSelector(
+const selectPrintedServices = createSelector(
   [centralSelect.services],
-  (services): Map<string, Map<string, Service[]>> => {
-    const printed = services.filter((service) => service.status === "$");
+  (services): Service[] => {
+    return services.filter((service) => service.status === "$");
+  },
+);
 
-    console.log(
-      "printed",
-      printed
-        .filter((p) => p.lastAssigned.employeeId === "1AL")
-        .map((p) => p.x.customer.displayName),
-    );
-
+const selectServicesByDateAndEmployee = createSelector(
+  [selectPrintedServices],
+  (printed): Map<string, Map<string, Service[]>> => {
     const tempResult = new Map<string, Map<string, Service[]>>();
 
     printed.forEach((service) => {
       const date = service.lastAssigned.schedDate;
 
-      if(!date) {
+      if (!date) {
         console.log("lastAssigned", service.lastAssigned);
       }
-
 
       const employeeId = service.lastAssigned.employeeId;
 
@@ -82,7 +79,7 @@ export const selectServicesByDateAndEmployee = createSelector(
 );
 
 // Derived selector: flatten to services by date (for card headers)
-export const selectServicesByDate = createSelector(
+const selectServicesByDate = createSelector(
   [selectServicesByDateAndEmployee],
   (byDateAndEmployee): Map<string, Service[]> => {
     const result = new Map<string, Service[]>();
@@ -99,7 +96,26 @@ export const selectServicesByDate = createSelector(
   },
 );
 
+const selectPromiseDetails = createSelector(
+  [selectPrintedServices],
+  (printed) => {
+    const promiseDetails = printed
+      .filter((service) => service.x.isPromisedOrHasPromise)
+      .map((service) => {
+        console.log("service", service.x.customer.displayName);
+        return {
+          promiseDetails: service.x.promiseDetails,
+          service,
+          schedDate: service.lastAssigned.schedDate,
+        };
+      });
+    return promiseDetails;
+  },
+);
+
 export const coverSheetsSelect = {
+  printedServices: selectPrintedServices,
   servicesByDateAndEmployee: selectServicesByDateAndEmployee,
   servicesByDate: selectServicesByDate,
+  promiseDetails: selectPromiseDetails,
 };

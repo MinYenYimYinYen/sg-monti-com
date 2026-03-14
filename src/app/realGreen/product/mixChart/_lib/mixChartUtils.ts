@@ -1,4 +1,4 @@
-import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { ProductMaster, SubProductConfig } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { CompoundUnitDisplay } from "@/app/realGreen/product/_lib/utils/UnitConfigDisplay";
 import { UnitContext } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 
@@ -8,6 +8,25 @@ export type MixChartRow = {
   size: number;
   amounts: MixChartAmount[];
 };
+
+/**
+ * Single source of truth for product amount calculations.
+ * Given a size and sub-product config, calculates the application amount.
+ */
+export function calculateAmountNeeded({size, rate}: {size: number, rate: number}
+
+): number {
+  return size * rate;
+}
+
+/**
+ * Inverse calculation: given amount and rate, calculate size covered.
+ */
+export function calculateSizeCovered({appAmount, rate}: {appAmount: number, rate: number}
+
+): number {
+  return appAmount / rate;
+}
 
 export function generateMixChartData(
   master: ProductMaster,
@@ -22,7 +41,10 @@ export function generateMixChartData(
   return sizes.map((size) => ({
     size,
     amounts: master.subProductConfigs.map((config) => {
-      const appAmount = size * config.rate;
+      const appAmount = calculateAmountNeeded({
+        size,
+        rate: config.rate,
+      });
       // Use unitConfigDisplay to format compound units
       return config.subProduct.unitConfigDisplay.format({
         amount: appAmount,
@@ -64,13 +86,19 @@ export function generateMixChartByProductAmount(
     const appAmount = amount * conversion.conversionFactor;
 
     // Calculate size covered based on the selected product's rate
-    const sizeCovered = appAmount / selectedConfig.rate;
+    const sizeCovered = calculateSizeCovered({
+      appAmount,
+      rate: selectedConfig.rate,
+    });
 
     // Calculate amounts needed for OTHER sub-products
     const amounts = master.subProductConfigs
       .filter((config) => config.subId !== selectedSubId)
       .map((config) => {
-        const requiredAppAmount = sizeCovered * config.rate;
+        const requiredAppAmount = calculateAmountNeeded({
+          size: sizeCovered,
+          rate: config.rate,
+        });
         return config.subProduct.unitConfigDisplay.format({
           amount: requiredAppAmount,
           targetContexts: ["load", "app"],

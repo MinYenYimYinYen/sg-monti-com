@@ -11,10 +11,6 @@ export class ServiceQuery extends BaseQuery<Service> {
     super(services);
   }
 
-  protected createInstance(items: Service[]): this {
-    return new ServiceQuery(items) as this;
-  }
-
   byStatus(...keys: ServiceStatusType[]) {
     const statuses = getServiceStatuses(keys);
     const serviceQuery = new ServiceQuery(
@@ -43,8 +39,16 @@ export class ServiceQuery extends BaseQuery<Service> {
   }
 
   hasPromise(bool: boolean) {
-    return new ServiceQuery(this.items.filter((s) => s.x.promises.length > 0 === bool));
+    return new ServiceQuery(
+      this.items.filter((s) => s.x.promises.length > 0 === bool),
+    );
   }
 
+  isPromised(bool: boolean) {
+    return new ServiceQuery(this.items.filter((s) => s.x.isPromisedOrHasPromise === bool));
+  }
 
+  protected createInstance(items: Service[]): this {
+    return new ServiceQuery(items) as this;
+  }
 }

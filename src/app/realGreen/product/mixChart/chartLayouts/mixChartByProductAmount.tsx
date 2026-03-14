@@ -1,6 +1,6 @@
 import { Document, Page, View, Text } from "@react-pdf/renderer";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { MixChartByProductAmountRow } from "@/app/realGreen/product/_lib/utils/mixChartUtils";
+import { MixChartByProductAmountRow } from "@/app/realGreen/product/mixChart/_lib/mixChartUtils";
 import { tw } from "@/lib/pdf/tw";
 import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
 import { PDFNumber } from "@/components/Number";

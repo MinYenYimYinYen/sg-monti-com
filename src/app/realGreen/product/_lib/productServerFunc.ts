@@ -32,6 +32,24 @@ import { ProductCategoryStored } from "@/app/realGreen/product/_lib/types/Produc
 import { baseUnit, Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
+export const WATER_IDS = {
+  productId: -2,
+  categoryId: -2,
+  unitId: 20, // Mixed Gallons
+};
+
+export const water: ProductSubCore = {
+  ...WATER_IDS,
+  productCode: ".Water",
+  isProduction: true,
+  isNonInventory: true,
+  isMaster: false,
+  isWorkOrder: false,
+  isLabor: false,
+  isMobile: false,
+  description: "Water",
+};
+
 export function remapRawProducts(raw: ProductRaw[]) {
   const cores: ProductCore[] = raw.map((p) => {
     return {
@@ -60,20 +78,10 @@ export function remapRawProducts(raw: ProductRaw[]) {
     if (isProductSubCore(core)) subCores.push(core);
     productCores.push(core);
   }
+  
 
-  const water: ProductSubCore = {
-    productId: -2,
-    categoryId: -2,
-    unitId: 20, // Mixed Gallons
-    productCode: ".Water",
-    isProduction: true,
-    isNonInventory: true,
-    isMaster: false,
-    isWorkOrder: false,
-    isLabor: false,
-    isMobile: false,
-    description: "Water",
-  };
+
+
 
   return {
     masterCores,

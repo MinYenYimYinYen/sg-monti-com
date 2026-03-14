@@ -53,6 +53,14 @@ export class ServiceUtils {
     return typeGuard.definedArray(check);
   }
 
+  public get techNotes() {
+    return {
+      servNote: this.service.techNote,
+      progNote: this.service.program.techNote,
+      custNote: this.service.program.customer.techNote,
+    }
+  }
+
   public get callAheads(): CallAhead[] {
     const servCallAhead = this.service.callAhead;
     const progCallAhead = this.service.program.callAhead;
@@ -76,5 +84,21 @@ export class ServiceUtils {
       this.service.program.customer.promise,
     ];
     return typeGuard.definedArray(maybeNull);
+  }
+
+  public get isPromisedOrHasPromise(): boolean {
+    return this.promises.length > 0 || this.service.isPromised;
+  }
+
+  public get promiseDetails() {
+    return this.promises.map((promise) => {
+      return {
+        ...promise,
+        // servNote: this.service.techNote,
+        // progNote: this.service.program.techNote,
+        // custNote: this.service.program.customer.techNote,
+        isPromised: this.service.isPromised,
+      }
+    })
   }
 }

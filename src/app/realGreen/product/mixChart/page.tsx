@@ -20,7 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import {
   generateMixChartData,
   generateMixChartByProductAmount,
-} from "@/app/realGreen/product/_lib/utils/mixChartUtils";
+} from "@/app/realGreen/product/mixChart/_lib/mixChartUtils";
 import { MixChartPDF } from "./chartLayouts/mixChartBySize";
 import { MixChartByProductAmountPDF } from "./chartLayouts/mixChartByProductAmount";
 import { UnitContext } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";

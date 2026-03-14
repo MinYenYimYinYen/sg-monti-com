@@ -93,7 +93,9 @@ export type Unit =
   | LengthUnit
   | TimeUnit
   | WeightUnit
-  | UnknownUnit;
+  | UnknownUnit
+  | VolumeUnit;
+
 
 export const baseUnit: Unit = {
   unitId: baseNumId,

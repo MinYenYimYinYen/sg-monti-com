@@ -21,6 +21,7 @@ import { NotificationType } from "@/app/realGreen/callAhead/_lib/CallAheadTypes"
 import { PrenotifyByType } from "@/app/scheduling/prenotify/_lib/PrenotifyByType";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { ServiceQuery } from "@/app/realGreen/customer/_lib/classes/ServiceQuery";
+import { PromiseDisplay } from "@/app/scheduling/prenotify/_lib/PromiseDisplay";
 
 export default function Prenotify() {
   usePrenotify();
@@ -44,20 +45,20 @@ export default function Prenotify() {
   const services = useSelector(centralSelect.services);
   const promised = new ServiceQuery(services).hasPromise(true).results;
 
-  console.log("promised", promised
-    .filter(s=>s.status==="$")
-    .map((s) => {
-    return {
-      custId: s.custId,
-      servCodeId: s.servCodeId,
-      combinedPromises: s.x.promises,
-      servPromise: s.promise,
-      progPromise: s.program.promise,
-      custPromise: s.program.customer.promise,
-      technotes: s.x.allTechNotes,
-
-    }
-  }));
+  // console.log("promised", promised
+  //   .filter(s=>s.status==="$")
+  //   .map((s) => {
+  //   return {
+  //     custId: s.custId,
+  //     servCodeId: s.servCodeId,
+  //     combinedPromises: s.x.promises,
+  //     servPromise: s.promise,
+  //     progPromise: s.program.promise,
+  //     custPromise: s.program.customer.promise,
+  //     technotes: s.x.allTechNotes,
+  //
+  //   }
+  // }));
 
 
   return (
@@ -126,6 +127,7 @@ export default function Prenotify() {
                     </TabsTrigger>
                   );
                 })}
+              <TabsTrigger value={"promises"}>Promises</TabsTrigger>
             </TabsList>
             {selectedPrenotifies.map(([notificationType, _value]) => {
               return (
@@ -135,8 +137,12 @@ export default function Prenotify() {
                     type={notificationType}
                   />
                 </TabsContent>
+
               );
             })}
+            <TabsContent value={"promises"}>
+              <PromiseDisplay />
+            </TabsContent>
           </Tabs>
         </div>
       </div>
