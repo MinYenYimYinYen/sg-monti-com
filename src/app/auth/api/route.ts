@@ -206,7 +206,7 @@ const handlers: HandlerMap<AuthContract> = {
       // 2. Issue New Access Token
       // We reuse the payload from the refresh token (userId, role, saId)
       // Ideally, we should check if the user still exists/is active in DB here
-      // but for speed, we can trust the signed refresh token for now.
+      // but for sec90Feet, we can trust the signed refresh token for now.
       const newPayload: TokenPayload = {
         role: payload.role,
         saId: payload.saId,

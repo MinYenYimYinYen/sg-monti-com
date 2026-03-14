@@ -47,15 +47,15 @@ export const baseAppMethod: AppMethod = {
 ```typescript
 /**
  * Calculates carrier application rate from AppMethod parameters.
- * Based on physical formula: rate = (flowRate × time) / (area covered)
+ * Based on physical formula: rate = (flowRate ï¿½ time) / (area covered)
  *
  * Formula derivation:
  * - gs = flowRate / 60 (gal/sec from gal/min)
- * - v = 90 / speed (ft/sec, distance/time)
- * - As = v × width (ft²/sec, area coverage rate)
+ * - v = 90 / sec90Feet (ft/sec, distance/time)
+ * - As = v ï¿½ width (ftï¿½/sec, area coverage rate)
  * - Aeff = As / overlap (effective area accounting for overlap)
- * - gft2 = gs / Aeff (gal/ft²)
- * - Result = gft2 × 1000 (gal/1000 ft²)
+ * - gft2 = gs / Aeff (gal/ftï¿½)
+ * - Result = gft2 ï¿½ 1000 (gal/1000 ftï¿½)
  */
 export function calculateCarrierRate({
   speed,
@@ -70,11 +70,11 @@ export function calculateCarrierRate({
 }): number {
   const gs = flowRate / 60; // gal/sec
   const v = 90 / speed; // ft/sec
-  const As = v * width; // ft²/sec
+  const As = v * width; // ftï¿½/sec
   const overlap = doubleOverlap ? 2 : 1;
-  const Aeff = As / overlap; // effective ft²/sec
-  const gft2 = gs / Aeff; // gal/ft²
-  return gft2 * 1000; // gal/1000 ft²
+  const Aeff = As / overlap; // effective ftï¿½/sec
+  const gft2 = gs / Aeff; // gal/ftï¿½
+  return gft2 * 1000; // gal/1000 ftï¿½
 }
 ```
 
@@ -99,23 +99,23 @@ export type ProductMasterProps = ProductCommonProps & {
 
 export type SubProductConfigDoc = {
   subId: number;
-  rate: number; // Manual fallback or per-1000-ft² rate
+  rate: number; // Manual fallback or per-1000-ftï¿½ rate
   appMethodId?: string | null; // Optional override of master's AppMethod
 };
 
 export type SubProductConfig = {
   subId: number;
   subProduct: ProductSub;
-  rate: number; // ALWAYS per 1000 ft² (calculated or manual)
+  rate: number; // ALWAYS per 1000 ftï¿½ (calculated or manual)
   appMethod?: AppMethod | null; // Hydrated from appMethodId (if override)
 };
 ```
 
 **Semantic meaning of `rate` field**:
-- **Source of truth**: Always represents application rate per 1000 ft²
+- **Source of truth**: Always represents application rate per 1000 ftï¿½
 - **Calculation priority**:
-  1. If `appMethodId` exists and valid AppMethod found ’ calculate from AppMethod
-  2. Else ’ use stored `rate` value (manual entry)
+  1. If `appMethodId` exists and valid AppMethod found ï¿½ calculate from AppMethod
+  2. Else ï¿½ use stored `rate` value (manual entry)
 
 ### 4. MongoDB Model (`AppMethodModel.ts`)
 
@@ -343,7 +343,7 @@ const selectProductMasters = createSelector(
 
           const config: SubProductConfig = {
             subId: configDoc.subId,
-            rate: calculatedRate, // Always per 1000 ft²
+            rate: calculatedRate, // Always per 1000 ftï¿½
             appMethod: effectiveAppMethod,
             subProduct: subProduct || {
               ...baseProductSub,
@@ -552,9 +552,9 @@ const [flowRate, setFlowRate] = useState(
 ### Manual Testing Scenarios
 1. Create AppMethod for standard walking speed (17.5s/90ft)
 2. Associate with master that has water carrier
-3. Generate mix chart - verify water rate ~1.74 gal/1000 ft²
+3. Generate mix chart - verify water rate ~1.74 gal/1000 ftï¿½
 4. Adjust speed in mix chart UI - verify rates recalculate
-5. Add concentrate products - verify rates are per 1000 ft²
+5. Add concentrate products - verify rates are per 1000 ftï¿½
 6. Remove AppMethod - verify fallback to manual rates
 
 ## Migration Considerations
