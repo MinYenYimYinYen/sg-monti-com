@@ -23,7 +23,7 @@ import {
 } from "@/app/realGreen/product/mixChart/_lib/mixChartUtils";
 import { MixChartPDF } from "./chartLayouts/mixChartBySize";
 import { MixChartByProductAmountPDF } from "./chartLayouts/mixChartByProductAmount";
-import { UnitContext } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 
 export default function MixChartPage() {
   useProduct({ autoLoad: true });

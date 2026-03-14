@@ -10,7 +10,7 @@ import { createSinglesColumns } from "@/app/realGreen/product/list/tabs/singlesC
 import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
 import EditUnitSheet from "@/app/realGreen/product/list/tabs/EditUnitSheet";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
-import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 export default function SinglesTab() {
   const singles = useSelector(productSelect.productSingles);

@@ -2,7 +2,7 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { UnitConfigContract } from "./UnitConfigContract";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { UnitConfigModel } from "@/app/realGreen/product/_lib/models/UnitConfigModel";
+import { UnitConfigModel } from "@/app/realGreen/product/unitConfig/UnitConfigModel";
 import {
   cleanMongoArray,
   cleanMongoObject,
@@ -10,7 +10,7 @@ import {
 import {
   ProductUnitConfig,
   ProductUnitConfigStorage,
-} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+} from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { AppError } from "@/lib/errors/AppError";
 
 const handlers: HandlerMap<UnitConfigContract> = {

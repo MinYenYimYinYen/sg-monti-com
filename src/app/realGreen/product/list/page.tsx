@@ -1,8 +1,8 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Container } from "@/components/Containers";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
-import { useUnitConfig } from "@/app/realGreen/product/_lib/hooks/useUnitConfig";
+import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig";
 import {
   Tabs,
   TabsContent,
@@ -13,10 +13,15 @@ import SinglesTab from "@/app/realGreen/product/list/tabs/SinglesTab";
 import MastersTab from "@/app/realGreen/product/list/tabs/MastersTab";
 import SubsTab from "@/app/realGreen/product/list/tabs/SubsTab";
 import ConversionsTab from "@/app/realGreen/product/list/tabs/ConversionsTab";
+import { FooterPortal } from "@/components/FooterPortal";
+import { Modal } from "@/components/Modal";
+import { AppMethodCRUD } from "@/app/realGreen/product/appMethod/AppMethodCRUD";
+import { Badge } from "@/style/components/badge";
 
 export default function ListProducts() {
   useProduct({ autoLoad: true });
   useUnitConfig({ autoLoad: true });
+  const [isAppMethodCRUDOpen, setIsAppMethodCRUDOpen] = useState(false);
 
   return (
     <Container variant={"page"}>
@@ -40,6 +45,18 @@ export default function ListProducts() {
           <ConversionsTab />
         </TabsContent>
       </Tabs>
+      <FooterPortal>
+        <Badge variant={"outline"} onClick={() => setIsAppMethodCRUDOpen(true)}>
+          Application Methods
+        </Badge>
+        <Modal
+          isOpen={isAppMethodCRUDOpen}
+          onClose={() => setIsAppMethodCRUDOpen(false)}
+          className={"w-full max-w-5xl h-[75vh]"}
+        >
+          <AppMethodCRUD />
+        </Modal>
+      </FooterPortal>
     </Container>
   );
 }

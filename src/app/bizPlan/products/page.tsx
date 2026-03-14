@@ -23,14 +23,14 @@ import { useActiveCustomers } from "@/app/realGreen/customer/hooks/useActiveCust
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
-import { useUnitConfig } from "@/app/realGreen/product/_lib/hooks/useUnitConfig";
+import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig";
 import { LandPlot } from "lucide-react";
 import {
   getServiceStatuses,
   ServiceStatusType,
 } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
-import { UnitContext } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { Container } from "@/components/Containers";
 
 export default function BizPlanProductsPage() {

@@ -12,7 +12,7 @@ import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategoryShe
 import EditUnitSheet from "@/app/realGreen/product/list/tabs/EditUnitSheet";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 export default function MastersTab() {
   const masters = useSelector(productSelect.productMasters);

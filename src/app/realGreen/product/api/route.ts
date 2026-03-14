@@ -31,7 +31,7 @@ import { ProductSubDocProps } from "@/app/realGreen/product/_lib/types/ProductSu
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { UnitModel } from "@/app/realGreen/product/_lib/models/UnitModel";
-import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {

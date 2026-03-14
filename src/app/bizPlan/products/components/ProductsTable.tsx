@@ -20,7 +20,7 @@ import {
 import {
   UnitContext,
   convertQuantity,
-} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+} from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { useViewport } from "@/lib/hooks/useViewport";
 import { cn } from "@/style/utils";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";

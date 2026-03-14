@@ -20,7 +20,7 @@ import { useViewport } from "@/lib/hooks/useViewport";
 import {
   UnitContext,
   convertQuantity,
-} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+} from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 
 interface ServiceCodeTableProps {

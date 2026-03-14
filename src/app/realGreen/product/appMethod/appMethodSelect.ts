@@ -2,7 +2,7 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { AppMethod } from "./AppMethodTypes";
-import { baseUnit, Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { baseUnit, Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 const selectAppMethodDocs = (state: AppState) => state.appMethod.appMethodDocs;
 
@@ -41,7 +41,13 @@ const selectAppMethodMap = createSelector([selectAppMethods], (appMethods) =>
   new Grouper(appMethods).toUniqueMap((m) => m.appMethodId),
 );
 
+const selectVolumeUnits = createSelector([selectUnitMap], (unitMap) => {
+  const volumeUnits =  Array.from(unitMap.values()).filter((unit) => unit.metric === "volume");
+  return volumeUnits;
+});
+
 export const appMethodSelect = {
   appMethods: selectAppMethods,
   appMethodMap: selectAppMethodMap,
+  volumeUnits: selectVolumeUnits,
 };

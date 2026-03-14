@@ -1,7 +1,7 @@
 import {
   ProductUnitConfig,
   UnitContext,
-} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+} from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 
 /**
  * Represents a single part of a compound unit display

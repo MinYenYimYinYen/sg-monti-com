@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import {
   UnitStorage,
-} from "@/app/realGreen/product/_lib/types/UnitTypes";
+} from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 interface UnitDoc extends mongoose.Document, UnitStorage {}
 

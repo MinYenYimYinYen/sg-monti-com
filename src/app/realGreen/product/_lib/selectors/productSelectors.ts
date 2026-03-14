@@ -9,14 +9,14 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { baseProductSub } from "@/app/realGreen/product/_lib/baseProduct";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { unitConfigSelect } from "@/app/realGreen/product/_lib/selectors/unitConfigSelectors";
+import { unitConfigSelect } from "@/app/realGreen/product/unitConfig/unitConfigSelectors";
 import {
   ProductUnitConfig,
   UnitConversion,
   UnitContext,
-} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+} from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
-import { UnitConfigDisplay } from "@/app/realGreen/product/_lib/utils/UnitConfigDisplay";
+import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import { appMethodSelect } from "@/app/realGreen/product/appMethod/appMethodSelect";
 import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
 

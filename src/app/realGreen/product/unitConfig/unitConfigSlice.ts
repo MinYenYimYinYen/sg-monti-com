@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { UnitConfigContract } from "@/app/realGreen/product/unitConfig/api/UnitConfigContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
-import { ProductUnitConfig } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+import { ProductUnitConfig } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 
 interface UnitConfigState {
   configs: ProductUnitConfig[];

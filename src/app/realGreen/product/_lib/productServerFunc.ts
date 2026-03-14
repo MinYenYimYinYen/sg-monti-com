@@ -29,7 +29,7 @@ import {
   baseProductSubDocProps,
 } from "@/app/realGreen/product/_lib/baseProduct";
 import { ProductCategoryStored } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
-import { baseUnit, Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { baseUnit, Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export const WATER_IDS = {

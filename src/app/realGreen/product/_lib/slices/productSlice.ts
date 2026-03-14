@@ -10,7 +10,7 @@ import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubType
 import {
   ProductCommonDoc,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 
 interface ProductState {

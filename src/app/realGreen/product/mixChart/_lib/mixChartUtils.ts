@@ -1,6 +1,6 @@
 import { ProductMaster, SubProductConfig } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { CompoundUnitDisplay } from "@/app/realGreen/product/_lib/utils/UnitConfigDisplay";
-import { UnitContext } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+import { CompoundUnitDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
+import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 
 export type MixChartAmount = CompoundUnitDisplay;
 

@@ -2,9 +2,9 @@ import { productActions } from "@/app/realGreen/product/_lib/slices/productSlice
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { SubProductConfigDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { useUnitConfig } from "@/app/realGreen/product/_lib/hooks/useUnitConfig";
+import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig";
 import { appMethodActions } from "@/app/realGreen/product/appMethod/appMethodSlice";
 import { useAppMethod } from "@/app/realGreen/product/appMethod/useAppMethod";
 

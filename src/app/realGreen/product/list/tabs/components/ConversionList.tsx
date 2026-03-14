@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import {
   UnitConversion,
   UNIT_CONTEXTS,
-} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+} from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/style/components/card";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { Input } from "@/style/components/input";

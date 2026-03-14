@@ -12,22 +12,22 @@ import { Check } from "lucide-react";
 
 type MultiSelectMode = "single" | "multiple";
 
-type MultiSelectContextValue<TValue extends string | number = string> = {
-  value: TValue[];
-  onValueChange: (value: TValue[]) => void;
+type MultiSelectContextValue = {
+  value: string[];
+  onValueChange: (value: string[]) => void;
   mode: MultiSelectMode;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   focusedIndex: number;
   setFocusedIndex: (index: number) => void;
-  items: React.RefObject<Map<TValue, HTMLDivElement>>;
+  items: React.RefObject<Map<string, HTMLDivElement>>;
 };
 
 // Use a less specific type for the context to allow generic usage
-const MultiSelectContext = React.createContext<MultiSelectContextValue<any> | undefined>(undefined);
+const MultiSelectContext = React.createContext<MultiSelectContextValue | undefined>(undefined);
 
-function useMultiSelect<TValue extends string | number = string>() {
-  const context = React.useContext(MultiSelectContext) as MultiSelectContextValue<TValue> | undefined;
+function useMultiSelect() {
+  const context = React.useContext(MultiSelectContext);
   if (!context) {
     throw new Error("MultiSelect components must be used within MultiSelect");
   }
@@ -38,25 +38,25 @@ function useMultiSelect<TValue extends string | number = string>() {
 // ROOT COMPONENT
 // ============================================================================
 
-interface MultiSelectProps<TValue extends string | number = string> {
-  value?: TValue[];
-  onValueChange?: (value: TValue[]) => void;
+interface MultiSelectProps {
+  value?: string[];
+  onValueChange?: (value: string[]) => void;
   mode?: MultiSelectMode;
   children: React.ReactNode;
-  defaultValue?: TValue[];
+  defaultValue?: string[];
 }
 
-export function MultiSelect<TValue extends string | number = string>({
+export function MultiSelect({
   value: controlledValue,
   onValueChange,
   mode = "multiple",
   children,
-  defaultValue = [] as TValue[],
-}: MultiSelectProps<TValue>) {
-  const [uncontrolledValue, setUncontrolledValue] = React.useState<TValue[]>(defaultValue);
+  defaultValue = [],
+}: MultiSelectProps) {
+  const [uncontrolledValue, setUncontrolledValue] = React.useState<string[]>(defaultValue);
   const [isOpen, setIsOpen] = React.useState(false);
   const [focusedIndex, setFocusedIndex] = React.useState(-1);
-  const items = React.useRef<Map<TValue, HTMLDivElement>>(new Map());
+  const items = React.useRef<Map<string, HTMLDivElement>>(new Map());
 
   const value = controlledValue ?? uncontrolledValue;
   const handleValueChange = onValueChange ?? setUncontrolledValue;
@@ -257,22 +257,16 @@ const multiSelectItemVariants = cva(
   }
 );
 
-interface MultiSelectItemProps<TValue extends string | number = string>
+interface MultiSelectItemProps
   extends React.ComponentPropsWithoutRef<"div">,
     VariantProps<typeof multiSelectItemVariants> {
-  value: TValue;
+  value: string;
   disabled?: boolean;
 }
 
-type MultiSelectItemComponent = <TValue extends string | number = string>(
-  props: MultiSelectItemProps<TValue> & { ref?: React.ForwardedRef<HTMLDivElement> }
-) => React.ReactElement;
-
-export const MultiSelectItem = React.forwardRef(<TValue extends string | number = string>(
-  { className, variant, value, disabled, children, onClick, ...props }: MultiSelectItemProps<TValue>,
-  ref: React.ForwardedRef<HTMLDivElement>
-) => {
-    const { value: selectedValues, onValueChange, mode, focusedIndex, setFocusedIndex, items } = useMultiSelect<TValue>();
+export const MultiSelectItem = React.forwardRef<HTMLDivElement, MultiSelectItemProps>(
+  ({ className, variant, value, disabled, children, onClick, ...props }, ref) => {
+    const { value: selectedValues, onValueChange, mode, focusedIndex, setFocusedIndex, items } = useMultiSelect();
     const itemRef = React.useRef<HTMLDivElement>(null);
     const [index, setIndex] = React.useState(-1);
 
@@ -352,7 +346,8 @@ export const MultiSelectItem = React.forwardRef(<TValue extends string | number 
         )}
       </div>
     );
-  }) as MultiSelectItemComponent & { displayName?: string };
+  }
+);
 
 MultiSelectItem.displayName = "MultiSelectItem";
 
@@ -401,18 +396,18 @@ MultiSelectEmpty.displayName = "MultiSelectEmpty";
 // VALUE DISPLAY HELPER
 // ============================================================================
 
-interface MultiSelectValueProps<TValue extends string | number = string> {
+interface MultiSelectValueProps {
   placeholder?: string;
-  children?: (values: TValue[]) => React.ReactNode;
+  children?: (values: string[]) => React.ReactNode;
   className?: string;
 }
 
-export function MultiSelectValue<TValue extends string | number = string>({
+export function MultiSelectValue({
   placeholder = "Select...",
   children,
   className,
-}: MultiSelectValueProps<TValue>) {
-  const { value } = useMultiSelect<TValue>();
+}: MultiSelectValueProps) {
+  const { value } = useMultiSelect();
 
   if (children) {
     return <>{children(value)}</>;

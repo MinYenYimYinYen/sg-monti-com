@@ -10,7 +10,7 @@ import flagReducer from "@/app/realGreen/flag/flagSlice";
 import custFlagReducer from "@/app/realGreen/custFlag/_lib/custFlagSlice";
 import progServReducer from "@/app/realGreen/progServ/_lib/slice/progServSlice";
 import productReducer from "@/app/realGreen/product/_lib/slices/productSlice";
-import unitConfigReducer from "@/app/realGreen/product/_lib/slices/unitConfigSlice";
+import unitConfigReducer from "@/app/realGreen/product/unitConfig/unitConfigSlice";
 
 import priceTableReducer from "@/app/realGreen/priceTable/priceTableSlice";
 import { serviceConditionReducer } from "@/app/realGreen/serviceCondition/_lib/serviceConditionSlice";

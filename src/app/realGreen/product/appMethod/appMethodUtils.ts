@@ -1,4 +1,4 @@
-import { VolumeUnit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 /**
  * Calculates carrier application rate from AppMethod parameters.

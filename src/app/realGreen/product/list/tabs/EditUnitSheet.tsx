@@ -21,7 +21,7 @@ import {
   Unit,
   AppUnit,
   getMetricForUL,
-} from "@/app/realGreen/product/_lib/types/UnitTypes";
+} from "@/app/realGreen/product/unitConfig/UnitTypes";
 import {
   DropdownMenu,
   DropdownMenuContent,

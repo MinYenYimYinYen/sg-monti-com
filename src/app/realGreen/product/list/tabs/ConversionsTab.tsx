@@ -5,11 +5,11 @@ import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { ProductSelector } from "./components/ProductSelector";
 import { ConversionList } from "./components/ConversionList";
-import { useUnitConfig } from "@/app/realGreen/product/_lib/hooks/useUnitConfig";
-import { UnitConversion } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig";
+import { UnitConversion } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { Alert, AlertDescription } from "@/style/components/alert";
 import { Info } from "lucide-react";
-import { unitConfigSelect } from "@/app/realGreen/product/_lib/selectors/unitConfigSelectors";
+import { unitConfigSelect } from "@/app/realGreen/product/unitConfig/unitConfigSelectors";
 
 export default function ConversionsTab() {
   const productCommonDocs = useSelector(productSelect.productCommonDocs);

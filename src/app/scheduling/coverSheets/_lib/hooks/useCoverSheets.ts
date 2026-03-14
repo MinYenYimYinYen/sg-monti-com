@@ -5,7 +5,7 @@ import { useCustFlag } from "@/app/realGreen/custFlag/_lib/useCustFlag";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
-import { useUnitConfig } from "@/app/realGreen/product/_lib/hooks/useUnitConfig";
+import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig";
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 import { useServiceCondition } from "@/app/realGreen/serviceCondition/_lib/useServiceCondition";

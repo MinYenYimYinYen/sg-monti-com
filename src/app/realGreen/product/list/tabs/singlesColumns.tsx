@@ -4,7 +4,7 @@ import { Button } from "@/style/components/button";
 import { Pencil } from "lucide-react";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 
-import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 export const createSinglesColumns = (
   onEditCategory: (categoryId: number, categoryName: string) => void,

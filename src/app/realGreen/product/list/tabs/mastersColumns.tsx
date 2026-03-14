@@ -9,7 +9,7 @@ import {
   SubProductConfigDoc,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
-import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 export const createMastersColumns: (
   onEdit: (master: ProductMaster) => void,

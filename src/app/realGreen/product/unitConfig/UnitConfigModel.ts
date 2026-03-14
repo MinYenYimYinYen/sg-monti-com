@@ -3,7 +3,7 @@ import {
   ProductUnitConfigStorage,
   UnitConversion,
   baseProductUnitConfig,
-} from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
+} from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 
 interface UnitConfigDoc extends mongoose.Document, ProductUnitConfigStorage {}
 
