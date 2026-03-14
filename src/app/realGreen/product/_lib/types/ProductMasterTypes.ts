@@ -5,6 +5,7 @@ import {
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
+import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
 
 export type ProductMasterCore = ProductCore & {
   isProduction: true;
@@ -34,12 +35,15 @@ export type ProductMasterDocProps = CreatedUpdated &
   ProductCommonDocProps & {
     productId: number;
     subProductConfigDocs: SubProductConfigDoc[];
+    appMethodId: string | null;
   };
 
 export type ProductMasterDoc = ProductMasterCore & ProductMasterDocProps;
 
 export type ProductMasterProps = ProductCommonProps & {
   subProductConfigs: SubProductConfig[];
+  appMethod: AppMethod | null;
+
 };
 
 export type ProductMaster = ProductMasterDoc & ProductMasterProps;

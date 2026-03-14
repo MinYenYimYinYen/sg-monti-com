@@ -20,10 +20,12 @@ import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
 import csvReducer from "@/app/csv/_lib/csvSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
+import { appMethodReducer } from "@/app/realGreen/product/appMethod/appMethodSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
   ui: uiReducer,
+  appMethod: appMethodReducer,
   auth: authReducer,
   callAhead: callAheadReducer,
   company: companyReducer,

@@ -1,25 +1,33 @@
-import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { baseUnit, Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
-import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
-type AppMethod = {
+export type AppMethodDoc = {
   appMethodId: string;
   description: string;
   speed: number;
   doubleOverlap: boolean;
   width: number;
   flowRate: number;
-  flowRateUnit: Unit;
-  carrier: ProductSub | null; // Would be water or null
-}
+  flowRateUnitId: number;
+};
 
-const baseAppMethod: AppMethod = {
+export type AppMethodProps = {
+  flowRateUnit: Unit;
+};
+
+export type AppMethod = AppMethodDoc & AppMethodProps;
+
+export const baseAppMethodDoc: AppMethodDoc = {
   appMethodId: baseStrId,
   description: baseStrId,
-  speed: 0,
+  speed: 17.5,
   doubleOverlap: false,
-  width: 0,
-  flowRate: 0,
+  width: 11,
+  flowRate: 3,
+  flowRateUnitId: baseNumId,
+};
+
+export const baseAppMethod: AppMethod = {
+  ...baseAppMethodDoc,
   flowRateUnit: baseUnit,
-  carrier: null,
-}
+};

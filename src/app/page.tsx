@@ -50,6 +50,11 @@ import { TRange } from "@/lib/primatives/tRange/TRange";
 import { CSVDropzone } from "@/components/dropZone/dropZone";
 import { useDispatch } from "react-redux";
 import { parseAssignmentFromUnservicedReport } from "@/app/csv/_lib/unservicedParser";
+import {
+  CardStack,
+  CardStackList,
+  CardStackCard,
+} from "@/components/CardStack";
 
 export default function Home() {
   // NEW: Declare contexts first
@@ -97,6 +102,66 @@ export default function Home() {
           Testing all installed components with current theme
         </p>
       </div>
+
+      {/* CardStack Test */}
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold">CardStack Component</h2>
+        <div className="h-[600px] border rounded-lg p-4">
+          <CardStack>
+            <CardStackList>
+              <CardStackCard id="create" variant="create">
+                <CardHeader>
+                  <CardTitle>Create New</CardTitle>
+                  <CardDescription>
+                    Click to create something new
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    This is the create card with variant=&#34;create&#34;
+                  </p>
+                </CardContent>
+              </CardStackCard>
+
+              <CardStackCard id="card1" title="Standard Method">
+                <CardHeader>
+                  <CardTitle>Standard Method</CardTitle>
+                  <CardDescription>Default walking speed</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm">Speed: 17.5 seconds</p>
+                  <p className="text-sm">Width: 11 feet</p>
+                  <p className="text-sm">Flow Rate: 3 gal/min</p>
+                </CardContent>
+              </CardStackCard>
+
+              <CardStackCard id="card2" title="Fast Application">
+                <CardHeader>
+                  <CardTitle>Fast Application</CardTitle>
+                  <CardDescription>Quick coverage</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm">Speed: 12.0 seconds</p>
+                  <p className="text-sm">Width: 8 feet</p>
+                  <p className="text-sm">Flow Rate: 4 gal/min</p>
+                </CardContent>
+              </CardStackCard>
+
+              <CardStackCard id="card3" title="Wide Coverage">
+                <CardHeader>
+                  <CardTitle>Wide Coverage</CardTitle>
+                  <CardDescription>Maximum area</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm">Speed: 20.0 seconds</p>
+                  <p className="text-sm">Width: 15 feet</p>
+                  <p className="text-sm">Flow Rate: 5 gal/min</p>
+                </CardContent>
+              </CardStackCard>
+            </CardStackList>
+          </CardStack>
+        </div>
+      </section>
 
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold">Unserviced CSV Dropzone</h2>

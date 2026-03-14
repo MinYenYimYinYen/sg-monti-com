@@ -5,9 +5,7 @@ import {
   SubProductConfig,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
-import {
-  ProductSub,
-} from "@/app/realGreen/product/_lib/types/ProductSubTypes";
+import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { baseProductSub } from "@/app/realGreen/product/_lib/baseProduct";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
@@ -19,6 +17,8 @@ import {
 } from "@/app/realGreen/product/_lib/types/ProductUnitConfigTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { UnitConfigDisplay } from "@/app/realGreen/product/_lib/utils/UnitConfigDisplay";
+import { appMethodSelect } from "@/app/realGreen/product/appMethod/appMethodSelect";
+import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
 
 const selectProductMasterDocs = (state: AppState) =>
   state.product.productMasterDocs;
@@ -42,16 +42,24 @@ const selectProductSingleDocMap = createSelector(
 const selectProductSubDocs = (state: AppState) => state.product.productSubDocs;
 
 const selectProductSubs = createSelector(
-  [selectProductSubDocs, unitConfigSelect.unitConfigMap],
-  (subDocs, unitConfigMap) => {
+  [selectProductSubDocs, unitConfigSelect.unitConfigMap
+  , appMethodSelect.appMethodMap
+  ],
+  (subDocs, unitConfigMap, appMethodMap) => {
     const productSubs: ProductSub[] = subDocs.map((doc) => {
-      const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(doc, unitConfigMap);
+      const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
+        doc,
+        unitConfigMap,
+      );
+      const appMethod: AppMethod | null =
+        appMethodMap.get(doc.appMethodId ?? baseStrId) || null;
 
       return {
         ...doc,
         unitConfig,
         unitConfigDisplay,
         productType: "sub",
+        appMethod,
       };
     });
     return productSubs;
@@ -63,10 +71,20 @@ const selectProductSubsMap = createSelector([selectProductSubs], (subs) => {
 });
 
 const selectProductMasters = createSelector(
-  [selectProductMasterDocs, selectProductSubsMap, unitConfigSelect.unitConfigMap],
-  (masterDocs, subsMap, unitConfigMap) => {
+  [
+    selectProductMasterDocs,
+    selectProductSubsMap,
+    unitConfigSelect.unitConfigMap,
+    appMethodSelect.appMethodMap,
+  ],
+  (masterDocs, subsMap, unitConfigMap, appMethodDocMap) => {
     const masters: ProductMaster[] = masterDocs.map((doc) => {
-      const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(doc, unitConfigMap);
+      const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
+        doc,
+        unitConfigMap,
+      );
+      const appMethod: AppMethod | null =
+        appMethodDocMap.get(doc.appMethodId ?? baseStrId) || null;
 
       return {
         ...doc,
@@ -85,6 +103,7 @@ const selectProductMasters = createSelector(
           };
           return config;
         }),
+        appMethod,
       };
     });
     return masters;
@@ -95,7 +114,10 @@ const selectProductSingles = createSelector(
   [selectProductSingleDocs, unitConfigSelect.unitConfigMap],
   (singleDocs, unitConfigMap) => {
     const productSingles: ProductSingle[] = singleDocs.map((doc) => {
-      const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(doc, unitConfigMap);
+      const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
+        doc,
+        unitConfigMap,
+      );
 
       return {
         ...doc,
@@ -149,15 +171,12 @@ function hydrateUnitConfig(
     const needsDefaults = (conversion: UnitConversion) =>
       conversion.unitLabel === baseStrId;
 
-    const createRealConversion = (
-      context: UnitContext,
-    ): UnitConversion => ({
+    const createRealConversion = (context: UnitContext): UnitConversion => ({
       context,
       unitLabel: doc.unit.desc,
       conversionFactor: 1,
       baseMetric: doc.unit.metric as any,
     });
-
 
     unitConfig = {
       ...storedUnitConfig,
@@ -176,9 +195,7 @@ function hydrateUnitConfig(
     };
   } else {
     // No config exists - create all defaults from doc.unit
-    const createRealConversion = (
-      context: UnitContext,
-    ): UnitConversion => ({
+    const createRealConversion = (context: UnitContext): UnitConversion => ({
       context,
       unitLabel: doc.unit.desc,
       conversionFactor: 1,
@@ -205,7 +222,10 @@ const selectProductCommons = createSelector(
   [selectProductCommonDocs, unitConfigSelect.unitConfigMap],
   (commonDocs, unitConfigMap) => {
     const productCommons: ProductCommon[] = commonDocs.map((doc) => {
-      const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(doc, unitConfigMap);
+      const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
+        doc,
+        unitConfigMap,
+      );
 
       return {
         ...doc,

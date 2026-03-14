@@ -4,6 +4,7 @@ import {
   ProductCore,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
 
 export type ProductSubCore = ProductCore & {
   isProduction: true;
@@ -20,10 +21,13 @@ export function isProductSubCore(
 
 export type ProductSubDocProps = CreatedUpdated & ProductCommonDocProps & {
   productId: number;
+  appMethodId: string | null;
 };
 
 export type ProductSubDoc = ProductSubCore & ProductSubDocProps;
 
-export type ProductSubProps = ProductCommonProps;
+export type ProductSubProps = ProductCommonProps & {
+  appMethod: AppMethod | null;
+};
 
 export type ProductSub = ProductSubDoc & ProductSubProps;

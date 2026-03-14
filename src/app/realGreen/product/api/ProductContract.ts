@@ -11,6 +11,7 @@ import {
   ProductCommonDoc,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { Unit } from "@/app/realGreen/product/_lib/types/UnitTypes";
+import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
 
 
 
@@ -42,4 +43,5 @@ export interface ProductContract extends ApiContract {
     params: {unit: Unit}
     result: SuccessResponse;
   }
+
 }
