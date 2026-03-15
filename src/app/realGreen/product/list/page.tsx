@@ -50,9 +50,10 @@ export default function ListProducts() {
           Application Methods
         </Badge>
         <Modal
+          title="Application Methods"
           isOpen={isAppMethodCRUDOpen}
           onClose={() => setIsAppMethodCRUDOpen(false)}
-          className={"w-full max-w-5xl h-[75vh]"}
+          className={"w-full max-w-6xl h-[75vh]"}
         >
           <AppMethodCRUD />
         </Modal>

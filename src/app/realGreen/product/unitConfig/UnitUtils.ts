@@ -1,10 +1,4 @@
-import {
-  AppUnit,
-  AreaUnit,
-  LengthUnit,
-  TimeUnit,
-  VolumeUnit,
-} from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { AppUnit, AreaUnit, LengthUnit, TimeUnit, VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 /**
  * Converter interface for volume units with call signature and metadata methods
@@ -78,6 +72,7 @@ export class UnitUtils {
   // Time conversions (to seconds)
   private static readonly TIME_TO_SECONDS: Record<TimeUnit["desc"], number> = {
     [AppUnit.sec]: 1,
+    [AppUnit.min]: 60,
   };
 
   /**
@@ -220,14 +215,16 @@ export class UnitUtils {
         toAll: (): { [K in TimeUnit["desc"]]: number } => {
           return {
             [AppUnit.sec]: seconds / UnitUtils.TIME_TO_SECONDS[AppUnit.sec],
+            [AppUnit.min]: seconds / UnitUtils.TIME_TO_SECONDS[AppUnit.min]
           };
         },
       };
     },
     {
-      getAllUnits: (): TimeUnit["desc"][] => [AppUnit.sec],
+      getAllUnits: (): TimeUnit["desc"][] => [AppUnit.sec, AppUnit.min],
       getConversionFactors: (): { [K in TimeUnit["desc"]]: number } => ({
         [AppUnit.sec]: UnitUtils.TIME_TO_SECONDS[AppUnit.sec],
+        [AppUnit.min]: UnitUtils.TIME_TO_SECONDS[AppUnit.min]
       }),
     }
   );

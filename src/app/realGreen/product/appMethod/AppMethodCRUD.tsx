@@ -10,23 +10,22 @@ import {
 import { appMethodSelect } from "./appMethodSelect";
 import { useAppMethod } from "./useAppMethod";
 import { AppMethodCreate } from "./AppMethodCreate";
-import { AppMethodEdit } from "./AppMethodEdit";
 
 export function AppMethodCRUD() {
   useAppMethod({ autoLoad: true });
-  const appMethods = useSelector(appMethodSelect.appMethods);
+  const appMethods = useSelector(appMethodSelect.appMethodDocs);
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full pt-2">
       <CardStack>
         <CardStackList>
-          <CardStackCard id="create" variant="create">
+          <CardStackCard id="create" variant="create" className={"w-[50%]"}>
             <AppMethodCreate />
           </CardStackCard>
 
           {appMethods.map((method) => (
-            <CardStackCard key={method.appMethodId} id={method.appMethodId}>
-              <AppMethodEdit method={method} />
+            <CardStackCard key={method.appMethodId} id={method.appMethodId} className={"w-[50%]"}>
+              <AppMethodCreate method={method} />
             </CardStackCard>
           ))}
         </CardStackList>
