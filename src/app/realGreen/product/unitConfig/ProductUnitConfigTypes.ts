@@ -2,7 +2,7 @@ import { Metric } from "./UnitTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 /**
- * Unit Context Types
+ * UnitCRM Context Types
  * Defines the different contexts in which products are measured/handled
  */
 export const UNIT_CONTEXTS = {
@@ -14,7 +14,7 @@ export const UNIT_CONTEXTS = {
 export type UnitContext = keyof typeof UNIT_CONTEXTS;
 
 /**
- * Unit Conversion Configuration
+ * UnitCRM Conversion Configuration
  * Defines how a product is measured in a specific context
  * Only one conversion allowed per context
  */
@@ -33,7 +33,7 @@ export const baseUnitConversion: UnitConversion = {
 };
 
 /**
- * Product Unit Configuration
+ * Product UnitCRM Configuration
  * Stores all unit conversion configurations for a specific product
  */
 export type ProductUnitConfig = {

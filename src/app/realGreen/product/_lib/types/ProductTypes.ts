@@ -1,4 +1,4 @@
-import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { ProductUnitConfig } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 
@@ -53,7 +53,7 @@ export type ProductCore = {
 export type ProductCommonDocProps = {
   productId: number;
   category: string;
-  unit: Unit;
+  unit: UnitCRM;
 }
 
 export type ProductCommonDoc = ProductCore & ProductCommonDocProps;

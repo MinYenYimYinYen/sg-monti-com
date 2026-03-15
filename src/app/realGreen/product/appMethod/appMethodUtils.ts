@@ -1,4 +1,4 @@
-import { VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { VolumeUnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 /**
  * Calculates carrier application rate from AppMethod parameters.
@@ -42,19 +42,19 @@ export function calculateCarrierRate({
   doubleOverlap,
   width,
   flowRate,
-  flowRateUnit,
+  // flowRateUnit,
 }: {
   sec90Feet: number;
   doubleOverlap: boolean;
   width: number;
   flowRate: number;
-  flowRateUnit: VolumeUnit;
+  // flowRateUnit: VolumeUnitCRM;
 }): number {
-  if (flowRateUnit.metric !== "volume") {
-    throw new Error(
-      `flowRateUnit must be a volume unit, got metric: ${flowRateUnit.metric}`
-    );
-  }
+  // if (flowRateUnit.metric !== "volume") {
+  //   throw new Error(
+  //     `flowRateUnit must be a volume unit, got metric: ${flowRateUnit.metric}`
+  //   );
+  // }
 
   const volumePerSec = flowRate / 60;
   const speed = 90 / sec90Feet;

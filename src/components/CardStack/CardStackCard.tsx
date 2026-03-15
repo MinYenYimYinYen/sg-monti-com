@@ -7,6 +7,7 @@ import { cn } from "@/style/utils";
 import { Card } from "@/style/components/card";
 import { CircleX } from "lucide-react";
 import { useCardStack } from "./useCardStack";
+import { CardIdContext } from "./CardStackHeader";
 
 interface CardStackCardProps {
   id: string;
@@ -24,17 +25,20 @@ export function CardStackCard({
   className,
 }: CardStackCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const { selectedId, selectCard, deselectCard, registerCard, unregisterCard, cards } =
+  const { selectedId, selectCard, deselectCard, registerCard, unregisterCard, unregisterParts, cards, cardParts } =
     useCardStack();
 
   const isSelected = selectedId === id;
   const index = Array.from(cards.values()).findIndex((c) => c.id === id);
+  const parts = cardParts.get(id);
 
   useEffect(() => {
-
     registerCard(id, cardRef);
-    return () => unregisterCard(id);
-  }, [id, registerCard, unregisterCard]);
+    return () => {
+      unregisterCard(id);
+      unregisterParts(id);
+    };
+  }, [id, registerCard, unregisterCard, unregisterParts]);
 
   useGSAP(
     () => {
@@ -92,7 +96,21 @@ export function CardStackCard({
           <CircleX className="h-5 w-5 text-muted-foreground hover:text-foreground" />
         </button>
       )}
-      {children}
+      <CardIdContext.Provider value={id}>
+        {/* Render children to allow registration, but hide them */}
+        <div style={{ display: 'none' }}>
+          {children}
+        </div>
+
+        {/* Render header for unselected cards, header + body for selected */}
+        {!isSelected && parts?.header}
+        {isSelected && (
+          <>
+            {parts?.header}
+            {parts?.body}
+          </>
+        )}
+      </CardIdContext.Provider>
     </Card>
   );
 }

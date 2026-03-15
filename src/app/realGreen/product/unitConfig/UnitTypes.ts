@@ -3,6 +3,7 @@ import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 export enum AppUnit {
   lbs = "Lbs",
   flOz = "Fl Oz",
+  sf = "SF",
   ksf = "1000 SF",
   ea = "Ea",
   dot = "Dot",
@@ -22,7 +23,8 @@ export type Metric =
   | "weight"
   | "unknown"
 
-export const UL_METRIC_MAP: Record<AppUnit, Metric> = {
+export const UL_METRIC_MAP = {
+  [AppUnit.sf]: "area",
   [AppUnit.ksf]: "area",
   [AppUnit.ea]: "count",
   [AppUnit.bulb]: "count",
@@ -33,7 +35,7 @@ export const UL_METRIC_MAP: Record<AppUnit, Metric> = {
   [AppUnit.flOz]: "volume",
   [AppUnit.lbs]: "weight",
   [AppUnit.unknown]: "unknown",
-};
+} as const satisfies Record<AppUnit, Metric>;
 
 export function getMetricForUL(ul: AppUnit): Metric {
   return UL_METRIC_MAP[ul] || "unknown";
@@ -45,48 +47,79 @@ export type UnitStorage = {
   desc: string;
 };
 
+/**
+ * Helper type to extract all AppUnit values that map to a specific Metric
+ */
+type UnitsForMetric<M extends Metric> = {
+  [K in keyof typeof UL_METRIC_MAP]: typeof UL_METRIC_MAP[K] extends M ? K : never
+}[keyof typeof UL_METRIC_MAP];
+
+// Base unit types (without unitId) - for calculations and arbitrary unit creation
 export type AreaUnit = {
-  unitId: number;
   metric: "area";
-  desc: AppUnit.ksf;
+  desc: UnitsForMetric<"area">;
 };
 
 export type CountUnit = {
-  unitId: number;
   metric: "count";
-  desc: AppUnit.ea | AppUnit.bulb | AppUnit.dot;
+  desc: UnitsForMetric<"count">;
 };
 
 export type LengthUnit = {
-  unitId: number;
   metric: "length";
-  desc: AppUnit.ft;
+  desc: UnitsForMetric<"length">;
 };
 
 export type TimeUnit = {
-  unitId: number;
   metric: "time";
-  desc: AppUnit.sec;
+  desc: UnitsForMetric<"time">;
 };
 
 export type VolumeUnit = {
-  unitId: number;
   metric: "volume";
-  desc: AppUnit.mGal | AppUnit.flOz;
+  desc: UnitsForMetric<"volume">;
 };
 
 export type WeightUnit = {
-  unitId: number;
   metric: "weight";
-  desc: AppUnit.lbs;
+  desc: UnitsForMetric<"weight">;
 };
 
 type UnknownUnit = {
-  unitId: number;
   metric: "unknown";
-  desc: AppUnit.unknown;
+  desc: UnitsForMetric<"unknown">;
 };
 
+// CRM unit types (with unitId) - extend base types
+export type AreaUnitCRM = AreaUnit & {
+  unitId: number;
+};
+
+export type CountUnitCRM = CountUnit & {
+  unitId: number;
+};
+
+export type LengthUnitCRM = LengthUnit & {
+  unitId: number;
+};
+
+export type TimeUnitCRM = TimeUnit & {
+  unitId: number;
+};
+
+export type VolumeUnitCRM = VolumeUnit & {
+  unitId: number;
+};
+
+export type WeightUnitCRM = WeightUnit & {
+  unitId: number;
+};
+
+type UnknownUnitCRM = UnknownUnit & {
+  unitId: number;
+};
+
+// Union of base unit types (no unitId)
 export type Unit =
   | AreaUnit
   | CountUnit
@@ -96,8 +129,24 @@ export type Unit =
   | UnknownUnit
   | VolumeUnit;
 
+// Union of CRM unit types (with unitId)
+export type UnitCRM =
+  | AreaUnitCRM
+  | CountUnitCRM
+  | LengthUnitCRM
+  | TimeUnitCRM
+  | WeightUnitCRM
+  | UnknownUnitCRM
+  | VolumeUnitCRM;
 
+// Base unit constant (for calculations)
 export const baseUnit: Unit = {
+  metric: "unknown",
+  desc: AppUnit.unknown,
+};
+
+// CRM unit constant (for database/CRM data)
+export const baseUnitCRM: UnitCRM = {
   unitId: baseNumId,
   metric: "unknown",
   desc: AppUnit.unknown,

@@ -9,7 +9,7 @@ import { createSubsColumns } from "@/app/realGreen/product/list/tabs/subsColumns
 import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
 import EditUnitSheet from "@/app/realGreen/product/list/tabs/EditUnitSheet";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
-import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 export default function SubsTab() {
   const subs = useSelector(productSelect.productSubs);
@@ -17,7 +17,7 @@ export default function SubsTab() {
     categoryId: number;
     categoryName: string;
   } | null>(null);
-  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [editingUnit, setEditingUnit] = useState<UnitCRM | null>(null);
 
   const subsColumns = useMemo(
     () =>

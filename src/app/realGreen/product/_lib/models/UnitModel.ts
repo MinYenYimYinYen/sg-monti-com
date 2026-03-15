@@ -13,4 +13,4 @@ const UnitSchema = new mongoose.Schema<UnitDoc>({
 
 export const UnitModel =
   (mongoose.models?.Unit as mongoose.Model<UnitDoc>) ||
-  mongoose.model<UnitDoc>("Unit", UnitSchema);
+  mongoose.model<UnitDoc>("UnitCRM", UnitSchema);

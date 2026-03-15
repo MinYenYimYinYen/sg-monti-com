@@ -18,7 +18,7 @@ import {
   FieldLabel,
 } from "@/style/components/field";
 import {
-  Unit,
+  UnitCRM,
   AppUnit,
   getMetricForUL,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
@@ -33,7 +33,7 @@ import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { Input } from "@/style/components/input";
 
 interface EditUnitSheetProps {
-  unit: Unit | null;
+  unit: UnitCRM | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -64,7 +64,7 @@ export default function EditUnitSheet({
           ...unit,
           desc: newDesc,
           metric: getMetricForUL(newDesc),
-        } as Unit);
+        } as UnitCRM);
         setStatus("success");
       } catch (error) {
         console.error("Failed to save unit", error);

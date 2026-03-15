@@ -39,7 +39,7 @@ const handlers: HandlerMap<UnitConfigContract> = {
       // Validate that at least one conversion exists
       if (!config.conversions || Object.keys(config.conversions).length === 0) {
         throw new AppError({
-          message: "Unit config must have at least one conversion",
+          message: "UnitCRM config must have at least one conversion",
           type: "VALIDATION_ERROR",
           statusCode: 400,
         });

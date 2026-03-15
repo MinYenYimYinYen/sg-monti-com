@@ -2,7 +2,7 @@ import mongoose, { Model, Schema } from "mongoose";
 
 /**
  * Ensures a model is only created once.
- * @param name The name of the model (e.g., "Unit")
+ * @param name The name of the model (e.g., "UnitCRM")
  * @param schema The Mongoose schema for the model
  * @returns The existing model or a newly created one
  */

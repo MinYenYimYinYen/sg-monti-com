@@ -26,7 +26,7 @@ import {
   ProductSubDocProps,
   ProductSubProps,
 } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { baseUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { baseUnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import {baseProductUnitConfig} from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 
@@ -55,7 +55,7 @@ export const baseProductMasterDocProps: ProductMasterDocProps = {
   productId: baseNumId,
   subProductConfigDocs: [],
   category: baseStrId,
-  unit: baseUnit,
+  unit: baseUnitCRM,
   appMethodId: null,
   createdAt: "",
   updatedAt: "",
@@ -89,7 +89,7 @@ export const baseProductSingleCore: ProductSingleCore = {
 export const baseProductSingleDocProps: ProductSingleDocProps = {
   productId: baseNumId,
   category: baseStrId,
-  unit: baseUnit,
+  unit: baseUnitCRM,
   createdAt: "",
   updatedAt: "",
 };
@@ -120,7 +120,7 @@ export const baseProductSubCore: ProductSubCore = {
 export const baseProductSubDocProps: ProductSubDocProps = {
   productId: baseNumId,
   category: baseStrId,
-  unit: baseUnit,
+  unit: baseUnitCRM,
   appMethodId: null,
   createdAt: "",
   updatedAt: "",
@@ -146,7 +146,7 @@ export const baseProductSub: ProductSub = {
 export const baseProductCommonDocProps: ProductCommonDocProps = {
   productId: baseNumId,
   category: baseStrId,
-  unit: baseUnit,
+  unit: baseUnitCRM,
 };
 
 export const baseProductCommonDoc: ProductCommonDoc = {

@@ -12,7 +12,7 @@ import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategoryShe
 import EditUnitSheet from "@/app/realGreen/product/list/tabs/EditUnitSheet";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 export default function MastersTab() {
   const masters = useSelector(productSelect.productMasters);
@@ -23,7 +23,7 @@ export default function MastersTab() {
     categoryId: number;
     categoryName: string;
   } | null>(null);
-  const [editingUnit, setEditingUnit] = React.useState<Unit | null>(null);
+  const [editingUnit, setEditingUnit] = React.useState<UnitCRM | null>(null);
 
   /*DEBUG*/
   // useEffect(() => {

@@ -23,7 +23,7 @@ import { appMethodSelect } from "./appMethodSelect";
 import { useAppMethod } from "./useAppMethod";
 import { AppMethodDoc, baseAppMethodDoc } from "./AppMethodTypes";
 import { validateAppMethod, ValidationIssue } from "./crudUtils";
-import { useCardStack } from "@/components/CardStack/useCardStack";
+import { useCardStack, CardStackHeader, CardStackBody } from "@/components/CardStack";
 import { cn } from "@/style/utils";
 
 export function AppMethodCreate() {
@@ -91,13 +91,16 @@ export function AppMethodCreate() {
 
   return (
     <>
-      <CardHeader>
-        <CardTitle>Create New Method</CardTitle>
-        <CardDescription>
-          Add a new application method
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardStackHeader>
+        <CardHeader>
+          <CardTitle>Create New Method</CardTitle>
+          <CardDescription>
+            Add a new application method
+          </CardDescription>
+        </CardHeader>
+      </CardStackHeader>
+      <CardStackBody>
+        <CardContent>
         <div className="space-y-2">
           <div className="space-y-1">
             <Label>App Method ID</Label>
@@ -245,6 +248,7 @@ export function AppMethodCreate() {
           </div>
         </div>
       </CardContent>
+      </CardStackBody>
     </>
   );
 }

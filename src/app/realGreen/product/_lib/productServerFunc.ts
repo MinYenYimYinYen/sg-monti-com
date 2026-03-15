@@ -29,7 +29,7 @@ import {
   baseProductSubDocProps,
 } from "@/app/realGreen/product/_lib/baseProduct";
 import { ProductCategoryStored } from "@/app/realGreen/product/_lib/types/ProductCategoryTypes";
-import { baseUnit, Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { baseUnitCRM, UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export const WATER_IDS = {
@@ -99,7 +99,7 @@ export function extendProducts<
     unitId: number;
     productCode: string;
   },
-  TDocProps extends { productId: number; category: string; unit: Unit },
+  TDocProps extends { productId: number; category: string; unit: UnitCRM },
 >({
   cores,
   docProps,
@@ -111,7 +111,7 @@ export function extendProducts<
   docProps: TDocProps[];
   baseDocProps: TDocProps;
   categoryMap: Map<number, ProductCategoryStored>;
-  unitMap: Map<number, Unit>;
+  unitMap: Map<number, UnitCRM>;
 }): (TCore & TDocProps)[] {
   const docPropsMap = new Grouper(docProps).toUniqueMap((p) => p.productId);
   return cores
@@ -126,7 +126,7 @@ export function extendProducts<
           core.categoryId?.toString() ||
           baseStrId,
         unit: unitMap.get(core.unitId) || {
-          ...baseUnit,
+          ...baseUnitCRM,
           unitId: core.unitId,
         },
       } as TCore & TDocProps;
@@ -138,7 +138,7 @@ export function extendProductMasters(
   cores: ProductMasterCore[],
   docProps: ProductMasterDocProps[],
   categoryMap: Map<number, ProductCategoryStored>,
-  unitMap: Map<number, Unit>,
+  unitMap: Map<number, UnitCRM>,
 ): ProductMasterDoc[] {
   return extendProducts({
     cores,
@@ -153,7 +153,7 @@ export function extendProductSingles(
   cores: ProductSingleCore[],
   docProps: ProductSingleDocProps[],
   categoryMap: Map<number, ProductCategoryStored>,
-  unitMap: Map<number, Unit>,
+  unitMap: Map<number, UnitCRM>,
 ): ProductSingleDoc[] {
   return extendProducts({
     cores,
@@ -168,7 +168,7 @@ export function extendProductSubs(
   cores: ProductSubCore[],
   docProps: ProductSubDocProps[],
   categoryMap: Map<number, ProductCategoryStored>,
-  unitMap: Map<number, Unit>,
+  unitMap: Map<number, UnitCRM>,
 ): ProductSubDoc[] {
   return extendProducts({
     cores,
@@ -183,7 +183,7 @@ export function extendProductCores(
   cores: ProductCore[],
   docProps: ProductCommonDocProps[],
   categoryMap: Map<number, ProductCategoryStored>,
-  unitMap: Map<number, Unit>,
+  unitMap: Map<number, UnitCRM>,
 ): ProductCommonDoc[] {
   return extendProducts({
     cores,

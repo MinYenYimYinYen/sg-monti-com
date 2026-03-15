@@ -12,48 +12,62 @@ import { Check } from "lucide-react";
 
 type MultiSelectMode = "single" | "multiple";
 
-type MultiSelectContextValue = {
-  value: string[];
-  onValueChange: (value: string[]) => void;
+type MultiSelectContextValue<TValue = any> = {
+  value: TValue[];
+  onValueChange: (value: TValue[]) => void;
   mode: MultiSelectMode;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   focusedIndex: number;
   setFocusedIndex: (index: number) => void;
   items: React.RefObject<Map<string, HTMLDivElement>>;
+  getValueKey: (value: TValue) => string;
+  compareValues: (a: TValue, b: TValue) => boolean;
 };
 
 // Use a less specific type for the context to allow generic usage
-const MultiSelectContext = React.createContext<MultiSelectContextValue | undefined>(undefined);
+const MultiSelectContext = React.createContext<MultiSelectContextValue<any> | undefined>(undefined);
 
-function useMultiSelect() {
+function useMultiSelect<TValue = any>() {
   const context = React.useContext(MultiSelectContext);
   if (!context) {
     throw new Error("MultiSelect components must be used within MultiSelect");
   }
-  return context;
+  return context as MultiSelectContextValue<TValue>;
 }
 
 // ============================================================================
 // ROOT COMPONENT
 // ============================================================================
 
-interface MultiSelectProps {
-  value?: string[];
-  onValueChange?: (value: string[]) => void;
+interface MultiSelectProps<TValue = string> {
+  value?: TValue[];
+  onValueChange?: (value: TValue[]) => void;
   mode?: MultiSelectMode;
   children: React.ReactNode;
-  defaultValue?: string[];
+  defaultValue?: TValue[];
+  /**
+   * Function to extract a unique string key from a value.
+   * Required for object values. Defaults to String(value) for primitives.
+   */
+  getValueKey?: (value: TValue) => string;
+  /**
+   * Function to compare two values for equality.
+   * Defaults to === comparison.
+   */
+  compareValues?: (a: TValue, b: TValue) => boolean;
 }
 
-export function MultiSelect({
+export function MultiSelect<TValue = string>({
   value: controlledValue,
   onValueChange,
   mode = "multiple",
   children,
   defaultValue = [],
-}: MultiSelectProps) {
-  const [uncontrolledValue, setUncontrolledValue] = React.useState<string[]>(defaultValue);
+  getValueKey = (value) => String(value),
+  compareValues = (a, b) => a === b,
+}: MultiSelectProps<TValue>) {
+  const [uncontrolledValue, setUncontrolledValue] = React.useState<TValue[]>(defaultValue);
   const [isOpen, setIsOpen] = React.useState(false);
   const [focusedIndex, setFocusedIndex] = React.useState(-1);
   const items = React.useRef<Map<string, HTMLDivElement>>(new Map());
@@ -72,6 +86,8 @@ export function MultiSelect({
         focusedIndex,
         setFocusedIndex,
         items,
+        getValueKey,
+        compareValues,
       }}
     >
       <Collapsible open={isOpen} onOpenChange={setIsOpen} className="relative">
@@ -257,32 +273,35 @@ const multiSelectItemVariants = cva(
   }
 );
 
-interface MultiSelectItemProps
+interface MultiSelectItemProps<TValue = string>
   extends React.ComponentPropsWithoutRef<"div">,
     VariantProps<typeof multiSelectItemVariants> {
-  value: string;
+  value: TValue;
   disabled?: boolean;
 }
 
-export const MultiSelectItem = React.forwardRef<HTMLDivElement, MultiSelectItemProps>(
-  ({ className, variant, value, disabled, children, onClick, ...props }, ref) => {
-    const { value: selectedValues, onValueChange, mode, focusedIndex, setFocusedIndex, items } = useMultiSelect();
+const MultiSelectItemInner = <TValue = string,>(
+  { className, variant, value, disabled, children, onClick, ...props }: MultiSelectItemProps<TValue>,
+  ref: React.ForwardedRef<HTMLDivElement>
+) => {
+    const { value: selectedValues, onValueChange, mode, focusedIndex, setFocusedIndex, items, getValueKey, compareValues } = useMultiSelect<TValue>();
     const itemRef = React.useRef<HTMLDivElement>(null);
     const [index, setIndex] = React.useState(-1);
 
-    const isSelected = selectedValues.includes(value);
+    const valueKey = getValueKey(value);
+    const isSelected = selectedValues.some((v) => compareValues(v, value));
 
     // Register item in map for keyboard navigation
     React.useEffect(() => {
       if (itemRef.current) {
-        items.current.set(value, itemRef.current);
+        items.current.set(valueKey, itemRef.current);
         const allItems = Array.from(items.current.values());
         setIndex(allItems.indexOf(itemRef.current));
         return () => {
-          items.current.delete(value);
+          items.current.delete(valueKey);
         };
       }
-    }, [items, value]);
+    }, [items, valueKey]);
 
     const isFocused = index === focusedIndex;
 
@@ -293,7 +312,7 @@ export const MultiSelectItem = React.forwardRef<HTMLDivElement, MultiSelectItemP
         onValueChange([value]);
       } else {
         const newValues = isSelected
-          ? selectedValues.filter((v) => v !== value)
+          ? selectedValues.filter((v) => !compareValues(v, value))
           : [...selectedValues, value];
         onValueChange(newValues);
       }
@@ -346,10 +365,13 @@ export const MultiSelectItem = React.forwardRef<HTMLDivElement, MultiSelectItemP
         )}
       </div>
     );
-  }
-);
+  };
 
-MultiSelectItem.displayName = "MultiSelectItem";
+export const MultiSelectItem = React.forwardRef(MultiSelectItemInner) as <TValue = string>(
+  props: MultiSelectItemProps<TValue> & { ref?: React.ForwardedRef<HTMLDivElement> }
+) => React.ReactElement;
+
+(MultiSelectItem as any).displayName = "MultiSelectItem";
 
 // ============================================================================
 // SEPARATOR COMPONENT
@@ -396,18 +418,18 @@ MultiSelectEmpty.displayName = "MultiSelectEmpty";
 // VALUE DISPLAY HELPER
 // ============================================================================
 
-interface MultiSelectValueProps {
+interface MultiSelectValueProps<TValue = string> {
   placeholder?: string;
-  children?: (values: string[]) => React.ReactNode;
+  children?: (values: TValue[]) => React.ReactNode;
   className?: string;
 }
 
-export function MultiSelectValue({
+export function MultiSelectValue<TValue = string>({
   placeholder = "Select...",
   children,
   className,
-}: MultiSelectValueProps) {
-  const { value } = useMultiSelect();
+}: MultiSelectValueProps<TValue>) {
+  const { value, getValueKey } = useMultiSelect<TValue>();
 
   if (children) {
     return <>{children(value)}</>;
@@ -424,7 +446,7 @@ export function MultiSelectValue({
       )}
       data-placeholder={!hasValue}
     >
-      {hasValue ? value.join(", ") : placeholder}
+      {hasValue ? value.map(getValueKey).join(", ") : placeholder}
     </span>
   );
 }

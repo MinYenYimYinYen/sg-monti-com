@@ -1,4 +1,4 @@
-import { baseUnit, Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { baseUnitCRM, UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export type AppMethodDoc = {
@@ -12,7 +12,7 @@ export type AppMethodDoc = {
 };
 
 export type AppMethodProps = {
-  flowRateUnit: Unit;
+  flowRateUnit: UnitCRM;
 };
 
 export type AppMethod = AppMethodDoc & AppMethodProps;
@@ -29,5 +29,5 @@ export const baseAppMethodDoc: AppMethodDoc = {
 
 export const baseAppMethod: AppMethod = {
   ...baseAppMethodDoc,
-  flowRateUnit: baseUnit,
+  flowRateUnit: baseUnitCRM,
 };

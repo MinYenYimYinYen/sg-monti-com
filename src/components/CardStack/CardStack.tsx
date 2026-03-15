@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo } from "react";
 import { cn } from "@/style/utils";
-import { CardStackContext, CardRegistration } from "./useCardStack";
+import { CardStackContext, CardRegistration, CardParts } from "./useCardStack";
 
 interface CardStackProps {
   children: React.ReactNode;
@@ -19,6 +19,7 @@ export function CardStack({
 }: CardStackProps) {
   const [selectedId, setSelectedId] = useState<string | null>(defaultSelected);
   const [cards, setCards] = useState(new Map<string, CardRegistration>());
+  const [cardParts, setCardParts] = useState(new Map<string, CardParts>());
 
   const selectCard = useCallback(
     (id: string) => {
@@ -56,6 +57,32 @@ export function CardStack({
     });
   }, []);
 
+  const registerHeader = useCallback((cardId: string, header: React.ReactNode) => {
+    setCardParts((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(cardId) || { header: null, body: null };
+      next.set(cardId, { ...existing, header });
+      return next;
+    });
+  }, []);
+
+  const registerBody = useCallback((cardId: string, body: React.ReactNode) => {
+    setCardParts((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(cardId) || { header: null, body: null };
+      next.set(cardId, { ...existing, body });
+      return next;
+    });
+  }, []);
+
+  const unregisterParts = useCallback((cardId: string) => {
+    setCardParts((prev) => {
+      const next = new Map(prev);
+      next.delete(cardId);
+      return next;
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       selectedId,
@@ -64,8 +91,12 @@ export function CardStack({
       registerCard,
       unregisterCard,
       cards,
+      registerHeader,
+      registerBody,
+      unregisterParts,
+      cardParts,
     }),
-    [selectedId, selectCard, deselectCard, registerCard, unregisterCard, cards]
+    [selectedId, selectCard, deselectCard, registerCard, unregisterCard, cards, registerHeader, registerBody, unregisterParts, cardParts]
   );
 
   return (

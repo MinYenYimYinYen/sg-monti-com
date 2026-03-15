@@ -118,7 +118,7 @@ export default function MixChartPage() {
               </div>
             )}
 
-            {/* Unit Context Selector - only shown when Key Product selected */}
+            {/* UnitCRM Context Selector - only shown when Key Product selected */}
             {selectedSubConfig && (
               <div className="flex flex-col gap-2">
                 <Label>Unit Type</Label>

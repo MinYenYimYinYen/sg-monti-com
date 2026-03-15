@@ -9,12 +9,12 @@ import {
   SubProductConfigDoc,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
-import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 export const createMastersColumns: (
   onEdit: (master: ProductMaster) => void,
   onEditCategory: (categoryId: number, categoryName: string) => void,
-  onEditUnit: (unit: Unit) => void,
+  onEditUnit: (unit: UnitCRM) => void,
 ) => ColumnDef<ProductMaster>[] = (onEdit, onEditCategory, onEditUnit) => [
   {
     accessorKey: "productCode",

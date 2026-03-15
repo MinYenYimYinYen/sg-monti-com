@@ -1,6 +1,6 @@
 import { ProductCommonDocProps, ProductCommonProps, ProductCore } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 
 export type ProductSingleCore = ProductCore & {

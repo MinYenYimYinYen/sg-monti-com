@@ -21,7 +21,7 @@ export type AppMethod = {
   doubleOverlap: boolean;
   width: number; // feet
   flowRate: number; // amount per minute
-  flowRateUnitId: number; // References Unit.unitId for gal/min, L/min, etc.
+  flowRateUnitId: number; // References UnitCRM.unitId for gal/min, L/min, etc.
 };
 
 export type AppMethodStorage = AppMethod & {

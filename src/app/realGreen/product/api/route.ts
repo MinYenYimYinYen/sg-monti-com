@@ -31,7 +31,7 @@ import { ProductSubDocProps } from "@/app/realGreen/product/_lib/types/ProductSu
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { UnitModel } from "@/app/realGreen/product/_lib/models/UnitModel";
-import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {
@@ -81,7 +81,7 @@ const handlers: HandlerMap<ProductContract> = {
       );
 
       const unitDocs = await UnitModel.find().lean();
-      const units: Unit[] = cleanMongoArray(unitDocs) as Unit[];
+      const units: UnitCRM[] = cleanMongoArray(unitDocs) as UnitCRM[];
       const unitMap = new Grouper(units).toUniqueMap((u) => u.unitId);
 
       const masterDocs = extendProductMasters(

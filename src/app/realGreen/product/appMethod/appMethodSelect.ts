@@ -2,7 +2,7 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { AppMethod } from "./AppMethodTypes";
-import { baseUnit, Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { baseUnitCRM, UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 const selectAppMethodDocs = (state: AppState) => state.appMethod.appMethodDocs;
 
@@ -18,7 +18,7 @@ const selectProductSubDocs = (state: AppState) => state.product.productSubDocs;
 const selectUnitMap = createSelector(
   [selectProductSubDocs],
   (productSubDocs) => {
-    const unitMap = new Map<number, Unit>();
+    const unitMap = new Map<number, UnitCRM>();
     productSubDocs.forEach((subDoc) => {
       unitMap.set(subDoc.unitId, subDoc.unit);
     });
@@ -31,7 +31,7 @@ const selectAppMethods = createSelector(
   (appMethodDocs, unitMap) => {
     const appMethods: AppMethod[] = appMethodDocs.map((doc) => ({
       ...doc,
-      flowRateUnit: unitMap.get(doc.flowRateUnitId) || baseUnit,
+      flowRateUnit: unitMap.get(doc.flowRateUnitId) || baseUnitCRM,
     }));
     return appMethods;
   },

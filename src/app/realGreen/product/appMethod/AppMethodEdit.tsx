@@ -23,7 +23,7 @@ import { appMethodSelect } from "./appMethodSelect";
 import { useAppMethod } from "./useAppMethod";
 import { AppMethod, AppMethodDoc } from "./AppMethodTypes";
 import { validateAppMethod } from "./crudUtils";
-import { useCardStack } from "@/components/CardStack/useCardStack";
+import { useCardStack, CardStackHeader, CardStackBody } from "@/components/CardStack";
 import { cn } from "@/style/utils";
 
 interface AppMethodEditProps {
@@ -106,14 +106,17 @@ export function AppMethodEdit({ method }: AppMethodEditProps) {
   if (!isEditing) {
     return (
       <>
-        <CardHeader>
-          <CardTitle>{method.description}</CardTitle>
-          <CardDescription>
-            {method.speed}s/90ft • {method.width}ft • {method.flowRate}{" "}
-            {method.flowRateUnit.desc}/min
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardStackHeader>
+          <CardHeader>
+            <CardTitle>{method.description}</CardTitle>
+            <CardDescription>
+              {method.speed}s/90ft • {method.width}ft • {method.flowRate}{" "}
+              {method.flowRateUnit.desc}/min
+            </CardDescription>
+          </CardHeader>
+        </CardStackHeader>
+        <CardStackBody>
+          <CardContent>
           <div className="space-y-4">
             <div className="space-y-2 text-sm">
               <p>
@@ -143,17 +146,21 @@ export function AppMethodEdit({ method }: AppMethodEditProps) {
             </div>
           </div>
         </CardContent>
+        </CardStackBody>
       </>
     );
   }
 
   return (
     <>
-      <CardHeader>
-        <CardTitle>Edit {method.description}</CardTitle>
-        <CardDescription>Update application method</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardStackHeader>
+        <CardHeader>
+          <CardTitle>Edit {method.description}</CardTitle>
+          <CardDescription>Update application method</CardDescription>
+        </CardHeader>
+      </CardStackHeader>
+      <CardStackBody>
+        <CardContent>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>App Method ID</Label>
@@ -291,6 +298,7 @@ export function AppMethodEdit({ method }: AppMethodEditProps) {
           </div>
         </div>
       </CardContent>
+      </CardStackBody>
     </>
   );
 }

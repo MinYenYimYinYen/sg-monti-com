@@ -10,7 +10,7 @@ import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubType
 import {
   ProductCommonDoc,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 
 interface ProductState {
@@ -63,7 +63,7 @@ const productSlice = createSlice({
         common.category = action.payload.newCategory;
       });
     },
-    updateUnit: (state, action: PayloadAction<{ newUnit: Unit }>) => {
+    updateUnit: (state, action: PayloadAction<{ newUnit: UnitCRM }>) => {
       const matchingMasters = state.productMasterDocs.filter(
         (master) => master.unitId === action.payload.newUnit.unitId,
       );

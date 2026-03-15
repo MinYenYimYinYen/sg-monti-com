@@ -4,11 +4,11 @@ import { Button } from "@/style/components/button";
 import { Pencil } from "lucide-react";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 
-import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 export const createSubsColumns = (
   onEditCategory: (categoryId: number, categoryName: string) => void,
-  onEditUnit: (unit: Unit) => void,
+  onEditUnit: (unit: UnitCRM) => void,
 ): ColumnDef<ProductSub>[] => [
   {
     accessorKey: "productId",

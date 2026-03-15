@@ -10,7 +10,7 @@ import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubType
 import {
   ProductCommonDoc,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
 
 
@@ -40,7 +40,7 @@ export interface ProductContract extends ApiContract {
   }
 
   saveUnit: {
-    params: {unit: Unit}
+    params: {unit: UnitCRM}
     result: SuccessResponse;
   }
 
