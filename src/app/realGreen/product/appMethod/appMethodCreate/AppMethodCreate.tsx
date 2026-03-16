@@ -24,8 +24,8 @@ import {
   GroundSpeedField,
   PatternWidthField,
   FlowRateField,
-  CoverageFieldComponent,
-} from "./FieldComponents";
+  CoverageField,
+} from "./fields";
 import { use3Fields } from "./use3Fields";
 import { useFormFieldValues } from "./useFormFieldValues";
 import { solverSelect } from "./selectors/solverSelect";
@@ -126,9 +126,7 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                   <PatternWidthField />
                 )}
                 {selectedFields.includes("flowRate") && <FlowRateField />}
-                {selectedFields.includes("coverage") && (
-                  <CoverageFieldComponent />
-                )}
+                {selectedFields.includes("coverage") && <CoverageField />}
               </>
             )}
 
@@ -155,7 +153,7 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                   />
                 )}
                 {solveForField === "coverage" && (
-                  <CoverageFieldComponent
+                  <CoverageField
                     disabled={solveForField === "coverage" && !solutionLocked}
                   />
                 )}

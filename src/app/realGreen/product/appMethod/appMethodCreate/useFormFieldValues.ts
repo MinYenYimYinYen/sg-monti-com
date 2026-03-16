@@ -47,7 +47,7 @@ export function useFormFieldValues() {
       dispatch(createAppMethodActions.setPatternWidthDistance(value));
     },
 
-    setPatternWidthDistanceUnit: (value: LengthUnit["desc"] | "") => {
+    setPatternWidthDistanceUnit: (value: LengthUnit["desc"]) => {
       dispatch(createAppMethodActions.setPatternWidthDistanceUnit(value));
     },
 

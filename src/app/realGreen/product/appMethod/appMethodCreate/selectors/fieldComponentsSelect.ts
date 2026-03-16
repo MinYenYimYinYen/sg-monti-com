@@ -1,4 +1,6 @@
 import { AppState } from "@/store";
+import { createSelector } from "@reduxjs/toolkit";
+import { solverSelect } from "./solverSelect";
 
 // Base selector
 const selectCreateAppMethodState = (state: AppState) => state.createAppMethod;
@@ -49,32 +51,177 @@ export const selectCoverageArea = (state: AppState) =>
 export const selectCoverageAreaUnit = (state: AppState) =>
   selectCreateAppMethodState(state).coverageAreaUnit;
 
+// Merged selectors - combine Redux state with solver results
+// Ground Speed with solution
+const selectGroundSpeedDistanceWithSolution = createSelector(
+  [selectGroundSpeedDistance, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "groundSpeed" && solution?.success) {
+      return solution.result.groundSpeed.distance;
+    }
+    return stateValue;
+  }
+);
+
+const selectGroundSpeedDistanceUnitWithSolution = createSelector(
+  [selectGroundSpeedDistanceUnit, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "groundSpeed" && solution?.success) {
+      return solution.result.groundSpeed.distanceUnit;
+    }
+    return stateValue;
+  }
+);
+
+const selectGroundSpeedTimeWithSolution = createSelector(
+  [selectGroundSpeedTime, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "groundSpeed" && solution?.success) {
+      return solution.result.groundSpeed.time;
+    }
+    return stateValue;
+  }
+);
+
+const selectGroundSpeedTimeUnitWithSolution = createSelector(
+  [selectGroundSpeedTimeUnit, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "groundSpeed" && solution?.success) {
+      return solution.result.groundSpeed.timeUnit;
+    }
+    return stateValue;
+  }
+);
+
+// Pattern Width with solution
+const selectPatternWidthDistanceWithSolution = createSelector(
+  [selectPatternWidthDistance, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "patternWidth" && solution?.success) {
+      return solution.result.patternWidth.distance;
+    }
+    return stateValue;
+  }
+);
+
+const selectPatternWidthDistanceUnitWithSolution = createSelector(
+  [selectPatternWidthDistanceUnit, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "patternWidth" && solution?.success) {
+      return solution.result.patternWidth.distanceUnit;
+    }
+    return stateValue;
+  }
+);
+
+// Flow Rate with solution
+const selectFlowRateVolumeWithSolution = createSelector(
+  [selectFlowRateVolume, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "flowRate" && solution?.success) {
+      return solution.result.flowRate.volume;
+    }
+    return stateValue;
+  }
+);
+
+const selectFlowRateVolumeUnitWithSolution = createSelector(
+  [selectFlowRateVolumeUnit, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "flowRate" && solution?.success) {
+      return solution.result.flowRate.volumeUnit;
+    }
+    return stateValue;
+  }
+);
+
+const selectFlowRateTimeWithSolution = createSelector(
+  [selectFlowRateTime, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "flowRate" && solution?.success) {
+      return solution.result.flowRate.time;
+    }
+    return stateValue;
+  }
+);
+
+const selectFlowRateTimeUnitWithSolution = createSelector(
+  [selectFlowRateTimeUnit, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "flowRate" && solution?.success) {
+      return solution.result.flowRate.timeUnit;
+    }
+    return stateValue;
+  }
+);
+
+// Coverage with solution
+const selectCoverageVolumeWithSolution = createSelector(
+  [selectCoverageVolume, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "coverage" && solution?.success) {
+      return solution.result.coverage.volume;
+    }
+    return stateValue;
+  }
+);
+
+const selectCoverageVolumeUnitWithSolution = createSelector(
+  [selectCoverageVolumeUnit, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "coverage" && solution?.success) {
+      return solution.result.coverage.volumeUnit;
+    }
+    return stateValue;
+  }
+);
+
+const selectCoverageAreaWithSolution = createSelector(
+  [selectCoverageArea, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "coverage" && solution?.success) {
+      return solution.result.coverage.area;
+    }
+    return stateValue;
+  }
+);
+
+const selectCoverageAreaUnitWithSolution = createSelector(
+  [selectCoverageAreaUnit, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, solveForField, solution) => {
+    if (solveForField === "coverage" && solution?.success) {
+      return solution.result.coverage.areaUnit;
+    }
+    return stateValue;
+  }
+);
+
 // Organized export
 export const fieldComponentsSelect = {
   // Ground Speed
   groundSpeed: {
-    distance: selectGroundSpeedDistance,
-    distanceUnit: selectGroundSpeedDistanceUnit,
-    time: selectGroundSpeedTime,
-    timeUnit: selectGroundSpeedTimeUnit,
+    distance: selectGroundSpeedDistanceWithSolution,
+    distanceUnit: selectGroundSpeedDistanceUnitWithSolution,
+    time: selectGroundSpeedTimeWithSolution,
+    timeUnit: selectGroundSpeedTimeUnitWithSolution,
   },
   // Pattern Width
   patternWidth: {
-    distance: selectPatternWidthDistance,
-    distanceUnit: selectPatternWidthDistanceUnit,
+    distance: selectPatternWidthDistanceWithSolution,
+    distanceUnit: selectPatternWidthDistanceUnitWithSolution,
   },
   // Flow Rate
   flowRate: {
-    volume: selectFlowRateVolume,
-    volumeUnit: selectFlowRateVolumeUnit,
-    time: selectFlowRateTime,
-    timeUnit: selectFlowRateTimeUnit,
+    volume: selectFlowRateVolumeWithSolution,
+    volumeUnit: selectFlowRateVolumeUnitWithSolution,
+    time: selectFlowRateTimeWithSolution,
+    timeUnit: selectFlowRateTimeUnitWithSolution,
   },
   // Coverage
   coverage: {
-    volume: selectCoverageVolume,
-    volumeUnit: selectCoverageVolumeUnit,
-    area: selectCoverageArea,
-    areaUnit: selectCoverageAreaUnit,
+    volume: selectCoverageVolumeWithSolution,
+    volumeUnit: selectCoverageVolumeUnitWithSolution,
+    area: selectCoverageAreaWithSolution,
+    areaUnit: selectCoverageAreaUnitWithSolution,
   },
 };

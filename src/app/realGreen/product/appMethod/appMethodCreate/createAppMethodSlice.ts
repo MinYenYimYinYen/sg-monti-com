@@ -125,7 +125,7 @@ const createAppMethodSlice = createSlice({
 
     setPatternWidthDistanceUnit: (
       state,
-      action: PayloadAction<LengthUnit["desc"] | "">,
+      action: PayloadAction<LengthUnit["desc"]>,
     ) => {
       state.patternWidthDistanceUnit = action.payload;
     },
