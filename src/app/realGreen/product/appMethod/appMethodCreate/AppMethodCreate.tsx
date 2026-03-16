@@ -30,14 +30,12 @@ import { use3Fields } from "./use3Fields";
 import { useFormFieldValues } from "./useFormFieldValues";
 import { solverSelect } from "./selectors/solverSelect";
 import { useAppMethod } from "../useAppMethod";
-import { useSolution } from "@/app/realGreen/product/appMethod/appMethodCreate/useSolution";
 
 interface AppMethodCreateProps {
   method?: AppMethod;
 }
 
 export function AppMethodCreate({ method }: AppMethodCreateProps) {
-  useSolution();
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const { deselectCard } = useCardStack();
   const { upsertAppMethod } = useAppMethod({});
