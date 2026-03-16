@@ -21,11 +21,13 @@ import { customerReducer } from "@/store/reducers/customerReducers";
 import csvReducer from "@/app/csv/_lib/csvSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
 import { appMethodReducer } from "@/app/realGreen/product/appMethod/appMethodSlice";
+import createAppMethodReducer from "@/app/realGreen/product/appMethod/appMethodCreate/createAppMethodSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
   ui: uiReducer,
   appMethod: appMethodReducer,
+  createAppMethod: createAppMethodReducer,
   auth: authReducer,
   callAhead: callAheadReducer,
   company: companyReducer,

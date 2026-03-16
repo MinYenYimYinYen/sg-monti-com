@@ -9,7 +9,7 @@ import {
 } from "@/components/CardStack";
 import { appMethodSelect } from "./appMethodSelect";
 import { useAppMethod } from "./useAppMethod";
-import { AppMethodCreate } from "./AppMethodCreate";
+import { AppMethodCreate } from "./appMethodCreate/AppMethodCreate";
 
 export function AppMethodCRUD() {
   useAppMethod({ autoLoad: true });
