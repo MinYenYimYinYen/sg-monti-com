@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 import { useFormFieldValues } from "@/app/realGreen/product/appMethod/appMethodCreate/useFormFieldValues";
 import { fieldComponentsSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/fieldComponentsSelect";
+import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
 import { FieldLabel } from "./shared/FieldLabel";
 import { UnitSelect } from "./shared/UnitSelect";
 
@@ -17,6 +18,10 @@ export function PatternWidthField({ disabled }: PatternWidthFieldProps) {
 
   const patternWidth = useSelector(fieldComponentsSelect.patternWidth.distance);
   const patternWidthUnit = useSelector(fieldComponentsSelect.patternWidth.distanceUnit);
+
+  // Check if this field is being solved for
+  const solveForField = useSelector(solverSelect.solveForField);
+  const isBeingSolved = solveForField === "patternWidth";
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
@@ -33,6 +38,7 @@ export function PatternWidthField({ disabled }: PatternWidthFieldProps) {
             onChange={(e) =>
               setPatternWidthDistance(e.target.value === "" ? "" : Number(e.target.value))
             }
+            disabled={isBeingSolved}
           />
           <UnitSelect
             units={distanceUnits}

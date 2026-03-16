@@ -40,9 +40,6 @@ interface CreateAppMethodState {
 
   // Overlap
   overlap: number;
-
-  // Solution state
-  solutionLocked: boolean;
 }
 
 const initialState: CreateAppMethodState = {
@@ -74,9 +71,6 @@ const initialState: CreateAppMethodState = {
 
   // Overlap
   overlap: 2, // Double overlap by default
-
-  // Solution state
-  solutionLocked: false,
 };
 
 const createAppMethodSlice = createSlice({
@@ -179,11 +173,6 @@ const createAppMethodSlice = createSlice({
     // Overlap action
     setOverlap: (state, action: PayloadAction<number>) => {
       state.overlap = action.payload;
-    },
-
-    // Solution actions
-    setSolutionLocked: (state, action: PayloadAction<boolean>) => {
-      state.solutionLocked = action.payload;
     },
 
     resetForm: (state) => {

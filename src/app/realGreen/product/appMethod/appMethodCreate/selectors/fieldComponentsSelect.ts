@@ -1,6 +1,7 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { solverSelect } from "./solverSelect";
+import { UnitMath } from "@/app/realGreen/product/unitConfig/UnitMath";
 
 // Base selector
 const selectCreateAppMethodState = (state: AppState) => state.createAppMethod;
@@ -54,19 +55,49 @@ export const selectCoverageAreaUnit = (state: AppState) =>
 // Merged selectors - combine Redux state with solver results
 // Ground Speed with solution
 const selectGroundSpeedDistanceWithSolution = createSelector(
-  [selectGroundSpeedDistance, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
-    if (solveForField === "groundSpeed" && solution?.success) {
-      return solution.result.groundSpeed.distance;
+  [
+    selectGroundSpeedDistance,
+    solverSelect.solveForField,
+    solverSelect.solution,
+    selectGroundSpeedDistanceUnit,
+    selectGroundSpeedTime,
+    selectGroundSpeedTimeUnit
+  ],
+  (stateValue, solveForField, solution, distanceUnit, time, timeUnit) => {
+    // If not solving for groundSpeed, return Redux state
+    if (solveForField !== "groundSpeed") {
+      return stateValue;
     }
-    return stateValue;
+
+    // If no solution yet, return empty
+    if (!solution?.success) {
+      return "";
+    }
+
+    // Convert solver result to user's chosen units
+    const baseRate = UnitMath.distanceRate(
+      solution.result.groundSpeed.distance,
+      solution.result.groundSpeed.distanceUnit,
+      solution.result.groundSpeed.time,
+      solution.result.groundSpeed.timeUnit
+    );
+
+    // Use user's units if set, otherwise fall back to solution's units
+    const targetDistanceUnit = distanceUnit || solution.result.groundSpeed.distanceUnit;
+    const targetTime = time || solution.result.groundSpeed.time;
+    const targetTimeUnit = timeUnit || solution.result.groundSpeed.timeUnit;
+
+    // Calculate distance for user's chosen time/units
+    const rateInTargetUnits = baseRate.toDistanceRate(targetDistanceUnit, targetTimeUnit);
+    return rateInTargetUnits * targetTime;
   }
 );
 
 const selectGroundSpeedDistanceUnitWithSolution = createSelector(
   [selectGroundSpeedDistanceUnit, solverSelect.solveForField, solverSelect.solution],
   (stateValue, solveForField, solution) => {
-    if (solveForField === "groundSpeed" && solution?.success) {
+    // If being solved and user hasn't set unit, provide default from solution
+    if (solveForField === "groundSpeed" && solution?.success && !stateValue) {
       return solution.result.groundSpeed.distanceUnit;
     }
     return stateValue;
@@ -76,7 +107,8 @@ const selectGroundSpeedDistanceUnitWithSolution = createSelector(
 const selectGroundSpeedTimeWithSolution = createSelector(
   [selectGroundSpeedTime, solverSelect.solveForField, solverSelect.solution],
   (stateValue, solveForField, solution) => {
-    if (solveForField === "groundSpeed" && solution?.success) {
+    // If being solved and user hasn't set time, provide default from solution
+    if (solveForField === "groundSpeed" && solution?.success && !stateValue) {
       return solution.result.groundSpeed.time;
     }
     return stateValue;
@@ -86,7 +118,8 @@ const selectGroundSpeedTimeWithSolution = createSelector(
 const selectGroundSpeedTimeUnitWithSolution = createSelector(
   [selectGroundSpeedTimeUnit, solverSelect.solveForField, solverSelect.solution],
   (stateValue, solveForField, solution) => {
-    if (solveForField === "groundSpeed" && solution?.success) {
+    // If being solved and user hasn't set unit, provide default from solution
+    if (solveForField === "groundSpeed" && solution?.success && !stateValue) {
       return solution.result.groundSpeed.timeUnit;
     }
     return stateValue;
@@ -95,19 +128,41 @@ const selectGroundSpeedTimeUnitWithSolution = createSelector(
 
 // Pattern Width with solution
 const selectPatternWidthDistanceWithSolution = createSelector(
-  [selectPatternWidthDistance, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
-    if (solveForField === "patternWidth" && solution?.success) {
-      return solution.result.patternWidth.distance;
+  [
+    selectPatternWidthDistance,
+    solverSelect.solveForField,
+    solverSelect.solution,
+    selectPatternWidthDistanceUnit
+  ],
+  (stateValue, solveForField, solution, distanceUnit) => {
+    // If not solving for patternWidth, return Redux state
+    if (solveForField !== "patternWidth") {
+      return stateValue;
     }
-    return stateValue;
+
+    // If no solution yet, return empty
+    if (!solution?.success) {
+      return "";
+    }
+
+    // Convert solver result to user's chosen units
+    const baseDistance = UnitMath.distance(
+      solution.result.patternWidth.distance,
+      solution.result.patternWidth.distanceUnit
+    );
+
+    // Use user's unit if set, otherwise fall back to solution's unit
+    const targetUnit = distanceUnit || solution.result.patternWidth.distanceUnit;
+
+    return baseDistance.toDistance(targetUnit);
   }
 );
 
 const selectPatternWidthDistanceUnitWithSolution = createSelector(
   [selectPatternWidthDistanceUnit, solverSelect.solveForField, solverSelect.solution],
   (stateValue, solveForField, solution) => {
-    if (solveForField === "patternWidth" && solution?.success) {
+    // If being solved and user hasn't set unit, provide default from solution
+    if (solveForField === "patternWidth" && solution?.success && !stateValue) {
       return solution.result.patternWidth.distanceUnit;
     }
     return stateValue;
@@ -116,19 +171,49 @@ const selectPatternWidthDistanceUnitWithSolution = createSelector(
 
 // Flow Rate with solution
 const selectFlowRateVolumeWithSolution = createSelector(
-  [selectFlowRateVolume, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
-    if (solveForField === "flowRate" && solution?.success) {
-      return solution.result.flowRate.volume;
+  [
+    selectFlowRateVolume,
+    solverSelect.solveForField,
+    solverSelect.solution,
+    selectFlowRateVolumeUnit,
+    selectFlowRateTime,
+    selectFlowRateTimeUnit
+  ],
+  (stateValue, solveForField, solution, volumeUnit, time, timeUnit) => {
+    // If not solving for flowRate, return Redux state
+    if (solveForField !== "flowRate") {
+      return stateValue;
     }
-    return stateValue;
+
+    // If no solution yet, return empty
+    if (!solution?.success) {
+      return "";
+    }
+
+    // Convert solver result to user's chosen units
+    const baseRate = UnitMath.volumeRate(
+      solution.result.flowRate.volume,
+      solution.result.flowRate.volumeUnit,
+      solution.result.flowRate.time,
+      solution.result.flowRate.timeUnit
+    );
+
+    // Use user's units if set, otherwise fall back to solution's units
+    const targetVolumeUnit = volumeUnit || solution.result.flowRate.volumeUnit;
+    const targetTime = time || solution.result.flowRate.time;
+    const targetTimeUnit = timeUnit || solution.result.flowRate.timeUnit;
+
+    // Calculate volume for user's chosen time/units
+    const rateInTargetUnits = baseRate.toVolumeRate(targetVolumeUnit, targetTimeUnit);
+    return rateInTargetUnits * targetTime;
   }
 );
 
 const selectFlowRateVolumeUnitWithSolution = createSelector(
   [selectFlowRateVolumeUnit, solverSelect.solveForField, solverSelect.solution],
   (stateValue, solveForField, solution) => {
-    if (solveForField === "flowRate" && solution?.success) {
+    // If being solved and user hasn't set unit, provide default from solution
+    if (solveForField === "flowRate" && solution?.success && !stateValue) {
       return solution.result.flowRate.volumeUnit;
     }
     return stateValue;
@@ -138,7 +223,8 @@ const selectFlowRateVolumeUnitWithSolution = createSelector(
 const selectFlowRateTimeWithSolution = createSelector(
   [selectFlowRateTime, solverSelect.solveForField, solverSelect.solution],
   (stateValue, solveForField, solution) => {
-    if (solveForField === "flowRate" && solution?.success) {
+    // If being solved and user hasn't set time, provide default from solution
+    if (solveForField === "flowRate" && solution?.success && !stateValue) {
       return solution.result.flowRate.time;
     }
     return stateValue;
@@ -148,7 +234,8 @@ const selectFlowRateTimeWithSolution = createSelector(
 const selectFlowRateTimeUnitWithSolution = createSelector(
   [selectFlowRateTimeUnit, solverSelect.solveForField, solverSelect.solution],
   (stateValue, solveForField, solution) => {
-    if (solveForField === "flowRate" && solution?.success) {
+    // If being solved and user hasn't set unit, provide default from solution
+    if (solveForField === "flowRate" && solution?.success && !stateValue) {
       return solution.result.flowRate.timeUnit;
     }
     return stateValue;
@@ -157,19 +244,49 @@ const selectFlowRateTimeUnitWithSolution = createSelector(
 
 // Coverage with solution
 const selectCoverageVolumeWithSolution = createSelector(
-  [selectCoverageVolume, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
-    if (solveForField === "coverage" && solution?.success) {
-      return solution.result.coverage.volume;
+  [
+    selectCoverageVolume,
+    solverSelect.solveForField,
+    solverSelect.solution,
+    selectCoverageVolumeUnit,
+    selectCoverageArea,
+    selectCoverageAreaUnit
+  ],
+  (stateValue, solveForField, solution, volumeUnit, area, areaUnit) => {
+    // If not solving for coverage, return Redux state
+    if (solveForField !== "coverage") {
+      return stateValue;
     }
-    return stateValue;
+
+    // If no solution yet, return empty
+    if (!solution?.success) {
+      return "";
+    }
+
+    // Convert solver result to user's chosen units
+    const baseRate = UnitMath.volumePerArea(
+      solution.result.coverage.volume,
+      solution.result.coverage.volumeUnit,
+      solution.result.coverage.area,
+      solution.result.coverage.areaUnit
+    );
+
+    // Use user's units if set, otherwise fall back to solution's units
+    const targetVolumeUnit = volumeUnit || solution.result.coverage.volumeUnit;
+    const targetArea = area || solution.result.coverage.area;
+    const targetAreaUnit = areaUnit || solution.result.coverage.areaUnit;
+
+    // Calculate volume for user's chosen area/units
+    const rateInTargetUnits = baseRate.toVolumePerArea(targetVolumeUnit, targetAreaUnit);
+    return rateInTargetUnits * targetArea;
   }
 );
 
 const selectCoverageVolumeUnitWithSolution = createSelector(
   [selectCoverageVolumeUnit, solverSelect.solveForField, solverSelect.solution],
   (stateValue, solveForField, solution) => {
-    if (solveForField === "coverage" && solution?.success) {
+    // If being solved and user hasn't set unit, provide default from solution
+    if (solveForField === "coverage" && solution?.success && !stateValue) {
       return solution.result.coverage.volumeUnit;
     }
     return stateValue;
@@ -179,7 +296,8 @@ const selectCoverageVolumeUnitWithSolution = createSelector(
 const selectCoverageAreaWithSolution = createSelector(
   [selectCoverageArea, solverSelect.solveForField, solverSelect.solution],
   (stateValue, solveForField, solution) => {
-    if (solveForField === "coverage" && solution?.success) {
+    // If being solved and user hasn't set area, provide default from solution
+    if (solveForField === "coverage" && solution?.success && !stateValue) {
       return solution.result.coverage.area;
     }
     return stateValue;
@@ -189,7 +307,8 @@ const selectCoverageAreaWithSolution = createSelector(
 const selectCoverageAreaUnitWithSolution = createSelector(
   [selectCoverageAreaUnit, solverSelect.solveForField, solverSelect.solution],
   (stateValue, solveForField, solution) => {
-    if (solveForField === "coverage" && solution?.success) {
+    // If being solved and user hasn't set unit, provide default from solution
+    if (solveForField === "coverage" && solution?.success && !stateValue) {
       return solution.result.coverage.areaUnit;
     }
     return stateValue;

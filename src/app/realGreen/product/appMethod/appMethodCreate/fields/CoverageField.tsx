@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 import { useFormFieldValues } from "@/app/realGreen/product/appMethod/appMethodCreate/useFormFieldValues";
 import { fieldComponentsSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/fieldComponentsSelect";
+import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
 import { FieldLabel } from "./shared/FieldLabel";
 import { UnitSelect } from "./shared/UnitSelect";
 
@@ -26,6 +27,10 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
   const coverageArea = useSelector(fieldComponentsSelect.coverage.area);
   const coverageAreaUnit = useSelector(fieldComponentsSelect.coverage.areaUnit);
 
+  // Check if this field is being solved for
+  const solveForField = useSelector(solverSelect.solveForField);
+  const isBeingSolved = solveForField === "coverage";
+
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
       <div className="space-y-1">
@@ -41,6 +46,7 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
             onChange={(e) =>
               setCoverageVolume(e.target.value === "" ? "" : Number(e.target.value))
             }
+            disabled={isBeingSolved}
           />
           <UnitSelect
             units={volumeUnits}

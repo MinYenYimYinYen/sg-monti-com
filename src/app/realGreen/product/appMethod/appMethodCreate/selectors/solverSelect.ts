@@ -189,8 +189,7 @@ const selectCanSave = createSelector(
 );
 
 
-const selectSolutionLocked = (state: AppState) =>
-  state.createAppMethod.solutionLocked;
+
 
 export const solverSelect = {
   params: selectParams,
@@ -202,5 +201,4 @@ export const solverSelect = {
   description: selectDescription,
   canSave: selectCanSave,
   selectedFields: selectSelectedFields,
-  solutionLocked: selectSolutionLocked,
 };

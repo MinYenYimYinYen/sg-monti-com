@@ -78,9 +78,6 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
     deselectCard();
   };
 
-  const { setSolutionLocked } = useSolution();
-  const solutionLocked = useSelector(solverSelect.solutionLocked);
-
   return (
     <>
       <CardStackHeader>
@@ -133,30 +130,10 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
             {/* Show the solved field as disabled when 3 fields are selected */}
             {solveForField && (
               <div className={"bg-accent/20 p-2 rounded-md"}>
-                {solveForField === "groundSpeed" && (
-                  <GroundSpeedField
-                    disabled={
-                      solveForField === "groundSpeed" && !solutionLocked
-                    }
-                  />
-                )}
-                {solveForField === "patternWidth" && (
-                  <PatternWidthField
-                    disabled={
-                      solveForField === "patternWidth" && !solutionLocked
-                    }
-                  />
-                )}
-                {solveForField === "flowRate" && (
-                  <FlowRateField
-                    disabled={solveForField === "flowRate" && !solutionLocked}
-                  />
-                )}
-                {solveForField === "coverage" && (
-                  <CoverageField
-                    disabled={solveForField === "coverage" && !solutionLocked}
-                  />
-                )}
+                {solveForField === "groundSpeed" && <GroundSpeedField />}
+                {solveForField === "patternWidth" && <PatternWidthField />}
+                {solveForField === "flowRate" && <FlowRateField />}
+                {solveForField === "coverage" && <CoverageField />}
               </div>
             )}
 
@@ -168,13 +145,6 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                 onCheckedChange={(checked) => setOverlap(checked ? 2 : 1)}
               />
               <Label htmlFor="doubleOverlap-create">Double Overlap</Label>
-            </div>
-
-            {/*Process Actions*/}
-            <div className="flex gap-2 items-center">
-              <Button disabled={!solution}>
-                {solutionLocked ? "Unlock Solution" : "Lock Solution"}
-              </Button>
             </div>
 
             {/* Save Actions */}
