@@ -1,10 +1,19 @@
-import { AppUnit, AreaUnit, LengthUnit, TimeUnit, VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import {
+  AppUnit,
+  AreaUnit,
+  LengthUnit,
+  TimeUnit,
+  VolumeUnit,
+} from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 /**
  * Converter interface for volume units with call signature and metadata methods
  */
 interface VolumeConverter {
-  (value: number, fromUnit: VolumeUnit["desc"]): {
+  (
+    value: number,
+    fromUnit: VolumeUnit["desc"],
+  ): {
     to: (toUnit: VolumeUnit["desc"]) => number;
     toAll: () => { [K in VolumeUnit["desc"]]: number };
   };
@@ -16,7 +25,10 @@ interface VolumeConverter {
  * Converter interface for area units with call signature and metadata methods
  */
 interface AreaConverter {
-  (value: number, fromUnit: AreaUnit["desc"]): {
+  (
+    value: number,
+    fromUnit: AreaUnit["desc"],
+  ): {
     to: (toUnit: AreaUnit["desc"]) => number;
     toAll: () => { [K in AreaUnit["desc"]]: number };
   };
@@ -28,7 +40,10 @@ interface AreaConverter {
  * Converter interface for distance/length units with call signature and metadata methods
  */
 interface DistanceConverter {
-  (value: number, fromUnit: LengthUnit["desc"]): {
+  (
+    value: number,
+    fromUnit: LengthUnit["desc"],
+  ): {
     to: (toUnit: LengthUnit["desc"]) => number;
     toAll: () => { [K in LengthUnit["desc"]]: number };
   };
@@ -40,7 +55,10 @@ interface DistanceConverter {
  * Converter interface for time units with call signature and metadata methods
  */
 interface TimeConverter {
-  (value: number, fromUnit: TimeUnit["desc"]): {
+  (
+    value: number,
+    fromUnit: TimeUnit["desc"],
+  ): {
     to: (toUnit: TimeUnit["desc"]) => number;
     toAll: () => { [K in TimeUnit["desc"]]: number };
   };
@@ -53,7 +71,10 @@ interface TimeConverter {
  */
 export class UnitUtils {
   // Volume conversions (to gallons)
-  private static readonly VOLUME_TO_GALLONS: Record<VolumeUnit["desc"], number> = {
+  private static readonly VOLUME_TO_GALLONS: Record<
+    VolumeUnit["desc"],
+    number
+  > = {
     [AppUnit.mGal]: 1,
     [AppUnit.flOz]: 1 / 128,
   };
@@ -113,7 +134,7 @@ export class UnitUtils {
         [AppUnit.mGal]: UnitUtils.VOLUME_TO_GALLONS[AppUnit.mGal],
         [AppUnit.flOz]: UnitUtils.VOLUME_TO_GALLONS[AppUnit.flOz],
       }),
-    }
+    },
   );
 
   /**
@@ -154,7 +175,7 @@ export class UnitUtils {
         [AppUnit.sf]: UnitUtils.AREA_TO_SQ_FT[AppUnit.sf],
         [AppUnit.ksf]: UnitUtils.AREA_TO_SQ_FT[AppUnit.ksf],
       }),
-    }
+    },
   );
 
   /**
@@ -189,7 +210,7 @@ export class UnitUtils {
       getConversionFactors: (): { [K in LengthUnit["desc"]]: number } => ({
         [AppUnit.ft]: UnitUtils.LENGTH_TO_FEET[AppUnit.ft],
       }),
-    }
+    },
   );
 
   /**
@@ -215,7 +236,7 @@ export class UnitUtils {
         toAll: (): { [K in TimeUnit["desc"]]: number } => {
           return {
             [AppUnit.sec]: seconds / UnitUtils.TIME_TO_SECONDS[AppUnit.sec],
-            [AppUnit.min]: seconds / UnitUtils.TIME_TO_SECONDS[AppUnit.min]
+            [AppUnit.min]: seconds / UnitUtils.TIME_TO_SECONDS[AppUnit.min],
           };
         },
       };
@@ -224,9 +245,9 @@ export class UnitUtils {
       getAllUnits: (): TimeUnit["desc"][] => [AppUnit.sec, AppUnit.min],
       getConversionFactors: (): { [K in TimeUnit["desc"]]: number } => ({
         [AppUnit.sec]: UnitUtils.TIME_TO_SECONDS[AppUnit.sec],
-        [AppUnit.min]: UnitUtils.TIME_TO_SECONDS[AppUnit.min]
+        [AppUnit.min]: UnitUtils.TIME_TO_SECONDS[AppUnit.min],
       }),
-    }
+    },
   );
 
   /**
@@ -242,7 +263,7 @@ export class UnitUtils {
     fromVolumeUnit: VolumeUnit["desc"],
     fromAreaUnit: AreaUnit["desc"],
     toVolumeUnit: VolumeUnit["desc"],
-    toAreaUnit: AreaUnit["desc"]
+    toAreaUnit: AreaUnit["desc"],
   ): number {
     // Convert to base units (gallons per square foot)
     const gallons = value * this.VOLUME_TO_GALLONS[fromVolumeUnit];
@@ -253,5 +274,75 @@ export class UnitUtils {
     const targetSqFt = this.AREA_TO_SQ_FT[toAreaUnit];
     const targetGallons = gallonsPerSqFt * targetSqFt;
     return targetGallons / this.VOLUME_TO_GALLONS[toVolumeUnit];
+  }
+
+  /**
+   * Convert volume rate (volume per time) between compound units
+   *
+   * @example
+   * // Convert 0.0070714 gal/1sec to fl oz/30sec
+   * UnitUtils.convertVolumeRate(
+   *   0.0070714, AppUnit.mGal, 1, AppUnit.sec,
+   *   AppUnit.flOz, 30, AppUnit.sec
+   * )
+   * // Returns: ~27.3 (fl oz per 30 seconds)
+   */
+  static convertVolumeRate(
+    value: number,
+    fromVolumeUnit: VolumeUnit["desc"],
+    fromTime: number,
+    fromTimeUnit: TimeUnit["desc"],
+    toVolumeUnit: VolumeUnit["desc"],
+    toTime: number,
+    toTimeUnit: TimeUnit["desc"],
+  ): number {
+    // Convert to base rate (gallons per second)
+    const gallons = value * this.VOLUME_TO_GALLONS[fromVolumeUnit];
+    const fromSeconds = fromTime * this.TIME_TO_SECONDS[fromTimeUnit];
+    const gallonsPerSecond = gallons / fromSeconds;
+
+    // Convert to target rate
+    const toSeconds = toTime * this.TIME_TO_SECONDS[toTimeUnit];
+    const targetGallons = gallonsPerSecond * toSeconds;
+    return targetGallons / this.VOLUME_TO_GALLONS[toVolumeUnit];
+  }
+
+  /**
+   * Convert distance rate (distance per time) between compound units
+   *
+   * @example
+   * // Convert 90 ft/17.5sec to ft/60sec
+   * UnitUtils.convertDistanceRate(
+   *   90, AppUnit.ft, 17.5, AppUnit.sec,
+   *   AppUnit.ft, 60, AppUnit.sec
+   * )
+   * // Returns: ~308.6 (feet per 60 seconds)
+   */
+  static convertDistanceRate({
+    value,
+    fromDistanceUnit,
+    fromTime,
+    fromTimeUnit,
+    toDistanceUnit,
+    toTime,
+    toTimeUnit,
+  }: {
+    value: number;
+    fromDistanceUnit: LengthUnit["desc"];
+    fromTime: number;
+    fromTimeUnit: TimeUnit["desc"];
+    toDistanceUnit: LengthUnit["desc"];
+    toTime: number;
+    toTimeUnit: TimeUnit["desc"];
+  }): number {
+    // Convert to base rate (feet per second)
+    const feet = value * this.LENGTH_TO_FEET[fromDistanceUnit];
+    const fromSeconds = fromTime * this.TIME_TO_SECONDS[fromTimeUnit];
+    const feetPerSecond = feet / fromSeconds;
+
+    // Convert to target rate
+    const toSeconds = toTime * this.TIME_TO_SECONDS[toTimeUnit];
+    const targetFeet = feetPerSecond * toSeconds;
+    return targetFeet / this.LENGTH_TO_FEET[toDistanceUnit];
   }
 }

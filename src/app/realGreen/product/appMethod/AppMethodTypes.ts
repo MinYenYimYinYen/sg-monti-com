@@ -1,4 +1,4 @@
-import { AppMethodResult } from "./appMethodUtils";
+import { AppMethodResult } from "./AppMethodSolver";
 
 /**
  * AppMethod entity - reusable application method configuration

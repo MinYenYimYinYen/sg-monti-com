@@ -25,15 +25,15 @@ import {
   PopoverContent,
 } from "@/style/components/popover";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
-import { CardStackHeader, CardStackBody, useCardStack } from "@/components/CardStack";
+import {
+  CardStackHeader,
+  CardStackBody,
+  useCardStack,
+} from "@/components/CardStack";
 import { appMethodSelect } from "./appMethodSelect";
 import { useAppMethod } from "./useAppMethod";
 import { AppMethod } from "./AppMethodTypes";
-import {
-  AppMethodParams,
-  AppMethodSolver,
-  UIFeedback,
-} from "./appMethodUtils";
+import { AppMethodParams, AppMethodSolver, UIFeedback } from "./AppMethodSolver";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 import { Info } from "lucide-react";
 import { cn } from "@/style/utils";
@@ -70,7 +70,9 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
     return { overlap: 2 };
   };
 
-  const [userInput, setUserInput] = useState<AppMethodParams>(getInitialUserInput());
+  const [userInput, setUserInput] = useState<AppMethodParams>(
+    getInitialUserInput(),
+  );
 
   // Save button state
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -85,7 +87,7 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
   const solverResult = (() => {
     if (validation.canValidate) {
       return AppMethodSolver.validateConsistency(
-        userInput as Required<AppMethodParams>
+        userInput as Required<AppMethodParams>,
       );
     } else if (validation.canSolve) {
       return AppMethodSolver.solve(userInput);
@@ -123,7 +125,7 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
 
   // Get feedback for specific field
   const getFieldFeedback = (
-    field: keyof AppMethodParams
+    field: keyof AppMethodParams,
   ): UIFeedback | undefined => {
     return solverResult?.feedback?.find((f) => f.field === field);
   };
@@ -219,7 +221,8 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
           <CardHeader>
             <CardTitle>{method.description}</CardTitle>
             <CardDescription>
-              {formatGroundSpeed()} • {formatPatternWidth()} • {formatFlowRate()}
+              {formatGroundSpeed()} • {formatPatternWidth()} •{" "}
+              {formatFlowRate()}
             </CardDescription>
           </CardHeader>
         </CardStackHeader>
@@ -243,7 +246,8 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                   <strong>Coverage:</strong> {formatCoverage()}
                 </p>
                 <p>
-                  <strong>Overlap:</strong> {method.overlap === 2 ? "Double" : "Single"}
+                  <strong>Overlap:</strong>{" "}
+                  {method.overlap === 2 ? "Double" : "Single"}
                 </p>
               </div>
 
@@ -265,8 +269,14 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
     <>
       <CardStackHeader>
         <CardHeader>
-          <CardTitle>{isEditMode ? `Edit ${method.description}` : "Create New Method"}</CardTitle>
-          <CardDescription>{isEditMode ? "Update application method" : "Add a new application method"}</CardDescription>
+          <CardTitle>
+            {isEditMode ? `Edit ${method.description}` : "Create New Method"}
+          </CardTitle>
+          <CardDescription>
+            {isEditMode
+              ? "Update application method"
+              : "Add a new application method"}
+          </CardDescription>
         </CardHeader>
       </CardStackHeader>
       <CardStackBody>
@@ -330,9 +340,11 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                         ...displayData.groundSpeed!,
                         distance: parseFloat(e.target.value) || 0,
                         distanceUnit:
-                          displayData.groundSpeed?.distanceUnit || distanceUnits[0],
+                          displayData.groundSpeed?.distanceUnit ||
+                          distanceUnits[0],
                         time: displayData.groundSpeed?.time || 0,
-                        timeUnit: displayData.groundSpeed?.timeUnit || timeUnits[0],
+                        timeUnit:
+                          displayData.groundSpeed?.timeUnit || timeUnits[0],
                       },
                     })
                   }
@@ -345,20 +357,46 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                       ? [displayData.groundSpeed.distanceUnit]
                       : []
                   }
-                  onValueChange={(values) =>
-                    setUserInput({
-                      ...userInput,
-                      groundSpeed: {
-                        distance: displayData.groundSpeed?.distance || 0,
-                        distanceUnit: values[0] as any,
-                        time: displayData.groundSpeed?.time || 0,
-                        timeUnit: displayData.groundSpeed?.timeUnit || timeUnits[0],
-                      },
-                    })
-                  }
+                  onValueChange={(values) => {
+                    if (isLocked("groundSpeed") && displayData.groundSpeed) {
+                      // Convert existing rate to new distance unit
+                      const converted = UnitUtils.convertDistanceRate({
+                        value: displayData.groundSpeed.distance,
+                        fromDistanceUnit: displayData.groundSpeed.distanceUnit,
+                        fromTime: displayData.groundSpeed.time,
+                        fromTimeUnit: displayData.groundSpeed.timeUnit,
+                        toDistanceUnit: displayData.groundSpeed.distanceUnit,
+                        toTime: displayData.groundSpeed.time,
+                        toTimeUnit: [0] as any,
+                      });
+                      setUserInput({
+                        ...userInput,
+                        groundSpeed: {
+                          distance: converted,
+                          distanceUnit: values[0] as any,
+                          time: displayData.groundSpeed.time,
+                          timeUnit: displayData.groundSpeed.timeUnit,
+                        },
+                      });
+                    } else {
+                      setUserInput({
+                        ...userInput,
+                        groundSpeed: {
+                          distance: displayData.groundSpeed?.distance || 0,
+                          distanceUnit: values[0] as any,
+                          time: displayData.groundSpeed?.time || 0,
+                          timeUnit:
+                            displayData.groundSpeed?.timeUnit || timeUnits[0],
+                        },
+                      });
+                    }
+                  }}
                 >
                   <MultiSelectTrigger>
-                    <MultiSelectValue placeholder="Distance Unit" className="capitalize" />
+                    <MultiSelectValue
+                      placeholder="Distance Unit"
+                      className="capitalize"
+                    />
                   </MultiSelectTrigger>
                   <MultiSelectContent>
                     {distanceUnits.map((unit) => (
@@ -378,9 +416,11 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                       groundSpeed: {
                         distance: displayData.groundSpeed?.distance || 0,
                         distanceUnit:
-                          displayData.groundSpeed?.distanceUnit || distanceUnits[0],
+                          displayData.groundSpeed?.distanceUnit ||
+                          distanceUnits[0],
                         time: parseFloat(e.target.value) || 0,
-                        timeUnit: displayData.groundSpeed?.timeUnit || timeUnits[0],
+                        timeUnit:
+                          displayData.groundSpeed?.timeUnit || timeUnits[0],
                       },
                     })
                   }
@@ -393,21 +433,47 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                       ? [displayData.groundSpeed.timeUnit]
                       : []
                   }
-                  onValueChange={(values) =>
-                    setUserInput({
-                      ...userInput,
-                      groundSpeed: {
-                        distance: displayData.groundSpeed?.distance || 0,
-                        distanceUnit:
-                          displayData.groundSpeed?.distanceUnit || distanceUnits[0],
-                        time: displayData.groundSpeed?.time || 0,
-                        timeUnit: values[0] as any,
-                      },
-                    })
-                  }
+                  onValueChange={(values) => {
+                    if (isLocked("groundSpeed") && displayData.groundSpeed) {
+                      // Convert existing rate to new time unit
+                      const converted = UnitUtils.convertDistanceRate({
+                        value: displayData.groundSpeed.distance,
+                        fromDistanceUnit: displayData.groundSpeed.distanceUnit,
+                        fromTime: displayData.groundSpeed.time,
+                        fromTimeUnit: displayData.groundSpeed.timeUnit,
+                        toDistanceUnit: displayData.groundSpeed.distanceUnit,
+                        toTime: displayData.groundSpeed.time,
+                        toTimeUnit: [0] as any,
+                      });
+                      setUserInput({
+                        ...userInput,
+                        groundSpeed: {
+                          distance: converted,
+                          distanceUnit: displayData.groundSpeed.distanceUnit,
+                          time: displayData.groundSpeed.time,
+                          timeUnit: values[0] as any,
+                        },
+                      });
+                    } else {
+                      setUserInput({
+                        ...userInput,
+                        groundSpeed: {
+                          distance: displayData.groundSpeed?.distance || 0,
+                          distanceUnit:
+                            displayData.groundSpeed?.distanceUnit ||
+                            distanceUnits[0],
+                          time: displayData.groundSpeed?.time || 0,
+                          timeUnit: values[0] as any,
+                        },
+                      });
+                    }
+                  }}
                 >
                   <MultiSelectTrigger>
-                    <MultiSelectValue placeholder="Time Unit" className="capitalize" />
+                    <MultiSelectValue
+                      placeholder="Time Unit"
+                      className="capitalize"
+                    />
                   </MultiSelectTrigger>
                   <MultiSelectContent>
                     {timeUnits.map((unit) => (
@@ -450,7 +516,8 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                       patternWidth: {
                         distance: parseFloat(e.target.value) || 0,
                         distanceUnit:
-                          displayData.patternWidth?.distanceUnit || distanceUnits[0],
+                          displayData.patternWidth?.distanceUnit ||
+                          distanceUnits[0],
                       },
                     })
                   }
@@ -463,18 +530,36 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                       ? [displayData.patternWidth.distanceUnit]
                       : []
                   }
-                  onValueChange={(values) =>
-                    setUserInput({
-                      ...userInput,
-                      patternWidth: {
-                        distance: displayData.patternWidth?.distance || 0,
-                        distanceUnit: values[0] as any,
-                      },
-                    })
-                  }
+                  onValueChange={(values) => {
+                    if (isLocked("patternWidth") && displayData.patternWidth) {
+                      // Convert simple distance to new unit
+                      const converted = UnitUtils.distance(
+                        displayData.patternWidth.distance,
+                        displayData.patternWidth.distanceUnit,
+                      ).to(values[0] as any);
+                      setUserInput({
+                        ...userInput,
+                        patternWidth: {
+                          distance: converted,
+                          distanceUnit: values[0] as any,
+                        },
+                      });
+                    } else {
+                      setUserInput({
+                        ...userInput,
+                        patternWidth: {
+                          distance: displayData.patternWidth?.distance || 0,
+                          distanceUnit: values[0] as any,
+                        },
+                      });
+                    }
+                  }}
                 >
                   <MultiSelectTrigger>
-                    <MultiSelectValue placeholder="Distance Unit" className="capitalize" />
+                    <MultiSelectValue
+                      placeholder="Distance Unit"
+                      className="capitalize"
+                    />
                   </MultiSelectTrigger>
                   <MultiSelectContent>
                     {distanceUnits.map((unit) => (
@@ -520,7 +605,8 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                         volumeUnit:
                           displayData.flowRate?.volumeUnit || volumeUnits[0],
                         time: displayData.flowRate?.time || 0,
-                        timeUnit: displayData.flowRate?.timeUnit || timeUnits[0],
+                        timeUnit:
+                          displayData.flowRate?.timeUnit || timeUnits[0],
                       },
                     })
                   }
@@ -533,20 +619,46 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                       ? [displayData.flowRate.volumeUnit]
                       : []
                   }
-                  onValueChange={(values) =>
-                    setUserInput({
-                      ...userInput,
-                      flowRate: {
-                        volume: displayData.flowRate?.volume || 0,
-                        volumeUnit: values[0] as any,
-                        time: displayData.flowRate?.time || 0,
-                        timeUnit: displayData.flowRate?.timeUnit || timeUnits[0],
-                      },
-                    })
-                  }
+                  onValueChange={(values) => {
+                    if (isLocked("flowRate") && displayData.flowRate) {
+                      // Convert existing rate to new volume unit
+                      const converted = UnitUtils.convertVolumeRate(
+                        displayData.flowRate.volume,
+                        displayData.flowRate.volumeUnit,
+                        displayData.flowRate.time,
+                        displayData.flowRate.timeUnit,
+                        values[0] as any,
+                        displayData.flowRate.time,
+                        displayData.flowRate.timeUnit,
+                      );
+                      setUserInput({
+                        ...userInput,
+                        flowRate: {
+                          volume: converted,
+                          volumeUnit: values[0] as any,
+                          time: displayData.flowRate.time,
+                          timeUnit: displayData.flowRate.timeUnit,
+                        },
+                      });
+                    } else {
+                      setUserInput({
+                        ...userInput,
+                        flowRate: {
+                          volume: displayData.flowRate?.volume || 0,
+                          volumeUnit: values[0] as any,
+                          time: displayData.flowRate?.time || 0,
+                          timeUnit:
+                            displayData.flowRate?.timeUnit || timeUnits[0],
+                        },
+                      });
+                    }
+                  }}
                 >
                   <MultiSelectTrigger>
-                    <MultiSelectValue placeholder="Volume Unit" className="capitalize" />
+                    <MultiSelectValue
+                      placeholder="Volume Unit"
+                      className="capitalize"
+                    />
                   </MultiSelectTrigger>
                   <MultiSelectContent>
                     {volumeUnits.map((unit) => (
@@ -568,7 +680,8 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                         volumeUnit:
                           displayData.flowRate?.volumeUnit || volumeUnits[0],
                         time: parseFloat(e.target.value) || 0,
-                        timeUnit: displayData.flowRate?.timeUnit || timeUnits[0],
+                        timeUnit:
+                          displayData.flowRate?.timeUnit || timeUnits[0],
                       },
                     })
                   }
@@ -577,23 +690,50 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                 <MultiSelect
                   mode="single"
                   value={
-                    displayData.flowRate?.timeUnit ? [displayData.flowRate.timeUnit] : []
+                    displayData.flowRate?.timeUnit
+                      ? [displayData.flowRate.timeUnit]
+                      : []
                   }
-                  onValueChange={(values) =>
-                    setUserInput({
-                      ...userInput,
-                      flowRate: {
-                        volume: displayData.flowRate?.volume || 0,
-                        volumeUnit:
-                          displayData.flowRate?.volumeUnit || volumeUnits[0],
-                        time: displayData.flowRate?.time || 0,
-                        timeUnit: values[0] as any,
-                      },
-                    })
-                  }
+                  onValueChange={(values) => {
+                    if (isLocked("flowRate") && displayData.flowRate) {
+                      // Convert existing rate to new time unit
+                      const converted = UnitUtils.convertVolumeRate(
+                        displayData.flowRate.volume,
+                        displayData.flowRate.volumeUnit,
+                        displayData.flowRate.time,
+                        displayData.flowRate.timeUnit,
+                        displayData.flowRate.volumeUnit,
+                        displayData.flowRate.time,
+                        values[0] as any,
+                      );
+                      setUserInput({
+                        ...userInput,
+                        flowRate: {
+                          volume: converted,
+                          volumeUnit: displayData.flowRate.volumeUnit,
+                          time: displayData.flowRate.time,
+                          timeUnit: values[0] as any,
+                        },
+                      });
+                    } else {
+                      setUserInput({
+                        ...userInput,
+                        flowRate: {
+                          volume: displayData.flowRate?.volume || 0,
+                          volumeUnit:
+                            displayData.flowRate?.volumeUnit || volumeUnits[0],
+                          time: displayData.flowRate?.time || 0,
+                          timeUnit: values[0] as any,
+                        },
+                      });
+                    }
+                  }}
                 >
                   <MultiSelectTrigger>
-                    <MultiSelectValue placeholder="Time Unit" className="capitalize" />
+                    <MultiSelectValue
+                      placeholder="Time Unit"
+                      className="capitalize"
+                    />
                   </MultiSelectTrigger>
                   <MultiSelectContent>
                     {timeUnits.map((unit) => (
@@ -635,9 +775,11 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                       ...userInput,
                       coverage: {
                         volume: parseFloat(e.target.value) || 0,
-                        volumeUnit: displayData.coverage?.volumeUnit || volumeUnits[0],
+                        volumeUnit:
+                          displayData.coverage?.volumeUnit || volumeUnits[0],
                         area: displayData.coverage?.area || 0,
-                        areaUnit: displayData.coverage?.areaUnit || areaUnits[0],
+                        areaUnit:
+                          displayData.coverage?.areaUnit || areaUnits[0],
                       },
                     })
                   }
@@ -650,20 +792,44 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                       ? [displayData.coverage.volumeUnit]
                       : []
                   }
-                  onValueChange={(values) =>
-                    setUserInput({
-                      ...userInput,
-                      coverage: {
-                        volume: displayData.coverage?.volume || 0,
-                        volumeUnit: values[0] as any,
-                        area: displayData.coverage?.area || 0,
-                        areaUnit: displayData.coverage?.areaUnit || areaUnits[0],
-                      },
-                    })
-                  }
+                  onValueChange={(values) => {
+                    if (isLocked("coverage") && displayData.coverage) {
+                      // Convert existing coverage to new volume unit
+                      const converted = UnitUtils.convertVolumePerArea(
+                        displayData.coverage.volume,
+                        displayData.coverage.volumeUnit,
+                        displayData.coverage.areaUnit,
+                        values[0] as any,
+                        displayData.coverage.areaUnit,
+                      );
+                      setUserInput({
+                        ...userInput,
+                        coverage: {
+                          volume: converted,
+                          volumeUnit: values[0] as any,
+                          area: displayData.coverage.area,
+                          areaUnit: displayData.coverage.areaUnit,
+                        },
+                      });
+                    } else {
+                      setUserInput({
+                        ...userInput,
+                        coverage: {
+                          volume: displayData.coverage?.volume || 0,
+                          volumeUnit: values[0] as any,
+                          area: displayData.coverage?.area || 0,
+                          areaUnit:
+                            displayData.coverage?.areaUnit || areaUnits[0],
+                        },
+                      });
+                    }
+                  }}
                 >
                   <MultiSelectTrigger>
-                    <MultiSelectValue placeholder="Volume Unit" className="capitalize" />
+                    <MultiSelectValue
+                      placeholder="Volume Unit"
+                      className="capitalize"
+                    />
                   </MultiSelectTrigger>
                   <MultiSelectContent>
                     {volumeUnits.map((unit) => (
@@ -682,9 +848,11 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                       ...userInput,
                       coverage: {
                         volume: displayData.coverage?.volume || 0,
-                        volumeUnit: displayData.coverage?.volumeUnit || volumeUnits[0],
+                        volumeUnit:
+                          displayData.coverage?.volumeUnit || volumeUnits[0],
                         area: parseFloat(e.target.value) || 0,
-                        areaUnit: displayData.coverage?.areaUnit || areaUnits[0],
+                        areaUnit:
+                          displayData.coverage?.areaUnit || areaUnits[0],
                       },
                     })
                   }
@@ -693,22 +861,48 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                 <MultiSelect
                   mode="single"
                   value={
-                    displayData.coverage?.areaUnit ? [displayData.coverage.areaUnit] : []
+                    displayData.coverage?.areaUnit
+                      ? [displayData.coverage.areaUnit]
+                      : []
                   }
-                  onValueChange={(values) =>
-                    setUserInput({
-                      ...userInput,
-                      coverage: {
-                        volume: displayData.coverage?.volume || 0,
-                        volumeUnit: displayData.coverage?.volumeUnit || volumeUnits[0],
-                        area: displayData.coverage?.area || 0,
-                        areaUnit: values[0] as any,
-                      },
-                    })
-                  }
+                  onValueChange={(values) => {
+                    if (isLocked("coverage") && displayData.coverage) {
+                      // Convert existing coverage to new area unit
+                      const converted = UnitUtils.convertVolumePerArea(
+                        displayData.coverage.volume,
+                        displayData.coverage.volumeUnit,
+                        displayData.coverage.areaUnit,
+                        displayData.coverage.volumeUnit,
+                        values[0] as any,
+                      );
+                      setUserInput({
+                        ...userInput,
+                        coverage: {
+                          volume: converted,
+                          volumeUnit: displayData.coverage.volumeUnit,
+                          area: displayData.coverage.area,
+                          areaUnit: values[0] as any,
+                        },
+                      });
+                    } else {
+                      setUserInput({
+                        ...userInput,
+                        coverage: {
+                          volume: displayData.coverage?.volume || 0,
+                          volumeUnit:
+                            displayData.coverage?.volumeUnit || volumeUnits[0],
+                          area: displayData.coverage?.area || 0,
+                          areaUnit: values[0] as any,
+                        },
+                      });
+                    }
+                  }}
                 >
                   <MultiSelectTrigger>
-                    <MultiSelectValue placeholder="Area Unit" className="capitalize" />
+                    <MultiSelectValue
+                      placeholder="Area Unit"
+                      className="capitalize"
+                    />
                   </MultiSelectTrigger>
                   <MultiSelectContent>
                     {areaUnits.map((unit) => (
@@ -738,7 +932,10 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
               <SaveButton
                 onClick={handleSave}
                 disabled={
-                  !solverResult?.success || idExists || !appMethodId || !description
+                  !solverResult?.success ||
+                  idExists ||
+                  !appMethodId ||
+                  !description
                 }
                 status={saveStatus}
                 onSuccessComplete={handleSuccessComplete}
@@ -765,7 +962,7 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                             f.severity === "error" && "text-destructive",
                             f.severity === "warning" && "text-yellow-500",
                             f.severity === "info" && "text-blue-500",
-                            f.severity === "success" && "text-green-500"
+                            f.severity === "success" && "text-green-500",
                           )}
                         >
                           {f.message}
@@ -802,7 +999,7 @@ function FieldInfoPopover({
               feedback?.severity === "warning" && "text-yellow-500",
               feedback?.severity === "info" && "text-blue-500",
               feedback?.severity === "success" && "text-green-500",
-              !feedback && "text-muted-foreground"
+              !feedback && "text-muted-foreground",
             )}
           />
         </button>
@@ -816,7 +1013,7 @@ function FieldInfoPopover({
                 feedback.severity === "error" && "text-destructive",
                 feedback.severity === "warning" && "text-yellow-500",
                 feedback.severity === "info" && "text-blue-500",
-                feedback.severity === "success" && "text-green-500"
+                feedback.severity === "success" && "text-green-500",
               )}
             >
               {feedback.message}
