@@ -5,6 +5,7 @@ import {
   LengthUnit,
   TimeUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { camelDisplay } from "@/lib/primatives/string/camelDisplay";
 
 /**
  * UI feedback for validation and solver results
@@ -128,10 +129,10 @@ export class AppMethodSolver {
     // Exactly one missing - can solve for it
     if (missing.length === 1) {
       const paramName = missing[0];
-      const displayName = paramName.replace(/([A-Z])/g, " $1").trim();
+      // const displayName = paramName.replace(/([A-Z])/g, " $1").trim();
       feedback.push({
         severity: "success",
-        message: `Ready to calculate ${displayName}`,
+        message: `Ready to calculate ${camelDisplay(paramName)}`,
         field: paramName,
       });
       return {

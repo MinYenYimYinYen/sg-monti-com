@@ -28,16 +28,16 @@ import {
 } from "./FieldComponents";
 import { use3Fields } from "./use3Fields";
 import { useFormFieldValues } from "./useFormFieldValues";
-import { createAppMethodSelect } from "./createAppMethodSelect";
+import { solverSelect } from "./selectors/solverSelect";
 import { useAppMethod } from "../useAppMethod";
-import { useSolver } from "@/app/realGreen/product/appMethod/appMethodCreate/useSolver";
+import { useSolution } from "@/app/realGreen/product/appMethod/appMethodCreate/useSolution";
 
 interface AppMethodCreateProps {
   method?: AppMethod;
 }
 
 export function AppMethodCreate({ method }: AppMethodCreateProps) {
-  useSolver();
+  useSolution();
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const { deselectCard } = useCardStack();
   const { upsertAppMethod } = useAppMethod({});
@@ -46,21 +46,23 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
     useFormFieldValues();
 
   // Select state from Redux
-  const appMethodId = useSelector(createAppMethodSelect.appMethodId);
-  const description = useSelector(createAppMethodSelect.description);
-  const selectedFields = useSelector(createAppMethodSelect.selectedFields);
-  const overlap = useSelector(createAppMethodSelect.overlap);
-  const solveForField = useSelector(createAppMethodSelect.solveForField);
-  const canSave = useSelector(createAppMethodSelect.canSave);
-  const solverResult = useSelector(createAppMethodSelect.solverResult);
+  const appMethodId = useSelector(solverSelect.appMethodId);
+  const description = useSelector(solverSelect.description);
+  const selectedFields = useSelector(solverSelect.selectedFields);
+  const canSave = useSelector(solverSelect.canSave);
+
+  const overlap = useSelector(solverSelect.overlap);
+  const solveForField = useSelector(solverSelect.solveForField);
+  const validation = useSelector(solverSelect.validation);
+  const solution = useSelector(solverSelect.solution);
 
   const handleSave = async () => {
-    if (!canSave || !solverResult?.success) return;
+    if (!canSave || !solution?.success) return;
     setSaveStatus("saving");
     await upsertAppMethod({
       appMethodId,
       description,
-      ...solverResult.result,
+      ...solution.result,
     });
     setSaveStatus("success");
   };
@@ -76,7 +78,8 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
     deselectCard();
   };
 
-
+  const { setSolutionLocked } = useSolution();
+  const solutionLocked = useSelector(solverSelect.solutionLocked);
 
   return (
     <>
@@ -131,18 +134,32 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
 
             {/* Show the solved field as disabled when 3 fields are selected */}
             {solveForField && (
-              <>
+              <div className={"bg-accent/20 p-2 rounded-md"}>
                 {solveForField === "groundSpeed" && (
-                  <GroundSpeedField disabled />
+                  <GroundSpeedField
+                    disabled={
+                      solveForField === "groundSpeed" && !solutionLocked
+                    }
+                  />
                 )}
                 {solveForField === "patternWidth" && (
-                  <PatternWidthField disabled />
+                  <PatternWidthField
+                    disabled={
+                      solveForField === "patternWidth" && !solutionLocked
+                    }
+                  />
                 )}
-                {solveForField === "flowRate" && <FlowRateField disabled />}
+                {solveForField === "flowRate" && (
+                  <FlowRateField
+                    disabled={solveForField === "flowRate" && !solutionLocked}
+                  />
+                )}
                 {solveForField === "coverage" && (
-                  <CoverageFieldComponent disabled />
+                  <CoverageFieldComponent
+                    disabled={solveForField === "coverage" && !solutionLocked}
+                  />
                 )}
-              </>
+              </div>
             )}
 
             {/* Overlap */}
@@ -155,7 +172,14 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
               <Label htmlFor="doubleOverlap-create">Double Overlap</Label>
             </div>
 
-            {/* Actions */}
+            {/*Process Actions*/}
+            <div className="flex gap-2 items-center">
+              <Button disabled={!solution}>
+                {solutionLocked ? "Unlock Solution" : "Lock Solution"}
+              </Button>
+            </div>
+
+            {/* Save Actions */}
             <div className="flex gap-2 items-center">
               <SaveButton
                 disabled={!canSave}

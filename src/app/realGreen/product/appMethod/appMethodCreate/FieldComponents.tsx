@@ -12,9 +12,9 @@ interface FieldComponentProps {
 
 export function GroundSpeedField({ disabled }: FieldComponentProps) {
   return (
-    <div className={disabled ? "opacity-50 pointer-events-none" : ""}>
+    <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
       <RateField
-        label="Ground Speed"
+        label="groundSpeed"
         helpText="Enter the distance and time it takes to travel that distance."
         valuePlaceholder="Distance"
         valueUnits={distanceUnits}
@@ -29,9 +29,9 @@ export function GroundSpeedField({ disabled }: FieldComponentProps) {
 
 export function PatternWidthField({ disabled }: FieldComponentProps) {
   return (
-    <div className={disabled ? "opacity-50 pointer-events-none" : ""}>
+    <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
       <DistanceField
-        label="Pattern Width"
+        label="patternWidth"
         helpText="Enter the width of the application pattern."
         distanceUnits={distanceUnits}
       />
@@ -41,9 +41,9 @@ export function PatternWidthField({ disabled }: FieldComponentProps) {
 
 export function FlowRateField({ disabled }: FieldComponentProps) {
   return (
-    <div className={disabled ? "opacity-50 pointer-events-none" : ""}>
+    <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
       <RateField
-        label="Flow Rate"
+        label="flowRate"
         helpText="Enter the volume of fluid and time it takes to dispense that volume."
         valuePlaceholder="Volume"
         valueUnits={volumeUnits}
@@ -58,7 +58,7 @@ export function FlowRateField({ disabled }: FieldComponentProps) {
 
 export function CoverageFieldComponent({ disabled }: FieldComponentProps) {
   return (
-    <div className={disabled ? "opacity-50 pointer-events-none" : ""}>
+    <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
       <CoverageField volumeUnits={volumeUnits} areaUnits={areaUnits} />
     </div>
   );

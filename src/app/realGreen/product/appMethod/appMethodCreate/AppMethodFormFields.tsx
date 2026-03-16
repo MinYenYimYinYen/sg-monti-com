@@ -13,23 +13,30 @@ import {
   PopoverContent,
 } from "@/style/components/popover";
 import { Info } from "lucide-react";
+import { useSelector } from "react-redux";
+import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
+import { FieldKey } from "@/app/realGreen/product/appMethod/appMethodCreate/FieldSelector";
+import { camelDisplay } from "@/lib/primatives/string/camelDisplay";
 
 interface FieldLabelProps {
-  label: string;
+  label: FieldKey;
   helpText: string;
 }
 
 export function FieldLabel({ label, helpText }: FieldLabelProps) {
+  const solveForField = useSelector(solverSelect.solveForField)
+  const validation = useSelector(solverSelect.validation)
+
   return (
     <div className="flex items-center gap-2">
-      <Label>{label}</Label>
+      <Label>{camelDisplay(label)}</Label>
       <Popover>
         <PopoverTrigger asChild>
           <button type="button" className="inline-flex">
             <Info className="h-4 w-4 text-muted-foreground" />
           </button>
         </PopoverTrigger>
-        <PopoverContent>
+        <PopoverContent className="z-[10000]">
           <div className="space-y-2 text-sm">
             <p className="text-muted-foreground">{helpText}</p>
           </div>
@@ -62,7 +69,7 @@ export function UnitSelect({ units, placeholder }: UnitSelectProps) {
 }
 
 interface RateFieldProps {
-  label: string;
+  label: FieldKey;
   helpText: string;
   valuePlaceholder: string;
   valueUnits: string[];
@@ -96,7 +103,7 @@ export function RateField({
 }
 
 interface DistanceFieldProps {
-  label: string;
+  label: FieldKey;
   helpText: string;
   distanceUnits: string[];
 }
@@ -127,7 +134,7 @@ export function CoverageField({ volumeUnits, areaUnits }: CoverageFieldProps) {
   return (
     <div className="space-y-1">
       <FieldLabel
-        label="Coverage"
+        label="coverage"
         helpText="Enter the volume of product applied per area of coverage."
       />
       <div className="grid grid-cols-4 gap-2">

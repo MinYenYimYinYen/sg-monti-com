@@ -41,9 +41,8 @@ interface CreateAppMethodState {
   // Overlap
   overlap: number;
 
-  // Solver state
-  validation: ValidationResult | null;
-  solverResult: SolverResult | null;
+  // Solution state
+  solutionLocked: boolean;
 }
 
 const initialState: CreateAppMethodState = {
@@ -76,9 +75,8 @@ const initialState: CreateAppMethodState = {
   // Overlap
   overlap: 2, // Double overlap by default
 
-  // Solver state
-  validation: null,
-  solverResult: null,
+  // Solution state
+  solutionLocked: false,
 };
 
 const createAppMethodSlice = createSlice({
@@ -104,7 +102,7 @@ const createAppMethodSlice = createSlice({
 
     setGroundSpeedDistanceUnit: (
       state,
-      action: PayloadAction<LengthUnit["desc"] | "">
+      action: PayloadAction<LengthUnit["desc"] | "">,
     ) => {
       state.groundSpeedDistanceUnit = action.payload;
     },
@@ -115,7 +113,7 @@ const createAppMethodSlice = createSlice({
 
     setGroundSpeedTimeUnit: (
       state,
-      action: PayloadAction<TimeUnit["desc"] | "">
+      action: PayloadAction<TimeUnit["desc"] | "">,
     ) => {
       state.groundSpeedTimeUnit = action.payload;
     },
@@ -127,7 +125,7 @@ const createAppMethodSlice = createSlice({
 
     setPatternWidthDistanceUnit: (
       state,
-      action: PayloadAction<LengthUnit["desc"] | "">
+      action: PayloadAction<LengthUnit["desc"] | "">,
     ) => {
       state.patternWidthDistanceUnit = action.payload;
     },
@@ -139,7 +137,7 @@ const createAppMethodSlice = createSlice({
 
     setFlowRateVolumeUnit: (
       state,
-      action: PayloadAction<VolumeUnit["desc"] | "">
+      action: PayloadAction<VolumeUnit["desc"] | "">,
     ) => {
       state.flowRateVolumeUnit = action.payload;
     },
@@ -150,7 +148,7 @@ const createAppMethodSlice = createSlice({
 
     setFlowRateTimeUnit: (
       state,
-      action: PayloadAction<TimeUnit["desc"] | "">
+      action: PayloadAction<TimeUnit["desc"] | "">,
     ) => {
       state.flowRateTimeUnit = action.payload;
     },
@@ -162,7 +160,7 @@ const createAppMethodSlice = createSlice({
 
     setCoverageVolumeUnit: (
       state,
-      action: PayloadAction<VolumeUnit["desc"] | "">
+      action: PayloadAction<VolumeUnit["desc"] | "">,
     ) => {
       state.coverageVolumeUnit = action.payload;
     },
@@ -173,7 +171,7 @@ const createAppMethodSlice = createSlice({
 
     setCoverageAreaUnit: (
       state,
-      action: PayloadAction<AreaUnit["desc"] | "">
+      action: PayloadAction<AreaUnit["desc"] | "">,
     ) => {
       state.coverageAreaUnit = action.payload;
     },
@@ -183,13 +181,9 @@ const createAppMethodSlice = createSlice({
       state.overlap = action.payload;
     },
 
-    // Solver actions
-    setValidation: (state, action: PayloadAction<ValidationResult | null>) => {
-      state.validation = action.payload;
-    },
-
-    setSolverResult: (state, action: PayloadAction<SolverResult | null>) => {
-      state.solverResult = action.payload;
+    // Solution actions
+    setSolutionLocked: (state, action: PayloadAction<boolean>) => {
+      state.solutionLocked = action.payload;
     },
 
     resetForm: (state) => {
@@ -211,8 +205,6 @@ const createAppMethodSlice = createSlice({
       state.coverageArea = "";
       state.coverageAreaUnit = "";
       state.overlap = 2;
-      state.validation = null;
-      state.solverResult = null;
     },
   },
 });
