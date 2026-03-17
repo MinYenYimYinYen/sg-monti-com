@@ -1,4 +1,4 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/index";
 import { createAppMethodActions } from "./createAppMethodSlice";
 import {
@@ -7,6 +7,9 @@ import {
   LengthUnit,
   TimeUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
+import { useEffect } from "react";
+import { fieldComponentsSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/fieldComponentsSelect";
 
 /**
  * Hook for updating form field values
@@ -14,6 +17,40 @@ import {
  */
 export function useFormFieldValues() {
   const dispatch = useDispatch<AppDispatch>();
+
+  const solution = useSelector(solverSelect.solution);
+  const solveForField = useSelector(solverSelect.solveForField);
+
+  const groundSpeedDistance = useSelector(
+    fieldComponentsSelect.groundSpeed.distance,
+  );
+  const coverageVolume = useSelector(fieldComponentsSelect.coverage.volume);
+  const flowRateVolume = useSelector(fieldComponentsSelect.flowRate.volume);
+  const patternWidthDistance = useSelector(
+    fieldComponentsSelect.patternWidth.distance,
+  );
+
+  useEffect(() => {
+    if (!solution?.success) return;
+    switch (solveForField) {
+      case "groundSpeed":
+        dispatch(
+          createAppMethodActions.setGroundSpeedDistance(groundSpeedDistance),
+        );
+        return;
+      case "coverage":
+        dispatch(createAppMethodActions.setCoverageVolume(coverageVolume));
+        return;
+      case "flowRate":
+        dispatch(createAppMethodActions.setFlowRateVolume(flowRateVolume));
+        return;
+      case "patternWidth":
+        dispatch(
+          createAppMethodActions.setPatternWidthDistance(patternWidthDistance),
+        );
+        return;
+    }
+  }, [solution, dispatch, solveForField]);
 
   return {
     // Metadata

@@ -17,7 +17,7 @@ export function AppMethodCRUD() {
 
   return (
     <div className="h-full w-full pt-2">
-      <CardStack>
+      <CardStack onSelectedChange={(id) => console.log("Selected:", id)}>
         <CardStackList>
           <CardStackCard id="create" variant="create" className={"w-[50%]"}>
             <AppMethodCreate />

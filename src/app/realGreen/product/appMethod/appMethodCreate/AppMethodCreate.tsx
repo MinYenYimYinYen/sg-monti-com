@@ -51,7 +51,6 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
 
   const overlap = useSelector(solverSelect.overlap);
   const solveForField = useSelector(solverSelect.solveForField);
-  const validation = useSelector(solverSelect.validation);
   const solution = useSelector(solverSelect.solution);
 
   const handleSave = async () => {
