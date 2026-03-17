@@ -5,10 +5,8 @@ import {
   PopoverContent,
 } from "@/style/components/popover";
 import { Info } from "lucide-react";
-import { useSelector } from "react-redux";
-import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
-import { FieldKey } from "@/app/realGreen/product/appMethod/appMethodCreate/FieldSelector";
 import { camelDisplay } from "@/lib/primatives/string/camelDisplay";
+import { FieldKey } from "@/app/realGreen/product/appMethod/appMethodCreate/createAppMethodSlice";
 
 interface FieldLabelProps {
   label: FieldKey;
@@ -16,8 +14,7 @@ interface FieldLabelProps {
 }
 
 export function FieldLabel({ label, helpText }: FieldLabelProps) {
-  const solveForField = useSelector(solverSelect.solveForField);
-  const validation = useSelector(solverSelect.validation);
+
 
   return (
     <div className="flex items-center gap-2">

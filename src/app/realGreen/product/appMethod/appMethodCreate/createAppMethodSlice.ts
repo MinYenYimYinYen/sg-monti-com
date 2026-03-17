@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { FieldKey } from "./FieldSelector";
 import {
   VolumeUnit,
   AreaUnit,
@@ -8,13 +7,16 @@ import {
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { ValidationResult, SolverResult } from "../AppMethodSolver";
 
+// Field types
+export type FieldKey = "groundSpeed" | "patternWidth" | "flowRate" | "coverage";
+
 interface CreateAppMethodState {
   // Metadata
   appMethodId: string;
   description: string;
 
-  // Field selection
-  selectedFields: FieldKey[];
+  // Solve for field (which field is unknown/calculated)
+  solveForField: FieldKey;
 
   // Ground Speed - individual properties
   groundSpeedDistance: number | "";
@@ -45,7 +47,7 @@ interface CreateAppMethodState {
 const initialState: CreateAppMethodState = {
   appMethodId: "",
   description: "",
-  selectedFields: [],
+  solveForField: "coverage", // Default: solve for coverage (most common)
 
   // Ground Speed
   groundSpeedDistance: "",
@@ -85,8 +87,8 @@ const createAppMethodSlice = createSlice({
       state.description = action.payload;
     },
 
-    setSelectedFields: (state, action: PayloadAction<FieldKey[]>) => {
-      state.selectedFields = action.payload;
+    setSolveForField: (state, action: PayloadAction<FieldKey>) => {
+      state.solveForField = action.payload;
     },
 
     // Ground Speed actions
@@ -178,7 +180,7 @@ const createAppMethodSlice = createSlice({
     resetForm: (state) => {
       state.appMethodId = "";
       state.description = "";
-      state.selectedFields = [];
+      state.solveForField = "coverage"; // Reset to default
       state.groundSpeedDistance = "";
       state.groundSpeedDistanceUnit = "";
       state.groundSpeedTime = "";

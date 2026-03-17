@@ -1,7 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
 import { AppMethodParams, AppMethodSolver } from "../../AppMethodSolver";
-import { FieldKey } from "../FieldSelector";
+import { FieldKey } from "../createAppMethodSlice";
 
 const selectOverlap = (state: AppState) => state.createAppMethod.overlap;
 
@@ -10,9 +10,8 @@ const selectAppMethodId = (state: AppState) =>
 const selectDescription = (state: AppState) =>
   state.createAppMethod.description;
 
-
-const selectSelectedFields = (state: AppState) =>
-  state.createAppMethod.selectedFields;
+const selectSolveForField = (state: AppState) =>
+  state.createAppMethod.solveForField;
 // Individual field property selectors for selectParams dependencies
 const selectGroundSpeedDistance = (state: AppState) =>
   state.createAppMethod.groundSpeedDistance;
@@ -147,26 +146,6 @@ const selectParams = createSelector(
   },
 );
 
-/**
- * Which field will be solved for (the one not selected)
- */
-const selectSolveForField = createSelector(
-  [selectSelectedFields],
-  (selectedFields): FieldKey | null => {
-    if (selectedFields.length !== 3) return null;
-
-    const allFields: FieldKey[] = [
-      "groundSpeed",
-      "patternWidth",
-      "flowRate",
-      "coverage",
-    ];
-
-    return allFields.find((field) => !selectedFields.includes(field)) ?? null;
-  },
-);
-
-
 const selectValidation = createSelector([selectParams], (params) =>
   AppMethodSolver.validate(params),
 );
@@ -175,7 +154,6 @@ const selectSolution = createSelector(
   [selectParams, selectSolveForField],
   (params, solveForField) => {
     console.log("selectSolution", params, solveForField);
-    if (!solveForField) return null;
     const solution =  AppMethodSolver.solve(params);
     console.log("solution", solution);
     return solution;
@@ -200,5 +178,4 @@ export const solverSelect = {
   appMethodId: selectAppMethodId,
   description: selectDescription,
   canSave: selectCanSave,
-  selectedFields: selectSelectedFields,
 };

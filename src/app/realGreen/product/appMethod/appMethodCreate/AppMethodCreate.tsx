@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useSelector } from "react-redux";
+import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import {
   CardHeader,
   CardTitle,
@@ -18,40 +18,54 @@ import {
   CardStackBody,
   useCardStack,
 } from "@/components/CardStack";
+import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import { AppMethod } from "../AppMethodTypes";
-import { FieldSelector } from "./FieldSelector";
 import {
   GroundSpeedField,
   PatternWidthField,
   FlowRateField,
   CoverageField,
 } from "./fields";
-import { use3Fields } from "./use3Fields";
 import { useFormFieldValues } from "./useFormFieldValues";
 import { solverSelect } from "./selectors/solverSelect";
 import { useAppMethod } from "../useAppMethod";
+import { loadSavedAppMethod } from "./loadSavedAppMethod";
+import { createAppMethodActions, FieldKey } from "./createAppMethodSlice";
+import { AppDispatch } from "@/store";
+// import { FieldKey } from "@/app/realGreen/product/appMethod/appMethodCreate/FieldSelector";
+// import { FieldKey } from "./createAppMethodSlice";
 
 interface AppMethodCreateProps {
   method?: AppMethod;
 }
 
 export function AppMethodCreate({ method }: AppMethodCreateProps) {
+  const dispatch = useDispatch<AppDispatch>();
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const { deselectCard } = useCardStack();
+  const { deselectCard} = useCardStack();
   const { upsertAppMethod } = useAppMethod({});
-  const { selectFields } = use3Fields();
   const { setAppMethodId, setDescription, setOverlap, resetForm } =
     useFormFieldValues();
+
+  // Load saved method into Redux on mount (if editing)
+  useEffect(() => {
+    if (method) {
+      loadSavedAppMethod(method, dispatch);
+    }
+  }, [method, dispatch]);
 
   // Select state from Redux
   const appMethodId = useSelector(solverSelect.appMethodId);
   const description = useSelector(solverSelect.description);
-  const selectedFields = useSelector(solverSelect.selectedFields);
   const canSave = useSelector(solverSelect.canSave);
 
   const overlap = useSelector(solverSelect.overlap);
   const solveForField = useSelector(solverSelect.solveForField);
   const solution = useSelector(solverSelect.solution);
+
+  const handleSolveForChange = (value: string) => {
+    dispatch(createAppMethodActions.setSolveForField(value as FieldKey));
+  };
 
   const handleSave = async () => {
     if (!canSave || !solution?.success) return;
@@ -106,33 +120,26 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
               />
             </div>
 
-            {/* Field Selector */}
-            <FieldSelector
-              selectedFields={selectedFields}
-              onSelectionChange={selectFields}
-            />
+            {/* Solve For Selector */}
+            <div className="space-y-2">
+              <Label>Solve For (Unknown Field)</Label>
+              <RadioGroup
+                variant="button-group"
+                value={solveForField}
+                onValueChange={handleSolveForChange}
+              >
+                <RadioGroupItem value="groundSpeed">Ground Speed</RadioGroupItem>
+                <RadioGroupItem value="patternWidth">Pattern Width</RadioGroupItem>
+                <RadioGroupItem value="flowRate">Flow Rate</RadioGroupItem>
+                <RadioGroupItem value="coverage">Coverage</RadioGroupItem>
+              </RadioGroup>
+            </div>
 
-            {/* Conditionally render fields based on selection */}
-            {selectedFields.length > 0 && (
-              <>
-                {selectedFields.includes("groundSpeed") && <GroundSpeedField />}
-                {selectedFields.includes("patternWidth") && (
-                  <PatternWidthField />
-                )}
-                {selectedFields.includes("flowRate") && <FlowRateField />}
-                {selectedFields.includes("coverage") && <CoverageField />}
-              </>
-            )}
-
-            {/* Show the solved field as disabled when 3 fields are selected */}
-            {solveForField && (
-              <div className={"bg-accent/20 p-2 rounded-md"}>
-                {solveForField === "groundSpeed" && <GroundSpeedField />}
-                {solveForField === "patternWidth" && <PatternWidthField />}
-                {solveForField === "flowRate" && <FlowRateField />}
-                {solveForField === "coverage" && <CoverageField />}
-              </div>
-            )}
+            {/* Always render all 4 fields */}
+            <GroundSpeedField />
+            <PatternWidthField />
+            <FlowRateField />
+            <CoverageField />
 
             {/* Overlap */}
             <div className="flex items-center space-x-2">
