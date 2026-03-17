@@ -27,9 +27,10 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
   const coverageArea = useSelector(fieldComponentsSelect.coverage.area);
   const coverageAreaUnit = useSelector(fieldComponentsSelect.coverage.areaUnit);
 
-  // Check if this field is being solved for
-  const solveForField = useSelector(solverSelect.solveForField);
-  const isBeingSolved = solveForField === "coverage";
+  // Check which specific field is being solved for
+  const missingField = useSelector(solverSelect.missingField);
+  const isVolumeBeingSolved = missingField?.param === "coverage" && missingField?.field === "volume";
+  const isAreaBeingSolved = missingField?.param === "coverage" && missingField?.field === "area";
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
@@ -46,7 +47,7 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
             onChange={(e) =>
               setCoverageVolume(e.target.value === "" ? "" : Number(e.target.value))
             }
-            disabled={isBeingSolved}
+            disabled={isVolumeBeingSolved}
           />
           <UnitSelect
             units={volumeUnits}
@@ -61,6 +62,7 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
             onChange={(e) =>
               setCoverageArea(e.target.value === "" ? "" : Number(e.target.value))
             }
+            disabled={isAreaBeingSolved}
           />
           <UnitSelect
             units={areaUnits}

@@ -19,38 +19,51 @@ export function useFormFieldValues() {
   const dispatch = useDispatch<AppDispatch>();
 
   const solution = useSelector(solverSelect.solution);
-  const solveForField = useSelector(solverSelect.solveForField);
+  const missingField = useSelector(solverSelect.missingField);
 
   const groundSpeedDistance = useSelector(
     fieldComponentsSelect.groundSpeed.distance,
   );
+  const groundSpeedTime = useSelector(
+    fieldComponentsSelect.groundSpeed.time,
+  );
   const coverageVolume = useSelector(fieldComponentsSelect.coverage.volume);
+  const coverageArea = useSelector(fieldComponentsSelect.coverage.area);
   const flowRateVolume = useSelector(fieldComponentsSelect.flowRate.volume);
+  const flowRateTime = useSelector(fieldComponentsSelect.flowRate.time);
   const patternWidthDistance = useSelector(
     fieldComponentsSelect.patternWidth.distance,
   );
 
   useEffect(() => {
-    if (!solution?.success) return;
-    switch (solveForField) {
-      case "groundSpeed":
-        dispatch(
-          createAppMethodActions.setGroundSpeedDistance(groundSpeedDistance),
-        );
+    if (!solution?.success || !missingField) return;
+
+    const key = `${missingField.param}.${missingField.field}`;
+
+    switch (key) {
+      case "groundSpeed.distance":
+        dispatch(createAppMethodActions.setGroundSpeedDistance(groundSpeedDistance));
         return;
-      case "coverage":
+      case "groundSpeed.time":
+        dispatch(createAppMethodActions.setGroundSpeedTime(groundSpeedTime));
+        return;
+      case "coverage.volume":
         dispatch(createAppMethodActions.setCoverageVolume(coverageVolume));
         return;
-      case "flowRate":
+      case "coverage.area":
+        dispatch(createAppMethodActions.setCoverageArea(coverageArea));
+        return;
+      case "flowRate.volume":
         dispatch(createAppMethodActions.setFlowRateVolume(flowRateVolume));
         return;
-      case "patternWidth":
-        dispatch(
-          createAppMethodActions.setPatternWidthDistance(patternWidthDistance),
-        );
+      case "flowRate.time":
+        dispatch(createAppMethodActions.setFlowRateTime(flowRateTime));
+        return;
+      case "patternWidth.distance":
+        dispatch(createAppMethodActions.setPatternWidthDistance(patternWidthDistance));
         return;
     }
-  }, [solution, dispatch, solveForField]);
+  }, [solution, dispatch, missingField, groundSpeedDistance, groundSpeedTime, coverageVolume, coverageArea, flowRateVolume, flowRateTime, patternWidthDistance]);
 
   return {
     // Metadata

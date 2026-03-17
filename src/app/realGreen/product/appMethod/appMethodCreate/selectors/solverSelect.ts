@@ -1,6 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
-import { AppMethodParams, AppMethodSolver } from "../../AppMethodSolver";
+import { AppMethodParams, AppMethodSolver, MissingField } from "../../AppMethodSolver";
 import { FieldKey } from "../createAppMethodSlice";
 
 const selectOverlap = (state: AppState) => state.createAppMethod.overlap;
@@ -9,9 +9,6 @@ const selectAppMethodId = (state: AppState) =>
   state.createAppMethod.appMethodId;
 const selectDescription = (state: AppState) =>
   state.createAppMethod.description;
-
-const selectSolveForField = (state: AppState) =>
-  state.createAppMethod.solveForField;
 // Individual field property selectors for selectParams dependencies
 const selectGroundSpeedDistance = (state: AppState) =>
   state.createAppMethod.groundSpeedDistance;
@@ -89,55 +86,40 @@ const selectParams = createSelector(
       overlap,
     };
 
-    // Ground Speed
-    if (
-      groundSpeedDistance !== "" &&
-      groundSpeedDistanceUnit !== "" &&
-      groundSpeedTime !== "" &&
-      groundSpeedTimeUnit !== ""
-    ) {
+    // Ground Speed - include param if at least units are provided
+    if (groundSpeedDistanceUnit !== "" || groundSpeedTimeUnit !== "") {
       params.groundSpeed = {
-        distance: groundSpeedDistance as number,
+        distance: groundSpeedDistance === "" ? (undefined as any) : (groundSpeedDistance as number),
         distanceUnit: groundSpeedDistanceUnit,
-        time: groundSpeedTime as number,
+        time: groundSpeedTime === "" ? (undefined as any) : (groundSpeedTime as number),
         timeUnit: groundSpeedTimeUnit,
       };
     }
 
-    // Pattern Width
-    if (patternWidthDistance !== "" && patternWidthDistanceUnit !== "") {
+    // Pattern Width - include param if at least unit is provided
+    if (patternWidthDistanceUnit !== "") {
       params.patternWidth = {
-        distance: patternWidthDistance as number,
+        distance: patternWidthDistance === "" ? (undefined as any) : (patternWidthDistance as number),
         distanceUnit: patternWidthDistanceUnit,
       };
     }
 
-    // Flow Rate
-    if (
-      flowRateVolume !== "" &&
-      flowRateVolumeUnit !== "" &&
-      flowRateTime !== "" &&
-      flowRateTimeUnit !== ""
-    ) {
+    // Flow Rate - include param if at least units are provided
+    if (flowRateVolumeUnit !== "" || flowRateTimeUnit !== "") {
       params.flowRate = {
-        volume: flowRateVolume as number,
+        volume: flowRateVolume === "" ? (undefined as any) : (flowRateVolume as number),
         volumeUnit: flowRateVolumeUnit,
-        time: flowRateTime as number,
+        time: flowRateTime === "" ? (undefined as any) : (flowRateTime as number),
         timeUnit: flowRateTimeUnit,
       };
     }
 
-    // Coverage
-    if (
-      coverageVolume !== "" &&
-      coverageVolumeUnit !== "" &&
-      coverageArea !== "" &&
-      coverageAreaUnit !== ""
-    ) {
+    // Coverage - include param if at least units are provided
+    if (coverageVolumeUnit !== "" || coverageAreaUnit !== "") {
       params.coverage = {
-        volume: coverageVolume as number,
+        volume: coverageVolume === "" ? (undefined as any) : (coverageVolume as number),
         volumeUnit: coverageVolumeUnit,
-        area: coverageArea as number,
+        area: coverageArea === "" ? (undefined as any) : (coverageArea as number),
         areaUnit: coverageAreaUnit,
       };
     }
@@ -150,10 +132,20 @@ const selectValidation = createSelector([selectParams], (params) =>
   AppMethodSolver.validate(params),
 );
 
+/**
+ * Auto-detect which field is missing (if solvable)
+ */
+const selectMissingField = createSelector(
+  [selectValidation],
+  (validation): MissingField | null => {
+    return validation.readyToSolveFor || null;
+  },
+);
+
 const selectSolution = createSelector(
-  [selectParams, selectSolveForField],
-  (params, solveForField) => {
-    console.log("selectSolution", params, solveForField);
+  [selectParams],
+  (params) => {
+    console.log("selectSolution", params);
     const solution =  AppMethodSolver.solve(params);
     console.log("solution", solution);
     return solution;
@@ -172,7 +164,7 @@ const selectCanSave = createSelector(
 export const solverSelect = {
   params: selectParams,
   overlap: selectOverlap,
-  solveForField: selectSolveForField,
+  missingField: selectMissingField,
   validation: selectValidation,
   solution: selectSolution,
   appMethodId: selectAppMethodId,

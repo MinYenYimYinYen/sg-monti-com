@@ -57,15 +57,15 @@ export const selectCoverageAreaUnit = (state: AppState) =>
 const selectGroundSpeedDistanceWithSolution = createSelector(
   [
     selectGroundSpeedDistance,
-    solverSelect.solveForField,
+    solverSelect.missingField,
     solverSelect.solution,
     selectGroundSpeedDistanceUnit,
     selectGroundSpeedTime,
     selectGroundSpeedTimeUnit
   ],
-  (stateValue, solveForField, solution, distanceUnit, time, timeUnit) => {
-    // If not solving for groundSpeed, return Redux state
-    if (solveForField !== "groundSpeed") {
+  (stateValue, missingField, solution, distanceUnit, time, timeUnit) => {
+    // If not solving for groundSpeed.distance, return Redux state
+    if (missingField?.param !== "groundSpeed" || missingField?.field !== "distance") {
       return stateValue;
     }
 
@@ -94,10 +94,10 @@ const selectGroundSpeedDistanceWithSolution = createSelector(
 );
 
 const selectGroundSpeedDistanceUnitWithSolution = createSelector(
-  [selectGroundSpeedDistanceUnit, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
+  [selectGroundSpeedDistanceUnit, solverSelect.missingField, solverSelect.solution],
+  (stateValue, missingField, solution) => {
     // If being solved and user hasn't set unit, provide default from solution
-    if (solveForField === "groundSpeed" && solution?.success && !stateValue) {
+    if (missingField?.param === "groundSpeed" && missingField?.field === "distance" && solution?.success && !stateValue) {
       return solution.result.groundSpeed.distanceUnit;
     }
     return stateValue;
@@ -105,10 +105,10 @@ const selectGroundSpeedDistanceUnitWithSolution = createSelector(
 );
 
 const selectGroundSpeedTimeWithSolution = createSelector(
-  [selectGroundSpeedTime, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
-    // If being solved and user hasn't set time, provide default from solution
-    if (solveForField === "groundSpeed" && solution?.success && !stateValue) {
+  [selectGroundSpeedTime, solverSelect.missingField, solverSelect.solution],
+  (stateValue, missingField, solution) => {
+    // If solving for groundSpeed.time, show solution
+    if (missingField?.param === "groundSpeed" && missingField?.field === "time" && solution?.success) {
       return solution.result.groundSpeed.time;
     }
     return stateValue;
@@ -116,10 +116,10 @@ const selectGroundSpeedTimeWithSolution = createSelector(
 );
 
 const selectGroundSpeedTimeUnitWithSolution = createSelector(
-  [selectGroundSpeedTimeUnit, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
+  [selectGroundSpeedTimeUnit, solverSelect.missingField, solverSelect.solution],
+  (stateValue, missingField, solution) => {
     // If being solved and user hasn't set unit, provide default from solution
-    if (solveForField === "groundSpeed" && solution?.success && !stateValue) {
+    if (missingField?.param === "groundSpeed" && missingField?.field === "time" && solution?.success && !stateValue) {
       return solution.result.groundSpeed.timeUnit;
     }
     return stateValue;
@@ -130,13 +130,13 @@ const selectGroundSpeedTimeUnitWithSolution = createSelector(
 const selectPatternWidthDistanceWithSolution = createSelector(
   [
     selectPatternWidthDistance,
-    solverSelect.solveForField,
+    solverSelect.missingField,
     solverSelect.solution,
     selectPatternWidthDistanceUnit
   ],
-  (stateValue, solveForField, solution, distanceUnit) => {
-    // If not solving for patternWidth, return Redux state
-    if (solveForField !== "patternWidth") {
+  (stateValue, missingField, solution, distanceUnit) => {
+    // If not solving for patternWidth.distance, return Redux state
+    if (missingField?.param !== "patternWidth" || missingField?.field !== "distance") {
       return stateValue;
     }
 
@@ -159,10 +159,10 @@ const selectPatternWidthDistanceWithSolution = createSelector(
 );
 
 const selectPatternWidthDistanceUnitWithSolution = createSelector(
-  [selectPatternWidthDistanceUnit, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
+  [selectPatternWidthDistanceUnit, solverSelect.missingField, solverSelect.solution],
+  (stateValue, missingField, solution) => {
     // If being solved and user hasn't set unit, provide default from solution
-    if (solveForField === "patternWidth" && solution?.success && !stateValue) {
+    if (missingField?.param === "patternWidth" && missingField?.field === "distance" && solution?.success && !stateValue) {
       return solution.result.patternWidth.distanceUnit;
     }
     return stateValue;
@@ -173,15 +173,15 @@ const selectPatternWidthDistanceUnitWithSolution = createSelector(
 const selectFlowRateVolumeWithSolution = createSelector(
   [
     selectFlowRateVolume,
-    solverSelect.solveForField,
+    solverSelect.missingField,
     solverSelect.solution,
     selectFlowRateVolumeUnit,
     selectFlowRateTime,
     selectFlowRateTimeUnit
   ],
-  (stateValue, solveForField, solution, volumeUnit, time, timeUnit) => {
-    // If not solving for flowRate, return Redux state
-    if (solveForField !== "flowRate") {
+  (stateValue, missingField, solution, volumeUnit, time, timeUnit) => {
+    // If not solving for flowRate.volume, return Redux state
+    if (missingField?.param !== "flowRate" || missingField?.field !== "volume") {
       return stateValue;
     }
 
@@ -210,10 +210,10 @@ const selectFlowRateVolumeWithSolution = createSelector(
 );
 
 const selectFlowRateVolumeUnitWithSolution = createSelector(
-  [selectFlowRateVolumeUnit, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
+  [selectFlowRateVolumeUnit, solverSelect.missingField, solverSelect.solution],
+  (stateValue, missingField, solution) => {
     // If being solved and user hasn't set unit, provide default from solution
-    if (solveForField === "flowRate" && solution?.success && !stateValue) {
+    if (missingField?.param === "flowRate" && missingField?.field === "volume" && solution?.success && !stateValue) {
       return solution.result.flowRate.volumeUnit;
     }
     return stateValue;
@@ -221,10 +221,10 @@ const selectFlowRateVolumeUnitWithSolution = createSelector(
 );
 
 const selectFlowRateTimeWithSolution = createSelector(
-  [selectFlowRateTime, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
-    // If being solved and user hasn't set time, provide default from solution
-    if (solveForField === "flowRate" && solution?.success && !stateValue) {
+  [selectFlowRateTime, solverSelect.missingField, solverSelect.solution],
+  (stateValue, missingField, solution) => {
+    // If solving for flowRate.time, show solution
+    if (missingField?.param === "flowRate" && missingField?.field === "time" && solution?.success) {
       return solution.result.flowRate.time;
     }
     return stateValue;
@@ -232,10 +232,10 @@ const selectFlowRateTimeWithSolution = createSelector(
 );
 
 const selectFlowRateTimeUnitWithSolution = createSelector(
-  [selectFlowRateTimeUnit, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
+  [selectFlowRateTimeUnit, solverSelect.missingField, solverSelect.solution],
+  (stateValue, missingField, solution) => {
     // If being solved and user hasn't set unit, provide default from solution
-    if (solveForField === "flowRate" && solution?.success && !stateValue) {
+    if (missingField?.param === "flowRate" && missingField?.field === "time" && solution?.success && !stateValue) {
       return solution.result.flowRate.timeUnit;
     }
     return stateValue;
@@ -246,15 +246,15 @@ const selectFlowRateTimeUnitWithSolution = createSelector(
 const selectCoverageVolumeWithSolution = createSelector(
   [
     selectCoverageVolume,
-    solverSelect.solveForField,
+    solverSelect.missingField,
     solverSelect.solution,
     selectCoverageVolumeUnit,
     selectCoverageArea,
     selectCoverageAreaUnit
   ],
-  (stateValue, solveForField, solution, volumeUnit, area, areaUnit) => {
-    // If not solving for coverage, return Redux state
-    if (solveForField !== "coverage") {
+  (stateValue, missingField, solution, volumeUnit, area, areaUnit) => {
+    // If not solving for coverage.volume, return Redux state
+    if (missingField?.param !== "coverage" || missingField?.field !== "volume") {
       return stateValue;
     }
 
@@ -283,10 +283,10 @@ const selectCoverageVolumeWithSolution = createSelector(
 );
 
 const selectCoverageVolumeUnitWithSolution = createSelector(
-  [selectCoverageVolumeUnit, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
+  [selectCoverageVolumeUnit, solverSelect.missingField, solverSelect.solution],
+  (stateValue, missingField, solution) => {
     // If being solved and user hasn't set unit, provide default from solution
-    if (solveForField === "coverage" && solution?.success && !stateValue) {
+    if (missingField?.param === "coverage" && missingField?.field === "volume" && solution?.success && !stateValue) {
       return solution.result.coverage.volumeUnit;
     }
     return stateValue;
@@ -294,10 +294,10 @@ const selectCoverageVolumeUnitWithSolution = createSelector(
 );
 
 const selectCoverageAreaWithSolution = createSelector(
-  [selectCoverageArea, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
-    // If being solved and user hasn't set area, provide default from solution
-    if (solveForField === "coverage" && solution?.success && !stateValue) {
+  [selectCoverageArea, solverSelect.missingField, solverSelect.solution],
+  (stateValue, missingField, solution) => {
+    // If solving for coverage.area, show solution
+    if (missingField?.param === "coverage" && missingField?.field === "area" && solution?.success) {
       return solution.result.coverage.area;
     }
     return stateValue;
@@ -305,10 +305,10 @@ const selectCoverageAreaWithSolution = createSelector(
 );
 
 const selectCoverageAreaUnitWithSolution = createSelector(
-  [selectCoverageAreaUnit, solverSelect.solveForField, solverSelect.solution],
-  (stateValue, solveForField, solution) => {
+  [selectCoverageAreaUnit, solverSelect.missingField, solverSelect.solution],
+  (stateValue, missingField, solution) => {
     // If being solved and user hasn't set unit, provide default from solution
-    if (solveForField === "coverage" && solution?.success && !stateValue) {
+    if (missingField?.param === "coverage" && missingField?.field === "area" && solution?.success && !stateValue) {
       return solution.result.coverage.areaUnit;
     }
     return stateValue;

@@ -37,7 +37,4 @@ export function loadSavedAppMethod(method: AppMethod, dispatch: AppDispatch) {
 
   // Overlap
   dispatch(createAppMethodActions.setOverlap(method.overlap));
-
-  // Default to solving for coverage (most common use case)
-  dispatch(createAppMethodActions.setSolveForField("coverage"));
 }

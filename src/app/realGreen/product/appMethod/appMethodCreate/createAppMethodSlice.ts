@@ -15,9 +15,6 @@ interface CreateAppMethodState {
   appMethodId: string;
   description: string;
 
-  // Solve for field (which field is unknown/calculated)
-  solveForField: FieldKey;
-
   // Ground Speed - individual properties
   groundSpeedDistance: number | "";
   groundSpeedDistanceUnit: LengthUnit["desc"] | "";
@@ -47,7 +44,6 @@ interface CreateAppMethodState {
 const initialState: CreateAppMethodState = {
   appMethodId: "",
   description: "",
-  solveForField: "coverage", // Default: solve for coverage (most common)
 
   // Ground Speed
   groundSpeedDistance: "",
@@ -85,10 +81,6 @@ const createAppMethodSlice = createSlice({
 
     setDescription: (state, action: PayloadAction<string>) => {
       state.description = action.payload;
-    },
-
-    setSolveForField: (state, action: PayloadAction<FieldKey>) => {
-      state.solveForField = action.payload;
     },
 
     // Ground Speed actions
@@ -180,7 +172,6 @@ const createAppMethodSlice = createSlice({
     resetForm: (state) => {
       state.appMethodId = "";
       state.description = "";
-      state.solveForField = "coverage"; // Reset to default
       state.groundSpeedDistance = "";
       state.groundSpeedDistanceUnit = "";
       state.groundSpeedTime = "";

@@ -20,8 +20,8 @@ export function PatternWidthField({ disabled }: PatternWidthFieldProps) {
   const patternWidthUnit = useSelector(fieldComponentsSelect.patternWidth.distanceUnit);
 
   // Check if this field is being solved for
-  const solveForField = useSelector(solverSelect.solveForField);
-  const isBeingSolved = solveForField === "patternWidth";
+  const missingField = useSelector(solverSelect.missingField);
+  const isDistanceBeingSolved = missingField?.param === "patternWidth" && missingField?.field === "distance";
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
@@ -38,7 +38,7 @@ export function PatternWidthField({ disabled }: PatternWidthFieldProps) {
             onChange={(e) =>
               setPatternWidthDistance(e.target.value === "" ? "" : Number(e.target.value))
             }
-            disabled={isBeingSolved}
+            disabled={isDistanceBeingSolved}
           />
           <UnitSelect
             units={distanceUnits}

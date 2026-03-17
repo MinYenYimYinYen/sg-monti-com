@@ -15,7 +15,6 @@ import {
   CardStackBody,
   useCardStack,
 } from "@/components/CardStack";
-import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import { AppMethod } from "../AppMethodTypes";
 import {
   GroundSpeedField,
@@ -27,7 +26,6 @@ import { useFormFieldValues } from "./useFormFieldValues";
 import { solverSelect } from "./selectors/solverSelect";
 import { useAppMethod } from "../useAppMethod";
 import { loadSavedAppMethod } from "./loadSavedAppMethod";
-import { createAppMethodActions, FieldKey } from "./createAppMethodSlice";
 import { AppDispatch } from "@/store";
 
 interface AppMethodCreateProps {
@@ -55,12 +53,7 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
   const canSave = useSelector(solverSelect.canSave);
 
   const overlap = useSelector(solverSelect.overlap);
-  const solveForField = useSelector(solverSelect.solveForField);
   const solution = useSelector(solverSelect.solution);
-
-  const handleSolveForChange = (value: string) => {
-    dispatch(createAppMethodActions.setSolveForField(value as FieldKey));
-  };
 
   const handleSave = async () => {
     if (!canSave || !solution?.success) return;
@@ -108,22 +101,7 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
             />
           </div>
 
-          {/* Solve For Selector */}
-          <div className="space-y-2">
-            <Label>Solve For (Unknown Field)</Label>
-            <RadioGroup
-              variant="button-group"
-              value={solveForField}
-              onValueChange={handleSolveForChange}
-            >
-              <RadioGroupItem value="groundSpeed">Ground Speed</RadioGroupItem>
-              <RadioGroupItem value="patternWidth">Pattern Width</RadioGroupItem>
-              <RadioGroupItem value="flowRate">Flow Rate</RadioGroupItem>
-              <RadioGroupItem value="coverage">Coverage</RadioGroupItem>
-            </RadioGroup>
-          </div>
-
-          {/* Always render all 4 fields */}
+          {/* Always render all 4 fields - the solver will auto-detect which field to solve for */}
           <GroundSpeedField />
           <PatternWidthField />
           <FlowRateField />

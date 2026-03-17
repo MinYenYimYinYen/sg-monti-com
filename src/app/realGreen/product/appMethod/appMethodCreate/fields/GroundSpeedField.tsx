@@ -27,9 +27,10 @@ export function GroundSpeedField({ disabled }: GroundSpeedFieldProps) {
   const groundSpeedDistanceUnit = useSelector(fieldComponentsSelect.groundSpeed.distanceUnit);
   const groundSpeedTimeUnit = useSelector(fieldComponentsSelect.groundSpeed.timeUnit);
 
-  // Check if this field is being solved for
-  const solveForField = useSelector(solverSelect.solveForField);
-  const isBeingSolved = solveForField === "groundSpeed";
+  // Check which specific field is being solved for
+  const missingField = useSelector(solverSelect.missingField);
+  const isDistanceBeingSolved = missingField?.param === "groundSpeed" && missingField?.field === "distance";
+  const isTimeBeingSolved = missingField?.param === "groundSpeed" && missingField?.field === "time";
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
@@ -46,7 +47,7 @@ export function GroundSpeedField({ disabled }: GroundSpeedFieldProps) {
             onChange={(e) =>
               setGroundSpeedDistance(e.target.value === "" ? "" : Number(e.target.value))
             }
-            disabled={isBeingSolved}
+            disabled={isDistanceBeingSolved}
           />
           <UnitSelect
             units={distanceUnits}
@@ -61,6 +62,7 @@ export function GroundSpeedField({ disabled }: GroundSpeedFieldProps) {
             onChange={(e) =>
               setGroundSpeedTime(e.target.value === "" ? "" : Number(e.target.value))
             }
+            disabled={isTimeBeingSolved}
           />
           <UnitSelect
             units={timeUnits}

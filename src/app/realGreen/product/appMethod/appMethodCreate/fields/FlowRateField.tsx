@@ -27,9 +27,10 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
   const flowRateTime = useSelector(fieldComponentsSelect.flowRate.time);
   const flowRateTimeUnit = useSelector(fieldComponentsSelect.flowRate.timeUnit);
 
-  // Check if this field is being solved for
-  const solveForField = useSelector(solverSelect.solveForField);
-  const isBeingSolved = solveForField === "flowRate";
+  // Check which specific field is being solved for
+  const missingField = useSelector(solverSelect.missingField);
+  const isVolumeBeingSolved = missingField?.param === "flowRate" && missingField?.field === "volume";
+  const isTimeBeingSolved = missingField?.param === "flowRate" && missingField?.field === "time";
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
@@ -46,7 +47,7 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
             onChange={(e) =>
               setFlowRateVolume(e.target.value === "" ? "" : Number(e.target.value))
             }
-            disabled={isBeingSolved}
+            disabled={isVolumeBeingSolved}
           />
           <UnitSelect
             units={volumeUnits}
@@ -61,6 +62,7 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
             onChange={(e) =>
               setFlowRateTime(e.target.value === "" ? "" : Number(e.target.value))
             }
+            disabled={isTimeBeingSolved}
           />
           <UnitSelect
             units={timeUnits}

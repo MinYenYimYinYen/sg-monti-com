@@ -59,7 +59,7 @@ export type ValidationResult = {
   canSolve: boolean;
   canValidate: boolean; // All params provided, can check consistency
   feedback: UIFeedback[];
-  readyToSolveFor?: keyof Omit<AppMethodParams, "overlap">;
+  readyToSolveFor?: MissingField;
 };
 
 /**
@@ -84,6 +84,14 @@ export type SolverError = {
  */
 export type SolverResult = SolverSuccess | SolverError;
 
+/**
+ * Identifies which specific numeric field is missing within a parameter
+ */
+export type MissingField = {
+  param: keyof Omit<AppMethodParams, "overlap">;
+  field: "volume" | "time" | "distance" | "area";
+};
+
 export class AppMethodSolver {
   /**
    * Validate parameters and provide feedback
@@ -104,16 +112,76 @@ export class AppMethodSolver {
    */
   static validate(params: AppMethodParams): ValidationResult {
     const feedback: UIFeedback[] = [];
-    const missing: (keyof Omit<AppMethodParams, "overlap">)[] = [];
+    const partiallySolvable: MissingField[] = [];
 
-    // Check what's missing
-    if (!params.coverage) missing.push("coverage");
-    if (!params.flowRate) missing.push("flowRate");
-    if (!params.groundSpeed) missing.push("groundSpeed");
-    if (!params.patternWidth) missing.push("patternWidth");
+    // Helper to check if a parameter has exactly 1 missing numeric field
+    const checkParam = (
+      paramName: keyof Omit<AppMethodParams, "overlap">,
+      param: any,
+      numericFields: { field: "volume" | "time" | "distance" | "area"; unitField?: string }[]
+    ): void => {
+      if (!param) return; // Param not provided at all
 
-    // All parameters provided - can validate consistency
-    if (missing.length === 0) {
+      const missingFields: ("volume" | "time" | "distance" | "area")[] = [];
+      const missingUnits: string[] = [];
+
+      for (const { field, unitField } of numericFields) {
+        if (param[field] === undefined || param[field] === "") {
+          missingFields.push(field);
+        }
+        if (unitField && (param[unitField] === undefined || param[unitField] === "")) {
+          missingUnits.push(unitField);
+        }
+      }
+
+      // If exactly 1 numeric field is missing and all units are present, it's solvable
+      if (missingFields.length === 1 && missingUnits.length === 0) {
+        partiallySolvable.push({ param: paramName, field: missingFields[0] });
+      }
+    };
+
+    // Check each parameter
+    checkParam("flowRate", params.flowRate, [
+      { field: "volume", unitField: "volumeUnit" },
+      { field: "time", unitField: "timeUnit" },
+    ]);
+
+    checkParam("groundSpeed", params.groundSpeed, [
+      { field: "distance", unitField: "distanceUnit" },
+      { field: "time", unitField: "timeUnit" },
+    ]);
+
+    checkParam("patternWidth", params.patternWidth, [
+      { field: "distance", unitField: "distanceUnit" },
+    ]);
+
+    checkParam("coverage", params.coverage, [
+      { field: "volume", unitField: "volumeUnit" },
+      { field: "area", unitField: "areaUnit" },
+    ]);
+
+    // Check if all parameters are complete
+    const allComplete =
+      params.flowRate &&
+      params.flowRate.volume !== undefined &&
+      params.flowRate.volume !== "" &&
+      params.flowRate.time !== undefined &&
+      params.flowRate.time !== "" &&
+      params.groundSpeed &&
+      params.groundSpeed.distance !== undefined &&
+      params.groundSpeed.distance !== "" &&
+      params.groundSpeed.time !== undefined &&
+      params.groundSpeed.time !== "" &&
+      params.patternWidth &&
+      params.patternWidth.distance !== undefined &&
+      params.patternWidth.distance !== "" &&
+      params.coverage &&
+      params.coverage.volume !== undefined &&
+      params.coverage.volume !== "" &&
+      params.coverage.area !== undefined &&
+      params.coverage.area !== "";
+
+    if (allComplete) {
       feedback.push({
         severity: "info",
         message: "All parameters provided. Click 'Validate' to check if they're consistent.",
@@ -126,31 +194,35 @@ export class AppMethodSolver {
       };
     }
 
-    // Exactly one missing - can solve for it
-    if (missing.length === 1) {
-      const paramName = missing[0];
-      // const displayName = paramName.replace(/([A-Z])/g, " $1").trim();
+    // Exactly one parameter has exactly one missing numeric field - can solve
+    if (partiallySolvable.length === 1) {
+      const missing = partiallySolvable[0];
       feedback.push({
         severity: "success",
-        message: `Ready to calculate ${camelDisplay(paramName)}`,
-        field: paramName,
+        message: `Ready to calculate ${camelDisplay(missing.param)}.${missing.field}`,
+        field: missing.param,
       });
       return {
         isValid: true,
         canSolve: true,
         canValidate: false,
         feedback,
-        readyToSolveFor: paramName,
+        readyToSolveFor: missing,
       };
     }
 
-    // More than one missing
-    const provided = 4 - missing.length;
-    const needed = missing.length - 1; // Need all but one
-    feedback.push({
-      severity: "info",
-      message: `Provide ${needed} more parameter${needed !== 1 ? "s" : ""} to calculate the remaining value. (${provided}/4 provided)`,
-    });
+    // Multiple partially solvable or none solvable
+    if (partiallySolvable.length > 1) {
+      feedback.push({
+        severity: "info",
+        message: `Multiple fields are partially complete. Please fill in all but one numeric field.`,
+      });
+    } else {
+      feedback.push({
+        severity: "info",
+        message: `Fill in all fields except one numeric value to enable calculation.`,
+      });
+    }
 
     return {
       isValid: false,
@@ -205,96 +277,33 @@ export class AppMethodSolver {
 
     const missing = validation.readyToSolveFor;
 
-    // Solve for the missing parameter with runtime validation and error handling
+    // Solve for the missing numeric field with runtime validation and error handling
     try {
-      switch (missing) {
-        case "coverage":
-          if (!params.flowRate || !params.groundSpeed || !params.patternWidth) {
-            return {
-              success: false,
-              feedback: [
-                {
-                  severity: "error",
-                  message: "Missing required parameters to solve for coverage",
-                },
-              ],
-            };
-          }
-          return {
-            success: true,
-            result: this.solveCoverage({
-              flowRate: params.flowRate,
-              groundSpeed: params.groundSpeed,
-              patternWidth: params.patternWidth,
-              overlap: params.overlap,
-            }),
-          };
+      // Route to appropriate solver based on param and field
+      const solverKey = `${missing.param}.${missing.field}`;
 
-        case "flowRate":
-          if (!params.coverage || !params.groundSpeed || !params.patternWidth) {
-            return {
-              success: false,
-              feedback: [
-                {
-                  severity: "error",
-                  message: "Missing required parameters to solve for flowRate",
-                },
-              ],
-            };
-          }
-          return {
-            success: true,
-            result: this.solveFlowRate({
-              coverage: params.coverage,
-              groundSpeed: params.groundSpeed,
-              patternWidth: params.patternWidth,
-              overlap: params.overlap,
-            }),
-          };
+      switch (solverKey) {
+        // FlowRate solvers
+        case "flowRate.volume":
+          return this.solveFlowRateVolume(params);
+        case "flowRate.time":
+          return this.solveFlowRateTime(params);
 
-        case "groundSpeed":
-          if (!params.flowRate || !params.coverage || !params.patternWidth) {
-            return {
-              success: false,
-              feedback: [
-                {
-                  severity: "error",
-                  message: "Missing required parameters to solve for groundSpeed",
-                },
-              ],
-            };
-          }
-          return {
-            success: true,
-            result: this.solveGroundSpeed({
-              flowRate: params.flowRate,
-              coverage: params.coverage,
-              patternWidth: params.patternWidth,
-              overlap: params.overlap,
-            }),
-          };
+        // GroundSpeed solvers
+        case "groundSpeed.distance":
+          return this.solveGroundSpeedDistance(params);
+        case "groundSpeed.time":
+          return this.solveGroundSpeedTime(params);
 
-        case "patternWidth":
-          if (!params.flowRate || !params.coverage || !params.groundSpeed) {
-            return {
-              success: false,
-              feedback: [
-                {
-                  severity: "error",
-                  message: "Missing required parameters to solve for patternWidth",
-                },
-              ],
-            };
-          }
-          return {
-            success: true,
-            result: this.solvePatternWidth({
-              flowRate: params.flowRate,
-              coverage: params.coverage,
-              groundSpeed: params.groundSpeed,
-              overlap: params.overlap,
-            }),
-          };
+        // PatternWidth solver
+        case "patternWidth.distance":
+          return this.solvePatternWidthDistance(params);
+
+        // Coverage solvers
+        case "coverage.volume":
+          return this.solveCoverageVolume(params);
+        case "coverage.area":
+          return this.solveCoverageArea(params);
 
         default:
           return {
@@ -302,7 +311,7 @@ export class AppMethodSolver {
             feedback: [
               {
                 severity: "error",
-                message: `Unknown parameter to solve for: ${missing}`,
+                message: `Unknown field to solve for: ${solverKey}`,
               },
             ],
           };
@@ -402,7 +411,483 @@ export class AppMethodSolver {
   }
 
   /**
-   * Solve for coverage
+   * Solve for flowRate.volume when flowRate.time is provided
+   * Formula: volume = (coverage × groundSpeed × patternWidth × time) / overlap
+   */
+  private static solveFlowRateVolume(params: AppMethodParams): SolverResult {
+    if (!params.flowRate || !params.coverage || !params.groundSpeed || !params.patternWidth) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Missing required parameters" }],
+      };
+    }
+
+    const { time, timeUnit } = params.flowRate;
+    if (!time || !timeUnit) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Flow rate time is required" }],
+      };
+    }
+
+    const coverage = UnitMath.volumePerArea(
+      params.coverage.volume,
+      params.coverage.volumeUnit,
+      params.coverage.area,
+      params.coverage.areaUnit,
+    );
+
+    const groundSpeed = UnitMath.distanceRate(
+      params.groundSpeed.distance,
+      params.groundSpeed.distanceUnit,
+      params.groundSpeed.time,
+      params.groundSpeed.timeUnit,
+    );
+
+    const patternWidth = UnitMath.distance(
+      params.patternWidth.distance,
+      params.patternWidth.distanceUnit,
+    );
+
+    const overlap = UnitMath.scalar(params.overlap);
+    const timeValue = UnitMath.time(time, timeUnit);
+
+    // volume = (coverage × groundSpeed × patternWidth × time) / overlap
+    const volumeResult = coverage
+      .multiply(groundSpeed)
+      .multiply(patternWidth)
+      .multiply(timeValue)
+      .divide(overlap);
+
+    const volume = volumeResult.toVolume(params.coverage.volumeUnit);
+
+    return {
+      success: true,
+      result: {
+        flowRate: {
+          volume,
+          volumeUnit: params.coverage.volumeUnit,
+          time,
+          timeUnit,
+        },
+        groundSpeed: params.groundSpeed,
+        patternWidth: params.patternWidth,
+        coverage: params.coverage,
+        overlap: params.overlap,
+      },
+    };
+  }
+
+  /**
+   * Solve for flowRate.time when flowRate.volume is provided
+   * Formula: time = (volume × overlap) / (coverage × groundSpeed × patternWidth)
+   */
+  private static solveFlowRateTime(params: AppMethodParams): SolverResult {
+    if (!params.flowRate || !params.coverage || !params.groundSpeed || !params.patternWidth) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Missing required parameters" }],
+      };
+    }
+
+    const { volume, volumeUnit } = params.flowRate;
+    if (!volume || !volumeUnit) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Flow rate volume is required" }],
+      };
+    }
+
+    const volumeValue = UnitMath.volume(volume, volumeUnit);
+    const coverage = UnitMath.volumePerArea(
+      params.coverage.volume,
+      params.coverage.volumeUnit,
+      params.coverage.area,
+      params.coverage.areaUnit,
+    );
+
+    const groundSpeed = UnitMath.distanceRate(
+      params.groundSpeed.distance,
+      params.groundSpeed.distanceUnit,
+      params.groundSpeed.time,
+      params.groundSpeed.timeUnit,
+    );
+
+    const patternWidth = UnitMath.distance(
+      params.patternWidth.distance,
+      params.patternWidth.distanceUnit,
+    );
+
+    const overlap = UnitMath.scalar(params.overlap);
+
+    // time = (volume × overlap) / (coverage × groundSpeed × patternWidth)
+    const timeResult = volumeValue
+      .multiply(overlap)
+      .divide(coverage)
+      .divide(groundSpeed)
+      .divide(patternWidth);
+
+    const time = timeResult.toTime(params.groundSpeed.timeUnit);
+
+    return {
+      success: true,
+      result: {
+        flowRate: {
+          volume,
+          volumeUnit,
+          time,
+          timeUnit: params.groundSpeed.timeUnit,
+        },
+        groundSpeed: params.groundSpeed,
+        patternWidth: params.patternWidth,
+        coverage: params.coverage,
+        overlap: params.overlap,
+      },
+    };
+  }
+
+  /**
+   * Solve for groundSpeed.distance when groundSpeed.time is provided
+   * Formula: distance = (flowRate × overlap × time) / (coverage × patternWidth)
+   */
+  private static solveGroundSpeedDistance(params: AppMethodParams): SolverResult {
+    if (!params.flowRate || !params.coverage || !params.groundSpeed || !params.patternWidth) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Missing required parameters" }],
+      };
+    }
+
+    const { time, timeUnit } = params.groundSpeed;
+    if (!time || !timeUnit) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Ground speed time is required" }],
+      };
+    }
+
+    const flowRate = UnitMath.volumeRate(
+      params.flowRate.volume,
+      params.flowRate.volumeUnit,
+      params.flowRate.time,
+      params.flowRate.timeUnit,
+    );
+
+    const coverage = UnitMath.volumePerArea(
+      params.coverage.volume,
+      params.coverage.volumeUnit,
+      params.coverage.area,
+      params.coverage.areaUnit,
+    );
+
+    const patternWidth = UnitMath.distance(
+      params.patternWidth.distance,
+      params.patternWidth.distanceUnit,
+    );
+
+    const overlap = UnitMath.scalar(params.overlap);
+    const timeValue = UnitMath.time(time, timeUnit);
+
+    // distance = (flowRate × overlap × time) / (coverage × patternWidth)
+    const distanceResult = flowRate
+      .multiply(overlap)
+      .multiply(timeValue)
+      .divide(coverage)
+      .divide(patternWidth);
+
+    const distance = distanceResult.toDistance(params.patternWidth.distanceUnit);
+
+    return {
+      success: true,
+      result: {
+        flowRate: params.flowRate,
+        groundSpeed: {
+          distance,
+          distanceUnit: params.patternWidth.distanceUnit,
+          time,
+          timeUnit,
+        },
+        patternWidth: params.patternWidth,
+        coverage: params.coverage,
+        overlap: params.overlap,
+      },
+    };
+  }
+
+  /**
+   * Solve for groundSpeed.time when groundSpeed.distance is provided
+   * Formula: time = (coverage × patternWidth × distance) / (flowRate × overlap)
+   */
+  private static solveGroundSpeedTime(params: AppMethodParams): SolverResult {
+    if (!params.flowRate || !params.coverage || !params.groundSpeed || !params.patternWidth) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Missing required parameters" }],
+      };
+    }
+
+    const { distance, distanceUnit } = params.groundSpeed;
+    if (!distance || !distanceUnit) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Ground speed distance is required" }],
+      };
+    }
+
+    const flowRate = UnitMath.volumeRate(
+      params.flowRate.volume,
+      params.flowRate.volumeUnit,
+      params.flowRate.time,
+      params.flowRate.timeUnit,
+    );
+
+    const coverage = UnitMath.volumePerArea(
+      params.coverage.volume,
+      params.coverage.volumeUnit,
+      params.coverage.area,
+      params.coverage.areaUnit,
+    );
+
+    const patternWidth = UnitMath.distance(
+      params.patternWidth.distance,
+      params.patternWidth.distanceUnit,
+    );
+
+    const distanceValue = UnitMath.distance(distance, distanceUnit);
+    const overlap = UnitMath.scalar(params.overlap);
+
+    // time = (coverage × patternWidth × distance) / (flowRate × overlap)
+    const timeResult = coverage
+      .multiply(patternWidth)
+      .multiply(distanceValue)
+      .divide(flowRate)
+      .divide(overlap);
+
+    const time = timeResult.toTime(params.flowRate.timeUnit);
+
+    return {
+      success: true,
+      result: {
+        flowRate: params.flowRate,
+        groundSpeed: {
+          distance,
+          distanceUnit,
+          time,
+          timeUnit: params.flowRate.timeUnit,
+        },
+        patternWidth: params.patternWidth,
+        coverage: params.coverage,
+        overlap: params.overlap,
+      },
+    };
+  }
+
+  /**
+   * Solve for patternWidth.distance
+   * Formula: patternWidth = (flowRate × overlap) / (coverage × groundSpeed)
+   */
+  private static solvePatternWidthDistance(params: AppMethodParams): SolverResult {
+    if (!params.flowRate || !params.coverage || !params.groundSpeed || !params.patternWidth) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Missing required parameters" }],
+      };
+    }
+
+    const { distanceUnit } = params.patternWidth;
+    if (!distanceUnit) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Pattern width unit is required" }],
+      };
+    }
+
+    const flowRate = UnitMath.volumeRate(
+      params.flowRate.volume,
+      params.flowRate.volumeUnit,
+      params.flowRate.time,
+      params.flowRate.timeUnit,
+    );
+
+    const coverage = UnitMath.volumePerArea(
+      params.coverage.volume,
+      params.coverage.volumeUnit,
+      params.coverage.area,
+      params.coverage.areaUnit,
+    );
+
+    const groundSpeed = UnitMath.distanceRate(
+      params.groundSpeed.distance,
+      params.groundSpeed.distanceUnit,
+      params.groundSpeed.time,
+      params.groundSpeed.timeUnit,
+    );
+
+    const overlap = UnitMath.scalar(params.overlap);
+
+    // patternWidth = (flowRate × overlap) / (coverage × groundSpeed)
+    const patternWidthResult = flowRate
+      .multiply(overlap)
+      .divide(coverage)
+      .divide(groundSpeed);
+
+    const distance = patternWidthResult.toDistance(distanceUnit);
+
+    return {
+      success: true,
+      result: {
+        flowRate: params.flowRate,
+        groundSpeed: params.groundSpeed,
+        patternWidth: {
+          distance,
+          distanceUnit,
+        },
+        coverage: params.coverage,
+        overlap: params.overlap,
+      },
+    };
+  }
+
+  /**
+   * Solve for coverage.volume when coverage.area is provided
+   * Formula: volume = (flowRate × overlap × area) / (groundSpeed × patternWidth)
+   */
+  private static solveCoverageVolume(params: AppMethodParams): SolverResult {
+    if (!params.flowRate || !params.coverage || !params.groundSpeed || !params.patternWidth) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Missing required parameters" }],
+      };
+    }
+
+    const { area, areaUnit, volumeUnit } = params.coverage;
+    if (!area || !areaUnit || !volumeUnit) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Coverage area and units are required" }],
+      };
+    }
+
+    const flowRate = UnitMath.volumeRate(
+      params.flowRate.volume,
+      params.flowRate.volumeUnit,
+      params.flowRate.time,
+      params.flowRate.timeUnit,
+    );
+
+    const groundSpeed = UnitMath.distanceRate(
+      params.groundSpeed.distance,
+      params.groundSpeed.distanceUnit,
+      params.groundSpeed.time,
+      params.groundSpeed.timeUnit,
+    );
+
+    const patternWidth = UnitMath.distance(
+      params.patternWidth.distance,
+      params.patternWidth.distanceUnit,
+    );
+
+    const areaValue = UnitMath.area(area, areaUnit);
+    const overlap = UnitMath.scalar(params.overlap);
+
+    // coverage rate = (flowRate × overlap) / (groundSpeed × patternWidth)
+    // volume = coverage rate × area
+    const coverageRate = flowRate
+      .multiply(overlap)
+      .divide(groundSpeed)
+      .divide(patternWidth);
+
+    const volumeResult = coverageRate.multiply(areaValue);
+    const volume = volumeResult.toVolume(volumeUnit);
+
+    return {
+      success: true,
+      result: {
+        flowRate: params.flowRate,
+        groundSpeed: params.groundSpeed,
+        patternWidth: params.patternWidth,
+        coverage: {
+          volume,
+          volumeUnit,
+          area,
+          areaUnit,
+        },
+        overlap: params.overlap,
+      },
+    };
+  }
+
+  /**
+   * Solve for coverage.area when coverage.volume is provided
+   * Formula: area = (volume × groundSpeed × patternWidth) / (flowRate × overlap)
+   */
+  private static solveCoverageArea(params: AppMethodParams): SolverResult {
+    if (!params.flowRate || !params.coverage || !params.groundSpeed || !params.patternWidth) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Missing required parameters" }],
+      };
+    }
+
+    const { volume, volumeUnit, areaUnit } = params.coverage;
+    if (!volume || !volumeUnit || !areaUnit) {
+      return {
+        success: false,
+        feedback: [{ severity: "error", message: "Coverage volume and units are required" }],
+      };
+    }
+
+    const volumeValue = UnitMath.volume(volume, volumeUnit);
+
+    const flowRate = UnitMath.volumeRate(
+      params.flowRate.volume,
+      params.flowRate.volumeUnit,
+      params.flowRate.time,
+      params.flowRate.timeUnit,
+    );
+
+    const groundSpeed = UnitMath.distanceRate(
+      params.groundSpeed.distance,
+      params.groundSpeed.distanceUnit,
+      params.groundSpeed.time,
+      params.groundSpeed.timeUnit,
+    );
+
+    const patternWidth = UnitMath.distance(
+      params.patternWidth.distance,
+      params.patternWidth.distanceUnit,
+    );
+
+    const overlap = UnitMath.scalar(params.overlap);
+
+    // area = (volume × groundSpeed × patternWidth) / (flowRate × overlap)
+    const areaResult = volumeValue
+      .multiply(groundSpeed)
+      .multiply(patternWidth)
+      .divide(flowRate)
+      .divide(overlap);
+
+    const area = areaResult.toArea(areaUnit);
+
+    return {
+      success: true,
+      result: {
+        flowRate: params.flowRate,
+        groundSpeed: params.groundSpeed,
+        patternWidth: params.patternWidth,
+        coverage: {
+          volume,
+          volumeUnit,
+          area,
+          areaUnit,
+        },
+        overlap: params.overlap,
+      },
+    };
+  }
+
+  /**
+   * Solve for coverage (legacy - when entire coverage param is missing)
    * Formula: coverage = (flowRate × overlap) / (groundSpeed × patternWidth)
    */
   private static solveCoverage(
