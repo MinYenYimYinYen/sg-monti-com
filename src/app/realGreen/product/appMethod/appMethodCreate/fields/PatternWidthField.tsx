@@ -14,31 +14,46 @@ interface PatternWidthFieldProps {
 }
 
 export function PatternWidthField({ disabled }: PatternWidthFieldProps) {
-  const { setPatternWidthDistance, setPatternWidthDistanceUnit } = useFormFieldValues();
+  const { setPatternWidthDistance, setPatternWidthDistanceUnit, resetPatternWidth } =
+    useFormFieldValues();
 
   const patternWidth = useSelector(fieldComponentsSelect.patternWidth.distance);
-  const patternWidthUnit = useSelector(fieldComponentsSelect.patternWidth.distanceUnit);
+  const patternWidthUnit = useSelector(
+    fieldComponentsSelect.patternWidth.distanceUnit,
+  );
 
   // Check if this field is being solved for
   const missingField = useSelector(solverSelect.missingField);
-  const isDistanceBeingSolved = missingField?.param === "patternWidth" && missingField?.field === "distance";
+  const isDistanceBeingSolved =
+    missingField?.param === "patternWidth" &&
+    missingField?.field === "distance";
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
-      <div className="space-y-1">
-        <FieldLabel
-          label="patternWidth"
-          helpText="Enter the width of the application pattern."
-        />
+      <div className="space-y-1  transition-colors has-[button:hover]:bg-destructive/30 p-1 rounded-sm">
+        <div className="flex items-center justify-between">
+          <FieldLabel
+            label="patternWidth"
+            helpText="Enter the width of the application pattern."
+          />
+          <button className="text-xs text-muted-foreground hover:text-foreground"
+            type="button"
+            onClick={resetPatternWidth}>
+            clear values
+          </button>
+        </div>
         <div className="grid grid-cols-4 gap-2">
           <Input
             type="number"
             placeholder="Distance"
             value={patternWidth ?? ""}
             onChange={(e) =>
-              setPatternWidthDistance(e.target.value === "" ? undefined : Number(e.target.value))
+              setPatternWidthDistance(
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
             }
             disabled={isDistanceBeingSolved}
+            step="0.01"
           />
           <UnitSelect
             units={distanceUnits}

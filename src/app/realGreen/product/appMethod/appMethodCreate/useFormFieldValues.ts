@@ -10,6 +10,7 @@ import {
 import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
 import { useEffect } from "react";
 import { fieldComponentsSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/fieldComponentsSelect";
+import { round } from "@/lib/primatives/numbers/round";
 
 /**
  * Hook for updating form field values
@@ -24,9 +25,7 @@ export function useFormFieldValues() {
   const groundSpeedDistance = useSelector(
     fieldComponentsSelect.groundSpeed.distance,
   );
-  const groundSpeedTime = useSelector(
-    fieldComponentsSelect.groundSpeed.time,
-  );
+  const groundSpeedTime = useSelector(fieldComponentsSelect.groundSpeed.time);
   const coverageVolume = useSelector(fieldComponentsSelect.coverage.volume);
   const coverageArea = useSelector(fieldComponentsSelect.coverage.area);
   const flowRateVolume = useSelector(fieldComponentsSelect.flowRate.volume);
@@ -37,33 +36,81 @@ export function useFormFieldValues() {
 
   useEffect(() => {
     if (!solution?.success || !missingField) return;
-
     const key = `${missingField.param}.${missingField.field}`;
 
     switch (key) {
       case "groundSpeed.distance":
-        dispatch(createAppMethodActions.setGroundSpeedDistance(groundSpeedDistance));
+        dispatch(
+          createAppMethodActions.setGroundSpeedDistance(
+            groundSpeedDistance === undefined
+              ? undefined
+              : round(groundSpeedDistance, 0.01),
+          ),
+        );
         return;
       case "groundSpeed.time":
-        dispatch(createAppMethodActions.setGroundSpeedTime(groundSpeedTime));
+        dispatch(
+          createAppMethodActions.setGroundSpeedTime(
+            groundSpeedTime === undefined
+              ? undefined
+              : round(groundSpeedTime, 0.01),
+          ),
+        );
         return;
       case "coverage.volume":
-        dispatch(createAppMethodActions.setCoverageVolume(coverageVolume));
+        dispatch(
+          createAppMethodActions.setCoverageVolume(
+            coverageVolume === undefined
+              ? undefined
+              : round(coverageVolume, 0.01),
+          ),
+        );
         return;
       case "coverage.area":
-        dispatch(createAppMethodActions.setCoverageArea(coverageArea));
+        dispatch(
+          createAppMethodActions.setCoverageArea(
+            coverageArea === undefined ? undefined : round(coverageArea, 0.01),
+          ),
+        );
         return;
       case "flowRate.volume":
-        dispatch(createAppMethodActions.setFlowRateVolume(flowRateVolume));
+        dispatch(
+          createAppMethodActions.setFlowRateVolume(
+            flowRateVolume === undefined
+              ? undefined
+              : round(flowRateVolume, 0.01),
+          ),
+        );
         return;
       case "flowRate.time":
-        dispatch(createAppMethodActions.setFlowRateTime(flowRateTime));
+        dispatch(
+          createAppMethodActions.setFlowRateTime(
+            flowRateTime === undefined ? undefined : round(flowRateTime, 0.01),
+          ),
+        );
         return;
       case "patternWidth.distance":
-        dispatch(createAppMethodActions.setPatternWidthDistance(patternWidthDistance));
+        dispatch(
+          createAppMethodActions.setPatternWidthDistance(
+            patternWidthDistance === undefined
+              ? undefined
+              : round(patternWidthDistance, 0.01),
+          ),
+        );
         return;
     }
-  }, [solution, dispatch, missingField, groundSpeedDistance, groundSpeedTime, coverageVolume, coverageArea, flowRateVolume, flowRateTime, patternWidthDistance]);
+  }, [
+    solution,
+    dispatch,
+    missingField,
+    groundSpeedDistance,
+    groundSpeedTime,
+    coverageVolume,
+    coverageArea,
+    flowRateVolume,
+    flowRateTime,
+    patternWidthDistance,
+  ]);
 
   return {
     // Metadata
@@ -143,6 +190,18 @@ export function useFormFieldValues() {
     // Reset
     resetForm: () => {
       dispatch(createAppMethodActions.resetForm());
+    },
+    resetGroundSpeed: () => {
+      dispatch(createAppMethodActions.resetGroundSpeed());
+    },
+    resetPatternWidth: () => {
+      dispatch(createAppMethodActions.resetPatternWidth());
+    },
+    resetFlowRate: () => {
+      dispatch(createAppMethodActions.resetFlowRate());
+    },
+    resetCoverage: () => {
+      dispatch(createAppMethodActions.resetCoverage());
     },
   };
 }

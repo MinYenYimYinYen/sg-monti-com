@@ -20,6 +20,7 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
     setCoverageVolumeUnit,
     setCoverageArea,
     setCoverageAreaUnit,
+    resetCoverage,
   } = useFormFieldValues();
 
   const coverageVolume = useSelector(fieldComponentsSelect.coverage.volume);
@@ -34,11 +35,18 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
-      <div className="space-y-1">
-        <FieldLabel
-          label="coverage"
-          helpText="Enter the volume of product applied per area of coverage."
-        />
+      <div className="space-y-1  transition-colors has-[button:hover]:bg-destructive/30 p-1 rounded-sm">
+        <div className="flex items-center justify-between">
+          <FieldLabel
+            label="coverage"
+            helpText="Enter the volume of product applied per area of coverage."
+          />
+          <button className="text-xs text-muted-foreground hover:text-foreground"
+            type="button"
+            onClick={resetCoverage}>
+            clear values
+          </button>
+        </div>
         <div className="grid grid-cols-4 gap-2">
           <Input
             type="number"
@@ -48,6 +56,7 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
               setCoverageVolume(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isVolumeBeingSolved}
+            step="0.01"
           />
           <UnitSelect
             units={volumeUnits}
@@ -63,6 +72,7 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
               setCoverageArea(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isAreaBeingSolved}
+            step="0.01"
           />
           <UnitSelect
             units={areaUnits}

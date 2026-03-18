@@ -5,7 +5,10 @@ import {
   LengthUnit,
   TimeUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
-import { ValidationResult, SolverResult } from "../appMethodSolver/AppMethodSolver";
+import {
+  ValidationResult,
+  SolverResult,
+} from "../appMethodSolver/AppMethodSolver";
 
 // Field types
 export type FieldKey = "groundSpeed" | "patternWidth" | "flowRate" | "coverage";
@@ -84,7 +87,10 @@ const createAppMethodSlice = createSlice({
     },
 
     // Ground Speed actions
-    setGroundSpeedDistance: (state, action: PayloadAction<number | undefined>) => {
+    setGroundSpeedDistance: (
+      state,
+      action: PayloadAction<number | undefined>,
+    ) => {
       state.groundSpeedDistance = action.payload;
     },
 
@@ -107,7 +113,10 @@ const createAppMethodSlice = createSlice({
     },
 
     // Pattern Width actions
-    setPatternWidthDistance: (state, action: PayloadAction<number | undefined>) => {
+    setPatternWidthDistance: (
+      state,
+      action: PayloadAction<number | undefined>,
+    ) => {
       state.patternWidthDistance = action.payload;
     },
 
@@ -187,6 +196,28 @@ const createAppMethodSlice = createSlice({
       state.coverageArea = undefined;
       state.coverageAreaUnit = undefined;
       state.overlap = 2;
+    },
+    resetGroundSpeed: (state) => {
+      state.groundSpeedDistance = undefined;
+      state.groundSpeedDistanceUnit = undefined;
+      state.groundSpeedTime = undefined;
+      state.groundSpeedTimeUnit = undefined;
+    },
+    resetPatternWidth: (state) => {
+      state.patternWidthDistance = undefined;
+      state.patternWidthDistanceUnit = undefined;
+    },
+    resetFlowRate: (state) => {
+      state.flowRateVolume = undefined;
+      state.flowRateVolumeUnit = undefined;
+      state.flowRateTime = undefined;
+      state.flowRateTimeUnit = undefined;
+    },
+    resetCoverage: (state) => {
+      state.coverageVolume = undefined;
+      state.coverageVolumeUnit = undefined;
+      state.coverageArea = undefined;
+      state.coverageAreaUnit = undefined;
     },
   },
 });

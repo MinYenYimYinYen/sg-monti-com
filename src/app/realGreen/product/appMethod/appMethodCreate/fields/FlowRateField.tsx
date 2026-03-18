@@ -20,6 +20,7 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
     setFlowRateVolumeUnit,
     setFlowRateTime,
     setFlowRateTimeUnit,
+    resetFlowRate,
   } = useFormFieldValues();
 
   const flowRateVolume = useSelector(fieldComponentsSelect.flowRate.volume);
@@ -34,11 +35,18 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
-      <div className="space-y-1">
-        <FieldLabel
-          label="flowRate"
-          helpText="Enter the volume of fluid and time it takes to dispense that volume."
-        />
+      <div className="space-y-1  transition-colors has-[button:hover]:bg-destructive/30 p-1 rounded-sm">
+        <div className="flex items-center justify-between">
+          <FieldLabel
+            label="flowRate"
+            helpText="Enter the volume of fluid and time it takes to dispense that volume."
+          />
+          <button className="text-xs text-muted-foreground hover:text-foreground"
+            type="button"
+            onClick={resetFlowRate}>
+            clear values
+          </button>
+        </div>
         <div className="grid grid-cols-4 gap-2">
           <Input
             type="number"
@@ -48,6 +56,7 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
               setFlowRateVolume(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isVolumeBeingSolved}
+            step="0.01"
           />
           <UnitSelect
             units={volumeUnits}
@@ -63,6 +72,7 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
               setFlowRateTime(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isTimeBeingSolved}
+            step="0.01"
           />
           <UnitSelect
             units={timeUnits}

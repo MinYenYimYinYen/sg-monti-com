@@ -20,34 +20,54 @@ export function GroundSpeedField({ disabled }: GroundSpeedFieldProps) {
     setGroundSpeedDistance,
     setGroundSpeedDistanceUnit,
     setGroundSpeedTimeUnit,
+    resetGroundSpeed,
   } = useFormFieldValues();
 
   const groundSpeedTime = useSelector(fieldComponentsSelect.groundSpeed.time);
-  const groundSpeedDistance = useSelector(fieldComponentsSelect.groundSpeed.distance);
-  const groundSpeedDistanceUnit = useSelector(fieldComponentsSelect.groundSpeed.distanceUnit);
-  const groundSpeedTimeUnit = useSelector(fieldComponentsSelect.groundSpeed.timeUnit);
+  const groundSpeedDistance = useSelector(
+    fieldComponentsSelect.groundSpeed.distance,
+  );
+  const groundSpeedDistanceUnit = useSelector(
+    fieldComponentsSelect.groundSpeed.distanceUnit,
+  );
+  const groundSpeedTimeUnit = useSelector(
+    fieldComponentsSelect.groundSpeed.timeUnit,
+  );
 
   // Check which specific field is being solved for
   const missingField = useSelector(solverSelect.missingField);
-  const isDistanceBeingSolved = missingField?.param === "groundSpeed" && missingField?.field === "distance";
-  const isTimeBeingSolved = missingField?.param === "groundSpeed" && missingField?.field === "time";
+  const isDistanceBeingSolved =
+    missingField?.param === "groundSpeed" && missingField?.field === "distance";
+  const isTimeBeingSolved =
+    missingField?.param === "groundSpeed" && missingField?.field === "time";
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
-      <div className="space-y-1">
-        <FieldLabel
-          label="groundSpeed"
-          helpText="Enter the distance and time it takes to travel that distance."
-        />
+      <div className="space-y-1  transition-colors has-[button:hover]:bg-destructive/30 p-1 rounded-sm">
+        <div className="flex items-center justify-between">
+          <FieldLabel
+            label="groundSpeed"
+            helpText="Enter the distance and time it takes to travel that distance."
+          />
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={resetGroundSpeed}>
+            clear values
+          </button>
+        </div>
         <div className="grid grid-cols-4 gap-2">
           <Input
             type="number"
             placeholder="Distance"
             value={groundSpeedDistance ?? ""}
             onChange={(e) =>
-              setGroundSpeedDistance(e.target.value === "" ? undefined : Number(e.target.value))
+              setGroundSpeedDistance(
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
             }
             disabled={isDistanceBeingSolved}
+            step="0.01"
           />
           <UnitSelect
             units={distanceUnits}
@@ -60,9 +80,12 @@ export function GroundSpeedField({ disabled }: GroundSpeedFieldProps) {
             placeholder="Time"
             value={groundSpeedTime ?? ""}
             onChange={(e) =>
-              setGroundSpeedTime(e.target.value === "" ? undefined : Number(e.target.value))
+              setGroundSpeedTime(
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
             }
             disabled={isTimeBeingSolved}
+            step="0.01"
           />
           <UnitSelect
             units={timeUnits}
