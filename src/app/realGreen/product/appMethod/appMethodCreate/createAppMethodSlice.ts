@@ -4,6 +4,7 @@ import {
   AreaUnit,
   LengthUnit,
   TimeUnit,
+  WeightUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import {
   ValidationResult,
@@ -17,6 +18,7 @@ interface CreateAppMethodState {
   // Metadata
   appMethodId: string;
   description: string;
+  productType: "liquid" | "granular";
 
   // Ground Speed - individual properties
   groundSpeedDistance: number | undefined;
@@ -30,13 +32,13 @@ interface CreateAppMethodState {
 
   // Flow Rate - individual properties
   flowRateVolume: number | undefined;
-  flowRateVolumeUnit: VolumeUnit["desc"] | undefined;
+  flowRateVolumeUnit: VolumeUnit["desc"] | WeightUnit["desc"] | undefined;
   flowRateTime: number | undefined;
   flowRateTimeUnit: TimeUnit["desc"] | undefined;
 
   // Coverage - individual properties
   coverageVolume: number | undefined;
-  coverageVolumeUnit: VolumeUnit["desc"] | undefined;
+  coverageVolumeUnit: VolumeUnit["desc"] | WeightUnit["desc"] | undefined;
   coverageArea: number | undefined;
   coverageAreaUnit: AreaUnit["desc"] | undefined;
 
@@ -47,6 +49,7 @@ interface CreateAppMethodState {
 const initialState: CreateAppMethodState = {
   appMethodId: "",
   description: "",
+  productType: "liquid",
 
   // Ground Speed
   groundSpeedDistance: undefined,
@@ -84,6 +87,10 @@ const createAppMethodSlice = createSlice({
 
     setDescription: (state, action: PayloadAction<string>) => {
       state.description = action.payload;
+    },
+
+    setProductType: (state, action: PayloadAction<"liquid" | "granular">) => {
+      state.productType = action.payload;
     },
 
     // Ground Speed actions
@@ -134,7 +141,7 @@ const createAppMethodSlice = createSlice({
 
     setFlowRateVolumeUnit: (
       state,
-      action: PayloadAction<VolumeUnit["desc"] | undefined>,
+      action: PayloadAction<VolumeUnit["desc"] | WeightUnit["desc"] | undefined>,
     ) => {
       state.flowRateVolumeUnit = action.payload;
     },
@@ -157,7 +164,7 @@ const createAppMethodSlice = createSlice({
 
     setCoverageVolumeUnit: (
       state,
-      action: PayloadAction<VolumeUnit["desc"] | undefined>,
+      action: PayloadAction<VolumeUnit["desc"] | WeightUnit["desc"] | undefined>,
     ) => {
       state.coverageVolumeUnit = action.payload;
     },
@@ -181,6 +188,7 @@ const createAppMethodSlice = createSlice({
     resetForm: (state) => {
       state.appMethodId = "";
       state.description = "";
+      state.productType = "liquid";
       state.groundSpeedDistance = undefined;
       state.groundSpeedDistanceUnit = undefined;
       state.groundSpeedTime = undefined;

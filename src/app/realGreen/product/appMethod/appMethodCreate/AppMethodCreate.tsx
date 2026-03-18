@@ -10,6 +10,7 @@ import { Label } from "@/style/components/label";
 import { Checkbox } from "@/style/components/checkbox";
 import { Button } from "@/style/components/button";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
+import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import {
   CardStackHeader,
   CardStackBody,
@@ -37,8 +38,14 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const { deselectCard} = useCardStack();
   const { upsertAppMethod } = useAppMethod({});
-  const { setAppMethodId, setDescription, setOverlap, resetForm } =
-    useFormFieldValues();
+  const {
+    productType,
+    setProductType,
+    setAppMethodId,
+    setDescription,
+    setOverlap,
+    resetForm,
+  } = useFormFieldValues();
 
   // Load saved method into Redux on mount (if editing)
   useEffect(() => {
@@ -99,6 +106,21 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          {/* Product Type */}
+          <div className="space-y-1">
+            <Label>Product Type</Label>
+            <RadioGroup
+              variant="button-group"
+              value={productType}
+              onValueChange={(value) =>
+                setProductType(value as "liquid" | "granular")
+              }
+            >
+              <RadioGroupItem value="liquid">Liquid</RadioGroupItem>
+              <RadioGroupItem value="granular">Granular</RadioGroupItem>
+            </RadioGroup>
           </div>
 
           {/* Always render all 4 fields - the solver will auto-detect which field to solve for */}

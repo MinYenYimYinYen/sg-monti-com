@@ -8,6 +8,7 @@ import { FieldLabel } from "./shared/FieldLabel";
 import { UnitSelect } from "./shared/UnitSelect";
 
 const volumeUnits = UnitUtils.volume.getAllUnits();
+const weightUnits = UnitUtils.weight.getAllUnits();
 const areaUnits = UnitUtils.area.getAllUnits();
 
 interface CoverageFieldProps {
@@ -16,6 +17,7 @@ interface CoverageFieldProps {
 
 export function CoverageField({ disabled }: CoverageFieldProps) {
   const {
+    productType,
     setCoverageVolume,
     setCoverageVolumeUnit,
     setCoverageArea,
@@ -32,6 +34,10 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
   const missingField = useSelector(solverSelect.missingField);
   const isVolumeBeingSolved = missingField?.param === "coverage" && missingField?.field === "volume";
   const isAreaBeingSolved = missingField?.param === "coverage" && missingField?.field === "area";
+
+  // Select appropriate units based on product type
+  const coverageUnits = productType === "liquid" ? volumeUnits : weightUnits;
+  const coveragePlaceholder = productType === "liquid" ? "Volume" : "Weight";
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
@@ -50,7 +56,7 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
         <div className="grid grid-cols-4 gap-2">
           <Input
             type="number"
-            placeholder="Volume"
+            placeholder={coveragePlaceholder}
             value={coverageVolume ?? ""}
             onChange={(e) =>
               setCoverageVolume(e.target.value === "" ? undefined : Number(e.target.value))
@@ -59,8 +65,8 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
             step="0.01"
           />
           <UnitSelect
-            units={volumeUnits}
-            placeholder="Volume Unit"
+            units={coverageUnits}
+            placeholder={`${coveragePlaceholder} Unit`}
             value={coverageVolumeUnit}
             onValueChange={setCoverageVolumeUnit}
           />

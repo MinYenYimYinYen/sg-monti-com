@@ -1,8 +1,9 @@
-import { useAppDispatch, useAppSelector } from "@/lib/hooks/redux";
+import { useAppDispatch, } from "@/lib/hooks/redux";
 import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
 import { useEffect } from "react";
 import { custFlagActions } from "@/app/realGreen/custFlag/_lib/custFlagSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
+import { useSelector } from "react-redux";
 
 export function useCustFlag({
   flagIds,
@@ -12,7 +13,7 @@ export function useCustFlag({
   custStatuses: string[];
 }) {
   const dispatch = useAppDispatch();
-  const flagIdsInState = useAppSelector(custFlagSelect.flagIdsInState);
+  const flagIdsInState = useSelector(custFlagSelect.flagIdsInState);
 
   useEffect(() => {
     const flagsToLoad = flagIds.filter((id) => !flagIdsInState.includes(id));

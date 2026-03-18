@@ -2,9 +2,17 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { solverSelect } from "./solverSelect";
 import { UnitMath } from "@/app/realGreen/product/unitConfig/UnitMath";
+import {
+  VolumeUnit,
+  WeightUnit,
+} from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 // Base selector
 const selectCreateAppMethodState = (state: AppState) => state.createAppMethod;
+
+// Product Type selector
+const selectProductType = (state: AppState) =>
+  selectCreateAppMethodState(state).productType;
 
 // Ground Speed selectors - direct state access (no memoization needed)
 export const selectGroundSpeedDistance = (state: AppState) =>
@@ -182,9 +190,18 @@ const selectFlowRateVolumeWithSolution = createSelector(
     solverSelect.solution,
     selectFlowRateVolumeUnit,
     selectFlowRateTime,
-    selectFlowRateTimeUnit
+    selectFlowRateTimeUnit,
+    selectProductType,
   ],
-  (stateValue, missingField, solution, volumeUnit, time, timeUnit) => {
+  (
+    stateValue,
+    missingField,
+    solution,
+    volumeUnit,
+    time,
+    timeUnit,
+    productType,
+  ) => {
     // If not solving for flowRate.volume, return Redux state
     if (missingField?.param !== "flowRate" || missingField?.field !== "volume") {
       return stateValue;
@@ -201,22 +218,39 @@ const selectFlowRateVolumeWithSolution = createSelector(
       return undefined; // Can't calculate without time
     }
 
-    // Convert solver result to user's chosen units
-    const baseRate = UnitMath.volumeRate(
-      solution.result.flowRate.volume,
-      solution.result.flowRate.volumeUnit,
-      solution.result.flowRate.time,
-      solution.result.flowRate.timeUnit
-    );
+    // Convert solver result to user's chosen units (conditional on productType)
+    const baseRate =
+      productType === "liquid"
+        ? UnitMath.volumeRate(
+            solution.result.flowRate.volume,
+            solution.result.flowRate.volumeUnit as VolumeUnit["desc"],
+            solution.result.flowRate.time,
+            solution.result.flowRate.timeUnit,
+          )
+        : UnitMath.weightRate(
+            solution.result.flowRate.volume,
+            solution.result.flowRate.volumeUnit as WeightUnit["desc"],
+            solution.result.flowRate.time,
+            solution.result.flowRate.timeUnit,
+          );
 
     // Use user's units if set, otherwise fall back to solution's units
     const targetVolumeUnit = volumeUnit || solution.result.flowRate.volumeUnit;
     const targetTimeUnit = timeUnit || solution.result.flowRate.timeUnit;
 
-    // Calculate volume for user's chosen time/units
-    const rateInTargetUnits = baseRate.toVolumeRate(targetVolumeUnit, targetTimeUnit);
+    // Calculate volume/weight for user's chosen time/units
+    const rateInTargetUnits =
+      productType === "liquid"
+        ? baseRate.toVolumeRate(
+            targetVolumeUnit as VolumeUnit["desc"],
+            targetTimeUnit,
+          )
+        : baseRate.toWeightRate(
+            targetVolumeUnit as WeightUnit["desc"],
+            targetTimeUnit,
+          );
     return rateInTargetUnits * targetTime;
-  }
+  },
 );
 
 const selectFlowRateVolumeUnitWithSolution = createSelector(
@@ -260,9 +294,18 @@ const selectCoverageVolumeWithSolution = createSelector(
     solverSelect.solution,
     selectCoverageVolumeUnit,
     selectCoverageArea,
-    selectCoverageAreaUnit
+    selectCoverageAreaUnit,
+    selectProductType,
   ],
-  (stateValue, missingField, solution, volumeUnit, area, areaUnit) => {
+  (
+    stateValue,
+    missingField,
+    solution,
+    volumeUnit,
+    area,
+    areaUnit,
+    productType,
+  ) => {
     // If not solving for coverage.volume, return Redux state
     if (missingField?.param !== "coverage" || missingField?.field !== "volume") {
       return stateValue;
@@ -279,22 +322,39 @@ const selectCoverageVolumeWithSolution = createSelector(
       return undefined; // Can't calculate without area
     }
 
-    // Convert solver result to user's chosen units
-    const baseRate = UnitMath.volumePerArea(
-      solution.result.coverage.volume,
-      solution.result.coverage.volumeUnit,
-      solution.result.coverage.area,
-      solution.result.coverage.areaUnit
-    );
+    // Convert solver result to user's chosen units (conditional on productType)
+    const baseRate =
+      productType === "liquid"
+        ? UnitMath.volumePerArea(
+            solution.result.coverage.volume,
+            solution.result.coverage.volumeUnit as VolumeUnit["desc"],
+            solution.result.coverage.area,
+            solution.result.coverage.areaUnit,
+          )
+        : UnitMath.weightPerArea(
+            solution.result.coverage.volume,
+            solution.result.coverage.volumeUnit as WeightUnit["desc"],
+            solution.result.coverage.area,
+            solution.result.coverage.areaUnit,
+          );
 
     // Use user's units if set, otherwise fall back to solution's units
     const targetVolumeUnit = volumeUnit || solution.result.coverage.volumeUnit;
     const targetAreaUnit = areaUnit || solution.result.coverage.areaUnit;
 
-    // Calculate volume for user's chosen area/units
-    const rateInTargetUnits = baseRate.toVolumePerArea(targetVolumeUnit, targetAreaUnit);
+    // Calculate volume/weight for user's chosen area/units
+    const rateInTargetUnits =
+      productType === "liquid"
+        ? baseRate.toVolumePerArea(
+            targetVolumeUnit as VolumeUnit["desc"],
+            targetAreaUnit,
+          )
+        : baseRate.toWeightPerArea(
+            targetVolumeUnit as WeightUnit["desc"],
+            targetAreaUnit,
+          );
     return rateInTargetUnits * targetArea;
-  }
+  },
 );
 
 const selectCoverageVolumeUnitWithSolution = createSelector(

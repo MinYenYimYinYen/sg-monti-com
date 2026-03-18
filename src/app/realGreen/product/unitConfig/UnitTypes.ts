@@ -1,6 +1,6 @@
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 
-export enum AppUnit {
+export enum UnitLabel {
   lbs = "Lbs",
   flOz = "Fl Oz",
   sf = "SF",
@@ -25,23 +25,23 @@ export type Metric =
   | "unknown"
 
 export const UL_METRIC_MAP = {
-  [AppUnit.sf]: "area",
-  [AppUnit.ksf]: "area",
-  [AppUnit.ea]: "count",
-  [AppUnit.bulb]: "count",
-  [AppUnit.dot]: "count",
-  [AppUnit.ft]: "length",
-  [AppUnit.sec]: "time",
-  [AppUnit.min]: "time",
-  [AppUnit.mGal]: "volume",
-  [AppUnit.flOz]: "volume",
-  [AppUnit.lbs]: "weight",
-  [AppUnit.unknown]: "unknown",
-} as const satisfies Record<AppUnit, Metric>;
+  [UnitLabel.sf]: "area",
+  [UnitLabel.ksf]: "area",
+  [UnitLabel.ea]: "count",
+  [UnitLabel.bulb]: "count",
+  [UnitLabel.dot]: "count",
+  [UnitLabel.ft]: "length",
+  [UnitLabel.sec]: "time",
+  [UnitLabel.min]: "time",
+  [UnitLabel.mGal]: "volume",
+  [UnitLabel.flOz]: "volume",
+  [UnitLabel.lbs]: "weight",
+  [UnitLabel.unknown]: "unknown",
+} as const satisfies Record<UnitLabel, Metric>;
 
 
 
-export function getMetricForUL(ul: AppUnit): Metric {
+export function getMetricForUL(ul: UnitLabel): Metric {
   return UL_METRIC_MAP[ul] || "unknown";
 }
 
@@ -146,12 +146,12 @@ export type UnitCRM =
 // Base unit constant (for calculations)
 export const baseUnit: Unit = {
   metric: "unknown",
-  desc: AppUnit.unknown,
+  desc: UnitLabel.unknown,
 };
 
 // CRM unit constant (for database/CRM data)
 export const baseUnitCRM: UnitCRM = {
   unitId: baseNumId,
   metric: "unknown",
-  desc: AppUnit.unknown,
+  desc: UnitLabel.unknown,
 };

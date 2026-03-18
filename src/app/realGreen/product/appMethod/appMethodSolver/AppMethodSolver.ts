@@ -4,6 +4,7 @@ import {
   AreaUnit,
   LengthUnit,
   TimeUnit,
+  WeightUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { camelDisplay } from "@/lib/primatives/string/camelDisplay";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
@@ -22,9 +23,10 @@ export type UIFeedback = {
  * Fields always exist, but numeric values can be undefined (not yet provided)
  */
 export type AppMethodParams = {
+  productType: "liquid" | "granular";
   flowRate: {
     volume: number | undefined;
-    volumeUnit: VolumeUnit["desc"] | undefined;
+    volumeUnit: VolumeUnit["desc"] | WeightUnit["desc"] | undefined;
     time: number | undefined;
     timeUnit: TimeUnit["desc"] | undefined;
   };
@@ -40,7 +42,7 @@ export type AppMethodParams = {
   };
   coverage: {
     volume: number | undefined;
-    volumeUnit: VolumeUnit["desc"] | undefined;
+    volumeUnit: VolumeUnit["desc"] | WeightUnit["desc"] | undefined;
     area: number | undefined;
     areaUnit: AreaUnit["desc"] | undefined;
   };
@@ -52,9 +54,10 @@ export type AppMethodParams = {
  * All numeric fields are guaranteed to be numbers (no undefined)
  */
 export type AppMethodResult = {
+  productType: "liquid" | "granular";
   flowRate: {
     volume: number;
-    volumeUnit: VolumeUnit["desc"];
+    volumeUnit: VolumeUnit["desc"] | WeightUnit["desc"];
     time: number;
     timeUnit: TimeUnit["desc"];
   };
@@ -70,7 +73,7 @@ export type AppMethodResult = {
   };
   coverage: {
     volume: number;
-    volumeUnit: VolumeUnit["desc"];
+    volumeUnit: VolumeUnit["desc"] | WeightUnit["desc"];
     area: number;
     areaUnit: AreaUnit["desc"];
   };
@@ -497,12 +500,19 @@ export class AppMethodSolver {
     }
 
     // Now TypeScript knows all numeric fields and units are defined
-    const coverage = UnitMath.volumePerArea(
-      params.coverage.volume,
-      params.coverage.volumeUnit,
-      params.coverage.area,
-      params.coverage.areaUnit,
-    );
+    const coverage = params.productType === "liquid"
+      ? UnitMath.volumePerArea(
+          params.coverage.volume,
+          params.coverage.volumeUnit as VolumeUnit["desc"],
+          params.coverage.area,
+          params.coverage.areaUnit,
+        )
+      : UnitMath.weightPerArea(
+          params.coverage.volume,
+          params.coverage.volumeUnit as WeightUnit["desc"],
+          params.coverage.area,
+          params.coverage.areaUnit,
+        );
 
     const groundSpeed = UnitMath.distanceRate(
       params.groundSpeed.distance,
@@ -526,20 +536,23 @@ export class AppMethodSolver {
       .multiply(timeValue)
       .divide(overlap);
 
-    const volume = volumeResult.toVolume(params.coverage.volumeUnit);
+    const volume = params.productType === "liquid"
+      ? volumeResult.toVolume(params.coverage.volumeUnit as VolumeUnit["desc"])
+      : volumeResult.toWeight(params.coverage.volumeUnit as WeightUnit["desc"]);
 
     return {
       success: true,
       result: {
+        productType: params.productType,
         flowRate: {
           volume,
           volumeUnit: params.coverage.volumeUnit,
           time: params.flowRate.time,
           timeUnit: params.flowRate.timeUnit,
         },
-        groundSpeed: params.groundSpeed,
-        patternWidth: params.patternWidth,
-        coverage: params.coverage,
+        groundSpeed: params.groundSpeed as Required<typeof params.groundSpeed>,
+        patternWidth: params.patternWidth as Required<typeof params.patternWidth>,
+        coverage: params.coverage as Required<typeof params.coverage>,
         overlap: params.overlap,
       },
     };
@@ -611,13 +624,23 @@ export class AppMethodSolver {
       };
     }
 
-    const volumeValue = UnitMath.volume(params.flowRate.volume, params.flowRate.volumeUnit);
-    const coverage = UnitMath.volumePerArea(
-      params.coverage.volume,
-      params.coverage.volumeUnit,
-      params.coverage.area,
-      params.coverage.areaUnit,
-    );
+    const volumeValue = params.productType === "liquid"
+      ? UnitMath.volume(params.flowRate.volume, params.flowRate.volumeUnit as VolumeUnit["desc"])
+      : UnitMath.weight(params.flowRate.volume, params.flowRate.volumeUnit as WeightUnit["desc"]);
+
+    const coverage = params.productType === "liquid"
+      ? UnitMath.volumePerArea(
+          params.coverage.volume,
+          params.coverage.volumeUnit as VolumeUnit["desc"],
+          params.coverage.area,
+          params.coverage.areaUnit,
+        )
+      : UnitMath.weightPerArea(
+          params.coverage.volume,
+          params.coverage.volumeUnit as WeightUnit["desc"],
+          params.coverage.area,
+          params.coverage.areaUnit,
+        );
 
     const groundSpeed = UnitMath.distanceRate(
       params.groundSpeed.distance,
@@ -645,15 +668,16 @@ export class AppMethodSolver {
     return {
       success: true,
       result: {
+        productType: params.productType,
         flowRate: {
           volume: params.flowRate.volume,
           volumeUnit: params.flowRate.volumeUnit,
           time,
           timeUnit: params.groundSpeed.timeUnit,
         },
-        groundSpeed: params.groundSpeed,
-        patternWidth: params.patternWidth,
-        coverage: params.coverage,
+        groundSpeed: params.groundSpeed as Required<typeof params.groundSpeed>,
+        patternWidth: params.patternWidth as Required<typeof params.patternWidth>,
+        coverage: params.coverage as Required<typeof params.coverage>,
         overlap: params.overlap,
       },
     };
@@ -727,19 +751,33 @@ export class AppMethodSolver {
       };
     }
 
-    const flowRate = UnitMath.volumeRate(
-      params.flowRate.volume,
-      params.flowRate.volumeUnit,
-      params.flowRate.time,
-      params.flowRate.timeUnit,
-    );
+    const flowRate = params.productType === "liquid"
+      ? UnitMath.volumeRate(
+          params.flowRate.volume,
+          params.flowRate.volumeUnit as VolumeUnit["desc"],
+          params.flowRate.time,
+          params.flowRate.timeUnit,
+        )
+      : UnitMath.weightRate(
+          params.flowRate.volume,
+          params.flowRate.volumeUnit as WeightUnit["desc"],
+          params.flowRate.time,
+          params.flowRate.timeUnit,
+        );
 
-    const coverage = UnitMath.volumePerArea(
-      params.coverage.volume,
-      params.coverage.volumeUnit,
-      params.coverage.area,
-      params.coverage.areaUnit,
-    );
+    const coverage = params.productType === "liquid"
+      ? UnitMath.volumePerArea(
+          params.coverage.volume,
+          params.coverage.volumeUnit as VolumeUnit["desc"],
+          params.coverage.area,
+          params.coverage.areaUnit,
+        )
+      : UnitMath.weightPerArea(
+          params.coverage.volume,
+          params.coverage.volumeUnit as WeightUnit["desc"],
+          params.coverage.area,
+          params.coverage.areaUnit,
+        );
 
     const patternWidth = UnitMath.distance(
       params.patternWidth.distance,
@@ -763,15 +801,16 @@ export class AppMethodSolver {
     return {
       success: true,
       result: {
-        flowRate: params.flowRate,
+        productType: params.productType,
+        flowRate: params.flowRate as Required<typeof params.flowRate>,
         groundSpeed: {
           distance,
           distanceUnit: params.patternWidth.distanceUnit,
           time: params.groundSpeed.time,
           timeUnit: params.groundSpeed.timeUnit,
         },
-        patternWidth: params.patternWidth,
-        coverage: params.coverage,
+        patternWidth: params.patternWidth as Required<typeof params.patternWidth>,
+        coverage: params.coverage as Required<typeof params.coverage>,
         overlap: params.overlap,
       },
     };
@@ -843,19 +882,33 @@ export class AppMethodSolver {
       };
     }
 
-    const flowRate = UnitMath.volumeRate(
-      params.flowRate.volume,
-      params.flowRate.volumeUnit,
-      params.flowRate.time,
-      params.flowRate.timeUnit,
-    );
+    const flowRate = params.productType === "liquid"
+      ? UnitMath.volumeRate(
+          params.flowRate.volume,
+          params.flowRate.volumeUnit as VolumeUnit["desc"],
+          params.flowRate.time,
+          params.flowRate.timeUnit,
+        )
+      : UnitMath.weightRate(
+          params.flowRate.volume,
+          params.flowRate.volumeUnit as WeightUnit["desc"],
+          params.flowRate.time,
+          params.flowRate.timeUnit,
+        );
 
-    const coverage = UnitMath.volumePerArea(
-      params.coverage.volume,
-      params.coverage.volumeUnit,
-      params.coverage.area,
-      params.coverage.areaUnit,
-    );
+    const coverage = params.productType === "liquid"
+      ? UnitMath.volumePerArea(
+          params.coverage.volume,
+          params.coverage.volumeUnit as VolumeUnit["desc"],
+          params.coverage.area,
+          params.coverage.areaUnit,
+        )
+      : UnitMath.weightPerArea(
+          params.coverage.volume,
+          params.coverage.volumeUnit as WeightUnit["desc"],
+          params.coverage.area,
+          params.coverage.areaUnit,
+        );
 
     const patternWidth = UnitMath.distance(
       params.patternWidth.distance,
@@ -877,7 +930,8 @@ export class AppMethodSolver {
     return {
       success: true,
       result: {
-        flowRate: params.flowRate,
+        productType: params.productType,
+        flowRate: params.flowRate as Required<typeof params.flowRate>,
         groundSpeed: {
           distance: params.groundSpeed.distance,
           distanceUnit: params.groundSpeed.distanceUnit,
@@ -952,19 +1006,33 @@ export class AppMethodSolver {
       };
     }
 
-    const flowRate = UnitMath.volumeRate(
-      params.flowRate.volume,
-      params.flowRate.volumeUnit,
-      params.flowRate.time,
-      params.flowRate.timeUnit,
-    );
+    const flowRate = params.productType === "liquid"
+      ? UnitMath.volumeRate(
+          params.flowRate.volume,
+          params.flowRate.volumeUnit as VolumeUnit["desc"],
+          params.flowRate.time,
+          params.flowRate.timeUnit,
+        )
+      : UnitMath.weightRate(
+          params.flowRate.volume,
+          params.flowRate.volumeUnit as WeightUnit["desc"],
+          params.flowRate.time,
+          params.flowRate.timeUnit,
+        );
 
-    const coverage = UnitMath.volumePerArea(
-      params.coverage.volume,
-      params.coverage.volumeUnit,
-      params.coverage.area,
-      params.coverage.areaUnit,
-    );
+    const coverage = params.productType === "liquid"
+      ? UnitMath.volumePerArea(
+          params.coverage.volume,
+          params.coverage.volumeUnit as VolumeUnit["desc"],
+          params.coverage.area,
+          params.coverage.areaUnit,
+        )
+      : UnitMath.weightPerArea(
+          params.coverage.volume,
+          params.coverage.volumeUnit as WeightUnit["desc"],
+          params.coverage.area,
+          params.coverage.areaUnit,
+        );
 
     const groundSpeed = UnitMath.distanceRate(
       params.groundSpeed.distance,
@@ -986,13 +1054,14 @@ export class AppMethodSolver {
     return {
       success: true,
       result: {
-        flowRate: params.flowRate,
-        groundSpeed: params.groundSpeed,
+        productType: params.productType,
+        flowRate: params.flowRate as Required<typeof params.flowRate>,
+        groundSpeed: params.groundSpeed as Required<typeof params.groundSpeed>,
         patternWidth: {
           distance,
           distanceUnit: params.patternWidth.distanceUnit,
         },
-        coverage: params.coverage,
+        coverage: params.coverage as Required<typeof params.coverage>,
         overlap: params.overlap,
       },
     };
@@ -1072,12 +1141,19 @@ export class AppMethodSolver {
       };
     }
 
-    const flowRate = UnitMath.volumeRate(
-      params.flowRate.volume,
-      params.flowRate.volumeUnit,
-      params.flowRate.time,
-      params.flowRate.timeUnit,
-    );
+    const flowRate = params.productType === "liquid"
+      ? UnitMath.volumeRate(
+          params.flowRate.volume,
+          params.flowRate.volumeUnit as VolumeUnit["desc"],
+          params.flowRate.time,
+          params.flowRate.timeUnit,
+        )
+      : UnitMath.weightRate(
+          params.flowRate.volume,
+          params.flowRate.volumeUnit as WeightUnit["desc"],
+          params.flowRate.time,
+          params.flowRate.timeUnit,
+        );
 
     const groundSpeed = UnitMath.distanceRate(
       params.groundSpeed.distance,
@@ -1102,14 +1178,17 @@ export class AppMethodSolver {
       .divide(patternWidth);
 
     const volumeResult = coverageRate.multiply(areaValue);
-    const volume = volumeResult.toVolume(params.coverage.volumeUnit);
+    const volume = params.productType === "liquid"
+      ? volumeResult.toVolume(params.coverage.volumeUnit as VolumeUnit["desc"])
+      : volumeResult.toWeight(params.coverage.volumeUnit as WeightUnit["desc"]);
 
     return {
       success: true,
       result: {
-        flowRate: params.flowRate,
-        groundSpeed: params.groundSpeed,
-        patternWidth: params.patternWidth,
+        productType: params.productType,
+        flowRate: params.flowRate as Required<typeof params.flowRate>,
+        groundSpeed: params.groundSpeed as Required<typeof params.groundSpeed>,
+        patternWidth: params.patternWidth as Required<typeof params.patternWidth>,
         coverage: {
           volume,
           volumeUnit: params.coverage.volumeUnit,
@@ -1195,14 +1274,23 @@ export class AppMethodSolver {
       };
     }
 
-    const volumeValue = UnitMath.volume(params.coverage.volume, params.coverage.volumeUnit);
+    const volumeValue = params.productType === "liquid"
+      ? UnitMath.volume(params.coverage.volume, params.coverage.volumeUnit as VolumeUnit["desc"])
+      : UnitMath.weight(params.coverage.volume, params.coverage.volumeUnit as WeightUnit["desc"]);
 
-    const flowRate = UnitMath.volumeRate(
-      params.flowRate.volume,
-      params.flowRate.volumeUnit,
-      params.flowRate.time,
-      params.flowRate.timeUnit,
-    );
+    const flowRate = params.productType === "liquid"
+      ? UnitMath.volumeRate(
+          params.flowRate.volume,
+          params.flowRate.volumeUnit as VolumeUnit["desc"],
+          params.flowRate.time,
+          params.flowRate.timeUnit,
+        )
+      : UnitMath.weightRate(
+          params.flowRate.volume,
+          params.flowRate.volumeUnit as WeightUnit["desc"],
+          params.flowRate.time,
+          params.flowRate.timeUnit,
+        );
 
     const groundSpeed = UnitMath.distanceRate(
       params.groundSpeed.distance,
@@ -1230,8 +1318,9 @@ export class AppMethodSolver {
     return {
       success: true,
       result: {
-        flowRate: params.flowRate,
-        groundSpeed: params.groundSpeed,
+        productType: params.productType,
+        flowRate: params.flowRate as Required<typeof params.flowRate>,
+        groundSpeed: params.groundSpeed as Required<typeof params.groundSpeed>,
         patternWidth: params.patternWidth,
         coverage: {
           volume: params.coverage.volume,
@@ -1243,211 +1332,4 @@ export class AppMethodSolver {
       },
     };
   }
-
-  // /**
-  //  * Solve for coverage (legacy - when entire coverage param is missing)
-  //  * Formula: coverage = (flowRate × overlap) / (groundSpeed × patternWidth)
-  //  */
-  // private static solveCoverage(
-  //   params: Required<Omit<AppMethodParams, "coverage">>,
-  // ): AppMethodResult {
-  //   // Convert inputs to UnitMath
-  //   const flowRate = UnitMath.volumeRate(
-  //     params.flowRate.volume,
-  //     params.flowRate.volumeUnit,
-  //     params.flowRate.time,
-  //     params.flowRate.timeUnit,
-  //   );
-  //
-  //   const groundSpeed = UnitMath.distanceRate(
-  //     params.groundSpeed.distance,
-  //     params.groundSpeed.distanceUnit,
-  //     params.groundSpeed.time,
-  //     params.groundSpeed.timeUnit,
-  //   );
-  //
-  //   const patternWidth = UnitMath.distance(
-  //     params.patternWidth.distance,
-  //     params.patternWidth.distanceUnit,
-  //   );
-  //
-  //   const overlap = UnitMath.scalar(params.overlap);
-  //
-  //   // Calculate: coverage = (flowRate × overlap) / (groundSpeed × patternWidth)
-  //   const coverageResult = flowRate
-  //     .multiply(overlap)
-  //     .divide(groundSpeed)
-  //     .divide(patternWidth);
-  //
-  //   // Convert back to a reasonable output unit (you can make this configurable)
-  //   const coverageValue = coverageResult.toVolumePerArea(
-  //     params.flowRate.volumeUnit, // Use same volume unit as flow rate
-  //     "1000 SF" as AreaUnit["desc"], // Default to 1000 SF
-  //   );
-  //
-  //   return {
-  //     ...params,
-  //     coverage: {
-  //       volume: coverageValue,
-  //       volumeUnit: params.flowRate.volumeUnit,
-  //       area: 1000,
-  //       areaUnit: "1000 SF" as AreaUnit["desc"],
-  //     },
-  //   };
-  // }
-  //
-  // /**
-  //  * Solve for flowRate
-  //  * Formula: flowRate = (coverage × groundSpeed × patternWidth) / overlap
-  //  */
-  // private static solveFlowRate(
-  //   params: Required<Omit<AppMethodParams, "flowRate">>,
-  // ): AppMethodResult {
-  //   // Convert inputs to UnitMath
-  //   const coverage = UnitMath.volumePerArea(
-  //     params.coverage.volume,
-  //     params.coverage.volumeUnit,
-  //     params.coverage.area,
-  //     params.coverage.areaUnit,
-  //   );
-  //
-  //   const groundSpeed = UnitMath.distanceRate(
-  //     params.groundSpeed.distance,
-  //     params.groundSpeed.distanceUnit,
-  //     params.groundSpeed.time,
-  //     params.groundSpeed.timeUnit,
-  //   );
-  //
-  //   const patternWidth = UnitMath.distance(
-  //     params.patternWidth.distance,
-  //     params.patternWidth.distanceUnit,
-  //   );
-  //
-  //   const overlap = UnitMath.scalar(params.overlap);
-  //
-  //   // Calculate: flowRate = (coverage × groundSpeed × patternWidth) / overlap
-  //   const flowRateResult = coverage
-  //     .multiply(groundSpeed)
-  //     .multiply(patternWidth)
-  //     .divide(overlap);
-  //
-  //   // Convert back to reasonable output units
-  //   const flowRateValue = flowRateResult.toVolumeRate(
-  //     params.coverage.volumeUnit, // Use same volume unit as coverage
-  //     params.groundSpeed.timeUnit, // Use same time unit as ground speed
-  //   );
-  //
-  //   return {
-  //     ...params,
-  //     flowRate: {
-  //       volume: flowRateValue,
-  //       volumeUnit: params.coverage.volumeUnit,
-  //       time: 1,
-  //       timeUnit: params.groundSpeed.timeUnit,
-  //     },
-  //   };
-  // }
-  //
-  // /**
-  //  * Solve for groundSpeed
-  //  * Formula: groundSpeed = (flowRate × overlap) / (coverage × patternWidth)
-  //  */
-  // private static solveGroundSpeed(
-  //   params: Required<Omit<AppMethodParams, "groundSpeed">>,
-  // ): AppMethodResult {
-  //   // Convert inputs to UnitMath
-  //   const flowRate = UnitMath.volumeRate(
-  //     params.flowRate.volume,
-  //     params.flowRate.volumeUnit,
-  //     params.flowRate.time,
-  //     params.flowRate.timeUnit,
-  //   );
-  //
-  //   const coverage = UnitMath.volumePerArea(
-  //     params.coverage.volume,
-  //     params.coverage.volumeUnit,
-  //     params.coverage.area,
-  //     params.coverage.areaUnit,
-  //   );
-  //
-  //   const patternWidth = UnitMath.distance(
-  //     params.patternWidth.distance,
-  //     params.patternWidth.distanceUnit,
-  //   );
-  //
-  //   const overlap = UnitMath.scalar(params.overlap);
-  //
-  //   // Calculate: groundSpeed = (flowRate × overlap) / (coverage × patternWidth)
-  //   const groundSpeedResult = flowRate
-  //     .multiply(overlap)
-  //     .divide(coverage)
-  //     .divide(patternWidth);
-  //
-  //   // Convert back to reasonable output units
-  //   const groundSpeedValue = groundSpeedResult.toDistanceRate(
-  //     params.patternWidth.distanceUnit, // Use same distance unit as pattern width
-  //     params.flowRate.timeUnit, // Use same time unit as flow rate
-  //   );
-  //
-  //   return {
-  //     ...params,
-  //     groundSpeed: {
-  //       distance: groundSpeedValue,
-  //       distanceUnit: params.patternWidth.distanceUnit,
-  //       time: 1,
-  //       timeUnit: params.flowRate.timeUnit,
-  //     },
-  //   };
-  // }
-  //
-  // /**
-  //  * Solve for patternWidth
-  //  * Formula: patternWidth = (flowRate × overlap) / (coverage × groundSpeed)
-  //  */
-  // private static solvePatternWidth(
-  //   params: Required<Omit<AppMethodParams, "patternWidth">>,
-  // ): AppMethodResult {
-  //   // Convert inputs to UnitMath
-  //   const flowRate = UnitMath.volumeRate(
-  //     params.flowRate.volume,
-  //     params.flowRate.volumeUnit,
-  //     params.flowRate.time,
-  //     params.flowRate.timeUnit,
-  //   );
-  //
-  //   const coverage = UnitMath.volumePerArea(
-  //     params.coverage.volume,
-  //     params.coverage.volumeUnit,
-  //     params.coverage.area,
-  //     params.coverage.areaUnit,
-  //   );
-  //
-  //   const groundSpeed = UnitMath.distanceRate(
-  //     params.groundSpeed.distance,
-  //     params.groundSpeed.distanceUnit,
-  //     params.groundSpeed.time,
-  //     params.groundSpeed.timeUnit,
-  //   );
-  //
-  //   const overlap = UnitMath.scalar(params.overlap);
-  //
-  //   // Calculate: patternWidth = (flowRate × overlap) / (coverage × groundSpeed)
-  //   const patternWidthResult = flowRate
-  //     .multiply(overlap)
-  //     .divide(coverage)
-  //     .divide(groundSpeed);
-  //
-  //   // Convert back to reasonable output units
-  //   const patternWidthValue = patternWidthResult.toDistance(
-  //     params.groundSpeed.distanceUnit, // Use same distance unit as ground speed
-  //   );
-  //
-  //   return {
-  //     ...params,
-  //     patternWidth: {
-  //       distance: patternWidthValue,
-  //       distanceUnit: params.groundSpeed.distanceUnit,
-  //     },
-  //   };
-  // }
 }

@@ -1,9 +1,10 @@
 import {
-  AppUnit,
+  UnitLabel,
   AreaUnit,
   LengthUnit,
   TimeUnit,
   VolumeUnit,
+  WeightUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 /**
@@ -67,6 +68,21 @@ interface TimeConverter {
 }
 
 /**
+ * Converter interface for weight units with call signature and metadata methods
+ */
+interface WeightConverter {
+  (
+    value: number,
+    fromUnit: WeightUnit["desc"],
+  ): {
+    to: (toUnit: WeightUnit["desc"]) => number;
+    toAll: () => { [K in WeightUnit["desc"]]: number };
+  };
+  getAllUnits(): WeightUnit["desc"][];
+  getConversionFactors(): { [K in WeightUnit["desc"]]: number };
+}
+
+/**
  * Type-safe unit conversion and metadata utilities
  */
 export class UnitUtils {
@@ -75,25 +91,30 @@ export class UnitUtils {
     VolumeUnit["desc"],
     number
   > = {
-    [AppUnit.mGal]: 1,
-    [AppUnit.flOz]: 1 / 128,
+    [UnitLabel.mGal]: 1,
+    [UnitLabel.flOz]: 1 / 128,
   };
 
   // Area conversions (to square feet)
   private static readonly AREA_TO_SQ_FT: Record<AreaUnit["desc"], number> = {
-    [AppUnit.sf]: 1,
-    [AppUnit.ksf]: 1000,
+    [UnitLabel.sf]: 1,
+    [UnitLabel.ksf]: 1000,
   };
 
   // Length conversions (to feet)
   private static readonly LENGTH_TO_FEET: Record<LengthUnit["desc"], number> = {
-    [AppUnit.ft]: 1,
+    [UnitLabel.ft]: 1,
   };
 
   // Time conversions (to seconds)
   private static readonly TIME_TO_SECONDS: Record<TimeUnit["desc"], number> = {
-    [AppUnit.sec]: 1,
-    [AppUnit.min]: 60,
+    [UnitLabel.sec]: 1,
+    [UnitLabel.min]: 60,
+  };
+
+  // Weight conversions (to pounds)
+  private static readonly WEIGHT_TO_LBS: Record<WeightUnit["desc"], number> = {
+    [UnitLabel.lbs]: 1,
   };
 
   /**
@@ -122,17 +143,17 @@ export class UnitUtils {
 
         toAll: (): { [K in VolumeUnit["desc"]]: number } => {
           return {
-            [AppUnit.mGal]: gallons / UnitUtils.VOLUME_TO_GALLONS[AppUnit.mGal],
-            [AppUnit.flOz]: gallons / UnitUtils.VOLUME_TO_GALLONS[AppUnit.flOz],
+            [UnitLabel.mGal]: gallons / UnitUtils.VOLUME_TO_GALLONS[UnitLabel.mGal],
+            [UnitLabel.flOz]: gallons / UnitUtils.VOLUME_TO_GALLONS[UnitLabel.flOz],
           };
         },
       };
     },
     {
-      getAllUnits: (): VolumeUnit["desc"][] => [AppUnit.mGal, AppUnit.flOz],
+      getAllUnits: (): VolumeUnit["desc"][] => [UnitLabel.mGal, UnitLabel.flOz],
       getConversionFactors: (): { [K in VolumeUnit["desc"]]: number } => ({
-        [AppUnit.mGal]: UnitUtils.VOLUME_TO_GALLONS[AppUnit.mGal],
-        [AppUnit.flOz]: UnitUtils.VOLUME_TO_GALLONS[AppUnit.flOz],
+        [UnitLabel.mGal]: UnitUtils.VOLUME_TO_GALLONS[UnitLabel.mGal],
+        [UnitLabel.flOz]: UnitUtils.VOLUME_TO_GALLONS[UnitLabel.flOz],
       }),
     },
   );
@@ -163,17 +184,17 @@ export class UnitUtils {
 
         toAll: (): { [K in AreaUnit["desc"]]: number } => {
           return {
-            [AppUnit.sf]: sqFt / UnitUtils.AREA_TO_SQ_FT[AppUnit.sf],
-            [AppUnit.ksf]: sqFt / UnitUtils.AREA_TO_SQ_FT[AppUnit.ksf],
+            [UnitLabel.sf]: sqFt / UnitUtils.AREA_TO_SQ_FT[UnitLabel.sf],
+            [UnitLabel.ksf]: sqFt / UnitUtils.AREA_TO_SQ_FT[UnitLabel.ksf],
           };
         },
       };
     },
     {
-      getAllUnits: (): AreaUnit["desc"][] => [AppUnit.sf, AppUnit.ksf],
+      getAllUnits: (): AreaUnit["desc"][] => [UnitLabel.sf, UnitLabel.ksf],
       getConversionFactors: (): { [K in AreaUnit["desc"]]: number } => ({
-        [AppUnit.sf]: UnitUtils.AREA_TO_SQ_FT[AppUnit.sf],
-        [AppUnit.ksf]: UnitUtils.AREA_TO_SQ_FT[AppUnit.ksf],
+        [UnitLabel.sf]: UnitUtils.AREA_TO_SQ_FT[UnitLabel.sf],
+        [UnitLabel.ksf]: UnitUtils.AREA_TO_SQ_FT[UnitLabel.ksf],
       }),
     },
   );
@@ -200,15 +221,15 @@ export class UnitUtils {
 
         toAll: (): { [K in LengthUnit["desc"]]: number } => {
           return {
-            [AppUnit.ft]: feet / UnitUtils.LENGTH_TO_FEET[AppUnit.ft],
+            [UnitLabel.ft]: feet / UnitUtils.LENGTH_TO_FEET[UnitLabel.ft],
           };
         },
       };
     },
     {
-      getAllUnits: (): LengthUnit["desc"][] => [AppUnit.ft],
+      getAllUnits: (): LengthUnit["desc"][] => [UnitLabel.ft],
       getConversionFactors: (): { [K in LengthUnit["desc"]]: number } => ({
-        [AppUnit.ft]: UnitUtils.LENGTH_TO_FEET[AppUnit.ft],
+        [UnitLabel.ft]: UnitUtils.LENGTH_TO_FEET[UnitLabel.ft],
       }),
     },
   );
@@ -235,17 +256,52 @@ export class UnitUtils {
 
         toAll: (): { [K in TimeUnit["desc"]]: number } => {
           return {
-            [AppUnit.sec]: seconds / UnitUtils.TIME_TO_SECONDS[AppUnit.sec],
-            [AppUnit.min]: seconds / UnitUtils.TIME_TO_SECONDS[AppUnit.min],
+            [UnitLabel.sec]: seconds / UnitUtils.TIME_TO_SECONDS[UnitLabel.sec],
+            [UnitLabel.min]: seconds / UnitUtils.TIME_TO_SECONDS[UnitLabel.min],
           };
         },
       };
     },
     {
-      getAllUnits: (): TimeUnit["desc"][] => [AppUnit.sec, AppUnit.min],
+      getAllUnits: (): TimeUnit["desc"][] => [UnitLabel.sec, UnitLabel.min],
       getConversionFactors: (): { [K in TimeUnit["desc"]]: number } => ({
-        [AppUnit.sec]: UnitUtils.TIME_TO_SECONDS[AppUnit.sec],
-        [AppUnit.min]: UnitUtils.TIME_TO_SECONDS[AppUnit.min],
+        [UnitLabel.sec]: UnitUtils.TIME_TO_SECONDS[UnitLabel.sec],
+        [UnitLabel.min]: UnitUtils.TIME_TO_SECONDS[UnitLabel.min],
+      }),
+    },
+  );
+
+  /**
+   * Weight converter with fluent API
+   *
+   * @example
+   * // Convert pounds (currently only one unit)
+   * UnitUtils.weight(5, AppUnit.lbs).to(AppUnit.lbs)  // 5
+   *
+   * @example
+   * // Get all available units
+   * UnitUtils.weight.getAllUnits()  // ["Lbs"]
+   */
+  static readonly weight: WeightConverter = Object.assign(
+    (value: number, fromUnit: WeightUnit["desc"]) => {
+      const lbs = value * UnitUtils.WEIGHT_TO_LBS[fromUnit];
+
+      return {
+        to: (toUnit: WeightUnit["desc"]): number => {
+          return lbs / UnitUtils.WEIGHT_TO_LBS[toUnit];
+        },
+
+        toAll: (): { [K in WeightUnit["desc"]]: number } => {
+          return {
+            [UnitLabel.lbs]: lbs / UnitUtils.WEIGHT_TO_LBS[UnitLabel.lbs],
+          };
+        },
+      };
+    },
+    {
+      getAllUnits: (): WeightUnit["desc"][] => [UnitLabel.lbs],
+      getConversionFactors: (): { [K in WeightUnit["desc"]]: number } => ({
+        [UnitLabel.lbs]: UnitUtils.WEIGHT_TO_LBS[UnitLabel.lbs],
       }),
     },
   );
@@ -305,6 +361,63 @@ export class UnitUtils {
     const toSeconds = toTime * this.TIME_TO_SECONDS[toTimeUnit];
     const targetGallons = gallonsPerSecond * toSeconds;
     return targetGallons / this.VOLUME_TO_GALLONS[toVolumeUnit];
+  }
+
+  /**
+   * Convert weight per area (application rate) between units
+   *
+   * @example
+   * // Convert 2 Lbs/1000sf to Lbs/SF
+   * UnitUtils.convertWeightPerArea(2, AppUnit.lbs, AppUnit.ksf, AppUnit.lbs, AppUnit.sf)
+   * // Returns: 0.002
+   */
+  static convertWeightPerArea(
+    value: number,
+    fromWeightUnit: WeightUnit["desc"],
+    fromAreaUnit: AreaUnit["desc"],
+    toWeightUnit: WeightUnit["desc"],
+    toAreaUnit: AreaUnit["desc"],
+  ): number {
+    // Convert to base units (pounds per square foot)
+    const lbs = value * this.WEIGHT_TO_LBS[fromWeightUnit];
+    const sqFt = this.AREA_TO_SQ_FT[fromAreaUnit];
+    const lbsPerSqFt = lbs / sqFt;
+
+    // Convert to target units
+    const targetSqFt = this.AREA_TO_SQ_FT[toAreaUnit];
+    const targetLbs = lbsPerSqFt * targetSqFt;
+    return targetLbs / this.WEIGHT_TO_LBS[toWeightUnit];
+  }
+
+  /**
+   * Convert weight rate (weight per time) between compound units
+   *
+   * @example
+   * // Convert 5 lbs/1min to lbs/60sec
+   * UnitUtils.convertWeightRate(
+   *   5, AppUnit.lbs, 1, AppUnit.min,
+   *   AppUnit.lbs, 60, AppUnit.sec
+   * )
+   * // Returns: 5 (lbs per 60 seconds)
+   */
+  static convertWeightRate(
+    value: number,
+    fromWeightUnit: WeightUnit["desc"],
+    fromTime: number,
+    fromTimeUnit: TimeUnit["desc"],
+    toWeightUnit: WeightUnit["desc"],
+    toTime: number,
+    toTimeUnit: TimeUnit["desc"],
+  ): number {
+    // Convert to base rate (pounds per second)
+    const lbs = value * this.WEIGHT_TO_LBS[fromWeightUnit];
+    const fromSeconds = fromTime * this.TIME_TO_SECONDS[fromTimeUnit];
+    const lbsPerSecond = lbs / fromSeconds;
+
+    // Convert to target rate
+    const toSeconds = toTime * this.TIME_TO_SECONDS[toTimeUnit];
+    const targetLbs = lbsPerSecond * toSeconds;
+    return targetLbs / this.WEIGHT_TO_LBS[toWeightUnit];
   }
 
   /**

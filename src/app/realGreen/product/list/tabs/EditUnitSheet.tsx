@@ -19,7 +19,7 @@ import {
 } from "@/style/components/field";
 import {
   UnitCRM,
-  AppUnit,
+  UnitLabel,
   getMetricForUL,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import {
@@ -44,12 +44,12 @@ export default function EditUnitSheet({
   onOpenChange,
 }: EditUnitSheetProps) {
   const { updateUnit } = useProduct({});
-  const [newDesc, setNewDesc] = React.useState<AppUnit>(unit?.desc || AppUnit.unknown);
+  const [newDesc, setNewDesc] = React.useState<UnitLabel>(unit?.desc || UnitLabel.unknown);
   const [status, setStatus] = React.useState<SaveStatus>("idle");
 
   React.useEffect(() => {
     if (unit) {
-      setNewDesc(unit.desc as AppUnit);
+      setNewDesc(unit.desc as UnitLabel);
     }
   }, [unit]);
 
@@ -111,7 +111,7 @@ export default function EditUnitSheet({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
-                    {Object.values(AppUnit).map((ulValue) => (
+                    {Object.values(UnitLabel).map((ulValue) => (
                       <DropdownMenuItem
                         key={ulValue}
                         onClick={() => setNewDesc(ulValue)}

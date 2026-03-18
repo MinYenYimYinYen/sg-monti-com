@@ -6,6 +6,7 @@ import {
   AreaUnit,
   LengthUnit,
   TimeUnit,
+  WeightUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
 import { useEffect } from "react";
@@ -21,6 +22,9 @@ export function useFormFieldValues() {
 
   const solution = useSelector(solverSelect.solution);
   const missingField = useSelector(solverSelect.missingField);
+  const productType = useSelector(
+    (state: any) => state.createAppMethod.productType,
+  );
 
   const groundSpeedDistance = useSelector(
     fieldComponentsSelect.groundSpeed.distance,
@@ -113,6 +117,12 @@ export function useFormFieldValues() {
   ]);
 
   return {
+    // Product Type
+    productType,
+    setProductType: (value: "liquid" | "granular") => {
+      dispatch(createAppMethodActions.setProductType(value));
+    },
+
     // Metadata
     setAppMethodId: (value: string) => {
       dispatch(createAppMethodActions.setAppMethodId(value));
@@ -153,7 +163,9 @@ export function useFormFieldValues() {
       dispatch(createAppMethodActions.setFlowRateVolume(value));
     },
 
-    setFlowRateVolumeUnit: (value: VolumeUnit["desc"] | undefined) => {
+    setFlowRateVolumeUnit: (
+      value: VolumeUnit["desc"] | WeightUnit["desc"] | undefined,
+    ) => {
       dispatch(createAppMethodActions.setFlowRateVolumeUnit(value));
     },
 
@@ -170,7 +182,9 @@ export function useFormFieldValues() {
       dispatch(createAppMethodActions.setCoverageVolume(value));
     },
 
-    setCoverageVolumeUnit: (value: VolumeUnit["desc"] | undefined) => {
+    setCoverageVolumeUnit: (
+      value: VolumeUnit["desc"] | WeightUnit["desc"] | undefined,
+    ) => {
       dispatch(createAppMethodActions.setCoverageVolumeUnit(value));
     },
 

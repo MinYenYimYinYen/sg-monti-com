@@ -4,6 +4,7 @@ import { AppMethodParams, AppMethodSolver, MissingField } from "../../appMethodS
 import { FieldKey } from "../createAppMethodSlice";
 
 const selectOverlap = (state: AppState) => state.createAppMethod.overlap;
+const selectProductType = (state: AppState) => state.createAppMethod.productType;
 
 const selectAppMethodId = (state: AppState) =>
   state.createAppMethod.appMethodId;
@@ -50,6 +51,7 @@ const selectCoverageAreaUnit = (state: AppState) =>
 const selectParams = createSelector(
   [
     selectOverlap,
+    selectProductType,
     selectGroundSpeedDistance,
     selectGroundSpeedDistanceUnit,
     selectGroundSpeedTime,
@@ -67,6 +69,7 @@ const selectParams = createSelector(
   ],
   (
     overlap,
+    productType,
     groundSpeedDistance,
     groundSpeedDistanceUnit,
     groundSpeedTime,
@@ -85,6 +88,7 @@ const selectParams = createSelector(
     // Always include all fields, numeric values can be undefined
     return {
       overlap,
+      productType,
       groundSpeed: {
         distance: groundSpeedDistance,
         distanceUnit: groundSpeedDistanceUnit,

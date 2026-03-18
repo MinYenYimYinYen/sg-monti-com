@@ -4,7 +4,8 @@ import {
   AreaUnit,
   LengthUnit,
   TimeUnit,
-  AppUnit,
+  WeightUnit,
+  UnitLabel,
 } from "./UnitTypes";
 
 /**
@@ -12,6 +13,7 @@ import {
  *
  * Each dimension represents an exponent in dimensional analysis:
  * - volume: 1 means "gallons", -1 means "per gallon"
+ * - weight: 1 means "pounds", -1 means "per pound"
  * - length: 1 means "feet", 2 means "square feet", -1 means "per foot", -2 means "per square foot"
  * - time: 1 means "seconds", -1 means "per second"
  *
@@ -19,10 +21,13 @@ import {
  * - Speed (ft/sec): { length: 1, time: -1 }
  * - Area (ft²): { length: 2 }
  * - Flow rate (gal/min): { volume: 1, time: -1 }
+ * - Weight rate (lbs/min): { weight: 1, time: -1 }
  * - Coverage (gal/ft²): { volume: 1, length: -2 }
+ * - Coverage (lbs/ft²): { weight: 1, length: -2 }
  */
 type Dimensions = {
   volume?: number;
+  weight?: number;
   length?: number;
   time?: number;
 };
@@ -84,7 +89,7 @@ export class UnitMath {
    * const volume = UnitMath.volume(5, AppUnit.mGal);
    */
   static volume(volume: number, volumeUnit: VolumeUnit["desc"]): UnitMath {
-    const gallons = UnitUtils.volume(volume, volumeUnit).to(AppUnit.mGal);
+    const gallons = UnitUtils.volume(volume, volumeUnit).to(UnitLabel.mGal);
     return new UnitMath(gallons, { volume: 1 });
   }
 
@@ -95,7 +100,7 @@ export class UnitMath {
    * const width = UnitMath.distance(11, AppUnit.ft);
    */
   static distance(distance: number, distanceUnit: LengthUnit["desc"]): UnitMath {
-    const feet = UnitUtils.distance(distance, distanceUnit).to(AppUnit.ft);
+    const feet = UnitUtils.distance(distance, distanceUnit).to(UnitLabel.ft);
     return new UnitMath(feet, { length: 1 });
   }
 
@@ -106,7 +111,7 @@ export class UnitMath {
    * const duration = UnitMath.time(60, AppUnit.sec);
    */
   static time(time: number, timeUnit: TimeUnit["desc"]): UnitMath {
-    const seconds = UnitUtils.time(time, timeUnit).to(AppUnit.sec);
+    const seconds = UnitUtils.time(time, timeUnit).to(UnitLabel.sec);
     return new UnitMath(seconds, { time: 1 });
   }
 
@@ -117,7 +122,7 @@ export class UnitMath {
    * const area = UnitMath.area(1000, AppUnit.sf);
    */
   static area(area: number, areaUnit: AreaUnit["desc"]): UnitMath {
-    const sqFeet = UnitUtils.area(area, areaUnit).to(AppUnit.sf);
+    const sqFeet = UnitUtils.area(area, areaUnit).to(UnitLabel.sf);
     return new UnitMath(sqFeet, { length: 2 });
   }
 
@@ -134,8 +139,8 @@ export class UnitMath {
     time: number,
     timeUnit: TimeUnit["desc"]
   ): UnitMath {
-    const gallons = UnitUtils.volume(volume, volumeUnit).to(AppUnit.mGal);
-    const seconds = UnitUtils.time(time, timeUnit).to(AppUnit.sec);
+    const gallons = UnitUtils.volume(volume, volumeUnit).to(UnitLabel.mGal);
+    const seconds = UnitUtils.time(time, timeUnit).to(UnitLabel.sec);
     return new UnitMath(gallons / seconds, { volume: 1, time: -1 });
   }
 
@@ -152,8 +157,8 @@ export class UnitMath {
     time: number,
     timeUnit: TimeUnit["desc"]
   ): UnitMath {
-    const feet = UnitUtils.distance(distance, distanceUnit).to(AppUnit.ft);
-    const seconds = UnitUtils.time(time, timeUnit).to(AppUnit.sec);
+    const feet = UnitUtils.distance(distance, distanceUnit).to(UnitLabel.ft);
+    const seconds = UnitUtils.time(time, timeUnit).to(UnitLabel.sec);
     return new UnitMath(feet / seconds, { length: 1, time: -1 });
   }
 
@@ -170,9 +175,56 @@ export class UnitMath {
     area: number,
     areaUnit: AreaUnit["desc"]
   ): UnitMath {
-    const gallons = UnitUtils.volume(volume, volumeUnit).to(AppUnit.mGal);
-    const sqFeet = UnitUtils.area(area, areaUnit).to(AppUnit.sf);
+    const gallons = UnitUtils.volume(volume, volumeUnit).to(UnitLabel.mGal);
+    const sqFeet = UnitUtils.area(area, areaUnit).to(UnitLabel.sf);
     return new UnitMath(gallons / sqFeet, { volume: 1, length: -2 });
+  }
+
+  /**
+   * Create a weight quantity
+   *
+   * @example
+   * const weight = UnitMath.weight(5, AppUnit.lbs);
+   */
+  static weight(weight: number, weightUnit: WeightUnit["desc"]): UnitMath {
+    const lbs = UnitUtils.weight(weight, weightUnit).to(UnitLabel.lbs);
+    return new UnitMath(lbs, { weight: 1 });
+  }
+
+  /**
+   * Create a weight rate (weight per time)
+   *
+   * @example
+   * const weightRate = UnitMath.weightRate(3, AppUnit.lbs, 1, AppUnit.sec);
+   * // Represents 3 pounds per second
+   */
+  static weightRate(
+    weight: number,
+    weightUnit: WeightUnit["desc"],
+    time: number,
+    timeUnit: TimeUnit["desc"]
+  ): UnitMath {
+    const lbs = UnitUtils.weight(weight, weightUnit).to(UnitLabel.lbs);
+    const seconds = UnitUtils.time(time, timeUnit).to(UnitLabel.sec);
+    return new UnitMath(lbs / seconds, { weight: 1, time: -1 });
+  }
+
+  /**
+   * Create a weight per area quantity (application rate)
+   *
+   * @example
+   * const rate = UnitMath.weightPerArea(2, AppUnit.lbs, 1000, AppUnit.sf);
+   * // Represents 2 pounds per 1000 square feet
+   */
+  static weightPerArea(
+    weight: number,
+    weightUnit: WeightUnit["desc"],
+    area: number,
+    areaUnit: AreaUnit["desc"]
+  ): UnitMath {
+    const lbs = UnitUtils.weight(weight, weightUnit).to(UnitLabel.lbs);
+    const sqFeet = UnitUtils.area(area, areaUnit).to(UnitLabel.sf);
+    return new UnitMath(lbs / sqFeet, { weight: 1, length: -2 });
   }
 
   // ========== Arithmetic Operations ==========
@@ -189,6 +241,7 @@ export class UnitMath {
   multiply(other: UnitMath): UnitMath {
     return new UnitMath(this.baseValue * other.baseValue, {
       volume: (this.dimensions.volume || 0) + (other.dimensions.volume || 0),
+      weight: (this.dimensions.weight || 0) + (other.dimensions.weight || 0),
       length: (this.dimensions.length || 0) + (other.dimensions.length || 0),
       time: (this.dimensions.time || 0) + (other.dimensions.time || 0),
     });
@@ -206,6 +259,7 @@ export class UnitMath {
   divide(other: UnitMath): UnitMath {
     return new UnitMath(this.baseValue / other.baseValue, {
       volume: (this.dimensions.volume || 0) - (other.dimensions.volume || 0),
+      weight: (this.dimensions.weight || 0) - (other.dimensions.weight || 0),
       length: (this.dimensions.length || 0) - (other.dimensions.length || 0),
       time: (this.dimensions.time || 0) - (other.dimensions.time || 0),
     });
@@ -232,10 +286,11 @@ export class UnitMath {
    */
   toScalar(): number {
     const hasVolume = this.dimensions.volume && this.dimensions.volume !== 0;
+    const hasWeight = this.dimensions.weight && this.dimensions.weight !== 0;
     const hasLength = this.dimensions.length && this.dimensions.length !== 0;
     const hasTime = this.dimensions.time && this.dimensions.time !== 0;
 
-    if (hasVolume || hasLength || hasTime) {
+    if (hasVolume || hasWeight || hasLength || hasTime) {
       throw new Error(
         `Cannot convert to scalar: quantity has dimensions ${JSON.stringify(this.dimensions)}`
       );
@@ -256,7 +311,7 @@ export class UnitMath {
       );
     }
 
-    return UnitUtils.volume(this.baseValue, AppUnit.mGal).to(volumeUnit);
+    return UnitUtils.volume(this.baseValue, UnitLabel.mGal).to(volumeUnit);
   }
 
   /**
@@ -271,7 +326,7 @@ export class UnitMath {
       );
     }
 
-    return UnitUtils.distance(this.baseValue, AppUnit.ft).to(distanceUnit);
+    return UnitUtils.distance(this.baseValue, UnitLabel.ft).to(distanceUnit);
   }
 
   /**
@@ -286,7 +341,7 @@ export class UnitMath {
       );
     }
 
-    return UnitUtils.time(this.baseValue, AppUnit.sec).to(timeUnit);
+    return UnitUtils.time(this.baseValue, UnitLabel.sec).to(timeUnit);
   }
 
   /**
@@ -301,7 +356,7 @@ export class UnitMath {
       );
     }
 
-    return UnitUtils.area(this.baseValue, AppUnit.sf).to(areaUnit);
+    return UnitUtils.area(this.baseValue, UnitLabel.sf).to(areaUnit);
   }
 
   /**
@@ -326,10 +381,10 @@ export class UnitMath {
 
     // baseValue is in gallons per square foot
     // Convert volume part
-    const volumeInTargetUnit = UnitUtils.volume(this.baseValue, AppUnit.mGal).to(volumeUnit);
+    const volumeInTargetUnit = UnitUtils.volume(this.baseValue, UnitLabel.mGal).to(volumeUnit);
 
     // Convert area part: we have "per 1 sqft", need "per X areaUnit"
-    const sqFtPerTargetAreaUnit = UnitUtils.area(1, areaUnit).to(AppUnit.sf);
+    const sqFtPerTargetAreaUnit = UnitUtils.area(1, areaUnit).to(UnitLabel.sf);
 
     return volumeInTargetUnit * sqFtPerTargetAreaUnit;
   }
@@ -355,8 +410,8 @@ export class UnitMath {
     }
 
     // baseValue is in gallons per second
-    const volumeInTargetUnit = UnitUtils.volume(this.baseValue, AppUnit.mGal).to(volumeUnit);
-    const secondsPerTargetTimeUnit = UnitUtils.time(1, timeUnit).to(AppUnit.sec);
+    const volumeInTargetUnit = UnitUtils.volume(this.baseValue, UnitLabel.mGal).to(volumeUnit);
+    const secondsPerTargetTimeUnit = UnitUtils.time(1, timeUnit).to(UnitLabel.sec);
 
     return volumeInTargetUnit * secondsPerTargetTimeUnit;
   }
@@ -374,7 +429,8 @@ export class UnitMath {
     if (
       this.dimensions.length !== 1 ||
       this.dimensions.time !== -1 ||
-      this.dimensions.volume
+      this.dimensions.volume ||
+      this.dimensions.weight
     ) {
       throw new Error(
         `Cannot convert to distance rate: dimensions are ${JSON.stringify(this.dimensions)}, expected { length: 1, time: -1 }`
@@ -382,9 +438,83 @@ export class UnitMath {
     }
 
     // baseValue is in feet per second
-    const distanceInTargetUnit = UnitUtils.distance(this.baseValue, AppUnit.ft).to(distanceUnit);
-    const secondsPerTargetTimeUnit = UnitUtils.time(1, timeUnit).to(AppUnit.sec);
+    const distanceInTargetUnit = UnitUtils.distance(this.baseValue, UnitLabel.ft).to(distanceUnit);
+    const secondsPerTargetTimeUnit = UnitUtils.time(1, timeUnit).to(UnitLabel.sec);
 
     return distanceInTargetUnit * secondsPerTargetTimeUnit;
+  }
+
+  /**
+   * Convert to weight in specified units
+   *
+   * @throws Error if dimensions are not { weight: 1 }
+   */
+  toWeight(weightUnit: WeightUnit["desc"]): number {
+    if (this.dimensions.weight !== 1 || this.dimensions.length || this.dimensions.time || this.dimensions.volume) {
+      throw new Error(
+        `Cannot convert to weight: dimensions are ${JSON.stringify(this.dimensions)}, expected { weight: 1 }`
+      );
+    }
+
+    return UnitUtils.weight(this.baseValue, UnitLabel.lbs).to(weightUnit);
+  }
+
+  /**
+   * Convert to weight rate (weight per time)
+   *
+   * @throws Error if dimensions are not { weight: 1, time: -1 }
+   *
+   * @example
+   * const weightRate = UnitMath.weight(5, AppUnit.lbs).divide(UnitMath.time(60, AppUnit.sec));
+   * const lbsPerMin = weightRate.toWeightRate(AppUnit.lbs, AppUnit.min);
+   */
+  toWeightRate(weightUnit: WeightUnit["desc"], timeUnit: TimeUnit["desc"]): number {
+    if (
+      this.dimensions.weight !== 1 ||
+      this.dimensions.time !== -1 ||
+      this.dimensions.length ||
+      this.dimensions.volume
+    ) {
+      throw new Error(
+        `Cannot convert to weight rate: dimensions are ${JSON.stringify(this.dimensions)}, expected { weight: 1, time: -1 }`
+      );
+    }
+
+    // baseValue is in pounds per second
+    const weightInTargetUnit = UnitUtils.weight(this.baseValue, UnitLabel.lbs).to(weightUnit);
+    const secondsPerTargetTimeUnit = UnitUtils.time(1, timeUnit).to(UnitLabel.sec);
+
+    return weightInTargetUnit * secondsPerTargetTimeUnit;
+  }
+
+  /**
+   * Convert to weight per area (application coverage rate)
+   *
+   * @throws Error if dimensions are not { weight: 1, length: -2 }
+   *
+   * @example
+   * const coverage = weightRate.multiply(overlap).divide(groundSpeed).divide(width);
+   * const lbsPer1000SqFt = coverage.toWeightPerArea(AppUnit.lbs, AppUnit.ksf);
+   */
+  toWeightPerArea(weightUnit: WeightUnit["desc"], areaUnit: AreaUnit["desc"]): number {
+    if (
+      this.dimensions.weight !== 1 ||
+      this.dimensions.length !== -2 ||
+      this.dimensions.time ||
+      this.dimensions.volume
+    ) {
+      throw new Error(
+        `Cannot convert to weight per area: dimensions are ${JSON.stringify(this.dimensions)}, expected { weight: 1, length: -2 }`
+      );
+    }
+
+    // baseValue is in pounds per square foot
+    // Convert weight part
+    const weightInTargetUnit = UnitUtils.weight(this.baseValue, UnitLabel.lbs).to(weightUnit);
+
+    // Convert area part: we have "per 1 sqft", need "per X areaUnit"
+    const sqFtPerTargetAreaUnit = UnitUtils.area(1, areaUnit).to(UnitLabel.sf);
+
+    return weightInTargetUnit * sqFtPerTargetAreaUnit;
   }
 }

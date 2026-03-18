@@ -8,6 +8,7 @@ import { FieldLabel } from "./shared/FieldLabel";
 import { UnitSelect } from "./shared/UnitSelect";
 
 const volumeUnits = UnitUtils.volume.getAllUnits();
+const weightUnits = UnitUtils.weight.getAllUnits();
 const timeUnits = UnitUtils.time.getAllUnits();
 
 interface FlowRateFieldProps {
@@ -16,6 +17,7 @@ interface FlowRateFieldProps {
 
 export function FlowRateField({ disabled }: FlowRateFieldProps) {
   const {
+    productType,
     setFlowRateVolume,
     setFlowRateVolumeUnit,
     setFlowRateTime,
@@ -32,6 +34,10 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
   const missingField = useSelector(solverSelect.missingField);
   const isVolumeBeingSolved = missingField?.param === "flowRate" && missingField?.field === "volume";
   const isTimeBeingSolved = missingField?.param === "flowRate" && missingField?.field === "time";
+
+  // Select appropriate units based on product type
+  const flowUnits = productType === "liquid" ? volumeUnits : weightUnits;
+  const flowPlaceholder = productType === "liquid" ? "Volume" : "Weight";
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
@@ -50,7 +56,7 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
         <div className="grid grid-cols-4 gap-2">
           <Input
             type="number"
-            placeholder="Volume"
+            placeholder={flowPlaceholder}
             value={flowRateVolume ?? ""}
             onChange={(e) =>
               setFlowRateVolume(e.target.value === "" ? undefined : Number(e.target.value))
@@ -59,8 +65,8 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
             step="0.01"
           />
           <UnitSelect
-            units={volumeUnits}
-            placeholder="Volume Unit"
+            units={flowUnits}
+            placeholder={`${flowPlaceholder} Unit`}
             value={flowRateVolumeUnit}
             onValueChange={setFlowRateVolumeUnit}
           />
