@@ -1,10 +1,15 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
-import { AppMethodParams, AppMethodSolver, MissingField } from "../../appMethodSolver/AppMethodSolver";
+import {
+  AppMethodParams,
+  AppMethodSolver,
+  MissingField,
+} from "../../appMethodSolver/AppMethodSolver";
 import { FieldKey } from "../createAppMethodSlice";
 
 const selectOverlap = (state: AppState) => state.createAppMethod.overlap;
-const selectProductType = (state: AppState) => state.createAppMethod.productType;
+const selectProductType = (state: AppState) =>
+  state.createAppMethod.productType;
 
 const selectAppMethodId = (state: AppState) =>
   state.createAppMethod.appMethodId;
@@ -129,24 +134,17 @@ const selectMissingField = createSelector(
   },
 );
 
-const selectSolution = createSelector(
-  [selectParams],
-  (params) => {
-    console.log("selectSolution", params);
-    const solution =  AppMethodSolver.solve(params);
-    console.log("solution", solution);
-    return solution;
-  },
-);
+const selectSolution = createSelector([selectParams], (params) => {
+  const solution = AppMethodSolver.solve(params);
+  return solution;
+});
 const selectCanSave = createSelector(
   [selectAppMethodId, selectDescription, selectSolution],
   (appMethodId, description, solution) => {
+    console.log("selectCanSave", appMethodId, description, solution);
     return Boolean(appMethodId && description && solution && solution.success);
   },
 );
-
-
-
 
 export const solverSelect = {
   params: selectParams,

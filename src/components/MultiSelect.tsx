@@ -21,6 +21,8 @@ type MultiSelectContextValue<TValue = any> = {
   focusedIndex: number;
   setFocusedIndex: (index: number) => void;
   items: React.RefObject<Map<string, HTMLDivElement>>;
+  itemLabels: React.RefObject<Map<string, string>>;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
   getValueKey: (value: TValue) => string;
   compareValues: (a: TValue, b: TValue) => boolean;
 };
@@ -71,6 +73,8 @@ export function MultiSelect<TValue = string>({
   const [isOpen, setIsOpen] = React.useState(false);
   const [focusedIndex, setFocusedIndex] = React.useState(-1);
   const items = React.useRef<Map<string, HTMLDivElement>>(new Map());
+  const itemLabels = React.useRef<Map<string, string>>(new Map());
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   const value = controlledValue ?? uncontrolledValue;
   const handleValueChange = onValueChange ?? setUncontrolledValue;
@@ -86,6 +90,8 @@ export function MultiSelect<TValue = string>({
         focusedIndex,
         setFocusedIndex,
         items,
+        itemLabels,
+        triggerRef,
         getValueKey,
         compareValues,
       }}
@@ -129,15 +135,70 @@ interface MultiSelectTriggerProps
 export const MultiSelectTrigger = React.forwardRef<
   React.ElementRef<typeof CollapsibleTrigger>,
   MultiSelectTriggerProps
->(({ className, variant, size, children, ...props }, ref) => {
-  const { isOpen } = useMultiSelect();
+>(({ className, variant, size, children, onKeyDown, ...props }, ref) => {
+  const { isOpen, setIsOpen, setFocusedIndex, itemLabels, triggerRef } = useMultiSelect();
+  const typeaheadRef = React.useRef({ buffer: "", timeout: null as NodeJS.Timeout | null });
+  const internalRef = React.useRef<HTMLButtonElement>(null);
+
+  // Combine refs
+  React.useEffect(() => {
+    const element = internalRef.current;
+    triggerRef.current = element;
+
+    if (typeof ref === 'function') {
+      ref(element);
+    } else if (ref) {
+      ref.current = element;
+    }
+  }, [ref, triggerRef]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    // Call original onKeyDown if provided
+    onKeyDown?.(e);
+
+    // Don't intercept if dropdown is already open
+    if (isOpen) return;
+
+    // Handle alphanumeric keys for type-ahead
+    if (e.key.length === 1 && /^[a-z0-9]$/i.test(e.key)) {
+      e.preventDefault();
+
+      // Clear existing timeout
+      if (typeaheadRef.current.timeout) {
+        clearTimeout(typeaheadRef.current.timeout);
+      }
+
+      // Add to buffer
+      typeaheadRef.current.buffer += e.key.toLowerCase();
+
+      // Set timeout to clear buffer
+      typeaheadRef.current.timeout = setTimeout(() => {
+        typeaheadRef.current.buffer = "";
+      }, 500);
+
+      // Search for matching item
+      const labels = Array.from(itemLabels.current.entries());
+      const matchIndex = labels.findIndex(([_, label]) =>
+        label.toLowerCase().startsWith(typeaheadRef.current.buffer)
+      );
+
+      // Open dropdown and set focus to matching item
+      setIsOpen(true);
+      if (matchIndex >= 0) {
+        setFocusedIndex(matchIndex);
+      } else {
+        setFocusedIndex(0);
+      }
+    }
+  };
 
   return (
     <CollapsibleTrigger
-      ref={ref}
+      ref={internalRef}
       role="combobox"
       aria-expanded={isOpen}
       className={cn(multiSelectTriggerVariants({ variant, size }), className)}
+      onKeyDown={handleKeyDown}
       {...props}
     >
       {children}
@@ -158,9 +219,10 @@ interface MultiSelectContentProps extends React.ComponentPropsWithoutRef<"div"> 
 export const MultiSelectContent = React.forwardRef<HTMLDivElement, MultiSelectContentProps>(
   ({ className, align = "end", side = "bottom", children, ...props }, ref) => {
     const context = useMultiSelect();
-    const { isOpen, setIsOpen, focusedIndex } = context;
+    const { isOpen, setIsOpen, focusedIndex, mode, onValueChange, value, items: itemsMap, itemLabels, triggerRef } = context;
     const setFocusedIndex = context.setFocusedIndex as React.Dispatch<React.SetStateAction<number>>;
     const containerRef = React.useRef<HTMLDivElement>(null);
+    const typeaheadRef = React.useRef({ buffer: "", timeout: null as NodeJS.Timeout | null });
 
     // Click outside to close
     React.useEffect(() => {
@@ -182,11 +244,57 @@ export const MultiSelectContent = React.forwardRef<HTMLDivElement, MultiSelectCo
       }
     }, [isOpen, setIsOpen]);
 
+    // Auto-focus content when opened
+    React.useEffect(() => {
+      if (isOpen && containerRef.current) {
+        const focusableDiv = containerRef.current.querySelector('[tabindex="0"]') as HTMLElement;
+        focusableDiv?.focus();
+      }
+    }, [isOpen]);
+
+    // Get focused item value
+    const getFocusedItemValue = () => {
+      const itemsArray = Array.from(itemsMap.current.entries());
+      if (focusedIndex >= 0 && focusedIndex < itemsArray.length) {
+        return itemsArray[focusedIndex];
+      }
+      return null;
+    };
+
     // Keyboard navigation
     const handleKeyDown = (e: React.KeyboardEvent) => {
       const items = Array.from(containerRef.current?.querySelectorAll("[data-multiselect-item]") || []);
 
       if (items.length === 0) return;
+
+      // Handle letter keys for type-ahead when dropdown is open
+      if (e.key.length === 1 && /^[a-z0-9]$/i.test(e.key)) {
+        e.preventDefault();
+
+        // Clear existing timeout
+        if (typeaheadRef.current.timeout) {
+          clearTimeout(typeaheadRef.current.timeout);
+        }
+
+        // Add to buffer
+        typeaheadRef.current.buffer += e.key.toLowerCase();
+
+        // Set timeout to clear buffer
+        typeaheadRef.current.timeout = setTimeout(() => {
+          typeaheadRef.current.buffer = "";
+        }, 500);
+
+        // Search for matching item
+        const labels = Array.from(itemLabels.current.entries());
+        const matchIndex = labels.findIndex(([_, label]) =>
+          label.toLowerCase().startsWith(typeaheadRef.current.buffer)
+        );
+
+        if (matchIndex >= 0) {
+          setFocusedIndex(matchIndex);
+        }
+        return;
+      }
 
       switch (e.key) {
         case "ArrowDown":
@@ -208,6 +316,44 @@ export const MultiSelectContent = React.forwardRef<HTMLDivElement, MultiSelectCo
         case "Escape":
           e.preventDefault();
           setIsOpen(false);
+          triggerRef.current?.focus();
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (focusedIndex >= 0) {
+            // Trigger click on focused item
+            const focusedItem = items[focusedIndex] as HTMLElement;
+            focusedItem?.click();
+
+            // In single mode, close dropdown and return focus
+            if (mode === "single") {
+              setIsOpen(false);
+              triggerRef.current?.focus();
+            }
+          }
+          break;
+        case " ":
+          e.preventDefault();
+          if (focusedIndex >= 0) {
+            // Toggle selection of focused item
+            const focusedItem = items[focusedIndex] as HTMLElement;
+            focusedItem?.click();
+          }
+          break;
+        case "Tab":
+          // Don't prevent default - allow natural tab behavior
+          if (focusedIndex >= 0) {
+            // Select focused item (don't toggle, ensure it's selected)
+            const focusedItem = items[focusedIndex] as HTMLElement;
+            const isSelected = focusedItem?.getAttribute("data-selected") === "true";
+
+            if (!isSelected) {
+              focusedItem?.click();
+            }
+          }
+          // Close dropdown
+          setIsOpen(false);
+          // Tab will naturally move focus
           break;
       }
     };
@@ -284,7 +430,7 @@ const MultiSelectItemInner = <TValue = string,>(
   { className, variant, value, disabled, children, onClick, ...props }: MultiSelectItemProps<TValue>,
   ref: React.ForwardedRef<HTMLDivElement>
 ) => {
-    const { value: selectedValues, onValueChange, mode, focusedIndex, setFocusedIndex, items, getValueKey, compareValues } = useMultiSelect<TValue>();
+    const { value: selectedValues, onValueChange, mode, focusedIndex, setFocusedIndex, items, itemLabels, getValueKey, compareValues } = useMultiSelect<TValue>();
     const itemRef = React.useRef<HTMLDivElement>(null);
     const [index, setIndex] = React.useState(-1);
 
@@ -295,13 +441,17 @@ const MultiSelectItemInner = <TValue = string,>(
     React.useEffect(() => {
       if (itemRef.current) {
         items.current.set(valueKey, itemRef.current);
+        // Extract text content for type-ahead search
+        const textContent = itemRef.current.textContent || "";
+        itemLabels.current.set(valueKey, textContent);
         const allItems = Array.from(items.current.values());
         setIndex(allItems.indexOf(itemRef.current));
         return () => {
           items.current.delete(valueKey);
+          itemLabels.current.delete(valueKey);
         };
       }
-    }, [items, valueKey]);
+    }, [items, itemLabels, valueKey, children]);
 
     const isFocused = index === focusedIndex;
 
@@ -348,6 +498,7 @@ const MultiSelectItemInner = <TValue = string,>(
           multiSelectItemVariants({ variant }),
           isSelected && "bg-primary/20 font-medium border-l-4 border-primary",
           !isSelected && "border-l-4 border-transparent",
+          isFocused && !disabled && "bg-accent",
           disabled && "opacity-50 cursor-not-allowed",
           className
         )}

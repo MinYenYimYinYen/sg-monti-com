@@ -1,8 +1,8 @@
 import {
-  UnitLabel,
   AreaUnit,
   LengthUnit,
   TimeUnit,
+  UnitLabel,
   VolumeUnit,
   WeightUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
@@ -86,6 +86,11 @@ interface WeightConverter {
  * Type-safe unit conversion and metadata utilities
  */
 export class UnitUtils {
+  private static readonly VOLUME_UNITS = [
+    UnitLabel.mGal,
+    UnitLabel.flOz,
+  ] as const satisfies VolumeUnit["desc"][];
+
   // Volume conversions (to gallons)
   private static readonly VOLUME_TO_GALLONS: Record<
     VolumeUnit["desc"],
@@ -94,29 +99,6 @@ export class UnitUtils {
     [UnitLabel.mGal]: 1,
     [UnitLabel.flOz]: 1 / 128,
   };
-
-  // Area conversions (to square feet)
-  private static readonly AREA_TO_SQ_FT: Record<AreaUnit["desc"], number> = {
-    [UnitLabel.sf]: 1,
-    [UnitLabel.ksf]: 1000,
-  };
-
-  // Length conversions (to feet)
-  private static readonly LENGTH_TO_FEET: Record<LengthUnit["desc"], number> = {
-    [UnitLabel.ft]: 1,
-  };
-
-  // Time conversions (to seconds)
-  private static readonly TIME_TO_SECONDS: Record<TimeUnit["desc"], number> = {
-    [UnitLabel.sec]: 1,
-    [UnitLabel.min]: 60,
-  };
-
-  // Weight conversions (to pounds)
-  private static readonly WEIGHT_TO_LBS: Record<WeightUnit["desc"], number> = {
-    [UnitLabel.lbs]: 1,
-  };
-
   /**
    * Volume converter with fluent API
    *
@@ -143,21 +125,32 @@ export class UnitUtils {
 
         toAll: (): { [K in VolumeUnit["desc"]]: number } => {
           return {
-            [UnitLabel.mGal]: gallons / UnitUtils.VOLUME_TO_GALLONS[UnitLabel.mGal],
-            [UnitLabel.flOz]: gallons / UnitUtils.VOLUME_TO_GALLONS[UnitLabel.flOz],
+            [UnitLabel.mGal]:
+              gallons / UnitUtils.VOLUME_TO_GALLONS[UnitLabel.mGal],
+            [UnitLabel.flOz]:
+              gallons / UnitUtils.VOLUME_TO_GALLONS[UnitLabel.flOz],
           };
         },
       };
     },
     {
-      getAllUnits: (): VolumeUnit["desc"][] => [UnitLabel.mGal, UnitLabel.flOz],
+      getAllUnits: (): VolumeUnit["desc"][] => UnitUtils.VOLUME_UNITS,
       getConversionFactors: (): { [K in VolumeUnit["desc"]]: number } => ({
         [UnitLabel.mGal]: UnitUtils.VOLUME_TO_GALLONS[UnitLabel.mGal],
         [UnitLabel.flOz]: UnitUtils.VOLUME_TO_GALLONS[UnitLabel.flOz],
       }),
     },
   );
+  private static readonly AREA_UNITS = [
+    UnitLabel.sf,
+    UnitLabel.ksf,
+  ] as const satisfies AreaUnit["desc"][];
 
+  // Area conversions (to square feet)
+  private static readonly AREA_TO_SQ_FT: Record<AreaUnit["desc"], number> = {
+    [UnitLabel.sf]: 1,
+    [UnitLabel.ksf]: 1000,
+  };
   /**
    * Area converter with fluent API
    *
@@ -191,24 +184,33 @@ export class UnitUtils {
       };
     },
     {
-      getAllUnits: (): AreaUnit["desc"][] => [UnitLabel.sf, UnitLabel.ksf],
+      getAllUnits: (): AreaUnit["desc"][] => UnitUtils.AREA_UNITS,
       getConversionFactors: (): { [K in AreaUnit["desc"]]: number } => ({
         [UnitLabel.sf]: UnitUtils.AREA_TO_SQ_FT[UnitLabel.sf],
         [UnitLabel.ksf]: UnitUtils.AREA_TO_SQ_FT[UnitLabel.ksf],
       }),
     },
   );
+  private static readonly LENGTH_UNITS = [
+    UnitLabel.ft,
+    UnitLabel.miles,
+  ] as const satisfies LengthUnit["desc"][];
 
+  // Length conversions (to feet)
+  private static readonly LENGTH_TO_FEET: Record<LengthUnit["desc"], number> = {
+    [UnitLabel.ft]: 1,
+    [UnitLabel.miles]: 5280,
+  };
   /**
    * Distance converter with fluent API
    *
    * @example
-   * // Convert feet (currently only one unit)
-   * UnitUtils.distance(10, AppUnit.ft).to(AppUnit.ft)  // 10
+   * // Convert feet to miles
+   * UnitUtils.distance(5280, AppUnit.ft).to(AppUnit.miles)  // 1
    *
    * @example
    * // Get all available units
-   * UnitUtils.distance.getAllUnits()  // ["Feet"]
+   * UnitUtils.distance.getAllUnits()  // ["Feet", "Miles"]
    */
   static readonly distance: DistanceConverter = Object.assign(
     (value: number, fromUnit: LengthUnit["desc"]) => {
@@ -222,28 +224,42 @@ export class UnitUtils {
         toAll: (): { [K in LengthUnit["desc"]]: number } => {
           return {
             [UnitLabel.ft]: feet / UnitUtils.LENGTH_TO_FEET[UnitLabel.ft],
+            [UnitLabel.miles]: feet / UnitUtils.LENGTH_TO_FEET[UnitLabel.miles],
           };
         },
       };
     },
     {
-      getAllUnits: (): LengthUnit["desc"][] => [UnitLabel.ft],
+      getAllUnits: (): LengthUnit["desc"][] => UnitUtils.LENGTH_UNITS,
       getConversionFactors: (): { [K in LengthUnit["desc"]]: number } => ({
         [UnitLabel.ft]: UnitUtils.LENGTH_TO_FEET[UnitLabel.ft],
+        [UnitLabel.miles]: UnitUtils.LENGTH_TO_FEET[UnitLabel.miles],
       }),
     },
   );
 
+  private static readonly TIME_UNITS = [
+    UnitLabel.sec,
+    UnitLabel.min,
+    UnitLabel.hr,
+  ] as const satisfies TimeUnit["desc"][];
+
+  // Time conversions (to seconds)
+  private static readonly TIME_TO_SECONDS: Record<TimeUnit["desc"], number> = {
+    [UnitLabel.sec]: 1,
+    [UnitLabel.min]: 60,
+    [UnitLabel.hr]: 3600,
+  };
   /**
    * Time converter with fluent API
    *
    * @example
-   * // Convert seconds (currently only one unit)
-   * UnitUtils.time(60, AppUnit.sec).to(AppUnit.sec)  // 60
+   * // Convert hours to seconds
+   * UnitUtils.time(1, AppUnit.hr).to(AppUnit.sec)  // 3600
    *
    * @example
    * // Get all available units
-   * UnitUtils.time.getAllUnits()  // ["Seconds"]
+   * UnitUtils.time.getAllUnits()  // ["Seconds", "Minutes", "Hours"]
    */
   static readonly time: TimeConverter = Object.assign(
     (value: number, fromUnit: TimeUnit["desc"]) => {
@@ -258,19 +274,28 @@ export class UnitUtils {
           return {
             [UnitLabel.sec]: seconds / UnitUtils.TIME_TO_SECONDS[UnitLabel.sec],
             [UnitLabel.min]: seconds / UnitUtils.TIME_TO_SECONDS[UnitLabel.min],
+            [UnitLabel.hr]: seconds / UnitUtils.TIME_TO_SECONDS[UnitLabel.hr],
           };
         },
       };
     },
     {
-      getAllUnits: (): TimeUnit["desc"][] => [UnitLabel.sec, UnitLabel.min],
+      getAllUnits: (): TimeUnit["desc"][] => UnitUtils.TIME_UNITS,
       getConversionFactors: (): { [K in TimeUnit["desc"]]: number } => ({
         [UnitLabel.sec]: UnitUtils.TIME_TO_SECONDS[UnitLabel.sec],
         [UnitLabel.min]: UnitUtils.TIME_TO_SECONDS[UnitLabel.min],
+        [UnitLabel.hr]: UnitUtils.TIME_TO_SECONDS[UnitLabel.hr],
       }),
     },
   );
+  private static readonly WEIGHT_UNITS = [
+    UnitLabel.lbs,
+  ] as const satisfies WeightUnit["desc"][];
 
+  // Weight conversions (to pounds)
+  private static readonly WEIGHT_TO_LBS: Record<WeightUnit["desc"], number> = {
+    [UnitLabel.lbs]: 1,
+  };
   /**
    * Weight converter with fluent API
    *
@@ -299,7 +324,7 @@ export class UnitUtils {
       };
     },
     {
-      getAllUnits: (): WeightUnit["desc"][] => [UnitLabel.lbs],
+      getAllUnits: (): WeightUnit["desc"][] => UnitUtils.WEIGHT_UNITS,
       getConversionFactors: (): { [K in WeightUnit["desc"]]: number } => ({
         [UnitLabel.lbs]: UnitUtils.WEIGHT_TO_LBS[UnitLabel.lbs],
       }),
