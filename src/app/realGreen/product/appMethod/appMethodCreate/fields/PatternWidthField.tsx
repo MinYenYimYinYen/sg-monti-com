@@ -34,9 +34,9 @@ export function PatternWidthField({ disabled }: PatternWidthFieldProps) {
           <Input
             type="number"
             placeholder="Distance"
-            value={patternWidth}
+            value={patternWidth ?? ""}
             onChange={(e) =>
-              setPatternWidthDistance(e.target.value === "" ? "" : Number(e.target.value))
+              setPatternWidthDistance(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isDistanceBeingSolved}
           />

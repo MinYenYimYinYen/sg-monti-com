@@ -5,7 +5,7 @@ import {
   LengthUnit,
   TimeUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
-import { ValidationResult, SolverResult } from "../AppMethodSolver";
+import { ValidationResult, SolverResult } from "../appMethodSolver/AppMethodSolver";
 
 // Field types
 export type FieldKey = "groundSpeed" | "patternWidth" | "flowRate" | "coverage";
@@ -16,26 +16,26 @@ interface CreateAppMethodState {
   description: string;
 
   // Ground Speed - individual properties
-  groundSpeedDistance: number | "";
-  groundSpeedDistanceUnit: LengthUnit["desc"] | "";
-  groundSpeedTime: number | "";
-  groundSpeedTimeUnit: TimeUnit["desc"] | "";
+  groundSpeedDistance: number | undefined;
+  groundSpeedDistanceUnit: LengthUnit["desc"] | undefined;
+  groundSpeedTime: number | undefined;
+  groundSpeedTimeUnit: TimeUnit["desc"] | undefined;
 
   // Pattern Width - individual properties
-  patternWidthDistance: number | "";
-  patternWidthDistanceUnit: LengthUnit["desc"] | "";
+  patternWidthDistance: number | undefined;
+  patternWidthDistanceUnit: LengthUnit["desc"] | undefined;
 
   // Flow Rate - individual properties
-  flowRateVolume: number | "";
-  flowRateVolumeUnit: VolumeUnit["desc"] | "";
-  flowRateTime: number | "";
-  flowRateTimeUnit: TimeUnit["desc"] | "";
+  flowRateVolume: number | undefined;
+  flowRateVolumeUnit: VolumeUnit["desc"] | undefined;
+  flowRateTime: number | undefined;
+  flowRateTimeUnit: TimeUnit["desc"] | undefined;
 
   // Coverage - individual properties
-  coverageVolume: number | "";
-  coverageVolumeUnit: VolumeUnit["desc"] | "";
-  coverageArea: number | "";
-  coverageAreaUnit: AreaUnit["desc"] | "";
+  coverageVolume: number | undefined;
+  coverageVolumeUnit: VolumeUnit["desc"] | undefined;
+  coverageArea: number | undefined;
+  coverageAreaUnit: AreaUnit["desc"] | undefined;
 
   // Overlap
   overlap: number;
@@ -46,26 +46,26 @@ const initialState: CreateAppMethodState = {
   description: "",
 
   // Ground Speed
-  groundSpeedDistance: "",
-  groundSpeedDistanceUnit: "",
-  groundSpeedTime: "",
-  groundSpeedTimeUnit: "",
+  groundSpeedDistance: undefined,
+  groundSpeedDistanceUnit: undefined,
+  groundSpeedTime: undefined,
+  groundSpeedTimeUnit: undefined,
 
   // Pattern Width
-  patternWidthDistance: "",
-  patternWidthDistanceUnit: "",
+  patternWidthDistance: undefined,
+  patternWidthDistanceUnit: undefined,
 
   // Flow Rate
-  flowRateVolume: "",
-  flowRateVolumeUnit: "",
-  flowRateTime: "",
-  flowRateTimeUnit: "",
+  flowRateVolume: undefined,
+  flowRateVolumeUnit: undefined,
+  flowRateTime: undefined,
+  flowRateTimeUnit: undefined,
 
   // Coverage
-  coverageVolume: "",
-  coverageVolumeUnit: "",
-  coverageArea: "",
-  coverageAreaUnit: "",
+  coverageVolume: undefined,
+  coverageVolumeUnit: undefined,
+  coverageArea: undefined,
+  coverageAreaUnit: undefined,
 
   // Overlap
   overlap: 2, // Double overlap by default
@@ -84,82 +84,82 @@ const createAppMethodSlice = createSlice({
     },
 
     // Ground Speed actions
-    setGroundSpeedDistance: (state, action: PayloadAction<number | "">) => {
+    setGroundSpeedDistance: (state, action: PayloadAction<number | undefined>) => {
       state.groundSpeedDistance = action.payload;
     },
 
     setGroundSpeedDistanceUnit: (
       state,
-      action: PayloadAction<LengthUnit["desc"] | "">,
+      action: PayloadAction<LengthUnit["desc"] | undefined>,
     ) => {
       state.groundSpeedDistanceUnit = action.payload;
     },
 
-    setGroundSpeedTime: (state, action: PayloadAction<number | "">) => {
+    setGroundSpeedTime: (state, action: PayloadAction<number | undefined>) => {
       state.groundSpeedTime = action.payload;
     },
 
     setGroundSpeedTimeUnit: (
       state,
-      action: PayloadAction<TimeUnit["desc"] | "">,
+      action: PayloadAction<TimeUnit["desc"] | undefined>,
     ) => {
       state.groundSpeedTimeUnit = action.payload;
     },
 
     // Pattern Width actions
-    setPatternWidthDistance: (state, action: PayloadAction<number | "">) => {
+    setPatternWidthDistance: (state, action: PayloadAction<number | undefined>) => {
       state.patternWidthDistance = action.payload;
     },
 
     setPatternWidthDistanceUnit: (
       state,
-      action: PayloadAction<LengthUnit["desc"]>,
+      action: PayloadAction<LengthUnit["desc"] | undefined>,
     ) => {
       state.patternWidthDistanceUnit = action.payload;
     },
 
     // Flow Rate actions
-    setFlowRateVolume: (state, action: PayloadAction<number | "">) => {
+    setFlowRateVolume: (state, action: PayloadAction<number | undefined>) => {
       state.flowRateVolume = action.payload;
     },
 
     setFlowRateVolumeUnit: (
       state,
-      action: PayloadAction<VolumeUnit["desc"] | "">,
+      action: PayloadAction<VolumeUnit["desc"] | undefined>,
     ) => {
       state.flowRateVolumeUnit = action.payload;
     },
 
-    setFlowRateTime: (state, action: PayloadAction<number | "">) => {
+    setFlowRateTime: (state, action: PayloadAction<number | undefined>) => {
       state.flowRateTime = action.payload;
     },
 
     setFlowRateTimeUnit: (
       state,
-      action: PayloadAction<TimeUnit["desc"] | "">,
+      action: PayloadAction<TimeUnit["desc"] | undefined>,
     ) => {
       state.flowRateTimeUnit = action.payload;
     },
 
     // Coverage actions
-    setCoverageVolume: (state, action: PayloadAction<number | "">) => {
+    setCoverageVolume: (state, action: PayloadAction<number | undefined>) => {
       state.coverageVolume = action.payload;
     },
 
     setCoverageVolumeUnit: (
       state,
-      action: PayloadAction<VolumeUnit["desc"] | "">,
+      action: PayloadAction<VolumeUnit["desc"] | undefined>,
     ) => {
       state.coverageVolumeUnit = action.payload;
     },
 
-    setCoverageArea: (state, action: PayloadAction<number | "">) => {
+    setCoverageArea: (state, action: PayloadAction<number | undefined>) => {
       state.coverageArea = action.payload;
     },
 
     setCoverageAreaUnit: (
       state,
-      action: PayloadAction<AreaUnit["desc"] | "">,
+      action: PayloadAction<AreaUnit["desc"] | undefined>,
     ) => {
       state.coverageAreaUnit = action.payload;
     },
@@ -172,20 +172,20 @@ const createAppMethodSlice = createSlice({
     resetForm: (state) => {
       state.appMethodId = "";
       state.description = "";
-      state.groundSpeedDistance = "";
-      state.groundSpeedDistanceUnit = "";
-      state.groundSpeedTime = "";
-      state.groundSpeedTimeUnit = "";
-      state.patternWidthDistance = "";
-      state.patternWidthDistanceUnit = "";
-      state.flowRateVolume = "";
-      state.flowRateVolumeUnit = "";
-      state.flowRateTime = "";
-      state.flowRateTimeUnit = "";
-      state.coverageVolume = "";
-      state.coverageVolumeUnit = "";
-      state.coverageArea = "";
-      state.coverageAreaUnit = "";
+      state.groundSpeedDistance = undefined;
+      state.groundSpeedDistanceUnit = undefined;
+      state.groundSpeedTime = undefined;
+      state.groundSpeedTimeUnit = undefined;
+      state.patternWidthDistance = undefined;
+      state.patternWidthDistanceUnit = undefined;
+      state.flowRateVolume = undefined;
+      state.flowRateVolumeUnit = undefined;
+      state.flowRateTime = undefined;
+      state.flowRateTimeUnit = undefined;
+      state.coverageVolume = undefined;
+      state.coverageVolumeUnit = undefined;
+      state.coverageArea = undefined;
+      state.coverageAreaUnit = undefined;
       state.overlap = 2;
     },
   },

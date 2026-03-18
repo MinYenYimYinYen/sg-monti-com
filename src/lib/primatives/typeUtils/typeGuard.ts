@@ -95,15 +95,14 @@ function withDefinedKeys<T, K extends keyof T>(
   );
 }
 
-function hasDefinedKeys<T>(
-  item: T | undefined | null,
-  keys: (keyof T)[],
-): item is T {
-  if (item == null) {
-    // Handles both `null` and `undefined`
-    return false;
-  }
-  return keys.some((key) => item[key] !== undefined && item[key] !== null);
+/**
+ * Checks if ALL specified keys on an object are defined (not undefined or null)
+ */
+function hasAllDefinedKeys<T, K extends keyof T>(
+  item: T,
+  keys: K[],
+): item is T & { [P in K]-?: NonNullable<T[P]> } {
+  return keys.every((key) => item[key] !== undefined && item[key] !== null);
 }
 
 function hasAnyDefinedKeys<T>(
@@ -134,7 +133,7 @@ export const typeGuard = {
   hasDefined,
   withDefinedKey,
   withDefinedKeys,
-  hasDefinedKeys,
+  hasAllDefinedKeys,
   hasAnyDefinedKeys,
   definedArray,
 };

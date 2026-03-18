@@ -9,8 +9,8 @@ import {
 interface UnitSelectProps<T extends string> {
   units: readonly T[];
   placeholder: string;
-  value?: T | "";
-  onValueChange?: (value: T) => void;
+  value?: T | undefined;
+  onValueChange?: (value: T | undefined) => void;
 }
 
 export function UnitSelect<T extends string>({
@@ -23,7 +23,7 @@ export function UnitSelect<T extends string>({
     <MultiSelect
       mode="single"
       value={value ? [value] : []}
-      onValueChange={(values) => onValueChange?.(values[0] as T)}
+      onValueChange={(values) => onValueChange?.(values[0] as T | undefined)}
     >
       <MultiSelectTrigger>
         <MultiSelectValue placeholder={placeholder} className="capitalize" />

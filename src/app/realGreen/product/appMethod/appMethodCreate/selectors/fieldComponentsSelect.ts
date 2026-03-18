@@ -69,9 +69,15 @@ const selectGroundSpeedDistanceWithSolution = createSelector(
       return stateValue;
     }
 
-    // If no solution yet, return empty
+    // If no solution yet, return undefined
     if (!solution?.success) {
-      return "";
+      return undefined;
+    }
+
+    // Determine target time - use user's value or solution's value
+    const targetTime = time ?? solution.result.groundSpeed.time;
+    if (targetTime === undefined) {
+      return undefined; // Can't calculate without time
     }
 
     // Convert solver result to user's chosen units
@@ -84,7 +90,6 @@ const selectGroundSpeedDistanceWithSolution = createSelector(
 
     // Use user's units if set, otherwise fall back to solution's units
     const targetDistanceUnit = distanceUnit || solution.result.groundSpeed.distanceUnit;
-    const targetTime = time || solution.result.groundSpeed.time;
     const targetTimeUnit = timeUnit || solution.result.groundSpeed.timeUnit;
 
     // Calculate distance for user's chosen time/units
@@ -140,9 +145,9 @@ const selectPatternWidthDistanceWithSolution = createSelector(
       return stateValue;
     }
 
-    // If no solution yet, return empty
+    // If no solution yet, return undefined
     if (!solution?.success) {
-      return "";
+      return undefined;
     }
 
     // Convert solver result to user's chosen units
@@ -185,9 +190,15 @@ const selectFlowRateVolumeWithSolution = createSelector(
       return stateValue;
     }
 
-    // If no solution yet, return empty
+    // If no solution yet, return undefined
     if (!solution?.success) {
-      return "";
+      return undefined;
+    }
+
+    // Determine target time - use user's value or solution's value
+    const targetTime = time ?? solution.result.flowRate.time;
+    if (targetTime === undefined) {
+      return undefined; // Can't calculate without time
     }
 
     // Convert solver result to user's chosen units
@@ -200,7 +211,6 @@ const selectFlowRateVolumeWithSolution = createSelector(
 
     // Use user's units if set, otherwise fall back to solution's units
     const targetVolumeUnit = volumeUnit || solution.result.flowRate.volumeUnit;
-    const targetTime = time || solution.result.flowRate.time;
     const targetTimeUnit = timeUnit || solution.result.flowRate.timeUnit;
 
     // Calculate volume for user's chosen time/units
@@ -258,9 +268,15 @@ const selectCoverageVolumeWithSolution = createSelector(
       return stateValue;
     }
 
-    // If no solution yet, return empty
+    // If no solution yet, return undefined
     if (!solution?.success) {
-      return "";
+      return undefined;
+    }
+
+    // Determine target area - use user's value or solution's value
+    const targetArea = area ?? solution.result.coverage.area;
+    if (targetArea === undefined) {
+      return undefined; // Can't calculate without area
     }
 
     // Convert solver result to user's chosen units
@@ -273,7 +289,6 @@ const selectCoverageVolumeWithSolution = createSelector(
 
     // Use user's units if set, otherwise fall back to solution's units
     const targetVolumeUnit = volumeUnit || solution.result.coverage.volumeUnit;
-    const targetArea = area || solution.result.coverage.area;
     const targetAreaUnit = areaUnit || solution.result.coverage.areaUnit;
 
     // Calculate volume for user's chosen area/units

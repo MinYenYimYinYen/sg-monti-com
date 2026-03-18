@@ -43,9 +43,9 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
           <Input
             type="number"
             placeholder="Volume"
-            value={flowRateVolume}
+            value={flowRateVolume ?? ""}
             onChange={(e) =>
-              setFlowRateVolume(e.target.value === "" ? "" : Number(e.target.value))
+              setFlowRateVolume(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isVolumeBeingSolved}
           />
@@ -58,9 +58,9 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
           <Input
             type="number"
             placeholder="Time"
-            value={flowRateTime}
+            value={flowRateTime ?? ""}
             onChange={(e) =>
-              setFlowRateTime(e.target.value === "" ? "" : Number(e.target.value))
+              setFlowRateTime(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isTimeBeingSolved}
           />

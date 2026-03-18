@@ -76,62 +76,62 @@ export function useFormFieldValues() {
     },
 
     // Ground Speed
-    setGroundSpeedDistance: (value: number | "") => {
+    setGroundSpeedDistance: (value: number | undefined) => {
       dispatch(createAppMethodActions.setGroundSpeedDistance(value));
     },
 
-    setGroundSpeedDistanceUnit: (value: LengthUnit["desc"] | "") => {
+    setGroundSpeedDistanceUnit: (value: LengthUnit["desc"] | undefined) => {
       dispatch(createAppMethodActions.setGroundSpeedDistanceUnit(value));
     },
 
-    setGroundSpeedTime: (value: number | "") => {
+    setGroundSpeedTime: (value: number | undefined) => {
       dispatch(createAppMethodActions.setGroundSpeedTime(value));
     },
 
-    setGroundSpeedTimeUnit: (value: TimeUnit["desc"] | "") => {
+    setGroundSpeedTimeUnit: (value: TimeUnit["desc"] | undefined) => {
       dispatch(createAppMethodActions.setGroundSpeedTimeUnit(value));
     },
 
     // Pattern Width
-    setPatternWidthDistance: (value: number | "") => {
+    setPatternWidthDistance: (value: number | undefined) => {
       dispatch(createAppMethodActions.setPatternWidthDistance(value));
     },
 
-    setPatternWidthDistanceUnit: (value: LengthUnit["desc"]) => {
+    setPatternWidthDistanceUnit: (value: LengthUnit["desc"] | undefined) => {
       dispatch(createAppMethodActions.setPatternWidthDistanceUnit(value));
     },
 
     // Flow Rate
-    setFlowRateVolume: (value: number | "") => {
+    setFlowRateVolume: (value: number | undefined) => {
       dispatch(createAppMethodActions.setFlowRateVolume(value));
     },
 
-    setFlowRateVolumeUnit: (value: VolumeUnit["desc"] | "") => {
+    setFlowRateVolumeUnit: (value: VolumeUnit["desc"] | undefined) => {
       dispatch(createAppMethodActions.setFlowRateVolumeUnit(value));
     },
 
-    setFlowRateTime: (value: number | "") => {
+    setFlowRateTime: (value: number | undefined) => {
       dispatch(createAppMethodActions.setFlowRateTime(value));
     },
 
-    setFlowRateTimeUnit: (value: TimeUnit["desc"] | "") => {
+    setFlowRateTimeUnit: (value: TimeUnit["desc"] | undefined) => {
       dispatch(createAppMethodActions.setFlowRateTimeUnit(value));
     },
 
     // Coverage
-    setCoverageVolume: (value: number | "") => {
+    setCoverageVolume: (value: number | undefined) => {
       dispatch(createAppMethodActions.setCoverageVolume(value));
     },
 
-    setCoverageVolumeUnit: (value: VolumeUnit["desc"] | "") => {
+    setCoverageVolumeUnit: (value: VolumeUnit["desc"] | undefined) => {
       dispatch(createAppMethodActions.setCoverageVolumeUnit(value));
     },
 
-    setCoverageArea: (value: number | "") => {
+    setCoverageArea: (value: number | undefined) => {
       dispatch(createAppMethodActions.setCoverageArea(value));
     },
 
-    setCoverageAreaUnit: (value: AreaUnit["desc"] | "") => {
+    setCoverageAreaUnit: (value: AreaUnit["desc"] | undefined) => {
       dispatch(createAppMethodActions.setCoverageAreaUnit(value));
     },
 

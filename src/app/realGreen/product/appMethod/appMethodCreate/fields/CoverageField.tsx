@@ -43,9 +43,9 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
           <Input
             type="number"
             placeholder="Volume"
-            value={coverageVolume}
+            value={coverageVolume ?? ""}
             onChange={(e) =>
-              setCoverageVolume(e.target.value === "" ? "" : Number(e.target.value))
+              setCoverageVolume(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isVolumeBeingSolved}
           />
@@ -58,9 +58,9 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
           <Input
             type="number"
             placeholder="Area"
-            value={coverageArea}
+            value={coverageArea ?? ""}
             onChange={(e) =>
-              setCoverageArea(e.target.value === "" ? "" : Number(e.target.value))
+              setCoverageArea(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isAreaBeingSolved}
           />

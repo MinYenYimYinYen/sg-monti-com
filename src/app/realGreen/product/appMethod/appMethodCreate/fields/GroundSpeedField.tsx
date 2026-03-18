@@ -43,9 +43,9 @@ export function GroundSpeedField({ disabled }: GroundSpeedFieldProps) {
           <Input
             type="number"
             placeholder="Distance"
-            value={groundSpeedDistance}
+            value={groundSpeedDistance ?? ""}
             onChange={(e) =>
-              setGroundSpeedDistance(e.target.value === "" ? "" : Number(e.target.value))
+              setGroundSpeedDistance(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isDistanceBeingSolved}
           />
@@ -58,9 +58,9 @@ export function GroundSpeedField({ disabled }: GroundSpeedFieldProps) {
           <Input
             type="number"
             placeholder="Time"
-            value={groundSpeedTime}
+            value={groundSpeedTime ?? ""}
             onChange={(e) =>
-              setGroundSpeedTime(e.target.value === "" ? "" : Number(e.target.value))
+              setGroundSpeedTime(e.target.value === "" ? undefined : Number(e.target.value))
             }
             disabled={isTimeBeingSolved}
           />

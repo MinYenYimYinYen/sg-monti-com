@@ -1,6 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
-import { AppMethodParams, AppMethodSolver, MissingField } from "../../AppMethodSolver";
+import { AppMethodParams, AppMethodSolver, MissingField } from "../../appMethodSolver/AppMethodSolver";
 import { FieldKey } from "../createAppMethodSlice";
 
 const selectOverlap = (state: AppState) => state.createAppMethod.overlap;
@@ -82,49 +82,32 @@ const selectParams = createSelector(
     coverageArea,
     coverageAreaUnit,
   ): AppMethodParams => {
-    const params: AppMethodParams = {
+    // Always include all fields, numeric values can be undefined
+    return {
       overlap,
-    };
-
-    // Ground Speed - include param if at least units are provided
-    if (groundSpeedDistanceUnit !== "" || groundSpeedTimeUnit !== "") {
-      params.groundSpeed = {
-        distance: groundSpeedDistance === "" ? (undefined as any) : (groundSpeedDistance as number),
+      groundSpeed: {
+        distance: groundSpeedDistance,
         distanceUnit: groundSpeedDistanceUnit,
-        time: groundSpeedTime === "" ? (undefined as any) : (groundSpeedTime as number),
+        time: groundSpeedTime,
         timeUnit: groundSpeedTimeUnit,
-      };
-    }
-
-    // Pattern Width - include param if at least unit is provided
-    if (patternWidthDistanceUnit !== "") {
-      params.patternWidth = {
-        distance: patternWidthDistance === "" ? (undefined as any) : (patternWidthDistance as number),
+      },
+      patternWidth: {
+        distance: patternWidthDistance,
         distanceUnit: patternWidthDistanceUnit,
-      };
-    }
-
-    // Flow Rate - include param if at least units are provided
-    if (flowRateVolumeUnit !== "" || flowRateTimeUnit !== "") {
-      params.flowRate = {
-        volume: flowRateVolume === "" ? (undefined as any) : (flowRateVolume as number),
+      },
+      flowRate: {
+        volume: flowRateVolume,
         volumeUnit: flowRateVolumeUnit,
-        time: flowRateTime === "" ? (undefined as any) : (flowRateTime as number),
+        time: flowRateTime,
         timeUnit: flowRateTimeUnit,
-      };
-    }
-
-    // Coverage - include param if at least units are provided
-    if (coverageVolumeUnit !== "" || coverageAreaUnit !== "") {
-      params.coverage = {
-        volume: coverageVolume === "" ? (undefined as any) : (coverageVolume as number),
+      },
+      coverage: {
+        volume: coverageVolume,
         volumeUnit: coverageVolumeUnit,
-        area: coverageArea === "" ? (undefined as any) : (coverageArea as number),
+        area: coverageArea,
         areaUnit: coverageAreaUnit,
-      };
-    }
-
-    return params;
+      },
+    };
   },
 );
 
