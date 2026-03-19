@@ -1,0 +1,29 @@
+# .aiignore - Keep the AI out of expensive/useless folders
+
+# Build and Node
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Env vars and secrets
+.env*
+
+# Assets (AI can't read images anyway, don't let it try)
+public/
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+
+# Lockfiles (Massive token wasters)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# IDE files
+.idea/
+.vscode/

@@ -1,36 +1,25 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { DataGrid } from "@/components/DataGrid";
 import { TabInfo } from "./TabInfo";
-
-import { createSinglesColumns } from "@/app/realGreen/product/list/tabs/singlesColumns";
-import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
-import EditUnitSheet from "@/app/realGreen/product/list/tabs/EditUnitSheet";
-import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
-import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { ProductSelector } from "./components/ProductSelector";
+import { SingleEditPanel } from "./components/SingleEditPanel";
 
 export default function SinglesTab() {
   const singles = useSelector(productSelect.productSingles);
+  const singlesMap = useSelector(productSelect.productSinglesMap);
 
-  const [editCategoryState, setEditCategoryState] = React.useState<{
-    categoryId: number;
-    categoryName: string;
-  } | null>(null);
-  const [editingUnit, setEditingUnit] = React.useState<UnitCRM | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
 
-  const singlesColumns = React.useMemo(
-    () =>
-      createSinglesColumns(
-        (categoryId, categoryName) => {
-          setEditCategoryState({ categoryId, categoryName });
-        },
-        (unit) => setEditingUnit(unit),
-      ),
-    [],
-  );
+  const selectedProduct = selectedProductId
+    ? singlesMap.get(selectedProductId)
+    : null;
+
+  const productName = selectedProduct
+    ? `${selectedProduct.productCode} - ${selectedProduct.description}`
+    : "";
 
   return (
     <div className="space-y-4">
@@ -50,28 +39,34 @@ export default function SinglesTab() {
           {singles.length} product{singles.length !== 1 ? "s" : ""}
         </p>
       </div>
-      <DataGrid
-        data={singles}
-        columns={singlesColumns}
-        enableSorting={true}
-        enableFiltering={true}
-        enablePagination={true}
-        enableColumnVisibility={true}
-        rowVariant="alternating"
-        globalFilterColumns={["description", "productCode"]}
-        globalFilterPlaceholder="Search products..."
-      />
-      <EditCategorySheet
-        categoryId={editCategoryState?.categoryId || baseNumId}
-        categoryName={editCategoryState?.categoryName || ""}
-        open={editCategoryState !== null}
-        onOpenChange={(open) => !open && setEditCategoryState(null)}
-      />
-      <EditUnitSheet
-        unit={editingUnit}
-        open={editingUnit !== null}
-        onOpenChange={(open) => !open && setEditingUnit(null)}
-      />
+
+      <div className="grid grid-cols-12 gap-4">
+        {/* Left Panel: Product Selector */}
+        <div className="col-span-4">
+          <ProductSelector
+            products={singles}
+            selectedProductId={selectedProductId}
+            onSelectProduct={setSelectedProductId}
+          />
+        </div>
+
+        {/* Right Panel: Edit Panel */}
+        <div className="col-span-8">
+          {selectedProduct ? (
+            <SingleEditPanel
+              key={selectedProduct.productId}
+              product={selectedProduct}
+              productName={productName}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-[600px] border-2 border-dashed border-muted rounded-lg">
+              <p className="text-muted-foreground">
+                Select a product to edit its attributes
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

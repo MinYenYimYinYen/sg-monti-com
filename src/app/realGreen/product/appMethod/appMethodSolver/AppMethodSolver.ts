@@ -1,5 +1,5 @@
 import { camelDisplay } from "@/lib/primatives/string/camelDisplay";
-import { executeCalculation } from "./appMethodSolverHelpers";
+import { executeCalculation, executeValidation } from "./appMethodSolverHelpers";
 import type {
   AppMethodParams,
   ValidationResult,
@@ -90,19 +90,18 @@ function validate(params: AppMethodParams): ValidationResult {
     params.coverage.area !== undefined;
 
   if (allComplete) {
-    //todo: this prevents saving due to not success response.
-    // Need success response, but probably should auto-validate by solving for any
-    // variable with a 5% tolerance.
+    // All parameters provided — auto-validate by solving for coverage.volume
+    // and checking consistency within 5% tolerance.
     feedback.push({
       severity: "info",
-      message:
-        "All parameters provided. Click 'Validate' to check if they're consistent.",
+      message: "All parameters provided. Validating consistency…",
     });
     return {
       isValid: true,
-      canSolve: false,
+      canSolve: true,
       canValidate: true,
       feedback,
+      readyToSolveFor: { param: "coverage", field: "volume" },
     };
   }
 
@@ -182,6 +181,12 @@ function solve(params: AppMethodParams): SolverResult {
   }
 
   try {
+    // When all params are provided (canValidate), run consistency check instead
+    // of a normal solve — returns success only if values agree within 5% tolerance.
+    if (validation.canValidate) {
+      return executeValidation(params);
+    }
+
     return executeCalculation(params, validation.readyToSolveFor);
   } catch (error) {
     return {

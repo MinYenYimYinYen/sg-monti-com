@@ -1,81 +1,28 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { DataGrid } from "@/components/DataGrid";
 import { TabInfo } from "./TabInfo";
-import { Row } from "@tanstack/react-table";
-import { EditSubProductsSheet } from "./EditSubProductsSheet";
-import { createMastersColumns } from "@/app/realGreen/product/list/tabs/mastersColumns";
-import EditCategorySheet from "@/app/realGreen/product/list/tabs/EditCategorySheet";
-import EditUnitSheet from "@/app/realGreen/product/list/tabs/EditUnitSheet";
-import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
-import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { ProductSelector } from "./components/ProductSelector";
+import { MasterEditPanel } from "./components/MasterEditPanel";
 
 export default function MastersTab() {
   const masters = useSelector(productSelect.productMasters);
-  const subsMap = useSelector(productSelect.productSubsMap);
-  const [editingMaster, setEditingMaster] =
-    React.useState<ProductMaster | null>(null);
-  const [editCategoryState, setEditCategoryState] = React.useState<{
-    categoryId: number;
-    categoryName: string;
-  } | null>(null);
-  const [editingUnit, setEditingUnit] = React.useState<UnitCRM | null>(null);
+  const mastersMap = useSelector(productSelect.productMastersMap);
 
-  /*DEBUG*/
-  // useEffect(() => {
-  //   console.log("masters", masters)
-  // }, [masters]);
-  /*END DEBUG*/
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
 
-  const mastersColumns = useMemo(() => {
-    return createMastersColumns(
-      setEditingMaster,
-      (categoryId, categoryName) =>
-        setEditCategoryState({ categoryId, categoryName }),
-      setEditingUnit,
-    );
-  }, []);
+  const selectedProduct = selectedProductId
+    ? mastersMap.get(selectedProductId)
+    : null;
 
-  //todo: Right now this just displays the sub-products.
-  // It is not sufficient because we must define the rate at
-  // which the sub-products are consumed per master unit.
-  const renderSubComponent = (row: Row<ProductMaster>) => {
-    const master = row.original;
-    const subProducts = master.subProductConfigDocs
-      .map((config) => subsMap.get(config.subId))
-      .filter(Boolean);
-
-    if (subProducts.length === 0) {
-      return (
-        <div className="p-4 text-sm text-muted-foreground">
-          No sub-products configured
-        </div>
-      );
-    }
-
-    return (
-      <div className="p-4">
-        <h4 className="mb-2 text-sm font-semibold">Sub-Products:</h4>
-        <div className="space-y-1">
-          {subProducts.map((sub) => (
-            <div key={sub!.productId} className="flex gap-4 text-sm pl-4">
-              <span className="font-mono text-muted-foreground min-w-[120px]">
-                {sub!.productCode}
-              </span>
-              <span>{sub!.description}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  const productName = selectedProduct
+    ? `${selectedProduct.productCode} - ${selectedProduct.description}`
+    : "";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-2xl font-semibold tracking-tight">
@@ -92,37 +39,34 @@ export default function MastersTab() {
           {masters.length} product{masters.length !== 1 ? "s" : ""}
         </p>
       </div>
-      <DataGrid
-        data={masters}
-        columns={mastersColumns}
-        enableSorting={true}
-        enableFiltering={true}
-        enablePagination={true}
-        enableColumnVisibility={true}
-        enableRowExpansion={true}
-        getRowCanExpand={() => true}
-        renderSubComponent={renderSubComponent}
-        rowVariant="expandable"
-        globalFilterColumns={["description", "productCode"]}
-        globalFilterPlaceholder="Search products..."
-      />
-      <EditSubProductsSheet
-        key={editingMaster?.productId ?? "closed"}
-        master={editingMaster}
-        open={editingMaster !== null}
-        onOpenChange={(open) => !open && setEditingMaster(null)}
-      />
-      <EditCategorySheet
-        categoryId={editCategoryState?.categoryId || baseNumId}
-        categoryName={editCategoryState?.categoryName || ""}
-        open={editCategoryState !== null}
-        onOpenChange={(open) => !open && setEditCategoryState(null)}
-      />
-      <EditUnitSheet
-        unit={editingUnit}
-        open={editingUnit !== null}
-        onOpenChange={(open) => !open && setEditingUnit(null)}
-      />
+
+      <div className="grid grid-cols-12 gap-4">
+        {/* Left Panel: Product Selector */}
+        <div className="col-span-4">
+          <ProductSelector
+            products={masters}
+            selectedProductId={selectedProductId}
+            onSelectProduct={setSelectedProductId}
+          />
+        </div>
+
+        {/* Right Panel: Edit Panel */}
+        <div className="col-span-8">
+          {selectedProduct ? (
+            <MasterEditPanel
+              key={selectedProduct.productId}
+              master={selectedProduct}
+              productName={productName}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-[600px] border-2 border-dashed border-muted rounded-lg">
+              <p className="text-muted-foreground">
+                Select a product to edit its attributes
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

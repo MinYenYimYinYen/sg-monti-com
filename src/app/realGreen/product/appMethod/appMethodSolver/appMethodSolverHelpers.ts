@@ -300,6 +300,91 @@ export function buildSuccessResult(
 }
 
 /**
+ * Validates consistency of all parameters by solving for coverage.volume
+ * and comparing to the user-provided value within a tolerance.
+ *
+ * Used when all parameters are already provided (no missing field to solve for).
+ * Returns success with the user's own values if consistent, or failure with
+ * a descriptive message showing the discrepancy.
+ *
+ * @param params - Complete AppMethodParams (all numeric fields defined)
+ * @param tolerancePct - Acceptable % difference (default 5%)
+ */
+export function executeValidation(
+  params: AppMethodParams,
+  tolerancePct = 5,
+): SolverResult {
+  // Solve for coverage.volume using the other params (treat it as missing)
+  const missingCoverageVolume: MissingField = { param: "coverage", field: "volume" };
+
+  // Temporarily remove coverage.volume so the solver can calculate it
+  const paramsWithoutCoverageVolume: AppMethodParams = {
+    ...params,
+    coverage: {
+      ...params.coverage,
+      volume: undefined,
+    },
+  };
+
+  let calculated: SolverResult;
+  try {
+    calculated = executeCalculation(paramsWithoutCoverageVolume, missingCoverageVolume);
+  } catch (error) {
+    return {
+      success: false,
+      feedback: [
+        {
+          severity: "error",
+          message:
+            error instanceof Error
+              ? `Validation error: ${error.message}`
+              : "Unknown validation error occurred",
+        },
+      ],
+    };
+  }
+
+  if (!calculated.success) {
+    return calculated;
+  }
+
+  const calculatedVolume = calculated.result.coverage.volume;
+  const providedVolume = params.coverage.volume!;
+
+  // Check within tolerance
+  const diff = Math.abs(calculatedVolume - providedVolume);
+  const tolerance = (tolerancePct / 100) * Math.abs(calculatedVolume);
+
+  if (diff <= tolerance) {
+    // Consistent — return the user's own values as the result
+    return {
+      success: true,
+      result: params as AppMethodResult,
+      feedback: [
+        {
+          severity: "success",
+          message: "Parameters are consistent.",
+        },
+      ],
+    };
+  }
+
+  // Inconsistent — return descriptive error
+  const pctOff = ((diff / Math.abs(calculatedVolume)) * 100).toFixed(1);
+  const unit = params.coverage.volumeUnit ?? "";
+  return {
+    success: false,
+    feedback: [
+      {
+        severity: "error",
+        message: `Parameters are inconsistent (${pctOff}% off). Based on the other values, coverage volume should be ~${calculatedVolume.toFixed(3)} ${unit}, but ${providedVolume.toFixed(3)} ${unit} was provided.`,
+        field: "coverage",
+      },
+    ],
+  };
+}
+
+/**
  * Orchestrates the calculation based on which field needs to be solved
  * Validates dependencies, gets standardized units, performs calculation
  */
