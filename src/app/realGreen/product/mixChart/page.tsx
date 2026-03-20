@@ -221,7 +221,7 @@ export default function MixChartPage() {
                     <Pencil className="h-3 w-3" />
                     {config.subProduct.description}
                     {customRates.has(config.subId) && (
-                      <Badge variant="default" className="ml-1 h-4 text-xs">Custom</Badge>
+                      <Badge className="ml-1 h-4 text-xs">Custom</Badge>
                     )}
                   </Button>
                 ))}
