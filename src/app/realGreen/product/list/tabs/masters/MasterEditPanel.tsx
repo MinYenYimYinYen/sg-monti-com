@@ -7,7 +7,12 @@ import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSel
 import { Button } from "@/style/components/button";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { Input } from "@/style/components/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/style/components/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/style/components/card";
 import { Badge } from "@/style/components/badge";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { Checkbox } from "@/style/components/checkbox";
@@ -35,6 +40,9 @@ import {
   ProductMaster,
   SubProductConfigDoc,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { useAppMethod } from "@/app/realGreen/product/appMethod/useAppMethod";
+import { appMethodSelect } from "@/app/realGreen/product/appMethod/appMethodSelect";
+import { MasterSubConfig } from "@/app/realGreen/product/list/tabs/masters/MasterSubConfig";
 
 interface MasterEditPanelProps {
   master: ProductMaster;
@@ -42,7 +50,12 @@ interface MasterEditPanelProps {
 }
 
 export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
-  const { updateCategory, updateUnit, updateMasterSubProducts } = useProduct({});
+  const { updateCategory, updateUnit, updateMasterSubProducts } = useProduct(
+    {},
+  );
+  useAppMethod({ autoLoad: true });
+  const appMethods = useSelector(appMethodSelect.appMethodDocs);
+  const appMethodMap = useSelector(appMethodSelect.appMethodMap);
   const productSubs = useSelector(productSelect.productSubs);
 
   // --- Category state ---
@@ -50,7 +63,9 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
   const [categoryStatus, setCategoryStatus] = useState<SaveStatus>("idle");
 
   // --- Unit state ---
-  const [newUnitDesc, setNewUnitDesc] = useState<UnitLabel>(master.unit.desc as UnitLabel);
+  const [newUnitDesc, setNewUnitDesc] = useState<UnitLabel>(
+    master.unit.desc as UnitLabel,
+  );
   const [unitStatus, setUnitStatus] = useState<SaveStatus>("idle");
 
   // --- Sub-products state ---
@@ -69,7 +84,13 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
     setConfigDocs(master.subProductConfigDocs);
     setSubsStatus("idle");
     setSearchTerm("");
-  }, [master.productId, master.category, master.unit.unitId, master.unit.desc, master.subProductConfigDocs]);
+  }, [
+    master.productId,
+    master.category,
+    master.unit.unitId,
+    master.unit.desc,
+    master.subProductConfigDocs,
+  ]);
 
   const canSaveCategory =
     newCategoryName !== master.category && newCategoryName.trim().length > 0;
@@ -123,13 +144,37 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
     setConfigDocs((prev) =>
       prev.some((c) => c.subId === productId)
         ? prev.filter((c) => c.subId !== productId)
-        : [...prev, { subId: productId, rate: 0 }],
+        : [
+            ...prev,
+            {
+              subId: productId,
+              rate: 0,
+              appMethodId: null,
+              useAppMethod: false,
+            },
+          ],
     );
   };
 
   const updateRate = (productId: number, rate: number) => {
     setConfigDocs((prev) =>
       prev.map((c) => (c.subId === productId ? { ...c, rate } : c)),
+    );
+  };
+
+  const updateUseAppMethod = (productId: number, useAppMethod: boolean) => {
+    setConfigDocs((prev) =>
+      prev.map((c) =>
+        c.subId === productId ? { ...c, useAppMethod } : c,
+      ),
+    );
+  };
+
+  const updateAppMethodId = (productId: number, appMethodId: string | null) => {
+    setConfigDocs((prev) =>
+      prev.map((c) =>
+        c.subId === productId ? { ...c, appMethodId } : c,
+      ),
     );
   };
 
@@ -154,7 +199,9 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
         <p className="text-sm text-muted-foreground">{productName}</p>
       </CardHeader>
       <CardContent>
-        <Accordion type="multiple" defaultValue={["attributes", "subs"]}
+        <Accordion
+          type="multiple"
+          defaultValue={["attributes", "subs"]}
           className={"space-y-2"}
         >
           {/* Attributes Section */}
@@ -371,42 +418,17 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                               (s) => s.productId === config.subId,
                             );
                             return (
-                              <div
+                              <MasterSubConfig
                                 key={config.subId}
-                                className="space-y-2 rounded-md border p-2.5"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium">
-                                    {sub?.description ||
-                                      `Sub ID: ${config.subId}`}
-                                  </span>
-                                  <Button
-                                    variant="outline"
-                                    intensity="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0"
-                                    onClick={() => toggleSub(config.subId)}
-                                  >
-                                    ✕
-                                  </Button>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Label className="text-xs text-muted-foreground whitespace-nowrap">
-                                    Rate:
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    className="h-8"
-                                    value={config.rate}
-                                    onChange={(e) =>
-                                      updateRate(
-                                        config.subId,
-                                        parseFloat(e.target.value) || 0,
-                                      )
-                                    }
-                                  />
-                                </div>
-                              </div>
+                                config={config}
+                                subProduct={sub}
+                                onRemove={toggleSub}
+                                onUpdateRate={updateRate}
+                                onUpdateUseAppMethod={updateUseAppMethod}
+                                onUpdateAppMethodId={updateAppMethodId}
+                                appMethods={appMethods}
+                                appMethodMap={appMethodMap}
+                              />
                             );
                           })
                         )}

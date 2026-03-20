@@ -226,3 +226,9 @@ export function useSchedPromise() {
 *   **Modal Architecture**: Use `Modal` (Portal + GSAP) and `TabControl` for complex dialogs.
 *   **File Structure**: Prefer `camelCase` for route folders (e.g., `changePassword`).
 *   **Styling Workflow**: Use semantic colors (`bg-primary`, `bg-accent`, `text-foreground`) with variant + intensity props. Never use hardcoded colors (`bg-blue-500`). See styling rules above.
+
+# For markdown files on Windows, write with UTF-8 BOM encoding
+(echo -ne '\xEF\xBB\xBF'; cat <<'EOF'
+[content here]
+EOF
+) > "path/to/file.md"

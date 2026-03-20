@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { TabInfo } from "./TabInfo";
 import { ProductSelector } from "./components/ProductSelector";
-import { MasterEditPanel } from "./components/MasterEditPanel";
+import { MasterEditPanel } from "./masters/MasterEditPanel";
 
 export default function MastersTab() {
   const masters = useSelector(productSelect.productMasters);

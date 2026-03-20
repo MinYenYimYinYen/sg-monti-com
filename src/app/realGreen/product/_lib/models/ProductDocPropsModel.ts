@@ -22,11 +22,14 @@ const ProductDocPropsSchema = new mongoose.Schema(
         {
           subId: { type: Number, required: true },
           rate: { type: Number, required: true },
+          appMethodId: { type: String, required: false, default: null },
+          useAppMethod: { type: Boolean, required: false, default: false },
         },
       ],
       required: false,
       default: [],
     },
+
   },
   { timestamps: true },
 );

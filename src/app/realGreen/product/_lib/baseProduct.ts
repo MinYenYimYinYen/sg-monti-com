@@ -56,7 +56,6 @@ export const baseProductMasterDocProps: ProductMasterDocProps = {
   subProductConfigDocs: [],
   category: baseStrId,
   unit: baseUnitCRM,
-  appMethodId: null,
   createdAt: "",
   updatedAt: "",
 };
@@ -71,7 +70,6 @@ export const baseProductMasterProps: ProductMasterProps = {
   unitConfig: baseProductUnitConfig,
   unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
   productType: "master",
-  appMethod: null,
 };
 
 export const baseProductMaster: ProductMaster = {
@@ -121,7 +119,6 @@ export const baseProductSubDocProps: ProductSubDocProps = {
   productId: baseNumId,
   category: baseStrId,
   unit: baseUnitCRM,
-  appMethodId: null,
   createdAt: "",
   updatedAt: "",
 };
@@ -135,7 +132,6 @@ export const baseProductSubProps: ProductSubProps = {
   unitConfig: baseProductUnitConfig,
   unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
   productType: "sub",
-  appMethod: null,
 };
 
 export const baseProductSub: ProductSub = {

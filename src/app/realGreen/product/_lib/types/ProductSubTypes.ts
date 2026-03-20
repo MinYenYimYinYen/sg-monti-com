@@ -19,15 +19,13 @@ export function isProductSubCore(
   return isProduction && !isMaster && !isMobile;
 }
 
-export type ProductSubDocProps = CreatedUpdated & ProductCommonDocProps & {
-  productId: number;
-  appMethodId: string | null;
-};
+export type ProductSubDocProps = CreatedUpdated &
+  ProductCommonDocProps & {
+    productId: number;
+  };
 
 export type ProductSubDoc = ProductSubCore & ProductSubDocProps;
 
-export type ProductSubProps = ProductCommonProps & {
-  appMethod: AppMethod | null;
-};
+export type ProductSubProps = ProductCommonProps & {};
 
 export type ProductSub = ProductSubDoc & ProductSubProps;

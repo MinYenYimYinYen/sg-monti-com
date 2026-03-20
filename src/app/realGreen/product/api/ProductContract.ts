@@ -7,13 +7,9 @@ import {
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingleDoc } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import {
-  ProductCommonDoc,
-} from "@/app/realGreen/product/_lib/types/ProductTypes";
+import { ProductCommonDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
-
-
 
 // Server response structure
 export type ProductsResponse = {
@@ -32,16 +28,15 @@ export interface ProductContract extends ApiContract {
   saveCategory: {
     params: ProductCategoryStored;
     result: SuccessResponse;
-  }
+  };
 
   saveMasterSubProducts: {
-    params: {masterId: number, subProductConfigDocs: SubProductConfigDoc[]}
+    params: { masterId: number; subProductConfigDocs: SubProductConfigDoc[] };
     result: SuccessResponse;
-  }
+  };
 
   saveUnit: {
-    params: {unit: UnitCRM}
+    params: { unit: UnitCRM };
     result: SuccessResponse;
-  }
-
+  };
 }

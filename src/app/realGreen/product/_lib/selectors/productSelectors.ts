@@ -42,24 +42,19 @@ const selectProductSingleDocMap = createSelector(
 const selectProductSubDocs = (state: AppState) => state.product.productSubDocs;
 
 const selectProductSubs = createSelector(
-  [selectProductSubDocs, unitConfigSelect.unitConfigMap
-  , appMethodSelect.appMethodMap
-  ],
-  (subDocs, unitConfigMap, appMethodMap) => {
+  [selectProductSubDocs, unitConfigSelect.unitConfigMap],
+  (subDocs, unitConfigMap) => {
     const productSubs: ProductSub[] = subDocs.map((doc) => {
       const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
         doc,
         unitConfigMap,
       );
-      const appMethod: AppMethod | null =
-        appMethodMap.get(doc.appMethodId ?? baseStrId) || null;
 
       return {
         ...doc,
         unitConfig,
         unitConfigDisplay,
         productType: "sub",
-        appMethod,
       };
     });
     return productSubs;
@@ -75,16 +70,13 @@ const selectProductMasters = createSelector(
     selectProductMasterDocs,
     selectProductSubsMap,
     unitConfigSelect.unitConfigMap,
-    appMethodSelect.appMethodMap,
   ],
-  (masterDocs, subsMap, unitConfigMap, appMethodDocMap) => {
+  (masterDocs, subsMap, unitConfigMap) => {
     const masters: ProductMaster[] = masterDocs.map((doc) => {
       const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
         doc,
         unitConfigMap,
       );
-      const appMethod: AppMethod | null =
-        appMethodDocMap.get(doc.appMethodId ?? baseStrId) || null;
 
       return {
         ...doc,
@@ -103,7 +95,6 @@ const selectProductMasters = createSelector(
           };
           return config;
         }),
-        appMethod,
       };
     });
     return masters;

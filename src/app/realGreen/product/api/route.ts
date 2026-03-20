@@ -25,7 +25,10 @@ import {
 } from "@/app/realGreen/product/_lib/models/ProductDocPropsModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { baseNumId } from "../../_lib/realGreenConst";
-import { ProductMasterDocProps } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import {
+  ProductMasterDoc,
+  ProductMasterDocProps,
+} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSingleDocProps } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDocProps } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
@@ -116,7 +119,6 @@ const handlers: HandlerMap<ProductContract> = {
         productCommonDocs: commonDocs,
       };
 
-
       return { success: true, payload: productsResponse };
     },
   },
@@ -133,7 +135,10 @@ const handlers: HandlerMap<ProductContract> = {
       if (result.categoryId) {
         return { success: true };
       } else {
-        throw new AppError({ message: "Error saving category", type: "SERVER_ERROR" });
+        throw new AppError({
+          message: "Error saving category",
+          type: "SERVER_ERROR",
+        });
       }
     },
   },
@@ -189,7 +194,10 @@ const handlers: HandlerMap<ProductContract> = {
       if (result.unitId) {
         return { success: true };
       } else {
-        throw new AppError({ message: "Error saving unit", type: "SERVER_ERROR" });
+        throw new AppError({
+          message: "Error saving unit",
+          type: "SERVER_ERROR",
+        });
       }
     },
   },

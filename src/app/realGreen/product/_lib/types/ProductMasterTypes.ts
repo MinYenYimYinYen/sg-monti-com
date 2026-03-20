@@ -23,6 +23,8 @@ export function isProductMasterCore(
 export type SubProductConfigDoc = {
   subId: number;
   rate: number;
+  appMethodId: string | null;
+  useAppMethod: boolean;
 };
 
 export type SubProductConfig = {
@@ -35,14 +37,15 @@ export type ProductMasterDocProps = CreatedUpdated &
   ProductCommonDocProps & {
     productId: number;
     subProductConfigDocs: SubProductConfigDoc[];
-    appMethodId: string | null;
+    // appMethodId: string | null;
+    // useAppMethod: boolean;
   };
 
 export type ProductMasterDoc = ProductMasterCore & ProductMasterDocProps;
 
 export type ProductMasterProps = ProductCommonProps & {
   subProductConfigs: SubProductConfig[];
-  appMethod: AppMethod | null;
+  // appMethod: AppMethod | null;
 
 };
 
