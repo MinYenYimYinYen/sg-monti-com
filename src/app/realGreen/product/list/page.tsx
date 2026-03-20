@@ -17,47 +17,35 @@ import { FooterPortal } from "@/components/FooterPortal";
 import { Modal } from "@/components/Modal";
 import { AppMethodCRUD } from "@/app/realGreen/product/appMethod/AppMethodCRUD";
 import { Badge } from "@/style/components/badge";
+import { ProductsFooter } from "@/app/realGreen/product/list/tabs/components/ProductsFooter";
 
 export default function ListProducts() {
   useProduct({ autoLoad: true });
   useUnitConfig({ autoLoad: true });
-  const [isAppMethodCRUDOpen, setIsAppMethodCRUDOpen] = useState(false);
 
   return (
     <Container variant={"page"}>
-      <Tabs defaultValue={"singles"}>
+      <Tabs defaultValue={"masters"}>
         <TabsList>
-          <TabsTrigger value={"singles"}>Singles</TabsTrigger>
           <TabsTrigger value={"masters"}>Masters</TabsTrigger>
           <TabsTrigger value={"subs"}>Subs</TabsTrigger>
+          <TabsTrigger value={"singles"}>Singles</TabsTrigger>
           <TabsTrigger value={"conversions"}>Conversions</TabsTrigger>
         </TabsList>
-        <TabsContent value={"singles"}>
-          <SinglesTab />
-        </TabsContent>
         <TabsContent value={"masters"}>
           <MastersTab />
         </TabsContent>
         <TabsContent value={"subs"}>
           <SubsTab />
         </TabsContent>
+        <TabsContent value={"singles"}>
+          <SinglesTab />
+        </TabsContent>
         <TabsContent value={"conversions"}>
           <ConversionsTab />
         </TabsContent>
       </Tabs>
-      <FooterPortal>
-        <Badge variant={"outline"} onClick={() => setIsAppMethodCRUDOpen(true)}>
-          Application Methods
-        </Badge>
-        <Modal
-          title="Application Methods"
-          isOpen={isAppMethodCRUDOpen}
-          onClose={() => setIsAppMethodCRUDOpen(false)}
-          className={"w-full max-w-6xl h-[75vh]"}
-        >
-          <AppMethodCRUD />
-        </Modal>
-      </FooterPortal>
+      <ProductsFooter />
     </Container>
   );
 }

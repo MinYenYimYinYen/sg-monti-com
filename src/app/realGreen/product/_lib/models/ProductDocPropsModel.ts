@@ -3,15 +3,16 @@ import { ProductMasterDocProps } from "@/app/realGreen/product/_lib/types/Produc
 import { ProductSingleDocProps } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDocProps } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { createModel } from "@/lib/mongoose/createModel";
 
 export type ProductDocPropsStorage = (Partial<ProductMasterDocProps> &
   Partial<ProductSingleDocProps> &
   Partial<ProductSubDocProps>) &
   CreatedUpdated;
 
-interface ProductDocPropsDoc
-  extends ProductDocPropsStorage,
-    mongoose.Document {}
+// interface ProductDocPropsDoc
+//   extends ProductDocPropsStorage,
+//     mongoose.Document {}
 
 const ProductDocPropsSchema = new mongoose.Schema(
   {
@@ -21,7 +22,9 @@ const ProductDocPropsSchema = new mongoose.Schema(
       type: [
         {
           subId: { type: Number, required: true },
-          rate: { type: Number, required: true },
+          //todo: store storedRate
+          storedRate: { type: Number, required: true, default: 0},
+          // rate: { type: Number, required: true },
           appMethodId: { type: String, required: false, default: null },
           useAppMethod: { type: Boolean, required: false, default: false },
         },
@@ -34,6 +37,7 @@ const ProductDocPropsSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export const ProductDocPropsModel =
-  (mongoose.models?.Product as mongoose.Model<ProductDocPropsDoc>) ||
-  mongoose.model<ProductDocPropsDoc>("ProductDocProps", ProductDocPropsSchema);
+// export const ProductDocPropsModel =
+//   (mongoose.models?.Product as mongoose.Model<ProductDocPropsDoc>) ||
+//   mongoose.model<ProductDocPropsDoc>("ProductDocProps", ProductDocPropsSchema);
+export const ProductDocPropsModel = createModel("ProductDocProps", ProductDocPropsSchema)

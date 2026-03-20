@@ -24,6 +24,8 @@ import {
 import { MixChartPDF } from "./chartLayouts/mixChartBySize";
 import { MixChartByProductAmountPDF } from "./chartLayouts/mixChartByProductAmount";
 import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
+import { FooterPortal } from "@/components/FooterPortal";
+import { ProductsFooter } from "@/app/realGreen/product/list/tabs/components/ProductsFooter";
 
 export default function MixChartPage() {
   useProduct({ autoLoad: true });
@@ -184,6 +186,7 @@ export default function MixChartPage() {
           </div>
         )}
       </div>
+      <ProductsFooter />
     </Container>
   );
 }

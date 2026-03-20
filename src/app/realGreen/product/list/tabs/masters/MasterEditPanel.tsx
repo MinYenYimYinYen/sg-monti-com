@@ -148,7 +148,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
             ...prev,
             {
               subId: productId,
-              rate: 0,
+              storedRate: 0,
               appMethodId: null,
               useAppMethod: false,
             },
@@ -156,9 +156,9 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
     );
   };
 
-  const updateRate = (productId: number, rate: number) => {
+  const updateRate = (productId: number, storedRate: number) => {
     setConfigDocs((prev) =>
-      prev.map((c) => (c.subId === productId ? { ...c, rate } : c)),
+      prev.map((c) => (c.subId === productId ? { ...c, storedRate, } : c)),
     );
   };
 

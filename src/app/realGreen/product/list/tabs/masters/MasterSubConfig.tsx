@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/style/components/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CircleX } from "lucide-react";
 import { SubProductConfigDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
@@ -20,7 +20,7 @@ interface MasterSubConfigProps {
   config: SubProductConfigDoc;
   subProduct: ProductSub | undefined;
   onRemove: (subId: number) => void;
-  onUpdateRate: (subId: number, rate: number) => void;
+  onUpdateRate: (subId: number, storedRate: number) => void;
   onUpdateUseAppMethod: (subId: number, useAppMethod: boolean) => void;
   onUpdateAppMethodId: (subId: number, appMethodId: string | null) => void;
   appMethods: AppMethod[];
@@ -57,7 +57,7 @@ export function MasterSubConfig({
           className="h-6 w-6 p-0"
           onClick={() => onRemove(config.subId)}
         >
-          
+          <CircleX />
         </Button>
       </div>
 
@@ -108,7 +108,9 @@ export function MasterSubConfig({
               {appMethods.map((method) => (
                 <DropdownMenuItem
                   key={method.appMethodId}
-                  onClick={() => onUpdateAppMethodId(config.subId, method.appMethodId)}
+                  onClick={() =>
+                    onUpdateAppMethodId(config.subId, method.appMethodId)
+                  }
                 >
                   {method.appMethodId}
                 </DropdownMenuItem>
@@ -121,12 +123,12 @@ export function MasterSubConfig({
       {/* Rate Input */}
       <div className="flex items-center gap-2">
         <Label className="text-xs text-muted-foreground whitespace-nowrap">
-          Rate:
+          Default Rate:
         </Label>
         <Input
           type="number"
           className="h-8"
-          value={config.rate}
+          value={config.storedRate}
           onChange={(e) =>
             onUpdateRate(config.subId, parseFloat(e.target.value) || 0)
           }

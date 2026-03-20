@@ -19,6 +19,7 @@ import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import { appMethodSelect } from "@/app/realGreen/product/appMethod/appMethodSelect";
 import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
+import { hydrateRate } from "@/app/realGreen/product/_lib/selectors/hydrateRate";
 
 const selectProductMasterDocs = (state: AppState) =>
   state.product.productMasterDocs;
@@ -70,13 +71,15 @@ const selectProductMasters = createSelector(
     selectProductMasterDocs,
     selectProductSubsMap,
     unitConfigSelect.unitConfigMap,
+    appMethodSelect.appMethodMap,
   ],
-  (masterDocs, subsMap, unitConfigMap) => {
+  (masterDocs, subsMap, unitConfigMap, appMethodMap) => {
     const masters: ProductMaster[] = masterDocs.map((doc) => {
       const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
         doc,
         unitConfigMap,
       );
+
 
       return {
         ...doc,
@@ -85,9 +88,15 @@ const selectProductMasters = createSelector(
         unitConfigDisplay,
         subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
           const subProduct = subsMap.get(configDoc.subId);
+
+          const rate = hydrateRate({subProductConfigDoc: configDoc, appMethodMap})
           const config: SubProductConfig = {
             subId: configDoc.subId,
-            rate: configDoc.rate,
+            useAppMethod: configDoc.useAppMethod,
+            storedRate: configDoc.storedRate,
+            appMethodId: configDoc.appMethodId,
+            //todo: calculate rate on storedRate or useAppMethod
+            rate,
             subProduct: subProduct || {
               ...baseProductSub,
               productId: configDoc.subId,
