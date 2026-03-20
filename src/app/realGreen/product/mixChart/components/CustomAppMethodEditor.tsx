@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { SubProductConfig } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { appMethodSelect } from "@/app/realGreen/product/appMethod/appMethodSelect";
 import { createAppMethodActions } from "@/app/realGreen/product/appMethod/appMethodCreate/createAppMethodSlice";
 import { loadSavedAppMethod } from "@/app/realGreen/product/appMethod/appMethodCreate/loadSavedAppMethod";
 import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
@@ -17,18 +16,18 @@ import { Label } from "@/style/components/label";
 import { Badge } from "@/style/components/badge";
 import {
   MultiSelect,
-  MultiSelectTrigger,
   MultiSelectContent,
   MultiSelectItem,
+  MultiSelectTrigger,
   MultiSelectValue,
 } from "@/components/MultiSelect";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 import { UnitLabel } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { Separator } from "@/style/components/separator";
 import {
+  SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@/style/components/sheet";
 
 type FieldKey = "groundSpeed" | "patternWidth" | "flowRate";
@@ -59,16 +58,40 @@ export function CustomAppMethodEditor({
   const [selectedParams, setSelectedParams] = useState<FieldKey[]>([]);
   const [calculatedRate, setCalculatedRate] = useState<number | null>(null);
 
+  //todo: this works now, but we need to:
+  // Fix the column header when custom rates are used.  Still shows the stored appMethod Rate
+  // Make a place in the PDF header for a title when custom rates are used.
+  // THEN: get to work on a form techs can use to enter how much product they left with
+  // and returned with each day.  Show results for how much product they should have used
+  // based on the production they did, compared to subtracting end product from start product quantities.
+
+  // Calculate rate when solution updates
+  React.useEffect(() => {
+    if (solution?.success) {
+      const coverage = solution.result.coverage;
+      // Convert area to ksf for rate calculation
+      const areaInKsf = UnitUtils.area(coverage.area, coverage.areaUnit).to(
+        UnitLabel.ksf,
+      );
+      const rate = coverage.volume / areaInKsf;
+      setCalculatedRate(rate);
+    } else {
+      setCalculatedRate(null);
+    }
+  }, [solution]);
 
   useEffect(() => {
-  if (config.appMethod) {
-    loadSavedAppMethod(config.appMethod, dispatch);
-  }
-
+    if (config.appMethod) {
+      loadSavedAppMethod(config.appMethod, dispatch);
+      // Always solve for coverage.volume when editing parameters
+      dispatch(
+        createAppMethodActions.setSolveForField({
+          param: "coverage",
+          field: "volume",
+        }),
+      );
+    }
   }, [config.appMethod, dispatch]);
-
-
-  console.log("validation", validation);
 
   const handleApply = () => {
     if (calculatedRate !== null) {
@@ -175,7 +198,7 @@ export function CustomAppMethodEditor({
             <Separator />
             <div className="flex justify-between items-center">
               <span className="text-sm font-semibold">Rate:</span>
-              <Badge variant="default" className="text-base">
+              <Badge className="text-base">
                 {calculatedRate?.toFixed(2)}{" "}
                 {solution.result.coverage.volumeUnit}/ksf
               </Badge>
