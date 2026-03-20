@@ -5,7 +5,8 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 9999;
+    /* z-index 49: Below shadcn overlay components (z-50) but above most UI */
+    z-index: 49;
 
     /* Default hidden state (GSAP will handle the toggle) */
     opacity: 0;

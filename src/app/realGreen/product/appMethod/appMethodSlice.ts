@@ -30,6 +30,12 @@ const appMethodSlice = createSlice({
       }
       state.appMethodDocs = newDocs;
     });
+    builder.addCase(deleteOne.fulfilled, (state, action) => {
+      const deletedDoc = action.payload;
+      state.appMethodDocs = state.appMethodDocs.filter(
+        (doc) => doc.appMethodId !== deletedDoc.appMethodId,
+      );
+    });
   },
 });
 

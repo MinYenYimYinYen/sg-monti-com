@@ -95,7 +95,8 @@ export function Modal({
   return createPortal(
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[9999] hidden items-center justify-center"
+      // z-49: Below shadcn overlay components (z-50) to allow Sheet/Popover/DropdownMenu to render above Modal
+      className="fixed inset-0 z-[49] hidden items-center justify-center"
       aria-hidden={!isOpen}
     >
       {/* Backdrop */}

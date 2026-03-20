@@ -41,10 +41,10 @@ export function useAppMethod({ autoLoad }: { autoLoad?: boolean }) {
     );
   };
 
-  const deleteAppMethod = (appMethod: AppMethod) => {
+  const deleteAppMethod = ({ appMethod, clearReferences }: { appMethod: AppMethod; clearReferences?: boolean }) => {
     return dispatch(
       appMethodActions.deleteOne({
-        params: { appMethod },
+        params: { appMethod, clearReferences },
         config: { showLoading: false, force: true },
       }),
     );

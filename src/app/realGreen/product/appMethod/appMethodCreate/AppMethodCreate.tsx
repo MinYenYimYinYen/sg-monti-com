@@ -11,6 +11,7 @@ import { Checkbox } from "@/style/components/checkbox";
 import { Button } from "@/style/components/button";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
+import { Separator } from "@/style/components/separator";
 import {
   CardStackHeader,
   CardStackBody,
@@ -28,6 +29,7 @@ import { solverSelect } from "./selectors/solverSelect";
 import { useAppMethod } from "../useAppMethod";
 import { loadSavedAppMethod } from "./loadSavedAppMethod";
 import { AppDispatch } from "@/store";
+import { AppMethodDeleteSheet } from "../AppMethodDeleteSheet";
 
 interface AppMethodCreateProps {
   method?: AppMethod;
@@ -36,6 +38,7 @@ interface AppMethodCreateProps {
 export function AppMethodCreate({ method }: AppMethodCreateProps) {
   const dispatch = useDispatch<AppDispatch>();
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const { deselectCard} = useCardStack();
   const { upsertAppMethod } = useAppMethod({});
   const {
@@ -84,6 +87,11 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
     deselectCard();
   };
 
+  const handleDeleteComplete = () => {
+    resetForm();
+    deselectCard();
+  };
+
   return (
     <CardStackBody>
       <CardContent>
@@ -95,6 +103,7 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
               placeholder="e.g., BACKPACK_STD"
               value={appMethodId}
               onChange={(e) => setAppMethodId(e.target.value)}
+              disabled={!!method}
             />
           </div>
 
@@ -153,8 +162,36 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
               Cancel
             </Button>
           </div>
+
+          {/* Delete Section - Only show when editing existing method */}
+          {method && (
+            <>
+              <Separator className="my-2" />
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Danger Zone</Label>
+                <Button
+                  variant="destructive"
+                  intensity={"soft"}
+                  onClick={() => setDeleteSheetOpen(true)}
+                  className="w-full"
+                >
+                  Delete Application Method
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </CardContent>
+
+      {/* Delete Sheet */}
+      {method && (
+        <AppMethodDeleteSheet
+          method={method}
+          open={deleteSheetOpen}
+          onOpenChange={setDeleteSheetOpen}
+          onDeleteComplete={handleDeleteComplete}
+        />
+      )}
     </CardStackBody>
   );
 }

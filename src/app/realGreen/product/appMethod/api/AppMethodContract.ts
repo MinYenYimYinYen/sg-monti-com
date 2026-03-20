@@ -14,8 +14,12 @@ export interface AppMethodContract extends ApiContract {
     result: DataResponse<AppMethodDoc>;
   }
   deleteOne: {
-    params: {appMethod: AppMethodDoc};
+    params: {appMethod: AppMethodDoc; clearReferences?: boolean};
     result: DataResponse<AppMethodDoc>;
+  }
+  checkDependencies: {
+    params: {appMethodId: string};
+    result: DataResponse<{productIds: number[]}>;
   }
 
 }
