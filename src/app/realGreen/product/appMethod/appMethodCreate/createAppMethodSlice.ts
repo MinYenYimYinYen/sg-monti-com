@@ -9,6 +9,7 @@ import {
 import {
   ValidationResult,
   SolverResult,
+  MissingField,
 } from "../appMethodSolver/AppMethodSolver";
 
 // Field types
@@ -44,6 +45,10 @@ interface CreateAppMethodState {
 
   // Overlap
   overlap: number;
+
+  // Solve For Override - when set, forces solver to solve for this specific field
+  // null = auto-detect mode (default behavior)
+  solveForField: MissingField | null;
 }
 
 const initialState: CreateAppMethodState = {
@@ -75,6 +80,9 @@ const initialState: CreateAppMethodState = {
 
   // Overlap
   overlap: 2, // Double overlap by default
+
+  // Solve For Override
+  solveForField: null, // Auto-detect mode
 };
 
 const createAppMethodSlice = createSlice({
@@ -185,6 +193,11 @@ const createAppMethodSlice = createSlice({
       state.overlap = action.payload;
     },
 
+    // Solve For Field action
+    setSolveForField: (state, action: PayloadAction<MissingField | null>) => {
+      state.solveForField = action.payload;
+    },
+
     resetForm: (state) => {
       state.appMethodId = "";
       state.description = "";
@@ -204,6 +217,7 @@ const createAppMethodSlice = createSlice({
       state.coverageArea = undefined;
       state.coverageAreaUnit = undefined;
       state.overlap = 2;
+      state.solveForField = null;
     },
     resetGroundSpeed: (state) => {
       state.groundSpeedDistance = undefined;

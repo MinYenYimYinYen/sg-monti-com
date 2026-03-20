@@ -22,6 +22,7 @@ export function useFormFieldValues() {
 
   const solution = useSelector(solverSelect.solution);
   const missingField = useSelector(solverSelect.missingField);
+  const solveForField = useSelector(solverSelect.solveForField);
   const productType = useSelector(
     (state: any) => state.createAppMethod.productType,
   );
@@ -39,8 +40,13 @@ export function useFormFieldValues() {
   );
 
   useEffect(() => {
-    if (!solution?.success || !missingField) return;
-    const key = `${missingField.param}.${missingField.field}`;
+    if (!solution?.success) return;
+
+    // Use solveForField if explicitly set, otherwise use auto-detected missingField
+    const fieldToUpdate = solveForField || missingField;
+    if (!fieldToUpdate) return;
+
+    const key = `${fieldToUpdate.param}.${fieldToUpdate.field}`;
 
     switch (key) {
       case "groundSpeed.distance":
@@ -107,6 +113,7 @@ export function useFormFieldValues() {
     solution,
     dispatch,
     missingField,
+    solveForField,
     groundSpeedDistance,
     groundSpeedTime,
     coverageVolume,

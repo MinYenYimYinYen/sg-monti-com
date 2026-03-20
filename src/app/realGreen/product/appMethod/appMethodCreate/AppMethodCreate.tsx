@@ -30,6 +30,7 @@ import { useAppMethod } from "../useAppMethod";
 import { loadSavedAppMethod } from "./loadSavedAppMethod";
 import { AppDispatch } from "@/store";
 import { AppMethodDeleteSheet } from "../AppMethodDeleteSheet";
+import { SolveForSelector } from "./components/SolveForSelector";
 
 interface AppMethodCreateProps {
   method?: AppMethod;
@@ -137,6 +138,9 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
           <PatternWidthField />
           <FlowRateField />
           <CoverageField />
+
+          {/* Solve For Selector - appears when all fields are complete */}
+          <SolveForSelector />
 
           {/* Overlap */}
           <div className="flex items-center space-x-2">

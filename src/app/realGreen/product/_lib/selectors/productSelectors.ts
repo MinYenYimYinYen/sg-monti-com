@@ -90,13 +90,15 @@ const selectProductMasters = createSelector(
           const subProduct = subsMap.get(configDoc.subId);
 
           const rate = hydrateRate({subProductConfigDoc: configDoc, appMethodMap})
+          const appMethod = configDoc.appMethodId ? appMethodMap.get(configDoc.appMethodId) ?? null : null;
+
           const config: SubProductConfig = {
             subId: configDoc.subId,
             useAppMethod: configDoc.useAppMethod,
             storedRate: configDoc.storedRate,
             appMethodId: configDoc.appMethodId,
-            //todo: calculate rate on storedRate or useAppMethod
             rate,
+            appMethod,
             subProduct: subProduct || {
               ...baseProductSub,
               productId: configDoc.subId,

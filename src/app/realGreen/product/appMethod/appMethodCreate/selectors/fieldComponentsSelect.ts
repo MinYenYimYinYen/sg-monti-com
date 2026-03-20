@@ -66,14 +66,20 @@ const selectGroundSpeedDistanceWithSolution = createSelector(
   [
     selectGroundSpeedDistance,
     solverSelect.missingField,
+    solverSelect.solveForField,
     solverSelect.solution,
     selectGroundSpeedDistanceUnit,
     selectGroundSpeedTime,
     selectGroundSpeedTimeUnit
   ],
-  (stateValue, missingField, solution, distanceUnit, time, timeUnit) => {
+  (stateValue, missingField, solveForField, solution, distanceUnit, time, timeUnit) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "groundSpeed" && missingField?.field === "distance") ||
+      (solveForField?.param === "groundSpeed" && solveForField?.field === "distance");
+
     // If not solving for groundSpeed.distance, return Redux state
-    if (missingField?.param !== "groundSpeed" || missingField?.field !== "distance") {
+    if (!isBeingSolved) {
       return stateValue;
     }
 
@@ -107,10 +113,15 @@ const selectGroundSpeedDistanceWithSolution = createSelector(
 );
 
 const selectGroundSpeedDistanceUnitWithSolution = createSelector(
-  [selectGroundSpeedDistanceUnit, solverSelect.missingField, solverSelect.solution],
-  (stateValue, missingField, solution) => {
+  [selectGroundSpeedDistanceUnit, solverSelect.missingField, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, missingField, solveForField, solution) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "groundSpeed" && missingField?.field === "distance") ||
+      (solveForField?.param === "groundSpeed" && solveForField?.field === "distance");
+
     // If being solved and user hasn't set unit, provide default from solution
-    if (missingField?.param === "groundSpeed" && missingField?.field === "distance" && solution?.success && !stateValue) {
+    if (isBeingSolved && solution?.success && !stateValue) {
       return solution.result.groundSpeed.distanceUnit;
     }
     return stateValue;
@@ -118,10 +129,15 @@ const selectGroundSpeedDistanceUnitWithSolution = createSelector(
 );
 
 const selectGroundSpeedTimeWithSolution = createSelector(
-  [selectGroundSpeedTime, solverSelect.missingField, solverSelect.solution],
-  (stateValue, missingField, solution) => {
+  [selectGroundSpeedTime, solverSelect.missingField, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, missingField, solveForField, solution) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "groundSpeed" && missingField?.field === "time") ||
+      (solveForField?.param === "groundSpeed" && solveForField?.field === "time");
+
     // If solving for groundSpeed.time, show solution
-    if (missingField?.param === "groundSpeed" && missingField?.field === "time" && solution?.success) {
+    if (isBeingSolved && solution?.success) {
       return solution.result.groundSpeed.time;
     }
     return stateValue;
@@ -129,10 +145,15 @@ const selectGroundSpeedTimeWithSolution = createSelector(
 );
 
 const selectGroundSpeedTimeUnitWithSolution = createSelector(
-  [selectGroundSpeedTimeUnit, solverSelect.missingField, solverSelect.solution],
-  (stateValue, missingField, solution) => {
+  [selectGroundSpeedTimeUnit, solverSelect.missingField, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, missingField, solveForField, solution) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "groundSpeed" && missingField?.field === "time") ||
+      (solveForField?.param === "groundSpeed" && solveForField?.field === "time");
+
     // If being solved and user hasn't set unit, provide default from solution
-    if (missingField?.param === "groundSpeed" && missingField?.field === "time" && solution?.success && !stateValue) {
+    if (isBeingSolved && solution?.success && !stateValue) {
       return solution.result.groundSpeed.timeUnit;
     }
     return stateValue;
@@ -144,12 +165,18 @@ const selectPatternWidthDistanceWithSolution = createSelector(
   [
     selectPatternWidthDistance,
     solverSelect.missingField,
+    solverSelect.solveForField,
     solverSelect.solution,
     selectPatternWidthDistanceUnit
   ],
-  (stateValue, missingField, solution, distanceUnit) => {
+  (stateValue, missingField, solveForField, solution, distanceUnit) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "patternWidth" && missingField?.field === "distance") ||
+      (solveForField?.param === "patternWidth" && solveForField?.field === "distance");
+
     // If not solving for patternWidth.distance, return Redux state
-    if (missingField?.param !== "patternWidth" || missingField?.field !== "distance") {
+    if (!isBeingSolved) {
       return stateValue;
     }
 
@@ -172,10 +199,15 @@ const selectPatternWidthDistanceWithSolution = createSelector(
 );
 
 const selectPatternWidthDistanceUnitWithSolution = createSelector(
-  [selectPatternWidthDistanceUnit, solverSelect.missingField, solverSelect.solution],
-  (stateValue, missingField, solution) => {
+  [selectPatternWidthDistanceUnit, solverSelect.missingField, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, missingField, solveForField, solution) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "patternWidth" && missingField?.field === "distance") ||
+      (solveForField?.param === "patternWidth" && solveForField?.field === "distance");
+
     // If being solved and user hasn't set unit, provide default from solution
-    if (missingField?.param === "patternWidth" && missingField?.field === "distance" && solution?.success && !stateValue) {
+    if (isBeingSolved && solution?.success && !stateValue) {
       return solution.result.patternWidth.distanceUnit;
     }
     return stateValue;
@@ -187,6 +219,7 @@ const selectFlowRateVolumeWithSolution = createSelector(
   [
     selectFlowRateVolume,
     solverSelect.missingField,
+    solverSelect.solveForField,
     solverSelect.solution,
     selectFlowRateVolumeUnit,
     selectFlowRateTime,
@@ -196,14 +229,20 @@ const selectFlowRateVolumeWithSolution = createSelector(
   (
     stateValue,
     missingField,
+    solveForField,
     solution,
     volumeUnit,
     time,
     timeUnit,
     productType,
   ) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "flowRate" && missingField?.field === "volume") ||
+      (solveForField?.param === "flowRate" && solveForField?.field === "volume");
+
     // If not solving for flowRate.volume, return Redux state
-    if (missingField?.param !== "flowRate" || missingField?.field !== "volume") {
+    if (!isBeingSolved) {
       return stateValue;
     }
 
@@ -254,10 +293,15 @@ const selectFlowRateVolumeWithSolution = createSelector(
 );
 
 const selectFlowRateVolumeUnitWithSolution = createSelector(
-  [selectFlowRateVolumeUnit, solverSelect.missingField, solverSelect.solution],
-  (stateValue, missingField, solution) => {
+  [selectFlowRateVolumeUnit, solverSelect.missingField, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, missingField, solveForField, solution) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "flowRate" && missingField?.field === "volume") ||
+      (solveForField?.param === "flowRate" && solveForField?.field === "volume");
+
     // If being solved and user hasn't set unit, provide default from solution
-    if (missingField?.param === "flowRate" && missingField?.field === "volume" && solution?.success && !stateValue) {
+    if (isBeingSolved && solution?.success && !stateValue) {
       return solution.result.flowRate.volumeUnit;
     }
     return stateValue;
@@ -265,10 +309,15 @@ const selectFlowRateVolumeUnitWithSolution = createSelector(
 );
 
 const selectFlowRateTimeWithSolution = createSelector(
-  [selectFlowRateTime, solverSelect.missingField, solverSelect.solution],
-  (stateValue, missingField, solution) => {
+  [selectFlowRateTime, solverSelect.missingField, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, missingField, solveForField, solution) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "flowRate" && missingField?.field === "time") ||
+      (solveForField?.param === "flowRate" && solveForField?.field === "time");
+
     // If solving for flowRate.time, show solution
-    if (missingField?.param === "flowRate" && missingField?.field === "time" && solution?.success) {
+    if (isBeingSolved && solution?.success) {
       return solution.result.flowRate.time;
     }
     return stateValue;
@@ -276,10 +325,15 @@ const selectFlowRateTimeWithSolution = createSelector(
 );
 
 const selectFlowRateTimeUnitWithSolution = createSelector(
-  [selectFlowRateTimeUnit, solverSelect.missingField, solverSelect.solution],
-  (stateValue, missingField, solution) => {
+  [selectFlowRateTimeUnit, solverSelect.missingField, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, missingField, solveForField, solution) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "flowRate" && missingField?.field === "time") ||
+      (solveForField?.param === "flowRate" && solveForField?.field === "time");
+
     // If being solved and user hasn't set unit, provide default from solution
-    if (missingField?.param === "flowRate" && missingField?.field === "time" && solution?.success && !stateValue) {
+    if (isBeingSolved && solution?.success && !stateValue) {
       return solution.result.flowRate.timeUnit;
     }
     return stateValue;
@@ -291,6 +345,7 @@ const selectCoverageVolumeWithSolution = createSelector(
   [
     selectCoverageVolume,
     solverSelect.missingField,
+    solverSelect.solveForField,
     solverSelect.solution,
     selectCoverageVolumeUnit,
     selectCoverageArea,
@@ -300,14 +355,20 @@ const selectCoverageVolumeWithSolution = createSelector(
   (
     stateValue,
     missingField,
+    solveForField,
     solution,
     volumeUnit,
     area,
     areaUnit,
     productType,
   ) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "coverage" && missingField?.field === "volume") ||
+      (solveForField?.param === "coverage" && solveForField?.field === "volume");
+
     // If not solving for coverage.volume, return Redux state
-    if (missingField?.param !== "coverage" || missingField?.field !== "volume") {
+    if (!isBeingSolved) {
       return stateValue;
     }
 
@@ -358,10 +419,15 @@ const selectCoverageVolumeWithSolution = createSelector(
 );
 
 const selectCoverageVolumeUnitWithSolution = createSelector(
-  [selectCoverageVolumeUnit, solverSelect.missingField, solverSelect.solution],
-  (stateValue, missingField, solution) => {
+  [selectCoverageVolumeUnit, solverSelect.missingField, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, missingField, solveForField, solution) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "coverage" && missingField?.field === "volume") ||
+      (solveForField?.param === "coverage" && solveForField?.field === "volume");
+
     // If being solved and user hasn't set unit, provide default from solution
-    if (missingField?.param === "coverage" && missingField?.field === "volume" && solution?.success && !stateValue) {
+    if (isBeingSolved && solution?.success && !stateValue) {
       return solution.result.coverage.volumeUnit;
     }
     return stateValue;
@@ -369,10 +435,15 @@ const selectCoverageVolumeUnitWithSolution = createSelector(
 );
 
 const selectCoverageAreaWithSolution = createSelector(
-  [selectCoverageArea, solverSelect.missingField, solverSelect.solution],
-  (stateValue, missingField, solution) => {
+  [selectCoverageArea, solverSelect.missingField, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, missingField, solveForField, solution) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "coverage" && missingField?.field === "area") ||
+      (solveForField?.param === "coverage" && solveForField?.field === "area");
+
     // If solving for coverage.area, show solution
-    if (missingField?.param === "coverage" && missingField?.field === "area" && solution?.success) {
+    if (isBeingSolved && solution?.success) {
       return solution.result.coverage.area;
     }
     return stateValue;
@@ -380,10 +451,15 @@ const selectCoverageAreaWithSolution = createSelector(
 );
 
 const selectCoverageAreaUnitWithSolution = createSelector(
-  [selectCoverageAreaUnit, solverSelect.missingField, solverSelect.solution],
-  (stateValue, missingField, solution) => {
+  [selectCoverageAreaUnit, solverSelect.missingField, solverSelect.solveForField, solverSelect.solution],
+  (stateValue, missingField, solveForField, solution) => {
+    // Check if this field is being solved for (either auto-detected or explicitly set)
+    const isBeingSolved =
+      (missingField?.param === "coverage" && missingField?.field === "area") ||
+      (solveForField?.param === "coverage" && solveForField?.field === "area");
+
     // If being solved and user hasn't set unit, provide default from solution
-    if (missingField?.param === "coverage" && missingField?.field === "area" && solution?.success && !stateValue) {
+    if (isBeingSolved && solution?.success && !stateValue) {
       return solution.result.coverage.areaUnit;
     }
     return stateValue;

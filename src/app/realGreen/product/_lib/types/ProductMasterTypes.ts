@@ -31,6 +31,7 @@ export type SubProductConfigDoc = {
 
 export type SubProductConfig = SubProductConfigDoc & {
   subProduct: ProductSub;
+  appMethod: AppMethod | null;
   rate: number;
 };
 

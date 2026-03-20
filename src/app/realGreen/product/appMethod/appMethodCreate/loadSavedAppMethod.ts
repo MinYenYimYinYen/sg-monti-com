@@ -37,4 +37,11 @@ export function loadSavedAppMethod(method: AppMethod, dispatch: AppDispatch) {
 
   // Overlap
   dispatch(createAppMethodActions.setOverlap(method.overlap));
+
+  // When editing existing method, default to solving for coverage.volume
+  // This prevents validation mode and allows recalculation when editing parameters
+  dispatch(createAppMethodActions.setSolveForField({
+    param: "coverage",
+    field: "volume",
+  }));
 }

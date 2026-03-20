@@ -10,6 +10,8 @@ import { FieldKey } from "../createAppMethodSlice";
 const selectOverlap = (state: AppState) => state.createAppMethod.overlap;
 const selectProductType = (state: AppState) =>
   state.createAppMethod.productType;
+const selectSolveForField = (state: AppState) =>
+  state.createAppMethod.solveForField;
 
 const selectAppMethodId = (state: AppState) =>
   state.createAppMethod.appMethodId;
@@ -134,10 +136,33 @@ const selectMissingField = createSelector(
   },
 );
 
-const selectSolution = createSelector([selectParams], (params) => {
-  const solution = AppMethodSolver.solve(params);
-  return solution;
-});
+const selectSolution = createSelector(
+  [selectParams, selectSolveForField],
+  (params, solveForOverride) => {
+    if (solveForOverride) {
+      // User has explicitly chosen which field to solve for
+      // Clear ONLY that specific numeric field (keep all units intact)
+
+      // Create a deep copy and clear the specific field
+      const modifiedParams: AppMethodParams = {
+        ...params,
+        flowRate: { ...params.flowRate },
+        groundSpeed: { ...params.groundSpeed },
+        patternWidth: { ...params.patternWidth },
+        coverage: { ...params.coverage },
+      };
+
+      // Clear the specific numeric field
+      const targetParam = modifiedParams[solveForOverride.param] as any;
+      targetParam[solveForOverride.field] = undefined;
+
+      return AppMethodSolver.solve(modifiedParams);
+    }
+
+    // Normal auto-detect mode
+    return AppMethodSolver.solve(params);
+  },
+);
 const selectCanSave = createSelector(
   [selectAppMethodId, selectDescription, selectSolution],
   (appMethodId, description, solution) => {
@@ -149,6 +174,7 @@ const selectCanSave = createSelector(
 export const solverSelect = {
   params: selectParams,
   overlap: selectOverlap,
+  solveForField: selectSolveForField,
   missingField: selectMissingField,
   validation: selectValidation,
   solution: selectSolution,

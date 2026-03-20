@@ -22,11 +22,12 @@ export function PatternWidthField({ disabled }: PatternWidthFieldProps) {
     fieldComponentsSelect.patternWidth.distanceUnit,
   );
 
-  // Check if this field is being solved for
+  // Check if this field is being solved for (either auto-detected or explicitly set)
   const missingField = useSelector(solverSelect.missingField);
+  const solveForField = useSelector(solverSelect.solveForField);
   const isDistanceBeingSolved =
-    missingField?.param === "patternWidth" &&
-    missingField?.field === "distance";
+    (missingField?.param === "patternWidth" && missingField?.field === "distance") ||
+    (solveForField?.param === "patternWidth" && solveForField?.field === "distance");
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>

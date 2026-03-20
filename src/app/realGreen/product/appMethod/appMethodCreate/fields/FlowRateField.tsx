@@ -30,10 +30,15 @@ export function FlowRateField({ disabled }: FlowRateFieldProps) {
   const flowRateTime = useSelector(fieldComponentsSelect.flowRate.time);
   const flowRateTimeUnit = useSelector(fieldComponentsSelect.flowRate.timeUnit);
 
-  // Check which specific field is being solved for
+  // Check which specific field is being solved for (either auto-detected or explicitly set)
   const missingField = useSelector(solverSelect.missingField);
-  const isVolumeBeingSolved = missingField?.param === "flowRate" && missingField?.field === "volume";
-  const isTimeBeingSolved = missingField?.param === "flowRate" && missingField?.field === "time";
+  const solveForField = useSelector(solverSelect.solveForField);
+  const isVolumeBeingSolved =
+    (missingField?.param === "flowRate" && missingField?.field === "volume") ||
+    (solveForField?.param === "flowRate" && solveForField?.field === "volume");
+  const isTimeBeingSolved =
+    (missingField?.param === "flowRate" && missingField?.field === "time") ||
+    (solveForField?.param === "flowRate" && solveForField?.field === "time");
 
   // Select appropriate units based on product type
   const flowUnits = productType === "liquid" ? volumeUnits : weightUnits;

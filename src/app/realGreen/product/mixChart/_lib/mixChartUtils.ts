@@ -32,6 +32,7 @@ export function generateMixChartData(
   master: ProductMaster,
   increment: number,
   maxSize: number,
+  customRates?: Map<number, number>,
 ): MixChartRow[] {
   const sizes: number[] = [];
   for (let size = increment; size <= maxSize; size += increment) {
@@ -41,9 +42,12 @@ export function generateMixChartData(
   return sizes.map((size) => ({
     size,
     amounts: master.subProductConfigs.map((config) => {
+      // Use custom rate if available, otherwise use default rate
+      const rate = customRates?.get(config.subId) ?? config.rate;
+
       const appAmount = calculateAmountNeeded({
         size,
-        rate: config.rate,
+        rate,
       });
       // Use unitConfigDisplay to format compound units
       return config.subProduct.unitConfigDisplay.format({
@@ -67,6 +71,7 @@ export function generateMixChartByProductAmount(
   increment: number,
   maxUnits: number,
   unitContext: UnitContext = "load",
+  customRates?: Map<number, number>,
 ): MixChartByProductAmountRow[] {
   const selectedConfig = master.subProductConfigs.find(
     (config) => config.subId === selectedSubId
@@ -85,19 +90,25 @@ export function generateMixChartByProductAmount(
     // Convert selected unit context to app units
     const appAmount = amount * conversion.conversionFactor;
 
+    // Use custom rate for selected product if available
+    const selectedRate = customRates?.get(selectedConfig.subId) ?? selectedConfig.rate;
+
     // Calculate size covered based on the selected product's rate
     const sizeCovered = calculateSizeCovered({
       appAmount,
-      rate: selectedConfig.rate,
+      rate: selectedRate,
     });
 
     // Calculate amounts needed for OTHER sub-products
     const amounts = master.subProductConfigs
       .filter((config) => config.subId !== selectedSubId)
       .map((config) => {
+        // Use custom rate if available, otherwise use default rate
+        const rate = customRates?.get(config.subId) ?? config.rate;
+
         const requiredAppAmount = calculateAmountNeeded({
           size: sizeCovered,
-          rate: config.rate,
+          rate,
         });
         return config.subProduct.unitConfigDisplay.format({
           amount: requiredAppAmount,

@@ -17,6 +17,9 @@ import {
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
+import { Button } from "@/style/components/button";
+import { Badge } from "@/style/components/badge";
+import { Sheet, SheetContent } from "@/style/components/sheet";
 import {
   generateMixChartData,
   generateMixChartByProductAmount,
@@ -26,6 +29,8 @@ import { MixChartByProductAmountPDF } from "./chartLayouts/mixChartByProductAmou
 import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { FooterPortal } from "@/components/FooterPortal";
 import { ProductsFooter } from "@/app/realGreen/product/list/tabs/components/ProductsFooter";
+import { CustomAppMethodEditor } from "./components/CustomAppMethodEditor";
+import { Pencil, X } from "lucide-react";
 
 export default function MixChartPage() {
   useProduct({ autoLoad: true });
@@ -37,6 +42,8 @@ export default function MixChartPage() {
   const [unitContext, setUnitContext] = useState<UnitContext>("load");
   const [increment, setIncrement] = useState<number>(10);
   const [rowCount, setRowCount] = useState<number>(17);
+  const [customRates, setCustomRates] = useState<Map<number, number>>(new Map());
+  const [editingSubId, setEditingSubId] = useState<number | null>(null);
 
   // Debounce increment and row count to avoid re-rendering PDF on every keystroke
   const debouncedIncrement = useDebounce(increment, 100);
@@ -51,15 +58,19 @@ export default function MixChartPage() {
   const maxSize = debouncedIncrement * debouncedRowCount;
   const maxUnits = debouncedIncrement * debouncedRowCount;
 
-  // Generate chart data based on layout type (uses debounced values)
+  // Generate chart data based on layout type (uses debounced values and custom rates)
   const chartDataBySize = selectedMaster
-    ? generateMixChartData(selectedMaster, debouncedIncrement, maxSize)
+    ? generateMixChartData(selectedMaster, debouncedIncrement, maxSize, customRates)
     : [];
 
   const chartDataByProductAmount =
     selectedMaster && selectedSubId
-      ? generateMixChartByProductAmount(selectedMaster, selectedSubId, debouncedIncrement, maxUnits, unitContext)
+      ? generateMixChartByProductAmount(selectedMaster, selectedSubId, debouncedIncrement, maxUnits, unitContext, customRates)
       : [];
+
+  const editingConfig = selectedMaster && editingSubId
+    ? selectedMaster.subProductConfigs.find(c => c.subId === editingSubId)
+    : null;
 
   if (!isClient) return null;
 
@@ -68,8 +79,34 @@ export default function MixChartPage() {
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">Mix Chart</h1>
 
+        {/* Custom Rates Display */}
+        {customRates.size > 0 && selectedMaster && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-muted-foreground">Custom Rates:</span>
+            {Array.from(customRates.entries()).map(([subId, rate]) => {
+              const config = selectedMaster.subProductConfigs.find(c => c.subId === subId);
+              if (!config) return null;
+              return (
+                <Badge key={subId} variant="secondary" className="flex items-center gap-1">
+                  {config.subProduct.description}: {rate.toFixed(2)}
+                  <button
+                    onClick={() => {
+                      const newRates = new Map(customRates);
+                      newRates.delete(subId);
+                      setCustomRates(newRates);
+                    }}
+                    className="hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            })}
+          </div>
+        )}
+
         {/* Controls Row */}
-        <div className="flex gap-4 items-end">
+        <div className="flex gap-4 items-end flex-wrap">
             <div className="flex flex-col gap-2">
               <Label>Master Product</Label>
               <Select
@@ -166,6 +203,32 @@ export default function MixChartPage() {
             </div>
           </div>
 
+        {/* Customize Rates Section */}
+        {selectedMaster && selectedMaster.subProductConfigs.some(c => c.useAppMethod) && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Customize Rates</Label>
+            <div className="flex flex-wrap gap-2">
+              {selectedMaster.subProductConfigs
+                .filter(c => c.useAppMethod)
+                .map((config) => (
+                  <Button
+                    key={config.subId}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingSubId(config.subId)}
+                    className="flex items-center gap-2"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    {config.subProduct.description}
+                    {customRates.has(config.subId) && (
+                      <Badge variant="default" className="ml-1 h-4 text-xs">Custom</Badge>
+                    )}
+                  </Button>
+                ))}
+            </div>
+          </div>
+        )}
+
         {/* PDF Viewer */}
         {selectedMaster && (
           <div className={"w-full h-[75vh] overflow-y-auto"}>
@@ -186,6 +249,23 @@ export default function MixChartPage() {
           </div>
         )}
       </div>
+
+      {/* Custom Rate Editor Sheet */}
+      {editingConfig && (
+        <Sheet open={!!editingSubId} onOpenChange={() => setEditingSubId(null)}>
+          <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto">
+            <CustomAppMethodEditor
+              config={editingConfig}
+              onRateCalculated={(subId, rate) => {
+                setCustomRates(prev => new Map(prev).set(subId, rate));
+                setEditingSubId(null);
+              }}
+              onCancel={() => setEditingSubId(null)}
+            />
+          </SheetContent>
+        </Sheet>
+      )}
+
       <ProductsFooter />
     </Container>
   );

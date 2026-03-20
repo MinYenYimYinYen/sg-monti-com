@@ -34,12 +34,15 @@ export function GroundSpeedField({ disabled }: GroundSpeedFieldProps) {
     fieldComponentsSelect.groundSpeed.timeUnit,
   );
 
-  // Check which specific field is being solved for
+  // Check which specific field is being solved for (either auto-detected or explicitly set)
   const missingField = useSelector(solverSelect.missingField);
+  const solveForField = useSelector(solverSelect.solveForField);
   const isDistanceBeingSolved =
-    missingField?.param === "groundSpeed" && missingField?.field === "distance";
+    (missingField?.param === "groundSpeed" && missingField?.field === "distance") ||
+    (solveForField?.param === "groundSpeed" && solveForField?.field === "distance");
   const isTimeBeingSolved =
-    missingField?.param === "groundSpeed" && missingField?.field === "time";
+    (missingField?.param === "groundSpeed" && missingField?.field === "time") ||
+    (solveForField?.param === "groundSpeed" && solveForField?.field === "time");
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
