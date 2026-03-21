@@ -15,6 +15,7 @@ import {
   startOfYear,
   endOfYear,
 } from "date-fns";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 
 /**
  * Utility functions that return ISO date strings (yyyy-MM-dd).
@@ -82,6 +83,13 @@ function yearEnd(): string {
   return format(endOfYear(new Date()), "yyyy-MM-dd");
 }
 
+function padDateRange(dateRange: TRange<string>, days: number) {
+  return {
+    min: format(addDays(new Date(dateRange.min), -days), "yyyy-MM-dd"),
+    max: format(addDays(new Date(dateRange.max), days), "yyyy-MM-dd"),
+  };
+}
+
 export const dateStrings = {
   today,
   daysAgo,
@@ -98,4 +106,5 @@ export const dateStrings = {
   monthEnd,
   yearStart,
   yearEnd,
+  padDateRange,
 };

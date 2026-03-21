@@ -7,7 +7,6 @@ import { SubProductConfig } from "@/app/realGreen/product/_lib/types/ProductMast
 import { createAppMethodActions } from "@/app/realGreen/product/appMethod/appMethodCreate/createAppMethodSlice";
 import { loadSavedAppMethod } from "@/app/realGreen/product/appMethod/appMethodCreate/loadSavedAppMethod";
 import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
-import { useFormFieldValues } from "@/app/realGreen/product/appMethod/appMethodCreate/useFormFieldValues";
 import { GroundSpeedField } from "@/app/realGreen/product/appMethod/appMethodCreate/fields/GroundSpeedField";
 import { PatternWidthField } from "@/app/realGreen/product/appMethod/appMethodCreate/fields/PatternWidthField";
 import { FlowRateField } from "@/app/realGreen/product/appMethod/appMethodCreate/fields/FlowRateField";
@@ -46,24 +45,8 @@ export function CustomAppMethodEditor({
   const dispatch = useDispatch<AppDispatch>();
   const solution = useSelector(solverSelect.solution);
   const validation = useSelector(solverSelect.validation);
-  const {
-    resetForm,
-    setProductType,
-    setCoverageVolume,
-    setCoverageVolumeUnit,
-    setCoverageArea,
-    setCoverageAreaUnit,
-  } = useFormFieldValues();
-
   const [selectedParams, setSelectedParams] = useState<FieldKey[]>([]);
   const [calculatedRate, setCalculatedRate] = useState<number | null>(null);
-
-  //todo: this works now, but we need to:
-  // Fix the column header when custom rates are used.  Still shows the stored appMethod Rate
-  // Make a place in the PDF header for a title when custom rates are used.
-  // THEN: get to work on a form techs can use to enter how much product they left with
-  // and returned with each day.  Show results for how much product they should have used
-  // based on the production they did, compared to subtracting end product from start product quantities.
 
   // Calculate rate when solution updates
   React.useEffect(() => {

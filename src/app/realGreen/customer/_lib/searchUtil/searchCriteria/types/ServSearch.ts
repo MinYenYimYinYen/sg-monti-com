@@ -64,4 +64,6 @@ export type ServiceSearchCriteria = {
   progIds?: number[];
   servStats?: string[];
   season: TRange<number>;
+  updated?: TRange<string>;
+  created?: TRange<string>;
 };

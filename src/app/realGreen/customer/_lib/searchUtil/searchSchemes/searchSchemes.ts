@@ -9,6 +9,7 @@ import { CustomerDoc } from "../../entities/types/CustomerTypes";
 import { ProgramDoc } from "../../entities/types/ProgramTypes";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServiceSearchCriteria } from "../searchCriteria/types/ServSearch";
+import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 type SearchSchemeParams = {
   season: number;
@@ -130,6 +131,48 @@ const lastSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => {
         stepName: "customers",
         getIds: (pipelineData) => {
           const dupedIds = (pipelineData as ServiceDoc[]).map((s) => s.custId);
+          return [...new Set(dupedIds)];
+        },
+        getSearchCriteria: (ids) => ({
+          custIds: ids,
+        }),
+      }),
+    ],
+  };
+};
+
+const recentProduction = ({
+  season,
+}: SearchSchemeParams): SearchScheme => {
+  const today = dateStrings.today();
+  return {
+    schemeName: "production",
+    steps: [
+      createPaginationStep({
+        stepName: "services",
+        optimizerKey: "recentProductionServices",
+        searchCriteria: {
+          season: { min: season, max: season },
+          servStats: getServiceStatuses(["completed"]),
+          updated: dateStrings.padDateRange({ min: today, max: today }, 7),
+        },
+      }),
+      createBatchSizeStep({
+        stepName: "programs",
+        optimizerKey: "recentProductionPrograms",
+        getIds: (pipelineData) => {
+          const dupedIds = (pipelineData as ServiceDoc[]).map((s) => s.progId);
+          return [...new Set(dupedIds)];
+        },
+        getSearchCriteria: (ids) => ({
+          progIds: ids,
+        }),
+      }),
+      createBatchSizeStep({
+        stepName: "customers",
+        optimizerKey: "recentProductionCustomers",
+        getIds: (pipelineData) => {
+          const dupedIds = (pipelineData as ProgramDoc[]).map((p) => p.custId);
           return [...new Set(dupedIds)];
         },
         getSearchCriteria: (ids) => ({

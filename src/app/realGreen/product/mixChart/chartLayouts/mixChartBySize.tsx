@@ -8,9 +8,10 @@ import { PDFNumber } from "@/components/Number";
 export type MixChartPDFProps = {
   master: ProductMaster;
   chartData: MixChartRow[];
+  customRates: Map<number, number>;
 };
 
-export function MixChartPDF({ master, chartData }: MixChartPDFProps) {
+export function MixChartPDF({ master, chartData, customRates }: MixChartPDFProps) {
   return (
     <Document>
       <Page size={"LETTER"} style={tw("p-4 text-xs")}>
@@ -42,9 +43,17 @@ export function MixChartPDF({ master, chartData }: MixChartPDFProps) {
                   "flex-1 border-r border-black p-2 flex flex-row gap-2 items-center justify-center",
                 )}
               >
-                <Text style={tw("font-bold")}>
-                  {config.subProduct.description} ({config.rate}{config.subProduct.unitConfig.conversions.app.unitLabel}/1000)
-                </Text>
+                <View style={tw("flex flex-row gap-1 items-center")}>
+                  <Text style={tw("font-bold")}>
+                    {config.subProduct.description} (
+                  </Text>
+                  <PDFNumber decimals={2} style={tw("font-bold")}>
+                    {customRates.get(config.subId) ?? config.rate}
+                  </PDFNumber>
+                  <Text style={tw("font-bold")}>
+                    {config.subProduct.unitConfig.conversions.app.unitLabel}/1000)
+                  </Text>
+                </View>
               </View>
             ))}
           </View>

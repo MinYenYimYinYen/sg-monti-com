@@ -4,6 +4,7 @@ import {
 } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/types/ServSearch";
 import { AppError } from "@/lib/errors/AppError";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { RGStringRange } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 
 function tRangeToArray(range: TRange<number>): number[] {
   const { min, max } = range;
@@ -23,6 +24,13 @@ function tRangeToArray(range: TRange<number>): number[] {
   return result;
 }
 
+function tRangeToRGStringRange(range: TRange<string>): RGStringRange {
+  return {
+    minValue: range.min,
+    maxValue: range.max,
+  };
+}
+
 export function remapServSearch(
   search: ServiceSearchCriteria,
 ): ServiceSearchRaw {
@@ -37,6 +45,8 @@ export function remapServSearch(
   if (search.servIds) rgSearch.id = search.servIds;
   if (search.progIds) rgSearch.programID = search.progIds;
   if (search.servStats) rgSearch.serviceStatus = search.servStats;
+  if (search.updated) rgSearch.updated = tRangeToRGStringRange(search.updated);
+  if (search.created) rgSearch.created = tRangeToRGStringRange(search.created);
   rgSearch.serviceYear = tRangeToArray(search.season);
   return rgSearch;
 }

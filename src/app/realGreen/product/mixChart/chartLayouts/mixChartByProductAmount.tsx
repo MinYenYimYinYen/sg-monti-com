@@ -11,15 +11,17 @@ export type MixChartByProductAmountPDFProps = {
   master: ProductMaster;
   selectedSubId: number;
   chartData: MixChartByProductAmountRow[];
+  customRates: Map<number, number>;
 };
 
 export function MixChartByProductAmountPDF({
   master,
   selectedSubId,
   chartData,
+  customRates,
 }: MixChartByProductAmountPDFProps) {
   const selectedConfig = master.subProductConfigs.find(
-    (config) => config.subId === selectedSubId
+    (config) => config.subId === selectedSubId,
   );
 
   if (!selectedConfig || chartData.length === 0) {
@@ -33,7 +35,7 @@ export function MixChartByProductAmountPDF({
   }
 
   const otherConfigs = master.subProductConfigs.filter(
-    (config) => config.subId !== selectedSubId
+    (config) => config.subId !== selectedSubId,
   );
 
   return (
@@ -59,18 +61,26 @@ export function MixChartByProductAmountPDF({
             {/* Load Amount Column */}
             <View
               style={tw(
-                `${KEY_PRODUCT_COLUMN_WIDTH} border-r border-black p-2 flex items-center justify-center`
+                `${KEY_PRODUCT_COLUMN_WIDTH} border-r border-black p-2 flex items-center justify-center`,
               )}
             >
-              <Text style={tw("font-bold")}>
-                {selectedConfig.subProduct.description} ({selectedConfig.rate}{selectedConfig.subProduct.unitConfig.conversions.app.unitLabel}/1000)
-              </Text>
+              <View style={tw("flex flex-row gap-1 items-center")}>
+                <Text style={tw("font-bold")}>
+                  {selectedConfig.subProduct.description} (
+                </Text>
+                <PDFNumber decimals={2} style={tw("font-bold")}>
+                  {customRates.get(selectedConfig.subId) ?? selectedConfig.rate}
+                </PDFNumber>
+                <Text style={tw("font-bold")}>
+                  {selectedConfig.subProduct.unitConfig.conversions.app.unitLabel}/1000)
+                </Text>
+              </View>
             </View>
 
             {/* Size Covered Column */}
             <View
               style={tw(
-                "w-16 border-r border-black p-2 flex flex-row gap-1 items-center justify-center"
+                "w-16 border-r border-black p-2 flex flex-row gap-1 items-center justify-center",
               )}
             >
               <LandPlotPDFIcon size={12} />
@@ -82,7 +92,7 @@ export function MixChartByProductAmountPDF({
               <View
                 key={config.subId}
                 style={tw(
-                  "flex-1 border-r border-black p-2 flex items-center justify-center"
+                  "flex-1 border-r border-black p-2 flex items-center justify-center",
                 )}
               >
                 <Text style={tw("font-bold")}>
@@ -97,13 +107,13 @@ export function MixChartByProductAmountPDF({
             <View
               key={index}
               style={tw(
-                `flex flex-row border-b border-black ${index % 2 === 0 ? "bg-[#e5e5e5]" : ""}`
+                `flex flex-row border-b border-black ${index % 2 === 0 ? "bg-[#e5e5e5]" : ""}`,
               )}
             >
               {/* Amount */}
               <View
                 style={tw(
-                  `${KEY_PRODUCT_COLUMN_WIDTH} border-r border-black p-2 flex items-center justify-center`
+                  `${KEY_PRODUCT_COLUMN_WIDTH} border-r border-black p-2 flex items-center justify-center`,
                 )}
               >
                 <View style={tw("flex flex-row gap-1 items-center")}>
@@ -115,7 +125,7 @@ export function MixChartByProductAmountPDF({
               {/* Size Covered */}
               <View
                 style={tw(
-                  "w-16 border-r border-black p-2 flex items-center justify-center"
+                  "w-16 border-r border-black p-2 flex items-center justify-center",
                 )}
               >
                 <PDFNumber>{row.sizeCovered}</PDFNumber>
@@ -126,14 +136,14 @@ export function MixChartByProductAmountPDF({
                 <View
                   key={idx}
                   style={tw(
-                    "flex-1 border-r border-black p-2 flex flex-col items-center justify-center"
+                    "flex-1 border-r border-black p-2 flex flex-col items-center justify-center",
                   )}
                 >
                   {amountData.parts.map((part, partIdx) => (
                     <View
                       key={partIdx}
                       style={tw(
-                        "flex flex-row gap-1 items-center justify-center"
+                        "flex flex-row gap-1 items-center justify-center",
                       )}
                     >
                       <PDFNumber>{part.amount}</PDFNumber>
