@@ -27,7 +27,7 @@ export function ChooseRouteDate() {
         {routeDates.map((date) => {
           return (
             <MultiSelectItem key={date} value={date}>
-              <div>{prettyDate(date, "eee, MM dd")}</div>
+              <div>{prettyDate(date, "eee, MMM dd")}</div>
             </MultiSelectItem>
           );
         })}

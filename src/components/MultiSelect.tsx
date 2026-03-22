@@ -25,6 +25,7 @@ type MultiSelectContextValue<TValue = any> = {
   triggerRef: React.RefObject<HTMLButtonElement | null>;
   getValueKey: (value: TValue) => string;
   compareValues: (a: TValue, b: TValue) => boolean;
+  getDisplayValue?: (value: TValue) => string;
 };
 
 // Use a less specific type for the context to allow generic usage
@@ -58,6 +59,11 @@ interface MultiSelectProps<TValue = string> {
    * Defaults to === comparison.
    */
   compareValues?: (a: TValue, b: TValue) => boolean;
+  /**
+   * Function to get the display string for a value.
+   * Defaults to getValueKey if not provided.
+   */
+  getDisplayValue?: (value: TValue) => string;
 }
 
 export function MultiSelect<TValue = string>({
@@ -68,6 +74,7 @@ export function MultiSelect<TValue = string>({
   defaultValue = [],
   getValueKey = (value) => String(value),
   compareValues = (a, b) => a === b,
+  getDisplayValue,
 }: MultiSelectProps<TValue>) {
   const [uncontrolledValue, setUncontrolledValue] = React.useState<TValue[]>(defaultValue);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -94,6 +101,7 @@ export function MultiSelect<TValue = string>({
         triggerRef,
         getValueKey,
         compareValues,
+        getDisplayValue,
       }}
     >
       <Collapsible open={isOpen} onOpenChange={setIsOpen} className="relative">
@@ -580,13 +588,14 @@ export function MultiSelectValue<TValue = string>({
   children,
   className,
 }: MultiSelectValueProps<TValue>) {
-  const { value, getValueKey } = useMultiSelect<TValue>();
+  const { value, getValueKey, getDisplayValue } = useMultiSelect<TValue>();
 
   if (children) {
     return <>{children(value)}</>;
   }
 
   const hasValue = value.length > 0;
+  const displayFn = getDisplayValue || getValueKey;
 
   return (
     <span
@@ -597,7 +606,7 @@ export function MultiSelectValue<TValue = string>({
       )}
       data-placeholder={!hasValue}
     >
-      {hasValue ? value.map(getValueKey).join(", ") : placeholder}
+      {hasValue ? value.map(displayFn).join(", ") : placeholder}
     </span>
   );
 }

@@ -8,17 +8,21 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from "@/components/MultiSelect";
+import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 
 export function ChooseTech() {
   const { setTech } = useTechRoute();
-  const tech = useSelector(techRouteSelect.tech);
+  const techId = useSelector(techRouteSelect.tech);
   const availableTechs = useSelector(techRouteSelect.availableTechs);
+  const employeeMap = useSelector(employeeSelect.employeeMap);
+  const tech = techId && employeeMap.get(techId);
 
   return (
     <MultiSelect
       mode="single"
-      value={tech ? [tech] : []}
+      value={techId ? [techId] : []}
       onValueChange={(techs) => setTech(techs[0])}
+      getDisplayValue={(techId) => employeeMap.get(techId)?.name || techId}
     >
       <MultiSelectTrigger>
         <MultiSelectValue placeholder="Select a tech" />
@@ -26,7 +30,7 @@ export function ChooseTech() {
       <MultiSelectContent>
         {availableTechs.map((techId) => (
           <MultiSelectItem key={techId} value={techId}>
-            {techId}
+            {employeeMap.get(techId)?.name}
           </MultiSelectItem>
         ))}
       </MultiSelectContent>
