@@ -4,7 +4,7 @@ import { parseISO, format, isValid } from "date-fns";
  * Converts a strict ISO Date string (YYYY-MM-DD) to a JS Date object.
  * Returns undefined if the string is invalid or empty.
  *
- * Note: This handles "local" dates (YYYY-MM-DD) by parsing them as local time,
+ * Note: This handles "local" routeDates (YYYY-MM-DD) by parsing them as local time,
  * avoiding timezone shifts that occur with new Date("YYYY-MM-DD").
  */
 function toJSDate(isoDateString: string | undefined | null): Date | undefined {

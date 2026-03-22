@@ -21,7 +21,7 @@ import {TRange} from "@/lib/primatives/tRange/TRange";
 
 /**
  * DateCompareOptions defines fallback behavior for date comparison functions
- * when one or both of the dates being compared are invalid or undefined.
+ * when one or both of the routeDates being compared are invalid or undefined.
  *
  * It provides control over what the function should return (`true` or `false`)
  * in such scenarios, or whether it should throw an error.
@@ -65,7 +65,7 @@ import {TRange} from "@/lib/primatives/tRange/TRange";
  *   undefined,
  *   undefined
  * );
- * // Error: "One of the dates is invalid, and no options were provided to handle that."
+ * // Error: "One of the routeDates is invalid, and no options were provided to handle that."
  * ```
  */
 
@@ -130,12 +130,12 @@ function handleUndefined(
 ): boolean {
   if (!options) {
     // throw new ValidationError(
-    //   "One of the dates is invalid, and no options were provided to handle that.",
+    //   "One of the routeDates is invalid, and no options were provided to handle that.",
     //   { value, comparedTo },
     // );
     throw new AppError({
       message:
-        "One of the dates is invalid, and no options were provided to handle that.",
+        "One of the routeDates is invalid, and no options were provided to handle that.",
       type: "VALIDATION_ERROR",
       data: { value, comparedTo },
     });
@@ -151,12 +151,12 @@ function handleUndefined(
   }
 
   // throw new ValidationError(
-  //   "One of the dates is invalid, and specific options were not provided to handle that.",
+  //   "One of the routeDates is invalid, and specific options were not provided to handle that.",
   //   { value, comparedTo, options },
   // );
   throw new AppError({
     message:
-      "One of the dates is invalid, and specific options were not provided to handle that.",
+      "One of the routeDates is invalid, and specific options were not provided to handle that.",
     type: "VALIDATION_ERROR",
     data: { value, comparedTo, options },
   });

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Modal } from "@/components/Modal";
 import { DollarSign, Hash, LandPlot, Settings } from "lucide-react";
 import { Container } from "@/components/Containers";
-import { useCoverSheets } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheets";
+import { useCoverSheetDeps } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheetDeps";
 import { useSelector } from "react-redux";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import { CoverSheetCard } from "@/app/scheduling/coverSheets/_lib/components/CoverSheetCard";
@@ -16,7 +16,7 @@ import { UnservDropZone } from "@/app/scheduling/_libShared/UnservDropZone";
 type ViewState = "countSizeRev" | "servCodes" | "products";
 
 export default function CoverSheetsPage() {
-  useCoverSheets();
+  useCoverSheetDeps();
   const servicesByDateAndEmployee = useSelector(
     coverSheetsSelect.servicesByDateAndEmployee,
   );

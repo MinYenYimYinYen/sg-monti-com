@@ -54,7 +54,7 @@ const selectServicesByDateAndEmployee = createSelector(
       dateMap.get(employeeId)!.push(service);
     });
 
-    // Sort dates and create new Map with sorted order
+    // Sort routeDates and create new Map with sorted order
     const sortedDates = Array.from(tempResult.keys()).sort();
     const result = new Map<string, Map<string, Service[]>>();
     sortedDates.forEach((date) => {

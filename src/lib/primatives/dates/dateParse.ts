@@ -38,7 +38,7 @@ function tryParseDate(dateString: string): string | undefined {
   return undefined;
 }
 
-// Semantic Parser for natural language dates (e.g., "today", "next friday", "2w")
+// Semantic Parser for natural language routeDates (e.g., "today", "next friday", "2w")
 function parseSemantic(dateString: string): Date | undefined {
   const text = dateString.toLowerCase();
   const today = startOfDay(new Date());

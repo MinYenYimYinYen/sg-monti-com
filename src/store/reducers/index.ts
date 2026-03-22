@@ -22,6 +22,7 @@ import csvReducer from "@/app/csv/_lib/csvSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
 import { appMethodReducer } from "@/app/realGreen/product/appMethod/appMethodSlice";
 import createAppMethodReducer from "@/app/realGreen/product/appMethod/appMethodCreate/createAppMethodSlice";
+import { techRouteReducer } from "@/app/scheduling/techRoute/techRouteSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -42,6 +43,7 @@ const rootReducer = combineReducers({
   progServ: progServReducer,
   serviceCondition: serviceConditionReducer,
   taxCode: taxCodeReducer,
+  techRoute: techRouteReducer,
   zipCode: zipCodeReducer,
   customer: customerReducer,
   csv: csvReducer,

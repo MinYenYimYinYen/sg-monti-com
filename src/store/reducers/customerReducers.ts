@@ -11,6 +11,7 @@ export const customerReducer = combineReducers({
   active: activeCustomerReducer,
   lastSeasonProduction: lastSeasonProductionReducer,
   printed: printedCustomerReducer,
+  recentProduction: printedCustomerReducer,
   central: centralCustomerReducer,
   csv: csvReducer,
 });

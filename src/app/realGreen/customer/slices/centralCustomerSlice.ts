@@ -13,12 +13,15 @@ import {
   lastSeasonProductionGetDocs,
   printedCustomersActions,
   printedCustomersGetDocs,
+  recentProductionActions,
+  recentProductionGetDocs,
 } from "@/app/realGreen/customer/slices/customerReducers";
 
 export type CustomerContextMode =
   | "active"
   | "printed"
-  | "lastSeasonProduction";
+  | "lastSeasonProduction"
+  | "recentProduction";
 
 interface CentralCustomerState extends CentralCustomerStateData {
   activeContexts: CustomerContextMode[];
@@ -74,25 +77,18 @@ export const centralCustomerSlice = createSlice({
     // ============================================================================
 
     // Active Customers - Streaming
-    builder.addCase(
-      activeCustomersActions.receiveChunk,
-      (state, action) => {
-        if (state.activeContexts.includes("active")) {
-          mergeChunk(state, action.payload);
-        }
-      },
-    );
+    builder.addCase(activeCustomersActions.receiveChunk, (state, action) => {
+      if (state.activeContexts.includes("active")) {
+        mergeChunk(state, action.payload);
+      }
+    });
 
     // Printed Customers - Streaming
-    builder.addCase(
-      printedCustomersActions.receiveChunk,
-      (state, action) => {
-        if (state.activeContexts.includes("printed")) {
-          mergeChunk(state, action.payload);
-        } else {
-        }
-      },
-    );
+    builder.addCase(printedCustomersActions.receiveChunk, (state, action) => {
+      if (state.activeContexts.includes("printed")) {
+        mergeChunk(state, action.payload);
+      }
+    });
 
     // Last Season Production - Streaming
     builder.addCase(
@@ -103,6 +99,12 @@ export const centralCustomerSlice = createSlice({
         }
       },
     );
+
+    builder.addCase(recentProductionActions.receiveChunk, (state, action) => {
+      if (state.activeContexts.includes("recentProduction")) {
+        mergeChunk(state, action.payload);
+      }
+    });
 
     // ============================================================================
     // FETCH START - Clear Maps
@@ -125,16 +127,21 @@ export const centralCustomerSlice = createSlice({
       }
     });
 
-    builder.addCase(
-      lastSeasonProductionGetDocs.pending,
-      (state) => {
-        if (state.activeContexts.includes("lastSeasonProduction")) {
-          state.CustDocMap.clear();
-          state.ProgDocMap.clear();
-          state.ServDocMap.clear();
-        }
-      },
-    );
+    builder.addCase(lastSeasonProductionGetDocs.pending, (state) => {
+      if (state.activeContexts.includes("lastSeasonProduction")) {
+        state.CustDocMap.clear();
+        state.ProgDocMap.clear();
+        state.ServDocMap.clear();
+      }
+    });
+
+    builder.addCase(recentProductionGetDocs.pending, (state) => {
+      if (state.activeContexts.includes("recentProduction")) {
+        state.CustDocMap.clear();
+        state.ProgDocMap.clear();
+        state.ServDocMap.clear();
+      }
+    })
   },
 });
 
@@ -160,7 +167,10 @@ export const switchContexts =
         sourceState = state.customer.printed;
       } else if (context === "lastSeasonProduction") {
         sourceState = state.customer.lastSeasonProduction;
-      } else {
+      } else if (context === "recentProduction") {
+        sourceState = state.customer.recentProduction;
+      }
+      else {
         return;
       }
 

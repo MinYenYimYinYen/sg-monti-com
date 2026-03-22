@@ -5,7 +5,7 @@ import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/c
 import { Container } from "@/components/Containers";
 import { Document, Page, PDFViewer, View, Text } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
-import { useCoverSheets } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheets";
+import { useCoverSheetDeps } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheetDeps";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { useServCodes } from "@/app/realGreen/customer/_lib/hooks/useServCodes";
 import { useAppProducts } from "@/app/realGreen/customer/_lib/hooks/useAppProducts";
@@ -29,7 +29,7 @@ export type RouteDatePageProps = {
 
 export default function RouteDatePage({ params }: RouteDatePageProps) {
   const loadingCount = useSelector(uiSelect.loadingCount);
-  useCoverSheets();
+  useCoverSheetDeps();
 
 
 

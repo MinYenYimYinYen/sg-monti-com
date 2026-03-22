@@ -11,7 +11,7 @@ import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 import { useServiceCondition } from "@/app/realGreen/serviceCondition/_lib/useServiceCondition";
 import { useCondition } from "@/app/realGreen/conditionCode/useCondition";
 
-export function useCoverSheets() {
+export function useCoverSheetDeps() {
   useCustomerContext({ contexts: ["printed"] });
   usePrintedCustomers({ autoLoad: true });
   useProgServ({ autoLoad: true });
