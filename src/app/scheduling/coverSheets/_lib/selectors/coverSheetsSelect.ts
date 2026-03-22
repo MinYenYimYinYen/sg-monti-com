@@ -72,8 +72,6 @@ const selectServicesByDateAndEmployee = createSelector(
       result.set(date, sortedEmployeeMap);
     });
 
-    console.log("result", result);
-
     return result;
   },
 );

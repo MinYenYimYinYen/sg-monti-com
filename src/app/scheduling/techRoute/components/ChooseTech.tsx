@@ -15,7 +15,6 @@ export function ChooseTech() {
   const techId = useSelector(techRouteSelect.tech);
   const availableTechs = useSelector(techRouteSelect.availableTechs);
   const employeeMap = useSelector(employeeSelect.employeeMap);
-  const tech = techId && employeeMap.get(techId);
 
   return (
     <MultiSelect

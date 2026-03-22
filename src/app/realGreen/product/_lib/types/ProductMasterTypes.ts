@@ -22,7 +22,6 @@ export function isProductMasterCore(
 
 export type SubProductConfigDoc = {
   subId: number;
-  //todo: store storedRate
   storedRate: number;
   // rate: number;
   appMethodId: string | null;

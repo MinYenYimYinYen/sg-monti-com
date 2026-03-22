@@ -47,7 +47,9 @@ const selectServices = createSelector(
   [selectRouteDate, selectRoutesByDate],
   (routeDate, routesByDate) => {
     if (!routeDate) return [];
-    return routesByDate.get(routeDate) ?? [];
+    const services = routesByDate.get(routeDate) ?? [];
+    console.log("services", services);
+    return services;
   },
 );
 
@@ -63,7 +65,6 @@ const selectAvailableTechs = createSelector(
     return Array.from(techIds).sort();
   },
 );
-
 
 export const techRouteSelect = {
   routesByDate: selectRoutesByDate,

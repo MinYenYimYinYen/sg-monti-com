@@ -3,13 +3,14 @@ import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCu
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig";
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
+import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 
 export function useTechRouteDeps() {
   useCustomerContext({ contexts: ["printed", "recentProduction"] });
   usePrintedCustomers({ autoLoad: true });
   useProgServ({ autoLoad: true });
   useUnitConfig({ autoLoad: true });
-  useProgServ({ autoLoad: true });
+  useProduct({ autoLoad: true });
   useEmployee({ autoLoad: true });
 
 }
