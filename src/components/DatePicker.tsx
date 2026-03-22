@@ -50,6 +50,7 @@ export interface DatePickerProps extends VariantProps<typeof datePickerVariants>
   className?: string;
   placeholder?: string;
   isInvalid?: boolean;
+  allowedDates?: string[];
 }
 
 export function DatePicker({
@@ -59,6 +60,7 @@ export function DatePicker({
   placeholder = "MM/DD/YYYY",
   isInvalid,
   size,
+  allowedDates,
 }: DatePickerProps) {
   // Track the previous value prop to detect external changes during render
   const [prevValue, setPrevValue] = useState(value);
@@ -135,6 +137,14 @@ export function DatePicker({
   const date = dateConversion.toJSDate(value);
   const sizeKey = size || "default";
 
+  // Create disabled matcher for Calendar component
+  const disabled = allowedDates && allowedDates.length > 0
+    ? (date: Date) => {
+        const isoDate = dateConversion.toISO(date);
+        return !isoDate || !allowedDates.includes(isoDate);
+      }
+    : undefined;
+
   return (
     <div className={cn(datePickerVariants({ size }), className)}>
       <Input
@@ -172,6 +182,7 @@ export function DatePicker({
             onSelect={handleCalendarSelect}
             month={month}
             onMonthChange={setMonth}
+            disabled={disabled}
           />
         </PopoverContent>
       </Popover>

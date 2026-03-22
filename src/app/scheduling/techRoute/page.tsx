@@ -6,6 +6,9 @@ import { useTechRouteDeps } from "@/app/scheduling/techRoute/useTechRouteDeps";
 import { useRecentProduction } from "@/app/realGreen/customer/hooks/useRecentProduction";
 
 import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
+import { DatePicker } from "@/components/DatePicker";
+import { ChooseRouteDate } from "@/app/scheduling/techRoute/components/ChooseRouteDate";
+import { ChooseTech } from "@/app/scheduling/techRoute/components/ChooseTech";
 
 export default function TechRoute() {
   const techId = "1BT";
@@ -16,5 +19,8 @@ export default function TechRoute() {
   const techRoutes = useSelector(techRouteSelect.routesByDate);
 
 
-  return <Container variant={"fluid"}></Container>;
+  return <Container variant={"fluid"}>
+    <ChooseTech />
+    <ChooseRouteDate />
+  </Container>;
 }

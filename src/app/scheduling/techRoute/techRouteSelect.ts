@@ -4,16 +4,22 @@ import { authSelect } from "@/app/auth/authSlice";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { AppState } from "@/store";
 
+const selectAuthTech = createSelector([authSelect.user], (user) => user?.saId);
+const selectTech = (state: AppState) => state.techRoute.tech;
+
+const selectDefaultTech = createSelector(
+  [selectAuthTech, selectTech],
+  (authTech, tech) => (tech ? tech : authTech),
+);
+
 const selectRoutesByDate = createSelector(
-  [coverSheetsSelect.servicesByDateAndEmployee, authSelect.user],
-  (byDateAndEmployee, user) => {
+  [coverSheetsSelect.servicesByDateAndEmployee, selectDefaultTech],
+  (byDateAndEmployee, defaultTech) => {
     const result = new Map<string, Service[]>();
 
     byDateAndEmployee.forEach((employeeMap, date) => {
-      if (!user) return null;
-
-      // const services = employeeMap.get(user.saId);
-      const services = employeeMap.get("1BT");
+      const services = employeeMap.get(defaultTech ?? "");
+      // const services = employeeMap.get("1BT");
       if (services) {
         result.set(date, services);
       }
@@ -45,10 +51,26 @@ const selectServices = createSelector(
   },
 );
 
+const selectAvailableTechs = createSelector(
+  [coverSheetsSelect.servicesByDateAndEmployee],
+  (byDateAndEmployee) => {
+    const techIds = new Set<string>();
+    byDateAndEmployee.forEach((employeeMap) => {
+      employeeMap.forEach((_, employeeId) => {
+        techIds.add(employeeId);
+      });
+    });
+    return Array.from(techIds).sort();
+  },
+);
+
+
 export const techRouteSelect = {
   routesByDate: selectRoutesByDate,
   routeDates: selectRouteDates,
   getRouteForDate: selectGetRouteForDate,
   routeDate: selectRouteDate,
   services: selectServices,
+  availableTechs: selectAvailableTechs,
+  tech: selectDefaultTech,
 };
