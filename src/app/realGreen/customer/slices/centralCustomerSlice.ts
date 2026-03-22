@@ -4,20 +4,16 @@ import {
   CentralCustomerStateData,
   centralInitialState,
 } from "@/app/realGreen/customer/slices/SliceTypes";
-import {
-  activeCustomersSlice,
-  activeCustomersActions,
-} from "./activeCustomersSlice";
-import {
-  printedCustomersSlice,
-  printedCustomersActions,
-} from "./printedCustomersSlice";
-import {
-  lastSeasonProductionSlice,
-  lastSeasonProductionActions,
-} from "./lastSeasonProductionSlice";
 import { StreamChunk } from "@/app/realGreen/customer/api/CustomerContract";
 import { AppState, AppThunk } from "@/store";
+import {
+  activeCustomersActions,
+  activeCustomersGetDocs,
+  lastSeasonProductionActions,
+  lastSeasonProductionGetDocs,
+  printedCustomersActions,
+  printedCustomersGetDocs,
+} from "@/app/realGreen/customer/slices/customerReducers";
 
 export type CustomerContextMode =
   | "active"
@@ -79,7 +75,7 @@ export const centralCustomerSlice = createSlice({
 
     // Active Customers - Streaming
     builder.addCase(
-      activeCustomersSlice.actions.receiveChunk,
+      activeCustomersActions.receiveChunk,
       (state, action) => {
         if (state.activeContexts.includes("active")) {
           mergeChunk(state, action.payload);
@@ -89,7 +85,7 @@ export const centralCustomerSlice = createSlice({
 
     // Printed Customers - Streaming
     builder.addCase(
-      printedCustomersSlice.actions.receiveChunk,
+      printedCustomersActions.receiveChunk,
       (state, action) => {
         if (state.activeContexts.includes("printed")) {
           mergeChunk(state, action.payload);
@@ -100,7 +96,7 @@ export const centralCustomerSlice = createSlice({
 
     // Last Season Production - Streaming
     builder.addCase(
-      lastSeasonProductionSlice.actions.receiveChunk,
+      lastSeasonProductionActions.receiveChunk,
       (state, action) => {
         if (state.activeContexts.includes("lastSeasonProduction")) {
           mergeChunk(state, action.payload);
@@ -113,7 +109,7 @@ export const centralCustomerSlice = createSlice({
     // When a fetch starts for an active context, clear all Maps
     // ============================================================================
 
-    builder.addCase(activeCustomersActions.getCustDocs.pending, (state) => {
+    builder.addCase(activeCustomersGetDocs.pending, (state) => {
       if (state.activeContexts.includes("active")) {
         state.CustDocMap.clear();
         state.ProgDocMap.clear();
@@ -121,7 +117,7 @@ export const centralCustomerSlice = createSlice({
       }
     });
 
-    builder.addCase(printedCustomersActions.getCustDocs.pending, (state) => {
+    builder.addCase(printedCustomersGetDocs.pending, (state) => {
       if (state.activeContexts.includes("printed")) {
         state.CustDocMap.clear();
         state.ProgDocMap.clear();
@@ -130,7 +126,7 @@ export const centralCustomerSlice = createSlice({
     });
 
     builder.addCase(
-      lastSeasonProductionActions.getCustDocs.pending,
+      lastSeasonProductionGetDocs.pending,
       (state) => {
         if (state.activeContexts.includes("lastSeasonProduction")) {
           state.CustDocMap.clear();

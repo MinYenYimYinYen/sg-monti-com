@@ -1,23 +1,24 @@
-import { printedCustomersActions } from "@/app/realGreen/customer/slices/printedCustomersSlice";
 import { realGreenConst } from "../../_lib/realGreenConst";
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { useSelector } from "react-redux";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
+import { printedCustomersGetDocs } from "@/app/realGreen/customer/slices/customerReducers";
 
-export function usePrintedCustomers({ autoLoad = false }: { autoLoad?: boolean } = {}) {
+export function usePrintedCustomers({
+  autoLoad = false,
+}: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
-
 
   useEffect(() => {
     if (!autoLoad || !season) {
       return;
     }
     dispatch(
-      printedCustomersActions.getCustDocs({
+      printedCustomersGetDocs({
         params: {
           schemeName: "printedCustomers",
           season,
@@ -30,7 +31,7 @@ export function usePrintedCustomers({ autoLoad = false }: { autoLoad?: boolean }
   const refresh = () => {
     if (!season) return;
     dispatch(
-      printedCustomersActions.getCustDocs({
+      printedCustomersGetDocs({
         params: {
           schemeName: "printedCustomers",
           season,

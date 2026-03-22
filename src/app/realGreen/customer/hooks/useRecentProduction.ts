@@ -1,24 +1,22 @@
-import { useSelector } from "react-redux";
-import { useEffect } from "react";
-import {
-  lastSeasonProductionGetDocs,
-} from "@/app/realGreen/customer/slices/customerReducers";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
-import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
+import { useSelector } from "react-redux";
+import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
+import { useEffect } from "react";
+import { recentProductionGetDocs } from "@/app/realGreen/customer/slices/customerReducers";
+import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
-export function useLastSeasonProduction({ autoLoad = false }: { autoLoad?: boolean } = {}) {
+export function useRecentProduction() {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
 
   useEffect(() => {
-    if (!autoLoad || !season) return;
+    if (!season) return;
     dispatch(
-      lastSeasonProductionGetDocs({
+      recentProductionGetDocs({
         params: {
-          schemeName: "lastSeasonProduction",
+          schemeName: "recentProduction",
           season,
         },
         config: {
@@ -26,14 +24,14 @@ export function useLastSeasonProduction({ autoLoad = false }: { autoLoad?: boole
         },
       }),
     );
-  }, [autoLoad, dispatch, season]);
+  }, [dispatch, season]);
 
   const refresh = () => {
     if (!season) return;
     dispatch(
-      lastSeasonProductionGetDocs({
+      recentProductionGetDocs({
         params: {
-          schemeName: "lastSeasonProduction",
+          schemeName: "recentProduction",
           season,
         },
         config: {
@@ -42,6 +40,5 @@ export function useLastSeasonProduction({ autoLoad = false }: { autoLoad?: boole
       }),
     );
   };
-
   return { refresh, canRefresh: !!season };
 }

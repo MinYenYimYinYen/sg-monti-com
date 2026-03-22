@@ -1,10 +1,10 @@
 import { useSelector } from "react-redux";
 import { useEffect } from "react";
-import { activeCustomersActions } from "@/app/realGreen/customer/slices/activeCustomersSlice";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
+import { activeCustomersGetDocs } from "@/app/realGreen/customer/slices/customerReducers";
 
 export function useActiveCustomers({ autoLoad = false }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
@@ -14,7 +14,7 @@ export function useActiveCustomers({ autoLoad = false }: { autoLoad?: boolean } 
   useEffect(() => {
     if (!autoLoad || !season) return;
     dispatch(
-      activeCustomersActions.getCustDocs({
+      activeCustomersGetDocs({
         params: {
           schemeName: "activeCustomers",
           season,
@@ -29,7 +29,7 @@ export function useActiveCustomers({ autoLoad = false }: { autoLoad?: boolean } 
   const refresh = () => {
     if (!season) return;
     dispatch(
-      activeCustomersActions.getCustDocs({
+      activeCustomersGetDocs({
         params: {
           schemeName: "activeCustomers",
           season,

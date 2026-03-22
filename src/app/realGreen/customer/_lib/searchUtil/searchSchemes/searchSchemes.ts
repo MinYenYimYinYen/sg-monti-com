@@ -187,4 +187,5 @@ export const searchScheme = {
   activeCustomers,
   printedCustomers,
   lastSeasonProduction,
+  recentProduction,
 };
