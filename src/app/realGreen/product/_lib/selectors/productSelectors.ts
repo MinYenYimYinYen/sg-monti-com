@@ -43,19 +43,22 @@ const selectProductSingleDocMap = createSelector(
 const selectProductSubDocs = (state: AppState) => state.product.productSubDocs;
 
 const selectProductSubs = createSelector(
-  [selectProductSubDocs, unitConfigSelect.unitConfigMap],
-  (subDocs, unitConfigMap) => {
+  [selectProductSubDocs, unitConfigSelect.unitConfigMap, appMethodSelect.appMethodMap],
+  (subDocs, unitConfigMap, appMethodMap) => {
     const productSubs: ProductSub[] = subDocs.map((doc) => {
       const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
         doc,
         unitConfigMap,
       );
 
+      const appMethod = doc.appMethodId ? appMethodMap.get(doc.appMethodId) ?? null : null;
+
       return {
         ...doc,
         unitConfig,
         unitConfigDisplay,
         productType: "sub",
+        appMethod,
       };
     });
     return productSubs;

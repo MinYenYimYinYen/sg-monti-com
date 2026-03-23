@@ -26,6 +26,8 @@ export type ProductSubDocProps = CreatedUpdated &
 
 export type ProductSubDoc = ProductSubCore & ProductSubDocProps;
 
-export type ProductSubProps = ProductCommonProps & {};
+export type ProductSubProps = ProductCommonProps & {
+  appMethod: AppMethod | null;
+};
 
 export type ProductSub = ProductSubDoc & ProductSubProps;

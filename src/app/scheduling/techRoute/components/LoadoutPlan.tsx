@@ -11,6 +11,7 @@ import {
   MultiSelectContent,
   MultiSelectItem,
   MultiSelectTrigger,
+  MultiSelectValue,
 } from "@/components/MultiSelect";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { isProductSubCore } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
@@ -24,7 +25,7 @@ import {
 import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
 
 export function LoadoutPlan() {
-  const {toggleLeftWith, updateLeftWith} = useTechRoute();
+  const { toggleLeftWith, updateLeftWith } = useTechRoute();
   const leftWith = useSelector(techRouteSelect.leftWith);
   const services = useSelector(techRouteSelect.services);
   const loadout = aggregateLoadouts(services);
@@ -32,7 +33,34 @@ export function LoadoutPlan() {
   const allSingles = useSelector(productSelect.productSingles);
   const allSubs = useSelector(productSelect.productSubs);
 
+  const planned = loadout.masters.flatMap((master) => {
+    const subs = master.subProducts.map((sub) => sub.product);
+    return subs;
+  });
 
+  const otherSubs = new ProductQuery(allSubs).difference(
+    new ProductQuery(planned),
+  ).results;
+
+  // Handler for MultiSelect value changes
+  const handleValueChange = (selectedProductIds: number[]) => {
+    // Determine which products were added or removed
+    const currentIds = leftWith.map((lw) => lw.productId);
+
+    // Find added and removed IDs
+    const added = selectedProductIds.filter((id) => !currentIds.includes(id));
+    const removed = currentIds.filter((id) => !selectedProductIds.includes(id));
+
+    // Toggle added products
+    added.forEach((productId) => {
+      toggleLeftWith({ productId, amount: 0 });
+    });
+
+    // Toggle removed products
+    removed.forEach((productId) => {
+      toggleLeftWith({ productId, amount: 0 });
+    });
+  };
 
   return (
     <div className={"flex flex-col gap-2"}>
@@ -67,21 +95,64 @@ export function LoadoutPlan() {
       </div>
       <div className={"flex flex-col gap-1"}>
         <div>
-          <MultiSelect>
-            <MultiSelectTrigger />
+          <MultiSelect<number>
+            value={leftWith.map((lw) => lw.productId)}
+            onValueChange={handleValueChange}
+            getValueKey={(productId) => String(productId)}
+            getDisplayValue={(productId) => {
+              const product = [...allSubs, ...allSingles].find(
+                (p) => p.productId === productId,
+              );
+              return product?.description || String(productId);
+            }}
+            getMultiDisplayValue={(productIds) => {
+              if (productIds.length === 0) return "Select products...";
+              if (productIds.length === 1) {
+                const product = [...allSubs, ...allSingles].find(
+                  (p) => p.productId === productIds[0],
+                );
+                return product?.description || String(productIds[0]);
+              }
+              return `${productIds.length} products selected`;
+            }}
+          >
+            <MultiSelectTrigger>
+              <MultiSelectValue placeholder="Select products..." />
+            </MultiSelectTrigger>
             <MultiSelectContent>
               <ScrollArea className={"h-64"}>
-                <Tabs>
-                  <TabsList>
-                    <TabsTrigger value={"subs"}>Standard</TabsTrigger>
-                    <TabsTrigger value={"singles"}>Specialty</TabsTrigger>
+                <Tabs defaultValue={"subs"}>
+                  <TabsList className={"w-full"}>
+                    <TabsTrigger value={"planned"} className={"flex-1"}>
+                      Planned
+                    </TabsTrigger>
+                    <TabsTrigger value={"subs"} className={"flex-1"}>
+                      Standard
+                    </TabsTrigger>
+                    <TabsTrigger value={"singles"} className={"flex-1"}>
+                      Specialty
+                    </TabsTrigger>
                   </TabsList>
-                  <TabsContent value={"subs"}>
-                    {allSubs.map((product) => {
+                  <TabsContent value={"planned"}>
+                    {planned.map((product) => {
                       return (
                         <MultiSelectItem
                           key={product.productId}
                           value={product.productId}
+                          className="!bg-transparent hover:bg-primary/10"
+                        >
+                          {product.description}
+                        </MultiSelectItem>
+                      )
+                    })}
+                  </TabsContent>
+                  <TabsContent value={"subs"}>
+                    {otherSubs.map((product) => {
+                      return (
+                        <MultiSelectItem
+                          key={product.productId}
+                          value={product.productId}
+                          className="!bg-transparent hover:bg-primary/10"
                         >
                           {product.description}
                         </MultiSelectItem>
@@ -94,6 +165,7 @@ export function LoadoutPlan() {
                         <MultiSelectItem
                           key={product.productId}
                           value={product.productId}
+                          className="!bg-transparent hover:bg-primary/10"
                         >
                           {product.description}
                         </MultiSelectItem>
