@@ -26,6 +26,7 @@ type MultiSelectContextValue<TValue = any> = {
   getValueKey: (value: TValue) => string;
   compareValues: (a: TValue, b: TValue) => boolean;
   getDisplayValue?: (value: TValue) => string;
+  getMultiDisplayValue?: (values: TValue[]) => string;
 };
 
 // Use a less specific type for the context to allow generic usage
@@ -60,10 +61,16 @@ interface MultiSelectProps<TValue = string> {
    */
   compareValues?: (a: TValue, b: TValue) => boolean;
   /**
-   * Function to get the display string for a value.
-   * Defaults to getValueKey if not provided.
+   * Function to get the display string for a single value.
+   * Used in dropdown items. Defaults to getValueKey if not provided.
    */
   getDisplayValue?: (value: TValue) => string;
+  /**
+   * Function to get the display string for multiple selected values.
+   * Takes precedence over getDisplayValue when displaying the trigger value.
+   * Use this to show summaries like "3 items selected" instead of listing all items.
+   */
+  getMultiDisplayValue?: (values: TValue[]) => string;
 }
 
 export function MultiSelect<TValue = string>({
@@ -75,6 +82,7 @@ export function MultiSelect<TValue = string>({
   getValueKey = (value) => String(value),
   compareValues = (a, b) => a === b,
   getDisplayValue,
+  getMultiDisplayValue,
 }: MultiSelectProps<TValue>) {
   const [uncontrolledValue, setUncontrolledValue] = React.useState<TValue[]>(defaultValue);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -102,6 +110,7 @@ export function MultiSelect<TValue = string>({
         getValueKey,
         compareValues,
         getDisplayValue,
+        getMultiDisplayValue,
       }}
     >
       <Collapsible open={isOpen} onOpenChange={setIsOpen} className="relative">
@@ -588,14 +597,21 @@ export function MultiSelectValue<TValue = string>({
   children,
   className,
 }: MultiSelectValueProps<TValue>) {
-  const { value, getValueKey, getDisplayValue } = useMultiSelect<TValue>();
+  const { value, getValueKey, getDisplayValue, getMultiDisplayValue } =
+    useMultiSelect<TValue>();
 
   if (children) {
     return <>{children(value)}</>;
   }
 
   const hasValue = value.length > 0;
-  const displayFn = getDisplayValue || getValueKey;
+
+  // Use getMultiDisplayValue if provided, otherwise fall back to mapping individual values
+  const displayText = hasValue
+    ? getMultiDisplayValue
+      ? getMultiDisplayValue(value)
+      : value.map(getDisplayValue || getValueKey).join(", ")
+    : placeholder;
 
   return (
     <span
@@ -606,7 +622,7 @@ export function MultiSelectValue<TValue = string>({
       )}
       data-placeholder={!hasValue}
     >
-      {hasValue ? value.map(displayFn).join(", ") : placeholder}
+      {displayText}
     </span>
   );
 }
