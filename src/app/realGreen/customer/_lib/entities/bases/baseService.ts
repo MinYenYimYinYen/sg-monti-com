@@ -12,6 +12,7 @@ import { baseProgram } from "./baseProgram";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { baseEmployee } from "@/app/realGreen/employee/_lib/baseEmployee";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
+import { baseLoadout } from "@/app/realGreen/product/_lib/types/LoadoutTypes";
 
 export const baseServiceCore: ServiceCore = {
   servId: baseNumId,
@@ -73,6 +74,7 @@ export const baseService: Service = {
     lastAssigned: baseAssignment,
     promise: null,
     promiseIssues: [],
+    loadout: baseLoadout,
   }),
 
   ...baseServiceDoc,
@@ -85,4 +87,5 @@ export const baseService: Service = {
   lastAssigned: baseAssignment,
   promise: null,
   promiseIssues: [],
+  loadout: baseLoadout,
 };

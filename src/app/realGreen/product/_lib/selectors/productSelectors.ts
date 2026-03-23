@@ -103,6 +103,7 @@ const selectProductMasters = createSelector(
               ...baseProductSub,
               productId: configDoc.subId,
             },
+            mixedProductIds: configDoc.mixedProductIds,
           };
           return config;
         }),

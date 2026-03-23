@@ -26,6 +26,7 @@ import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUti
 import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { parsePromiseString } from "@/app/schedPromise/parsePromise";
+import { hydrateLoadout } from "@/app/realGreen/customer/selectors/hydrateLoadout";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -204,6 +205,7 @@ export const selectCustomers = createSelector(
             lastAssigned,
             promise: servPromiseResult.promise,
             promiseIssues: servPromiseResult.issues,
+            loadout: hydrateLoadout({servDoc,servCodeMap, productCommonMap})
           };
 
           // Add x after all other properties are set - mutate in place to preserve references

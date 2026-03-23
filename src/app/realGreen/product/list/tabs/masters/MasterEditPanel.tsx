@@ -151,6 +151,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
               storedRate: 0,
               appMethodId: null,
               useAppMethod: false,
+              mixedProductIds: [],
             },
           ],
     );

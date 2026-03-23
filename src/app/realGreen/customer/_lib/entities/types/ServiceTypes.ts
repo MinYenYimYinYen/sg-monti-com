@@ -20,6 +20,7 @@ import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils
 import {
   SchedPromise,
 } from "@/app/schedPromise/SchedPromiseTypes";
+import { Loadout } from "@/app/realGreen/product/_lib/types/LoadoutTypes";
 
 export type ServiceRaw = {
   // actualManHours?: number;
@@ -143,6 +144,7 @@ export type ServiceProps = {
   lastAssigned: Assignment;
   promise: SchedPromise | null;
   promiseIssues: string[];
+  loadout: Loadout;
 
 };
 

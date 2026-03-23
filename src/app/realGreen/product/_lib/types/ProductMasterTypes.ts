@@ -23,9 +23,9 @@ export function isProductMasterCore(
 export type SubProductConfigDoc = {
   subId: number;
   storedRate: number;
-  // rate: number;
   appMethodId: string | null;
   useAppMethod: boolean;
+  mixedProductIds: number[];
 };
 
 export type SubProductConfig = SubProductConfigDoc & {

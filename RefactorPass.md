@@ -31,3 +31,4 @@
 * **Hooks:** Identify hard coded debounce, client side checks, viewport checks, useDispatch, and replace with standard utilities in src/lib/redux.ts
 * **Primitives:** Identify hard coded work being done on primitives that could be handled by functions in src/lib/primitives/[strings, numbers, dates]. Dates are converted to strings in this project early in any process.
 * **Objects/Typescript:** Identify hard coded object/array/Map code that could use the utilities in src/lib/primatives/typeUtils.
+* **TypeGuards:** Identify hard coded type guards that could use the utilities in src/lib/primatives/typeUtils/typeGuard.ts.

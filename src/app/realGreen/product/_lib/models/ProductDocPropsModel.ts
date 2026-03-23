@@ -10,10 +10,6 @@ export type ProductDocPropsStorage = (Partial<ProductMasterDocProps> &
   Partial<ProductSubDocProps>) &
   CreatedUpdated;
 
-// interface ProductDocPropsDoc
-//   extends ProductDocPropsStorage,
-//     mongoose.Document {}
-
 const ProductDocPropsSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true, unique: true },
@@ -22,11 +18,10 @@ const ProductDocPropsSchema = new mongoose.Schema(
       type: [
         {
           subId: { type: Number, required: true },
-          //todo: store storedRate
           storedRate: { type: Number, required: true, default: 0},
-          // rate: { type: Number, required: true },
           appMethodId: { type: String, required: false, default: null },
           useAppMethod: { type: Boolean, required: false, default: false },
+          mixedProductIds: { type: [Number], required: false, default: [] },
         },
       ],
       required: false,
@@ -37,7 +32,4 @@ const ProductDocPropsSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// export const ProductDocPropsModel =
-//   (mongoose.models?.Product as mongoose.Model<ProductDocPropsDoc>) ||
-//   mongoose.model<ProductDocPropsDoc>("ProductDocProps", ProductDocPropsSchema);
 export const ProductDocPropsModel = createModel("ProductDocProps", ProductDocPropsSchema)

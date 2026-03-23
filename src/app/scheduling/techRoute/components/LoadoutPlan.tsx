@@ -1,7 +1,6 @@
 import { useAppProducts } from "@/app/realGreen/customer/_lib/hooks/useAppProducts";
 import { useSelector } from "react-redux";
 import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
-import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 
 export function LoadoutPlan() {
