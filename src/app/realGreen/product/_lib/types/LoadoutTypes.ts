@@ -1,23 +1,23 @@
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { Unit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
-type LoadoutMixedProduct = {
+export type LoadoutMixedProduct = {
   product: ProductCommon;
   amount: number;
-  unit: Unit;
+  unit: UnitCRM;
 };
 
-type LoadoutSubProduct = {
+export type LoadoutSubProduct = {
   product: ProductCommon;
   amount: number;
-  unit: Unit;
+  unit: UnitCRM;
   mixedProducts: LoadoutMixedProduct[];
 };
 
-type LoadoutMaster = {
+export type LoadoutMaster = {
   product: ProductCommon;
   amount: number;
-  unit: Unit;
+  unit: UnitCRM;
   subProducts: LoadoutSubProduct[];
 };
 
