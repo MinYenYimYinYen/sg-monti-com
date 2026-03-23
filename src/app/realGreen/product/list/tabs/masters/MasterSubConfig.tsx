@@ -15,6 +15,13 @@ import { ChevronDown, CircleX } from "lucide-react";
 import { SubProductConfigDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
+import {
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectItem,
+  MultiSelectTrigger,
+  MultiSelectValue,
+} from "@/components/MultiSelect";
 
 interface MasterSubConfigProps {
   config: SubProductConfigDoc;
@@ -23,8 +30,11 @@ interface MasterSubConfigProps {
   onUpdateRate: (subId: number, storedRate: number) => void;
   onUpdateUseAppMethod: (subId: number, useAppMethod: boolean) => void;
   onUpdateAppMethodId: (subId: number, appMethodId: string | null) => void;
+  onUpdateMixedProductIds: (subId: number, mixedProductIds: number[]) => void;
   appMethods: AppMethod[];
   appMethodMap: Map<string, AppMethod>;
+  allConfigs: SubProductConfigDoc[];
+  allSubProducts: ProductSub[];
 }
 
 export function MasterSubConfig({
@@ -34,12 +44,21 @@ export function MasterSubConfig({
   onUpdateRate,
   onUpdateUseAppMethod,
   onUpdateAppMethodId,
+  onUpdateMixedProductIds,
   appMethods,
   appMethodMap,
+  allConfigs,
+  allSubProducts,
 }: MasterSubConfigProps) {
   const selectedAppMethod = config.appMethodId
     ? appMethodMap.get(config.appMethodId)
     : null;
+
+  const availableSiblings = allSubProducts.filter(
+    (sub) =>
+      allConfigs.some((c) => c.subId === sub.productId) &&
+      sub.productId !== config.subId,
+  );
 
   return (
     <div className="space-y-1 rounded-md border p-2.5">
@@ -117,6 +136,36 @@ export function MasterSubConfig({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+      )}
+
+      {/* Mixed Products MultiSelect - only visible when useAppMethod is true */}
+      {config.useAppMethod && (
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">
+            Mixed Products:
+          </Label>
+          <MultiSelect
+            mode="multiple"
+            value={config.mixedProductIds}
+            onValueChange={(ids) => onUpdateMixedProductIds(config.subId, ids)}
+            getValueKey={(id) => String(id)}
+            getDisplayValue={(id) => {
+              const sub = allSubProducts.find((s) => s.productId === id);
+              return sub?.description || `ID: ${id}`;
+            }}
+          >
+            <MultiSelectTrigger size="sm">
+              <MultiSelectValue placeholder="Select products to mix..." />
+            </MultiSelectTrigger>
+            <MultiSelectContent className="max-h-[200px] w-[300px]">
+              {availableSiblings.map((sub) => (
+                <MultiSelectItem key={sub.productId} value={sub.productId}>
+                  {sub.description}
+                </MultiSelectItem>
+              ))}
+            </MultiSelectContent>
+          </MultiSelect>
         </div>
       )}
 

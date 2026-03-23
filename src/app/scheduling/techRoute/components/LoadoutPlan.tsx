@@ -6,7 +6,7 @@ import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitC
 export function LoadoutPlan() {
   const services = useSelector(techRouteSelect.services);
 
-
+  console.log("services", services);
 
   return (
     <div className={"flex flex-col gap-2"}>

@@ -1,6 +1,5 @@
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { getProductMasters } from "@/app/realGreen/customer/selectors/hydrateProductsPlanned";
 import {
   baseLoadout,
@@ -9,42 +8,37 @@ import {
   LoadoutSubProduct,
   LoadoutMixedProduct,
 } from "@/app/realGreen/product/_lib/types/LoadoutTypes";
-import { SubProductConfig } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import {
+  SubProductConfig,
+  ProductMaster,
+} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
 export function hydrateLoadout(params: {
   servDoc: ServiceDoc;
   servCodeMap: Map<string, ServCode>;
-  productCommonMap: Map<number, ProductCommon>;
 }): Loadout {
-  const { servDoc, servCodeMap, productCommonMap } = params;
+  const { servDoc, servCodeMap } = params;
 
   const servCode = servCodeMap.get(servDoc.servCodeId);
   if (!servCode) return baseLoadout;
 
   const productMasters = getProductMasters(servCode, servDoc.size);
 
-  const masters = productMasters
-    .map((master) =>
-      hydrateMaster({
-        master,
-        productCommonMap,
-        size: servDoc.size,
-      }),
-    )
-    .filter((master): master is LoadoutMaster => master !== null);
+  const masters = productMasters.map((master) =>
+    hydrateMaster({
+      master,
+      size: servDoc.size,
+    }),
+  );
 
   return { masters };
 }
 
 function hydrateMaster(params: {
-  master: { productId: number; subProductConfigs: SubProductConfig[] };
-  productCommonMap: Map<number, ProductCommon>;
+  master: ProductMaster;
   size: number;
-}): LoadoutMaster | null {
-  const { master, productCommonMap, size } = params;
-
-  const masterProductCommon = productCommonMap.get(master.productId);
-  if (!masterProductCommon) return null;
+}): LoadoutMaster {
+  const { master, size } = params;
 
   const childProductIds = buildChildProductIdSet(master.subProductConfigs);
 
@@ -54,16 +48,15 @@ function hydrateMaster(params: {
       hydrateSubProduct({
         subConfig,
         allSubConfigs: master.subProductConfigs,
-        productCommonMap,
         size,
       }),
     )
     .filter((sub): sub is LoadoutSubProduct => sub !== null);
 
   return {
-    product: masterProductCommon,
+    product: master,
     amount: size,
-    unit: masterProductCommon.unit,
+    unit: master.unit,
     subProducts,
   };
 }
@@ -71,29 +64,26 @@ function hydrateMaster(params: {
 function hydrateSubProduct(params: {
   subConfig: SubProductConfig;
   allSubConfigs: SubProductConfig[];
-  productCommonMap: Map<number, ProductCommon>;
   size: number;
 }): LoadoutSubProduct | null {
-  const { subConfig, allSubConfigs, productCommonMap, size } = params;
+  const { subConfig, allSubConfigs, size } = params;
 
-  const subProductCommon = productCommonMap.get(subConfig.subId);
-  if (!subProductCommon) return null;
+  if (!subConfig.subProduct) return null;
 
   const mixedProducts = subConfig.mixedProductIds
     .map((mixedId) =>
       hydrateMixedProduct({
         mixedId,
         allSubConfigs,
-        productCommonMap,
         size,
       }),
     )
     .filter((mixed): mixed is LoadoutMixedProduct => mixed !== null);
 
   return {
-    product: subProductCommon,
+    product: subConfig.subProduct,
     amount: size * subConfig.rate,
-    unit: subProductCommon.unit,
+    unit: subConfig.subProduct.unit,
     mixedProducts,
   };
 }
@@ -101,21 +91,17 @@ function hydrateSubProduct(params: {
 function hydrateMixedProduct(params: {
   mixedId: number;
   allSubConfigs: SubProductConfig[];
-  productCommonMap: Map<number, ProductCommon>;
   size: number;
 }): LoadoutMixedProduct | null {
-  const { mixedId, allSubConfigs, productCommonMap, size } = params;
+  const { mixedId, allSubConfigs, size } = params;
 
   const mixedConfig = allSubConfigs.find((c) => c.subId === mixedId);
-  if (!mixedConfig) return null;
-
-  const mixedProductCommon = productCommonMap.get(mixedId);
-  if (!mixedProductCommon) return null;
+  if (!mixedConfig || !mixedConfig.subProduct) return null;
 
   return {
-    product: mixedProductCommon,
+    product: mixedConfig.subProduct,
     amount: size * mixedConfig.rate,
-    unit: mixedProductCommon.unit,
+    unit: mixedConfig.subProduct.unit,
   };
 }
 

@@ -205,7 +205,7 @@ export const selectCustomers = createSelector(
             lastAssigned,
             promise: servPromiseResult.promise,
             promiseIssues: servPromiseResult.issues,
-            loadout: hydrateLoadout({servDoc,servCodeMap, productCommonMap})
+            loadout: hydrateLoadout({ servDoc, servCodeMap })
           };
 
           // Add x after all other properties are set - mutate in place to preserve references

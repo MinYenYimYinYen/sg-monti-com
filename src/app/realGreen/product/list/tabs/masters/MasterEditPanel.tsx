@@ -179,6 +179,17 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
     );
   };
 
+  const updateMixedProductIds = (
+    productId: number,
+    mixedProductIds: number[],
+  ) => {
+    setConfigDocs((prev) =>
+      prev.map((c) =>
+        c.subId === productId ? { ...c, mixedProductIds } : c,
+      ),
+    );
+  };
+
   const handleSaveSubs = async () => {
     try {
       setSubsStatus("saving");
@@ -427,8 +438,11 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                                 onUpdateRate={updateRate}
                                 onUpdateUseAppMethod={updateUseAppMethod}
                                 onUpdateAppMethodId={updateAppMethodId}
+                                onUpdateMixedProductIds={updateMixedProductIds}
                                 appMethods={appMethods}
                                 appMethodMap={appMethodMap}
+                                allConfigs={configDocs}
+                                allSubProducts={availableSubs}
                               />
                             );
                           })
