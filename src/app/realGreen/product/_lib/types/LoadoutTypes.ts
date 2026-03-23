@@ -1,5 +1,8 @@
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
-import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import {
+  ProductMaster,
+  SubProductConfig,
+} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 
 export type LoadoutMixedProduct = {
@@ -9,6 +12,7 @@ export type LoadoutMixedProduct = {
 };
 
 export type LoadoutSubProduct = {
+  config: SubProductConfig;
   product: ProductSub;
   amount: number;
   unit: UnitCRM;

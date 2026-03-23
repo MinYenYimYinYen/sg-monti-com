@@ -12,6 +12,7 @@ import {
   SubProductConfig,
   ProductMaster,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export function hydrateLoadout(params: {
   servDoc: ServiceDoc;
@@ -76,11 +77,13 @@ function hydrateSubProduct(params: {
         mixedId,
         allSubConfigs,
         size,
+        appMethodId: subConfig.appMethodId,
       }),
     )
     .filter((mixed): mixed is LoadoutMixedProduct => mixed !== null);
 
   return {
+    config: subConfig,
     product: subConfig.subProduct,
     amount: size * subConfig.rate,
     unit: subConfig.subProduct.unit,
@@ -92,6 +95,7 @@ function hydrateMixedProduct(params: {
   mixedId: number;
   allSubConfigs: SubProductConfig[];
   size: number;
+  appMethodId: string | null;
 }): LoadoutMixedProduct | null {
   const { mixedId, allSubConfigs, size } = params;
 

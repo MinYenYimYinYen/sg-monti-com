@@ -48,7 +48,6 @@ const selectServices = createSelector(
   (routeDate, routesByDate) => {
     if (!routeDate) return [];
     const services = routesByDate.get(routeDate) ?? [];
-    console.log("services", services);
     return services;
   },
 );
@@ -66,6 +65,8 @@ const selectAvailableTechs = createSelector(
   },
 );
 
+const selectLeftWith = (state: AppState) => state.techRoute.leftWith;
+
 export const techRouteSelect = {
   routesByDate: selectRoutesByDate,
   routeDates: selectRouteDates,
@@ -74,4 +75,5 @@ export const techRouteSelect = {
   services: selectServices,
   availableTechs: selectAvailableTechs,
   tech: selectDefaultTech,
+  leftWith: selectLeftWith,
 };
