@@ -10,6 +10,7 @@ import { ChooseRouteDate } from "@/app/scheduling/techRoute/components/ChooseRou
 import { ChooseTech } from "@/app/scheduling/techRoute/components/ChooseTech";
 import { cn, md } from "@/style/utils";
 import { LoadoutPlan } from "@/app/scheduling/techRoute/components/LoadoutPlan";
+import { ScrollArea } from "@/style/components/scroll-area";
 
 export default function TechRoute() {
   usePrintedCustomers({ autoLoad: true });
@@ -18,7 +19,7 @@ export default function TechRoute() {
 
 
   return (
-    <Container variant={"fluid"}>
+    <Container variant={"fluid"} className="flex flex-col h-full overflow-hidden">
       <div className={"text-2xl font-bold"}>Daily Inventory</div>
       <div
         className={cn(
@@ -33,9 +34,9 @@ export default function TechRoute() {
           <ChooseRouteDate />
         </div>
       </div>
-      <div>
+      <ScrollArea className="flex-1">
         <LoadoutPlan />
-      </div>
+      </ScrollArea>
     </Container>
   );
 }

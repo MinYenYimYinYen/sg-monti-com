@@ -5,6 +5,7 @@ import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
 import { useEffect } from "react";
 import { MasterProductCard } from "./loadoutPlanSections/MasterProductCard";
 import { AdditionalProductsSection } from "./loadoutPlanSections/AdditionalProductsSection";
+import { Container } from "@/components/Containers";
 
 export function LoadoutPlan() {
   const { updateStartLoadout } = useTechRoute();
@@ -47,24 +48,26 @@ export function LoadoutPlan() {
   console.log("startLoadout", startLoadout);
 
   return (
-    <div className={"flex flex-col gap-3"}>
-      {/* Master Product Cards */}
-      {loadoutInventory.masters.map((master) => (
-        <MasterProductCard
-          key={master.product.productId}
-          masterProductId={master.product.productId}
-        />
-      ))}
+    <Container variant={"page"}>
+      <div className={"flex flex-col gap-3"}>
+        {/* Master Product Cards */}
+        {loadoutInventory.masters.map((master) => (
+          <MasterProductCard
+            key={master.product.productId}
+            masterProductId={master.product.productId}
+          />
+        ))}
 
-      {/* Additional Products Section */}
-      <AdditionalProductsSection />
+        {/* Additional Products Section */}
+        <AdditionalProductsSection />
 
-      {/* Empty State */}
-      {loadoutInventory.masters.length === 0 && (
-        <div className={"text-center text-foreground/50 py-8"}>
-          No products planned for selected services
-        </div>
-      )}
-    </div>
+        {/* Empty State */}
+        {loadoutInventory.masters.length === 0 && (
+          <div className={"text-center text-foreground/50 py-8"}>
+            No products planned for selected services
+          </div>
+        )}
+      </div>
+    </Container>
   );
 }

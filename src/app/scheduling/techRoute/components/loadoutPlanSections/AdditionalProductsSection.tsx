@@ -4,6 +4,7 @@ import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
 import { Input } from "@/style/components/input";
 import { Plus, X } from "lucide-react";
 import { PendingProductSlot } from "./PendingProductSlot";
+import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 
 export function AdditionalProductsSection() {
   const { updateStartLoadout, removeProductFromLoadout, addPendingProductSlot } =
@@ -24,76 +25,118 @@ export function AdditionalProductsSection() {
       </div>
 
       {/* Singles */}
-      {startLoadout.singles.map((single) => (
-        <div
-          key={single.product.productId}
-          className={"flex items-center gap-2 bg-accent/10 rounded px-2 py-1"}
-        >
-          <div className={"flex-1 text-sm text-foreground/90"}>
-            {single.product.description}
-          </div>
-          <Input
-            type="number"
-            placeholder="Start amount"
-            className="w-24"
-            value={single.startAmount ?? ""}
-            onChange={(e) => {
-              const value = e.target.value ? parseFloat(e.target.value) : 0;
-              const updatedSingles = startLoadout.singles.map((s) => {
-                if (s.product.productId === single.product.productId) {
-                  return { ...s, startAmount: value };
-                }
-                return s;
-              });
-              updateStartLoadout({ singles: updatedSingles });
-            }}
-          />
-          <button
-            onClick={() =>
-              removeProductFromLoadout(single.product.productId)
-            }
-            className="text-destructive hover:text-destructive/80"
+      {startLoadout.singles.map((single) => {
+        // Convert app units to load units for display
+        const displayValue = single.startAmount != null
+          ? convertQuantity(
+              single.startAmount,
+              "app",
+              "load",
+              single.product.unitConfig
+            )
+          : "";
+
+        return (
+          <div
+            key={single.product.productId}
+            className={"flex items-center gap-2 bg-accent/10 rounded px-2 py-1"}
           >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
+            <div className={"flex-1 text-sm text-foreground/90"}>
+              {single.product.description}
+            </div>
+            <Input
+              type="number"
+              placeholder="Start amount"
+              className="w-24"
+              value={displayValue}
+              onChange={(e) => {
+                const loadValue = e.target.value ? parseFloat(e.target.value) : null;
+                // Convert load units to app units for storage
+                const appValue = loadValue != null
+                  ? convertQuantity(
+                      loadValue,
+                      "load",
+                      "app",
+                      single.product.unitConfig
+                    )
+                  : 0;
+                const updatedSingles = startLoadout.singles.map((s) => {
+                  if (s.product.productId === single.product.productId) {
+                    return { ...s, startAmount: appValue };
+                  }
+                  return s;
+                });
+                updateStartLoadout({ singles: updatedSingles });
+              }}
+            />
+            <button
+              onClick={() =>
+                removeProductFromLoadout(single.product.productId)
+              }
+              className="text-destructive hover:text-destructive/80"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        );
+      })}
 
       {/* SubProducts */}
-      {startLoadout.subProducts.map((sub) => (
-        <div
-          key={sub.product.productId}
-          className={"flex items-center gap-2 bg-accent/10 rounded px-2 py-1"}
-        >
-          <div className={"flex-1 text-sm text-foreground/90"}>
-            {sub.product.description}
-          </div>
-          <Input
-            type="number"
-            placeholder="Start amount"
-            className="w-24"
-            value={sub.startAmount ?? ""}
-            onChange={(e) => {
-              const value = e.target.value ? parseFloat(e.target.value) : 0;
-              const updatedSubProducts = startLoadout.subProducts.map((s) => {
-                if (s.product.productId === sub.product.productId) {
-                  return { ...s, startAmount: value };
-                }
-                return s;
-              });
-              updateStartLoadout({ subProducts: updatedSubProducts });
-            }}
-          />
-          <button
-            onClick={() =>
-              removeProductFromLoadout(sub.product.productId)
-            }
-            className="text-destructive hover:text-destructive/80"
+      {startLoadout.subProducts.map((sub) => {
+        // Convert app units to load units for display
+        const displayValue = sub.startAmount != null
+          ? convertQuantity(
+              sub.startAmount,
+              "app",
+              "load",
+              sub.product.unitConfig
+            )
+          : "";
+
+        return (
+          <div
+            key={sub.product.productId}
+            className={"flex items-center gap-2 bg-accent/10 rounded px-2 py-1"}
           >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
+            <div className={"flex-1 text-sm text-foreground/90"}>
+              {sub.product.description}
+            </div>
+            <Input
+              type="number"
+              placeholder="Start amount"
+              className="w-24"
+              value={displayValue}
+              onChange={(e) => {
+                const loadValue = e.target.value ? parseFloat(e.target.value) : null;
+                // Convert load units to app units for storage
+                const appValue = loadValue != null
+                  ? convertQuantity(
+                      loadValue,
+                      "load",
+                      "app",
+                      sub.product.unitConfig
+                    )
+                  : 0;
+                const updatedSubProducts = startLoadout.subProducts.map((s) => {
+                  if (s.product.productId === sub.product.productId) {
+                    return { ...s, startAmount: appValue };
+                  }
+                  return s;
+                });
+                updateStartLoadout({ subProducts: updatedSubProducts });
+              }}
+            />
+            <button
+              onClick={() =>
+                removeProductFromLoadout(sub.product.productId)
+              }
+              className="text-destructive hover:text-destructive/80"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        );
+      })}
 
       {/* Pending Slots for CustomProducts */}
       {customPendingSlots.map((slot) => (

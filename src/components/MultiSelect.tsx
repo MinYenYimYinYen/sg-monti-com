@@ -51,6 +51,11 @@ interface MultiSelectProps<TValue = string> {
   children: React.ReactNode;
   defaultValue?: TValue[];
   /**
+   * Additional CSS classes to apply to the root container.
+   * Merged with the required "relative" positioning class.
+   */
+  className?: string;
+  /**
    * Function to extract a unique string key from a value.
    * Required for object values. Defaults to String(value) for primitives.
    */
@@ -79,6 +84,7 @@ export function MultiSelect<TValue = string>({
   mode = "multiple",
   children,
   defaultValue = [],
+  className,
   getValueKey = (value) => String(value),
   compareValues = (a, b) => a === b,
   getDisplayValue,
@@ -113,7 +119,7 @@ export function MultiSelect<TValue = string>({
         getMultiDisplayValue,
       }}
     >
-      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="relative">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className={cn("relative", className)}>
         {children}
       </Collapsible>
     </MultiSelectContext.Provider>

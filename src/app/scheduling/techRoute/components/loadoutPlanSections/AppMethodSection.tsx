@@ -3,6 +3,7 @@ import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
 import { aggregateLoadoutInventory } from "@/app/realGreen/customer/_lib/hooks/aggregateLoadoutInventory";
 import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
 import { Input } from "@/style/components/input";
+import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 
 type AppMethodSectionProps = {
   masterProductId: number;
@@ -65,6 +66,16 @@ export function AppMethodSection({
     updateStartLoadout({ masters: updatedMasters });
   };
 
+  // Convert app units to load units for display
+  const displayValue = startAppMethod?.startAmount != null
+    ? convertQuantity(
+        startAppMethod.startAmount,
+        "app",
+        "load",
+        plannedAppMethod.mixProduct.unitConfig
+      )
+    : "";
+
   return (
     <div className={"flex flex-col gap-2 bg-accent/30 rounded-sm p-1"}>
       {/* MixProduct with Input */}
@@ -81,10 +92,19 @@ export function AppMethodSection({
           type="number"
           placeholder="Start amount"
           className="w-24"
-          value={startAppMethod?.startAmount ?? ""}
+          value={displayValue}
           onChange={(e) => {
-            const value = e.target.value ? parseFloat(e.target.value) : null;
-            handleAmountChange(value);
+            const loadValue = e.target.value ? parseFloat(e.target.value) : null;
+            // Convert load units to app units for storage
+            const appValue = loadValue != null
+              ? convertQuantity(
+                  loadValue,
+                  "load",
+                  "app",
+                  plannedAppMethod.mixProduct.unitConfig
+                )
+              : null;
+            handleAmountChange(appValue);
           }}
         />
       </div>

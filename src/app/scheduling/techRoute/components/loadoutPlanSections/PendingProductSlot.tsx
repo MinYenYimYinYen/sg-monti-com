@@ -1,11 +1,19 @@
 import { useSelector } from "react-redux";
 import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
 import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
-import { MultiSelect, MultiSelectContent, MultiSelectItem, MultiSelectTrigger, MultiSelectValue } from "@/components/MultiSelect";
+import {
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectItem,
+  MultiSelectTrigger,
+  MultiSelectValue,
+} from "@/components/MultiSelect";
 import { Input } from "@/style/components/input";
 import { Check, X } from "lucide-react";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
+import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
+import { ScrollArea } from "@/style/components/scroll-area";
 
 type PendingProductSlotProps = {
   slotId: string;
@@ -36,10 +44,18 @@ export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
   const handleConfirm = () => {
     if (!selectedProduct || !amount) return;
 
-    const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+    const loadAmount = parseFloat(amount);
+    if (isNaN(loadAmount) || loadAmount <= 0) return;
 
-    addProductToLoadout(slotId, selectedProduct, parsedAmount);
+    // Convert load units to app units for storage
+    const appAmount = convertQuantity(
+      loadAmount,
+      "load",
+      "app",
+      selectedProduct.unitConfig,
+    );
+
+    addProductToLoadout(slotId, selectedProduct, appAmount);
   };
 
   const handleCancel = () => {
@@ -47,19 +63,20 @@ export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
   };
 
   return (
-    <div className={"flex items-center gap-2 bg-accent/10 rounded px-2 py-1"}>
+    <div className={"flex flex-wrap items-center gap-2 bg-accent/10 rounded px-2 py-1"}>
       {/* Category Selector */}
       <MultiSelect
         mode="single"
+        className="flex-1 min-w-[200px]"
         value={slot.categoryFilter ? [slot.categoryFilter] : []}
         onValueChange={(values) => {
           updatePendingSlotCategory(slotId, values[0] || null);
         }}
       >
-        <MultiSelectTrigger className="w-32">
+        <MultiSelectTrigger>
           <MultiSelectValue placeholder="Category" />
         </MultiSelectTrigger>
-        <MultiSelectContent>
+        <MultiSelectContent className={"max-h-48"}>
           {productCategories.map((category) => (
             <MultiSelectItem key={category} value={category}>
               {category}
@@ -71,6 +88,7 @@ export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
       {/* Product Selector */}
       <MultiSelect
         mode="single"
+        className="flex-1 min-w-[200px]"
         value={selectedProduct ? [selectedProduct] : []}
         onValueChange={(values) => {
           updatePendingSlotProduct(slotId, values[0] || null);
@@ -82,10 +100,10 @@ export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
           product.description
         }
       >
-        <MultiSelectTrigger className="flex-1">
+        <MultiSelectTrigger>
           <MultiSelectValue placeholder="Select product" />
         </MultiSelectTrigger>
-        <MultiSelectContent>
+        <MultiSelectContent className={"max-h-48"}>
           {availableProducts.map((product) => (
             <MultiSelectItem key={product.productId} value={product}>
               {product.description}
@@ -98,7 +116,7 @@ export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
       <Input
         type="number"
         placeholder="Amount"
-        className="w-24"
+        className="w-24 min-w-[80px]"
         value={amount}
         onChange={(e) => {
           updatePendingSlotAmount(slotId, e.target.value);

@@ -4,6 +4,7 @@ import { aggregateLoadoutInventory } from "@/app/realGreen/customer/_lib/hooks/a
 import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
 import { Input } from "@/style/components/input";
 import { PendingProductSlot } from "./PendingProductSlot";
+import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 
 type SubProductSectionProps = {
   masterProductId: number;
@@ -60,14 +61,25 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
       {plannedMaster.subProducts.map((sub) => {
         const subAmountDisplay = sub.product.unitConfigDisplay.format({
           amount: sub.plannedAmount,
-          targetContexts: ["load", "app"],
-          rounding: "ceil",
+          targetContexts: ["load", ],
+          rounding: "none",
+
         }).formattedString;
 
         // Find corresponding subProduct in startLoadout
         const startSub = startMaster?.subProducts.find(
           (s) => s.product.productId === sub.product.productId,
         );
+
+        // Convert app units to load units for display
+        const displayValue = startSub?.startAmount != null
+          ? convertQuantity(
+              startSub.startAmount,
+              "app",
+              "load",
+              sub.product.unitConfig
+            )
+          : "";
 
         return (
           <div
@@ -86,12 +98,21 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
               type="number"
               placeholder="Start amount"
               className="w-24"
-              value={startSub?.startAmount ?? ""}
+              value={displayValue}
               onChange={(e) => {
-                const value = e.target.value
+                const loadValue = e.target.value
                   ? parseFloat(e.target.value)
                   : null;
-                handleAmountChange(sub.product.productId, value);
+                // Convert load units to app units for storage
+                const appValue = loadValue != null
+                  ? convertQuantity(
+                      loadValue,
+                      "load",
+                      "app",
+                      sub.product.unitConfig
+                    )
+                  : null;
+                handleAmountChange(sub.product.productId, appValue);
               }}
             />
           </div>
