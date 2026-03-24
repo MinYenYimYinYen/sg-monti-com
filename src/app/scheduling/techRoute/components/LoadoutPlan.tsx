@@ -1,79 +1,139 @@
-import { useAppProducts } from "@/app/realGreen/customer/_lib/hooks/useAppProducts";
 import { useSelector } from "react-redux";
 import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
-import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
-import { aggregateLoadouts } from "@/app/realGreen/customer/_lib/hooks/loadoutUtils";
-import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { ProductQuery } from "@/app/realGreen/product/_lib/ProductQuery";
-import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import {
-  MultiSelect,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectTrigger,
-  MultiSelectValue,
-} from "@/components/MultiSelect";
-import { ScrollArea } from "@/style/components/scroll-area";
-import { isProductSubCore } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { isProductSingleCore } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/style/components/tabs";
-import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
+import { aggregateLoadoutInventory } from "@/app/realGreen/customer/_lib/hooks/aggregateLoadoutInventory";
 
 export function LoadoutPlan() {
-  const { toggleLeftWith, updateLeftWith } = useTechRoute();
-  const leftWith = useSelector(techRouteSelect.leftWith);
   const services = useSelector(techRouteSelect.services);
-  const loadout = aggregateLoadouts(services);
-  const subs = loadout.masters.flatMap((master) => master.subProducts);
-  const allSingles = useSelector(productSelect.productSingles);
-  const allSubs = useSelector(productSelect.productSubs);
-
-  //todo: here's the problem.  At this point we lose access to appMethodId.
-  // We want to select the appMethodId, not just the productId.  Because the
-  // productId alone will not tell about which master product it came from.
-  // And having thought that through, I realize it is not the appMethodId we need
-  // to make the connection, it is the master productId.  If we know the master
-  // productId, we can look up the appMethodId from the master product.
-  // We should structure the UI congruent with the Loadout type. We can maybe extend
-  // Loadout with LoadoutBegin/End values and something for other non-planned
-  // products as well.
+  const loadoutInventory = aggregateLoadoutInventory(services);
 
   return (
-    <div className={"flex flex-col gap-2"}>
-      <div className={"flex flex-col gap-1"}>
-        {subs.map((sub) => {
-          const loadUnitDisplay = sub.product.unitConfigDisplay.format({
-            amount: sub.plannedAmount,
-            targetContexts: ["load"],
-            rounding: "ceil",
-          }).formattedString;
-          return (
-            <div
-              key={sub.product.productId}
-              className={
-                "flex flex-col gap-1 w-full bg-accent/30 rounded-md py-1 px-2"
-              }
-            >
-              <div className={"text-lg font-bold"}>
-                {sub.config.useAppMethod
-                  ? sub.config.appMethodId
-                  : sub.product.description}
+    <div className={"flex flex-col gap-3"}>
+      {loadoutInventory.masters.map((master) => {
+        const masterAmountDisplay = master.product.unitConfigDisplay.format({
+          amount: master.plannedAmount,
+          targetContexts: ["load"],
+          rounding: "ceil",
+        }).formattedString;
+
+        return (
+          <div
+            key={master.product.productId}
+            className={"flex flex-col gap-2 w-full bg-accent/20 rounded-lg p-3"}
+          >
+            {/* Master Header */}
+            <div className={"flex justify-between items-center"}>
+              <div className={"text-xl font-bold text-foreground"}>
+                {master.product.description}
               </div>
-              <div className={"flex flex-col gap-1 ml-4"}>
-                <div className={"flex gap-1 flex-wrap"}>
-                  <div>Calculated:</div>
-                  <div>{loadUnitDisplay}</div>
-                </div>
+              <div className={"text-lg font-semibold text-foreground/80"}>
+                {masterAmountDisplay}
               </div>
             </div>
-          );
-        })}
-      </div>
+
+            {/* AppMethods Section */}
+            {master.appMethods.map((appMethod) => (
+              <div
+                key={appMethod.appMethod.appMethodId}
+                className={"flex flex-col gap-1 ml-4 bg-accent/30 rounded-md p-2"}
+              >
+                <div className={"text-lg font-semibold text-primary"}>
+                  {appMethod.appMethod.description}
+                </div>
+                <div className={"flex flex-col gap-1 ml-4"}>
+                  {appMethod.subProducts.map((sub) => {
+                    const subAmountDisplay = sub.product.unitConfigDisplay.format({
+                      amount: sub.plannedAmount,
+                      targetContexts: ["load"],
+                      rounding: "ceil",
+                    }).formattedString;
+
+                    return (
+                      <div
+                        key={sub.product.productId}
+                        className={"flex justify-between items-center"}
+                      >
+                        <div className={"text-sm text-foreground/90"}>
+                          {sub.product.description}
+                        </div>
+                        <div className={"text-sm font-medium text-foreground/70"}>
+                          {subAmountDisplay}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Non-AppMethod Sub-Products */}
+            {master.subProducts.length > 0 && (
+              <div className={"flex flex-col gap-1 ml-4"}>
+                <div className={"text-sm font-semibold text-foreground/60 uppercase"}>
+                  Other Products
+                </div>
+                {master.subProducts.map((sub) => {
+                  const subAmountDisplay = sub.product.unitConfigDisplay.format({
+                    amount: sub.plannedAmount,
+                    targetContexts: ["load"],
+                    rounding: "ceil",
+                  }).formattedString;
+
+                  return (
+                    <div
+                      key={sub.product.productId}
+                      className={"flex justify-between items-center bg-accent/10 rounded px-2 py-1"}
+                    >
+                      <div className={"text-sm text-foreground/90"}>
+                        {sub.product.description}
+                      </div>
+                      <div className={"text-sm font-medium text-foreground/70"}>
+                        {subAmountDisplay}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Singles (if any) */}
+            {master.singles.length > 0 && (
+              <div className={"flex flex-col gap-1 ml-4"}>
+                <div className={"text-sm font-semibold text-foreground/60 uppercase"}>
+                  Additional Items
+                </div>
+                {master.singles.map((single) => {
+                  const singleAmountDisplay = single.product.unitConfigDisplay.format({
+                    amount: single.plannedAmount,
+                    targetContexts: ["load"],
+                    rounding: "ceil",
+                  }).formattedString;
+
+                  return (
+                    <div
+                      key={single.product.productId}
+                      className={"flex justify-between items-center bg-secondary/10 rounded px-2 py-1"}
+                    >
+                      <div className={"text-sm text-foreground/90"}>
+                        {single.product.description}
+                      </div>
+                      <div className={"text-sm font-medium text-foreground/70"}>
+                        {singleAmountDisplay}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Empty State */}
+      {loadoutInventory.masters.length === 0 && (
+        <div className={"text-center text-foreground/50 py-8"}>
+          No products planned for selected services
+        </div>
+      )}
     </div>
   );
 }

@@ -4,18 +4,17 @@ import {
   SubProductConfig,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
+import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
 
 type AmountDetail = {
   plannedAmount: number;
   startAmount: number | null;
   finishAmount: number | null;
   unit: UnitCRM;
-}
-
+};
 
 export type LoadoutMixedProduct = AmountDetail & {
   product: ProductSub;
-
 };
 
 export type LoadoutSubProduct = AmountDetail & {
@@ -37,7 +36,42 @@ export type LoadoutStored = Loadout & {
   schedDate: string;
   employeeId: string;
   serviceIds: number[];
-}
+};
 
 export const baseLoadout: Loadout = { masters: [] };
 
+export type LoadoutInventory = {
+  masters: {
+    product: ProductMaster;
+    plannedAmount: number;
+    startAmount: number | null;
+    finishAmount: number | null;
+    unit: UnitCRM;
+    appMethods: {
+      appMethod: AppMethod;
+      subProducts: {
+        product: ProductSub;
+        plannedAmount: number;
+        startAmount: number | null;
+        finishAmount: number | null;
+        unit: UnitCRM;
+      }[];
+    }[];
+    subProducts: {
+      product: ProductSub;
+      plannedAmount: number;
+      startAmount: number | null;
+      finishAmount: number | null;
+      unit: UnitCRM;
+    }[];
+    singles: {
+      product: ProductSub;
+      plannedAmount: number;
+      startAmount: number | null;
+      finishAmount: number | null;
+      unit: UnitCRM;
+    }[];
+  }[];
+};
+
+export const baseLoadoutInventory: LoadoutInventory = { masters: [] };
