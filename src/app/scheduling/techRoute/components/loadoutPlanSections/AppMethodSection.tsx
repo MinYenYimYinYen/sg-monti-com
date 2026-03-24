@@ -66,17 +66,11 @@ export function AppMethodSection({
   };
 
   return (
-    <div
-      className={"flex flex-col gap-2 ml-4 bg-accent/30 rounded-md p-2"}
-    >
-      <div className={"text-lg font-semibold text-primary"}>
-        {plannedAppMethod.appMethod.description}
-      </div>
-
+    <div className={"flex flex-col gap-2 bg-accent/30 rounded-sm p-1"}>
       {/* MixProduct with Input */}
-      <div className={"flex items-center gap-2 ml-4"}>
-        <div className={"flex-1 text-sm text-foreground/90"}>
-          {plannedAppMethod.mixProduct.description}
+      <div className={"flex items-center gap-2"}>
+        <div className={"flex-1  text-foreground/90"}>
+          {plannedAppMethod.mixProduct.productCode}
         </div>
         <div className={"text-sm text-foreground/70"}>
           Planned: {mixProductAmountDisplay}

@@ -56,11 +56,7 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
   );
 
   return (
-    <div className={"flex flex-col gap-2 ml-4"}>
-      <div className={"text-sm font-semibold text-foreground/60 uppercase"}>
-        Other Products
-      </div>
-
+    <div className={"flex flex-col gap-2"}>
       {plannedMaster.subProducts.map((sub) => {
         const subAmountDisplay = sub.product.unitConfigDisplay.format({
           amount: sub.plannedAmount,

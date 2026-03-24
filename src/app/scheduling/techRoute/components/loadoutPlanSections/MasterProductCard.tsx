@@ -18,21 +18,12 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
 
   if (!master) return null;
 
-  const masterAmountDisplay = master.product.unitConfigDisplay.format({
-    amount: master.plannedAmount,
-    targetContexts: ["load"],
-    rounding: "ceil",
-  }).formattedString;
-
   return (
     <div className={"flex flex-col gap-2 w-full bg-accent/20 rounded-lg p-3"}>
       {/* Master Header */}
       <div className={"flex justify-between items-center"}>
         <div className={"text-xl font-bold text-foreground"}>
           {master.product.description}
-        </div>
-        <div className={"text-lg font-semibold text-foreground/80"}>
-          {masterAmountDisplay}
         </div>
       </div>
 
