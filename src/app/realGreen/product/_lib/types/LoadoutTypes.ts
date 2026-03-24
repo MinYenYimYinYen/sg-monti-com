@@ -1,46 +1,10 @@
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
-import {
-  ProductMaster,
-  SubProductConfig,
-} from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
+import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 
-type AmountDetail = {
-  plannedAmount: number;
-  startAmount: number | null;
-  finishAmount: number | null;
-  unit: UnitCRM;
-};
-
-export type LoadoutMixedProduct = AmountDetail & {
-  product: ProductSub;
-};
-
-export type LoadoutSubProduct = AmountDetail & {
-  config: SubProductConfig;
-  product: ProductSub;
-  mixedProducts: LoadoutMixedProduct[];
-};
-
-export type LoadoutMaster = AmountDetail & {
-  product: ProductMaster;
-  subProducts: LoadoutSubProduct[];
-};
-
-export type Loadout = {
-  masters: LoadoutMaster[];
-};
-
-export type LoadoutStored = Loadout & {
-  schedDate: string;
-  employeeId: string;
-  serviceIds: number[];
-};
-
-export const baseLoadout: Loadout = { masters: [] };
-
-export type LoadoutInventory = {
+export type LoadoutBase = {
   masters: {
     product: ProductMaster;
     plannedAmount: number;
@@ -49,6 +13,11 @@ export type LoadoutInventory = {
     unit: UnitCRM;
     appMethods: {
       appMethod: AppMethod;
+      mixProduct: ProductSub;
+      mixProductUnit: UnitCRM;
+      plannedAmount: number;
+      startAmount: number | null;
+      finishAmount: number | null;
       subProducts: {
         product: ProductSub;
         plannedAmount: number;
@@ -64,14 +33,24 @@ export type LoadoutInventory = {
       finishAmount: number | null;
       unit: UnitCRM;
     }[];
-    singles: {
-      product: ProductSub;
-      plannedAmount: number;
-      startAmount: number | null;
-      finishAmount: number | null;
-      unit: UnitCRM;
-    }[];
   }[];
 };
 
-export const baseLoadoutInventory: LoadoutInventory = { masters: [] };
+
+export type CustomProducts = {
+  singles: {
+    product: ProductSingle;
+    unit: UnitCRM;
+    startAmount: number;
+    finishAmount: number;
+  }[],
+  subProducts: {
+    product: ProductSub;
+    unit: UnitCRM;
+    startAmount: number;
+    finishAmount: number;
+  }[]
+}
+
+export type LoadoutInventory = LoadoutBase & CustomProducts
+export const baseLoadoutInventory: LoadoutInventory = { masters: [], singles: [], subProducts: [] };

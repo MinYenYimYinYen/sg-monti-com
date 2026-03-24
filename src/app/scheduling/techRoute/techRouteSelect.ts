@@ -65,8 +65,6 @@ const selectAvailableTechs = createSelector(
   },
 );
 
-const selectLeftWith = (state: AppState) => state.techRoute.leftWith;
-
 export const techRouteSelect = {
   routesByDate: selectRoutesByDate,
   routeDates: selectRouteDates,
@@ -75,5 +73,4 @@ export const techRouteSelect = {
   services: selectServices,
   availableTechs: selectAvailableTechs,
   tech: selectDefaultTech,
-  leftWith: selectLeftWith,
 };

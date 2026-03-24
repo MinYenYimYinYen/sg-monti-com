@@ -21,8 +21,7 @@ import {
   SchedPromise,
 } from "@/app/schedPromise/SchedPromiseTypes";
 import {
-  Loadout,
-  LoadoutInventory,
+  LoadoutBase,
 } from "@/app/realGreen/product/_lib/types/LoadoutTypes";
 
 export type ServiceRaw = {
@@ -147,8 +146,7 @@ export type ServiceProps = {
   lastAssigned: Assignment;
   promise: SchedPromise | null;
   promiseIssues: string[];
-  loadout: Loadout;
-  loadoutInventory: LoadoutInventory;
+  loadoutInventory: LoadoutBase;
 
 };
 

@@ -1,8 +1,8 @@
 import { useAppDispatch } from "@/lib/hooks/redux";
 import {
-  LeftWith,
   techRouteActions,
 } from "@/app/scheduling/techRoute/techRouteSlice";
+import { LoadoutBase } from "@/app/realGreen/product/_lib/types/LoadoutTypes";
 
 export function useTechRoute() {
   const dispatch = useAppDispatch();
@@ -14,18 +14,11 @@ export function useTechRoute() {
   const setRouteDate = (date: string) => {
     dispatch(techRouteActions.setRouteDate(date));
   };
-  
-  const toggleLeftWith = (leftWith: LeftWith) => {
-    dispatch(techRouteActions.toggleLeftWith(leftWith));
-  };
 
-  const updateLeftWith = (leftWith: LeftWith) => {
-    dispatch(techRouteActions.updateLeftWith(leftWith));
-  };
+  const updateStartLoadout = (loadout: Partial<LoadoutBase>) => {
+    dispatch(techRouteActions.updateStartLoadout(loadout));
+  }
 
-  const clearLeftWith = () => {
-    dispatch(techRouteActions.clearLeftWith());
-  };
 
-  return { setRouteDate, setTech, toggleLeftWith, updateLeftWith, clearLeftWith };
+  return { setRouteDate, setTech, updateStartLoadout };
 }

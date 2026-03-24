@@ -24,9 +24,7 @@ import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils
 import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
 import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
-import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { parsePromiseString } from "@/app/schedPromise/parsePromise";
-import { hydrateLoadout } from "@/app/realGreen/customer/selectors/hydrateLoadout";
 import { hydrateLoadoutInventory } from "@/app/realGreen/customer/selectors/hydrateLoadoutInventory";
 
 const selectActiveContexts = (state: AppState) =>
@@ -206,7 +204,6 @@ export const selectCustomers = createSelector(
             lastAssigned,
             promise: servPromiseResult.promise,
             promiseIssues: servPromiseResult.issues,
-            loadout: hydrateLoadout({ servDoc, servCodeMap }),
             loadoutInventory: hydrateLoadoutInventory({servDoc, servCodeMap})
           };
 

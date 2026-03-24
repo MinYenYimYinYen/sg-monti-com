@@ -1,11 +1,14 @@
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { LoadoutInventory } from "@/app/realGreen/product/_lib/types/LoadoutTypes";
+import {
+  LoadoutBase,
+  LoadoutInventory,
+} from "@/app/realGreen/product/_lib/types/LoadoutTypes";
 
 /**
  * Aggregates loadout inventories from multiple services into a single consolidated inventory.
  * Totals amounts at every level of the tree (masters → appMethods → subProducts).
  */
-export function aggregateLoadoutInventory(services: Service[]): LoadoutInventory {
+export function aggregateLoadoutInventory(services: Service[]): LoadoutBase {
   const loadoutInventories = services.map((service) => service.loadoutInventory);
 
   // Flatten all masters from all inventories
@@ -83,25 +86,9 @@ function aggregateMasters(
     (subs) => aggregateSubProducts(subs),
   );
 
-  // Flatten and group singles by productId
-  const allSingles = masters.flatMap((master) => master.singles);
-  const singlesMap = new Map<
-    number,
-    LoadoutInventory["masters"][number]["singles"][number][]
-  >();
 
-  allSingles.forEach((single) => {
-    const productId = single.product.productId;
-    if (!singlesMap.has(productId)) {
-      singlesMap.set(productId, []);
-    }
-    singlesMap.get(productId)!.push(single);
-  });
 
-  // Aggregate each group of singles
-  const aggregatedSingles = Array.from(singlesMap.values()).map((singles) =>
-    aggregateSubProducts(singles),
-  );
+
 
   return {
     product: first.product,
@@ -111,7 +98,6 @@ function aggregateMasters(
     unit: first.unit,
     appMethods: aggregatedAppMethods,
     subProducts: aggregatedSubProducts,
-    singles: aggregatedSingles,
   };
 }
 
@@ -123,6 +109,11 @@ function aggregateAppMethods(
   appMethods: LoadoutInventory["masters"][number]["appMethods"][number][],
 ): LoadoutInventory["masters"][number]["appMethods"][number] {
   const first = appMethods[0];
+
+  // Sum amounts across all appMethods
+  const totalAmount = Math.round(
+    appMethods.reduce((sum, am) => sum + am.plannedAmount, 0),
+  );
 
   // Flatten all sub-products from all appMethods
   const allSubProducts = appMethods.flatMap((am) => am.subProducts);
@@ -148,6 +139,11 @@ function aggregateAppMethods(
 
   return {
     appMethod: first.appMethod,
+    mixProduct: first.mixProduct,
+    mixProductUnit: first.mixProductUnit,
+    plannedAmount: totalAmount,
+    startAmount: null,
+    finishAmount: null,
     subProducts: aggregatedSubProducts,
   };
 }
