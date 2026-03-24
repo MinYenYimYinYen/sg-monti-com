@@ -2,7 +2,12 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import {
   techRouteActions,
 } from "@/app/scheduling/techRoute/techRouteSlice";
-import { LoadoutBase } from "@/app/realGreen/product/_lib/types/LoadoutTypes";
+import {
+  LoadoutBase,
+  LoadoutInventory,
+} from "@/app/realGreen/product/_lib/types/LoadoutTypes";
+import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
+import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 
 export function useTechRoute() {
   const dispatch = useAppDispatch();
@@ -15,10 +20,38 @@ export function useTechRoute() {
     dispatch(techRouteActions.setRouteDate(date));
   };
 
-  const updateStartLoadout = (loadout: Partial<LoadoutBase>) => {
+  const updateStartLoadout = (loadout: Partial<LoadoutInventory>) => {
     dispatch(techRouteActions.updateStartLoadout(loadout));
   }
 
+  const addPendingProductSlot = (masterId?: number) => {
+    dispatch(techRouteActions.addPendingProductSlot({ masterId }));
+  };
 
-  return { setRouteDate, setTech, updateStartLoadout };
+  const updatePendingSlotCategory = (slotId: string, category: string | null) => {
+    dispatch(techRouteActions.updatePendingSlotCategory({ slotId, category }));
+  };
+
+  const removePendingProductSlot = (slotId: string) => {
+    dispatch(techRouteActions.removePendingProductSlot(slotId));
+  };
+
+  const addProductToLoadout = (slotId: string, product: ProductSub | ProductSingle, amount: number) => {
+    dispatch(techRouteActions.addProductToLoadout({ slotId, product, amount }));
+  };
+
+  const removeProductFromLoadout = (productId: number, masterId?: number) => {
+    dispatch(techRouteActions.removeProductFromLoadout({ masterId, productId }));
+  };
+
+  return {
+    setRouteDate,
+    setTech,
+    updateStartLoadout,
+    addPendingProductSlot,
+    updatePendingSlotCategory,
+    removePendingProductSlot,
+    addProductToLoadout,
+    removeProductFromLoadout,
+  };
 }
