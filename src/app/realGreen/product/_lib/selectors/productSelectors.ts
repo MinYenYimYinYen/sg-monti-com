@@ -51,14 +51,12 @@ const selectProductSubs = createSelector(
         unitConfigMap,
       );
 
-      const appMethod = doc.appMethodId ? appMethodMap.get(doc.appMethodId) ?? null : null;
 
       return {
         ...doc,
         unitConfig,
         unitConfigDisplay,
         productType: "sub",
-        appMethod,
       };
     });
     return productSubs;

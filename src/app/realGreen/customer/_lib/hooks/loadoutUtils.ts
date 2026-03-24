@@ -43,7 +43,7 @@ function aggregateMasters(masters: LoadoutMaster[]): LoadoutMaster {
 
   // Sum amounts across all masters
   const totalAmount = Math.round(
-    masters.reduce((sum, master) => sum + master.amount, 0),
+    masters.reduce((sum, master) => sum + master.plannedAmount, 0),
   );
 
   // Flatten all sub-products from all masters
@@ -66,7 +66,9 @@ function aggregateMasters(masters: LoadoutMaster[]): LoadoutMaster {
 
   return {
     product: first.product,
-    amount: totalAmount,
+    plannedAmount: totalAmount,
+    startAmount: null,
+    finishAmount: null,
     unit: first.unit,
     subProducts: aggregatedSubProducts,
   };
@@ -83,7 +85,7 @@ function aggregateSubProducts(
 
   // Sum amounts across all sub-products
   const totalAmount = Math.round(
-    subProducts.reduce((sum, sub) => sum + sub.amount, 0),
+    subProducts.reduce((sum, sub) => sum + sub.plannedAmount, 0),
   );
 
   // Flatten all mixed products from all sub-products
@@ -107,7 +109,9 @@ function aggregateSubProducts(
   return {
     config: first.config,
     product: first.product,
-    amount: totalAmount,
+    plannedAmount: totalAmount,
+    startAmount: null,
+    finishAmount: null,
     unit: first.unit,
     mixedProducts: aggregatedMixedProducts,
   };
@@ -124,12 +128,14 @@ function aggregateMixedProducts(
 
   // Sum amounts across all mixed products
   const totalAmount = Math.round(
-    mixedProducts.reduce((sum, mixed) => sum + mixed.amount, 0),
+    mixedProducts.reduce((sum, mixed) => sum + mixed.plannedAmount, 0),
   );
 
   return {
     product: first.product,
-    amount: totalAmount,
+    plannedAmount: totalAmount,
+    startAmount: null,
+    finishAmount: null,
     unit: first.unit,
   };
 }

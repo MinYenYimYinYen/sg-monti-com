@@ -119,6 +119,7 @@ export const baseProductSubDocProps: ProductSubDocProps = {
   productId: baseNumId,
   category: baseStrId,
   unit: baseUnitCRM,
+  appMethodId: baseStrId,
   createdAt: "",
   updatedAt: "",
 };

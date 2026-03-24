@@ -14,6 +14,8 @@ const ProductDocPropsSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true, unique: true },
 
+    appMethodId: { type: String, required: false, default: null },
+
     subProductConfigDocs: {
       type: [
         {

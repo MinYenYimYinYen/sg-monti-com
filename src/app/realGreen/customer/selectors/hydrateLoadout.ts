@@ -12,7 +12,6 @@ import {
   SubProductConfig,
   ProductMaster,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export function hydrateLoadout(params: {
   servDoc: ServiceDoc;
@@ -56,7 +55,9 @@ function hydrateMaster(params: {
 
   return {
     product: master,
-    amount: size,
+    plannedAmount: size,
+    startAmount: null,
+    finishAmount: null,
     unit: master.unit,
     subProducts,
   };
@@ -85,7 +86,9 @@ function hydrateSubProduct(params: {
   return {
     config: subConfig,
     product: subConfig.subProduct,
-    amount: size * subConfig.rate,
+    plannedAmount: size * subConfig.rate,
+    startAmount: null,
+    finishAmount: null,
     unit: subConfig.subProduct.unit,
     mixedProducts,
   };
@@ -104,7 +107,9 @@ function hydrateMixedProduct(params: {
 
   return {
     product: mixedConfig.subProduct,
-    amount: size * mixedConfig.rate,
+    plannedAmount: size * mixedConfig.rate,
+    startAmount: null,
+    finishAmount: null,
     unit: mixedConfig.subProduct.unit,
   };
 }
