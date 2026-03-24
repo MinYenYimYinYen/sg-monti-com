@@ -72,13 +72,15 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
         return (
           <div
             key={sub.product.productId}
-            className={"flex items-center gap-2 bg-accent/10 rounded px-2 py-1"}
+            className={"flex items-center justify-between gap-2 bg-accent/10 rounded px-2 py-1"}
           >
-            <div className={"flex-1 text-sm text-foreground/90"}>
-              {sub.product.description}
-            </div>
-            <div className={"text-sm text-foreground/70"}>
-              Planned: {subAmountDisplay}
+            <div>
+              <div className={"flex-1 text-sm text-foreground/90"}>
+                {sub.product.productCode}
+              </div>
+              <div className={"text-xs text-foreground/70"}>
+                Planned: {subAmountDisplay}
+              </div>
             </div>
             <Input
               type="number"
@@ -86,7 +88,9 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
               className="w-24"
               value={startSub?.startAmount ?? ""}
               onChange={(e) => {
-                const value = e.target.value ? parseFloat(e.target.value) : null;
+                const value = e.target.value
+                  ? parseFloat(e.target.value)
+                  : null;
                 handleAmountChange(sub.product.productId, value);
               }}
             />

@@ -68,12 +68,14 @@ export function AppMethodSection({
   return (
     <div className={"flex flex-col gap-2 bg-accent/30 rounded-sm p-1"}>
       {/* MixProduct with Input */}
-      <div className={"flex items-center gap-2"}>
-        <div className={"flex-1  text-foreground/90"}>
-          {plannedAppMethod.mixProduct.productCode}
-        </div>
-        <div className={"text-sm text-foreground/70"}>
-          Planned: {mixProductAmountDisplay}
+      <div className={"flex items-center justify-between gap-2"}>
+        <div>
+          <div className={"flex-1  text-foreground/90"}>
+            {plannedAppMethod.mixProduct.productCode}
+          </div>
+          <div className={"text-xs text-foreground/70"}>
+            Planned: {mixProductAmountDisplay}
+          </div>
         </div>
         <Input
           type="number"
