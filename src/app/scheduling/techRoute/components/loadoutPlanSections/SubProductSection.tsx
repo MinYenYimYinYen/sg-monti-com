@@ -1,0 +1,107 @@
+import { useSelector } from "react-redux";
+import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
+import { aggregateLoadoutInventory } from "@/app/realGreen/customer/_lib/hooks/aggregateLoadoutInventory";
+import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
+import { Input } from "@/style/components/input";
+import { PendingProductSlot } from "./PendingProductSlot";
+
+type SubProductSectionProps = {
+  masterProductId: number;
+};
+
+export function SubProductSection({ masterProductId }: SubProductSectionProps) {
+  const { updateStartLoadout } = useTechRoute();
+
+  const services = useSelector(techRouteSelect.services);
+  const loadoutInventory = aggregateLoadoutInventory(services);
+  const startLoadout = useSelector(techRouteSelect.startLoadout);
+  const pendingSlots = useSelector(techRouteSelect.pendingProductSlots);
+
+  // Find planned master
+  const plannedMaster = loadoutInventory.masters.find(
+    (m) => m.product.productId === masterProductId,
+  );
+
+  // Find actual master in state
+  const startMaster = startLoadout.masters.find(
+    (m) => m.product.productId === masterProductId,
+  );
+
+  if (!plannedMaster || plannedMaster.subProducts.length === 0) return null;
+
+  const handleAmountChange = (productId: number, value: number | null) => {
+    if (!startMaster) return;
+
+    const updatedMasters = startLoadout.masters.map((m) => {
+      if (m.product.productId === masterProductId) {
+        return {
+          ...m,
+          subProducts: m.subProducts.map((s) => {
+            if (s.product.productId === productId) {
+              return { ...s, startAmount: value };
+            }
+            return s;
+          }),
+        };
+      }
+      return m;
+    });
+
+    updateStartLoadout({ masters: updatedMasters });
+  };
+
+  // Filter pending slots for this master
+  const masterPendingSlots = pendingSlots.filter(
+    (slot) => slot.masterId === masterProductId,
+  );
+
+  return (
+    <div className={"flex flex-col gap-2 ml-4"}>
+      <div className={"text-sm font-semibold text-foreground/60 uppercase"}>
+        Other Products
+      </div>
+
+      {plannedMaster.subProducts.map((sub) => {
+        const subAmountDisplay = sub.product.unitConfigDisplay.format({
+          amount: sub.plannedAmount,
+          targetContexts: ["load", "app"],
+          rounding: "ceil",
+        }).formattedString;
+
+        // Find corresponding subProduct in startLoadout
+        const startSub = startMaster?.subProducts.find(
+          (s) => s.product.productId === sub.product.productId,
+        );
+
+        return (
+          <div
+            key={sub.product.productId}
+            className={"flex items-center gap-2 bg-accent/10 rounded px-2 py-1"}
+          >
+            <div className={"flex-1 text-sm text-foreground/90"}>
+              {sub.product.description}
+            </div>
+            <div className={"text-sm text-foreground/70"}>
+              Planned: {subAmountDisplay}
+            </div>
+            <Input
+              type="number"
+              placeholder="Start amount"
+              className="w-24"
+              value={startSub?.startAmount ?? ""}
+              onChange={(e) => {
+                const value = e.target.value ? parseFloat(e.target.value) : null;
+                handleAmountChange(sub.product.productId, value);
+              }}
+            />
+          </div>
+        );
+      })}
+
+      {/* Pending Slots for this Master */}
+      {masterPendingSlots.map((slot) => (
+        <PendingProductSlot key={slot.id} slotId={slot.id} />
+      ))}
+    </div>
+  );
+}

@@ -19,6 +19,8 @@ type TechRouteState = {
   routeDate: string | null;
   startLoadout: LoadoutInventory;
   pendingProductSlots: PendingProductSlot[];
+  pendingSlotProducts: Record<string, ProductSub | ProductSingle | null>;
+  pendingSlotAmounts: Record<string, string>;
 };
 
 const initialState: TechRouteState = {
@@ -26,6 +28,8 @@ const initialState: TechRouteState = {
   routeDate: null,
   startLoadout: baseLoadoutInventory,
   pendingProductSlots: [],
+  pendingSlotProducts: {},
+  pendingSlotAmounts: {},
 };
 export const techRouteSlice = createSlice({
   name: "techRoute",
@@ -58,7 +62,11 @@ export const techRouteSlice = createSlice({
     },
 
     removePendingProductSlot: (state, action: PayloadAction<string>) => {
-      state.pendingProductSlots = state.pendingProductSlots.filter(s => s.id !== action.payload);
+      const slotId = action.payload;
+      state.pendingProductSlots = state.pendingProductSlots.filter(s => s.id !== slotId);
+      // Clear inputs when slot is removed
+      delete state.pendingSlotProducts[slotId];
+      delete state.pendingSlotAmounts[slotId];
     },
 
     addProductToLoadout: (state, action: PayloadAction<{
@@ -117,8 +125,10 @@ export const techRouteSlice = createSlice({
         });
       }
 
-      // Remove the slot after adding product
+      // Remove the slot after adding product and clear its inputs
       state.pendingProductSlots = state.pendingProductSlots.filter(s => s.id !== slotId);
+      delete state.pendingSlotProducts[slotId];
+      delete state.pendingSlotAmounts[slotId];
     },
 
     removeProductFromLoadout: (state, action: PayloadAction<{
@@ -138,6 +148,28 @@ export const techRouteSlice = createSlice({
         state.startLoadout.singles = state.startLoadout.singles.filter(s => s.product.productId !== productId);
         state.startLoadout.subProducts = state.startLoadout.subProducts.filter(s => s.product.productId !== productId);
       }
+    },
+
+    updatePendingSlotProduct: (state, action: PayloadAction<{
+      slotId: string;
+      product: ProductSub | ProductSingle | null;
+    }>) => {
+      const { slotId, product } = action.payload;
+      state.pendingSlotProducts[slotId] = product;
+    },
+
+    updatePendingSlotAmount: (state, action: PayloadAction<{
+      slotId: string;
+      amount: string;
+    }>) => {
+      const { slotId, amount } = action.payload;
+      state.pendingSlotAmounts[slotId] = amount;
+    },
+
+    clearPendingSlotInputs: (state, action: PayloadAction<string>) => {
+      const slotId = action.payload;
+      delete state.pendingSlotProducts[slotId];
+      delete state.pendingSlotAmounts[slotId];
     },
 
   },

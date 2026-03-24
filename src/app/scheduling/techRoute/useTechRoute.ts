@@ -44,6 +44,18 @@ export function useTechRoute() {
     dispatch(techRouteActions.removeProductFromLoadout({ masterId, productId }));
   };
 
+  const updatePendingSlotProduct = (slotId: string, product: ProductSub | ProductSingle | null) => {
+    dispatch(techRouteActions.updatePendingSlotProduct({ slotId, product }));
+  };
+
+  const updatePendingSlotAmount = (slotId: string, amount: string) => {
+    dispatch(techRouteActions.updatePendingSlotAmount({ slotId, amount }));
+  };
+
+  const clearPendingSlotInputs = (slotId: string) => {
+    dispatch(techRouteActions.clearPendingSlotInputs(slotId));
+  };
+
   return {
     setRouteDate,
     setTech,
@@ -53,5 +65,8 @@ export function useTechRoute() {
     removePendingProductSlot,
     addProductToLoadout,
     removeProductFromLoadout,
+    updatePendingSlotProduct,
+    updatePendingSlotAmount,
+    clearPendingSlotInputs,
   };
 }

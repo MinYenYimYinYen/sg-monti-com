@@ -72,6 +72,10 @@ const selectStartLoadout = (state: AppState) => state.techRoute.startLoadout;
 
 const selectPendingProductSlots = (state: AppState) => state.techRoute.pendingProductSlots;
 
+const selectPendingSlotProducts = (state: AppState) => state.techRoute.pendingSlotProducts;
+
+const selectPendingSlotAmounts = (state: AppState) => state.techRoute.pendingSlotAmounts;
+
 const selectUsedProductIds = createSelector(
   [selectStartLoadout],
   (startLoadout) => {
@@ -170,6 +174,8 @@ export const techRouteSelect = {
   tech: selectDefaultTech,
   startLoadout: selectStartLoadout,
   pendingProductSlots: selectPendingProductSlots,
+  pendingSlotProducts: selectPendingSlotProducts,
+  pendingSlotAmounts: selectPendingSlotAmounts,
   usedProductIds: selectUsedProductIds,
   productCategories: selectProductCategories,
   availableProducts: selectAvailableProducts,
