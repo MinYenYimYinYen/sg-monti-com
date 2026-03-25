@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { aggregateLoadoutInventory } from "@/app/realGreen/customer/_lib/hooks/aggregateLoadoutInventory";
+import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
 import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
@@ -14,11 +14,11 @@ export function AppMethodSection({
   masterProductId,
   appMethodId,
 }: AppMethodSectionProps) {
-  const { updateStartLoadout } = useLoadoutForm();
+  const { updateLoadout } = useLoadoutForm();
 
   const services = useSelector(loadoutFormSelect.services);
   const loadoutInventory = aggregateLoadoutInventory(services);
-  const startLoadout = useSelector(loadoutFormSelect.startLoadout);
+  const loadout = useSelector(loadoutFormSelect.loadout.data);
 
   // Find planned master and appMethod
   const plannedMaster = loadoutInventory.masters.find(
@@ -29,7 +29,7 @@ export function AppMethodSection({
   );
 
   // Find actual master and appMethod in state
-  const startMaster = startLoadout.masters.find(
+  const startMaster = loadout.masters.find(
     (m) => m.product.productId === masterProductId,
   );
   const startAppMethod = startMaster?.appMethods.find(
@@ -48,7 +48,7 @@ export function AppMethodSection({
   const handleAmountChange = (value: number | null) => {
     if (!startMaster) return;
 
-    const updatedMasters = startLoadout.masters.map((m) => {
+    const updatedMasters = loadout.masters.map((m) => {
       if (m.product.productId === masterProductId) {
         return {
           ...m,
@@ -63,7 +63,7 @@ export function AppMethodSection({
       return m;
     });
 
-    updateStartLoadout({ masters: updatedMasters });
+    updateLoadout({ masters: updatedMasters });
   };
 
   // Convert app units to load units for display

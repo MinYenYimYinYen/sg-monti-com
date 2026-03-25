@@ -43,9 +43,6 @@ export type LoadoutBase = {
       unit: UnitCRM;
     }[];
   }[];
-};
-
-export type CustomProducts = {
   singles: {
     productId: number;
     product: ProductSingle;
@@ -64,8 +61,9 @@ export type CustomProducts = {
   }[];
 };
 
-export type LoadoutStart = LoadoutBase & CustomProducts;
-export const baseLoadout: LoadoutStart = {
+
+
+export const baseLoadout: LoadoutBase = {
   masters: [],
   singles: [],
   subProducts: [],
@@ -102,10 +100,16 @@ export type LoadoutDoc = {
       finishAmount: number | null;
       unitId: number;
     }[];
+    singles: {
+      productId: number;
+      startAmount: number;
+      finishAmount: number;
+      unitId: number;
+    }
   }[];
 };
 
-type Loadout = LoadoutStart & {
+type Loadout = LoadoutBase & {
   employeeId: string;
   routeDate: string;
 };

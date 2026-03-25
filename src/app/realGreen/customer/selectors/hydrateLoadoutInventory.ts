@@ -3,7 +3,6 @@ import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { getProductMasters } from "@/app/realGreen/customer/selectors/hydrateProductsPlanned";
 import {
   LoadoutBase,
-  LoadoutStart,
 } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
@@ -18,7 +17,7 @@ export function hydrateLoadoutInventory(params: {
   const servCode = servCodeMap.get(servDoc.servCodeId);
   if (!servCode)
     return {
-      masters: [],
+      masters: [], singles: [], subProducts: [],
     };
 
   const productMasters = getProductMasters(servCode, servDoc.size);
@@ -30,25 +29,25 @@ export function hydrateLoadoutInventory(params: {
     }),
   );
 
-  return {  masters };
+  return {  masters, singles: [], subProducts: [] };
 }
 
 function hydrateMasterInventory(params: {
   master: ProductMaster;
   size: number;
-}): LoadoutStart["masters"][number] {
+}): LoadoutBase["masters"][number] {
   const { master, size } = params;
 
   // Group sub-products by appMethod
   const appMethodMap = new Map<
     string,
-    LoadoutStart["masters"][number]["appMethods"][number]
+    LoadoutBase["masters"][number]["appMethods"][number]
   >();
 
   // Track which product IDs are claimed by appMethods
   const claimedProductIds = new Set<number>();
 
-  const nonAppMethodSubs: LoadoutStart["masters"][number]["subProducts"] =
+  const nonAppMethodSubs: LoadoutBase["masters"][number]["subProducts"] =
     [];
 
   // First pass: identify appMethod containers and their claimed products

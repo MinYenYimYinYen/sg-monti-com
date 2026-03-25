@@ -6,6 +6,8 @@ import { AppState } from "@/store";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
+import { createValidationSelectors } from "@/lib/validation/createValidationSelectors";
+import { LoadoutValidator, LoadoutPhase } from "@/app/scheduling/dailyInventory/_lib/LoadoutValidator";
 
 const selectAuthTech = createSelector([authSelect.user], (user) => user?.saId);
 const selectTech = (state: AppState) => state.loadoutForm.tech;
@@ -68,21 +70,24 @@ const selectAvailableTechs = createSelector(
   },
 );
 
-const selectStartLoadout = (state: AppState) => state.loadoutForm.startLoadout;
+const selectLoadout = (state: AppState) => state.loadoutForm.loadout;
 
-const selectPendingProductSlots = (state: AppState) => state.loadoutForm.pendingProductSlots;
+const selectPendingProductSlots = (state: AppState) =>
+  state.loadoutForm.pendingProductSlots;
 
-const selectPendingSlotProducts = (state: AppState) => state.loadoutForm.pendingSlotProducts;
+const selectPendingSlotProducts = (state: AppState) =>
+  state.loadoutForm.pendingSlotProducts;
 
-const selectPendingSlotAmounts = (state: AppState) => state.loadoutForm.pendingSlotAmounts;
+const selectPendingSlotAmounts = (state: AppState) =>
+  state.loadoutForm.pendingSlotAmounts;
 
 const selectUsedProductIds = createSelector(
-  [selectStartLoadout],
-  (startLoadout) => {
+  [selectLoadout],
+  (loadout) => {
     const usedIds = new Set<number>();
 
     // From masters
-    startLoadout.masters.forEach((master) => {
+    loadout.masters.forEach((master) => {
       // From appMethods
       master.appMethods.forEach((appMethod) => {
         // mixProduct
@@ -100,11 +105,11 @@ const selectUsedProductIds = createSelector(
     });
 
     // From CustomProducts
-    startLoadout.singles.forEach((single) => {
+    loadout.singles.forEach((single) => {
       usedIds.add(single.product.productId);
     });
 
-    startLoadout.subProducts.forEach((sub) => {
+    loadout.subProducts.forEach((sub) => {
       usedIds.add(sub.product.productId);
     });
 
@@ -130,13 +135,19 @@ const selectProductCategories = createSelector(
 );
 
 const selectAvailableProducts = createSelector(
-  [productSelect.productSubs, productSelect.productSingles, selectUsedProductIds],
+  [
+    productSelect.productSubs,
+    productSelect.productSingles,
+    selectUsedProductIds,
+  ],
   (subs, singles, usedIds): (ProductSub | ProductSingle)[] => {
     const availableSubs = subs.filter((sub) => !usedIds.has(sub.productId));
-    const availableSingles = singles.filter((single) => !usedIds.has(single.productId));
+    const availableSingles = singles.filter(
+      (single) => !usedIds.has(single.productId),
+    );
 
     return [...availableSubs, ...availableSingles].sort((a, b) =>
-      a.description.localeCompare(b.description)
+      a.description.localeCompare(b.description),
     );
   },
 );
@@ -154,7 +165,9 @@ const selectProductsForPendingSlots = createSelector(
 
     pendingSlots.forEach((slot) => {
       const filteredProducts = slot.categoryFilter
-        ? availableProducts.filter((product) => product.category === slot.categoryFilter)
+        ? availableProducts.filter(
+            (product) => product.category === slot.categoryFilter,
+          )
         : availableProducts;
 
       productsMap.set(slot.id, filteredProducts);
@@ -164,6 +177,29 @@ const selectProductsForPendingSlots = createSelector(
   },
 );
 
+const selectLoadoutTouchedFields = (state: AppState) => {
+  return state.loadoutForm.loadoutTouchedFields;
+};
+
+const selectIsFieldTouched = (fieldPath: string) =>
+  createSelector(
+    [selectLoadoutTouchedFields],
+    (touchedFields) => touchedFields.has(fieldPath)
+  )
+
+// Factory function to create phase-specific validation selectors
+const createLoadoutValidation = (phase: LoadoutPhase) =>
+  createValidationSelectors({
+    selectData: (state: AppState) => state.loadoutForm.loadout,
+    selectTouchedFields: (state: AppState) => state.loadoutForm.loadoutTouchedFields,
+    selectShowAll: (state: AppState) => state.loadoutForm.showAllLoadoutIssues,
+    validator: class extends LoadoutValidator {
+      constructor() {
+        super(phase);
+      }
+    },
+  });
+
 export const loadoutFormSelect = {
   routesByDate: selectRoutesByDate,
   routeDates: selectRouteDates,
@@ -172,7 +208,6 @@ export const loadoutFormSelect = {
   services: selectServices,
   availableTechs: selectAvailableTechs,
   tech: selectDefaultTech,
-  startLoadout: selectStartLoadout,
   pendingProductSlots: selectPendingProductSlots,
   pendingSlotProducts: selectPendingSlotProducts,
   pendingSlotAmounts: selectPendingSlotAmounts,
@@ -181,4 +216,11 @@ export const loadoutFormSelect = {
   availableProducts: selectAvailableProducts,
   productsByCategory: selectProductsByCategory,
   productsForPendingSlots: selectProductsForPendingSlots,
+  loadoutTouchedFields: selectLoadoutTouchedFields,
+  isFieldTouched: selectIsFieldTouched,
+  loadout: {
+    data: selectLoadout,
+    startValidation: createLoadoutValidation("start"),
+    finishValidation: createLoadoutValidation("finish"),
+  },
 };

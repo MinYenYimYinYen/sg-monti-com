@@ -2,7 +2,6 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   baseLoadout,
   LoadoutBase,
-  LoadoutStart,
 } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductSub, isProductSubCore } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle, isProductSingleCore } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
@@ -17,7 +16,9 @@ type PendingProductSlot = {
 type LoadoutFormState = {
   tech: string | null;
   routeDate: string | null;
-  startLoadout: LoadoutStart;
+  loadout: LoadoutBase;
+  loadoutTouchedFields: Set<string>;
+  showAllLoadoutIssues: boolean;
   pendingProductSlots: PendingProductSlot[];
   pendingSlotProducts: Record<string, ProductSub | ProductSingle | null>;
   pendingSlotAmounts: Record<string, string>;
@@ -26,7 +27,9 @@ type LoadoutFormState = {
 const initialState: LoadoutFormState = {
   tech: null,
   routeDate: null,
-  startLoadout: baseLoadout,
+  loadout: baseLoadout,
+  loadoutTouchedFields: new Set<string>(),
+  showAllLoadoutIssues: false,
   pendingProductSlots: [],
   pendingSlotProducts: {},
   pendingSlotAmounts: {},
@@ -41,8 +44,8 @@ export const loadoutFormSlice = createSlice({
     setRouteDate: (state, action) => {
       state.routeDate = action.payload;
     },
-    updateStartLoadout: (state, action: PayloadAction<Partial<LoadoutBase>>) => {
-      state.startLoadout = { ...state.startLoadout, ...action.payload };
+    updateLoadout: (state, action: PayloadAction<Partial<LoadoutBase>>) => {
+      state.loadout = { ...state.loadout, ...action.payload };
     },
 
     addPendingProductSlot: (state, action: PayloadAction<{ masterId?: number }>) => {
@@ -85,7 +88,7 @@ export const loadoutFormSlice = createSlice({
 
         // If slot has masterId, check if this product is planned in that master
         if (slot.masterId !== undefined) {
-          const master = state.startLoadout.masters.find(m => m.product.productId === slot.masterId);
+          const master = state.loadout.masters.find(m => m.product.productId === slot.masterId);
           if (master) {
             // Check if this product is planned in master.subProducts
             const plannedSub = master.subProducts.find(s => s.product.productId === productSub.productId);
@@ -108,7 +111,7 @@ export const loadoutFormSlice = createSlice({
           }
         } else {
           // Add to CustomProducts.subProducts
-          state.startLoadout.subProducts.push({
+          state.loadout.subProducts.push({
             productId: productSub.productId,
             product: productSub,
             unitId: productSub.unitId,
@@ -121,7 +124,7 @@ export const loadoutFormSlice = createSlice({
         const productSingle = product as ProductSingle;
 
         // Singles always go to CustomProducts.singles
-        state.startLoadout.singles.push({
+        state.loadout.singles.push({
           productId: productSingle.productId,
           product: productSingle,
           unitId: productSingle.unitId,
@@ -145,14 +148,14 @@ export const loadoutFormSlice = createSlice({
 
       if (masterId !== undefined) {
         // Remove from master.subProducts
-        const master = state.startLoadout.masters.find(m => m.product.productId === masterId);
+        const master = state.loadout.masters.find(m => m.product.productId === masterId);
         if (master) {
           master.subProducts = master.subProducts.filter(s => s.product.productId !== productId);
         }
       } else {
         // Remove from CustomProducts
-        state.startLoadout.singles = state.startLoadout.singles.filter(s => s.product.productId !== productId);
-        state.startLoadout.subProducts = state.startLoadout.subProducts.filter(s => s.product.productId !== productId);
+        state.loadout.singles = state.loadout.singles.filter(s => s.product.productId !== productId);
+        state.loadout.subProducts = state.loadout.subProducts.filter(s => s.product.productId !== productId);
       }
     },
 
@@ -177,7 +180,13 @@ export const loadoutFormSlice = createSlice({
       delete state.pendingSlotProducts[slotId];
       delete state.pendingSlotAmounts[slotId];
     },
-
+    markStartLoadoutFieldTouched: (state, action: PayloadAction<string>) => {
+      const field = action.payload;
+      state.loadoutTouchedFields.add(field);
+    },
+    setShouldShowAllStartLoadoutIssues: (state, action: PayloadAction<boolean>) => {
+      state.showAllLoadoutIssues = action.payload;
+    }
   },
 });
 

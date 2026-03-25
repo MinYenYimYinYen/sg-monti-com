@@ -4,7 +4,6 @@ import {
 } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
 import {
   LoadoutBase,
-  LoadoutStart,
 } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
@@ -20,8 +19,8 @@ export function useLoadoutForm() {
     dispatch(loadoutFormActions.setRouteDate(date));
   };
 
-  const updateStartLoadout = (loadout: Partial<LoadoutStart>) => {
-    dispatch(loadoutFormActions.updateStartLoadout(loadout));
+  const updateLoadout = (loadout: Partial<LoadoutBase>) => {
+    dispatch(loadoutFormActions.updateLoadout(loadout));
   }
 
   const addPendingProductSlot = (masterId?: number) => {
@@ -59,7 +58,7 @@ export function useLoadoutForm() {
   return {
     setRouteDate,
     setTech,
-    updateStartLoadout,
+    updateLoadout,
     addPendingProductSlot,
     updatePendingSlotCategory,
     removePendingProductSlot,

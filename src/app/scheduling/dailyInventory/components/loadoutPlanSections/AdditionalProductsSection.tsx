@@ -7,10 +7,10 @@ import { PendingProductSlot } from "./PendingProductSlot";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 
 export function AdditionalProductsSection() {
-  const { updateStartLoadout, removeProductFromLoadout, addPendingProductSlot } =
+  const { updateLoadout, removeProductFromLoadout, addPendingProductSlot } =
     useLoadoutForm();
 
-  const startLoadout = useSelector(loadoutFormSelect.startLoadout);
+  const loadout = useSelector(loadoutFormSelect.loadout.data);
   const pendingSlots = useSelector(loadoutFormSelect.pendingProductSlots);
 
   // Filter pending slots for custom products (no masterId)
@@ -25,7 +25,7 @@ export function AdditionalProductsSection() {
       </div>
 
       {/* Singles */}
-      {startLoadout.singles.map((single) => {
+      {loadout.singles.map((single) => {
         // Convert app units to load units for display
         const displayValue = single.startAmount != null
           ? convertQuantity(
@@ -60,13 +60,13 @@ export function AdditionalProductsSection() {
                       single.product.unitConfig
                     )
                   : 0;
-                const updatedSingles = startLoadout.singles.map((s) => {
+                const updatedSingles = loadout.singles.map((s) => {
                   if (s.product.productId === single.product.productId) {
                     return { ...s, startAmount: appValue };
                   }
                   return s;
                 });
-                updateStartLoadout({ singles: updatedSingles });
+                updateLoadout({ singles: updatedSingles });
               }}
             />
             <button
@@ -82,7 +82,7 @@ export function AdditionalProductsSection() {
       })}
 
       {/* SubProducts */}
-      {startLoadout.subProducts.map((sub) => {
+      {loadout.subProducts.map((sub) => {
         // Convert app units to load units for display
         const displayValue = sub.startAmount != null
           ? convertQuantity(
@@ -117,13 +117,13 @@ export function AdditionalProductsSection() {
                       sub.product.unitConfig
                     )
                   : 0;
-                const updatedSubProducts = startLoadout.subProducts.map((s) => {
+                const updatedSubProducts = loadout.subProducts.map((s) => {
                   if (s.product.productId === sub.product.productId) {
                     return { ...s, startAmount: appValue };
                   }
                   return s;
                 });
-                updateStartLoadout({ subProducts: updatedSubProducts });
+                updateLoadout({ subProducts: updatedSubProducts });
               }}
             />
             <button

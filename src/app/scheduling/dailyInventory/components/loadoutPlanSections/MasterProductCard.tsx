@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { aggregateLoadoutInventory } from "@/app/realGreen/customer/_lib/hooks/aggregateLoadoutInventory";
+import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { AppMethodSection } from "./AppMethodSection";
 import { SubProductSection } from "./SubProductSection";
 

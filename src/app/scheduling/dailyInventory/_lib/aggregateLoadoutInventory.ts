@@ -1,7 +1,6 @@
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import {
   LoadoutBase,
-  LoadoutStart,
 } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 /**
@@ -15,7 +14,7 @@ export function aggregateLoadoutInventory(services: Service[]): LoadoutBase {
   const allMasters = loadoutInventories.flatMap((inventory) => inventory.masters);
 
   // Group by master productId and aggregate
-  const mastersMap = new Map<number, LoadoutStart["masters"][number][]>();
+  const mastersMap = new Map<number, LoadoutBase["masters"][number][]>();
   allMasters.forEach((master) => {
     const productId = master.product.productId;
     if (!mastersMap.has(productId)) {
@@ -29,7 +28,7 @@ export function aggregateLoadoutInventory(services: Service[]): LoadoutBase {
     aggregateMasters(masters),
   );
 
-  return { masters: aggregatedMasters };
+  return { masters: aggregatedMasters, singles: [], subProducts: [] };
 }
 
 /**
@@ -37,8 +36,8 @@ export function aggregateLoadoutInventory(services: Service[]): LoadoutBase {
  * Sums amounts and recursively aggregates appMethods and sub-products.
  */
 function aggregateMasters(
-  masters: LoadoutStart["masters"][number][],
-): LoadoutStart["masters"][number] {
+  masters: LoadoutBase["masters"][number][],
+): LoadoutBase["masters"][number] {
   const first = masters[0];
 
   // Sum amounts across all masters
@@ -50,7 +49,7 @@ function aggregateMasters(
   const allAppMethods = masters.flatMap((master) => master.appMethods);
   const appMethodsMap = new Map<
     string,
-    LoadoutStart["masters"][number]["appMethods"][number][]
+    LoadoutBase["masters"][number]["appMethods"][number][]
   >();
 
   allAppMethods.forEach((appMethod) => {
@@ -70,7 +69,7 @@ function aggregateMasters(
   const allSubProducts = masters.flatMap((master) => master.subProducts);
   const subProductsMap = new Map<
     number,
-    LoadoutStart["masters"][number]["subProducts"][number][]
+    LoadoutBase["masters"][number]["subProducts"][number][]
   >();
 
   allSubProducts.forEach((sub) => {
@@ -108,8 +107,8 @@ function aggregateMasters(
  * Sums amounts for each sub-product within the appMethod.
  */
 function aggregateAppMethods(
-  appMethods: LoadoutStart["masters"][number]["appMethods"][number][],
-): LoadoutStart["masters"][number]["appMethods"][number] {
+  appMethods: LoadoutBase["masters"][number]["appMethods"][number][],
+): LoadoutBase["masters"][number]["appMethods"][number] {
   const first = appMethods[0];
 
   // Sum amounts across all appMethods
@@ -123,7 +122,7 @@ function aggregateAppMethods(
   // Group by sub-product productId
   const subProductsMap = new Map<
     number,
-    LoadoutStart["masters"][number]["appMethods"][number]["subProducts"][number][]
+    LoadoutBase["masters"][number]["appMethods"][number]["subProducts"][number][]
   >();
 
   allSubProducts.forEach((sub) => {
@@ -158,8 +157,8 @@ function aggregateAppMethods(
  * Sums amounts (base case - no further nesting).
  */
 function aggregateSubProducts(
-  subProducts: LoadoutStart["masters"][number]["subProducts"][number][],
-): LoadoutStart["masters"][number]["subProducts"][number] {
+  subProducts: LoadoutBase["masters"][number]["subProducts"][number][],
+): LoadoutBase["masters"][number]["subProducts"][number] {
   const first = subProducts[0];
 
   // Sum amounts across all sub-products

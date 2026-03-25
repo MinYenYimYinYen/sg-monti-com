@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { aggregateLoadoutInventory } from "@/app/realGreen/customer/_lib/hooks/aggregateLoadoutInventory";
+import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
 import { Input } from "@/style/components/input";
 import { PendingProductSlot } from "./PendingProductSlot";
@@ -11,11 +11,11 @@ type SubProductSectionProps = {
 };
 
 export function SubProductSection({ masterProductId }: SubProductSectionProps) {
-  const { updateStartLoadout } = useLoadoutForm();
+  const { updateLoadout } = useLoadoutForm();
 
   const services = useSelector(loadoutFormSelect.services);
   const loadoutInventory = aggregateLoadoutInventory(services);
-  const startLoadout = useSelector(loadoutFormSelect.startLoadout);
+  const loadout = useSelector(loadoutFormSelect.loadout.data);
   const pendingSlots = useSelector(loadoutFormSelect.pendingProductSlots);
 
   // Find planned master
@@ -24,7 +24,7 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
   );
 
   // Find actual master in state
-  const startMaster = startLoadout.masters.find(
+  const startMaster = loadout.masters.find(
     (m) => m.product.productId === masterProductId,
   );
 
@@ -33,7 +33,7 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
   const handleAmountChange = (productId: number, value: number | null) => {
     if (!startMaster) return;
 
-    const updatedMasters = startLoadout.masters.map((m) => {
+    const updatedMasters = loadout.masters.map((m) => {
       if (m.product.productId === masterProductId) {
         return {
           ...m,
@@ -48,7 +48,7 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
       return m;
     });
 
-    updateStartLoadout({ masters: updatedMasters });
+    updateLoadout({ masters: updatedMasters });
   };
 
   // Filter pending slots for this master
@@ -66,7 +66,7 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
 
         }).formattedString;
 
-        // Find corresponding subProduct in startLoadout
+        // Find corresponding subProduct in loadout
         const startSub = startMaster?.subProducts.find(
           (s) => s.product.productId === sub.product.productId,
         );
