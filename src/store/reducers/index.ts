@@ -22,7 +22,8 @@ import csvReducer from "@/app/csv/_lib/csvSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
 import { appMethodReducer } from "@/app/realGreen/product/appMethod/appMethodSlice";
 import createAppMethodReducer from "@/app/realGreen/product/appMethod/appMethodCreate/createAppMethodSlice";
-import { techRouteReducer } from "@/app/scheduling/techRoute/techRouteSlice";
+import { loadoutFormReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
+import { loadoutReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -33,17 +34,18 @@ const rootReducer = combineReducers({
   callAhead: callAheadReducer,
   company: companyReducer,
   condition: conditionReducer,
+  custFlag: custFlagReducer,
   discount: discountReducer,
   employee: employeeReducer,
   flag: flagReducer,
-  custFlag: custFlagReducer,
+  loadout: loadoutReducer,
+  loadoutForm: loadoutFormReducer,
   priceTable: priceTableReducer,
   product: productReducer,
   unitConfig: unitConfigReducer,
   progServ: progServReducer,
   serviceCondition: serviceConditionReducer,
   taxCode: taxCodeReducer,
-  techRoute: techRouteReducer,
   zipCode: zipCodeReducer,
   customer: customerReducer,
   csv: csvReducer,

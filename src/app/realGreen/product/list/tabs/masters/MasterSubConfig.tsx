@@ -17,11 +17,12 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
 import {
   MultiSelect,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectTrigger,
-  MultiSelectValue,
-} from "@/components/MultiSelect";
+
+} from "@/components/multiselect/MultiSelect";
+import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
+import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
+import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
+import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 
 interface MasterSubConfigProps {
   config: SubProductConfigDoc;

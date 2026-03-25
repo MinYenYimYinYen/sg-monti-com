@@ -1,19 +1,20 @@
-import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
+import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
 import { useSelector } from "react-redux";
-import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
+import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
 import {
   MultiSelect,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectTrigger,
-  MultiSelectValue,
-} from "@/components/MultiSelect";
+
+} from "@/components/multiselect/MultiSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
+import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
+import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
+import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
+import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 
 export function ChooseTech() {
-  const { setTech } = useTechRoute();
-  const techId = useSelector(techRouteSelect.tech);
-  const availableTechs = useSelector(techRouteSelect.availableTechs);
+  const { setTech } = useLoadoutForm();
+  const techId = useSelector(loadoutFormSelect.tech);
+  const availableTechs = useSelector(loadoutFormSelect.availableTechs);
   const employeeMap = useSelector(employeeSelect.employeeMap);
 
   return (

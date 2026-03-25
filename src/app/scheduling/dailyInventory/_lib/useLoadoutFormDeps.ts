@@ -5,7 +5,7 @@ import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig"
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 
-export function useTechRouteDeps() {
+export function useLoadoutFormDeps() {
   useCustomerContext({ contexts: ["printed", "recentProduction"] });
   usePrintedCustomers({ autoLoad: true });
   useProgServ({ autoLoad: true });

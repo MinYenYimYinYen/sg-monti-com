@@ -1,7 +1,7 @@
 import { useSelector } from "react-redux";
-import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
+import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
 import { aggregateLoadoutInventory } from "@/app/realGreen/customer/_lib/hooks/aggregateLoadoutInventory";
-import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
+import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
 import { Input } from "@/style/components/input";
 import { PendingProductSlot } from "./PendingProductSlot";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
@@ -11,12 +11,12 @@ type SubProductSectionProps = {
 };
 
 export function SubProductSection({ masterProductId }: SubProductSectionProps) {
-  const { updateStartLoadout } = useTechRoute();
+  const { updateStartLoadout } = useLoadoutForm();
 
-  const services = useSelector(techRouteSelect.services);
+  const services = useSelector(loadoutFormSelect.services);
   const loadoutInventory = aggregateLoadoutInventory(services);
-  const startLoadout = useSelector(techRouteSelect.startLoadout);
-  const pendingSlots = useSelector(techRouteSelect.pendingProductSlots);
+  const startLoadout = useSelector(loadoutFormSelect.startLoadout);
+  const pendingSlots = useSelector(loadoutFormSelect.pendingProductSlots);
 
   // Find planned master
   const plannedMaster = loadoutInventory.masters.find(

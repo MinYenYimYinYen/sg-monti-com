@@ -1,19 +1,20 @@
 import { useSelector } from "react-redux";
-import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
-import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
+import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
+import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
 import {
   MultiSelect,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectTrigger,
-  MultiSelectValue,
-} from "@/components/MultiSelect";
+
+} from "@/components/multiselect/MultiSelect";
 import { Input } from "@/style/components/input";
 import { Check, X } from "lucide-react";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { ScrollArea } from "@/style/components/scroll-area";
+import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
+import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
+import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
+import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 
 type PendingProductSlotProps = {
   slotId: string;
@@ -26,13 +27,13 @@ export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
     updatePendingSlotAmount,
     addProductToLoadout,
     removePendingProductSlot,
-  } = useTechRoute();
+  } = useLoadoutForm();
 
-  const productCategories = useSelector(techRouteSelect.productCategories);
-  const productsForSlots = useSelector(techRouteSelect.productsForPendingSlots);
-  const pendingSlots = useSelector(techRouteSelect.pendingProductSlots);
-  const pendingSlotProducts = useSelector(techRouteSelect.pendingSlotProducts);
-  const pendingSlotAmounts = useSelector(techRouteSelect.pendingSlotAmounts);
+  const productCategories = useSelector(loadoutFormSelect.productCategories);
+  const productsForSlots = useSelector(loadoutFormSelect.productsForPendingSlots);
+  const pendingSlots = useSelector(loadoutFormSelect.pendingProductSlots);
+  const pendingSlotProducts = useSelector(loadoutFormSelect.pendingSlotProducts);
+  const pendingSlotAmounts = useSelector(loadoutFormSelect.pendingSlotAmounts);
 
   const slot = pendingSlots.find((s) => s.id === slotId);
   const availableProducts = productsForSlots.get(slotId) ?? [];

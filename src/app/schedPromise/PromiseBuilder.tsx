@@ -27,17 +27,19 @@ import { Toggle } from "@/style/components/toggle";
 import { Input } from "@/style/components/input";
 import {
   MultiSelect,
-  MultiSelectTrigger,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectValue,
-  MultiSelectSeparator,
-} from "@/components/MultiSelect";
+
+
+} from "@/components/multiselect/MultiSelect";
 import { DatePicker } from "@/components/DatePicker";
 import { Button } from "@/style/components/button";
 import { Copy } from "lucide-react";
 import { cn } from "@/style/utils";
 import CopyDiv from "@/components/CopyDiv";
+import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
+import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
+import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
+import { MultiSelectSeparator } from "@/components/multiselect/MultiSelectSeparator";
+import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 
 export function PromiseBuilder() {
   useEmployee({ autoLoad: true });

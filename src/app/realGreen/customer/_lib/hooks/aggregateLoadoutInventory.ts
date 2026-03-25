@@ -1,8 +1,8 @@
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import {
   LoadoutBase,
-  LoadoutInventory,
-} from "@/app/realGreen/product/_lib/types/LoadoutTypes";
+  LoadoutStart,
+} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 /**
  * Aggregates loadout inventories from multiple services into a single consolidated inventory.
@@ -15,7 +15,7 @@ export function aggregateLoadoutInventory(services: Service[]): LoadoutBase {
   const allMasters = loadoutInventories.flatMap((inventory) => inventory.masters);
 
   // Group by master productId and aggregate
-  const mastersMap = new Map<number, LoadoutInventory["masters"][number][]>();
+  const mastersMap = new Map<number, LoadoutStart["masters"][number][]>();
   allMasters.forEach((master) => {
     const productId = master.product.productId;
     if (!mastersMap.has(productId)) {
@@ -37,8 +37,8 @@ export function aggregateLoadoutInventory(services: Service[]): LoadoutBase {
  * Sums amounts and recursively aggregates appMethods and sub-products.
  */
 function aggregateMasters(
-  masters: LoadoutInventory["masters"][number][],
-): LoadoutInventory["masters"][number] {
+  masters: LoadoutStart["masters"][number][],
+): LoadoutStart["masters"][number] {
   const first = masters[0];
 
   // Sum amounts across all masters
@@ -50,7 +50,7 @@ function aggregateMasters(
   const allAppMethods = masters.flatMap((master) => master.appMethods);
   const appMethodsMap = new Map<
     string,
-    LoadoutInventory["masters"][number]["appMethods"][number][]
+    LoadoutStart["masters"][number]["appMethods"][number][]
   >();
 
   allAppMethods.forEach((appMethod) => {
@@ -70,7 +70,7 @@ function aggregateMasters(
   const allSubProducts = masters.flatMap((master) => master.subProducts);
   const subProductsMap = new Map<
     number,
-    LoadoutInventory["masters"][number]["subProducts"][number][]
+    LoadoutStart["masters"][number]["subProducts"][number][]
   >();
 
   allSubProducts.forEach((sub) => {
@@ -91,10 +91,12 @@ function aggregateMasters(
 
 
   return {
+    productId: first.product.productId,
     product: first.product,
     plannedAmount: totalAmount,
     startAmount: null,
     finishAmount: null,
+    unitId: first.unit.unitId,
     unit: first.unit,
     appMethods: aggregatedAppMethods,
     subProducts: aggregatedSubProducts,
@@ -106,8 +108,8 @@ function aggregateMasters(
  * Sums amounts for each sub-product within the appMethod.
  */
 function aggregateAppMethods(
-  appMethods: LoadoutInventory["masters"][number]["appMethods"][number][],
-): LoadoutInventory["masters"][number]["appMethods"][number] {
+  appMethods: LoadoutStart["masters"][number]["appMethods"][number][],
+): LoadoutStart["masters"][number]["appMethods"][number] {
   const first = appMethods[0];
 
   // Sum amounts across all appMethods
@@ -121,7 +123,7 @@ function aggregateAppMethods(
   // Group by sub-product productId
   const subProductsMap = new Map<
     number,
-    LoadoutInventory["masters"][number]["appMethods"][number]["subProducts"][number][]
+    LoadoutStart["masters"][number]["appMethods"][number]["subProducts"][number][]
   >();
 
   allSubProducts.forEach((sub) => {
@@ -138,8 +140,11 @@ function aggregateAppMethods(
   );
 
   return {
+    appMethodId: first.appMethod.appMethodId,
     appMethod: first.appMethod,
+    mixProductId: first.mixProduct.productId,
     mixProduct: first.mixProduct,
+    mixProductUnitId: first.mixProductUnit.unitId,
     mixProductUnit: first.mixProductUnit,
     plannedAmount: totalAmount,
     startAmount: null,
@@ -153,8 +158,8 @@ function aggregateAppMethods(
  * Sums amounts (base case - no further nesting).
  */
 function aggregateSubProducts(
-  subProducts: LoadoutInventory["masters"][number]["subProducts"][number][],
-): LoadoutInventory["masters"][number]["subProducts"][number] {
+  subProducts: LoadoutStart["masters"][number]["subProducts"][number][],
+): LoadoutStart["masters"][number]["subProducts"][number] {
   const first = subProducts[0];
 
   // Sum amounts across all sub-products
@@ -163,10 +168,12 @@ function aggregateSubProducts(
   );
 
   return {
+    productId: first.product.productId,
     product: first.product,
     plannedAmount: totalAmount,
     startAmount: null,
     finishAmount: null,
+    unitId: first.unit.unitId,
     unit: first.unit,
   };
 }

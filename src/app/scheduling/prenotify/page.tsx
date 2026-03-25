@@ -16,12 +16,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/style/components/tabs";
-import { MultiSelect, MultiSelectItem } from "@/components/MultiSelect";
+import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { NotificationType } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { PrenotifyByType } from "@/app/scheduling/prenotify/_lib/PrenotifyByType";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { ServiceQuery } from "@/app/realGreen/customer/_lib/classes/ServiceQuery";
 import { PromiseDisplay } from "@/app/scheduling/prenotify/_lib/PromiseDisplay";
+import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 
 export default function Prenotify() {
   usePrenotify();

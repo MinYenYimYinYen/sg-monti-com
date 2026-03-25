@@ -1,9 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
-  baseLoadoutInventory,
+  baseLoadout,
   LoadoutBase,
-  LoadoutInventory,
-} from "@/app/realGreen/product/_lib/types/LoadoutTypes";
+  LoadoutStart,
+} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductSub, isProductSubCore } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle, isProductSingleCore } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductCore } from "@/app/realGreen/product/_lib/types/ProductTypes";
@@ -14,24 +14,24 @@ type PendingProductSlot = {
   categoryFilter: string | null;
 };
 
-type TechRouteState = {
+type LoadoutFormState = {
   tech: string | null;
   routeDate: string | null;
-  startLoadout: LoadoutInventory;
+  startLoadout: LoadoutStart;
   pendingProductSlots: PendingProductSlot[];
   pendingSlotProducts: Record<string, ProductSub | ProductSingle | null>;
   pendingSlotAmounts: Record<string, string>;
 };
 
-const initialState: TechRouteState = {
+const initialState: LoadoutFormState = {
   tech: null,
   routeDate: null,
-  startLoadout: baseLoadoutInventory,
+  startLoadout: baseLoadout,
   pendingProductSlots: [],
   pendingSlotProducts: {},
   pendingSlotAmounts: {},
 };
-export const techRouteSlice = createSlice({
+export const loadoutFormSlice = createSlice({
   name: "techRoute",
   initialState,
   reducers: {
@@ -96,10 +96,12 @@ export const techRouteSlice = createSlice({
             } else {
               // Add as new subProduct to master
               master.subProducts.push({
+                productId: productSub.productId,
                 product: productSub,
                 plannedAmount: 0,
                 startAmount: amount,
                 finishAmount: null,
+                unitId: productSub.unitId,
                 unit: productSub.unit,
               });
             }
@@ -107,7 +109,9 @@ export const techRouteSlice = createSlice({
         } else {
           // Add to CustomProducts.subProducts
           state.startLoadout.subProducts.push({
+            productId: productSub.productId,
             product: productSub,
+            unitId: productSub.unitId,
             unit: productSub.unit,
             startAmount: amount,
             finishAmount: 0,
@@ -118,7 +122,9 @@ export const techRouteSlice = createSlice({
 
         // Singles always go to CustomProducts.singles
         state.startLoadout.singles.push({
+          productId: productSingle.productId,
           product: productSingle,
+          unitId: productSingle.unitId,
           unit: productSingle.unit,
           startAmount: amount,
           finishAmount: 0,
@@ -175,5 +181,5 @@ export const techRouteSlice = createSlice({
   },
 });
 
-export const techRouteActions = { ...techRouteSlice.actions };
-export const techRouteReducer = techRouteSlice.reducer;
+export const loadoutFormActions = { ...loadoutFormSlice.actions };
+export const loadoutFormReducer = loadoutFormSlice.reducer;

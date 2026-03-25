@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
-import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
-import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
+import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
+import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
 import { Input } from "@/style/components/input";
 import { Plus, X } from "lucide-react";
 import { PendingProductSlot } from "./PendingProductSlot";
@@ -8,10 +8,10 @@ import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitC
 
 export function AdditionalProductsSection() {
   const { updateStartLoadout, removeProductFromLoadout, addPendingProductSlot } =
-    useTechRoute();
+    useLoadoutForm();
 
-  const startLoadout = useSelector(techRouteSelect.startLoadout);
-  const pendingSlots = useSelector(techRouteSelect.pendingProductSlots);
+  const startLoadout = useSelector(loadoutFormSelect.startLoadout);
+  const pendingSlots = useSelector(loadoutFormSelect.pendingProductSlots);
 
   // Filter pending slots for custom products (no masterId)
   const customPendingSlots = pendingSlots.filter(

@@ -15,11 +15,8 @@ import { Label } from "@/style/components/label";
 import { Badge } from "@/style/components/badge";
 import {
   MultiSelect,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectTrigger,
-  MultiSelectValue,
-} from "@/components/MultiSelect";
+
+} from "@/components/multiselect/MultiSelect";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 import { UnitLabel } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { Separator } from "@/style/components/separator";
@@ -28,6 +25,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/style/components/sheet";
+import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
+import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
+import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
+import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 
 type FieldKey = "groundSpeed" | "patternWidth" | "flowRate";
 

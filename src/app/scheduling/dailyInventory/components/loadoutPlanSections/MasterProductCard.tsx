@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
+import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
 import { aggregateLoadoutInventory } from "@/app/realGreen/customer/_lib/hooks/aggregateLoadoutInventory";
 import { AppMethodSection } from "./AppMethodSection";
 import { SubProductSection } from "./SubProductSection";
@@ -9,7 +9,7 @@ type MasterProductCardProps = {
 };
 
 export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
-  const services = useSelector(techRouteSelect.services);
+  const services = useSelector(loadoutFormSelect.services);
   const loadoutInventory = aggregateLoadoutInventory(services);
 
   const master = loadoutInventory.masters.find(

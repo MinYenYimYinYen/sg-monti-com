@@ -22,7 +22,7 @@ import {
 } from "@/app/schedPromise/SchedPromiseTypes";
 import {
   LoadoutBase,
-} from "@/app/realGreen/product/_lib/types/LoadoutTypes";
+} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 export type ServiceRaw = {
   // actualManHours?: number;

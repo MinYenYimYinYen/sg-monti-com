@@ -15,11 +15,12 @@ import { Badge } from "@/style/components/badge";
 import { XIcon } from "lucide-react";
 import {
   MultiSelect,
-  MultiSelectTrigger,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectValue,
-} from "@/components/MultiSelect";
+
+} from "@/components/multiselect/MultiSelect";
+import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
+import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
+import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
+import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 
 export function CoverSheetsConfigEditor() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");

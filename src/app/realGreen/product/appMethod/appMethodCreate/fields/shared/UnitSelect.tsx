@@ -1,10 +1,11 @@
 import {
   MultiSelect,
-  MultiSelectTrigger,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectValue,
-} from "@/components/MultiSelect";
+
+} from "@/components/multiselect/MultiSelect";
+import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
+import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
+import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
+import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 
 interface UnitSelectProps<T extends string> {
   units: readonly T[];

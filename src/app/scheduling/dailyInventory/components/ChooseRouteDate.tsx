@@ -1,22 +1,20 @@
-import { useTechRoute } from "@/app/scheduling/techRoute/useTechRoute";
+import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
 import { useSelector } from "react-redux";
-import { techRouteSelect } from "@/app/scheduling/techRoute/techRouteSelect";
-import { DatePicker } from "@/components/DatePicker";
-import {
-  MultiSelect,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectTrigger,
-} from "@/components/MultiSelect";
+import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
+import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
+import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
+import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
+import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 
 export function ChooseRouteDate() {
-  const { setRouteDate } = useTechRoute();
-  const routeDate = useSelector(techRouteSelect.routeDate);
-  const routeDates = useSelector(techRouteSelect.routeDates);
+  const { setRouteDate } = useLoadoutForm();
+  const routeDate = useSelector(loadoutFormSelect.routeDate);
+  const routeDates = useSelector(loadoutFormSelect.routeDates);
 
   return (
     <MultiSelect
+      mode="single"
       value={routeDate ? [routeDate] : []}
       onValueChange={(date) => setRouteDate(date[0])}
     >
@@ -33,11 +31,5 @@ export function ChooseRouteDate() {
         })}
       </MultiSelectContent>
     </MultiSelect>
-    // <DatePicker
-    //   className="w-full"
-    //   value={routeDate ?? undefined}
-    //   onChange={(date) => setRouteDate(date)}
-    //   allowedDates={routeDates}
-    // />
   );
 }

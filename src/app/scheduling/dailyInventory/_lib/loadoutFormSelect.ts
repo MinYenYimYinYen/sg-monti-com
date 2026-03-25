@@ -8,7 +8,7 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 
 const selectAuthTech = createSelector([authSelect.user], (user) => user?.saId);
-const selectTech = (state: AppState) => state.techRoute.tech;
+const selectTech = (state: AppState) => state.loadoutForm.tech;
 
 const selectDefaultTech = createSelector(
   [selectAuthTech, selectTech],
@@ -44,7 +44,7 @@ const selectGetRouteForDate = (date: string) =>
     return routesByDate.get(date) ?? [];
   });
 
-const selectRouteDate = (state: AppState) => state.techRoute.routeDate;
+const selectRouteDate = (state: AppState) => state.loadoutForm.routeDate;
 
 const selectServices = createSelector(
   [selectRouteDate, selectRoutesByDate],
@@ -68,13 +68,13 @@ const selectAvailableTechs = createSelector(
   },
 );
 
-const selectStartLoadout = (state: AppState) => state.techRoute.startLoadout;
+const selectStartLoadout = (state: AppState) => state.loadoutForm.startLoadout;
 
-const selectPendingProductSlots = (state: AppState) => state.techRoute.pendingProductSlots;
+const selectPendingProductSlots = (state: AppState) => state.loadoutForm.pendingProductSlots;
 
-const selectPendingSlotProducts = (state: AppState) => state.techRoute.pendingSlotProducts;
+const selectPendingSlotProducts = (state: AppState) => state.loadoutForm.pendingSlotProducts;
 
-const selectPendingSlotAmounts = (state: AppState) => state.techRoute.pendingSlotAmounts;
+const selectPendingSlotAmounts = (state: AppState) => state.loadoutForm.pendingSlotAmounts;
 
 const selectUsedProductIds = createSelector(
   [selectStartLoadout],
@@ -164,7 +164,7 @@ const selectProductsForPendingSlots = createSelector(
   },
 );
 
-export const techRouteSelect = {
+export const loadoutFormSelect = {
   routesByDate: selectRoutesByDate,
   routeDates: selectRouteDates,
   getRouteForDate: selectGetRouteForDate,

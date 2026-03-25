@@ -3,8 +3,8 @@ import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { getProductMasters } from "@/app/realGreen/customer/selectors/hydrateProductsPlanned";
 import {
   LoadoutBase,
-  LoadoutInventory,
-} from "@/app/realGreen/product/_lib/types/LoadoutTypes";
+  LoadoutStart,
+} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
@@ -36,19 +36,19 @@ export function hydrateLoadoutInventory(params: {
 function hydrateMasterInventory(params: {
   master: ProductMaster;
   size: number;
-}): LoadoutInventory["masters"][number] {
+}): LoadoutStart["masters"][number] {
   const { master, size } = params;
 
   // Group sub-products by appMethod
   const appMethodMap = new Map<
     string,
-    LoadoutInventory["masters"][number]["appMethods"][number]
+    LoadoutStart["masters"][number]["appMethods"][number]
   >();
 
   // Track which product IDs are claimed by appMethods
   const claimedProductIds = new Set<number>();
 
-  const nonAppMethodSubs: LoadoutInventory["masters"][number]["subProducts"] =
+  const nonAppMethodSubs: LoadoutStart["masters"][number]["subProducts"] =
     [];
 
   // First pass: identify appMethod containers and their claimed products
@@ -68,8 +68,11 @@ function hydrateMasterInventory(params: {
         };
 
         appMethodMap.set(appMethodId, {
+          appMethodId: subConfig.appMethodId!,
           appMethod: subConfig.appMethod!,
+          mixProductId: mixProduct.productId,
           mixProduct: mixProduct,
+          mixProductUnitId: mixProduct.unit.unitId,
           mixProductUnit: mixProduct.unit,
           plannedAmount: size * subConfig.rate,
           startAmount: null,
@@ -88,10 +91,12 @@ function hydrateMasterInventory(params: {
     if (!subConfig.subProduct) return;
 
     const subInventoryItem = {
+      productId: subConfig.subProduct.productId,
       product: subConfig.subProduct,
       plannedAmount: size * subConfig.rate,
       startAmount: null,
       finishAmount: null,
+      unitId: subConfig.subProduct.unit.unitId,
       unit: subConfig.subProduct.unit,
     };
 
@@ -122,10 +127,12 @@ function hydrateMasterInventory(params: {
   });
 
   return {
+    productId: master.productId,
     product: master,
     plannedAmount: size,
     startAmount: null,
     finishAmount: null,
+    unitId: master.unit.unitId,
     unit: master.unit,
     appMethods: Array.from(appMethodMap.values()),
     subProducts: nonAppMethodSubs,
