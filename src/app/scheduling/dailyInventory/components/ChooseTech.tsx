@@ -23,6 +23,7 @@ export function ChooseTech() {
       value={techId ? [techId] : []}
       onValueChange={(techs) => setTech(techs[0])}
       getDisplayValue={(techId) => employeeMap.get(techId)?.name || techId}
+      className={"bg-accent/20 rounded-md"}
     >
       <MultiSelectTrigger>
         <MultiSelectValue placeholder="Select a tech" />

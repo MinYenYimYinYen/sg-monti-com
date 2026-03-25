@@ -17,6 +17,7 @@ export function ChooseRouteDate() {
       mode="single"
       value={routeDate ? [routeDate] : []}
       onValueChange={(date) => setRouteDate(date[0])}
+      className={"bg-secondary/20 rounded-md"}
     >
       <MultiSelectTrigger>
         {routeDate ? prettyDate(routeDate, "eee, MMM dd") : "Select Date"}

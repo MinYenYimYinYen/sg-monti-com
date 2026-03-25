@@ -30,10 +30,10 @@ export default function TechRoute() {
             md("flex-row gap-4 w-96 flex-none"),
           )}
         >
-          <div className={"w-62 bg-accent/20 rounded-md"}>
+          <div className={"w-62"}>
             <ChooseTech />
           </div>
-          <div className={"w-48 bg-secondary/20 rounded-md"}>
+          <div className={"w-48"}>
             <ChooseRouteDate />
           </div>
         </div>

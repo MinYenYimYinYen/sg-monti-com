@@ -90,8 +90,8 @@ export function AppMethodSection({
         </div>
         <Input
           type="number"
-          placeholder="Start amount"
-          className="w-24"
+          placeholder={plannedAppMethod.mixProduct.unitConfig.conversions.load.unitLabel}
+          className="w-32"
           value={displayValue}
           onChange={(e) => {
             const loadValue = e.target.value ? parseFloat(e.target.value) : null;

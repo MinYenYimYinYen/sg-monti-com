@@ -84,7 +84,7 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
         return (
           <div
             key={sub.product.productId}
-            className={"flex items-center justify-between gap-2 bg-accent/10 rounded px-2 py-1"}
+            className={"flex items-center justify-between gap-2 bg-accent/10 rounded px-1 py-1"}
           >
             <div>
               <div className={"flex-1 text-sm text-foreground/90"}>
@@ -96,8 +96,8 @@ export function SubProductSection({ masterProductId }: SubProductSectionProps) {
             </div>
             <Input
               type="number"
-              placeholder="Start amount"
-              className="w-24"
+              placeholder={sub.product.unitConfig.conversions.load.unitLabel}
+              className="w-32"
               value={displayValue}
               onChange={(e) => {
                 const loadValue = e.target.value
