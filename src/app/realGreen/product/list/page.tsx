@@ -15,7 +15,7 @@ import SubsTab from "@/app/realGreen/product/list/tabs/SubsTab";
 import ConversionsTab from "@/app/realGreen/product/list/tabs/ConversionsTab";
 import { FooterPortal } from "@/components/FooterPortal";
 import { Modal } from "@/components/Modal";
-import { AppMethodCRUD } from "@/app/realGreen/product/appMethod/AppMethodCRUD";
+import { AppMethodCRUD } from "@/app/appMethod/AppMethodCRUD";
 import { Badge } from "@/style/components/badge";
 import { ProductsFooter } from "@/app/realGreen/product/list/tabs/components/ProductsFooter";
 

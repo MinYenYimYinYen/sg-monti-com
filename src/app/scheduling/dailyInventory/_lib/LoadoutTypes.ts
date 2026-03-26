@@ -1,7 +1,7 @@
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
+import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 
 export type LoadoutBase = {

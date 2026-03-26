@@ -22,10 +22,10 @@ import {
 } from "@/style/components/select";
 import { Label } from "@/style/components/label";
 import { AppMethod } from "./AppMethodTypes";
-import { productSelect } from "../_lib/selectors/productSelectors";
-import { getAffectedProducts, AffectedProduct } from "../_lib/selectors/getAffectedProducts";
+import { productSelect } from "../realGreen/product/_lib/selectors/productSelectors";
+import { getAffectedProducts, AffectedProduct } from "../realGreen/product/_lib/selectors/getAffectedProducts";
 import { useAppMethod } from "./useAppMethod";
-import { useProduct } from "../_lib/hooks/useProduct";
+import { useProduct } from "../realGreen/product/_lib/hooks/useProduct";
 import { appMethodSelect } from "./appMethodSelect";
 import { AlertTriangle } from "lucide-react";
 

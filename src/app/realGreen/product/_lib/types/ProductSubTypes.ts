@@ -4,7 +4,7 @@ import {
   ProductCore,
 } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
+import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 
 export type ProductSubCore = ProductCore & {
   isProduction: true;

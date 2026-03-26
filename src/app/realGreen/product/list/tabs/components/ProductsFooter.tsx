@@ -1,7 +1,7 @@
 import { FooterPortal } from "@/components/FooterPortal";
 import { Badge } from "@/style/components/badge";
 import { Modal } from "@/components/Modal";
-import { AppMethodCRUD } from "@/app/realGreen/product/appMethod/AppMethodCRUD";
+import { AppMethodCRUD } from "@/app/appMethod/AppMethodCRUD";
 import React, { useState } from "react";
 
 export function ProductsFooter() {

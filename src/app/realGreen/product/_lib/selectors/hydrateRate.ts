@@ -1,5 +1,5 @@
 import { SubProductConfigDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
+import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 import { UnitMath } from "@/app/realGreen/product/unitConfig/UnitMath";
 import { UnitLabel, AreaUnit, VolumeUnit, WeightUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";

@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "@/store/index";
+import { AppDispatch } from "@/store";
 import { createAppMethodActions } from "./createAppMethodSlice";
 import {
   VolumeUnit,
@@ -8,9 +8,9 @@ import {
   TimeUnit,
   WeightUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
-import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
+import { solverSelect } from "@/app/appMethod/appMethodCreate/selectors/solverSelect";
 import { useEffect } from "react";
-import { fieldComponentsSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/fieldComponentsSelect";
+import { fieldComponentsSelect } from "@/app/appMethod/appMethodCreate/selectors/fieldComponentsSelect";
 import { round } from "@/lib/primatives/numbers/round";
 
 /**

@@ -23,7 +23,7 @@ import {
   PatternWidthField,
   FlowRateField,
   CoverageField,
-} from "./fields";
+} from "./components/fields";
 import { useFormFieldValues } from "./useFormFieldValues";
 import { solverSelect } from "./selectors/solverSelect";
 import { useAppMethod } from "../useAppMethod";

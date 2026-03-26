@@ -1,11 +1,11 @@
 import { Input } from "@/style/components/input";
 import { useSelector } from "react-redux";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
-import { useFormFieldValues } from "@/app/realGreen/product/appMethod/appMethodCreate/useFormFieldValues";
-import { fieldComponentsSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/fieldComponentsSelect";
-import { solverSelect } from "@/app/realGreen/product/appMethod/appMethodCreate/selectors/solverSelect";
-import { FieldLabel } from "./shared/FieldLabel";
-import { UnitSelect } from "./shared/UnitSelect";
+import { useFormFieldValues } from "@/app/appMethod/appMethodCreate/useFormFieldValues";
+import { fieldComponentsSelect } from "@/app/appMethod/appMethodCreate/selectors/fieldComponentsSelect";
+import { solverSelect } from "@/app/appMethod/appMethodCreate/selectors/solverSelect";
+import { FieldLabel } from "../shared/FieldLabel";
+import { UnitSelect } from "../shared/UnitSelect";
 
 const volumeUnits = UnitUtils.volume.getAllUnits();
 const weightUnits = UnitUtils.weight.getAllUnits();

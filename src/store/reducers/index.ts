@@ -20,8 +20,8 @@ import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
 import csvReducer from "@/app/csv/_lib/csvSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
-import { appMethodReducer } from "@/app/realGreen/product/appMethod/appMethodSlice";
-import createAppMethodReducer from "@/app/realGreen/product/appMethod/appMethodCreate/createAppMethodSlice";
+import { appMethodReducer } from "@/app/appMethod/appMethodSlice";
+import createAppMethodReducer from "@/app/appMethod/appMethodCreate/createAppMethodSlice";
 import { loadoutFormReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
 import { loadoutReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
 

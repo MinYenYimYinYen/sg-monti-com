@@ -1,7 +1,7 @@
-import { AppMethodDoc } from "@/app/realGreen/product/appMethod/AppMethodTypes";
+import { AppMethodDoc } from "@/app/appMethod/AppMethodTypes";
 import { createSlice } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
-import { AppMethodContract } from "@/app/realGreen/product/appMethod/api/AppMethodContract";
+import { AppMethodContract } from "@/app/appMethod/api/AppMethodContract";
 
 type appMethodState = {
   appMethodDocs: AppMethodDoc[];
@@ -42,19 +42,19 @@ const appMethodSlice = createSlice({
 const getAll = createStandardThunk<AppMethodContract, "getAll">({
   opName: "getAll",
   typePrefix: "appMethod/getAll",
-  apiPath: "/realGreen/product/appMethod/api",
+  apiPath: "/appMethod/api",
 });
 
 const upsert = createStandardThunk<AppMethodContract, "upsert">({
   opName: "upsert",
   typePrefix: "appMethod/upsert",
-  apiPath: "/realGreen/product/appMethod/api",
+  apiPath: "/appMethod/api",
 });
 
 const deleteOne = createStandardThunk<AppMethodContract, "deleteOne">({
   opName: "deleteOne",
   typePrefix: "appMethod/deleteOne",
-  apiPath: "/realGreen/product/appMethod/api",
+  apiPath: "/appMethod/api",
 });
 
 export const appMethodReducer = appMethodSlice.reducer;

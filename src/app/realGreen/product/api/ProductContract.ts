@@ -9,7 +9,7 @@ import { ProductSingleDoc } from "@/app/realGreen/product/_lib/types/ProductSing
 import { ProductSubDoc } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductCommonDoc } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
-import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
+import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 
 // Server response structure
 export type ProductsResponse = {

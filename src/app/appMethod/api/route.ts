@@ -1,11 +1,11 @@
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
-import { AppMethodContract } from "@/app/realGreen/product/appMethod/api/AppMethodContract";
+import { AppMethodContract } from "@/app/appMethod/api/AppMethodContract";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { AppMethodModel } from "@/app/realGreen/product/appMethod/AppMethodModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
-import { AppMethodDoc } from "@/app/realGreen/product/appMethod/AppMethodTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { ProductDocPropsModel } from "@/app/realGreen/product/_lib/models/ProductDocPropsModel";
+import { AppMethodModel } from "@/app/appMethod/AppMethodModel";
+import { AppMethodDoc } from "@/app/appMethod/AppMethodTypes";
 
 const handlers: HandlerMap<AppMethodContract> = {
   getAll: {

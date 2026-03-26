@@ -14,7 +14,7 @@ import {
 import { ChevronDown, CircleX } from "lucide-react";
 import { SubProductConfigDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
+import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import {
   MultiSelect,
 

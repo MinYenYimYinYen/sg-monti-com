@@ -40,8 +40,8 @@ import {
   ProductMaster,
   SubProductConfigDoc,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { useAppMethod } from "@/app/realGreen/product/appMethod/useAppMethod";
-import { appMethodSelect } from "@/app/realGreen/product/appMethod/appMethodSelect";
+import { useAppMethod } from "@/app/appMethod/useAppMethod";
+import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import { MasterSubConfig } from "@/app/realGreen/product/list/tabs/masters/MasterSubConfig";
 
 interface MasterEditPanelProps {

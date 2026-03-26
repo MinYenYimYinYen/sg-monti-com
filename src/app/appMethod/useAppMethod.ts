@@ -1,11 +1,11 @@
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { useEffect } from "react";
-import { appMethodActions } from "@/app/realGreen/product/appMethod/appMethodSlice";
+import { appMethodActions } from "@/app/appMethod/appMethodSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import {
   AppMethod,
   AppMethodDoc,
-} from "@/app/realGreen/product/appMethod/AppMethodTypes";
+} from "@/app/appMethod/AppMethodTypes";
 
 export function useAppMethod({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();

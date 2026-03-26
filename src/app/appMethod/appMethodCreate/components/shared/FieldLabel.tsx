@@ -6,7 +6,7 @@ import {
 } from "@/style/components/popover";
 import { Info } from "lucide-react";
 import { camelDisplay } from "@/lib/primatives/string/camelDisplay";
-import { FieldKey } from "@/app/realGreen/product/appMethod/appMethodCreate/createAppMethodSlice";
+import { FieldKey } from "@/app/appMethod/appMethodCreate/createAppMethodSlice";
 
 interface FieldLabelProps {
   label: FieldKey;

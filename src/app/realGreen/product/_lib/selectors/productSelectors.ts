@@ -17,8 +17,8 @@ import {
 } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
-import { appMethodSelect } from "@/app/realGreen/product/appMethod/appMethodSelect";
-import { AppMethod } from "@/app/realGreen/product/appMethod/AppMethodTypes";
+import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
+import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { hydrateRate } from "@/app/realGreen/product/_lib/selectors/hydrateRate";
 
 const selectProductMasterDocs = (state: AppState) =>

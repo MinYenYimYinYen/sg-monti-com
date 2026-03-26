@@ -18,7 +18,7 @@ import {
 import { appMethodSelect } from "./appMethodSelect";
 import { useAppMethod } from "./useAppMethod";
 import { AppMethodCreate } from "./appMethodCreate/AppMethodCreate";
-import { useFormFieldValues } from "@/app/realGreen/product/appMethod/appMethodCreate/useFormFieldValues";
+import { useFormFieldValues } from "@/app/appMethod/appMethodCreate/useFormFieldValues";
 
 export function AppMethodCRUD() {
   useAppMethod({ autoLoad: true });

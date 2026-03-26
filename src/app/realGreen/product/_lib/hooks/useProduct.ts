@@ -5,8 +5,8 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { SubProductConfigDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig";
-import { appMethodActions } from "@/app/realGreen/product/appMethod/appMethodSlice";
-import { useAppMethod } from "@/app/realGreen/product/appMethod/useAppMethod";
+import { appMethodActions } from "@/app/appMethod/appMethodSlice";
+import { useAppMethod } from "@/app/appMethod/useAppMethod";
 
 export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();
