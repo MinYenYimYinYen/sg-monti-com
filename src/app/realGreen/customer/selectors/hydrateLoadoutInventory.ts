@@ -4,7 +4,7 @@ import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { waterProduct } from "@/app/equipment/waterProduct";
-import { EquipmentEntry } from "@/app/equipment/EquipmentTypes";
+import { Equipment } from "@/app/equipment/EquipmentTypes";
 
 /**
  * getProductMasters — filters product rules by size and returns matching ProductMasters.
@@ -27,20 +27,20 @@ export function getProductMasters(servCode: ServCode, size: number): ProductMast
 }
 
 /**
- * ScenarioSelection — the worker's choice of scenario for a given master product.
- * Stored in Redux loadoutFormSlice.scenarioSelections.
+ * PackageSelection — the worker's choice of equipment package for a given master product.
+ * Stored in Redux loadoutFormSlice.packageSelections.
  */
-export type ScenarioSelection = {
+export type PackageSelection = {
   masterProductId: number;
-  selectedScenarioId: string;
+  selectedPackageId: string;
 };
 
 export function hydrateLoadoutInventory(params: {
   servDoc: ServiceDoc;
   servCodeMap: Map<string, ServCode>;
-  scenarioSelections?: ScenarioSelection[];
+  packageSelections?: PackageSelection[];
 }): LoadoutBase {
-  const { servDoc, servCodeMap, scenarioSelections = [] } = params;
+  const { servDoc, servCodeMap, packageSelections = [] } = params;
 
   const servCode = servCodeMap.get(servDoc.servCodeId);
   if (!servCode) return { masters: [], singles: [], subProducts: [] };
@@ -51,7 +51,7 @@ export function hydrateLoadoutInventory(params: {
     hydrateMasterInventory({
       master,
       size: servDoc.size,
-      scenarioSelections,
+      packageSelections,
     }),
   );
 
@@ -61,37 +61,37 @@ export function hydrateLoadoutInventory(params: {
 function hydrateMasterInventory(params: {
   master: ProductMaster;
   size: number;
-  scenarioSelections: ScenarioSelection[];
+  packageSelections: PackageSelection[];
 }): LoadoutBase["masters"][number] {
-  const { master, size, scenarioSelections } = params;
+  const { master, size, packageSelections } = params;
 
-  // Find the selected scenario for this master
-  const selection = scenarioSelections.find(
+  // Find the selected package for this master
+  const selection = packageSelections.find(
     (s) => s.masterProductId === master.productId,
   );
 
-  // If no scenario selected → equipmentEntries is empty (UI will prompt for selection)
+  // If no package selected → equipmentEntries is empty (UI will prompt for selection)
   if (!selection) {
     return buildMasterEntry({ master, size, equipmentEntries: [] });
   }
 
-  const selectedScenario = master.equipmentScenarios.find(
-    (s) => s.scenarioId === selection.selectedScenarioId,
+  const selectedPackage = master.equipmentPackages.find(
+    (p) => p.packageId === selection.selectedPackageId,
   );
 
-  // Scenario not found (stale selection) → empty entries
-  if (!selectedScenario) {
+  // Package not found (stale selection) → empty entries
+  if (!selectedPackage) {
     return buildMasterEntry({ master, size, equipmentEntries: [] });
   }
 
-  // Build the set of product IDs claimed by any equipment entry
+  // Build the set of product IDs claimed by any equipment item in this package
   const claimedProductIds = new Set<number>(
-    selectedScenario.equipmentEntries.flatMap((e) => e.mixedProductIds),
+    selectedPackage.equipments.flatMap((e: Equipment) => e.mixedProductIds),
   );
 
-  // Build equipment entries — selectedScenario.equipmentEntries are EquipmentEntry (hydrated)
+  // Build equipment entries from the selected package's hydrated equipment items
   const equipmentEntries: LoadoutBase["masters"][number]["equipmentEntries"] =
-    (selectedScenario.equipmentEntries as EquipmentEntry[]).map((entry) => {
+    selectedPackage.equipments.map((entry: Equipment) => {
       // Water carrier: use waterProduct constant, override productCode/description with equipmentId
       const mixProduct: ProductSub = {
         ...waterProduct,
@@ -150,7 +150,7 @@ function buildMasterEntry(params: {
 }): LoadoutBase["masters"][number] {
   const { master, size, equipmentEntries, subProducts } = params;
 
-  // When no scenario selected, all sub-products go to master.subProducts
+  // When no package selected, all sub-products go to master.subProducts
   const fallbackSubProducts = subProducts ?? master.subProductConfigs.map((config) => ({
     productId: config.subProduct.productId,
     product: config.subProduct,

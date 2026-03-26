@@ -54,7 +54,7 @@ export const baseProductMasterCore: ProductMasterCore = {
 export const baseProductMasterDocProps: ProductMasterDocProps = {
   productId: baseNumId,
   subProductConfigDocs: [],
-  equipmentScenarioDocs: [],
+  equipmentPackageIds: [],
   category: baseStrId,
   unit: baseUnitCRM,
   createdAt: "",
@@ -68,7 +68,7 @@ export const baseProductMasterDoc: ProductMasterDoc = {
 
 export const baseProductMasterProps: ProductMasterProps = {
   subProductConfigs: [],
-  equipmentScenarios: [],
+  equipmentPackages: [],
   unitConfig: baseProductUnitConfig,
   unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
   productType: "master",

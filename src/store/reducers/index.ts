@@ -21,6 +21,8 @@ import { customerReducer } from "@/store/reducers/customerReducers";
 import csvReducer from "@/app/csv/_lib/csvSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
 import { appMethodReducer } from "@/app/appMethod/appMethodSlice";
+import { equipmentReducer } from "@/app/equipment/equipmentSlice";
+import { equipmentPackageReducer } from "@/app/equipment/equipmentPackage/equipmentPackageSlice";
 import createAppMethodReducer from "@/app/appMethod/appMethodCreate/createAppMethodSlice";
 import { loadoutFormReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
 import { loadoutReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
@@ -47,6 +49,8 @@ const rootReducer = combineReducers({
   serviceCondition: serviceConditionReducer,
   taxCode: taxCodeReducer,
   zipCode: zipCodeReducer,
+  equipment: equipmentReducer,
+  equipmentPackage: equipmentPackageReducer,
   customer: customerReducer,
   csv: csvReducer,
 });

@@ -6,29 +6,31 @@ Currently a carrier sub-product (Water) on a `ProductMaster` can reference a sin
 via `SubProductConfigDoc.appMethodId`. The AppMethod drives the water rate calculation.
 The new requirement is to support multiple pieces of equipment running simultaneously on the same
 job (e.g., Main Tank + Injection Unit), each with its own water rate and its own set of mixed
-products. Workers choose a pre-defined **scenario** (complete truck configuration) at the start
+products. Workers choose a pre-defined **package** (complete truck configuration) at the start
 of their day.
 
 ---
 
 ## Core Concepts
 
-### `EquipmentEntry`
-One piece of equipment. Has its own AppMethod (water rate) and its own list of mixed products.
+### `Equipment`
+One piece of physical equipment (e.g., Main Tank, Injection Unit). A persisted entity with its
+own MongoDB collection. Has its own AppMethod (water rate) and its own list of mixed products.
 Water is auto-instantiated (client-side constant) when `AppMethod.needsWater === true`.
 The water row's `productCode` and `description` are both set to `equipmentId`.
 
-### `EquipmentScenario`
-A complete, pre-defined truck configuration. Contains one or more `EquipmentEntry` items.
-Workers pick exactly one scenario per master product per day (radio select, not persisted).
+### `EquipmentPackage`
+A complete, pre-defined truck configuration. A persisted entity with its own MongoDB collection.
+Contains one or more `Equipment` items (stored as embedded `EquipmentDoc` copies).
+Workers pick exactly one package per master product per day (radio select).
 
 **Example — "Tank Mix" master:**
 ```
-Scenario A: "Full Rig"
+Package A: "Full Rig"
   - MAIN_TANK      → TANK_MIX_STD AppMethod, mixes [B, C]
   - INJECTION_UNIT → INJECTION_STD AppMethod, mixes [A]
 
-Scenario B: "Main Tank Only"
+Package B: "Main Tank Only"
   - MAIN_TANK → TANK_MIX_STD AppMethod, mixes [A, B, C]
 ```
 
@@ -46,30 +48,43 @@ AppMethod = AppMethodResult & {
 }
 ```
 
-### 2. New types in `ProductMasterTypes.ts`
+### 2. New types in `src/app/equipment/`
+
+Both `Equipment` and `EquipmentPackage` are full Data Modules (own MongoDB collection,
+Contract, Route, Slice, Selectors, Hook, CRUD UI).
+
 ```
-EquipmentEntry = {
-  equipmentId: string        // user-defined, unique within master (e.g. "MAIN_TANK")
+// EquipmentTypes.ts
+
+EquipmentDoc = {
+  equipmentId: string        // natural key (e.g. "MAIN_TANK")
   description: string        // display label
   appMethodId: string        // references AppMethod
   mixedProductIds: number[]  // sub-products mixed into this equipment's water
 }
 
-EquipmentScenario = {
-  scenarioId: string         // user-defined (e.g. "FULL_RIG")
-  description: string        // display label (e.g. "Full Rig")
-  equipmentEntries: EquipmentEntry[]
-}
-
-// Hydrated version (selector output)
-EquipmentEntryHydrated = EquipmentEntry & {
+EquipmentProps = {
   appMethod: AppMethod
   waterRate: number          // coverage.volume / coverage.area → units/ksf
 }
 
-EquipmentScenarioHydrated = EquipmentScenario & {
-  equipmentEntries: EquipmentEntryHydrated[]
+Equipment = EquipmentDoc & EquipmentProps
+```
+
+```
+// EquipmentPackageTypes.ts
+
+EquipmentPackageDoc = {
+  packageId: string          // natural key (e.g. "FULL_RIG")
+  description: string        // display label (e.g. "Full Rig")
+  equipmentDocs: EquipmentDoc[]  // embedded copies of Equipment items in this package
 }
+
+EquipmentPackageProps = {
+  equipmentDocs: Equipment[] // hydrated — EquipmentDoc & EquipmentProps
+}
+
+EquipmentPackage = EquipmentPackageDoc & EquipmentPackageProps
 ```
 
 ### 3. `SubProductConfigDoc` — REMOVE AppMethod fields
@@ -91,7 +106,7 @@ SubProductConfigDoc = {
 }
 ```
 
-### 4. `ProductMasterDocProps` — add `equipmentScenarios`
+### 4. `ProductMasterDocProps` — add `equipmentPackageDocs`
 ```
 // BEFORE
 ProductMasterDocProps = CreatedUpdated & ProductCommonDocProps & {
@@ -102,7 +117,7 @@ ProductMasterDocProps = CreatedUpdated & ProductCommonDocProps & {
 // AFTER
 ProductMasterDocProps = CreatedUpdated & ProductCommonDocProps & {
   productId: number
-  equipmentScenarios: EquipmentScenario[]   // NEW
+  equipmentPackageDocs: EquipmentPackageDoc[]   // NEW — embedded packages for this master
   subProductConfigDocs: SubProductConfigDoc[]
 }
 ```
@@ -124,7 +139,7 @@ SubProductConfig = SubProductConfigDoc & {
 }
 ```
 
-### 6. `ProductMasterProps` — add hydrated scenarios
+### 6. `ProductMasterProps` — add hydrated packages
 ```
 // BEFORE
 ProductMasterProps = ProductCommonProps & {
@@ -134,7 +149,7 @@ ProductMasterProps = ProductCommonProps & {
 // AFTER
 ProductMasterProps = ProductCommonProps & {
   subProductConfigs: SubProductConfig[]
-  equipmentScenarios: EquipmentScenarioHydrated[]   // NEW
+  equipmentPackages: EquipmentPackage[]   // NEW
 }
 ```
 
@@ -147,13 +162,33 @@ ProductMasterProps = ProductCommonProps & {
 + needsWater: { type: Boolean, required: true, default: true }
 ```
 
+### `EquipmentModel.ts` (new collection)
+```
+equipmentId:      String (required, unique)
+description:      String (required)
+appMethodId:      String (required)
+mixedProductIds:  [Number] (default: [])
+```
+
+### `EquipmentPackageModel.ts` (new collection)
+```
+packageId:    String (required, unique)
+description:  String (required)
+equipmentDocs: [{
+  equipmentId:      String (required)
+  description:      String (required)
+  appMethodId:      String (required)
+  mixedProductIds:  [Number] (default: [])
+}]
+```
+
 ### `ProductDocPropsModel.ts`
 ```
 // ADD top-level field:
-equipmentScenarios: [{
-  scenarioId:   String (required)
+equipmentPackageDocs: [{
+  packageId:    String (required)
   description:  String (required)
-  equipmentEntries: [{
+  equipmentDocs: [{
     equipmentId:      String (required)
     description:      String (required)
     appMethodId:      String (required)
@@ -185,7 +220,7 @@ export const waterProductSub: ProductSub = {
 }
 ```
 
-When instantiating water for a specific `EquipmentEntry`, override `productCode` and `description`
+When instantiating water for a specific `Equipment` entry, override `productCode` and `description`
 with `equipmentId`:
 ```
 const waterForEquipment: ProductSub = {
@@ -201,11 +236,11 @@ const waterForEquipment: ProductSub = {
 ## Selector Changes (`productSelectors.ts`)
 
 - `hydrateRate` simplifies: no more AppMethod lookup per sub-config, just returns `storedRate`
-- New `hydrateEquipmentScenarios(doc, appMethodMap)` helper:
-  - Maps each `EquipmentScenario` → `EquipmentScenarioHydrated`
-  - For each `EquipmentEntry`: looks up `AppMethod` from `appMethodMap`, calculates `waterRate`
+- New `hydrateEquipmentPackages(doc, appMethodMap)` helper:
+  - Maps each `EquipmentPackageDoc` → `EquipmentPackage`
+  - For each `EquipmentDoc`: looks up `AppMethod` from `appMethodMap`, calculates `waterRate`
     from `appMethod.coverage.volume / coverage.area` (normalized to ksf)
-- `selectProductMasters` adds `equipmentScenarios: hydrateEquipmentScenarios(doc, appMethodMap)`
+- `selectProductMasters` adds `equipmentPackages: hydrateEquipmentPackages(doc, appMethodMap)`
 
 ---
 
@@ -214,11 +249,11 @@ const waterForEquipment: ProductSub = {
 Currently groups sub-products by `appMethodId` on each sub-config.
 
 **After this change:**
-- Reads `master.equipmentScenarios` (already hydrated)
-- Filters to the worker's selected scenario (from Redux `scenarioSelections`)
-- For each `EquipmentEntry` in the selected scenario:
-  - Creates one `appMethods[]` entry in the loadout:
-    - `appMethodId` = `entry.equipmentId` (bucket key)
+- Reads `master.equipmentPackages` (already hydrated)
+- Filters to the worker's selected package (from Redux `packageSelections`)
+- For each `Equipment` in the selected package:
+  - Creates one `equipmentEntries[]` entry in the loadout:
+    - `equipmentId` = `entry.equipmentId` (bucket key)
     - `mixProduct` = `{ ...waterProductSub, productCode: entry.equipmentId, description: entry.equipmentId }`
     - `plannedAmount` = `size × entry.waterRate`
     - `subProducts` = sub-products from `entry.mixedProductIds`
@@ -231,24 +266,24 @@ Currently groups sub-products by `appMethodId` on each sub-config.
 New state in `loadoutFormSlice`:
 ```
 // Added to LoadoutFormState:
-scenarioSelections: {
+packageSelections: {
   masterProductId: number
-  selectedScenarioId: string
+  selectedPackageId: string
 }[]
 ```
 
 New actions:
 ```
-setScenarioSelection(masterProductId, scenarioId)
-clearScenarioSelections()
+setPackageSelection(masterProductId, packageId)
+clearPackageSelections()
 ```
 
 **Loadout form behavior:**
-- For each master with `equipmentScenarios.length > 0`, a scenario selection prompt appears
+- For each master with `equipmentPackages.length > 0`, a package selection prompt appears
   before the loadout rows are shown
-- If only one scenario exists → auto-selected, no prompt
-- Worker picks one scenario (radio button) → loadout populates with correct water rows
-- Changing scenario resets that master's `startAmount`/`finishAmount` values
+- If only one package exists → auto-selected, no prompt
+- Worker picks one package (radio button) → loadout populates with correct water rows
+- Changing package resets that master's `startAmount`/`finishAmount` values
 
 ---
 
@@ -256,11 +291,11 @@ clearScenarioSelections()
 
 - Remove per-sub `useAppMethod` checkbox, `appMethodId` dropdown, `mixedProductIds` multi-select
   from `SubProductConfigDoc` editing
-- Add new **Equipment Scenarios** accordion section to `MasterEditPanel`:
-  - List of scenarios (each showing: `scenarioId`, `description`, list of equipment entries)
-  - Add / Edit / Remove scenarios
-  - Each scenario editor: scenario ID + description fields, list of equipment entries
-  - Each equipment entry editor: `equipmentId`, `description`, AppMethod selector,
+- Add new **Equipment Packages** accordion section to `MasterEditPanel`:
+  - List of packages (each showing: `packageId`, `description`, list of equipment items)
+  - Add / Edit / Remove packages
+  - Each package editor: package ID + description fields, list of equipment items
+  - Each equipment item editor: `equipmentId`, `description`, AppMethod selector,
     mixed products multi-select (from master's sub-products)
   - `needsWater` is shown on the AppMethod (read-only in this context)
 
@@ -268,12 +303,12 @@ clearScenarioSelections()
 
 ## Mix Chart Changes
 
-- Mix chart page gets an **Equipment Scenario** selector per master (radio group)
-- Selecting a scenario filters the chart to show only that scenario's equipment entries
-- Each `EquipmentEntry` can generate its own chart (separate PDF per entry)
+- Mix chart page gets an **Equipment Package** selector per master (radio group)
+- Selecting a package filters the chart to show only that package's equipment items
+- Each `Equipment` item can generate its own chart (separate PDF per item)
 - The pivot column selector (size vs. water vs. any sub-product) remains per chart
-- **Bonus:** When a scenario has multiple equipment entries, offer "Generate All Charts"
-  to produce one PDF per entry
+- **Bonus:** When a package has multiple equipment items, offer "Generate All Charts"
+  to produce one PDF per item
 
 ---
 
@@ -283,11 +318,11 @@ One-time migration (API handler or script) for existing data:
 
 **For each `ProductMasterDoc` with any `subProductConfigDoc` where `useAppMethod === true`:**
 1. Find the carrier sub-config (the one with `useAppMethod: true`)
-2. Create one `EquipmentScenario`:
+2. Create one `EquipmentPackage` with one `Equipment` item:
    ```
-   scenarioId:   existingAppMethodId
+   packageId:    existingAppMethodId
    description:  existingAppMethod.description
-   equipmentEntries: [{
+   equipmentDocs: [{
      equipmentId:     existingAppMethodId
      description:     existingAppMethod.description
      appMethodId:     existingAppMethodId
@@ -296,24 +331,31 @@ One-time migration (API handler or script) for existing data:
    ```
 3. Remove `appMethodId`, `useAppMethod`, `mixedProductIds` from all `subProductConfigDocs`
 4. Remove the water sub-product entry from `subProductConfigDocs` (auto-injected going forward)
+5. Write `equipmentPackageDocs` to the document
 
-**For all `AppMethod` documents:** add `needsWater: true`.
+For all `AppMethod` documents: add `needsWater: true`.
+
+**Also seed `Equipment` collection:** For each unique `equipmentId` created above, insert a
+corresponding `Equipment` document so the standalone collection is populated.
 
 ---
 
 ## Implementation Order
 
 1. `AppMethod` — add `needsWater` (type + model + API + CRUD UI checkbox)
-2. New types: `EquipmentEntry`, `EquipmentScenario`, hydrated variants (`ProductMasterTypes.ts`)
-3. `ProductDocPropsModel` schema update
-4. Migration script / handler
-5. `waterProduct.ts` — client-side water constant
-6. `productSelectors.ts` — `hydrateEquipmentScenarios`, simplify `hydrateRate`
-7. `hydrateLoadoutInventory` — read from `equipmentScenarios`
-8. `loadoutFormSlice` — add `scenarioSelections` state + actions
-9. `LoadoutForm` / `MasterProductCard` — scenario selection prompt UI
-10. `MasterEditPanel` / `MasterSubConfig` — Equipment Scenarios section
-11. Mix chart — scenario selector, per-entry chart generation
+2. New types: `EquipmentDoc`, `EquipmentProps`, `Equipment`, `EquipmentPackageDoc`, `EquipmentPackageProps`, `EquipmentPackage`
+3. `EquipmentModel.ts` + `EquipmentPackageModel.ts` schema (new collections)
+4. `ProductDocPropsModel` schema update (add `equipmentPackageDocs`, remove old sub-config fields)
+5. Migration script / handler
+6. `waterProduct.ts` — client-side water constant
+7. `productSelectors.ts` — `hydrateEquipmentPackages`, simplify `hydrateRate`
+8. `hydrateLoadoutInventory` — read from `equipmentPackages`
+9. `loadoutFormSlice` — add `packageSelections` state + actions
+10. `LoadoutForm` / `MasterProductCard` — package selection prompt UI
+11. `MasterEditPanel` / `MasterSubConfig` — Equipment Packages section
+12. Equipment Data Module — Contract, Route, Slice, Selectors, Hook, CRUD UI
+13. EquipmentPackage Data Module — Contract, Route, Slice, Selectors, Hook, CRUD UI
+14. Mix chart — package selector, per-equipment chart generation
 
 ---
 
@@ -340,7 +382,7 @@ masters[]:
 ```
 masters[]:
   equipmentEntries[]:        ← RENAMED from appMethods
-    equipmentId: string      ← RENAMED from appMethodId (bucket key = EquipmentEntry.equipmentId)
+    equipmentId: string      ← RENAMED from appMethodId (bucket key = Equipment.equipmentId)
     appMethod: AppMethod      ← unchanged
     mixProductId, mixProduct, mixProductUnitId, mixProductUnit  ← unchanged
     plannedAmount, startAmount, finishAmount  ← unchanged
@@ -370,92 +412,67 @@ Return shape also renames `appMethods` → `equipmentEntries`. No other logic ch
 
 ---
 
-## Equipment: Entity vs Type
+## Equipment and EquipmentPackage as Data Modules
 
-### The Question
-Should `Equipment` (the physical machine — Main Tank, Injection Unit) be a **persisted entity**
-(its own MongoDB collection, its own Redux slice, its own CRUD UI) rather than just a type
-embedded inside `EquipmentScenario`?
+Both `Equipment` and `EquipmentPackage` are implemented as full Data Modules following the
+project's Data Module Pattern (Contract, Route, Slice, Selectors, Hook, CRUD UI). Both have
+their own MongoDB collections and their own Redux slices.
 
-### Current Plan (Type Only)
-`EquipmentEntry` is defined inline within `EquipmentScenario` on the master product:
+### `Equipment` Data Module
+
 ```
-ProductMasterDoc.equipmentScenarios[].equipmentEntries[]:
-  equipmentId: string      ← user-defined string, not a foreign key
+// Persisted entity — own MongoDB collection
+EquipmentDoc = {
+  equipmentId: string        // natural key (e.g., "MAIN_TANK")
   description: string
-  appMethodId: string      ← references AppMethod entity
-  mixedProductIds: number[]
-```
-`equipmentId` is just a string label. There is no `Equipment` collection.
-
-### The Case for an Entity
-
-If `Equipment` were a persisted entity:
-```
-Equipment = {
-  equipmentId: string       // natural key (e.g., "MAIN_TANK")
-  description: string
-  appMethodId: string       // default AppMethod for this machine
-  notes: string             // e.g., serial number, purchase date
-  // future: purchaseDate, lastServiceDate, estimatedHours, etc.
+  appMethodId: string        // default AppMethod for this machine
+  mixedProductIds: number[]  // default mixed products
 }
+
+EquipmentProps = {
+  appMethod: AppMethod
+  waterRate: number
+}
+
+Equipment = EquipmentDoc & EquipmentProps
 ```
 
-Benefits:
-- **Reuse across masters** — the same "Main Tank" machine can be referenced by multiple
-  master products without duplicating its description and AppMethod
+- **Reuse across packages** — the same "Main Tank" machine can be referenced by multiple
+  packages without duplicating its description and AppMethod
 - **Machine-level reporting** — total planned hours/volume across all products that use
   this machine, aggregated at the equipment level
 - **Capital budgeting** — track machine age, planned replacement cycles
-- **Single source of truth** — changing the AppMethod for "Main Tank" updates all masters
-  that reference it, rather than requiring edits to each master's scenario
+- **CRUD UI** — simple form: ID + description + AppMethod selector + mixed products
 
-Tradeoffs:
-- Adds a new data module (Contract, Route, Slice, Selectors, Hook, CRUD UI)
-- `EquipmentEntry` becomes a foreign key reference (`equipmentId`) rather than an inline
-  definition — similar to how `SubProductConfigDoc.appMethodId` references `AppMethod`
-- `EquipmentScenario` becomes a list of `equipmentId` references + per-scenario overrides
-  (e.g., which products are mixed in this scenario's use of that machine)
-
-### Proposed Entity Model (if we go this route)
+### `EquipmentPackage` Data Module
 
 ```
-// Persisted entity
-Equipment = {
-  equipmentId: string        // natural key
+// Persisted entity — own MongoDB collection
+EquipmentPackageDoc = {
+  packageId: string          // natural key (e.g., "FULL_RIG")
   description: string
-  defaultAppMethodId: string // default AppMethod for this machine
+  equipmentDocs: EquipmentDoc[]  // embedded copies (snapshot at time of package creation)
 }
 
-// EquipmentEntry becomes a scenario-specific override
-EquipmentEntry = {
-  equipmentId: string        // references Equipment entity
-  appMethodId: string        // can override Equipment.defaultAppMethodId per scenario
-  mixedProductIds: number[]  // which products are mixed in this scenario
+EquipmentPackageProps = {
+  equipmentDocs: Equipment[] // hydrated
 }
+
+EquipmentPackage = EquipmentPackageDoc & EquipmentPackageProps
 ```
 
-The `LoadoutBase.equipmentEntries[]` shape is unchanged — it still carries the hydrated
-`AppMethod` and `mixProduct`. The difference is that `equipmentId` is now a foreign key
-to a real `Equipment` document rather than a free-form string.
+- **Embedded copies** — `EquipmentDoc` items are embedded in the package (not FK references)
+  so a package is a self-contained snapshot. Editing an `Equipment` entity does not
+  automatically update existing packages — admin must update the package explicitly.
+- **CRUD UI** — package editor: ID + description + list of equipment items (each with
+  AppMethod selector and mixed products multi-select)
 
-### Recommendation
+### Relationship to `ProductMaster`
 
-**Introduce `Equipment` as a persisted entity.** The reasoning mirrors why `AppMethod` is
-an entity rather than an inline type:
-- Multiple masters can share the same machine
-- Machine-level metrics (hours, volume) are a natural future requirement
-- The CRUD UI is simple (just ID + description + default AppMethod selector)
-- The data module pattern makes this straightforward to add
-
-**However**, the `EquipmentEntry` within a scenario still needs its own `appMethodId` override
-field, because different scenarios may use the same machine with different AppMethods (e.g.,
-Main Tank at full flow vs. reduced flow). The `Equipment.defaultAppMethodId` is just the
-starting point.
-
-**Migration:** Existing `EquipmentEntry` strings (created during the equipment plan migration)
-become `Equipment` documents automatically — `equipmentId` stays the same, `description`
-comes from the entry, `defaultAppMethodId` comes from the entry's `appMethodId`.
+`ProductMasterDoc` embeds `equipmentPackageDocs: EquipmentPackageDoc[]` — the packages
+available for workers to choose from when filling out a loadout for that master product.
+This is an embedded list (not FK references), consistent with how `subProductConfigDocs`
+are embedded on the master.
 
 ---
 
@@ -471,7 +488,7 @@ comes from the entry, `defaultAppMethodId` comes from the entry's `appMethodId`.
 | `hydrateProductsPlanned.ts` | Reads `subConfig.rate` — still valid, but water sub-product is no longer in `subProductConfigDocs` so water will disappear from `productsPlanned` / `AppProduct[]` |
 | `MasterSubConfig.tsx` | Props `onUpdateUseAppMethod`, `onUpdateAppMethodId`, `onUpdateMixedProductIds` removed |
 | `MasterEditPanel.tsx` | Handlers `updateUseAppMethod`, `updateAppMethodId`, `updateMixedProductIds` removed |
-| `AppMethodDeleteSheet.tsx` | `getAffectedProducts` scans `config.appMethodId` on sub-configs — must scan `equipmentScenarios` instead |
+| `AppMethodDeleteSheet.tsx` | `getAffectedProducts` scans `config.appMethodId` on sub-configs — must scan `equipmentPackageDocs` instead |
 | `getAffectedProducts.ts` | Same — reads `config.appMethodId` |
 | `SubProductConfig` consumers | Any code reading `.appMethod`, `.useAppMethod`, `.appMethodId`, `.mixedProductIds` on a hydrated `SubProductConfig` |
 | `LoadoutTypes.ts` | `appMethods[]` renamed to `equipmentEntries[]`, `appMethodId` → `equipmentId` |
@@ -549,17 +566,17 @@ LoadoutDoc = {
   routeDate: string
   truckId: string | null       // NEW — which truck they're driving today
   rideOnId: string | null      // NEW — which ride-on machine (Toro Spreader, etc.)
-  scenarioSelections: [{       // NEW — persist the scenario choice (not just Redux)
+  packageSelections: [{        // NEW — persist the package choice
     masterProductId: number
-    selectedScenarioId: string
+    selectedPackageId: string
   }]
   masters: [...]
 }
 ```
 
-**Note:** `scenarioSelections` is also added to `LoadoutDoc` (persisted). Currently the plan
-has this as Redux-only. Since the loadout is persisted, the scenario choice should be too —
-otherwise reopening a saved loadout loses which scenario the worker selected.
+**Note:** `packageSelections` is persisted in `LoadoutDoc`. Since the loadout is persisted,
+the package choice should be too — otherwise reopening a saved loadout loses which package
+the worker selected.
 
 **Config list (now):** `truckIds: string[]` and `rideOnIds: string[]` stored in `globalSettings`
 or a new `equipmentConfig` slice. No MongoDB collection needed yet.
@@ -571,8 +588,8 @@ out product amounts. Optional fields — no blocking if not selected.
 
 `ProductRule` (`sizeOperator: "lte" | "gt" | "all"`) already determines which master products
 apply to a given service size. This is the existing mechanism that routes small lawns to the
-backpack sprayer and large lawns to the tank/toro. The `EquipmentScenario` system builds on
-top of this — the scenario selected by the worker determines which equipment entries are active
+backpack sprayer and large lawns to the tank/toro. The `EquipmentPackage` system builds on
+top of this — the package selected by the worker determines which equipment items are active
 for the masters that `ProductRule` assigns to their services.
 
 ### Accuracy Inference (existing planned feature)
@@ -674,9 +691,9 @@ function flattenLoadoutPlanned(loadout: LoadoutBase): FlatPlannedProduct[] {
       size: master.plannedAmount,
       productCommon: sub.product.productCommon,
     })),
-    // AppMethod (water) sub-products (mixed products inside each equipment entry)
-    ...master.appMethods.flatMap(am =>
-      am.subProducts.map(sub => ({
+    // Equipment sub-products (mixed products inside each equipment entry)
+    ...master.equipmentEntries.flatMap(entry =>
+      entry.subProducts.map(sub => ({
         productId: sub.productId,
         amount: sub.plannedAmount,
         size: master.plannedAmount,
@@ -684,11 +701,11 @@ function flattenLoadoutPlanned(loadout: LoadoutBase): FlatPlannedProduct[] {
       }))
     ),
     // The water rows themselves (tracked for metered water usage reporting)
-    ...master.appMethods.map(am => ({
-      productId: am.mixProductId,
-      amount: am.plannedAmount,
+    ...master.equipmentEntries.map(entry => ({
+      productId: entry.mixProductId,
+      amount: entry.plannedAmount,
       size: master.plannedAmount,
-      productCommon: am.mixProduct.productCommon,
+      productCommon: entry.mixProduct.productCommon,
     })),
   ])
 }
@@ -697,7 +714,7 @@ function flattenLoadoutPlanned(loadout: LoadoutBase): FlatPlannedProduct[] {
 **Note on water in bizPlan:** Water is not currently purchased, but tracking planned water
 usage is valuable for future scenarios (metered water at a new location). Including water rows
 in `flattenLoadoutPlanned` ensures `bizPlan` inventory selectors capture water usage
-automatically once equipment scenarios are configured.
+automatically once equipment packages are configured.
 
 **Phase 2 — Update `bizPlan` selectors**
 
@@ -728,13 +745,13 @@ Keep only what's needed for `usedAppProducts`:
 
 ### `loadoutInventory` in Planning Context (bizPlan)
 
-`hydrateLoadoutInventory` will use the worker's `scenarioSelections` from Redux to filter
+`hydrateLoadoutInventory` will use the worker's `packageSelections` from Redux to filter
 equipment entries in the daily inventory workflow. For `bizPlan` (reporting context, no worker
-selection), we want **all** planned products across all scenarios.
+selection), we want **all** planned products across all packages.
 
-**Solution:** `hydrateLoadoutInventory` accepts an optional `scenarioId` parameter.
-When `null`/`undefined`, it includes all equipment scenarios (union of all `mixedProductIds`
-across all scenarios). This gives `bizPlan` the full planned picture including all water rows.
+**Solution:** `hydrateLoadoutInventory` accepts an optional `packageId` parameter.
+When `null`/`undefined`, it includes all equipment packages (union of all `mixedProductIds`
+across all packages). This gives `bizPlan` the full planned picture including all water rows.
 
 ### What Gets Removed vs Kept
 
@@ -751,7 +768,7 @@ across all scenarios). This gives `bizPlan` the full planned picture including a
 ### Implementation Order (relative to Equipment Plan)
 
 This refactor can happen **in parallel with or after** the equipment plan. The dependency is:
-- `hydrateLoadoutInventory` must be updated to read from `equipmentScenarios` (step 7 of
+- `hydrateLoadoutInventory` must be updated to read from `equipmentPackages` (step 8 of
   the equipment plan) before `flattenLoadoutPlanned` can include water rows correctly.
 - `bizPlan` selectors can be migrated to `flattenLoadoutPlanned` at any time, even before
   the equipment plan, as long as `loadoutInventory` is already on `Service` (it is).
@@ -767,28 +784,29 @@ This refactor can happen **in parallel with or after** the equipment plan. The d
 | Plan Step | File(s) | Status |
 |---|---|---|
 | `AppMethod` — add `needsWater` + `tracksTankLevel` | `AppMethodTypes.ts`, `AppMethodModel.ts` | ✅ Done |
-| `EquipmentEntry` / `EquipmentScenario` types (doc + hydrated) | `src/app/equipment/EquipmentTypes.ts` | ✅ Done |
+| `EquipmentDoc` / `EquipmentProps` / `Equipment` types | `src/app/equipment/EquipmentTypes.ts` | ✅ Done |
+| `EquipmentPackageDoc` / `EquipmentPackageProps` / `EquipmentPackage` types | `src/app/equipment/equipmentPackage/EquipmentPackageTypes.ts` | ✅ Done |
 | `SubProductConfigDoc` — removed `appMethodId`, `useAppMethod`, `mixedProductIds` | `ProductMasterTypes.ts` | ✅ Done |
-| `ProductMasterDocProps` — added `equipmentScenarioDocs` | `ProductMasterTypes.ts` | ✅ Done |
-| `ProductMasterProps` — added `equipmentScenarios` (hydrated) | `ProductMasterTypes.ts` | ✅ Done |
-| `ProductDocPropsModel` schema — added `equipmentScenarioDocs`, removed old sub-config fields | `ProductDocPropsModel.ts` | ✅ Done |
+| `ProductMasterDocProps` — added `equipmentPackageDocs` | `ProductMasterTypes.ts` | ✅ Done |
+| `ProductMasterProps` — added `equipmentPackages` (hydrated) | `ProductMasterTypes.ts` | ✅ Done |
+| `ProductDocPropsModel` schema — added `equipmentPackageDocs`, removed old sub-config fields | `ProductDocPropsModel.ts` | ✅ Done |
 | `AppMethodModel` schema — added `needsWater`, `tracksTankLevel` | `AppMethodModel.ts` | ✅ Done |
 | `waterProduct` client-side constant | `src/app/equipment/waterProduct.ts` | ✅ Done |
 | `hydrateRate` simplified (returns `storedRate` only) | `hydrateRate.ts` | ✅ Done |
-| `hydrateEquipmentScenarios` in `productSelectors.ts` | `productSelectors.ts` | ✅ Done |
-| `hydrateLoadoutInventory` — reads `equipmentScenarios`, uses `scenarioSelections` | `hydrateLoadoutInventory.ts` | ✅ Done |
+| `hydrateEquipmentPackages` in `productSelectors.ts` | `productSelectors.ts` | ✅ Done |
+| `hydrateLoadoutInventory` — reads `equipmentPackages`, uses `packageSelections` | `hydrateLoadoutInventory.ts` | ✅ Done |
 | `LoadoutBase` — `appMethods[]` → `equipmentEntries[]`, `appMethodId` → `equipmentId` | `LoadoutTypes.ts` | ✅ Done |
 | `LoadoutDoc` — same rename | `LoadoutTypes.ts` | ✅ Done |
 | `aggregateLoadoutInventory` — groups by `equipmentId` | `aggregateLoadoutInventory.ts` | ✅ Done |
-| `loadoutFormSlice` — `scenarioSelections` state + `setScenarioSelection` / `clearScenarioSelections` | `loadoutFormSlice.ts` | ✅ Done |
-| `loadoutFormSelect` — `scenarioSelections` selector, `usedProductIds` iterates `equipmentEntries` | `loadoutFormSelect.ts` | ✅ Done |
+| `loadoutFormSlice` — `packageSelections` state + `setPackageSelection` / `clearPackageSelections` | `loadoutFormSlice.ts` | ✅ Done |
+| `loadoutFormSelect` — `packageSelections` selector, `usedProductIds` iterates `equipmentEntries` | `loadoutFormSelect.ts` | ✅ Done |
 | `LoadoutValidator` — `equipmentEntries` path + `tracksTankLevel` guard | `LoadoutValidator.ts` | ✅ Done |
 | `loadoutFormHelpers.initializeLoadout` — maps `equipmentEntries` | `loadoutFormHelpers.ts` | ✅ Done |
 | `MasterProductCard` — renders `AppMethodSection` per `entry.equipmentId` | `MasterProductCard.tsx` | ✅ Done |
 | `AppMethodSection` — props `equipmentId` (was `appMethodId`) | `AppMethodSection.tsx` | ✅ Done |
 | `MasterSubConfig` — removed `useAppMethod`, `appMethodId`, `mixedProductIds` props | `MasterSubConfig.tsx` | ✅ Done |
 | `MasterEditPanel` — removed old AppMethod handlers from sub-product editing | `MasterEditPanel.tsx` | ✅ Done |
-| `getAffectedProducts` — scans `equipmentScenarioDocs[].equipmentEntries[].appMethodId` | `getAffectedProducts.ts` | ✅ Done |
+| `getAffectedProducts` — scans `equipmentPackageDocs[].equipmentDocs[].appMethodId` | `getAffectedProducts.ts` | ✅ Done |
 
 ---
 
@@ -796,17 +814,17 @@ This refactor can happen **in parallel with or after** the equipment plan. The d
 
 #### A. Data Migration (Required before production use)
 
-The MongoDB documents still have the old shape (`subProductConfigDocs` with `appMethodId` / `useAppMethod` / `mixedProductIds`, no `equipmentScenarioDocs`). The app will silently produce empty `equipmentEntries` for all masters until migration runs.
+The MongoDB documents still have the old shape (`subProductConfigDocs` with `appMethodId` / `useAppMethod` / `mixedProductIds`, no `equipmentPackageDocs`). The app will silently produce empty `equipmentEntries` for all masters until migration runs.
 
 **Migration script / API handler** (`src/app/realGreen/product/api/route.ts` or a one-off script):
 
 For each `ProductMasterDoc` where any `subProductConfigDoc` has `useAppMethod === true`:
 1. Find the carrier sub-config (the one with `useAppMethod: true`)
-2. Create one `EquipmentScenario`:
+2. Create one `EquipmentPackage` with one `Equipment` item:
    ```
-   scenarioId:   existingAppMethodId
+   packageId:    existingAppMethodId
    description:  existingAppMethod.description
-   equipmentEntries: [{
+   equipmentDocs: [{
      equipmentId:     existingAppMethodId
      description:     existingAppMethod.description
      appMethodId:     existingAppMethodId
@@ -815,55 +833,58 @@ For each `ProductMasterDoc` where any `subProductConfigDoc` has `useAppMethod ==
    ```
 3. Remove `appMethodId`, `useAppMethod`, `mixedProductIds` from all `subProductConfigDocs`
 4. Remove the water sub-product entry from `subProductConfigDocs` (auto-injected going forward)
-5. Write `equipmentScenarioDocs` to the document
+5. Write `equipmentPackageDocs` to the document
 
 For all `AppMethod` documents: add `needsWater: true`, `tracksTankLevel: true`.
+
+Also seed the `Equipment` collection: for each unique `equipmentId` created above, insert a
+corresponding `Equipment` document.
 
 **Note:** Mongoose schema already accepts the new shape. Old fields (`appMethodId`, `useAppMethod`, `mixedProductIds`) on sub-docs are simply ignored by the new schema — no crash, just silent data loss on re-save. Run migration before any admin saves a master product.
 
 ---
 
-#### B. Scenario Selection UI (Required for loadout to populate)
+#### B. Package Selection UI (Required for loadout to populate)
 
-`hydrateLoadoutInventory` returns empty `equipmentEntries` until a scenario is selected. Workers need a way to pick a scenario.
+`hydrateLoadoutInventory` returns empty `equipmentEntries` until a package is selected. Workers need a way to pick a package.
 
-**Component:** `ScenarioSelector` inside `MasterProductCard`
+**Component:** `PackageSelector` inside `MasterProductCard`
 
 Behavior:
-- If `master.equipmentScenarios.length === 0` → show nothing (no equipment configured yet)
-- If `master.equipmentScenarios.length === 1` → auto-select on mount (dispatch `setScenarioSelection`), show no prompt
-- If `master.equipmentScenarios.length > 1` → show radio group before loadout rows appear
+- If `master.equipmentPackages.length === 0` → show nothing (no packages configured yet)
+- If `master.equipmentPackages.length === 1` → auto-select on mount (dispatch `setPackageSelection`), show no prompt
+- If `master.equipmentPackages.length > 1` → show radio group before loadout rows appear
 
 ```tsx
 // Rough sketch
-function ScenarioSelector({ masterProductId }: { masterProductId: number }) {
+function PackageSelector({ masterProductId }: { masterProductId: number }) {
   const dispatch = useDispatch();
   const master = useSelector(...); // from productSelect.productMasters
-  const scenarioSelections = useSelector(loadoutFormSelect.scenarioSelections);
-  const currentSelection = scenarioSelections.find(s => s.masterProductId === masterProductId);
+  const packageSelections = useSelector(loadoutFormSelect.packageSelections);
+  const currentSelection = packageSelections.find(s => s.masterProductId === masterProductId);
 
-  // Auto-select single scenario
+  // Auto-select single package
   useEffect(() => {
-    if (master.equipmentScenarios.length === 1 && !currentSelection) {
-      dispatch(loadoutFormActions.setScenarioSelection({
+    if (master.equipmentPackages.length === 1 && !currentSelection) {
+      dispatch(loadoutFormActions.setPackageSelection({
         masterProductId,
-        selectedScenarioId: master.equipmentScenarios[0].scenarioId,
+        selectedPackageId: master.equipmentPackages[0].packageId,
       }));
     }
-  }, [master.equipmentScenarios, currentSelection, masterProductId, dispatch]);
+  }, [master.equipmentPackages, currentSelection, masterProductId, dispatch]);
 
-  if (master.equipmentScenarios.length <= 1) return null;
+  if (master.equipmentPackages.length <= 1) return null;
 
   return (
     <RadioGroup
-      value={currentSelection?.selectedScenarioId ?? ""}
-      onValueChange={(scenarioId) =>
-        dispatch(loadoutFormActions.setScenarioSelection({ masterProductId, selectedScenarioId: scenarioId }))
+      value={currentSelection?.selectedPackageId ?? ""}
+      onValueChange={(packageId) =>
+        dispatch(loadoutFormActions.setPackageSelection({ masterProductId, selectedPackageId: packageId }))
       }
     >
-      {master.equipmentScenarios.map(scenario => (
-        <RadioGroupItem key={scenario.scenarioId} value={scenario.scenarioId}>
-          {scenario.description}
+      {master.equipmentPackages.map(pkg => (
+        <RadioGroupItem key={pkg.packageId} value={pkg.packageId}>
+          {pkg.description}
         </RadioGroupItem>
       ))}
     </RadioGroup>
@@ -873,26 +894,26 @@ function ScenarioSelector({ masterProductId }: { masterProductId: number }) {
 
 **Placement:** At the top of `MasterProductCard`, before the `equipmentEntries` loop.
 
-**Changing scenario:** Should reset `startAmount`/`finishAmount` for that master's entries. Add a `resetMasterLoadoutAmounts(masterProductId)` action to `loadoutFormSlice`.
+**Changing package:** Should reset `startAmount`/`finishAmount` for that master's entries. Add a `resetMasterLoadoutAmounts(masterProductId)` action to `loadoutFormSlice`.
 
 ---
 
-#### C. Equipment Scenarios CRUD UI in `MasterEditPanel` (Required for setup)
+#### C. Equipment Packages CRUD UI in `MasterEditPanel` (Required for setup)
 
-`MasterEditPanel` currently has no UI for creating/editing `equipmentScenarioDocs`. Without this, admins cannot configure equipment scenarios for any master product.
+`MasterEditPanel` currently has no UI for creating/editing `equipmentPackageDocs`. Without this, admins cannot configure equipment packages for any master product.
 
-**New accordion section:** "Equipment Scenarios" (below Sub-Products)
+**New accordion section:** "Equipment Packages" (below Sub-Products)
 
-Each scenario row shows:
-- `scenarioId` (text input, natural key)
+Each package row shows:
+- `packageId` (text input, natural key)
 - `description` (text input)
-- List of equipment entries (each with `equipmentId`, `description`, AppMethod selector, mixed products multi-select)
-- Add / Remove entry buttons
-- Add / Remove scenario buttons
+- List of equipment items (each with `equipmentId`, `description`, AppMethod selector, mixed products multi-select)
+- Add / Remove item buttons
+- Add / Remove package buttons
 
-**Save action:** New `updateMasterEquipmentScenarios({ masterId, equipmentScenarioDocs })` thunk in `useProduct` / `productSlice`.
+**Save action:** New `updateMasterEquipmentPackages({ masterId, equipmentPackageDocs })` thunk in `useProduct` / `productSlice`.
 
-**API handler:** New `updateEquipmentScenarios` operation in `ProductContract` + `api/route.ts`.
+**API handler:** New `updateEquipmentPackages` operation in `ProductContract` + `api/route.ts`.
 
 ---
 
@@ -906,15 +927,15 @@ These are already in `AppMethodTypes.ts` and `AppMethodModel.ts` but the CRUD UI
 
 ---
 
-#### E. `LoadoutDoc` Persistence — `scenarioSelections` Field
+#### E. `LoadoutDoc` Persistence — `packageSelections` Field
 
-`LoadoutDoc` in `LoadoutTypes.ts` does not yet include `scenarioSelections`. Per the plan, the scenario choice should be persisted so reopening a saved loadout restores the worker's selection.
+`LoadoutDoc` in `LoadoutTypes.ts` does not yet include `packageSelections`. Per the plan, the package choice should be persisted so reopening a saved loadout restores the worker's selection.
 
 ```typescript
 // Add to LoadoutDoc:
-scenarioSelections: {
+packageSelections: {
   masterProductId: number;
-  selectedScenarioId: string;
+  selectedPackageId: string;
 }[];
 ```
 
@@ -932,24 +953,46 @@ The Mongoose schema for `LoadoutDoc` (wherever it lives) needs these fields adde
 
 ---
 
-#### G. `AppMethodDeleteSheet` — Update for Equipment Scenarios
+#### G. `AppMethodDeleteSheet` — Update for Equipment Packages
 
-`AppMethodDeleteSheet.tsx` currently calls `getAffectedProducts(method.appMethodId, productMasters)` which now correctly scans `equipmentScenarioDocs`. However the delete handler calls `updateMasterSubProducts` to reassign `appMethodId` on sub-configs — this logic is now stale. The reassign path needs to update `equipmentScenarioDocs[].equipmentEntries[].appMethodId` instead.
+`AppMethodDeleteSheet.tsx` currently calls `getAffectedProducts(method.appMethodId, productMasters)` which now correctly scans `equipmentPackageDocs`. However the delete handler calls `updateMasterSubProducts` to reassign `appMethodId` on sub-configs — this logic is now stale. The reassign path needs to update `equipmentPackageDocs[].equipmentDocs[].appMethodId` instead.
 
 ---
 
-#### H. Mix Chart — Scenario Selector + Per-Entry Charts
+#### H. Mix Chart — Package Selector + Per-Equipment Charts
 
 Per the plan:
-- Mix chart page gets an **Equipment Scenario** selector per master (radio group)
-- Each `EquipmentEntry` generates its own chart
-- "Generate All Charts" option for multi-entry scenarios
+- Mix chart page gets an **Equipment Package** selector per master (radio group)
+- Each `Equipment` item generates its own chart
+- "Generate All Charts" option for multi-equipment packages
 
 This is a new feature layer on top of the existing mix chart — no existing code is broken, just not yet extended.
 
 ---
 
-#### I. `bizPlan` / `AppProduct` Deprecation (Lower Priority)
+#### I. Equipment + EquipmentPackage Data Modules (Standalone CRUD)
+
+Both `Equipment` and `EquipmentPackage` need standalone Data Module implementations:
+
+**Equipment Data Module** (`src/app/equipment/`):
+- `EquipmentContract.ts` — `getEquipment`, `createEquipment`, `updateEquipment`, `deleteEquipment`
+- `api/route.ts` — CRUD handlers
+- `equipmentSlice.ts` — Redux slice
+- `equipmentSelect.ts` — selectors (map by `equipmentId`)
+- `useEquipment.ts` — auto-fetch hook
+- CRUD UI — list + create/edit form (ID, description, AppMethod selector, mixed products)
+
+**EquipmentPackage Data Module** (`src/app/equipment/equipmentPackage/`):
+- `EquipmentPackageContract.ts` — `getEquipmentPackages`, `createEquipmentPackage`, etc.
+- `api/route.ts` — CRUD handlers
+- `equipmentPackageSlice.ts` — Redux slice
+- `equipmentPackageSelect.ts` — selectors (map by `packageId`)
+- `useEquipmentPackage.ts` — auto-fetch hook
+- CRUD UI — list + create/edit form (ID, description, equipment items list)
+
+---
+
+#### J. `bizPlan` / `AppProduct` Deprecation (Lower Priority)
 
 `productsPlanned` on `Service` still comes from `hydrateProductsPlanned` (reading old `subProductConfigs`). After migration, water will no longer be in `subProductConfigs`, so water disappears from `bizPlan` inventory selectors.
 
@@ -964,15 +1007,16 @@ This can be done independently of the UI work above.
 
 ### Priority Order for Next Session
 
-1. **B — Scenario Selection UI** (unblocks runtime testing immediately)
+1. **B — Package Selection UI** (unblocks runtime testing immediately)
 2. **F — `waterProduct` unitConfigDisplay** (needed for `AppMethodSection` to render without crash)
-3. **A — Data Migration** (needed for real data; can test with manually-seeded `equipmentScenarioDocs` first)
-4. **C — Equipment Scenarios CRUD** (needed for admins to configure scenarios)
+3. **A — Data Migration** (needed for real data; can test with manually-seeded `equipmentPackageDocs` first)
+4. **C — Equipment Packages CRUD** (needed for admins to configure packages)
 5. **D — AppMethod CRUD checkboxes** (small, needed for `needsWater`/`tracksTankLevel` to be settable)
 6. **E — `LoadoutDoc` persistence fields** (needed before saving loadouts)
 7. **G — `AppMethodDeleteSheet` reassign path** (correctness fix)
 8. **H — Mix Chart** (new feature)
-9. **I — `bizPlan` deprecation** (cleanup, lower priority)
+9. **I — Equipment + EquipmentPackage Data Modules** (standalone CRUD)
+10. **J — `bizPlan` deprecation** (cleanup, lower priority)
 
 ---
 
@@ -1027,7 +1071,7 @@ Used in loadout form and bizPlan to show techs quantities in load units.
 ### Relevance to Equipment Plan
 
 - `AppMethod.coverage` stores volume/area in standard units (Gal, SF/ksf) — use `UnitUtils`
-  to normalize to ksf for `waterRate` calculation in `hydrateEquipmentScenarios`
+  to normalize to ksf for `waterRate` calculation in `hydrateEquipmentPackages`
 - `LoadoutBase.equipmentEntries[].plannedAmount` is in **app units** (Gal for water)
 - The loadout form displays `plannedAmount` to techs in **load units** via `UnitConfigDisplay`
 - `startAmount`/`finishAmount` entered by techs are in **load units** and must be converted

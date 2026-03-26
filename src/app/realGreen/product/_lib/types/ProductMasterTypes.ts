@@ -6,12 +6,12 @@ import {
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import {
-  EquipmentScenario,
-  EquipmentScenarioDoc,
-} from "@/app/equipment/EquipmentTypes";
+  EquipmentPackage,
+  EquipmentPackageDoc,
+} from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
 
 // Re-export for convenience
-export type { EquipmentScenario, EquipmentScenarioDoc };
+export type { EquipmentPackage, EquipmentPackageDoc };
 
 export type ProductMasterCore = ProductCore & {
   isProduction: true;
@@ -40,16 +40,16 @@ export type ProductMasterDocProps = CreatedUpdated &
   ProductCommonDocProps & {
     productId: number;
     subProductConfigDocs: SubProductConfigDoc[];
-    /** Equipment scenarios configured for this master product. */
-    equipmentScenarioDocs: EquipmentScenarioDoc[];
+    /** Equipment packages configured for this master product (FK references to EquipmentPackage). */
+    equipmentPackageIds: string[];
   };
 
 export type ProductMasterDoc = ProductMasterCore & ProductMasterDocProps;
 
 export type ProductMasterProps = ProductCommonProps & {
   subProductConfigs: SubProductConfig[];
-  /** Hydrated equipment scenarios (appMethodId resolved to AppMethod). */
-  equipmentScenarios: EquipmentScenario[];
+  /** Hydrated equipment packages (equipmentIds resolved to Equipment[]). */
+  equipmentPackages: EquipmentPackage[];
 };
 
 export type ProductMaster = ProductMasterDoc & ProductMasterProps;

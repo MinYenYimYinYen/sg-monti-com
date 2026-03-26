@@ -121,6 +121,22 @@ Use this pattern when creating a new data-driven feature that requires:
    - Dispatches thunk based on dependencies
    - Example: `useSchedPromise.ts`
 
+### Type Naming Conventions
+
+Types follow a layered suffix pattern that signals their role in the data pipeline:
+
+| Suffix | Meaning | Example |
+|---|---|---|
+| `Doc` | Storage shape — keys and metadata only, no hydrated data | `EquipmentDoc`, `EquipmentPackageDoc` |
+| `Props` | Hydration additions — data resolved from other sources | `EquipmentProps`, `EquipmentPackageProps` |
+| *(none)* | Final consumable entity — `Doc & Props`, ready for UI | `Equipment`, `EquipmentPackage` |
+| `DocProps` | Used when extending RealGreen entities with native keys/metadata | `CallAheadDocProps` |
+
+**Rules:**
+- Native data modules start at the `Doc` level (no `Raw` or `Core` needed).
+- RealGreen entities may have a `Raw` → `Core` → `DocProps` → `Doc` chain because they integrate external API shapes with native storage.
+- The no-suffix type is the one components and selectors consume. Never pass a `Doc` directly to UI.
+
 ### Key Conventions
 
 - **Auto-Deduplication**: `uiSlice.ts` automatically prevents duplicate API calls via param hashing. The slice's `transformParams` filters out already-loaded data before hashing.
@@ -199,6 +215,8 @@ export function useSchedPromise() {
     - **Function Parameters**: Prefer object-style parameters (destructuring) for functions with more than one
       argument (e.g., `constructor({ a, b }: Params)`). Single arguments can be passed directly.
     - **File Naming**: Use `camelCase` for directories and files (e.g., `src/app/auth/changePassword/page.tsx`), except for Next.js special files (`page.tsx`, `layout.tsx`) and React Components (`Button.tsx`).
+    - **Comments**: Comments describe *why*, not *what*. Only add a comment when there is genuine potential for confusion. Type-level JSDoc on the type itself is appropriate when the type's purpose is non-obvious; per-property comments are noise unless a property has a non-obvious constraint or invariant.
+    - **Inline function variable names**: In one-liner callbacks, abbreviation is acceptable (`customers.map(c => c.id)`). When a callback uses a block body (`{}`), use full descriptive names — `customers.map((customer) => { ... })`, not `customers.map((c) => { ... })`.
 
 ## Key Dependencies
 - `eslint`: For linting

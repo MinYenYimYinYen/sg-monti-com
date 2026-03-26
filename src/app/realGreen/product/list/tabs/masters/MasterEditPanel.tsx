@@ -18,11 +18,11 @@ import { ScrollArea } from "@/style/components/scroll-area";
 import { Checkbox } from "@/style/components/checkbox";
 import { Label } from "@/style/components/label";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/style/components/accordion";
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/style/components/tabs";
 import {
   UnitCRM,
   UnitLabel,
@@ -40,7 +40,14 @@ import {
   ProductMaster,
   SubProductConfigDoc,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { Equipment } from "@/app/equipment/EquipmentTypes";
 import { MasterSubConfig } from "@/app/realGreen/product/list/tabs/masters/MasterSubConfig";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/style/components/popover";
+import { Info } from "lucide-react";
 
 interface MasterEditPanelProps {
   master: ProductMaster;
@@ -176,262 +183,336 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
         <p className="text-sm text-muted-foreground">{productName}</p>
       </CardHeader>
       <CardContent>
-        <Accordion
-          type="multiple"
-          defaultValue={["attributes", "subs"]}
-          className={"space-y-2"}
-        >
-          {/* Attributes Section */}
-          <AccordionItem value="attributes">
-            <AccordionTrigger
-              className={
-                "text-lg bg-primary/20 rounded-t-md px-2 border border-b-primary/50 shadow-sm py-2"
-              }
-            >
+        <Tabs defaultValue="subs">
+          <TabsList className="w-full justify-start">
+            {/* Attributes tab with embedded info popover */}
+            <TabsTrigger value="attributes" className="flex items-center gap-1.5">
               Attributes
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 pt-1">
-                {/* Category Row */}
-                <form onSubmit={handleSaveCategory}>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-sm font-semibold whitespace-nowrap w-24">
-                      Category
-                    </span>
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">
-                      ID: {master.categoryId}
-                    </span>
-                    <Input
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      className="flex-1 min-w-[140px]"
-                    />
-                    <SaveButton
-                      type="submit"
-                      size="sm"
-                      variant="primary"
-                      onClick={handleSaveCategory}
-                      disabled={!canSaveCategory}
-                      status={categoryStatus}
-                      onSuccessComplete={() => setCategoryStatus("idle")}
-                    >
-                      Save
-                    </SaveButton>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setNewCategoryName(master.category)}
-                      disabled={
-                        !canSaveCategory ||
-                        categoryStatus === "saving" ||
-                        categoryStatus === "success"
-                      }
-                    >
-                      Reset
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 ml-[calc(6rem+0.75rem)]">
-                    Updates the category for all products in this category. Does
-                    not affect SA5 data.
-                  </p>
-                </form>
+              <span
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex"
+              >
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Info className="h-3.5 w-3.5 cursor-pointer text-muted-foreground hover:text-foreground" />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 text-sm">
+                    Category and unit changes affect all products sharing that category or unit in SA5.
+                  </PopoverContent>
+                </Popover>
+              </span>
+            </TabsTrigger>
 
-                {/* Unit Row */}
-                <form onSubmit={handleSaveUnit}>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-sm font-semibold whitespace-nowrap w-24">
-                      Unit
-                    </span>
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">
-                      ID: {master.unit.unitId}
-                    </span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="flex-1 min-w-[140px] justify-between font-normal"
-                        >
-                          {newUnitDesc}
-                          <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        {Object.values(UnitLabel).map((ulValue) => (
-                          <DropdownMenuItem
-                            key={ulValue}
-                            onClick={() => setNewUnitDesc(ulValue)}
-                          >
-                            {ulValue}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <SaveButton
-                      type="submit"
-                      size="sm"
-                      variant="primary"
-                      onClick={handleSaveUnit}
-                      disabled={!canSaveUnit}
-                      status={unitStatus}
-                      onSuccessComplete={() => setUnitStatus("idle")}
-                    >
-                      Save
-                    </SaveButton>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        setNewUnitDesc(master.unit.desc as UnitLabel)
-                      }
-                      disabled={
-                        !canSaveUnit ||
-                        unitStatus === "saving" ||
-                        unitStatus === "success"
-                      }
-                    >
-                      Reset
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 ml-[calc(6rem+0.75rem)]">
-                    Updates the unit description for all products using this
-                    unit.
-                  </p>
-                </form>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Sub-Products Section */}
-          <AccordionItem value="subs">
-            <AccordionTrigger
-              className={
-                "text-lg bg-primary/20 rounded-t-md px-2 border border-b-primary/50 shadow-sm py-2"
-              }
-            >
+            {/* Sub-Products tab with embedded info popover */}
+            <TabsTrigger value="subs" className="flex items-center gap-1.5">
               Sub-Products
-              <Badge variant="outline" className="ml-2 mr-auto">
+              <Badge variant="outline" className="ml-1 text-xs">
                 {configDocs.length}
               </Badge>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 pt-1">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Available */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <Label className="text-sm font-medium whitespace-nowrap">
-                        Available
-                      </Label>
-                      <Input
-                        placeholder="Search..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-8"
-                      />
-                    </div>
-                    <ScrollArea className="h-[300px] rounded-md border">
-                      <div className="p-3 space-y-1.5">
-                        {availableSubs.length === 0 ? (
-                          <div className="text-sm text-muted-foreground text-center py-8">
-                            No available sub-products found
-                          </div>
-                        ) : (
-                          availableSubs.map((sub) => (
-                            <div
-                              key={sub.productId}
-                              className="flex items-center space-x-3 rounded-md border p-2.5 hover:bg-accent/10 cursor-pointer"
-                              onClick={() => toggleSub(sub.productId)}
-                            >
-                              <Checkbox
-                                checked={configDocs.some(
-                                  (c) => c.subId === sub.productId,
-                                )}
-                                onCheckedChange={() => toggleSub(sub.productId)}
-                              />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono text-xs text-muted-foreground">
-                                    {sub.productCode}
-                                  </span>
-                                  <span className="text-sm">
-                                    {sub.description}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </div>
+              <span
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex"
+              >
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Info className="h-3.5 w-3.5 cursor-pointer text-muted-foreground hover:text-foreground" />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 text-sm">
+                    <p className="font-medium mb-1">Masters are recognized by SA5 settings:</p>
+                    <p className="text-muted-foreground">For Production ✓ · Mobile Device ✓ · Master Product ✓</p>
+                  </PopoverContent>
+                </Popover>
+              </span>
+            </TabsTrigger>
 
-                  {/* Selected */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">
-                        Selected ({configDocs.length})
-                      </Label>
-                      {configDocs.length > 0 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setConfigDocs([])}
-                        >
-                          Clear All
-                        </Button>
-                      )}
-                    </div>
-                    <ScrollArea className="h-[300px] rounded-md border">
-                      <div className="p-3 space-y-1.5">
-                        {configDocs.length === 0 ? (
-                          <div className="text-sm text-muted-foreground text-center py-8">
-                            No sub-products selected
-                          </div>
-                        ) : (
-                          configDocs.map((config) => {
-                            const sub = availableSubs.find(
-                              (s) => s.productId === config.subId,
-                            );
-                            return (
-                              <MasterSubConfig
-                                key={config.subId}
-                                config={config}
-                                subProduct={sub}
-                                onRemove={toggleSub}
-                                onUpdateRate={updateRate}
-                              />
-                            );
-                          })
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </div>
+            {/* Equipment Packages tab */}
+            <TabsTrigger value="equipment" className="flex items-center gap-1.5">
+              Equipment Packages
+              <Badge variant="outline" className="ml-1 text-xs">
+                {master.equipmentPackages.length}
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
 
-                <div className="flex justify-end gap-2">
+          {/* ── Attributes ── */}
+          <TabsContent value="attributes">
+            <div className="space-y-4 pt-2">
+              {/* Category Row */}
+              <form onSubmit={handleSaveCategory}>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm font-semibold whitespace-nowrap w-24">
+                    Category
+                  </span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    ID: {master.categoryId}
+                  </span>
+                  <Input
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    className="flex-1 min-w-[140px]"
+                  />
+                  <SaveButton
+                    type="submit"
+                    size="sm"
+                    variant="primary"
+                    onClick={handleSaveCategory}
+                    disabled={!canSaveCategory}
+                    status={categoryStatus}
+                    onSuccessComplete={() => setCategoryStatus("idle")}
+                  >
+                    Save
+                  </SaveButton>
                   <Button
+                    type="button"
+                    size="sm"
                     variant="outline"
-                    onClick={() => setConfigDocs(master.subProductConfigDocs)}
+                    onClick={() => setNewCategoryName(master.category)}
                     disabled={
-                      subsStatus === "saving" || subsStatus === "success"
+                      !canSaveCategory ||
+                      categoryStatus === "saving" ||
+                      categoryStatus === "success"
                     }
                   >
                     Reset
                   </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 ml-[calc(6rem+0.75rem)]">
+                  Updates the category for all products in this category. Does
+                  not affect SA5 data.
+                </p>
+              </form>
+
+              {/* Unit Row */}
+              <form onSubmit={handleSaveUnit}>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm font-semibold whitespace-nowrap w-24">
+                    Unit
+                  </span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    ID: {master.unit.unitId}
+                  </span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="flex-1 min-w-[140px] justify-between font-normal"
+                      >
+                        {newUnitDesc}
+                        <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {Object.values(UnitLabel).map((ulValue) => (
+                        <DropdownMenuItem
+                          key={ulValue}
+                          onClick={() => setNewUnitDesc(ulValue)}
+                        >
+                          {ulValue}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <SaveButton
-                    onClick={handleSaveSubs}
-                    status={subsStatus}
-                    onSuccessComplete={() => setSubsStatus("idle")}
+                    type="submit"
+                    size="sm"
+                    variant="primary"
+                    onClick={handleSaveUnit}
+                    disabled={!canSaveUnit}
+                    status={unitStatus}
+                    onSuccessComplete={() => setUnitStatus("idle")}
                   >
-                    Save Changes
+                    Save
                   </SaveButton>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      setNewUnitDesc(master.unit.desc as UnitLabel)
+                    }
+                    disabled={
+                      !canSaveUnit ||
+                      unitStatus === "saving" ||
+                      unitStatus === "success"
+                    }
+                  >
+                    Reset
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 ml-[calc(6rem+0.75rem)]">
+                  Updates the unit description for all products using this
+                  unit.
+                </p>
+              </form>
+            </div>
+          </TabsContent>
+
+          {/* ── Sub-Products ── */}
+          <TabsContent value="subs">
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Available */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-sm font-medium whitespace-nowrap">
+                      Available
+                    </Label>
+                    <Input
+                      placeholder="Search..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                  <ScrollArea className="h-[300px] rounded-md border">
+                    <div className="p-3 space-y-1.5">
+                      {availableSubs.length === 0 ? (
+                        <div className="text-sm text-muted-foreground text-center py-8">
+                          No available sub-products found
+                        </div>
+                      ) : (
+                        availableSubs.map((sub) => (
+                          <div
+                            key={sub.productId}
+                            className="flex items-center space-x-3 rounded-md border p-2.5 hover:bg-accent/10 cursor-pointer"
+                            onClick={() => toggleSub(sub.productId)}
+                          >
+                            <Checkbox
+                              checked={configDocs.some(
+                                (c) => c.subId === sub.productId,
+                              )}
+                              onCheckedChange={() => toggleSub(sub.productId)}
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs text-muted-foreground">
+                                  {sub.productCode}
+                                </span>
+                                <span className="text-sm">
+                                  {sub.description}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+
+                {/* Selected */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">
+                      Selected ({configDocs.length})
+                    </Label>
+                    {configDocs.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setConfigDocs([])}
+                      >
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+                  <ScrollArea className="h-[300px] rounded-md border">
+                    <div className="p-3 space-y-1.5">
+                      {configDocs.length === 0 ? (
+                        <div className="text-sm text-muted-foreground text-center py-8">
+                          No sub-products selected
+                        </div>
+                      ) : (
+                        configDocs.map((config) => {
+                          const sub = availableSubs.find(
+                            (s) => s.productId === config.subId,
+                          );
+                          return (
+                            <MasterSubConfig
+                              key={config.subId}
+                              config={config}
+                              subProduct={sub}
+                              onRemove={toggleSub}
+                              onUpdateRate={updateRate}
+                            />
+                          );
+                        })
+                      )}
+                    </div>
+                  </ScrollArea>
                 </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setConfigDocs(master.subProductConfigDocs)}
+                  disabled={
+                    subsStatus === "saving" || subsStatus === "success"
+                  }
+                >
+                  Reset
+                </Button>
+                <SaveButton
+                  onClick={handleSaveSubs}
+                  status={subsStatus}
+                  onSuccessComplete={() => setSubsStatus("idle")}
+                >
+                  Save Changes
+                </SaveButton>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* ── Equipment Packages ── */}
+          <TabsContent value="equipment">
+            <div className="pt-2">
+              {master.equipmentPackages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[200px] border-2 border-dashed border-muted rounded-lg gap-2">
+                  <p className="text-muted-foreground text-sm">
+                    No equipment packages configured
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Equipment packages define which machines and AppMethods are used for this product
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {master.equipmentPackages.map((pkg) => (
+                    <div
+                      key={pkg.packageId}
+                      className="rounded-md border p-3 space-y-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{pkg.packageId}</Badge>
+                        <span className="text-sm font-medium">{pkg.description}</span>
+                        <Badge className="ml-auto text-xs">
+                          {pkg.equipments.length} equipment
+                        </Badge>
+                      </div>
+                      <div className="pl-2 space-y-1">
+                        {pkg.equipments.map((entry: Equipment) => (
+                          <div
+                            key={entry.equipmentId}
+                            className="flex items-center gap-3 text-xs text-muted-foreground"
+                          >
+                            <span className="font-mono">{entry.equipmentId}</span>
+                            <span>→</span>
+                            <span>{entry.appMethod.description}</span>
+                            <span className="ml-auto">
+                              {entry.waterRate.toFixed(2)} gal/ksf
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* TODO: Add / Edit / Remove package buttons (Equipment Plan step C) */}
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

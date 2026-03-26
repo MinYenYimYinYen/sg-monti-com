@@ -27,7 +27,7 @@ export type LoadoutBase = {
     unit: UnitCRM;
     /** Equipment entries from the selected scenario. Empty until a scenario is selected. */
     equipmentEntries: {
-      /** Bucket key — matches EquipmentEntry.equipmentId */
+      /** Bucket key — matches Equipment.equipmentId */
       equipmentId: string;
       appMethod: AppMethod;
       mixProductId: number;

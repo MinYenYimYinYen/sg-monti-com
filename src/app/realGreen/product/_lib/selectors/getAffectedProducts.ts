@@ -1,4 +1,6 @@
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
+import { Equipment } from "@/app/equipment/EquipmentTypes";
+import { EquipmentPackage } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
 
 export interface AffectedProduct {
   productId: number;
@@ -13,7 +15,7 @@ export interface AffectedProduct {
 }
 
 /**
- * Finds all products that reference a specific appMethodId via their equipmentScenarios.
+ * Finds all products that reference a specific appMethodId via their equipment packages.
  * Used for showing impact before deleting an AppMethod.
  */
 export function getAffectedProducts(
@@ -23,12 +25,12 @@ export function getAffectedProducts(
   const affected: AffectedProduct[] = [];
 
   for (const master of productMasters) {
-    // Check if any equipmentScenario's entries reference this appMethodId
-    const hasScenario = master.equipmentScenarioDocs.some((s) =>
-      s.equipmentEntries.some((e) => e.appMethodId === appMethodId),
+    // Check if any hydrated equipment package's equipment items reference this appMethodId
+    const hasMatch = master.equipmentPackages.some((pkg: EquipmentPackage) =>
+      pkg.equipments.some((e: Equipment) => e.appMethodId === appMethodId),
     );
 
-    if (hasScenario) {
+    if (hasMatch) {
       // Report all sub-configs as potentially affected (the whole master uses this method)
       const affectedSubConfigs = master.subProductConfigs.map((config) => ({
         subId: config.subId,

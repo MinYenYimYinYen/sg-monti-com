@@ -1,6 +1,7 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import {
+  EquipmentPackage,
   ProductMaster,
   SubProductConfig,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
@@ -19,15 +20,13 @@ import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import { hydrateRate } from "@/app/realGreen/product/_lib/selectors/hydrateRate";
-import {
-  EquipmentEntry,
-  EquipmentEntryDoc,
-  EquipmentScenario,
-  EquipmentScenarioDoc,
-} from "@/app/equipment/EquipmentTypes";
+import { Equipment, EquipmentDoc } from "@/app/equipment/EquipmentTypes";
+import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 import { AreaUnit, UnitLabel } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { AppMethod } from "@/app/appMethod/AppMethodTypes";
+import { equipmentSelect } from "@/app/equipment/equipmentSelect";
+import { equipmentPackageSelect } from "@/app/equipment/equipmentPackage/equipmentPackageSelect";
 
 const selectProductMasterDocs = (state: AppState) =>
   state.product.productMasterDocs;
@@ -52,13 +51,12 @@ const selectProductSubDocs = (state: AppState) => state.product.productSubDocs;
 
 const selectProductSubs = createSelector(
   [selectProductSubDocs, unitConfigSelect.unitConfigMap, appMethodSelect.appMethodMap],
-  (subDocs, unitConfigMap, appMethodMap) => {
+  (subDocs, unitConfigMap, _appMethodMap) => {
     const productSubs: ProductSub[] = subDocs.map((doc) => {
       const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
         doc,
         unitConfigMap,
       );
-
 
       return {
         ...doc,
@@ -81,21 +79,27 @@ const selectProductMasters = createSelector(
     selectProductSubsMap,
     unitConfigSelect.unitConfigMap,
     appMethodSelect.appMethodMap,
+    equipmentSelect.equipmentMap,
+    equipmentPackageSelect.equipmentPackageMap,
   ],
-  (masterDocs, subsMap, unitConfigMap, appMethodMap) => {
+  (masterDocs, subsMap, unitConfigMap, appMethodMap, equipmentMap, equipmentPackageMap) => {
     const masters: ProductMaster[] = masterDocs.map((doc) => {
       const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
         doc,
         unitConfigMap,
       );
 
-
       return {
         ...doc,
         productType: "master",
         unitConfig,
         unitConfigDisplay,
-        equipmentScenarios: hydrateEquipmentScenarios(doc.equipmentScenarioDocs ?? [], appMethodMap),
+        equipmentPackages: hydrateEquipmentPackages(
+          doc.equipmentPackageIds ?? [],
+          equipmentPackageMap,
+          equipmentMap,
+          appMethodMap,
+        ),
         subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
           const subProduct = subsMap.get(configDoc.subId);
           const rate = hydrateRate({ subProductConfigDoc: configDoc, appMethodMap });
@@ -263,46 +267,44 @@ const selectAllProductsMap = createSelector(
   },
 );
 
-/**
- * Hydrates EquipmentScenarioDocs into EquipmentScenarios.
- * For each scenario, resolves each entry's appMethodId to a full AppMethod
- * and pre-calculates the waterRate (volume/ksf).
- * Entries whose appMethodId cannot be resolved are dropped.
- * Scenarios with no valid entries are dropped.
- */
-function hydrateEquipmentScenarios(
-  scenarioDocs: EquipmentScenarioDoc[],
+function hydrateEquipmentPackages(
+  packageIds: string[],
+  equipmentPackageMap: Map<string, EquipmentPackageDoc>,
+  equipmentMap: Map<string, EquipmentDoc>,
   appMethodMap: Map<string, AppMethod>,
-): EquipmentScenario[] {
-  return scenarioDocs.flatMap((scenarioDoc) => {
-    const hydratedEntries: EquipmentEntry[] = scenarioDoc.equipmentEntries.flatMap(
-      (entryDoc: EquipmentEntryDoc) => {
-        const appMethod = appMethodMap.get(entryDoc.appMethodId);
+): EquipmentPackage[] {
+  return packageIds.flatMap((packageId) => {
+    const packageDoc = equipmentPackageMap.get(packageId);
+    if (!packageDoc) return [];
+
+    const hydratedEquipments: Equipment[] = packageDoc.equipmentIds.flatMap(
+      (equipmentId) => {
+        const equipmentDoc = equipmentMap.get(equipmentId);
+        if (!equipmentDoc) return [];
+
+        const appMethod = appMethodMap.get(equipmentDoc.appMethodId);
         if (!appMethod) return [];
 
-        // Calculate waterRate: coverage.volume / (coverage.area in ksf)
         const areaInKsf = UnitUtils.area(
           appMethod.coverage.area,
           appMethod.coverage.areaUnit as AreaUnit["desc"],
         ).to(UnitLabel.ksf);
         const waterRate = areaInKsf > 0 ? appMethod.coverage.volume / areaInKsf : 0;
 
-        const entry: EquipmentEntry = {
-          ...entryDoc,
+        const equipment: Equipment = {
+          ...equipmentDoc,
           appMethod,
           waterRate,
         };
-        return [entry];
+        return [equipment];
       },
     );
 
-    if (hydratedEntries.length === 0) return [];
-
-    const scenario: EquipmentScenario = {
-      ...scenarioDoc,
-      equipmentEntries: hydratedEntries,
+    const pkg: EquipmentPackage = {
+      ...packageDoc,
+      equipments: hydratedEquipments,
     };
-    return [scenario];
+    return [pkg];
   });
 }
 
