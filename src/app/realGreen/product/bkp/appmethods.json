@@ -1,0 +1,74 @@
+[{
+  "_id": {
+    "$oid": "69b8f44ace5733283fed9f84"
+  },
+  "appMethodId": "Backpack",
+  "__v": 0,
+  "coverage": {
+    "volume": 4,
+    "volumeUnit": "Mixed Gal",
+    "area": 16,
+    "areaUnit": "1000 SF"
+  },
+  "createdAt": {
+    "$date": "2026-03-17T06:27:22.919Z"
+  },
+  "description": "Backpack blanket spray",
+  "flowRate": {
+    "volume": 0.007071428571428572,
+    "volumeUnit": "Mixed Gal",
+    "time": 1,
+    "timeUnit": "Seconds"
+  },
+  "groundSpeed": {
+    "distance": 90,
+    "distanceUnit": "Feet",
+    "time": 17.5,
+    "timeUnit": "Seconds"
+  },
+  "overlap": 2,
+  "patternWidth": {
+    "distance": 11,
+    "distanceUnit": "Feet"
+  },
+  "updatedAt": {
+    "$date": "2026-03-17T07:28:43.528Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69c164a2ce5733283facd7aa"
+  },
+  "appMethodId": "Tank Mix",
+  "__v": 0,
+  "coverage": {
+    "volume": 1.74,
+    "volumeUnit": "Gal",
+    "area": 1,
+    "areaUnit": "1000 SF"
+  },
+  "createdAt": {
+    "$date": "2026-03-23T16:04:49.109Z"
+  },
+  "description": "Standard tank mix for spray truck.",
+  "flowRate": {
+    "volume": 3,
+    "volumeUnit": "Gal",
+    "time": 61,
+    "timeUnit": "Seconds"
+  },
+  "groundSpeed": {
+    "distance": 90,
+    "distanceUnit": "Feet",
+    "time": 17.5,
+    "timeUnit": "Seconds"
+  },
+  "overlap": 2,
+  "patternWidth": {
+    "distance": 11,
+    "distanceUnit": "Feet"
+  },
+  "updatedAt": {
+    "$date": "2026-03-23T16:04:49.109Z"
+  }
+}]
