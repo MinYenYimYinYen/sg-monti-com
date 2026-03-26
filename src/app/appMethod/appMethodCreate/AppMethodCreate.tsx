@@ -124,20 +124,23 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
             />
           </div>
 
-          {/* Product Type */}
-          <div className="space-y-1">
-            <Label>Product Type</Label>
-            <RadioGroup
-              variant="button-group"
-              value={productType}
-              onValueChange={(value) =>
-                setProductType(value as "liquid" | "granular")
-              }
-            >
-              <RadioGroupItem value="liquid">Liquid</RadioGroupItem>
-              <RadioGroupItem value="granular">Granular</RadioGroupItem>
-            </RadioGroup>
-          </div>
+          {/* Product Type — only shown when creating a new method; changing it on an existing
+              method would cause unit-type mismatches in the solver selectors (NaN). */}
+          {!method && (
+            <div className="space-y-1">
+              <Label>Product Type</Label>
+              <RadioGroup
+                variant="button-group"
+                value={productType}
+                onValueChange={(value) =>
+                  setProductType(value as "liquid" | "granular")
+                }
+              >
+                <RadioGroupItem value="liquid">Liquid</RadioGroupItem>
+                <RadioGroupItem value="granular">Granular</RadioGroupItem>
+              </RadioGroup>
+            </div>
+          )}
 
           {/* Always render all 4 fields - the solver will auto-detect which field to solve for */}
           <GroundSpeedField />

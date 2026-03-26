@@ -20,8 +20,7 @@ export type EnrichedAppProduct = AppProduct & {
   program: Program;
   service: Service;
   season: number;
-  source?: 'actual' | 'planned'; // For mixed actual/planned selectors
-
+  source: 'actual' | 'planned'; // For mixed actual/planned selectors
 };
 
 /**

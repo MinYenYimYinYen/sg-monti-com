@@ -95,7 +95,7 @@ const selectProductMasters = createSelector(
         productType: "master",
         unitConfig,
         unitConfigDisplay,
-        equipmentScenarios: hydrateEquipmentScenarios(doc.equipmentScenarioDocs, appMethodMap),
+        equipmentScenarios: hydrateEquipmentScenarios(doc.equipmentScenarioDocs ?? [], appMethodMap),
         subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
           const subProduct = subsMap.get(configDoc.subId);
           const rate = hydrateRate({ subProductConfigDoc: configDoc, appMethodMap });

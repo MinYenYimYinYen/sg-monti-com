@@ -32,6 +32,8 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { UnitModel } from "@/app/realGreen/product/_lib/models/UnitModel";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { AppMethodModel } from "@/app/appMethod/AppMethodModel";
+import { WATER_PRODUCT_ID } from "@/app/equipment/waterProduct";
 
 const handlers: HandlerMap<ProductContract> = {
   getAll: {
@@ -115,6 +117,110 @@ const handlers: HandlerMap<ProductContract> = {
         productSubDocs: subDocs,
         productCommonDocs: commonDocs,
       };
+
+      //START MIGRATION SCRIPT
+      // One-time migration: build equipmentScenarioDocs from old subProductConfigDoc shape.
+      // Idempotent — skips any doc that already has equipmentScenarioDocs populated.
+      // Remove this block once migration is confirmed.
+      {
+        // Use the native MongoDB collection to read old fields that the new Mongoose schema
+        // no longer declares (appMethodId, useAppMethod, mixedProductIds on sub-docs).
+        const collection = ProductDocPropsModel.collection;
+        const rawDocs = await collection.find({}).toArray();
+
+        // Pre-load all AppMethods so we can resolve descriptions.
+        const appMethodDocsForMigration = await AppMethodModel.find({}).lean();
+        const appMethodMapForMigration = new Map(
+          appMethodDocsForMigration.map((m) => [m.appMethodId, m]),
+        );
+
+        let migrationProcessed = 0;
+        let migrationSkipped = 0;
+        let migrationUpdated = 0;
+
+        for (const rawDoc of rawDocs) {
+          migrationProcessed++;
+
+          // Skip if already migrated (has at least one scenario).
+          const existingScenarios: unknown[] = rawDoc.equipmentScenarioDocs ?? [];
+          if (existingScenarios.length > 0) {
+            migrationSkipped++;
+            continue;
+          }
+
+          const subConfigs: Array<Record<string, unknown>> =
+            (rawDoc.subProductConfigDocs as Array<Record<string, unknown>>) ?? [];
+
+          // Find the carrier sub-config — the one with useAppMethod === true.
+          const carrierConfig = subConfigs.find((c) => c.useAppMethod === true);
+
+          if (!carrierConfig) {
+            // No AppMethod-driven sub-config — initialize equipmentScenarioDocs to [] so the
+            // field is always present (guards against CRM-promoted masters arriving without it).
+            await collection.updateOne(
+              { _id: rawDoc._id },
+              { $set: { equipmentScenarioDocs: [] } },
+            );
+            migrationUpdated++;
+            continue;
+          }
+
+          const appMethodId = carrierConfig.appMethodId as string;
+          const appMethod = appMethodMapForMigration.get(appMethodId);
+          const description = appMethod?.description ?? appMethodId;
+          const mixedProductIds = (carrierConfig.mixedProductIds as number[]) ?? [];
+
+          const equipmentScenarioDocs = [
+            {
+              scenarioId: appMethodId,
+              description,
+              equipmentEntries: [
+                {
+                  equipmentId: appMethodId,
+                  description,
+                  appMethodId,
+                  mixedProductIds,
+                },
+              ],
+            },
+          ];
+
+          // Strip old fields from sub-configs and remove the water entry (subId === WATER_PRODUCT_ID).
+          const cleanedSubConfigs = subConfigs
+            .filter((c) => (c.subId as number) !== WATER_PRODUCT_ID)
+            .map(({ subId, storedRate }) => ({ subId, storedRate }));
+
+          await collection.updateOne(
+            { _id: rawDoc._id },
+            {
+              $set: {
+                equipmentScenarioDocs,
+                subProductConfigDocs: cleanedSubConfigs,
+              },
+            },
+          );
+          migrationUpdated++;
+        }
+
+        // Backfill needsWater / tracksTankLevel on AppMethod docs that predate those fields.
+        const appMethodMigrationResult = await AppMethodModel.updateMany(
+          {
+            $or: [
+              { needsWater: { $exists: false } },
+              { tracksTankLevel: { $exists: false } },
+            ],
+          },
+          { $set: { needsWater: true, tracksTankLevel: true } },
+        );
+
+        console.log(
+          `[Migration] equipmentScenarios: processed=${migrationProcessed}, ` +
+            `skipped=${migrationSkipped}, updated=${migrationUpdated}; ` +
+            `appMethods backfilled=${appMethodMigrationResult.modifiedCount}`,
+        );
+      }
+      //END MIGRATION SCRIPT
+
 
       return { success: true, payload: productsResponse };
     },

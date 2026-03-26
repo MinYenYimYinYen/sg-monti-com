@@ -1,11 +1,30 @@
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { getProductMasters } from "@/app/realGreen/customer/selectors/hydrateProductsPlanned";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { waterProduct } from "@/app/equipment/waterProduct";
 import { EquipmentEntry } from "@/app/equipment/EquipmentTypes";
+
+/**
+ * getProductMasters — filters product rules by size and returns matching ProductMasters.
+ * Moved here from hydrateProductsPlanned.ts (which is now deleted).
+ */
+export function getProductMasters(servCode: ServCode, size: number): ProductMaster[] {
+  const productRules = servCode.productRules.filter((rule) => {
+    const operator = rule.sizeOperator;
+    switch (operator) {
+      case "all":
+        return true;
+      case "lte":
+        return size <= rule.size;
+      case "gt":
+        return size > rule.size;
+    }
+  });
+  if (productRules.length === 0) return [];
+  return productRules.flatMap((rule) => rule.productMasters);
+}
 
 /**
  * ScenarioSelection — the worker's choice of scenario for a given master product.
@@ -28,7 +47,7 @@ export function hydrateLoadoutInventory(params: {
 
   const productMasters = getProductMasters(servCode, servDoc.size);
 
-  const masters = productMasters.map((master) =>
+  const masters = productMasters.map((master: ProductMaster) =>
     hydrateMasterInventory({
       master,
       size: servDoc.size,

@@ -25,9 +25,11 @@ export function PatternWidthField({ disabled }: PatternWidthFieldProps) {
   // Check if this field is being solved for (either auto-detected or explicitly set)
   const missingField = useSelector(solverSelect.missingField);
   const solveForField = useSelector(solverSelect.solveForField);
-  const isDistanceBeingSolved =
-    (missingField?.param === "patternWidth" && missingField?.field === "distance") ||
-    (solveForField?.param === "patternWidth" && solveForField?.field === "distance");
+  // When solveForField is explicitly set, only that field is disabled.
+  // In auto-detect mode (solveForField === null), disable the auto-detected missing field.
+  const isDistanceBeingSolved = solveForField !== null
+    ? solveForField.param === "patternWidth" && solveForField.field === "distance"
+    : missingField?.param === "patternWidth" && missingField?.field === "distance";
 
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>

@@ -11,9 +11,13 @@ import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { DollarSign, Hash, LandPlot } from "lucide-react";
 import { Fragment } from "react";
 import { Number } from "@/components/Number";
-import { useAppProducts } from "@/app/realGreen/customer/_lib/hooks/useAppProducts";
 import { useServCodes } from "@/app/realGreen/customer/_lib/hooks/useServCodes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import { useSelector } from "react-redux";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
+import { loadoutBaseToAppProductCore } from "@/app/realGreen/customer/selectors/loadoutBaseToAppProductCore";
+import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
+import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
 
 type ViewVariant = "countSizeRev" | "servCodes" | "products";
 
@@ -28,8 +32,27 @@ export function CoverSheetCard({
   date,
   employeeMap,
 }: CoverSheetCardProps) {
-  const { getPlannedAppProductTotal } = useAppProducts();
+  const productCommonMap = useSelector(productSelect.productCommonMap);
   const { getServCodeCounts } = useServCodes();
+
+  const getPlannedAppProductTotal = (services: Service[]): AppProduct[] => {
+    const allCores = services.flatMap((service) =>
+      loadoutBaseToAppProductCore(service.loadoutInventory, service.servId),
+    );
+    const productMap = new Map<number, AppProduct>();
+    allCores.forEach((core) => {
+      const existing = productMap.get(core.productId);
+      if (existing) {
+        productMap.set(core.productId, { ...existing, amount: existing.amount + core.amount });
+      } else {
+        productMap.set(core.productId, {
+          ...core,
+          productCommon: productCommonMap.get(core.productId) ?? baseProductCommon,
+        });
+      }
+    });
+    return Array.from(productMap.values());
+  };
 
   // Aggregate all services for the date header
   const allServices = Array.from(employeeMap.values()).flat();
@@ -63,7 +86,7 @@ export function CoverSheetCard({
           <div
             className={"grid grid-cols-3 gap-1 items-center justify-between"}
           >
-            {appProducts.map((product) => (
+            {appProducts.map((product: AppProduct) => (
               <Fragment key={product.productId}>
                 <p>{product.productCommon.productCode}</p>
                 <div className={"flex items-center gap-1"}>
@@ -153,7 +176,7 @@ export function CoverSheetCard({
               <p className={"font-semibold"}>{employeeId}</p>
             </div>
             <div className={"grid grid-cols-3 gap-1 items-center text-sm"}>
-              {eAppProducts.map((product) => (
+              {eAppProducts.map((product: AppProduct) => (
                 <Fragment key={product.productId}>
                   <p>{product.productCommon.productCode}</p>
                   <div className={"flex items-center gap-1"}>

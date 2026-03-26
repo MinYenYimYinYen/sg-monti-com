@@ -8,7 +8,9 @@ import {
   ProductsByServCode,
 } from "@/app/bizPlan/types/inventoryTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { ServiceStatusType } from "@/app/realGreen/_lib/subTypes/serviceStatus";
+import { loadoutBaseToAppProductCore } from "@/app/realGreen/customer/selectors/loadoutBaseToAppProductCore";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
+import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
 
 /**
  * Filter Criteria Type - Single source of truth for what "filtering" means
@@ -64,13 +66,14 @@ export const createProductUsagePlannedSelector = (
   filteredServicesSelector: ReturnType<typeof createFilteredServicesSelector>,
 ) =>
   createSelector(
-    [filteredServicesSelector],
-    (services): ProductUsagePlanned[] => {
-      // Step 1: Flatten and enrich all productsPlanned from filtered services
+    [filteredServicesSelector, productSelect.productCommonMap],
+    (services, productCommonMap): ProductUsagePlanned[] => {
+      // Step 1: Flatten and enrich all planned products from all services
       const enrichedAppProducts: EnrichedAppProduct[] = services.flatMap(
         (service) =>
-          service.productsPlanned.map((appProduct) => ({
-            ...appProduct,
+          loadoutBaseToAppProductCore(service.loadoutInventory, service.servId).map((core) => ({
+            ...core,
+            productCommon: productCommonMap.get(core.productId) ?? baseProductCommon,
             servId: service.servId,
             servCode: service.servCode,
             servCodeId: service.servCodeId,

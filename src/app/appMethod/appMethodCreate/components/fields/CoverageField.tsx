@@ -33,12 +33,14 @@ export function CoverageField({ disabled }: CoverageFieldProps) {
   // Check which specific field is being solved for (either auto-detected or explicitly set)
   const missingField = useSelector(solverSelect.missingField);
   const solveForField = useSelector(solverSelect.solveForField);
-  const isVolumeBeingSolved =
-    (missingField?.param === "coverage" && missingField?.field === "volume") ||
-    (solveForField?.param === "coverage" && solveForField?.field === "volume");
-  const isAreaBeingSolved =
-    (missingField?.param === "coverage" && missingField?.field === "area") ||
-    (solveForField?.param === "coverage" && solveForField?.field === "area");
+  // When solveForField is explicitly set, only that field is disabled.
+  // In auto-detect mode (solveForField === null), disable the auto-detected missing field.
+  const isVolumeBeingSolved = solveForField !== null
+    ? solveForField.param === "coverage" && solveForField.field === "volume"
+    : missingField?.param === "coverage" && missingField?.field === "volume";
+  const isAreaBeingSolved = solveForField !== null
+    ? solveForField.param === "coverage" && solveForField.field === "area"
+    : missingField?.param === "coverage" && missingField?.field === "area";
 
   // Select appropriate units based on product type
   const coverageUnits = productType === "liquid" ? volumeUnits : weightUnits;

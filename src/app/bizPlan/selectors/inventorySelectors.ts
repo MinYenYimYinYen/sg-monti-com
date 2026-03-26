@@ -4,6 +4,9 @@ import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelecto
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/baseServCode";
+import { loadoutBaseToAppProductCore } from "@/app/realGreen/customer/selectors/loadoutBaseToAppProductCore";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
+import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
 import {
   EnrichedAppProduct,
   ProductUsagePlanned,
@@ -24,13 +27,14 @@ import { baseGlobalSettings } from "@/app/globalSettings/_lib/baseGlobalSettings
  * Aggregates all planned product usage across services using Grouper.summarize()
  */
 const selectProductUsagePlanned = createSelector(
-  [centralSelect.services],
-  (services): ProductUsagePlanned[] => {
-    // Step 1: Flatten and enrich all productsPlanned from all services
+  [centralSelect.services, productSelect.productCommonMap],
+  (services, productCommonMap): ProductUsagePlanned[] => {
+    // Step 1: Flatten and enrich all planned products from all services
     const enrichedAppProducts: EnrichedAppProduct[] = services.flatMap(
       (service) =>
-        service.productsPlanned.map((appProduct) => ({
-          ...appProduct, // Reuse existing AppProduct structure
+        loadoutBaseToAppProductCore(service.loadoutInventory, service.servId).map((core) => ({
+          ...core,
+          productCommon: productCommonMap.get(core.productId) ?? baseProductCommon,
           servId: service.servId,
           servCode: service.servCode,
           servCodeId: service.servCodeId,
@@ -445,26 +449,38 @@ const selectSummaryStats = createSelector(
  * Uses actual production data for completed services (status === "S"), planned for remaining
  */
 const selectProductsMixedActualPlanned = createSelector(
-  [centralSelect.services],
-  (services): ProductUsageMixed[] => {
+  [centralSelect.services, productSelect.productCommonMap],
+  (services, productCommonMap): ProductUsageMixed[] => {
     // Step 1: Flatten all products, choosing actual or planned based on status
-    const mixedProducts: EnrichedAppProduct[] = services.flatMap((service) => {
+    const mixedProducts: EnrichedAppProduct[] = services.flatMap((service): EnrichedAppProduct[] => {
       const isComplete = service.status === "S";
-      const products = isComplete
-        ? service.production?.usedAppProducts || []
-        : service.productsPlanned;
-
-      return products.map((p) => ({
-        ...p,
-        servId: service.servId,
-        servCode: service.servCode,
-        servCodeId: service.servCodeId,
-        customer: service.program.customer,
-        program: service.program,
-        service,
-        season: service.season,
-        source: isComplete ? ("actual" as const) : ("planned" as const),
-      }));
+      if (isComplete) {
+        const products = service.production?.usedAppProducts || [];
+        return products.map((p) => ({
+          ...p,
+          servId: service.servId,
+          servCode: service.servCode,
+          servCodeId: service.servCodeId,
+          customer: service.program.customer,
+          program: service.program,
+          service,
+          season: service.season,
+          source: "actual" as const,
+        }));
+      } else {
+        return loadoutBaseToAppProductCore(service.loadoutInventory, service.servId).map((core) => ({
+          ...core,
+          productCommon: productCommonMap.get(core.productId) ?? baseProductCommon,
+          servId: service.servId,
+          servCode: service.servCode,
+          servCodeId: service.servCodeId,
+          customer: service.program.customer,
+          program: service.program,
+          service,
+          season: service.season,
+          source: "planned" as const,
+        }));
+      }
     });
 
     // Step 2: Group by productId and summarize
@@ -508,27 +524,28 @@ const selectProductsMixedActualPlanned = createSelector(
  * Works with whatever seasons are loaded into state, comparing based on globalSettings.season
  */
 const selectProductComparison = createSelector(
-  [centralSelect.services, globalSettingsSelect.season],
+  [centralSelect.services, globalSettingsSelect.season, productSelect.productCommonMap],
   (
     allServices,
     currentSeason = baseGlobalSettings.season,
+    productCommonMap,
   ): ProductComparison[] => {
     const lyServices = allServices.filter(
       (s) => s.season === currentSeason - 1,
     );
     const tyServices = allServices.filter((s) => s.season === currentSeason);
 
-    // Build usage maps for LY and TY
+    // Build usage maps for LY and TY using loadoutBaseToAppProductCore
     const buildUsageMap = (services: typeof allServices) => {
       const map = new Map<number, { quantity: number; serviceCount: number }>();
       services.forEach((service) => {
-        service.productsPlanned.forEach((appProduct) => {
-          const existing = map.get(appProduct.productId) || {
+        loadoutBaseToAppProductCore(service.loadoutInventory, service.servId).forEach((core) => {
+          const existing = map.get(core.productId) || {
             quantity: 0,
             serviceCount: 0,
           };
-          map.set(appProduct.productId, {
-            quantity: existing.quantity + appProduct.amount,
+          map.set(core.productId, {
+            quantity: existing.quantity + core.amount,
             serviceCount: existing.serviceCount + 1,
           });
         });
@@ -552,17 +569,11 @@ const selectProductComparison = createSelector(
           ly.quantity > 0 ? (quantityDiff / ly.quantity) * 100 : 0;
         const serviceDiff = ty.serviceCount - ly.serviceCount;
 
-        // Get productCommon from first available service
-        const firstService = [...lyServices, ...tyServices].find((s) =>
-          s.productsPlanned.some((ap) => ap.productId === productId),
-        );
-        const productCommon = firstService?.productsPlanned.find(
-          (ap) => ap.productId === productId,
-        )?.productCommon;
+        const productCommon = productCommonMap.get(productId) ?? baseProductCommon;
 
         return {
           productId,
-          productCommon: productCommon!,
+          productCommon,
           lastYear: {
             quantity: Math.round(ly.quantity),
             services: ly.serviceCount,
@@ -573,12 +584,12 @@ const selectProductComparison = createSelector(
           },
           variance: {
             quantityDiff: Math.round(quantityDiff),
-            quantityPercent: Math.round(quantityPercent * 100) / 100, // Round to 2 decimals
+            quantityPercent: Math.round(quantityPercent * 100) / 100,
             serviceDiff,
           },
         };
       })
-      .filter((p) => p.productCommon); // Filter out any missing productCommon
+      .filter((p) => p.productCommon.productId !== baseProductCommon.productId);
   },
 );
 

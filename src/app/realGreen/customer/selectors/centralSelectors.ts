@@ -13,7 +13,6 @@ import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
 import { discountSelect } from "../../discount/selectors/discountSelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import hydrateProduction from "@/app/realGreen/customer/selectors/hydrateProduction";
-import { hydrateProductsPlanned } from "@/app/realGreen/customer/selectors/hydrateProductsPlanned";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
@@ -196,15 +195,10 @@ export const selectCustomers = createSelector(
               serviceConditions: serviceConditionsByServId.get(servDoc.servId) ?? [],
               }
             ),
-            productsPlanned: hydrateProductsPlanned(
-              servDoc,
-              servCodeMap,
-              productCommonMap,
-            ),
             lastAssigned,
             promise: servPromiseResult.promise,
             promiseIssues: servPromiseResult.issues,
-            loadoutInventory: hydrateLoadoutInventory({servDoc, servCodeMap})
+            loadoutInventory: hydrateLoadoutInventory({servDoc, servCodeMap}),
           };
 
           // Add x after all other properties are set - mutate in place to preserve references

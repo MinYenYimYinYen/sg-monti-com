@@ -8,8 +8,10 @@ import { useIsClient } from "@/lib/hooks/useIsClient";
 import { useCoverSheetDeps } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheetDeps";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { useServCodes } from "@/app/realGreen/customer/_lib/hooks/useServCodes";
-import { useAppProducts } from "@/app/realGreen/customer/_lib/hooks/useAppProducts";
 import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
+import { loadoutBaseToAppProductCore } from "@/app/realGreen/customer/selectors/loadoutBaseToAppProductCore";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
+import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
 import { tw } from "@/lib/pdf/tw";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { HashPDFIcon } from "@/lib/pdf/pdfIcons";
@@ -40,8 +42,27 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
     coverSheetsSelect.servicesByDateAndEmployee,
   );
   const serviceByEmployee = servicesByDateAndEmployee.get(routeDate);
+  const productCommonMap = useSelector(productSelect.productCommonMap);
   const { getServCodeCounts, getServicesByRuleDesc } = useServCodes();
-  const { getPlannedAppProductTotal } = useAppProducts();
+
+  const getPlannedAppProductTotal = (services: Service[]): AppProduct[] => {
+    const allCores = services.flatMap((service) =>
+      loadoutBaseToAppProductCore(service.loadoutInventory, service.servId),
+    );
+    const productMap = new Map<number, AppProduct>();
+    allCores.forEach((core) => {
+      const existing = productMap.get(core.productId);
+      if (existing) {
+        productMap.set(core.productId, { ...existing, amount: existing.amount + core.amount });
+      } else {
+        productMap.set(core.productId, {
+          ...core,
+          productCommon: productCommonMap.get(core.productId) ?? baseProductCommon,
+        });
+      }
+    });
+    return Array.from(productMap.values());
+  };
 
   if (!isClient || !serviceByEmployee) return null;
 
@@ -59,6 +80,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
               getPlannedAppProductTotal={getPlannedAppProductTotal}
               getServCodeCounts={getServCodeCounts}
               getServicesByRuleDesc={getServicesByRuleDesc}
+              productCommonMap={productCommonMap}
             />
           </PDFViewer>
         )}
@@ -81,6 +103,7 @@ type CoverSheetsPDFProps = {
     idWithRule: string;
     services: Service[];
   }[];
+  productCommonMap: ReturnType<typeof productSelect.productCommonMap>;
 };
 
 function CoverSheetsPDF({
@@ -89,6 +112,7 @@ function CoverSheetsPDF({
   getServCodeCounts,
   getPlannedAppProductTotal,
   getServicesByRuleDesc,
+  productCommonMap,
 }: CoverSheetsPDFProps) {
   return (
     <Document>
@@ -200,16 +224,23 @@ function CoverSheetsPDF({
               const customer = service.x.customer;
               const address = customer.address;
               const flags = customer.flags;
-              const products = service.productsPlanned;
+              const pcMap = productCommonMap;
+              const products: AppProduct[] = loadoutBaseToAppProductCore(
+                service.loadoutInventory,
+                service.servId,
+              ).map((core) => ({
+                ...core,
+                productCommon: pcMap.get(core.productId) ?? baseProductCommon,
+              }));
               let filtered: AppProduct[] = products;
               if (
                 products
-                  .map((appProduct) => appProduct.productCommon.description)
+                  .map((ap: AppProduct) => ap.productCommon.description)
                   .includes("Water")
               ) {
                 filtered = products.filter(
-                  (appProduct) =>
-                    appProduct.productCommon.description === "Water",
+                  (ap: AppProduct) =>
+                    ap.productCommon.description === "Water",
                 );
               }
 
