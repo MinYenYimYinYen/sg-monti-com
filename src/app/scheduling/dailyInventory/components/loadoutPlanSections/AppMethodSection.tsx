@@ -1,9 +1,12 @@
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
+import { loadoutFormActions } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
 import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
 import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
+import { getFieldPath } from "@/lib/validation/getFieldPath";
+import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 type AppMethodSectionProps = {
   masterProductId: number;
@@ -14,6 +17,7 @@ export function AppMethodSection({
   masterProductId,
   appMethodId,
 }: AppMethodSectionProps) {
+  const dispatch = useDispatch();
   const { updateLoadout } = useLoadoutForm();
 
   const services = useSelector(loadoutFormSelect.services);
@@ -35,6 +39,29 @@ export function AppMethodSection({
   const startAppMethod = startMaster?.appMethods.find(
     (am) => am.appMethod.appMethodId === appMethodId,
   );
+
+  // Build field path for validation
+  const masterIndex = loadout.masters.findIndex(
+    (m) => m.product.productId === masterProductId
+  );
+  const appMethodIndex = startMaster?.appMethods.findIndex(
+    (am) => am.appMethod.appMethodId === appMethodId
+  ) ?? -1;
+
+  const fieldPath = getFieldPath<LoadoutBase>()
+    .field("masters")
+    .index(masterIndex)
+    .field("appMethods")
+    .index(appMethodIndex)
+    .field("startAmount")
+    .toString();
+
+  // Use proper validation selectors that respect touched state
+  const shouldShow = useSelector(
+    loadoutFormSelect.loadout.startValidation.shouldShowFieldIssue(fieldPath)
+  );
+  const allIssues = useSelector(loadoutFormSelect.loadout.startValidation.issues);
+  const fieldIssue = shouldShow ? allIssues[fieldPath] : undefined;
 
   if (!plannedAppMethod) return null;
 
@@ -88,25 +115,33 @@ export function AppMethodSection({
             Planned: {mixProductAmountDisplay}
           </div>
         </div>
-        <Input
-          type="number"
-          placeholder={plannedAppMethod.mixProduct.unitConfig.conversions.load.unitLabel}
-          className="w-32"
-          value={displayValue}
-          onChange={(e) => {
-            const loadValue = e.target.value ? parseFloat(e.target.value) : null;
-            // Convert load units to app units for storage
-            const appValue = loadValue != null
-              ? convertQuantity(
-                  loadValue,
-                  "load",
-                  "app",
-                  plannedAppMethod.mixProduct.unitConfig
-                )
-              : null;
-            handleAmountChange(appValue);
-          }}
-        />
+        <div className="flex flex-col items-end">
+          <Input
+            type="number"
+            placeholder={plannedAppMethod.mixProduct.unitConfig.conversions.load.unitLabel}
+            className={`w-32 ${fieldIssue ? 'border-red-500' : ''}`}
+            value={displayValue}
+            onChange={(e) => {
+              const loadValue = e.target.value ? parseFloat(e.target.value) : null;
+              // Convert load units to app units for storage
+              const appValue = loadValue != null
+                ? convertQuantity(
+                    loadValue,
+                    "load",
+                    "app",
+                    plannedAppMethod.mixProduct.unitConfig
+                  )
+                : null;
+              handleAmountChange(appValue);
+            }}
+            onBlur={() => {
+              dispatch(loadoutFormActions.markStartLoadoutFieldTouched(fieldPath));
+            }}
+          />
+          {fieldIssue && (
+            <span className="text-red-500 text-xs mt-1">{fieldIssue}</span>
+          )}
+        </div>
       </div>
     </div>
   );

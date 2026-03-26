@@ -75,7 +75,7 @@ export const loadoutFormSlice = createSlice({
     addProductToLoadout: (state, action: PayloadAction<{
       slotId: string;
       product: ProductSub | ProductSingle;
-      amount: number;
+      amount: number | null;
     }>) => {
       const { slotId, product, amount } = action.payload;
       const slot = state.pendingProductSlots.find(s => s.id === slotId);

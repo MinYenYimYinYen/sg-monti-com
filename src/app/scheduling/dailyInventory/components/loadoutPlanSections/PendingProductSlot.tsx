@@ -5,12 +5,9 @@ import {
   MultiSelect,
 
 } from "@/components/multiselect/MultiSelect";
-import { Input } from "@/style/components/input";
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
-import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
-import { ScrollArea } from "@/style/components/scroll-area";
 import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
 import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
@@ -23,8 +20,6 @@ type PendingProductSlotProps = {
 export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
   const {
     updatePendingSlotCategory,
-    updatePendingSlotProduct,
-    updatePendingSlotAmount,
     addProductToLoadout,
     removePendingProductSlot,
   } = useLoadoutForm();
@@ -32,31 +27,16 @@ export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
   const productCategories = useSelector(loadoutFormSelect.productCategories);
   const productsForSlots = useSelector(loadoutFormSelect.productsForPendingSlots);
   const pendingSlots = useSelector(loadoutFormSelect.pendingProductSlots);
-  const pendingSlotProducts = useSelector(loadoutFormSelect.pendingSlotProducts);
-  const pendingSlotAmounts = useSelector(loadoutFormSelect.pendingSlotAmounts);
 
   const slot = pendingSlots.find((s) => s.id === slotId);
   const availableProducts = productsForSlots.get(slotId) ?? [];
-  const selectedProduct = pendingSlotProducts[slotId];
-  const amount = pendingSlotAmounts[slotId] ?? "";
 
   if (!slot) return null;
 
-  const handleConfirm = () => {
-    if (!selectedProduct || !amount) return;
-
-    const loadAmount = parseFloat(amount);
-    if (isNaN(loadAmount) || loadAmount <= 0) return;
-
-    // Convert load units to app units for storage
-    const appAmount = convertQuantity(
-      loadAmount,
-      "load",
-      "app",
-      selectedProduct.unitConfig,
-    );
-
-    addProductToLoadout(slotId, selectedProduct, appAmount);
+  const handleProductSelect = (product: ProductSub | ProductSingle | null) => {
+    if (!product) return;
+    // Immediately add product to loadout with null amount
+    addProductToLoadout(slotId, product, null);
   };
 
   const handleCancel = () => {
@@ -90,9 +70,9 @@ export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
       <MultiSelect
         mode="single"
         className="flex-1 min-w-[200px]"
-        value={selectedProduct ? [selectedProduct] : []}
+        value={[]}
         onValueChange={(values) => {
-          updatePendingSlotProduct(slotId, values[0] || null);
+          handleProductSelect(values[0] || null);
         }}
         getValueKey={(product: ProductSub | ProductSingle) =>
           String(product.productId)
@@ -112,26 +92,6 @@ export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
           ))}
         </MultiSelectContent>
       </MultiSelect>
-
-      {/* Amount Input */}
-      <Input
-        type="number"
-        placeholder="Amount"
-        className="w-24 min-w-[80px]"
-        value={amount}
-        onChange={(e) => {
-          updatePendingSlotAmount(slotId, e.target.value);
-        }}
-      />
-
-      {/* Confirm Button */}
-      <button
-        onClick={handleConfirm}
-        className="text-green-600 hover:text-green-700"
-        disabled={!selectedProduct || !amount}
-      >
-        <Check className="h-4 w-4" />
-      </button>
 
       {/* Cancel Button */}
       <button

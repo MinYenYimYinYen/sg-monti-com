@@ -35,7 +35,7 @@ export function useLoadoutForm() {
     dispatch(loadoutFormActions.removePendingProductSlot(slotId));
   };
 
-  const addProductToLoadout = (slotId: string, product: ProductSub | ProductSingle, amount: number) => {
+  const addProductToLoadout = (slotId: string, product: ProductSub | ProductSingle, amount: number | null) => {
     dispatch(loadoutFormActions.addProductToLoadout({ slotId, product, amount }));
   };
 

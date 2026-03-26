@@ -48,16 +48,16 @@ export type LoadoutBase = {
     product: ProductSingle;
     unitId: number;
     unit: UnitCRM;
-    startAmount: number;
-    finishAmount: number;
+    startAmount: number | null;
+    finishAmount: number | null;
   }[];
   subProducts: {
     productId: number;
     product: ProductSub;
     unitId: number;
     unit: UnitCRM;
-    startAmount: number;
-    finishAmount: number;
+    startAmount: number | null;
+    finishAmount: number | null;
   }[];
 };
 
@@ -102,8 +102,8 @@ export type LoadoutDoc = {
     }[];
     singles: {
       productId: number;
-      startAmount: number;
-      finishAmount: number;
+      startAmount: number | null;
+      finishAmount: number | null;
       unitId: number;
     }
   }[];
