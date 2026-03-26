@@ -8,6 +8,7 @@ import {
  * Totals amounts at every level of the tree (masters → appMethods → subProducts).
  */
 export function aggregateLoadoutInventory(services: Service[]): LoadoutBase {
+  //todo: service.loadoutInventory should be renamed to service.loadoutBase
   const loadoutInventories = services.map((service) => service.loadoutInventory);
 
   // Flatten all masters from all inventories
