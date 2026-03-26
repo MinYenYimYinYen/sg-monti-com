@@ -94,10 +94,34 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
     ).unwrap();
   };
 
+  const updateMasterEquipmentPackages = (params: {
+    masterId: number;
+    equipmentPackageIds: string[];
+  }) => {
+    const { masterId, equipmentPackageIds } = params;
+    dispatch(
+      productActions.updateMasterEquipmentPackages({
+        masterId,
+        equipmentPackageIds,
+      }),
+    );
+
+    return dispatch(
+      productActions.saveMasterEquipmentPackages({
+        params,
+        config: {
+          force: true,
+          showLoading: false,
+        },
+      }),
+    ).unwrap();
+  };
+
   return {
     refresh,
     updateCategory,
     updateMasterSubProducts,
+    updateMasterEquipmentPackages,
     updateUnit,
   };
 }

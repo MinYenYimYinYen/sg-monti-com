@@ -119,6 +119,7 @@ function hydrateMasterInventory(params: {
         mixProduct,
         mixProductUnitId: mixProduct.unit.unitId,
         mixProductUnit: mixProduct.unit,
+        //todo: need to put waterRate back on
         plannedAmount: size * entry.waterRate,
         startAmount: null,
         finishAmount: null,

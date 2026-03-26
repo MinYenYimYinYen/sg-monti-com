@@ -39,4 +39,9 @@ export interface ProductContract extends ApiContract {
     params: { unit: UnitCRM };
     result: SuccessResponse;
   };
+
+  saveMasterEquipmentPackages: {
+    params: { masterId: number; equipmentPackageIds: string[] };
+    result: SuccessResponse;
+  };
 }

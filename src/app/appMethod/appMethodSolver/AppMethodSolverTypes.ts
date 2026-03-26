@@ -4,7 +4,16 @@ import {
   LengthUnit,
   TimeUnit,
   WeightUnit,
+  UnitLabel,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
+
+type FlowRate = {
+  volume: number;
+  volumeUnit: VolumeUnit["desc"] | WeightUnit["desc"];
+  time: number;
+  timeUnit: TimeUnit["desc"];
+}
+
 
 /**
  * UI feedback for validation and solver results
@@ -50,14 +59,10 @@ export type AppMethodParams = {
  * Result type with all parameters filled in
  * All numeric fields are guaranteed to be numbers (no undefined)
  */
+//todo: When everything is properly working, enforce granular flow rate with typescript
 export type AppMethodResult = {
   productType: "liquid" | "granular";
-  flowRate: {
-    volume: number;
-    volumeUnit: VolumeUnit["desc"] | WeightUnit["desc"];
-    time: number;
-    timeUnit: TimeUnit["desc"];
-  };
+  flowRate: FlowRate;
   groundSpeed: {
     distance: number;
     distanceUnit: LengthUnit["desc"];
@@ -117,3 +122,30 @@ export type MissingField = {
   param: keyof Omit<AppMethodParams, "overlap" | "productType">;
   field: "volume" | "time" | "distance" | "area";
 };
+
+export const baseAppMethodResult: AppMethodResult = {
+  productType: "liquid",
+  coverage: {
+    volume: 0,
+    volumeUnit: UnitLabel.flOz,
+    area: 1,
+    areaUnit: UnitLabel.ksf,
+  },
+  flowRate: {
+    volume: 0,
+    volumeUnit: UnitLabel.flOz,
+    time: 1,
+    timeUnit: UnitLabel.min,
+  },
+  groundSpeed: {
+    distance: 0,
+    distanceUnit: UnitLabel.ft,
+    time: 1,
+    timeUnit: UnitLabel.min,
+  },
+  overlap: 2,
+  patternWidth: {
+    distance: 1,
+    distanceUnit: UnitLabel.ft,
+  }
+}

@@ -1,4 +1,6 @@
 import { AppMethodResult } from "./appMethodSolver/AppMethodSolver";
+import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import { baseAppMethodResult } from "@/app/appMethod/appMethodSolver/AppMethodSolverTypes";
 
 /**
  * AppMethod entity - reusable application method configuration
@@ -29,3 +31,11 @@ export type AppMethod = AppMethodResult & {
  * Same as AppMethod - all data is stored inline with complete unit information
  */
 export type AppMethodDoc = AppMethod;
+
+export const baseAppMethod: AppMethod = {
+  ...baseAppMethodResult,
+  appMethodId: baseStrId,
+  description: baseStrId,
+  needsWater: true,
+  tracksTankLevel: true,
+}

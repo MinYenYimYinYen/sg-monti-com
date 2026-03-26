@@ -48,6 +48,12 @@ const ProductDocPropsSchema = new mongoose.Schema(
       default: [],
     },
 
+    equipmentPackageIds: {
+      type: [String],
+      required: false,
+      default: [],
+    },
+
   },
   { timestamps: true },
 );

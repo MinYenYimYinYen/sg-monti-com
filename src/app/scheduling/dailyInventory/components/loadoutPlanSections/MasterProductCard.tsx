@@ -12,6 +12,8 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
   const services = useSelector(loadoutFormSelect.services);
   const loadoutInventory = aggregateLoadoutInventory(services);
 
+  console.log("loadoutInventory", loadoutInventory);
+
   const master = loadoutInventory.masters.find(
     (m) => m.product.productId === masterProductId,
   );

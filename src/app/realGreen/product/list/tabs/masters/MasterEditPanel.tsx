@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
+import { equipmentPackageSelect } from "@/app/equipment/equipmentPackage/equipmentPackageSelect";
+import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipmentPackage";
 import { Button } from "@/style/components/button";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { Input } from "@/style/components/input";
@@ -55,10 +57,10 @@ interface MasterEditPanelProps {
 }
 
 export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
-  const { updateCategory, updateUnit, updateMasterSubProducts } = useProduct(
-    {},
-  );
+  const { updateCategory, updateUnit, updateMasterSubProducts, updateMasterEquipmentPackages } = useProduct({});
+  useEquipmentPackage({ autoLoad: true });
   const productSubs = useSelector(productSelect.productSubs);
+  const allPackageDocs = useSelector(equipmentPackageSelect.equipmentPackageDocs);
 
   // --- Category state ---
   const [newCategoryName, setNewCategoryName] = useState(master.category);
@@ -77,6 +79,12 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [subsStatus, setSubsStatus] = useState<SaveStatus>("idle");
 
+  // --- Equipment Packages state ---
+  const [packageIds, setPackageIds] = useState<string[]>(
+    master.equipmentPackageIds,
+  );
+  const [pkgStatus, setPkgStatus] = useState<SaveStatus>("idle");
+
   // Reset all when the selected master changes
   React.useEffect(() => {
     setNewCategoryName(master.category);
@@ -86,12 +94,15 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
     setConfigDocs(master.subProductConfigDocs);
     setSubsStatus("idle");
     setSearchTerm("");
+    setPackageIds(master.equipmentPackageIds);
+    setPkgStatus("idle");
   }, [
     master.productId,
     master.category,
     master.unit.unitId,
     master.unit.desc,
     master.subProductConfigDocs,
+    master.equipmentPackageIds,
   ]);
 
   const canSaveCategory =
@@ -466,50 +477,152 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
 
           {/* ── Equipment Packages ── */}
           <TabsContent value="equipment">
-            <div className="pt-2">
-              {master.equipmentPackages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-[200px] border-2 border-dashed border-muted rounded-lg gap-2">
-                  <p className="text-muted-foreground text-sm">
-                    No equipment packages configured
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Equipment packages define which machines and AppMethods are used for this product
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {master.equipmentPackages.map((pkg) => (
-                    <div
-                      key={pkg.packageId}
-                      className="rounded-md border p-3 space-y-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{pkg.packageId}</Badge>
-                        <span className="text-sm font-medium">{pkg.description}</span>
-                        <Badge className="ml-auto text-xs">
-                          {pkg.equipments.length} equipment
-                        </Badge>
-                      </div>
-                      <div className="pl-2 space-y-1">
-                        {pkg.equipments.map((entry: Equipment) => (
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Available packages */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Available</Label>
+                  <ScrollArea className="h-[300px] rounded-md border">
+                    <div className="p-3 space-y-1.5">
+                      {allPackageDocs.length === 0 ? (
+                        <div className="text-sm text-muted-foreground text-center py-8">
+                          No packages defined yet
+                        </div>
+                      ) : (
+                        allPackageDocs.map((pkg) => (
                           <div
-                            key={entry.equipmentId}
-                            className="flex items-center gap-3 text-xs text-muted-foreground"
+                            key={pkg.packageId}
+                            className="flex items-start space-x-3 rounded-md border p-2.5 hover:bg-accent/10 cursor-pointer"
+                            onClick={() =>
+                              setPackageIds((prev) =>
+                                prev.includes(pkg.packageId)
+                                  ? prev.filter((id) => id !== pkg.packageId)
+                                  : [...prev, pkg.packageId],
+                              )
+                            }
                           >
-                            <span className="font-mono">{entry.equipmentId}</span>
-                            <span>→</span>
-                            <span>{entry.appMethod.description}</span>
-                            <span className="ml-auto">
-                              {entry.waterRate.toFixed(2)} gal/ksf
-                            </span>
+                            <Checkbox
+                              checked={packageIds.includes(pkg.packageId)}
+                              onCheckedChange={() =>
+                                setPackageIds((prev) =>
+                                  prev.includes(pkg.packageId)
+                                    ? prev.filter((id) => id !== pkg.packageId)
+                                    : [...prev, pkg.packageId],
+                                )
+                              }
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="font-mono text-xs shrink-0">
+                                  {pkg.packageId}
+                                </Badge>
+                                <span className="text-sm truncate">{pkg.description}</span>
+                              </div>
+                              {pkg.equipmentIds.length > 0 && (
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {pkg.equipmentIds.join(", ")}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        ))}
-                      </div>
+                        ))
+                      )}
                     </div>
-                  ))}
+                  </ScrollArea>
                 </div>
-              )}
-              {/* TODO: Add / Edit / Remove package buttons (Equipment Plan step C) */}
+
+                {/* Assigned packages */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Assigned ({packageIds.length})
+                  </Label>
+                  <ScrollArea className="h-[300px] rounded-md border">
+                    <div className="p-3 space-y-1.5">
+                      {packageIds.length === 0 ? (
+                        <div className="text-sm text-muted-foreground text-center py-8">
+                          No packages assigned
+                        </div>
+                      ) : (
+                        packageIds.map((pkgId) => {
+                          const pkg = allPackageDocs.find((p) => p.packageId === pkgId);
+                          const hydrated = master.equipmentPackages.find(
+                            (p) => p.packageId === pkgId,
+                          );
+                          return (
+                            <div
+                              key={pkgId}
+                              className="rounded-md border p-2.5 space-y-1.5"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {pkgId}
+                                </Badge>
+                                <span className="text-sm flex-1">
+                                  {pkg?.description ?? pkgId}
+                                </span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                                  onClick={() =>
+                                    setPackageIds((prev) =>
+                                      prev.filter((id) => id !== pkgId),
+                                    )
+                                  }
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                              {hydrated && hydrated.equipments.map((entry: Equipment) => (
+                                <div
+                                  key={entry.equipmentId}
+                                  className="flex items-center gap-2 pl-2 text-xs text-muted-foreground"
+                                >
+                                  <span className="font-mono">{entry.equipmentId}</span>
+                                  <span>→</span>
+                                  <span>{entry.appMethod.description}</span>
+                                  {/*<span className="ml-auto">*/}
+                                  {/*  {entry.waterRate.toFixed(2)} gal/ksf*/}
+                                  {/*</span>*/}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setPackageIds(master.equipmentPackageIds)}
+                  disabled={pkgStatus === "saving" || pkgStatus === "success"}
+                >
+                  Reset
+                </Button>
+                <SaveButton
+                  onClick={async () => {
+                    try {
+                      setPkgStatus("saving");
+                      await updateMasterEquipmentPackages({
+                        masterId: master.productId,
+                        equipmentPackageIds: packageIds,
+                      });
+                      setPkgStatus("success");
+                    } catch (e) {
+                      console.error("Error saving equipment packages:", e);
+                      setPkgStatus("idle");
+                    }
+                  }}
+                  status={pkgStatus}
+                  onSuccessComplete={() => setPkgStatus("idle")}
+                >
+                  Save Changes
+                </SaveButton>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
