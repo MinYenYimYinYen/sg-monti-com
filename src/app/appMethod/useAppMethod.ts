@@ -50,5 +50,18 @@ export function useAppMethod({ autoLoad }: { autoLoad?: boolean }) {
     );
   };
 
-  return { refresh, upsertAppMethod, deleteAppMethod };
+  const checkAppMethodDependencies = async (appMethodId: string) => {
+    const result = await dispatch(
+      appMethodActions.checkDependencies({
+        params: { appMethodId },
+        config: { showLoading: false, force: true },
+      }),
+    );
+    if (appMethodActions.checkDependencies.fulfilled.match(result)) {
+      return result.payload;
+    }
+    return null;
+  };
+
+  return { refresh, upsertAppMethod, deleteAppMethod, checkAppMethodDependencies };
 }

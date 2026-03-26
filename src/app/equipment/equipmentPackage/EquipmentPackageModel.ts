@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { createModel } from "@/lib/mongoose/createModel";
 import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
 
-const EquipmentPackageSchema = new mongoose.Schema<EquipmentPackageDoc>(
+const EquipmentPackageSchema = new mongoose.Schema(
   {
     packageId: { type: String, required: true, unique: true },
     description: { type: String, required: true },

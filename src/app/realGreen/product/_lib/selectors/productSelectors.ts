@@ -282,7 +282,7 @@ function hydrateEquipmentPackages(
         const equipmentDoc = equipmentMap.get(equipmentId);
         if (!equipmentDoc) return [];
 
-        const appMethod = appMethodMap.get(equipmentDoc.appMethodId);
+        const appMethod = appMethodMap.get(equipmentDoc.defaultAppMethodId);
         if (!appMethod) return [];
 
         const areaInKsf = UnitUtils.area(
@@ -292,7 +292,11 @@ function hydrateEquipmentPackages(
         const waterRate = areaInKsf > 0 ? appMethod.coverage.volume / areaInKsf : 0;
 
         const equipment: Equipment = {
-          ...equipmentDoc,
+          equipmentId: equipmentDoc.equipmentId,
+          description: equipmentDoc.description,
+          defaultAppMethodId: equipmentDoc.defaultAppMethodId,
+          appMethodIds: equipmentDoc.appMethodIds,
+          mixedProductIds: equipmentDoc.mixedProductIds,
           appMethod,
           waterRate,
         };

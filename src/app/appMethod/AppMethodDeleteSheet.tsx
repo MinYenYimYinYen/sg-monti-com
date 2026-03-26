@@ -22,11 +22,12 @@ import {
 } from "@/style/components/select";
 import { Label } from "@/style/components/label";
 import { AppMethod } from "./AppMethodTypes";
+import { EquipmentDoc } from "@/app/equipment/EquipmentTypes";
 import { productSelect } from "../realGreen/product/_lib/selectors/productSelectors";
 import { getAffectedProducts, AffectedProduct } from "../realGreen/product/_lib/selectors/getAffectedProducts";
 import { useAppMethod } from "./useAppMethod";
 import { appMethodSelect } from "./appMethodSelect";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, XCircle } from "lucide-react";
 
 interface AppMethodDeleteSheetProps {
   method: AppMethod;
@@ -43,11 +44,31 @@ export function AppMethodDeleteSheet({
 }: AppMethodDeleteSheetProps) {
   const productMasters = useSelector(productSelect.productMasters);
   const allAppMethods = useSelector(appMethodSelect.appMethodDocs);
-  const { deleteAppMethod } = useAppMethod({});
+  const { deleteAppMethod, checkAppMethodDependencies } = useAppMethod({});
 
-  const [deleteMode, setDeleteMode] = useState<"clear" | "reassign">("clear");
-  const [replacementAppMethodId, setReplacementAppMethodId] = useState<string>("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Equipment dependency state (loaded from API)
+  const [equipmentWithDefault, setEquipmentWithDefault] = useState<EquipmentDoc[]>([]);
+  const [equipmentInAllowed, setEquipmentInAllowed] = useState<EquipmentDoc[]>([]);
+  const [depsLoaded, setDepsLoaded] = useState(false);
+
+  // Load equipment dependencies when sheet opens
+  React.useEffect(() => {
+    if (!open) {
+      setDepsLoaded(false);
+      setEquipmentWithDefault([]);
+      setEquipmentInAllowed([]);
+      return;
+    }
+    checkAppMethodDependencies(method.appMethodId).then((result: Awaited<ReturnType<typeof checkAppMethodDependencies>>) => {
+      if (result) {
+        setEquipmentWithDefault(result.equipmentWithDefault);
+        setEquipmentInAllowed(result.equipmentInAllowed);
+      }
+      setDepsLoaded(true);
+    });
+  }, [open, method.appMethodId, checkAppMethodDependencies]);
 
   const affectedProducts = useMemo(
     () => getAffectedProducts(method.appMethodId, productMasters),
@@ -62,19 +83,14 @@ export function AppMethodDeleteSheet({
     (m) => m.appMethodId !== method.appMethodId
   );
 
+  // Deletion is blocked if any equipment uses this as its default
+  const isBlocked = depsLoaded && equipmentWithDefault.length > 0;
+
   const handleDelete = async () => {
+    if (isBlocked) return;
     setIsDeleting(true);
     try {
-      if (deleteMode === "reassign" && replacementAppMethodId) {
-        // Reassign: the API route will handle swapping appMethodId in equipmentScenarioDocs
-        // For now, delete with clearReferences=false (references already handled server-side if needed)
-        // TODO: implement reassign logic in API route when needed
-        await deleteAppMethod({ appMethod: method, clearReferences: false });
-      } else {
-        // Delete with cascade clearing of equipmentScenarioDocs references
-        await deleteAppMethod({ appMethod: method, clearReferences: true });
-      }
-
+      await deleteAppMethod({ appMethod: method, clearReferences: true });
       onDeleteComplete?.();
       onOpenChange(false);
     } catch (error) {
@@ -90,52 +106,101 @@ export function AppMethodDeleteSheet({
         <SheetHeader>
           <SheetTitle>Delete Application Method</SheetTitle>
           <SheetDescription>
-            Review products that use this method before deleting
+            Review products and equipment that use this method before deleting
           </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-4 py-4">
           {/* Method Info */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">{method.appMethodId}</Badge>
-              <span className="text-sm text-muted-foreground">
-                {method.description}
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{method.appMethodId}</Badge>
+            <span className="text-sm text-muted-foreground">
+              {method.description}
+            </span>
           </div>
 
-          {affectedProducts.length === 0 ? (
-            <div className="rounded-md border border-green-200 bg-green-50 p-4">
-              <p className="text-sm text-green-800">
-                No products are using this application method. Safe to delete.
+          {/* Blocking: equipment with this as default */}
+          {depsLoaded && equipmentWithDefault.length > 0 && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-destructive">
+                    Cannot delete — {equipmentWithDefault.length} equipment item
+                    {equipmentWithDefault.length !== 1 ? "s" : ""} use this as their default
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Reassign or delete these equipment items before deleting this method.
+                  </p>
+                </div>
+              </div>
+              <div className="pl-6 space-y-1">
+                {equipmentWithDefault.map((e) => (
+                  <div key={e.equipmentId} className="flex items-center gap-2 text-xs">
+                    <Badge variant="outline" className="font-mono">{e.equipmentId}</Badge>
+                    <span className="text-muted-foreground">{e.description}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Non-blocking: equipment where this is in allowed list only */}
+          {depsLoaded && equipmentInAllowed.length > 0 && (
+            <div className="rounded-md border border-secondary/40 bg-secondary/10 p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">
+                    {equipmentInAllowed.length} equipment item
+                    {equipmentInAllowed.length !== 1 ? "s" : ""} will lose this from their allowed list
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This method will be removed from their compatible methods list automatically.
+                  </p>
+                </div>
+              </div>
+              <div className="pl-6 space-y-1">
+                {equipmentInAllowed.map((e) => (
+                  <div key={e.equipmentId} className="flex items-center gap-2 text-xs">
+                    <Badge variant="outline" className="font-mono">{e.equipmentId}</Badge>
+                    <span className="text-muted-foreground">{e.description}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Affected Products */}
+          {affectedProducts.length === 0 && equipmentWithDefault.length === 0 && equipmentInAllowed.length === 0 && depsLoaded ? (
+            <div className="rounded-md border border-accent/30 bg-accent/10 p-4">
+              <p className="text-sm text-foreground">
+                No products or equipment reference this method. Safe to delete.
               </p>
             </div>
-          ) : (
+          ) : affectedProducts.length > 0 && (
             <>
-              {/* Warning about zero rates */}
               {hasZeroRates && (
-                <div className="rounded-md border border-orange-200 bg-orange-50 p-4 flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5" />
+                <div className="rounded-md border border-secondary/40 bg-secondary/10 p-4 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-secondary mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-orange-800">
+                    <p className="text-sm font-medium">
                       Warning: Some products have zero stored rates
                     </p>
-                    <p className="text-xs text-orange-700 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       These products will fall back to a rate of 0 if references are cleared.
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Affected Products List */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
                   Affected Products ({affectedProducts.length})
                 </Label>
-                <ScrollArea className="h-[250px] rounded-md border">
+                <ScrollArea className="h-[200px] rounded-md border">
                   <div className="p-3 space-y-3">
-                    {affectedProducts.map((product) => (
+                    {affectedProducts.map((product: AffectedProduct) => (
                       <div key={product.productId} className="space-y-2 rounded-md border p-3">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">{product.productCode}</Badge>
@@ -170,79 +235,6 @@ export function AppMethodDeleteSheet({
                   </div>
                 </ScrollArea>
               </div>
-
-              {/* Delete Options */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Delete Options</Label>
-                <div className="space-y-2">
-                  <div
-                    className={`rounded-md border p-3 cursor-pointer transition-colors ${
-                      deleteMode === "clear"
-                        ? "border-primary bg-primary/5"
-                        : "hover:border-primary/50"
-                    }`}
-                    onClick={() => setDeleteMode("clear")}
-                  >
-                    <div className="flex items-start gap-2">
-                      <input
-                        type="radio"
-                        checked={deleteMode === "clear"}
-                        onChange={() => setDeleteMode("clear")}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Clear References & Delete</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Remove this equipment scenario from all products and delete
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`rounded-md border p-3 cursor-pointer transition-colors ${
-                      deleteMode === "reassign"
-                        ? "border-primary bg-primary/5"
-                        : "hover:border-primary/50"
-                    }`}
-                    onClick={() => setDeleteMode("reassign")}
-                  >
-                    <div className="flex items-start gap-2">
-                      <input
-                        type="radio"
-                        checked={deleteMode === "reassign"}
-                        onChange={() => setDeleteMode("reassign")}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 space-y-2">
-                        <div>
-                          <p className="text-sm font-medium">Reassign & Delete</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Replace with another application method before deleting
-                          </p>
-                        </div>
-                        {deleteMode === "reassign" && (
-                          <Select
-                            value={replacementAppMethodId}
-                            onValueChange={setReplacementAppMethodId}
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue placeholder="Select replacement method" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableReplacements.map((m) => (
-                                <SelectItem key={m.appMethodId} value={m.appMethodId}>
-                                  {m.appMethodId} - {m.description}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </>
           )}
         </div>
@@ -258,12 +250,9 @@ export function AppMethodDeleteSheet({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={
-              isDeleting ||
-              (deleteMode === "reassign" && !replacementAppMethodId && affectedProducts.length > 0)
-            }
+            disabled={isDeleting || isBlocked || !depsLoaded}
           >
-            {isDeleting ? "Deleting..." : "Delete Method"}
+            {isDeleting ? "Deleting…" : "Delete Method"}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -25,9 +25,13 @@ export function getAffectedProducts(
   const affected: AffectedProduct[] = [];
 
   for (const master of productMasters) {
-    // Check if any hydrated equipment package's equipment items reference this appMethodId
+    // Check if any hydrated equipment package's equipment items use this as their default AppMethod
     const hasMatch = master.equipmentPackages.some((pkg: EquipmentPackage) =>
-      pkg.equipments.some((e: Equipment) => e.appMethodId === appMethodId),
+      pkg.equipments.some(
+        (e: Equipment) =>
+          e.defaultAppMethodId === appMethodId ||
+          e.appMethodIds.includes(appMethodId),
+      ),
     );
 
     if (hasMatch) {

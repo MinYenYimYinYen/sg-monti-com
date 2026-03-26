@@ -13,8 +13,8 @@ const handlers: HandlerMap<EquipmentContract> = {
     handler: async () => {
       await connectToMongoDB();
       const findResult = await EquipmentModel.find().lean();
-      const docs: EquipmentDoc[] = cleanMongoArray(findResult);
-      return { success: true, payload: docs };
+      const docs = cleanMongoArray(findResult) as unknown as EquipmentDoc[];
+      return { success: true as const, payload: docs };
     },
   },
   upsert: {
@@ -26,7 +26,8 @@ const handlers: HandlerMap<EquipmentContract> = {
         equipment,
         { upsert: true, new: true },
       ).lean();
-      return { success: true, payload: cleanMongoObject(upsertResult) };
+      const doc = cleanMongoObject(upsertResult) as unknown as EquipmentDoc;
+      return { success: true as const, payload: doc };
     },
   },
   deleteOne: {
@@ -42,7 +43,7 @@ const handlers: HandlerMap<EquipmentContract> = {
       }
 
       await EquipmentModel.deleteOne({ equipmentId: equipment.equipmentId });
-      return { success: true, payload: equipment };
+      return { success: true as const, payload: equipment };
     },
   },
   checkDependencies: {
@@ -53,8 +54,8 @@ const handlers: HandlerMap<EquipmentContract> = {
         { equipmentIds: equipmentId },
         { packageId: 1 },
       ).lean();
-      const packageIds = packages.map((p) => p.packageId);
-      return { success: true, payload: { packageIds } };
+      const packageIds = packages.map((p) => p.packageId as string);
+      return { success: true as const, payload: { packageIds } };
     },
   },
 };
