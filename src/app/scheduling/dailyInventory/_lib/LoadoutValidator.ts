@@ -1,6 +1,8 @@
 import { BaseValidator, ValidatorSchema } from "@/lib/validation/BaseValidator";
 import { LoadoutBase } from "./LoadoutTypes";
 
+type EquipmentEntry = LoadoutBase["masters"][number]["equipmentEntries"][number];
+
 export type LoadoutPhase = "start" | "finish";
 
 export class LoadoutValidator extends BaseValidator<LoadoutBase> {
@@ -13,7 +15,6 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
       startAmount: {
         label: "Start Amount",
         validate: ({ value, parent }) => {
-          // Only validate during "start" phase
           if (this.phase !== "start") return null;
 
           if (value === null) {
@@ -26,7 +27,6 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
       finishAmount: {
         label: "Finish Amount",
         validate: ({ value, parent }) => {
-          // Only validate during "finish" phase
           if (this.phase !== "finish") return null;
 
           if (value === null) {
@@ -40,11 +40,14 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
           return null;
         },
       },
-      appMethods: {
+      equipmentEntries: {
         startAmount: {
           label: "Mix Product Start Amount",
-          validate: ({ value, parent }) => {
+          validate: ({ value, parent }: { value: number | null; parent: EquipmentEntry }) => {
             if (this.phase !== "start") return null;
+
+            // Skip validation for non-tank equipment (backpack, hose, etc.)
+            if (!parent.appMethod.tracksTankLevel) return null;
 
             if (value === null) {
               return `Start amount is required for ${parent.mixProduct.productCode}`;
@@ -55,8 +58,11 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
         },
         finishAmount: {
           label: "Mix Product Finish Amount",
-          validate: ({ value, parent }) => {
+          validate: ({ value, parent }: { value: number | null; parent: EquipmentEntry }) => {
             if (this.phase !== "finish") return null;
+
+            // Skip validation for non-tank equipment
+            if (!parent.appMethod.tracksTankLevel) return null;
 
             if (value === null) {
               return `Finish amount is required for ${parent.mixProduct.productCode}`;

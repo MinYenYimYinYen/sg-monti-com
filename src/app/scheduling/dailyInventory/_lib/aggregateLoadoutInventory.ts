@@ -1,14 +1,11 @@
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import {
-  LoadoutBase,
-} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 /**
  * Aggregates loadout inventories from multiple services into a single consolidated inventory.
- * Totals amounts at every level of the tree (masters → appMethods → subProducts).
+ * Totals amounts at every level of the tree (masters → equipmentEntries → subProducts).
  */
 export function aggregateLoadoutInventory(services: Service[]): LoadoutBase {
-  //todo: service.loadoutInventory should be renamed to service.loadoutBase
   const loadoutInventories = services.map((service) => service.loadoutInventory);
 
   // Flatten all masters from all inventories
@@ -34,7 +31,7 @@ export function aggregateLoadoutInventory(services: Service[]): LoadoutBase {
 
 /**
  * Aggregates multiple masters with the same productId.
- * Sums amounts and recursively aggregates appMethods and sub-products.
+ * Sums amounts and recursively aggregates equipmentEntries and sub-products.
  */
 function aggregateMasters(
   masters: LoadoutBase["masters"][number][],
@@ -46,27 +43,27 @@ function aggregateMasters(
     masters.reduce((sum, master) => sum + master.plannedAmount, 0),
   );
 
-  // Flatten and group appMethods by appMethodId
-  const allAppMethods = masters.flatMap((master) => master.appMethods);
-  const appMethodsMap = new Map<
+  // Flatten and group equipmentEntries by equipmentId
+  const allEquipmentEntries = masters.flatMap((master) => master.equipmentEntries);
+  const equipmentEntriesMap = new Map<
     string,
-    LoadoutBase["masters"][number]["appMethods"][number][]
+    LoadoutBase["masters"][number]["equipmentEntries"][number][]
   >();
 
-  allAppMethods.forEach((appMethod) => {
-    const appMethodId = appMethod.appMethod.appMethodId;
-    if (!appMethodsMap.has(appMethodId)) {
-      appMethodsMap.set(appMethodId, []);
+  allEquipmentEntries.forEach((entry) => {
+    const equipmentId = entry.equipmentId;
+    if (!equipmentEntriesMap.has(equipmentId)) {
+      equipmentEntriesMap.set(equipmentId, []);
     }
-    appMethodsMap.get(appMethodId)!.push(appMethod);
+    equipmentEntriesMap.get(equipmentId)!.push(entry);
   });
 
-  // Aggregate each group of appMethods
-  const aggregatedAppMethods = Array.from(appMethodsMap.values()).map(
-    (appMethods) => aggregateAppMethods(appMethods),
+  // Aggregate each group of equipment entries
+  const aggregatedEquipmentEntries = Array.from(equipmentEntriesMap.values()).map(
+    (entries) => aggregateEquipmentEntries(entries),
   );
 
-  // Flatten and group non-appMethod sub-products by productId
+  // Flatten and group non-equipment sub-products by productId
   const allSubProducts = masters.flatMap((master) => master.subProducts);
   const subProductsMap = new Map<
     number,
@@ -86,10 +83,6 @@ function aggregateMasters(
     (subs) => aggregateSubProducts(subs),
   );
 
-
-
-
-
   return {
     productId: first.product.productId,
     product: first.product,
@@ -98,32 +91,32 @@ function aggregateMasters(
     finishAmount: null,
     unitId: first.unit.unitId,
     unit: first.unit,
-    appMethods: aggregatedAppMethods,
+    equipmentEntries: aggregatedEquipmentEntries,
     subProducts: aggregatedSubProducts,
   };
 }
 
 /**
- * Aggregates multiple appMethods with the same appMethodId.
- * Sums amounts for each sub-product within the appMethod.
+ * Aggregates multiple equipment entries with the same equipmentId.
+ * Sums amounts for each sub-product within the entry.
  */
-function aggregateAppMethods(
-  appMethods: LoadoutBase["masters"][number]["appMethods"][number][],
-): LoadoutBase["masters"][number]["appMethods"][number] {
-  const first = appMethods[0];
+function aggregateEquipmentEntries(
+  entries: LoadoutBase["masters"][number]["equipmentEntries"][number][],
+): LoadoutBase["masters"][number]["equipmentEntries"][number] {
+  const first = entries[0];
 
-  // Sum amounts across all appMethods
+  // Sum amounts across all entries
   const totalAmount = Math.round(
-    appMethods.reduce((sum, am) => sum + am.plannedAmount, 0),
+    entries.reduce((sum, e) => sum + e.plannedAmount, 0),
   );
 
-  // Flatten all sub-products from all appMethods
-  const allSubProducts = appMethods.flatMap((am) => am.subProducts);
+  // Flatten all sub-products from all entries
+  const allSubProducts = entries.flatMap((e) => e.subProducts);
 
   // Group by sub-product productId
   const subProductsMap = new Map<
     number,
-    LoadoutBase["masters"][number]["appMethods"][number]["subProducts"][number][]
+    LoadoutBase["masters"][number]["equipmentEntries"][number]["subProducts"][number][]
   >();
 
   allSubProducts.forEach((sub) => {
@@ -140,7 +133,7 @@ function aggregateAppMethods(
   );
 
   return {
-    appMethodId: first.appMethod.appMethodId,
+    equipmentId: first.equipmentId,
     appMethod: first.appMethod,
     mixProductId: first.mixProduct.productId,
     mixProduct: first.mixProduct,

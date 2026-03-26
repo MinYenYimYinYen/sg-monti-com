@@ -27,12 +27,12 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
         </div>
       </div>
 
-      {/* AppMethods Section */}
-      {master.appMethods.map((appMethod) => (
+      {/* Equipment Entries Section */}
+      {master.equipmentEntries.map((entry) => (
         <AppMethodSection
-          key={appMethod.appMethod.appMethodId}
+          key={entry.equipmentId}
           masterProductId={masterProductId}
-          appMethodId={appMethod.appMethod.appMethodId}
+          equipmentId={entry.equipmentId}
         />
       ))}
 

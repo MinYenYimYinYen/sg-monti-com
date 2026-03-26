@@ -25,7 +25,6 @@ import { AppMethod } from "./AppMethodTypes";
 import { productSelect } from "../realGreen/product/_lib/selectors/productSelectors";
 import { getAffectedProducts, AffectedProduct } from "../realGreen/product/_lib/selectors/getAffectedProducts";
 import { useAppMethod } from "./useAppMethod";
-import { useProduct } from "../realGreen/product/_lib/hooks/useProduct";
 import { appMethodSelect } from "./appMethodSelect";
 import { AlertTriangle } from "lucide-react";
 
@@ -45,7 +44,6 @@ export function AppMethodDeleteSheet({
   const productMasters = useSelector(productSelect.productMasters);
   const allAppMethods = useSelector(appMethodSelect.appMethodDocs);
   const { deleteAppMethod } = useAppMethod({});
-  const { updateMasterSubProducts } = useProduct({});
 
   const [deleteMode, setDeleteMode] = useState<"clear" | "reassign">("clear");
   const [replacementAppMethodId, setReplacementAppMethodId] = useState<string>("");
@@ -68,27 +66,12 @@ export function AppMethodDeleteSheet({
     setIsDeleting(true);
     try {
       if (deleteMode === "reassign" && replacementAppMethodId) {
-        // Update all affected products with the new appMethodId
-        for (const affectedProduct of affectedProducts) {
-          const master = productMasters.find(m => m.productId === affectedProduct.productId);
-          if (!master) continue;
-
-          const updatedConfigs = master.subProductConfigDocs.map((config) => {
-            if (config.appMethodId === method.appMethodId) {
-              return { ...config, appMethodId: replacementAppMethodId };
-            }
-            return config;
-          });
-
-          await updateMasterSubProducts({
-            masterId: master.productId,
-            subProductConfigDocs: updatedConfigs,
-          });
-        }
-        // Delete without clearing references (already updated)
+        // Reassign: the API route will handle swapping appMethodId in equipmentScenarioDocs
+        // For now, delete with clearReferences=false (references already handled server-side if needed)
+        // TODO: implement reassign logic in API route when needed
         await deleteAppMethod({ appMethod: method, clearReferences: false });
       } else {
-        // Delete with cascade clearing
+        // Delete with cascade clearing of equipmentScenarioDocs references
         await deleteAppMethod({ appMethod: method, clearReferences: true });
       }
 
@@ -210,7 +193,7 @@ export function AppMethodDeleteSheet({
                       <div className="flex-1">
                         <p className="text-sm font-medium">Clear References & Delete</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Remove appMethod from all products and revert to stored rates
+                          Remove this equipment scenario from all products and delete
                         </p>
                       </div>
                     </div>

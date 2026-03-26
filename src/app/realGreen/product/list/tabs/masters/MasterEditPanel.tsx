@@ -40,8 +40,6 @@ import {
   ProductMaster,
   SubProductConfigDoc,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-import { useAppMethod } from "@/app/appMethod/useAppMethod";
-import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import { MasterSubConfig } from "@/app/realGreen/product/list/tabs/masters/MasterSubConfig";
 
 interface MasterEditPanelProps {
@@ -53,9 +51,6 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
   const { updateCategory, updateUnit, updateMasterSubProducts } = useProduct(
     {},
   );
-  useAppMethod({ autoLoad: true });
-  const appMethods = useSelector(appMethodSelect.appMethodDocs);
-  const appMethodMap = useSelector(appMethodSelect.appMethodMap);
   const productSubs = useSelector(productSelect.productSubs);
 
   // --- Category state ---
@@ -149,9 +144,6 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
             {
               subId: productId,
               storedRate: 0,
-              appMethodId: null,
-              useAppMethod: false,
-              mixedProductIds: [],
             },
           ],
     );
@@ -159,34 +151,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
 
   const updateRate = (productId: number, storedRate: number) => {
     setConfigDocs((prev) =>
-      prev.map((c) => (c.subId === productId ? { ...c, storedRate, } : c)),
-    );
-  };
-
-  const updateUseAppMethod = (productId: number, useAppMethod: boolean) => {
-    setConfigDocs((prev) =>
-      prev.map((c) =>
-        c.subId === productId ? { ...c, useAppMethod } : c,
-      ),
-    );
-  };
-
-  const updateAppMethodId = (productId: number, appMethodId: string | null) => {
-    setConfigDocs((prev) =>
-      prev.map((c) =>
-        c.subId === productId ? { ...c, appMethodId } : c,
-      ),
-    );
-  };
-
-  const updateMixedProductIds = (
-    productId: number,
-    mixedProductIds: number[],
-  ) => {
-    setConfigDocs((prev) =>
-      prev.map((c) =>
-        c.subId === productId ? { ...c, mixedProductIds } : c,
-      ),
+      prev.map((c) => (c.subId === productId ? { ...c, storedRate } : c)),
     );
   };
 
@@ -436,13 +401,6 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                                 subProduct={sub}
                                 onRemove={toggleSub}
                                 onUpdateRate={updateRate}
-                                onUpdateUseAppMethod={updateUseAppMethod}
-                                onUpdateAppMethodId={updateAppMethodId}
-                                onUpdateMixedProductIds={updateMixedProductIds}
-                                appMethods={appMethods}
-                                appMethodMap={appMethodMap}
-                                allConfigs={configDocs}
-                                allSubProducts={availableSubs}
                               />
                             );
                           })

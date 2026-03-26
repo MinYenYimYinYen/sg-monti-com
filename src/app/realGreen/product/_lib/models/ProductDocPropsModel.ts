@@ -14,16 +14,34 @@ const ProductDocPropsSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true, unique: true },
 
-    appMethodId: { type: String, required: false, default: null },
-
     subProductConfigDocs: {
       type: [
         {
           subId: { type: Number, required: true },
-          storedRate: { type: Number, required: true, default: 0},
-          appMethodId: { type: String, required: false, default: null },
-          useAppMethod: { type: Boolean, required: false, default: false },
-          mixedProductIds: { type: [Number], required: false, default: [] },
+          storedRate: { type: Number, required: true, default: 0 },
+        },
+      ],
+      required: false,
+      default: [],
+    },
+
+    equipmentScenarioDocs: {
+      type: [
+        {
+          scenarioId: { type: String, required: true },
+          description: { type: String, required: true },
+          equipmentEntries: {
+            type: [
+              {
+                equipmentId: { type: String, required: true },
+                description: { type: String, required: true },
+                appMethodId: { type: String, required: true },
+                mixedProductIds: { type: [Number], required: false, default: [] },
+              },
+            ],
+            required: false,
+            default: [],
+          },
         },
       ],
       required: false,

@@ -81,6 +81,9 @@ const selectPendingSlotProducts = (state: AppState) =>
 const selectPendingSlotAmounts = (state: AppState) =>
   state.loadoutForm.pendingSlotAmounts;
 
+const selectScenarioSelections = (state: AppState) =>
+  state.loadoutForm.scenarioSelections;
+
 const selectUsedProductIds = createSelector(
   [selectLoadout],
   (loadout) => {
@@ -88,12 +91,12 @@ const selectUsedProductIds = createSelector(
 
     // From masters
     loadout.masters.forEach((master) => {
-      // From appMethods
-      master.appMethods.forEach((appMethod) => {
-        // mixProduct
-        usedIds.add(appMethod.mixProduct.productId);
-        // appMethod subProducts
-        appMethod.subProducts.forEach((sub) => {
+      // From equipmentEntries
+      master.equipmentEntries.forEach((entry) => {
+        // mixProduct (water)
+        usedIds.add(entry.mixProduct.productId);
+        // entry subProducts
+        entry.subProducts.forEach((sub: { product: { productId: number } }) => {
           usedIds.add(sub.product.productId);
         });
       });
@@ -218,6 +221,7 @@ export const loadoutFormSelect = {
   productsForPendingSlots: selectProductsForPendingSlots,
   loadoutTouchedFields: selectLoadoutTouchedFields,
   isFieldTouched: selectIsFieldTouched,
+  scenarioSelections: selectScenarioSelections,
   loadout: {
     data: selectLoadout,
     startValidation: createLoadoutValidation("start"),

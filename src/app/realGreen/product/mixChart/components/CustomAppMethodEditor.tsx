@@ -65,17 +65,14 @@ export function CustomAppMethodEditor({
   }, [solution]);
 
   useEffect(() => {
-    if (config.appMethod) {
-      loadSavedAppMethod(config.appMethod, dispatch);
-      // Always solve for coverage.volume when editing parameters
-      dispatch(
-        createAppMethodActions.setSolveForField({
-          param: "coverage",
-          field: "volume",
-        }),
-      );
-    }
-  }, [config.appMethod, dispatch]);
+    // Always solve for coverage.volume when editing parameters
+    dispatch(
+      createAppMethodActions.setSolveForField({
+        param: "coverage",
+        field: "volume",
+      }),
+    );
+  }, [dispatch]);
 
   const handleApply = () => {
     if (calculatedRate !== null) {

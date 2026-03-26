@@ -758,6 +758,224 @@ This refactor can happen **in parallel with or after** the equipment plan. The d
 
 ---
 
+---
+
+## Implementation Status & Next Steps
+
+### ✅ Completed (TypeScript clean — `tsc --noEmit` exits 0)
+
+| Plan Step | File(s) | Status |
+|---|---|---|
+| `AppMethod` — add `needsWater` + `tracksTankLevel` | `AppMethodTypes.ts`, `AppMethodModel.ts` | ✅ Done |
+| `EquipmentEntry` / `EquipmentScenario` types (doc + hydrated) | `src/app/equipment/EquipmentTypes.ts` | ✅ Done |
+| `SubProductConfigDoc` — removed `appMethodId`, `useAppMethod`, `mixedProductIds` | `ProductMasterTypes.ts` | ✅ Done |
+| `ProductMasterDocProps` — added `equipmentScenarioDocs` | `ProductMasterTypes.ts` | ✅ Done |
+| `ProductMasterProps` — added `equipmentScenarios` (hydrated) | `ProductMasterTypes.ts` | ✅ Done |
+| `ProductDocPropsModel` schema — added `equipmentScenarioDocs`, removed old sub-config fields | `ProductDocPropsModel.ts` | ✅ Done |
+| `AppMethodModel` schema — added `needsWater`, `tracksTankLevel` | `AppMethodModel.ts` | ✅ Done |
+| `waterProduct` client-side constant | `src/app/equipment/waterProduct.ts` | ✅ Done |
+| `hydrateRate` simplified (returns `storedRate` only) | `hydrateRate.ts` | ✅ Done |
+| `hydrateEquipmentScenarios` in `productSelectors.ts` | `productSelectors.ts` | ✅ Done |
+| `hydrateLoadoutInventory` — reads `equipmentScenarios`, uses `scenarioSelections` | `hydrateLoadoutInventory.ts` | ✅ Done |
+| `LoadoutBase` — `appMethods[]` → `equipmentEntries[]`, `appMethodId` → `equipmentId` | `LoadoutTypes.ts` | ✅ Done |
+| `LoadoutDoc` — same rename | `LoadoutTypes.ts` | ✅ Done |
+| `aggregateLoadoutInventory` — groups by `equipmentId` | `aggregateLoadoutInventory.ts` | ✅ Done |
+| `loadoutFormSlice` — `scenarioSelections` state + `setScenarioSelection` / `clearScenarioSelections` | `loadoutFormSlice.ts` | ✅ Done |
+| `loadoutFormSelect` — `scenarioSelections` selector, `usedProductIds` iterates `equipmentEntries` | `loadoutFormSelect.ts` | ✅ Done |
+| `LoadoutValidator` — `equipmentEntries` path + `tracksTankLevel` guard | `LoadoutValidator.ts` | ✅ Done |
+| `loadoutFormHelpers.initializeLoadout` — maps `equipmentEntries` | `loadoutFormHelpers.ts` | ✅ Done |
+| `MasterProductCard` — renders `AppMethodSection` per `entry.equipmentId` | `MasterProductCard.tsx` | ✅ Done |
+| `AppMethodSection` — props `equipmentId` (was `appMethodId`) | `AppMethodSection.tsx` | ✅ Done |
+| `MasterSubConfig` — removed `useAppMethod`, `appMethodId`, `mixedProductIds` props | `MasterSubConfig.tsx` | ✅ Done |
+| `MasterEditPanel` — removed old AppMethod handlers from sub-product editing | `MasterEditPanel.tsx` | ✅ Done |
+| `getAffectedProducts` — scans `equipmentScenarioDocs[].equipmentEntries[].appMethodId` | `getAffectedProducts.ts` | ✅ Done |
+
+---
+
+### 🔲 Next Steps
+
+#### A. Data Migration (Required before production use)
+
+The MongoDB documents still have the old shape (`subProductConfigDocs` with `appMethodId` / `useAppMethod` / `mixedProductIds`, no `equipmentScenarioDocs`). The app will silently produce empty `equipmentEntries` for all masters until migration runs.
+
+**Migration script / API handler** (`src/app/realGreen/product/api/route.ts` or a one-off script):
+
+For each `ProductMasterDoc` where any `subProductConfigDoc` has `useAppMethod === true`:
+1. Find the carrier sub-config (the one with `useAppMethod: true`)
+2. Create one `EquipmentScenario`:
+   ```
+   scenarioId:   existingAppMethodId
+   description:  existingAppMethod.description
+   equipmentEntries: [{
+     equipmentId:     existingAppMethodId
+     description:     existingAppMethod.description
+     appMethodId:     existingAppMethodId
+     mixedProductIds: existingMixedProductIds
+   }]
+   ```
+3. Remove `appMethodId`, `useAppMethod`, `mixedProductIds` from all `subProductConfigDocs`
+4. Remove the water sub-product entry from `subProductConfigDocs` (auto-injected going forward)
+5. Write `equipmentScenarioDocs` to the document
+
+For all `AppMethod` documents: add `needsWater: true`, `tracksTankLevel: true`.
+
+**Note:** Mongoose schema already accepts the new shape. Old fields (`appMethodId`, `useAppMethod`, `mixedProductIds`) on sub-docs are simply ignored by the new schema — no crash, just silent data loss on re-save. Run migration before any admin saves a master product.
+
+---
+
+#### B. Scenario Selection UI (Required for loadout to populate)
+
+`hydrateLoadoutInventory` returns empty `equipmentEntries` until a scenario is selected. Workers need a way to pick a scenario.
+
+**Component:** `ScenarioSelector` inside `MasterProductCard`
+
+Behavior:
+- If `master.equipmentScenarios.length === 0` → show nothing (no equipment configured yet)
+- If `master.equipmentScenarios.length === 1` → auto-select on mount (dispatch `setScenarioSelection`), show no prompt
+- If `master.equipmentScenarios.length > 1` → show radio group before loadout rows appear
+
+```tsx
+// Rough sketch
+function ScenarioSelector({ masterProductId }: { masterProductId: number }) {
+  const dispatch = useDispatch();
+  const master = useSelector(...); // from productSelect.productMasters
+  const scenarioSelections = useSelector(loadoutFormSelect.scenarioSelections);
+  const currentSelection = scenarioSelections.find(s => s.masterProductId === masterProductId);
+
+  // Auto-select single scenario
+  useEffect(() => {
+    if (master.equipmentScenarios.length === 1 && !currentSelection) {
+      dispatch(loadoutFormActions.setScenarioSelection({
+        masterProductId,
+        selectedScenarioId: master.equipmentScenarios[0].scenarioId,
+      }));
+    }
+  }, [master.equipmentScenarios, currentSelection, masterProductId, dispatch]);
+
+  if (master.equipmentScenarios.length <= 1) return null;
+
+  return (
+    <RadioGroup
+      value={currentSelection?.selectedScenarioId ?? ""}
+      onValueChange={(scenarioId) =>
+        dispatch(loadoutFormActions.setScenarioSelection({ masterProductId, selectedScenarioId: scenarioId }))
+      }
+    >
+      {master.equipmentScenarios.map(scenario => (
+        <RadioGroupItem key={scenario.scenarioId} value={scenario.scenarioId}>
+          {scenario.description}
+        </RadioGroupItem>
+      ))}
+    </RadioGroup>
+  );
+}
+```
+
+**Placement:** At the top of `MasterProductCard`, before the `equipmentEntries` loop.
+
+**Changing scenario:** Should reset `startAmount`/`finishAmount` for that master's entries. Add a `resetMasterLoadoutAmounts(masterProductId)` action to `loadoutFormSlice`.
+
+---
+
+#### C. Equipment Scenarios CRUD UI in `MasterEditPanel` (Required for setup)
+
+`MasterEditPanel` currently has no UI for creating/editing `equipmentScenarioDocs`. Without this, admins cannot configure equipment scenarios for any master product.
+
+**New accordion section:** "Equipment Scenarios" (below Sub-Products)
+
+Each scenario row shows:
+- `scenarioId` (text input, natural key)
+- `description` (text input)
+- List of equipment entries (each with `equipmentId`, `description`, AppMethod selector, mixed products multi-select)
+- Add / Remove entry buttons
+- Add / Remove scenario buttons
+
+**Save action:** New `updateMasterEquipmentScenarios({ masterId, equipmentScenarioDocs })` thunk in `useProduct` / `productSlice`.
+
+**API handler:** New `updateEquipmentScenarios` operation in `ProductContract` + `api/route.ts`.
+
+---
+
+#### D. `AppMethod` CRUD — Add `needsWater` + `tracksTankLevel` Checkboxes
+
+The `AppMethodCreate` form needs two new boolean fields:
+- `needsWater` checkbox (default: `true`) — "Auto-add water carrier row"
+- `tracksTankLevel` checkbox (default: `true`) — "Track tank start/finish amounts"
+
+These are already in `AppMethodTypes.ts` and `AppMethodModel.ts` but the CRUD UI (`AppMethodCreate.tsx`, `createAppMethodSlice.ts`) needs to expose them.
+
+---
+
+#### E. `LoadoutDoc` Persistence — `scenarioSelections` Field
+
+`LoadoutDoc` in `LoadoutTypes.ts` does not yet include `scenarioSelections`. Per the plan, the scenario choice should be persisted so reopening a saved loadout restores the worker's selection.
+
+```typescript
+// Add to LoadoutDoc:
+scenarioSelections: {
+  masterProductId: number;
+  selectedScenarioId: string;
+}[];
+```
+
+Also add `truckId: string | null` and `rideOnId: string | null` per the Truck & Ride-On Tracking section.
+
+The Mongoose schema for `LoadoutDoc` (wherever it lives) needs these fields added.
+
+---
+
+#### F. `AppMethodSection` — `unitConfigDisplay` on `waterProduct`
+
+`AppMethodSection.tsx` calls `plannedEntry.mixProduct.unitConfigDisplay.format(...)`. The `waterProduct` constant in `waterProduct.ts` uses `baseProductSub` which may not have a valid `unitConfigDisplay`. Verify that `waterProduct` gets a proper `unitConfig` / `unitConfigDisplay` attached (either in the constant itself or when it's spread into `mixProduct` in `hydrateLoadoutInventory`).
+
+**Quick fix if needed:** Give `waterProduct` an explicit `unitConfig` with `conversions.load.unitLabel = "Gal"` and `conversionFactor = 1`.
+
+---
+
+#### G. `AppMethodDeleteSheet` — Update for Equipment Scenarios
+
+`AppMethodDeleteSheet.tsx` currently calls `getAffectedProducts(method.appMethodId, productMasters)` which now correctly scans `equipmentScenarioDocs`. However the delete handler calls `updateMasterSubProducts` to reassign `appMethodId` on sub-configs — this logic is now stale. The reassign path needs to update `equipmentScenarioDocs[].equipmentEntries[].appMethodId` instead.
+
+---
+
+#### H. Mix Chart — Scenario Selector + Per-Entry Charts
+
+Per the plan:
+- Mix chart page gets an **Equipment Scenario** selector per master (radio group)
+- Each `EquipmentEntry` generates its own chart
+- "Generate All Charts" option for multi-entry scenarios
+
+This is a new feature layer on top of the existing mix chart — no existing code is broken, just not yet extended.
+
+---
+
+#### I. `bizPlan` / `AppProduct` Deprecation (Lower Priority)
+
+`productsPlanned` on `Service` still comes from `hydrateProductsPlanned` (reading old `subProductConfigs`). After migration, water will no longer be in `subProductConfigs`, so water disappears from `bizPlan` inventory selectors.
+
+Per the deprecation plan:
+1. Add `flattenLoadoutPlanned(loadout: LoadoutBase)` utility
+2. Replace `service.productsPlanned` with `flattenLoadoutPlanned(service.loadoutInventory)` in `bizPlan` selectors
+3. Remove `productsPlanned` from `Service`, delete `hydrateProductsPlanned`
+
+This can be done independently of the UI work above.
+
+---
+
+### Priority Order for Next Session
+
+1. **B — Scenario Selection UI** (unblocks runtime testing immediately)
+2. **F — `waterProduct` unitConfigDisplay** (needed for `AppMethodSection` to render without crash)
+3. **A — Data Migration** (needed for real data; can test with manually-seeded `equipmentScenarioDocs` first)
+4. **C — Equipment Scenarios CRUD** (needed for admins to configure scenarios)
+5. **D — AppMethod CRUD checkboxes** (small, needed for `needsWater`/`tracksTankLevel` to be settable)
+6. **E — `LoadoutDoc` persistence fields** (needed before saving loadouts)
+7. **G — `AppMethodDeleteSheet` reassign path** (correctness fix)
+8. **H — Mix Chart** (new feature)
+9. **I — `bizPlan` deprecation** (cleanup, lower priority)
+
+---
+
 ## Unit System Reference
 
 The `unitConfig` module (`src/app/realGreen/product/unitConfig/`) provides the unit

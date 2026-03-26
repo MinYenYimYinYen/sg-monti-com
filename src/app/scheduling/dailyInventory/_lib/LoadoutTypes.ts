@@ -4,6 +4,18 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 
+/**
+ * LoadoutBase — the runtime loadout tree.
+ *
+ * Hierarchy:
+ *   masters[]
+ *     equipmentEntries[]   ← one per piece of equipment in the selected scenario
+ *       mixProduct         ← water carrier (auto-generated from waterProduct constant)
+ *       subProducts[]      ← mixed products for this equipment
+ *     subProducts[]        ← non-equipment sub-products (manual rates)
+ *   singles[]
+ *   subProducts[]          ← custom/additional sub-products
+ */
 export type LoadoutBase = {
   masters: {
     productId: number;
@@ -13,8 +25,10 @@ export type LoadoutBase = {
     finishAmount: number | null;
     unitId: number;
     unit: UnitCRM;
-    appMethods: {
-      appMethodId: string;
+    /** Equipment entries from the selected scenario. Empty until a scenario is selected. */
+    equipmentEntries: {
+      /** Bucket key — matches EquipmentEntry.equipmentId */
+      equipmentId: string;
       appMethod: AppMethod;
       mixProductId: number;
       mixProduct: ProductSub;
@@ -61,14 +75,17 @@ export type LoadoutBase = {
   }[];
 };
 
-
-
 export const baseLoadout: LoadoutBase = {
   masters: [],
   singles: [],
   subProducts: [],
 };
 
+/**
+ * LoadoutDoc — the persisted MongoDB shape.
+ *
+ * Mirrors LoadoutBase but without hydrated objects (IDs only).
+ */
 export type LoadoutDoc = {
   employeeId: string;
   routeDate: string;
@@ -78,8 +95,8 @@ export type LoadoutDoc = {
     startAmount: number | null;
     finishAmount: number | null;
     unitId: number;
-    appMethods: {
-      appMethodId: string;
+    equipmentEntries: {
+      equipmentId: string;
       mixProductId: number;
       mixProductUnitId: number;
       plannedAmount: number;
@@ -105,7 +122,7 @@ export type LoadoutDoc = {
       startAmount: number | null;
       finishAmount: number | null;
       unitId: number;
-    }
+    };
   }[];
 };
 

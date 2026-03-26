@@ -18,8 +18,16 @@ import {
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
-import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { hydrateRate } from "@/app/realGreen/product/_lib/selectors/hydrateRate";
+import {
+  EquipmentEntry,
+  EquipmentEntryDoc,
+  EquipmentScenario,
+  EquipmentScenarioDoc,
+} from "@/app/equipment/EquipmentTypes";
+import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
+import { AreaUnit, UnitLabel } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 
 const selectProductMasterDocs = (state: AppState) =>
   state.product.productMasterDocs;
@@ -87,24 +95,19 @@ const selectProductMasters = createSelector(
         productType: "master",
         unitConfig,
         unitConfigDisplay,
+        equipmentScenarios: hydrateEquipmentScenarios(doc.equipmentScenarioDocs, appMethodMap),
         subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
           const subProduct = subsMap.get(configDoc.subId);
-
-          const rate = hydrateRate({subProductConfigDoc: configDoc, appMethodMap})
-          const appMethod = configDoc.appMethodId ? appMethodMap.get(configDoc.appMethodId) ?? null : null;
+          const rate = hydrateRate({ subProductConfigDoc: configDoc, appMethodMap });
 
           const config: SubProductConfig = {
             subId: configDoc.subId,
-            useAppMethod: configDoc.useAppMethod,
             storedRate: configDoc.storedRate,
-            appMethodId: configDoc.appMethodId,
             rate,
-            appMethod,
             subProduct: subProduct || {
               ...baseProductSub,
               productId: configDoc.subId,
             },
-            mixedProductIds: configDoc.mixedProductIds,
           };
           return config;
         }),
@@ -259,6 +262,49 @@ const selectAllProductsMap = createSelector(
     return new Grouper(allProducts).toUniqueMap((p) => p.productId);
   },
 );
+
+/**
+ * Hydrates EquipmentScenarioDocs into EquipmentScenarios.
+ * For each scenario, resolves each entry's appMethodId to a full AppMethod
+ * and pre-calculates the waterRate (volume/ksf).
+ * Entries whose appMethodId cannot be resolved are dropped.
+ * Scenarios with no valid entries are dropped.
+ */
+function hydrateEquipmentScenarios(
+  scenarioDocs: EquipmentScenarioDoc[],
+  appMethodMap: Map<string, AppMethod>,
+): EquipmentScenario[] {
+  return scenarioDocs.flatMap((scenarioDoc) => {
+    const hydratedEntries: EquipmentEntry[] = scenarioDoc.equipmentEntries.flatMap(
+      (entryDoc: EquipmentEntryDoc) => {
+        const appMethod = appMethodMap.get(entryDoc.appMethodId);
+        if (!appMethod) return [];
+
+        // Calculate waterRate: coverage.volume / (coverage.area in ksf)
+        const areaInKsf = UnitUtils.area(
+          appMethod.coverage.area,
+          appMethod.coverage.areaUnit as AreaUnit["desc"],
+        ).to(UnitLabel.ksf);
+        const waterRate = areaInKsf > 0 ? appMethod.coverage.volume / areaInKsf : 0;
+
+        const entry: EquipmentEntry = {
+          ...entryDoc,
+          appMethod,
+          waterRate,
+        };
+        return [entry];
+      },
+    );
+
+    if (hydratedEntries.length === 0) return [];
+
+    const scenario: EquipmentScenario = {
+      ...scenarioDoc,
+      equipmentEntries: hydratedEntries,
+    };
+    return [scenario];
+  });
+}
 
 export const productSelect = {
   productMasterDocs: selectProductMasterDocs,

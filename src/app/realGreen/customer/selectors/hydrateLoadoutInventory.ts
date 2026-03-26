@@ -1,24 +1,30 @@
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { getProductMasters } from "@/app/realGreen/customer/selectors/hydrateProductsPlanned";
-import {
-  LoadoutBase,
-} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import { waterProduct } from "@/app/equipment/waterProduct";
+import { EquipmentEntry } from "@/app/equipment/EquipmentTypes";
+
+/**
+ * ScenarioSelection — the worker's choice of scenario for a given master product.
+ * Stored in Redux loadoutFormSlice.scenarioSelections.
+ */
+export type ScenarioSelection = {
+  masterProductId: number;
+  selectedScenarioId: string;
+};
 
 export function hydrateLoadoutInventory(params: {
   servDoc: ServiceDoc;
   servCodeMap: Map<string, ServCode>;
+  scenarioSelections?: ScenarioSelection[];
 }): LoadoutBase {
-  const { servDoc, servCodeMap } = params;
+  const { servDoc, servCodeMap, scenarioSelections = [] } = params;
 
   const servCode = servCodeMap.get(servDoc.servCodeId);
-  if (!servCode)
-    return {
-      masters: [], singles: [], subProducts: [],
-    };
+  if (!servCode) return { masters: [], singles: [], subProducts: [] };
 
   const productMasters = getProductMasters(servCode, servDoc.size);
 
@@ -26,104 +32,115 @@ export function hydrateLoadoutInventory(params: {
     hydrateMasterInventory({
       master,
       size: servDoc.size,
+      scenarioSelections,
     }),
   );
 
-  return {  masters, singles: [], subProducts: [] };
+  return { masters, singles: [], subProducts: [] };
 }
 
 function hydrateMasterInventory(params: {
   master: ProductMaster;
   size: number;
+  scenarioSelections: ScenarioSelection[];
 }): LoadoutBase["masters"][number] {
-  const { master, size } = params;
+  const { master, size, scenarioSelections } = params;
 
-  // Group sub-products by appMethod
-  const appMethodMap = new Map<
-    string,
-    LoadoutBase["masters"][number]["appMethods"][number]
-  >();
+  // Find the selected scenario for this master
+  const selection = scenarioSelections.find(
+    (s) => s.masterProductId === master.productId,
+  );
 
-  // Track which product IDs are claimed by appMethods
-  const claimedProductIds = new Set<number>();
+  // If no scenario selected → equipmentEntries is empty (UI will prompt for selection)
+  if (!selection) {
+    return buildMasterEntry({ master, size, equipmentEntries: [] });
+  }
 
-  const nonAppMethodSubs: LoadoutBase["masters"][number]["subProducts"] =
-    [];
+  const selectedScenario = master.equipmentScenarios.find(
+    (s) => s.scenarioId === selection.selectedScenarioId,
+  );
 
-  // First pass: identify appMethod containers and their claimed products
-  master.subProductConfigs.forEach((subConfig) => {
-    if (!subConfig.subProduct) return;
+  // Scenario not found (stale selection) → empty entries
+  if (!selectedScenario) {
+    return buildMasterEntry({ master, size, equipmentEntries: [] });
+  }
 
-    // If this sub has mixed products, it's an appMethod container
-    if (subConfig.mixedProductIds.length > 0) {
-      const appMethodId = subConfig.appMethodId || baseStrId;
+  // Build the set of product IDs claimed by any equipment entry
+  const claimedProductIds = new Set<number>(
+    selectedScenario.equipmentEntries.flatMap((e) => e.mixedProductIds),
+  );
 
-      if (!appMethodMap.has(appMethodId)) {
-        // Create mixProduct with appMethodId as description and productCode
-        const mixProduct: ProductSub = {
-          ...subConfig.subProduct,
-          description: appMethodId,
-          productCode: appMethodId,
-        };
+  // Build equipment entries — selectedScenario.equipmentEntries are EquipmentEntry (hydrated)
+  const equipmentEntries: LoadoutBase["masters"][number]["equipmentEntries"] =
+    (selectedScenario.equipmentEntries as EquipmentEntry[]).map((entry) => {
+      // Water carrier: use waterProduct constant, override productCode/description with equipmentId
+      const mixProduct: ProductSub = {
+        ...waterProduct,
+        productCode: entry.equipmentId,
+        description: entry.equipmentId,
+      };
 
-        appMethodMap.set(appMethodId, {
-          appMethodId: subConfig.appMethodId!,
-          appMethod: subConfig.appMethod!,
-          mixProductId: mixProduct.productId,
-          mixProduct: mixProduct,
-          mixProductUnitId: mixProduct.unit.unitId,
-          mixProductUnit: mixProduct.unit,
-          plannedAmount: size * subConfig.rate,
+      // Mixed sub-products for this entry
+      const entrySubProducts = master.subProductConfigs
+        .filter((config) => entry.mixedProductIds.includes(config.subId))
+        .map((config) => ({
+          productId: config.subProduct.productId,
+          product: config.subProduct,
+          plannedAmount: size * config.rate,
           startAmount: null,
           finishAmount: null,
-          subProducts: [],
-        });
-      }
+          unitId: config.subProduct.unit.unitId,
+          unit: config.subProduct.unit,
+        }));
 
-      // Mark the mixed products as claimed
-      subConfig.mixedProductIds.forEach((id) => claimedProductIds.add(id));
-    }
-  });
+      return {
+        equipmentId: entry.equipmentId,
+        appMethod: entry.appMethod,
+        mixProductId: mixProduct.productId,
+        mixProduct,
+        mixProductUnitId: mixProduct.unit.unitId,
+        mixProductUnit: mixProduct.unit,
+        plannedAmount: size * entry.waterRate,
+        startAmount: null,
+        finishAmount: null,
+        subProducts: entrySubProducts,
+      };
+    });
 
-  // Second pass: distribute sub-products to their correct locations
-  master.subProductConfigs.forEach((subConfig) => {
-    if (!subConfig.subProduct) return;
-
-    const subInventoryItem = {
-      productId: subConfig.subProduct.productId,
-      product: subConfig.subProduct,
-      plannedAmount: size * subConfig.rate,
+  // Non-claimed sub-products go to master.subProducts
+  const nonClaimedSubProducts = master.subProductConfigs
+    .filter((config) => !claimedProductIds.has(config.subId))
+    .map((config) => ({
+      productId: config.subProduct.productId,
+      product: config.subProduct,
+      plannedAmount: size * config.rate,
       startAmount: null,
       finishAmount: null,
-      unitId: subConfig.subProduct.unit.unitId,
-      unit: subConfig.subProduct.unit,
-    };
+      unitId: config.subProduct.unit.unitId,
+      unit: config.subProduct.unit,
+    }));
 
-    // Skip the appMethod container itself (it's stored as mixProduct)
-    if (subConfig.mixedProductIds.length > 0) {
-      return;
-    }
+  return buildMasterEntry({ master, size, equipmentEntries, subProducts: nonClaimedSubProducts });
+}
 
-    // If this product is claimed by an appMethod, add it to that appMethod's subProducts
-    if (claimedProductIds.has(subConfig.subProduct.productId)) {
-      // Find which appMethod claims this product
-      for (const subConfigWithAppMethod of master.subProductConfigs) {
-        if (
-          subConfigWithAppMethod.mixedProductIds.includes(
-            subConfig.subProduct.productId,
-          )
-        ) {
-          const appMethodId = subConfigWithAppMethod.appMethodId || baseStrId;
-          appMethodMap.get(appMethodId)?.subProducts.push(subInventoryItem);
-          break;
-        }
-      }
-    }
-    // Otherwise, add to regular subProducts
-    else {
-      nonAppMethodSubs.push(subInventoryItem);
-    }
-  });
+function buildMasterEntry(params: {
+  master: ProductMaster;
+  size: number;
+  equipmentEntries: LoadoutBase["masters"][number]["equipmentEntries"];
+  subProducts?: LoadoutBase["masters"][number]["subProducts"];
+}): LoadoutBase["masters"][number] {
+  const { master, size, equipmentEntries, subProducts } = params;
+
+  // When no scenario selected, all sub-products go to master.subProducts
+  const fallbackSubProducts = subProducts ?? master.subProductConfigs.map((config) => ({
+    productId: config.subProduct.productId,
+    product: config.subProduct,
+    plannedAmount: size * config.rate,
+    startAmount: null,
+    finishAmount: null,
+    unitId: config.subProduct.unit.unitId,
+    unit: config.subProduct.unit,
+  }));
 
   return {
     productId: master.productId,
@@ -133,7 +150,7 @@ function hydrateMasterInventory(params: {
     finishAmount: null,
     unitId: master.unit.unitId,
     unit: master.unit,
-    appMethods: Array.from(appMethodMap.values()),
-    subProducts: nonAppMethodSubs,
+    equipmentEntries,
+    subProducts: fallbackSubProducts,
   };
 }

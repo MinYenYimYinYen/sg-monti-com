@@ -20,6 +20,8 @@ import { AppMethodResult } from "./appMethodSolver/AppMethodSolver";
 export type AppMethod = AppMethodResult & {
   appMethodId: string;   // Unique identifier
   description: string;   // User-friendly name
+  needsWater: boolean;   // Auto-instantiate water carrier row in loadout
+  tracksTankLevel: boolean; // True = filled once/day (tank); False = multi-fill (backpack)
 };
 
 /**

@@ -48,6 +48,8 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
     setAppMethodId,
     setDescription,
     setOverlap,
+    setNeedsWater,
+    setTracksTankLevel,
     resetForm,
   } = useFormFieldValues();
 
@@ -62,6 +64,8 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
   const appMethodId = useSelector(solverSelect.appMethodId);
   const description = useSelector(solverSelect.description);
   const canSave = useSelector(solverSelect.canSave);
+  const needsWater = useSelector(solverSelect.needsWater);
+  const tracksTankLevel = useSelector(solverSelect.tracksTankLevel);
 
   const overlap = useSelector(solverSelect.overlap);
   const solution = useSelector(solverSelect.solution);
@@ -72,6 +76,8 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
     await upsertAppMethod({
       appMethodId,
       description,
+      needsWater,
+      tracksTankLevel,
       ...solution.result,
     });
     setSaveStatus("success");
@@ -150,6 +156,25 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
               onCheckedChange={(checked) => setOverlap(checked ? 2 : 1)}
             />
             <Label htmlFor="doubleOverlap-create">Double Overlap</Label>
+          </div>
+
+          {/* Water carrier flags */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="needsWater-create"
+              checked={needsWater}
+              onCheckedChange={(checked) => setNeedsWater(!!checked)}
+            />
+            <Label htmlFor="needsWater-create">Needs Water (auto-add carrier row)</Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="tracksTankLevel-create"
+              checked={tracksTankLevel}
+              onCheckedChange={(checked) => setTracksTankLevel(!!checked)}
+            />
+            <Label htmlFor="tracksTankLevel-create">Tracks Tank Level (filled once/day)</Label>
           </div>
 
           {/* Save Actions */}

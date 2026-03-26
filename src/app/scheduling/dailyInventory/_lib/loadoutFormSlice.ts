@@ -13,6 +13,11 @@ type PendingProductSlot = {
   categoryFilter: string | null;
 };
 
+type ScenarioSelection = {
+  masterProductId: number;
+  selectedScenarioId: string;
+};
+
 type LoadoutFormState = {
   tech: string | null;
   routeDate: string | null;
@@ -22,6 +27,8 @@ type LoadoutFormState = {
   pendingProductSlots: PendingProductSlot[];
   pendingSlotProducts: Record<string, ProductSub | ProductSingle | null>;
   pendingSlotAmounts: Record<string, string>;
+  /** Worker's scenario selection per master product. Not persisted between sessions. */
+  scenarioSelections: ScenarioSelection[];
 };
 
 const initialState: LoadoutFormState = {
@@ -33,6 +40,7 @@ const initialState: LoadoutFormState = {
   pendingProductSlots: [],
   pendingSlotProducts: {},
   pendingSlotAmounts: {},
+  scenarioSelections: [],
 };
 export const loadoutFormSlice = createSlice({
   name: "techRoute",
@@ -186,7 +194,26 @@ export const loadoutFormSlice = createSlice({
     },
     setShouldShowAllStartLoadoutIssues: (state, action: PayloadAction<boolean>) => {
       state.showAllLoadoutIssues = action.payload;
-    }
+    },
+
+    setScenarioSelection: (
+      state,
+      action: PayloadAction<{ masterProductId: number; selectedScenarioId: string }>,
+    ) => {
+      const { masterProductId, selectedScenarioId } = action.payload;
+      const existing = state.scenarioSelections.find(
+        (s) => s.masterProductId === masterProductId,
+      );
+      if (existing) {
+        existing.selectedScenarioId = selectedScenarioId;
+      } else {
+        state.scenarioSelections.push({ masterProductId, selectedScenarioId });
+      }
+    },
+
+    clearScenarioSelections: (state) => {
+      state.scenarioSelections = [];
+    },
   },
 });
 

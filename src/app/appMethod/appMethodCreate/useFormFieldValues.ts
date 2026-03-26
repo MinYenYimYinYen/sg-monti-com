@@ -208,6 +208,15 @@ export function useFormFieldValues() {
       dispatch(createAppMethodActions.setOverlap(value));
     },
 
+    // Flags
+    setNeedsWater: (value: boolean) => {
+      dispatch(createAppMethodActions.setNeedsWater(value));
+    },
+
+    setTracksTankLevel: (value: boolean) => {
+      dispatch(createAppMethodActions.setTracksTankLevel(value));
+    },
+
     // Reset
     resetForm: () => {
       dispatch(createAppMethodActions.resetForm());

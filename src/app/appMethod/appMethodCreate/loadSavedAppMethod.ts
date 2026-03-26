@@ -38,6 +38,10 @@ export function loadSavedAppMethod(method: AppMethod, dispatch: AppDispatch) {
   // Overlap
   dispatch(createAppMethodActions.setOverlap(method.overlap));
 
+  // Flags
+  dispatch(createAppMethodActions.setNeedsWater(method.needsWater));
+  dispatch(createAppMethodActions.setTracksTankLevel(method.tracksTankLevel));
+
   // When editing existing method, default to solving for coverage.volume
   // This prevents validation mode and allows recalculation when editing parameters
   dispatch(createAppMethodActions.setSolveForField({

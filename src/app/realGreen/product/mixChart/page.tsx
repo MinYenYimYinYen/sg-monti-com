@@ -203,27 +203,25 @@ export default function MixChartPage() {
           </div>
 
         {/* Customize Rates Section */}
-        {selectedMaster && selectedMaster.subProductConfigs.some(c => c.useAppMethod) && (
+        {selectedMaster && selectedMaster.subProductConfigs.length > 0 && (
           <div className="space-y-2">
             <Label className="text-sm font-medium">Customize Rates</Label>
             <div className="flex flex-wrap gap-2">
-              {selectedMaster.subProductConfigs
-                .filter(c => c.useAppMethod)
-                .map((config) => (
-                  <Button
-                    key={config.subId}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingSubId(config.subId)}
-                    className="flex items-center gap-2"
-                  >
-                    <Pencil className="h-3 w-3" />
-                    {config.subProduct.description}
-                    {customRates.has(config.subId) && (
-                      <Badge className="ml-1 h-4 text-xs">Custom</Badge>
-                    )}
-                  </Button>
-                ))}
+              {selectedMaster.subProductConfigs.map((config) => (
+                <Button
+                  key={config.subId}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingSubId(config.subId)}
+                  className="flex items-center gap-2"
+                >
+                  <Pencil className="h-3 w-3" />
+                  {config.subProduct.description}
+                  {customRates.has(config.subId) && (
+                    <Badge className="ml-1 h-4 text-xs">Custom</Badge>
+                  )}
+                </Button>
+              ))}
             </div>
           </div>
         )}

@@ -21,9 +21,15 @@ const handlers: HandlerMap<AppMethodContract> = {
     roles: ["admin", "office"],
     handler: async ({ appMethod }) => {
       await connectToMongoDB();
+      // Ensure new boolean fields have defaults for backward compat
+      const doc: AppMethodDoc = {
+        ...appMethod,
+        needsWater: appMethod.needsWater ?? true,
+        tracksTankLevel: appMethod.tracksTankLevel ?? true,
+      };
       const upsertResult = await AppMethodModel.findOneAndUpdate(
-        { appMethodId: appMethod.appMethodId },
-        appMethod,
+        { appMethodId: doc.appMethodId },
+        doc,
         { upsert: true, new: true },
       ).lean();
       return { success: true, payload: upsertResult };
@@ -34,17 +40,15 @@ const handlers: HandlerMap<AppMethodContract> = {
     handler: async ({ appMethod, clearReferences }) => {
       await connectToMongoDB();
 
-      // If clearReferences is true, remove all references to this appMethod from products
+      // If clearReferences is true, remove all equipmentScenarioDocs that reference this appMethod
       if (clearReferences) {
         await ProductDocPropsModel.updateMany(
-          { 'subProductConfigDocs.appMethodId': appMethod.appMethodId },
+          { "equipmentScenarioDocs.appMethodId": appMethod.appMethodId },
           {
-            $set: {
-              'subProductConfigDocs.$[elem].useAppMethod': false,
-              'subProductConfigDocs.$[elem].appMethodId': null
-            }
+            $pull: {
+              equipmentScenarioDocs: { appMethodId: appMethod.appMethodId },
+            },
           },
-          { arrayFilters: [{ 'elem.appMethodId': appMethod.appMethodId }] }
         );
       }
 
@@ -59,8 +63,8 @@ const handlers: HandlerMap<AppMethodContract> = {
     handler: async ({ appMethodId }) => {
       await connectToMongoDB();
       const products = await ProductDocPropsModel.find(
-        { 'subProductConfigDocs.appMethodId': appMethodId },
-        { productId: 1 }
+        { "equipmentScenarioDocs.appMethodId": appMethodId },
+        { productId: 1 },
       ).lean();
       const productIds = products.map((p) => p.productId);
       return { success: true, payload: { productIds } };
