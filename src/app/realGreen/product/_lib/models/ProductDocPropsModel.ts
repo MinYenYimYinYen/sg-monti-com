@@ -15,7 +15,7 @@ const SubProductConfigDocSchema = new mongoose.Schema(
   {
     subId: { type: Number, required: true },
     storedRate: { type: Number, required: true, default: 0 },
-    mixedByEquipmentId: { type: String, default: null },
+    mixedByEquipmentIds: { type: [String], default: [] },
   },
   { _id: false },
 );

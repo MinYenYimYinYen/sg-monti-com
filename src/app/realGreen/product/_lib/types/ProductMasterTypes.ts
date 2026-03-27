@@ -30,13 +30,13 @@ export function isProductMasterCore(
 export type SubProductConfigDoc = {
   subId: number;
   storedRate: number;
-  /** FK → Equipment. null = standalone (not mixed into any equipment's water). */
-  mixedByEquipmentId: string | null;
+  /** FK → Equipment[]. Empty array = standalone (not mixed into any equipment's water). */
+  mixedByEquipmentIds: string[];
 };
 
 type SubProductConfigProps = {
-  /** Hydrated from mixedByEquipmentId. null when standalone. */
-  mixedByEquipment: Equipment | null;
+  /** Hydrated from mixedByEquipmentIds. Empty array when standalone. */
+  mixedByEquipments: Equipment[];
 };
 
 export type SubProductConfig = SubProductConfigDoc &

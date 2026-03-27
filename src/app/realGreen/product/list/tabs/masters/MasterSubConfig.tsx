@@ -7,13 +7,7 @@ import { CircleX } from "lucide-react";
 import { SubProductConfigDoc } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Label } from "@/style/components/label";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/style/components/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { Checkbox } from "@/style/components/checkbox";
 import { Equipment } from "@/app/equipment/EquipmentTypes";
 
 interface MasterSubConfigProps {
@@ -22,7 +16,7 @@ interface MasterSubConfigProps {
   availableEquipments: Equipment[];
   onRemove: (subId: number) => void;
   onUpdateRate: (subId: number, storedRate: number) => void;
-  onUpdateMixedBy: (subId: number, equipmentId: string | null) => void;
+  onUpdateMixedBy: (subId: number, equipmentIds: string[]) => void;
 }
 
 export function MasterSubConfig({
@@ -33,7 +27,14 @@ export function MasterSubConfig({
   onUpdateRate,
   onUpdateMixedBy,
 }: MasterSubConfigProps) {
-  const selectedLabel = config.mixedByEquipmentId ?? "Standalone";
+  const selectedIds = config.mixedByEquipmentIds;
+
+  const toggleEquipment = (equipmentId: string) => {
+    const next = selectedIds.includes(equipmentId)
+      ? selectedIds.filter((id) => id !== equipmentId)
+      : [...selectedIds, equipmentId];
+    onUpdateMixedBy(config.subId, next);
+  };
 
   return (
     <div className="space-y-1 rounded-md border p-2.5">
@@ -68,36 +69,31 @@ export function MasterSubConfig({
         />
       </div>
 
-      {/* Mixed By Equipment */}
-      <div className="flex items-center gap-2">
-        <Label className="text-xs text-muted-foreground whitespace-nowrap w-20">
-          Mixed By:
-        </Label>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              className="h-8 flex-1 justify-between font-normal text-xs"
-            >
-              {selectedLabel}
-              <ChevronDown className="ml-2 h-3 w-3 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => onUpdateMixedBy(config.subId, null)}>
-              Standalone
-            </DropdownMenuItem>
+      {/* Mixed By Equipment — multi-select checkboxes */}
+      {availableEquipments.length > 0 && (
+        <div className="flex items-start gap-2">
+          <Label className="text-xs text-muted-foreground whitespace-nowrap w-20 pt-0.5">
+            Mixed By:
+          </Label>
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
             {availableEquipments.map((equipment) => (
-              <DropdownMenuItem
-                key={equipment.equipmentId}
-                onClick={() => onUpdateMixedBy(config.subId, equipment.equipmentId)}
-              >
-                {equipment.equipmentId}
-              </DropdownMenuItem>
+              <div key={equipment.equipmentId} className="flex items-center gap-1.5">
+                <Checkbox
+                  id={`${config.subId}-${equipment.equipmentId}`}
+                  checked={selectedIds.includes(equipment.equipmentId)}
+                  onCheckedChange={() => toggleEquipment(equipment.equipmentId)}
+                />
+                <label
+                  htmlFor={`${config.subId}-${equipment.equipmentId}`}
+                  className="text-xs cursor-pointer"
+                >
+                  {equipment.equipmentId}
+                </label>
+              </div>
             ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

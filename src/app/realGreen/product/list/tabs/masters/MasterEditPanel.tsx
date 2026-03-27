@@ -162,7 +162,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
             {
               subId: productId,
               storedRate: 0,
-              mixedByEquipmentId: null,
+              mixedByEquipmentIds: [],
             },
           ],
     );
@@ -174,10 +174,10 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
     );
   };
 
-  const updateMixedBy = (productId: number, equipmentId: string | null) => {
+  const updateMixedBy = (productId: number, equipmentIds: string[]) => {
     setConfigDocs((prev) =>
       prev.map((c) =>
-        c.subId === productId ? { ...c, mixedByEquipmentId: equipmentId } : c,
+        c.subId === productId ? { ...c, mixedByEquipmentIds: equipmentIds } : c,
       ),
     );
   };

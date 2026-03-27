@@ -103,20 +103,20 @@ const selectProductMasters = createSelector(
           subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
             const subProduct = subsMap.get(configDoc.subId);
             const rate = hydrateRate({ subProductConfigDoc: configDoc, appMethodMap });
-            const mixedByEquipmentId = configDoc.mixedByEquipmentId ?? null;
+            const mixedByEquipmentIds = configDoc.mixedByEquipmentIds ?? [];
 
             const config: SubProductConfig = {
               subId: configDoc.subId,
               storedRate: configDoc.storedRate,
-              mixedByEquipmentId,
+              mixedByEquipmentIds,
               rate,
               subProduct: subProduct || {
                 ...baseProductSub,
                 productId: configDoc.subId,
               },
-              mixedByEquipment: mixedByEquipmentId
-                ? (equipmentMap.get(mixedByEquipmentId) ?? null)
-                : null,
+              mixedByEquipments: mixedByEquipmentIds
+                .map((id) => equipmentMap.get(id))
+                .filter((e): e is Equipment => e !== undefined),
             };
             return config;
           }),

@@ -99,7 +99,7 @@ function hydrateMasterInventory(params: {
 
       // Mixed sub-products: those tagged with this equipment's ID on the master's sub-config
       const entrySubProducts = master.subProductConfigs
-        .filter((config) => config.mixedByEquipment?.equipmentId === entry.equipmentId)
+        .filter((config) => config.mixedByEquipmentIds.includes(entry.equipmentId))
         .map((config) => ({
           productId: config.subProduct.productId,
           product: config.subProduct,
@@ -128,7 +128,7 @@ function hydrateMasterInventory(params: {
 
   // Standalone sub-products (not tagged to any equipment) go to master.subProducts
   const nonClaimedSubProducts = master.subProductConfigs
-    .filter((config) => config.mixedByEquipment === null)
+    .filter((config) => config.mixedByEquipmentIds.length === 0)
     .map((config) => ({
       productId: config.subProduct.productId,
       product: config.subProduct,

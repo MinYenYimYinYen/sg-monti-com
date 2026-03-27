@@ -115,8 +115,8 @@ export function AppMethodSection({
       {/* MixProduct with Input */}
       <div className={"flex items-center justify-between gap-2"}>
         <div>
-          <div className={"flex-1 text-foreground/90"}>
-            {plannedEntry.mixProduct.productCode}
+        <div className={"flex-1 text-foreground/90"}>
+            {plannedEntry.appMethod.needsWater ? equipmentId : plannedEntry.mixProduct.productCode}
           </div>
           <div className={"text-xs text-foreground/70"}>
             Planned: {mixProductAmountDisplay}

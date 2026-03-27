@@ -31,6 +31,9 @@ export function LoadoutForm() {
     <div>No route found. </div>
   </div>
 
+  console.log('loadout', loadout);
+  console.log('loadoutInventory', loadoutInventory);
+
   return (
     <Container variant={"page"}>
       <div className={"flex flex-col gap-3 max-w-xl"}>
