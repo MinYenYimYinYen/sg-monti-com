@@ -81,8 +81,11 @@ const selectPendingSlotProducts = (state: AppState) =>
 const selectPendingSlotAmounts = (state: AppState) =>
   state.loadoutForm.pendingSlotAmounts;
 
-const selectScenarioSelections = (state: AppState) =>
-  state.loadoutForm.scenarioSelections;
+const selectPackageSelections = (state: AppState) =>
+  state.loadoutForm.packageSelections;
+
+const selectTruckId = (state: AppState) => state.loadoutForm.truckId;
+const selectRideOnId = (state: AppState) => state.loadoutForm.rideOnId;
 
 const selectUsedProductIds = createSelector(
   [selectLoadout],
@@ -221,7 +224,9 @@ export const loadoutFormSelect = {
   productsForPendingSlots: selectProductsForPendingSlots,
   loadoutTouchedFields: selectLoadoutTouchedFields,
   isFieldTouched: selectIsFieldTouched,
-  scenarioSelections: selectScenarioSelections,
+  packageSelections: selectPackageSelections,
+  truckId: selectTruckId,
+  rideOnId: selectRideOnId,
   loadout: {
     data: selectLoadout,
     startValidation: createLoadoutValidation("start"),

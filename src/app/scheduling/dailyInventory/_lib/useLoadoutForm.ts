@@ -55,9 +55,27 @@ export function useLoadoutForm() {
     dispatch(loadoutFormActions.clearPendingSlotInputs(slotId));
   };
 
+  const setTruckId = (truckId: string | null) => {
+    dispatch(loadoutFormActions.setTruckId(truckId));
+  };
+
+  const setRideOnId = (rideOnId: string | null) => {
+    dispatch(loadoutFormActions.setRideOnId(rideOnId));
+  };
+
+  const setPackageSelection = (masterProductId: number, selectedPackageId: string) => {
+    dispatch(loadoutFormActions.setPackageSelection({ masterProductId, selectedPackageId }));
+  };
+
+  const clearPackageSelections = () => {
+    dispatch(loadoutFormActions.clearPackageSelections());
+  };
+
   return {
     setRouteDate,
     setTech,
+    setTruckId,
+    setRideOnId,
     updateLoadout,
     addPendingProductSlot,
     updatePendingSlotCategory,
@@ -67,5 +85,7 @@ export function useLoadoutForm() {
     updatePendingSlotProduct,
     updatePendingSlotAmount,
     clearPendingSlotInputs,
+    setPackageSelection,
+    clearPackageSelections,
   };
 }

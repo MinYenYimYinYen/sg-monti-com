@@ -1,13 +1,13 @@
 "use client";
 import { Container } from "@/components/Containers";
 import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCustomers";
-import { useSelector } from "react-redux";
 import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
 import { useRecentProduction } from "@/app/realGreen/customer/hooks/useRecentProduction";
 
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
 import { ChooseRouteDate } from "@/app/scheduling/dailyInventory/components/ChooseRouteDate";
 import { ChooseTech } from "@/app/scheduling/dailyInventory/components/ChooseTech";
+import { ChooseTruck } from "@/app/scheduling/dailyInventory/components/ChooseTruck";
+import { ChooseRideOn } from "@/app/scheduling/dailyInventory/components/ChooseRideOn";
 import { cn, md } from "@/style/utils";
 import { LoadoutForm } from "@/app/scheduling/dailyInventory/components/LoadoutForm";
 import { ScrollArea } from "@/style/components/scroll-area";
@@ -27,14 +27,20 @@ export default function TechRoute() {
         <div
           className={cn(
             "flex flex-col gap-1",
-            md("flex-row gap-4 w-96 flex-none"),
+            md("flex-row gap-4 flex-wrap"),
           )}
         >
-          <div className={"w-62"}>
+          <div className={"w-48"}>
             <ChooseTech />
           </div>
-          <div className={"w-48"}>
+          <div className={"w-40"}>
             <ChooseRouteDate />
+          </div>
+          <div className={"w-36"}>
+            <ChooseTruck />
+          </div>
+          <div className={"w-36"}>
+            <ChooseRideOn />
           </div>
         </div>
         <LoadoutForm />

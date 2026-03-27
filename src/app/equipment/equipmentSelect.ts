@@ -23,9 +23,8 @@ const selectEquipments = createSelector(
 
       const equipment: Equipment = {
         ...equipmentDoc,
+        showFlOz: equipmentDoc.showFlOz ?? false,
         appMethod,
-        //todo: see EquipmentTypes.ts
-        waterRate: baseNumId,
       };
 
       return equipment;

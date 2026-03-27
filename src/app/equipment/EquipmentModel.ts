@@ -9,6 +9,7 @@ const EquipmentSchema = new mongoose.Schema(
     defaultAppMethodId: { type: String, required: true },
     appMethodIds: { type: [String], default: [] },
     mixedProductIds: { type: [Number], default: [] },
+    showFlOz: { type: Boolean, required: true, default: false },
   },
   { timestamps: true },
 );

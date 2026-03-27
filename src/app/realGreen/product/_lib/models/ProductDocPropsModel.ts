@@ -10,52 +10,37 @@ export type ProductDocPropsStorage = (Partial<ProductMasterDocProps> &
   Partial<ProductSubDocProps>) &
   CreatedUpdated;
 
+// Sub-schema for SubProductConfigDoc (ProductMasterDocProps)
+const SubProductConfigDocSchema = new mongoose.Schema(
+  {
+    subId: { type: Number, required: true },
+    storedRate: { type: Number, required: true, default: 0 },
+    mixedByEquipmentId: { type: String, default: null },
+  },
+  { _id: false },
+);
+
 const ProductDocPropsSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true, unique: true },
 
+    // ProductMasterDocProps fields
     subProductConfigDocs: {
-      type: [
-        {
-          subId: { type: Number, required: true },
-          storedRate: { type: Number, required: true, default: 0 },
-        },
-      ],
-      required: false,
+      type: [SubProductConfigDocSchema],
       default: [],
     },
-
-    equipmentScenarioDocs: {
-      type: [
-        {
-          scenarioId: { type: String, required: true },
-          description: { type: String, required: true },
-          equipmentEntries: {
-            type: [
-              {
-                equipmentId: { type: String, required: true },
-                description: { type: String, required: true },
-                appMethodId: { type: String, required: true },
-                mixedProductIds: { type: [Number], required: false, default: [] },
-              },
-            ],
-            required: false,
-            default: [],
-          },
-        },
-      ],
-      required: false,
-      default: [],
-    },
-
     equipmentPackageIds: {
       type: [String],
-      required: false,
       default: [],
     },
 
+    // ProductSubDocProps fields
+    appMethodId: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true },
 );
 
-export const ProductDocPropsModel = createModel("ProductDocProps", ProductDocPropsSchema)
+export const ProductDocPropsModel = createModel("ProductDocProps", ProductDocPropsSchema);

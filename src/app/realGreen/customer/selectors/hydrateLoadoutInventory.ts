@@ -10,7 +10,10 @@ import { Equipment } from "@/app/equipment/EquipmentTypes";
  * getProductMasters — filters product rules by size and returns matching ProductMasters.
  * Moved here from hydrateProductsPlanned.ts (which is now deleted).
  */
-export function getProductMasters(servCode: ServCode, size: number): ProductMaster[] {
+export function getProductMasters(
+  servCode: ServCode,
+  size: number,
+): ProductMaster[] {
   const productRules = servCode.productRules.filter((rule) => {
     const operator = rule.sizeOperator;
     switch (operator) {
@@ -84,11 +87,6 @@ function hydrateMasterInventory(params: {
     return buildMasterEntry({ master, size, equipmentEntries: [] });
   }
 
-  // Build the set of product IDs claimed by any equipment item in this package
-  const claimedProductIds = new Set<number>(
-    selectedPackage.equipments.flatMap((e: Equipment) => e.mixedProductIds),
-  );
-
   // Build equipment entries from the selected package's hydrated equipment items
   const equipmentEntries: LoadoutBase["masters"][number]["equipmentEntries"] =
     selectedPackage.equipments.map((entry: Equipment) => {
@@ -99,9 +97,9 @@ function hydrateMasterInventory(params: {
         description: entry.equipmentId,
       };
 
-      // Mixed sub-products for this entry
+      // Mixed sub-products: those tagged with this equipment's ID on the master's sub-config
       const entrySubProducts = master.subProductConfigs
-        .filter((config) => entry.mixedProductIds.includes(config.subId))
+        .filter((config) => config.mixedByEquipment?.equipmentId === entry.equipmentId)
         .map((config) => ({
           productId: config.subProduct.productId,
           product: config.subProduct,
@@ -119,17 +117,18 @@ function hydrateMasterInventory(params: {
         mixProduct,
         mixProductUnitId: mixProduct.unit.unitId,
         mixProductUnit: mixProduct.unit,
-        //todo: need to put waterRate back on
-        plannedAmount: size * entry.waterRate,
+        plannedAmount:
+          (size * entry.appMethod.flowRate.volume) /
+          entry.appMethod.flowRate.time,
         startAmount: null,
         finishAmount: null,
         subProducts: entrySubProducts,
       };
     });
 
-  // Non-claimed sub-products go to master.subProducts
+  // Standalone sub-products (not tagged to any equipment) go to master.subProducts
   const nonClaimedSubProducts = master.subProductConfigs
-    .filter((config) => !claimedProductIds.has(config.subId))
+    .filter((config) => config.mixedByEquipment === null)
     .map((config) => ({
       productId: config.subProduct.productId,
       product: config.subProduct,
@@ -140,7 +139,12 @@ function hydrateMasterInventory(params: {
       unit: config.subProduct.unit,
     }));
 
-  return buildMasterEntry({ master, size, equipmentEntries, subProducts: nonClaimedSubProducts });
+  return buildMasterEntry({
+    master,
+    size,
+    equipmentEntries,
+    subProducts: nonClaimedSubProducts,
+  });
 }
 
 function buildMasterEntry(params: {
@@ -152,15 +156,17 @@ function buildMasterEntry(params: {
   const { master, size, equipmentEntries, subProducts } = params;
 
   // When no package selected, all sub-products go to master.subProducts
-  const fallbackSubProducts = subProducts ?? master.subProductConfigs.map((config) => ({
-    productId: config.subProduct.productId,
-    product: config.subProduct,
-    plannedAmount: size * config.rate,
-    startAmount: null,
-    finishAmount: null,
-    unitId: config.subProduct.unit.unitId,
-    unit: config.subProduct.unit,
-  }));
+  const fallbackSubProducts =
+    subProducts ??
+    master.subProductConfigs.map((config) => ({
+      productId: config.subProduct.productId,
+      product: config.subProduct,
+      plannedAmount: size * config.rate,
+      startAmount: null,
+      finishAmount: null,
+      unitId: config.subProduct.unit.unitId,
+      unit: config.subProduct.unit,
+    }));
 
   return {
     productId: master.productId,

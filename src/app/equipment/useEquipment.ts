@@ -30,13 +30,15 @@ export function useEquipment({ autoLoad }: { autoLoad?: boolean }) {
       }),
     );
 
-  const upsertEquipment = (equipment: EquipmentDoc) =>
+  const upsertEquipment = (equipment: EquipmentDoc) => {
+    console.log("upsertEquipment", equipment);
     dispatch(
       equipmentActions.upsert({
         params: { equipment },
         config: { showLoading: false, force: true },
       }),
     );
+  };
 
   const deleteEquipment = ({
     equipment,

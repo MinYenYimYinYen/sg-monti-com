@@ -13,35 +13,40 @@ type PendingProductSlot = {
   categoryFilter: string | null;
 };
 
-type ScenarioSelection = {
+type PackageSelection = {
   masterProductId: number;
-  selectedScenarioId: string;
+  selectedPackageId: string;
 };
 
 type LoadoutFormState = {
   tech: string | null;
   routeDate: string | null;
+  truckId: string | null;
+  rideOnId: string | null;
   loadout: LoadoutBase;
   loadoutTouchedFields: Set<string>;
   showAllLoadoutIssues: boolean;
   pendingProductSlots: PendingProductSlot[];
   pendingSlotProducts: Record<string, ProductSub | ProductSingle | null>;
   pendingSlotAmounts: Record<string, string>;
-  /** Worker's scenario selection per master product. Not persisted between sessions. */
-  scenarioSelections: ScenarioSelection[];
+  /** Worker's equipment package selection per master product. Not persisted between sessions. */
+  packageSelections: PackageSelection[];
 };
 
 const initialState: LoadoutFormState = {
   tech: null,
   routeDate: null,
+  truckId: null,
+  rideOnId: null,
   loadout: baseLoadout,
   loadoutTouchedFields: new Set<string>(),
   showAllLoadoutIssues: false,
   pendingProductSlots: [],
   pendingSlotProducts: {},
   pendingSlotAmounts: {},
-  scenarioSelections: [],
+  packageSelections: [],
 };
+
 export const loadoutFormSlice = createSlice({
   name: "techRoute",
   initialState,
@@ -51,6 +56,12 @@ export const loadoutFormSlice = createSlice({
     },
     setRouteDate: (state, action) => {
       state.routeDate = action.payload;
+    },
+    setTruckId: (state, action: PayloadAction<string | null>) => {
+      state.truckId = action.payload;
+    },
+    setRideOnId: (state, action: PayloadAction<string | null>) => {
+      state.rideOnId = action.payload;
     },
     updateLoadout: (state, action: PayloadAction<Partial<LoadoutBase>>) => {
       state.loadout = { ...state.loadout, ...action.payload };
@@ -75,7 +86,6 @@ export const loadoutFormSlice = createSlice({
     removePendingProductSlot: (state, action: PayloadAction<string>) => {
       const slotId = action.payload;
       state.pendingProductSlots = state.pendingProductSlots.filter(s => s.id !== slotId);
-      // Clear inputs when slot is removed
       delete state.pendingSlotProducts[slotId];
       delete state.pendingSlotAmounts[slotId];
     },
@@ -90,22 +100,17 @@ export const loadoutFormSlice = createSlice({
 
       if (!slot) return;
 
-      // Determine if this is a sub or single
       if (isProductSubCore(product as ProductCore)) {
         const productSub = product as ProductSub;
 
-        // If slot has masterId, check if this product is planned in that master
         if (slot.masterId !== undefined) {
           const master = state.loadout.masters.find(m => m.product.productId === slot.masterId);
           if (master) {
-            // Check if this product is planned in master.subProducts
             const plannedSub = master.subProducts.find(s => s.product.productId === productSub.productId);
 
             if (plannedSub) {
-              // Update startAmount for planned product
               plannedSub.startAmount = amount;
             } else {
-              // Add as new subProduct to master
               master.subProducts.push({
                 productId: productSub.productId,
                 product: productSub,
@@ -118,7 +123,6 @@ export const loadoutFormSlice = createSlice({
             }
           }
         } else {
-          // Add to CustomProducts.subProducts
           state.loadout.subProducts.push({
             productId: productSub.productId,
             product: productSub,
@@ -131,7 +135,6 @@ export const loadoutFormSlice = createSlice({
       } else if (isProductSingleCore(product as ProductCore)) {
         const productSingle = product as ProductSingle;
 
-        // Singles always go to CustomProducts.singles
         state.loadout.singles.push({
           productId: productSingle.productId,
           product: productSingle,
@@ -142,7 +145,6 @@ export const loadoutFormSlice = createSlice({
         });
       }
 
-      // Remove the slot after adding product and clear its inputs
       state.pendingProductSlots = state.pendingProductSlots.filter(s => s.id !== slotId);
       delete state.pendingSlotProducts[slotId];
       delete state.pendingSlotAmounts[slotId];
@@ -155,13 +157,11 @@ export const loadoutFormSlice = createSlice({
       const { masterId, productId } = action.payload;
 
       if (masterId !== undefined) {
-        // Remove from master.subProducts
         const master = state.loadout.masters.find(m => m.product.productId === masterId);
         if (master) {
           master.subProducts = master.subProducts.filter(s => s.product.productId !== productId);
         }
       } else {
-        // Remove from CustomProducts
         state.loadout.singles = state.loadout.singles.filter(s => s.product.productId !== productId);
         state.loadout.subProducts = state.loadout.subProducts.filter(s => s.product.productId !== productId);
       }
@@ -188,31 +188,32 @@ export const loadoutFormSlice = createSlice({
       delete state.pendingSlotProducts[slotId];
       delete state.pendingSlotAmounts[slotId];
     },
+
     markStartLoadoutFieldTouched: (state, action: PayloadAction<string>) => {
-      const field = action.payload;
-      state.loadoutTouchedFields.add(field);
+      state.loadoutTouchedFields.add(action.payload);
     },
+
     setShouldShowAllStartLoadoutIssues: (state, action: PayloadAction<boolean>) => {
       state.showAllLoadoutIssues = action.payload;
     },
 
-    setScenarioSelection: (
+    setPackageSelection: (
       state,
-      action: PayloadAction<{ masterProductId: number; selectedScenarioId: string }>,
+      action: PayloadAction<{ masterProductId: number; selectedPackageId: string }>,
     ) => {
-      const { masterProductId, selectedScenarioId } = action.payload;
-      const existing = state.scenarioSelections.find(
+      const { masterProductId, selectedPackageId } = action.payload;
+      const existing = state.packageSelections.find(
         (s) => s.masterProductId === masterProductId,
       );
       if (existing) {
-        existing.selectedScenarioId = selectedScenarioId;
+        existing.selectedPackageId = selectedPackageId;
       } else {
-        state.scenarioSelections.push({ masterProductId, selectedScenarioId });
+        state.packageSelections.push({ masterProductId, selectedPackageId });
       }
     },
 
-    clearScenarioSelections: (state) => {
-      state.scenarioSelections = [];
+    clearPackageSelections: (state) => {
+      state.packageSelections = [];
     },
   },
 });

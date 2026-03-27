@@ -89,33 +89,38 @@ const selectProductMasters = createSelector(
         unitConfigMap,
       );
 
-      return {
-        ...doc,
-        productType: "master",
-        unitConfig,
-        unitConfigDisplay,
-        equipmentPackages: hydrateEquipmentPackages(
-          doc.equipmentPackageIds ?? [],
-          equipmentPackageMap,
-          equipmentMap,
-          appMethodMap,
-        ),
-        subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
-          const subProduct = subsMap.get(configDoc.subId);
-          const rate = hydrateRate({ subProductConfigDoc: configDoc, appMethodMap });
+        return {
+          ...doc,
+          productType: "master",
+          unitConfig,
+          unitConfigDisplay,
+          equipmentPackages: hydrateEquipmentPackages(
+            doc.equipmentPackageIds ?? [],
+            equipmentPackageMap,
+            equipmentMap,
+            appMethodMap,
+          ),
+          subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
+            const subProduct = subsMap.get(configDoc.subId);
+            const rate = hydrateRate({ subProductConfigDoc: configDoc, appMethodMap });
+            const mixedByEquipmentId = configDoc.mixedByEquipmentId ?? null;
 
-          const config: SubProductConfig = {
-            subId: configDoc.subId,
-            storedRate: configDoc.storedRate,
-            rate,
-            subProduct: subProduct || {
-              ...baseProductSub,
-              productId: configDoc.subId,
-            },
-          };
-          return config;
-        }),
-      };
+            const config: SubProductConfig = {
+              subId: configDoc.subId,
+              storedRate: configDoc.storedRate,
+              mixedByEquipmentId,
+              rate,
+              subProduct: subProduct || {
+                ...baseProductSub,
+                productId: configDoc.subId,
+              },
+              mixedByEquipment: mixedByEquipmentId
+                ? (equipmentMap.get(mixedByEquipmentId) ?? null)
+                : null,
+            };
+            return config;
+          }),
+        };
     });
     return masters;
   },
@@ -297,8 +302,8 @@ function hydrateEquipmentPackages(
           defaultAppMethodId: equipmentDoc.defaultAppMethodId,
           appMethodIds: equipmentDoc.appMethodIds,
           mixedProductIds: equipmentDoc.mixedProductIds,
+          showFlOz: equipmentDoc.showFlOz ?? false,
           appMethod,
-          waterRate,
         };
         return [equipment];
       },

@@ -27,6 +27,7 @@ import { EquipmentDoc } from "@/app/equipment/EquipmentTypes";
 import { useEquipment } from "@/app/equipment/useEquipment";
 import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import { EquipmentDeleteSheet } from "@/app/equipment/EquipmentDeleteSheet";
+import { Checkbox } from "@/style/components/checkbox";
 
 interface EquipmentFormProps {
   equipment?: EquipmentDoc;
@@ -45,6 +46,7 @@ export function EquipmentForm({ equipment }: EquipmentFormProps) {
   const [defaultAppMethodId, setDefaultAppMethodId] = useState(
     equipment?.defaultAppMethodId ?? "",
   );
+  const [showFlOz, setShowFlOz] = useState(equipment?.showFlOz ?? false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
 
@@ -79,6 +81,7 @@ export function EquipmentForm({ equipment }: EquipmentFormProps) {
       defaultAppMethodId,
       appMethodIds,
       mixedProductIds: equipment?.mixedProductIds ?? [],
+      showFlOz,
     };
     await upsertEquipment(doc);
     setSaveStatus("success");
@@ -152,6 +155,21 @@ export function EquipmentForm({ equipment }: EquipmentFormProps) {
                 ))}
               </MultiSelectContent>
             </MultiSelect>
+          </div>
+
+          {/* Show Fl Oz */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="showFlOz"
+              checked={showFlOz}
+              onCheckedChange={(checked) => setShowFlOz(checked === true)}
+            />
+            <Label htmlFor="showFlOz" className="cursor-pointer">
+              Show Fl Oz
+            </Label>
+            <span className="text-xs text-muted-foreground">
+              Display water amounts as gallons + remaining fl oz
+            </span>
           </div>
 
           {/* Default AppMethod — filtered to allowed set */}

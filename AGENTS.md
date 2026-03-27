@@ -143,6 +143,7 @@ Types follow a layered suffix pattern that signals their role in the data pipeli
 - **Storage vs Consumption**: Use storage-optimized types (e.g., discriminated unions) in state, transform to conventional types in selectors.
 - **Loading/Error States**: Handled globally by `uiSlice.ts` via `addMatcher`. Feature slices only track data.
 - **File Naming**: Follow pattern: `featureContract.ts`, `featureSlice.ts`, `featureSelect.ts`, `useFeature.ts`
+- **Full Hydration in Selectors**: FK references on `Doc` types are always resolved to full entities in selectors. The UI layer receives fully hydrated no-suffix types — never raw FKs. Components access data directly, no lookups. Example: `SubProductConfigDoc.mixedByEquipmentId: string | null` → `SubProductConfig.mixedByEquipment: Equipment | null` (resolved in `productSelectors.ts`).
 
 ### Example: SchedPromise Module
 

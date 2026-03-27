@@ -3,6 +3,7 @@ import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterT
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
+import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
 
 /**
  * LoadoutBase — the runtime loadout tree.
@@ -89,6 +90,8 @@ export const baseLoadout: LoadoutBase = {
 export type LoadoutDoc = {
   employeeId: string;
   routeDate: string;
+  truckId: string;
+  rideOnId: string;
   masters: {
     productId: number;
     plannedAmount: number;
@@ -126,7 +129,5 @@ export type LoadoutDoc = {
   }[];
 };
 
-type Loadout = LoadoutBase & {
-  employeeId: string;
-  routeDate: string;
-};
+export type LoadoutFinal = DeepNonNullable<LoadoutDoc>
+

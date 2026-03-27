@@ -9,6 +9,7 @@ import {
   EquipmentPackage,
   EquipmentPackageDoc,
 } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
+import { Equipment } from "@/app/equipment/EquipmentTypes";
 
 // Re-export for convenience
 export type { EquipmentPackage, EquipmentPackageDoc };
@@ -29,12 +30,20 @@ export function isProductMasterCore(
 export type SubProductConfigDoc = {
   subId: number;
   storedRate: number;
+  /** FK → Equipment. null = standalone (not mixed into any equipment's water). */
+  mixedByEquipmentId: string | null;
 };
 
-export type SubProductConfig = SubProductConfigDoc & {
-  subProduct: ProductSub;
-  rate: number;
+type SubProductConfigProps = {
+  /** Hydrated from mixedByEquipmentId. null when standalone. */
+  mixedByEquipment: Equipment | null;
 };
+
+export type SubProductConfig = SubProductConfigDoc &
+  SubProductConfigProps & {
+    subProduct: ProductSub;
+    rate: number;
+  };
 
 export type ProductMasterDocProps = CreatedUpdated &
   ProductCommonDocProps & {

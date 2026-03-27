@@ -7,7 +7,7 @@ import {
   UnitLabel,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
-type FlowRate = {
+export type FlowRate = {
   volume: number;
   volumeUnit: VolumeUnit["desc"] | WeightUnit["desc"];
   time: number;

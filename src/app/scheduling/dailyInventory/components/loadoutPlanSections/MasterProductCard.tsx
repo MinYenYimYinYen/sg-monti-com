@@ -3,6 +3,14 @@ import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutF
 import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { AppMethodSection } from "./AppMethodSection";
 import { SubProductSection } from "./SubProductSection";
+import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { useEffect } from "react";
+import { MultiSelect } from "@/components/multiselect/MultiSelect";
+import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
+import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
+import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
+import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
+import { EquipmentPackage } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
 
 type MasterProductCardProps = {
   masterProductId: number;
@@ -10,13 +18,27 @@ type MasterProductCardProps = {
 
 export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
   const services = useSelector(loadoutFormSelect.services);
-  const loadoutInventory = aggregateLoadoutInventory(services);
+  const packageSelections = useSelector(loadoutFormSelect.packageSelections);
+  const { setPackageSelection } = useLoadoutForm();
 
-  console.log("loadoutInventory", loadoutInventory);
+  const loadoutInventory = aggregateLoadoutInventory(services);
 
   const master = loadoutInventory.masters.find(
     (m) => m.product.productId === masterProductId,
   );
+
+  const packages = master?.product.equipmentPackages ?? [];
+
+  const selectedPackageId =
+    packageSelections.find((s) => s.masterProductId === masterProductId)
+      ?.selectedPackageId ?? null;
+
+  // Auto-select when there is exactly one package
+  useEffect(() => {
+    if (packages.length === 1 && !selectedPackageId) {
+      setPackageSelection(masterProductId, packages[0].packageId);
+    }
+  }, [masterProductId, packages, selectedPackageId, setPackageSelection]);
 
   if (!master) return null;
 
@@ -28,6 +50,35 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
           {master.product.description}
         </div>
       </div>
+
+      {/* Equipment Package selector — only shown when 2+ packages */}
+      {packages.length > 1 && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">Package:</span>
+          <MultiSelect
+            mode="single"
+            value={selectedPackageId ? [selectedPackageId] : []}
+            onValueChange={(ids) => {
+              if (ids[0]) setPackageSelection(masterProductId, ids[0]);
+            }}
+            getDisplayValue={(id) =>
+              packages.find((p: EquipmentPackage) => p.packageId === id)?.description ?? id
+            }
+            className="bg-card rounded-md flex-1"
+          >
+            <MultiSelectTrigger>
+              <MultiSelectValue placeholder="Select equipment package…" />
+            </MultiSelectTrigger>
+            <MultiSelectContent>
+              {packages.map((pkg: EquipmentPackage) => (
+                <MultiSelectItem key={pkg.packageId} value={pkg.packageId}>
+                  {pkg.description}
+                </MultiSelectItem>
+              ))}
+            </MultiSelectContent>
+          </MultiSelect>
+        </div>
+      )}
 
       {/* Equipment Entries Section */}
       {master.equipmentEntries.map((entry) => (

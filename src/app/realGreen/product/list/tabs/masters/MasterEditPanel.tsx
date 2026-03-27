@@ -60,7 +60,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
   const { updateCategory, updateUnit, updateMasterSubProducts, updateMasterEquipmentPackages } = useProduct({});
   useEquipmentPackage({ autoLoad: true });
   const productSubs = useSelector(productSelect.productSubs);
-  const allPackageDocs = useSelector(equipmentPackageSelect.equipmentPackageDocs);
+  const allPackages = useSelector(equipmentPackageSelect.equipmentPackages);
 
   // --- Category state ---
   const [newCategoryName, setNewCategoryName] = useState(master.category);
@@ -162,6 +162,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
             {
               subId: productId,
               storedRate: 0,
+              mixedByEquipmentId: null,
             },
           ],
     );
@@ -172,6 +173,23 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
       prev.map((c) => (c.subId === productId ? { ...c, storedRate } : c)),
     );
   };
+
+  const updateMixedBy = (productId: number, equipmentId: string | null) => {
+    setConfigDocs((prev) =>
+      prev.map((c) =>
+        c.subId === productId ? { ...c, mixedByEquipmentId: equipmentId } : c,
+      ),
+    );
+  };
+
+  // Unique equipments across all saved packages on this master
+  const availableEquipments = Array.from(
+    new Map(
+      master.equipmentPackages
+        .flatMap((pkg) => pkg.equipments)
+        .map((e) => [e.equipmentId, e]),
+    ).values(),
+  );
 
   const handleSaveSubs = async () => {
     try {
@@ -191,27 +209,17 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
     <Card>
       <CardHeader className={"py-2"}>
         <CardTitle>Edit Master Product</CardTitle>
-        <p className="text-sm text-muted-foreground">{productName}</p>
+        <p className="text-sm text-muted-foreground">{productName}({master.productId})</p>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="subs">
+        <Tabs defaultValue="equipment">
           <TabsList className="w-full justify-start">
-            {/* Attributes tab with embedded info popover */}
-            <TabsTrigger value="attributes" className="flex items-center gap-1.5">
-              Attributes
-              <span
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex"
-              >
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Info className="h-3.5 w-3.5 cursor-pointer text-muted-foreground hover:text-foreground" />
-                  </PopoverTrigger>
-                  <PopoverContent className="w-72 text-sm">
-                    Category and unit changes affect all products sharing that category or unit in SA5.
-                  </PopoverContent>
-                </Popover>
-              </span>
+            {/* Equipment Packages tab */}
+            <TabsTrigger value="equipment" className="flex items-center gap-1.5">
+              Equipment Packages
+              <Badge variant="outline" className="ml-1 text-xs">
+                {master.equipmentPackages.length}
+              </Badge>
             </TabsTrigger>
 
             {/* Sub-Products tab with embedded info popover */}
@@ -236,12 +244,22 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
               </span>
             </TabsTrigger>
 
-            {/* Equipment Packages tab */}
-            <TabsTrigger value="equipment" className="flex items-center gap-1.5">
-              Equipment Packages
-              <Badge variant="outline" className="ml-1 text-xs">
-                {master.equipmentPackages.length}
-              </Badge>
+            {/* Attributes tab with embedded info popover */}
+            <TabsTrigger value="attributes" className="flex items-center gap-1.5">
+              Attributes
+              <span
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex"
+              >
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Info className="h-3.5 w-3.5 cursor-pointer text-muted-foreground hover:text-foreground" />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 text-sm">
+                    Category and unit changes affect all products sharing that category or unit in SA5.
+                  </PopoverContent>
+                </Popover>
+              </span>
             </TabsTrigger>
           </TabsList>
 
@@ -443,8 +461,10 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                               key={config.subId}
                               config={config}
                               subProduct={sub}
+                              availableEquipments={availableEquipments}
                               onRemove={toggleSub}
                               onUpdateRate={updateRate}
+                              onUpdateMixedBy={updateMixedBy}
                             />
                           );
                         })
@@ -484,12 +504,12 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                   <Label className="text-sm font-medium">Available</Label>
                   <ScrollArea className="h-[300px] rounded-md border">
                     <div className="p-3 space-y-1.5">
-                      {allPackageDocs.length === 0 ? (
+                      {allPackages.length === 0 ? (
                         <div className="text-sm text-muted-foreground text-center py-8">
                           No packages defined yet
                         </div>
                       ) : (
-                        allPackageDocs.map((pkg) => (
+                        allPackages.map((pkg) => (
                           <div
                             key={pkg.packageId}
                             className="flex items-start space-x-3 rounded-md border p-2.5 hover:bg-accent/10 cursor-pointer"
@@ -544,7 +564,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                         </div>
                       ) : (
                         packageIds.map((pkgId) => {
-                          const pkg = allPackageDocs.find((p) => p.packageId === pkgId);
+                          const pkg = allPackages.find((p) => p.packageId === pkgId);
                           const hydrated = master.equipmentPackages.find(
                             (p) => p.packageId === pkgId,
                           );

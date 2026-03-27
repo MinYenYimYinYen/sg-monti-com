@@ -19,7 +19,7 @@ import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentP
 export function EquipmentPackageCRUD() {
   useEquipmentPackage({ autoLoad: true });
   useEquipment({ autoLoad: true }); // needed for the equipment multiselect in the form
-  const packageDocs = useSelector(equipmentPackageSelect.equipmentPackageDocs);
+  const packages = useSelector(equipmentPackageSelect.equipmentPackages);
 
   return (
     <div className="h-full w-full pt-2">
@@ -37,7 +37,7 @@ export function EquipmentPackageCRUD() {
           </CardStackCard>
 
           {/* One card per package */}
-          {packageDocs.map((doc) => (
+          {packages.map((doc) => (
             <CardStackCard key={doc.packageId} id={doc.packageId} className="w-[50%]">
               <CardStackHeader>
                 <CardHeader>
