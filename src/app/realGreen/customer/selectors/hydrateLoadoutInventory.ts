@@ -3,7 +3,8 @@ import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { waterProduct } from "@/app/equipment/waterProduct";
+import { waterProduct, buildWaterUnitConfig } from "@/app/equipment/waterProduct";
+import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import { Equipment } from "@/app/equipment/EquipmentTypes";
 
 /**
@@ -90,11 +91,15 @@ function hydrateMasterInventory(params: {
   // Build equipment entries from the selected package's hydrated equipment items
   const equipmentEntries: LoadoutBase["masters"][number]["equipmentEntries"] =
     selectedPackage.equipments.map((entry: Equipment) => {
-      // Water carrier: use waterProduct constant, override productCode/description with equipmentId
+      // Water carrier: build per-equipment unit config based on showFlOz, then override
+      // productCode/description with equipmentId so the UI labels the row by machine name.
+      const waterUnitConfig = buildWaterUnitConfig(entry.showFlOz);
       const mixProduct: ProductSub = {
         ...waterProduct,
         productCode: entry.equipmentId,
         description: entry.equipmentId,
+        unitConfig: waterUnitConfig,
+        unitConfigDisplay: new UnitConfigDisplay(waterUnitConfig),
       };
 
       // Mixed sub-products: those tagged with this equipment's ID on the master's sub-config

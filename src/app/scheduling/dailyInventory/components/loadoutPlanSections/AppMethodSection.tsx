@@ -3,7 +3,6 @@
 import { useSelector, useDispatch } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
 import { loadoutFormActions } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
-import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
 import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
@@ -22,8 +21,7 @@ export function AppMethodSection({
   const dispatch = useDispatch();
   const { updateLoadout } = useLoadoutForm();
 
-  const services = useSelector(loadoutFormSelect.services);
-  const loadoutInventory = aggregateLoadoutInventory(services);
+  const loadoutInventory = useSelector(loadoutFormSelect.serviceResolvedLoadoutInventory);
   const loadout = useSelector(loadoutFormSelect.loadout.data);
 
   // Find planned master and equipment entry
@@ -71,10 +69,15 @@ export function AppMethodSection({
   // Non-tank equipment (backpack, hose) doesn't need start/finish amount input
   const tracksTankLevel = plannedEntry.appMethod.tracksTankLevel;
 
+  // showFlOz is encoded in the mixProduct's unitConfig: app = "Fl Oz" means showFlOz: true.
+  // When true, display as compound "X Gal Y Fl Oz"; when false, display as decimal gallons.
+  const showFlOz =
+    plannedEntry.mixProduct.unitConfig.conversions.app.unitLabel === "Fl Oz";
+
   const mixProductAmountDisplay =
     plannedEntry.mixProduct.unitConfigDisplay.format({
       amount: plannedEntry.plannedAmount,
-      targetContexts: ["load"],
+      targetContexts: showFlOz ? ["load", "app"] : ["load"],
       rounding: "ceil",
     }).formattedString;
 

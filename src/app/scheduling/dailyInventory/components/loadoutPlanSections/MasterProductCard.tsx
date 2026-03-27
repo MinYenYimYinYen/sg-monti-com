@@ -1,6 +1,5 @@
 import { useSelector } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { AppMethodSection } from "./AppMethodSection";
 import { SubProductSection } from "./SubProductSection";
 import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
@@ -17,11 +16,9 @@ type MasterProductCardProps = {
 };
 
 export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
-  const services = useSelector(loadoutFormSelect.services);
+  const loadoutInventory = useSelector(loadoutFormSelect.serviceResolvedLoadoutInventory);
   const packageSelections = useSelector(loadoutFormSelect.packageSelections);
   const { setPackageSelection } = useLoadoutForm();
-
-  const loadoutInventory = aggregateLoadoutInventory(services);
 
   const master = loadoutInventory.masters.find(
     (m) => m.product.productId === masterProductId,

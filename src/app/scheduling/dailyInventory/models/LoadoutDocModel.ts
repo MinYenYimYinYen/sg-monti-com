@@ -2,26 +2,26 @@ import mongoose from "mongoose";
 import { LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { createModel } from "@/lib/mongoose/createModel";
 
-const AppMethodSubProductSchema = new mongoose.Schema(
+const EquipmentEntrySubProductSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true },
     plannedAmount: { type: Number, required: true },
-    startAmount: { type: Number, required: true, default: null },
-    finishAmount: { type: Number, required: true, default: null },
+    startAmount: { type: Number, default: null },
+    finishAmount: { type: Number, default: null },
     unitId: { type: Number, required: true },
   },
   { _id: false },
 );
 
-const AppMethodSchema = new mongoose.Schema(
+const EquipmentEntrySchema = new mongoose.Schema(
   {
-    appMethodId: { type: String, required: true },
+    equipmentId: { type: String, required: true },
     mixProductId: { type: Number, required: true },
     mixProductUnitId: { type: Number, required: true },
     plannedAmount: { type: Number, required: true },
-    startAmount: { type: Number, required: true, default: null },
-    finishAmount: { type: Number, required: true, default: null },
-    subProducts: { type: [AppMethodSubProductSchema], required: true },
+    startAmount: { type: Number, default: null },
+    finishAmount: { type: Number, default: null },
+    subProducts: { type: [EquipmentEntrySubProductSchema], required: true },
   },
   { _id: false },
 );
@@ -30,8 +30,8 @@ const MasterSubProductSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true },
     plannedAmount: { type: Number, required: true },
-    startAmount: { type: Number, required: true, default: null },
-    finishAmount: { type: Number, required: true, default: null },
+    startAmount: { type: Number, default: null },
+    finishAmount: { type: Number, default: null },
     unitId: { type: Number, required: true },
   },
   { _id: false },
@@ -40,8 +40,8 @@ const MasterSubProductSchema = new mongoose.Schema(
 const MasterSingleSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true },
-    startAmount: { type: Number, required: true },
-    finishAmount: { type: Number, required: true },
+    startAmount: { type: Number, default: null },
+    finishAmount: { type: Number, default: null },
     unitId: { type: Number, required: true },
   },
   { _id: false },
@@ -51,10 +51,10 @@ const MasterSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true },
     plannedAmount: { type: Number, required: true },
-    startAmount: { type: Number, required: true, default: null },
-    finishAmount: { type: Number, required: true, default: null },
+    startAmount: { type: Number, default: null },
+    finishAmount: { type: Number, default: null },
     unitId: { type: Number, required: true },
-    appMethods: { type: [AppMethodSchema], required: true },
+    equipmentEntries: { type: [EquipmentEntrySchema], required: true },
     subProducts: { type: [MasterSubProductSchema], required: true },
     singles: { type: [MasterSingleSchema], required: true },
   },
@@ -64,6 +64,8 @@ const MasterSchema = new mongoose.Schema(
 const LoadoutDocSchema = new mongoose.Schema<LoadoutDoc>({
   employeeId: { type: String, required: true },
   routeDate: { type: String, required: true },
+  truckId: { type: String, required: true, default: "" },
+  rideOnId: { type: String, required: true, default: "" },
   masters: { type: [MasterSchema], required: true },
 });
 

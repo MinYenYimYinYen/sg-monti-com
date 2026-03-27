@@ -1,15 +1,12 @@
-import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 /**
  * Aggregates loadout inventories from multiple services into a single consolidated inventory.
  * Totals amounts at every level of the tree (masters → equipmentEntries → subProducts).
  */
-export function aggregateLoadoutInventory(services: Service[]): LoadoutBase {
-  const loadoutInventories = services.map((service) => service.loadoutInventory);
-
+export function aggregateLoadoutInventory(inventories: LoadoutBase[]): LoadoutBase {
   // Flatten all masters from all inventories
-  const allMasters = loadoutInventories.flatMap((inventory) => inventory.masters);
+  const allMasters = inventories.flatMap((inventory) => inventory.masters);
 
   // Group by master productId and aggregate
   const mastersMap = new Map<number, LoadoutBase["masters"][number][]>();

@@ -226,6 +226,7 @@ const nonClaimedSubProducts = master.subProductConfigs
 - `appMethods[]` renamed to `equipmentEntries[]`
 - `appMethodId` renamed to `equipmentId` (bucket key)
 - `aggregateLoadoutInventory` groups by `equipmentId`
+- `LoadoutDocModel` schema updated: `appMethods` → `equipmentEntries`, `appMethodId` → `equipmentId`, `truckId`/`rideOnId` added
 
 ---
 

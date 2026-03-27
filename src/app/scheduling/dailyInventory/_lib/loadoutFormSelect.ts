@@ -8,6 +8,9 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { createValidationSelectors } from "@/lib/validation/createValidationSelectors";
 import { LoadoutValidator, LoadoutPhase } from "@/app/scheduling/dailyInventory/_lib/LoadoutValidator";
+import { hydrateLoadoutInventory } from "@/app/realGreen/customer/selectors/hydrateLoadoutInventory";
+import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
+import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
 
 const selectAuthTech = createSelector([authSelect.user], (user) => user?.saId);
 const selectTech = (state: AppState) => state.loadoutForm.tech;
@@ -193,6 +196,23 @@ const selectIsFieldTouched = (fieldPath: string) =>
     (touchedFields) => touchedFields.has(fieldPath)
   )
 
+/**
+ * selectServiceResolvedLoadoutInventory — re-runs hydrateLoadoutInventory for each service
+ * with the worker's current packageSelections, then aggregates across all services.
+ *
+ * This is the package-aware version of the inventory. service.loadoutInventory (baked into
+ * centralSelectors) is package-agnostic; this selector applies the runtime package choice.
+ */
+const selectServiceResolvedLoadoutInventory = createSelector(
+  [selectServices, selectPackageSelections, progServBaseSelect.basicServCodeMap],
+  (services, packageSelections, servCodeMap) => {
+    const inventories = services.map((service) =>
+      hydrateLoadoutInventory({ servDoc: service, servCodeMap, packageSelections }),
+    );
+    return aggregateLoadoutInventory(inventories);
+  },
+);
+
 // Factory function to create phase-specific validation selectors
 const createLoadoutValidation = (phase: LoadoutPhase) =>
   createValidationSelectors({
@@ -227,6 +247,7 @@ export const loadoutFormSelect = {
   packageSelections: selectPackageSelections,
   truckId: selectTruckId,
   rideOnId: selectRideOnId,
+  serviceResolvedLoadoutInventory: selectServiceResolvedLoadoutInventory,
   loadout: {
     data: selectLoadout,
     startValidation: createLoadoutValidation("start"),

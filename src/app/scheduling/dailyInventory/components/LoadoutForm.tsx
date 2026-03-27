@@ -1,6 +1,5 @@
 import { useSelector } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
 import { useEffect } from "react";
 import { MasterProductCard } from "./loadoutPlanSections/MasterProductCard";
@@ -12,7 +11,7 @@ export function LoadoutForm() {
   const { updateLoadout } = useLoadoutForm();
 
   const services = useSelector(loadoutFormSelect.services);
-  const loadoutInventory = aggregateLoadoutInventory(services);
+  const loadoutInventory = useSelector(loadoutFormSelect.serviceResolvedLoadoutInventory);
   const loadout = useSelector(loadoutFormSelect.loadout.data);
 
   // Initialize startLoadout with structure from loadoutInventory
@@ -30,9 +29,6 @@ export function LoadoutForm() {
   if (!services.length) return <div className={"text-center text-foreground/50 py-8"}>
     <div>No route found. </div>
   </div>
-
-  console.log('loadout', loadout);
-  console.log('loadoutInventory', loadoutInventory);
 
   return (
     <Container variant={"page"}>

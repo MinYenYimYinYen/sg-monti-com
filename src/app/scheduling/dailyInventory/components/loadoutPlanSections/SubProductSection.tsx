@@ -1,6 +1,5 @@
 import { useSelector } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { PendingProductSlot } from "./PendingProductSlot";
 import { SubProductInput } from "./SubProductInput";
 
@@ -9,8 +8,7 @@ type SubProductSectionProps = {
 };
 
 export function SubProductSection({ masterProductId }: SubProductSectionProps) {
-  const services = useSelector(loadoutFormSelect.services);
-  const loadoutInventory = aggregateLoadoutInventory(services);
+  const loadoutInventory = useSelector(loadoutFormSelect.serviceResolvedLoadoutInventory);
   const loadout = useSelector(loadoutFormSelect.loadout.data);
   const pendingSlots = useSelector(loadoutFormSelect.pendingProductSlots);
 
