@@ -290,11 +290,12 @@ function hydrateEquipmentPackages(
         const appMethod = appMethodMap.get(equipmentDoc.defaultAppMethodId);
         if (!appMethod) return [];
 
-        const areaInKsf = UnitUtils.area(
-          appMethod.coverage.area,
-          appMethod.coverage.areaUnit as AreaUnit["desc"],
-        ).to(UnitLabel.ksf);
-        const waterRate = areaInKsf > 0 ? appMethod.coverage.volume / areaInKsf : 0;
+        // TODO: remove after testing — waterRate was computed here but never stored on Equipment
+        // const areaInKsf = UnitUtils.area(
+        //   appMethod.coverage.area,
+        //   appMethod.coverage.areaUnit as AreaUnit["desc"],
+        // ).to(UnitLabel.ksf);
+        // const waterRate = areaInKsf > 0 ? appMethod.coverage.volume / areaInKsf : 0;
 
         const equipment: Equipment = {
           equipmentId: equipmentDoc.equipmentId,
