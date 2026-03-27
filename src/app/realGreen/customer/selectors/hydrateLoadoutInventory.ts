@@ -6,6 +6,8 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { waterProduct, buildWaterUnitConfig } from "@/app/equipment/waterProduct";
 import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import { Equipment } from "@/app/equipment/EquipmentTypes";
+import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
+import { UnitLabel, VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 /**
  * getProductMasters — filters product rules by size and returns matching ProductMasters.
@@ -122,9 +124,7 @@ function hydrateMasterInventory(params: {
         mixProduct,
         mixProductUnitId: mixProduct.unit.unitId,
         mixProductUnit: mixProduct.unit,
-        plannedAmount:
-          (size * entry.appMethod.flowRate.volume) /
-          entry.appMethod.flowRate.time,
+        plannedAmount: calcPlannedWaterAmount(entry.appMethod, size, entry.showFlOz),
         startAmount: null,
         finishAmount: null,
         subProducts: entrySubProducts,
@@ -150,6 +150,48 @@ function hydrateMasterInventory(params: {
     equipmentEntries,
     subProducts: nonClaimedSubProducts,
   });
+}
+
+/**
+ * calcPlannedWaterAmount — computes the total water volume needed for a job.
+ *
+ * Uses the AppMethod's solved coverage rate (volume per area) and the job size (ksf)
+ * to derive the total volume in the water product's app unit (Fl Oz or Gal).
+ *
+ * Formula: plannedAmount = (coverage.volume / coverage.area) × jobAreaInCoverageUnit
+ *
+ * The result is expressed in the water product's app unit, which is determined by
+ * showFlOz: true → Fl Oz, false → Gal. For granular methods the result stays in
+ * the coverage's weight unit (Lbs).
+ *
+ * Guards against missing/zero coverage data (base objects use sentinel values like 0 or 1).
+ */
+function calcPlannedWaterAmount(
+  appMethod: Equipment["appMethod"],
+  size: number,
+  showFlOz: boolean,
+): number {
+  const { coverage, productType } = appMethod;
+
+  // Guard: missing or zero area means the AppMethod hasn't been properly configured
+  if (!coverage.area || !coverage.areaUnit || !coverage.volumeUnit) return 0;
+
+  // Scale job size (ksf) to the coverage's area unit, then apply the coverage rate
+  const sizeInCoverageAreaUnit = UnitUtils.area(size, UnitLabel.ksf).to(coverage.areaUnit);
+  const volumeInCoverageUnit = (coverage.volume / coverage.area) * sizeInCoverageAreaUnit;
+
+  if (productType === "granular") {
+    // Granular: result stays in the coverage's weight unit (e.g. Lbs)
+    return volumeInCoverageUnit;
+  }
+
+  // Liquid: convert from coverage's volume unit to the water product's app unit.
+  // buildWaterUnitConfig sets app = Fl Oz when showFlOz, else Gal.
+  const appUnit = showFlOz ? UnitLabel.flOz : UnitLabel.mGal;
+  return UnitUtils.volume(
+    volumeInCoverageUnit,
+    coverage.volumeUnit as VolumeUnit["desc"],
+  ).to(appUnit);
 }
 
 function buildMasterEntry(params: {

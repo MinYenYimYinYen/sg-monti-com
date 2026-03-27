@@ -21,7 +21,9 @@ export function AppMethodSection({
   const dispatch = useDispatch();
   const { updateLoadout } = useLoadoutForm();
 
-  const loadoutInventory = useSelector(loadoutFormSelect.serviceResolvedLoadoutInventory);
+  const loadoutInventory = useSelector(
+    loadoutFormSelect.serviceResolvedLoadoutInventory,
+  );
   const loadout = useSelector(loadoutFormSelect.loadout.data);
 
   // Find planned master and equipment entry
@@ -61,7 +63,9 @@ export function AppMethodSection({
   const shouldShow = useSelector(
     loadoutFormSelect.loadout.startValidation.shouldShowFieldIssue(fieldPath),
   );
-  const allIssues = useSelector(loadoutFormSelect.loadout.startValidation.issues);
+  const allIssues = useSelector(
+    loadoutFormSelect.loadout.startValidation.issues,
+  );
   const fieldIssue = shouldShow ? allIssues[fieldPath] : undefined;
 
   if (!plannedEntry) return null;
@@ -118,8 +122,10 @@ export function AppMethodSection({
       {/* MixProduct with Input */}
       <div className={"flex items-center justify-between gap-2"}>
         <div>
-        <div className={"flex-1 text-foreground/90"}>
-            {plannedEntry.appMethod.needsWater ? equipmentId : plannedEntry.mixProduct.productCode}
+          <div className={"flex-1 text-foreground/90"}>
+            {plannedEntry.appMethod.needsWater
+              ? equipmentId
+              : plannedEntry.mixProduct.productCode}
           </div>
           <div className={"text-xs text-foreground/70"}>
             Planned: {mixProductAmountDisplay}
