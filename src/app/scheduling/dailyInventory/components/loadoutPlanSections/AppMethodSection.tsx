@@ -8,6 +8,7 @@ import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { getFieldPath } from "@/lib/validation/getFieldPath";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { TankWizardPopover } from "@/app/scheduling/dailyInventory/components/loadoutPlanSections/TankWizardPopover";
 
 type AppMethodSectionProps = {
   masterProductId: number;
@@ -123,9 +124,15 @@ export function AppMethodSection({
       <div className={"flex items-center justify-between gap-2"}>
         <div>
           <div className={"flex-1 text-foreground/90"}>
-            {plannedEntry.appMethod.needsWater
-              ? equipmentId
-              : plannedEntry.mixProduct.productCode}
+            {tracksTankLevel && plannedEntry.appMethod.needsWater ? (
+              <TankWizardPopover plannedEntry={plannedEntry}>
+                {equipmentId}
+              </TankWizardPopover>
+            ) : (
+              plannedEntry.appMethod.needsWater
+                ? equipmentId
+                : plannedEntry.mixProduct.productCode
+            )}
           </div>
           <div className={"text-xs text-foreground/70"}>
             Planned: {mixProductAmountDisplay}
