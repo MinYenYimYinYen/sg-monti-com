@@ -120,12 +120,19 @@ export type LoadoutDoc = {
       finishAmount: number | null;
       unitId: number;
     }[];
-    singles: {
-      productId: number;
-      startAmount: number | null;
-      finishAmount: number | null;
-      unitId: number;
-    };
+  }[];
+  /** Singles are "unplannable" products added ad-hoc by the tech — not children of any master. */
+  singles: {
+    productId: number;
+    startAmount: number | null;
+    finishAmount: number | null;
+    unitId: number;
+  }[];
+  subProducts: {
+    productId: number;
+    startAmount: number | null;
+    finishAmount: number | null;
+    unitId: number;
   }[];
 };
 

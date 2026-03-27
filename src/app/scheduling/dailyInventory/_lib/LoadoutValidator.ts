@@ -12,34 +12,8 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
 
   protected schema: ValidatorSchema<LoadoutBase> = {
     masters: {
-      startAmount: {
-        label: "Start Amount",
-        validate: ({ value, parent }) => {
-          if (this.phase !== "start") return null;
-
-          if (value === null) {
-            return `Start amount is required for ${parent.product.productCode}`;
-          }
-
-          return null;
-        },
-      },
-      finishAmount: {
-        label: "Finish Amount",
-        validate: ({ value, parent }) => {
-          if (this.phase !== "finish") return null;
-
-          if (value === null) {
-            return `Finish amount is required for ${parent.product.productCode}`;
-          }
-
-          if (parent.startAmount !== null && value > parent.startAmount) {
-            return `Finish amount cannot be greater than start amount (${parent.startAmount})`;
-          }
-
-          return null;
-        },
-      },
+      // masters[].startAmount and finishAmount are derived from the route (ksf),
+      // not user-entered fields — no validation needed here.
       equipmentEntries: {
         startAmount: {
           label: "Mix Product Start Amount",

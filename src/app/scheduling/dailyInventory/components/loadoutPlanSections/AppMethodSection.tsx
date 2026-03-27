@@ -95,7 +95,24 @@ export function AppMethodSection({
           ...m,
           equipmentEntries: m.equipmentEntries.map((e) => {
             if (e.equipmentId === equipmentId) {
-              return { ...e, startAmount: value };
+              // Derive sub-product start amounts proportionally from the tank level.
+              // ratio = entered tank amount / planned tank amount (both in app units).
+              const ratio =
+                value != null && plannedEntry.plannedAmount > 0
+                  ? value / plannedEntry.plannedAmount
+                  : null;
+
+              return {
+                ...e,
+                startAmount: value,
+                subProducts: e.subProducts.map((sub) => ({
+                  ...sub,
+                  startAmount:
+                    ratio != null
+                      ? Math.round(ratio * sub.plannedAmount * 100) / 100
+                      : null,
+                })),
+              };
             }
             return e;
           }),

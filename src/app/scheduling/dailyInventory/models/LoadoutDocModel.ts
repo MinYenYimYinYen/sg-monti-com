@@ -37,16 +37,6 @@ const MasterSubProductSchema = new mongoose.Schema(
   { _id: false },
 );
 
-const MasterSingleSchema = new mongoose.Schema(
-  {
-    productId: { type: Number, required: true },
-    startAmount: { type: Number, default: null },
-    finishAmount: { type: Number, default: null },
-    unitId: { type: Number, required: true },
-  },
-  { _id: false },
-);
-
 const MasterSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true },
@@ -56,7 +46,26 @@ const MasterSchema = new mongoose.Schema(
     unitId: { type: Number, required: true },
     equipmentEntries: { type: [EquipmentEntrySchema], required: true },
     subProducts: { type: [MasterSubProductSchema], required: true },
-    singles: { type: [MasterSingleSchema], required: true },
+  },
+  { _id: false },
+);
+
+const TopLevelSingleSchema = new mongoose.Schema(
+  {
+    productId: { type: Number, required: true },
+    startAmount: { type: Number, default: null },
+    finishAmount: { type: Number, default: null },
+    unitId: { type: Number, required: true },
+  },
+  { _id: false },
+);
+
+const TopLevelSubProductSchema = new mongoose.Schema(
+  {
+    productId: { type: Number, required: true },
+    startAmount: { type: Number, default: null },
+    finishAmount: { type: Number, default: null },
+    unitId: { type: Number, required: true },
   },
   { _id: false },
 );
@@ -67,6 +76,9 @@ const LoadoutDocSchema = new mongoose.Schema<LoadoutDoc>({
   truckId: { type: String, required: true, default: "" },
   rideOnId: { type: String, required: true, default: "" },
   masters: { type: [MasterSchema], required: true },
+  /** Singles are "unplannable" products added ad-hoc by the tech. */
+  singles: { type: [TopLevelSingleSchema], default: [] },
+  subProducts: { type: [TopLevelSubProductSchema], default: [] },
 });
 
 LoadoutDocSchema.index({ employeeId: 1, routeDate: 1 }, { unique: true });

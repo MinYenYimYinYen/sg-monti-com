@@ -10,13 +10,6 @@ type LoadoutState = {
 
 const initialState: LoadoutState = { loadouts: [], myLoadout: null };
 
-const loadoutSlice = createSlice({
-  name: "loadout",
-  initialState,
-  reducers: {},
-  extraReducers: (builder) => {},
-});
-
 const upsertLoadout = createStandardThunk<LoadoutContract, "upsertLoadout">({
   typePrefix: "loadout/upsertLoadout",
   opName: "upsertLoadout",
@@ -33,6 +26,43 @@ const getLoadouts = createStandardThunk<LoadoutContract, "getLoadouts">({
   typePrefix: "loadout/getLoadouts",
   opName: "getLoadouts",
   apiPath: "/scheduling/dailyInventory/api",
+});
+
+const loadoutSlice = createSlice({
+  name: "loadout",
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder.addCase(getLoadout.fulfilled, (state, action) => {
+      state.myLoadout = action.payload;
+    });
+
+    builder.addCase(getLoadouts.fulfilled, (state, action) => {
+      state.loadouts = action.payload;
+    });
+
+    builder.addCase(upsertLoadout.fulfilled, (state, action) => {
+      const upserted = action.payload;
+
+      // Update or insert in the loadouts list
+      const existingIndex = state.loadouts.findIndex(
+        (doc) => doc.employeeId === upserted.employeeId && doc.routeDate === upserted.routeDate,
+      );
+      if (existingIndex !== -1) {
+        state.loadouts[existingIndex] = upserted;
+      } else {
+        state.loadouts.push(upserted);
+      }
+
+      // Keep myLoadout in sync if it matches
+      if (
+        state.myLoadout?.employeeId === upserted.employeeId &&
+        state.myLoadout?.routeDate === upserted.routeDate
+      ) {
+        state.myLoadout = upserted;
+      }
+    });
+  },
 });
 
 export const loadoutActions = {
