@@ -31,7 +31,7 @@ export function AppMethodSection({
   const plannedMaster = loadoutInventory.masters.find(
     (m) => m.product.productId === masterProductId,
   );
-  const plannedEntry = plannedMaster?.equipmentEntries.find(
+  const plannedEquipment = plannedMaster?.equipmentEntries.find(
     (e) => e.equipmentId === equipmentId,
   );
 
@@ -69,19 +69,20 @@ export function AppMethodSection({
   );
   const fieldIssue = shouldShow ? allIssues[fieldPath] : undefined;
 
-  if (!plannedEntry) return null;
+  // eslint-disable-next-line react-compiler/react-compiler
+  if (!plannedEquipment) return null;
 
   // Non-tank equipment (backpack, hose) doesn't need start/finish amount input
-  const tracksTankLevel = plannedEntry.appMethod.tracksTankLevel;
+  const tracksTankLevel = plannedEquipment.appMethod.tracksTankLevel;
 
   // showFlOz is encoded in the mixProduct's unitConfig: app = "Fl Oz" means showFlOz: true.
   // When true, display as compound "X Gal Y Fl Oz"; when false, display as decimal gallons.
   const showFlOz =
-    plannedEntry.mixProduct.unitConfig.conversions.app.unitLabel === "Fl Oz";
+    plannedEquipment.mixProduct.unitConfig.conversions.app.unitLabel === "Fl Oz";
 
   const mixProductAmountDisplay =
-    plannedEntry.mixProduct.unitConfigDisplay.format({
-      amount: plannedEntry.plannedAmount,
+    plannedEquipment.mixProduct.unitConfigDisplay.format({
+      amount: plannedEquipment.plannedAmount,
       targetContexts: showFlOz ? ["load", "app"] : ["load"],
       rounding: "ceil",
     }).formattedString;
@@ -98,8 +99,8 @@ export function AppMethodSection({
               // Derive sub-product start amounts proportionally from the tank level.
               // ratio = entered tank amount / planned tank amount (both in app units).
               const ratio =
-                value != null && plannedEntry.plannedAmount > 0
-                  ? value / plannedEntry.plannedAmount
+                value != null && plannedEquipment.plannedAmount > 0
+                  ? value / plannedEquipment.plannedAmount
                   : null;
 
               return {
@@ -131,7 +132,7 @@ export function AppMethodSection({
           startEntry.startAmount,
           "app",
           "load",
-          plannedEntry.mixProduct.unitConfig,
+          plannedEquipment.mixProduct.unitConfig,
         )
       : "";
 
@@ -141,14 +142,17 @@ export function AppMethodSection({
       <div className={"flex items-center justify-between gap-2"}>
         <div>
           <div className={"flex-1 text-foreground/90"}>
-            {tracksTankLevel && plannedEntry.appMethod.needsWater ? (
-              <TankWizardPopover plannedEntry={plannedEntry}>
+            {tracksTankLevel && plannedEquipment.appMethod.needsWater ? (
+              <TankWizardPopover
+                plannedEquipment={plannedEquipment}
+                masterProductId={masterProductId}
+              >
                 {equipmentId}
               </TankWizardPopover>
             ) : (
-              plannedEntry.appMethod.needsWater
+              plannedEquipment.appMethod.needsWater
                 ? equipmentId
-                : plannedEntry.mixProduct.productCode
+                : plannedEquipment.mixProduct.productCode
             )}
           </div>
           <div className={"text-xs text-foreground/70"}>
@@ -160,7 +164,7 @@ export function AppMethodSection({
             <Input
               type="number"
               placeholder={
-                plannedEntry.mixProduct.unitConfig.conversions.load.unitLabel
+                plannedEquipment.mixProduct.unitConfig.conversions.load.unitLabel
               }
               className={`w-32 ${fieldIssue ? "border-red-500" : ""}`}
               value={displayValue}
@@ -175,7 +179,7 @@ export function AppMethodSection({
                         loadValue,
                         "load",
                         "app",
-                        plannedEntry.mixProduct.unitConfig,
+                        plannedEquipment.mixProduct.unitConfig,
                       )
                     : null;
                 handleAmountChange(appValue);

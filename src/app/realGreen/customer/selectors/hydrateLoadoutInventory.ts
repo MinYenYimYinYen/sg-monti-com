@@ -92,25 +92,27 @@ function hydrateMasterInventory(params: {
 
   // Build equipment entries from the selected package's hydrated equipment items
   const equipmentEntries: LoadoutBase["masters"][number]["equipmentEntries"] =
-    selectedPackage.equipments.map((entry: Equipment) => {
+    selectedPackage.equipments.map((equipment: Equipment) => {
       // Water carrier: build per-equipment unit config based on showFlOz, then override
       // productCode/description with equipmentId so the UI labels the row by machine name.
-      const waterUnitConfig = buildWaterUnitConfig(entry.showFlOz);
+      const waterUnitConfig = buildWaterUnitConfig(equipment.showFlOz);
       const mixProduct: ProductSub = {
         ...waterProduct,
-        productCode: entry.equipmentId,
-        description: entry.equipmentId,
+        productCode: equipment.equipmentId,
+        description: equipment.equipmentId,
         unitConfig: waterUnitConfig,
         unitConfigDisplay: new UnitConfigDisplay(waterUnitConfig),
       };
 
-      // Mixed sub-products: those tagged with this equipment's ID on the master's sub-config
+      // Mixed sub-products: those tagged with this equipment's ID on the master's sub-config.
+      // Multiply by overlap because the label rate is a single-pass rate; with double overlap
+      // the tech makes two passes over each unit area, so twice the product is consumed.
       const entrySubProducts = master.subProductConfigs
-        .filter((config) => config.mixedByEquipmentIds.includes(entry.equipmentId))
+        .filter((config) => config.mixedByEquipmentIds.includes(equipment.equipmentId))
         .map((config) => ({
           productId: config.subProduct.productId,
           product: config.subProduct,
-          plannedAmount: size * config.rate,
+          plannedAmount: size * config.rate * equipment.appMethod.overlap,
           startAmount: null,
           finishAmount: null,
           unitId: config.subProduct.unit.unitId,
@@ -118,13 +120,13 @@ function hydrateMasterInventory(params: {
         }));
 
       return {
-        equipmentId: entry.equipmentId,
-        appMethod: entry.appMethod,
+        equipmentId: equipment.equipmentId,
+        appMethod: equipment.appMethod,
         mixProductId: mixProduct.productId,
         mixProduct,
         mixProductUnitId: mixProduct.unit.unitId,
         mixProductUnit: mixProduct.unit,
-        plannedAmount: calcPlannedWaterAmount(entry.appMethod, size, entry.showFlOz),
+        plannedAmount: calcPlannedWaterAmount(equipment.appMethod, size, equipment.showFlOz),
         startAmount: null,
         finishAmount: null,
         subProducts: entrySubProducts,
@@ -176,7 +178,9 @@ function calcPlannedWaterAmount(
   // Guard: missing or zero area means the AppMethod hasn't been properly configured
   if (!coverage.area || !coverage.areaUnit || !coverage.volumeUnit) return 0;
 
-  // Scale job size (ksf) to the coverage's area unit, then apply the coverage rate
+  // Scale job size (ksf) to the coverage's area unit, then apply the coverage rate.
+  // The solver bakes overlap into coverage.volume (overlap effectively halves the pattern width),
+  // so this correctly reflects the actual water applied per unit area including overlap.
   const sizeInCoverageAreaUnit = UnitUtils.area(size, UnitLabel.ksf).to(coverage.areaUnit);
   const volumeInCoverageUnit = (coverage.volume / coverage.area) * sizeInCoverageAreaUnit;
 

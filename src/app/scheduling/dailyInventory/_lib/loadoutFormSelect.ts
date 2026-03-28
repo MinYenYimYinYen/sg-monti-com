@@ -8,7 +8,7 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { createValidationSelectors } from "@/lib/validation/createValidationSelectors";
 import { LoadoutValidator, LoadoutPhase } from "@/app/scheduling/dailyInventory/_lib/LoadoutValidator";
-import { hydrateLoadoutInventory } from "@/app/realGreen/customer/selectors/hydrateLoadoutInventory";
+import { hydrateLoadoutInventory, getProductMasters } from "@/app/realGreen/customer/selectors/hydrateLoadoutInventory";
 import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
 
@@ -213,6 +213,25 @@ const selectServiceResolvedLoadoutInventory = createSelector(
   },
 );
 
+/**
+ * selectTotalKsfForMaster — sums the size (ksf) of all route services that actually produce
+ * the given master product. A service only produces a master if its size satisfies the
+ * product rule's size operator (lte / gt / all), so we re-run getProductMasters per service.
+ */
+const selectTotalKsfForMaster = (masterProductId: number) =>
+  createSelector(
+    [selectServices, progServBaseSelect.basicServCodeMap],
+    (services, servCodeMap) =>
+      services.reduce((sum, service) => {
+        const servCode = servCodeMap.get(service.servCodeId);
+        if (!servCode) return sum;
+        const hasMaster = getProductMasters(servCode, service.size).some(
+          (m) => m.productId === masterProductId,
+        );
+        return hasMaster ? sum + service.size : sum;
+      }, 0),
+  );
+
 // Factory function to create phase-specific validation selectors
 const createLoadoutValidation = (phase: LoadoutPhase) =>
   createValidationSelectors({
@@ -248,6 +267,7 @@ export const loadoutFormSelect = {
   truckId: selectTruckId,
   rideOnId: selectRideOnId,
   serviceResolvedLoadoutInventory: selectServiceResolvedLoadoutInventory,
+  totalKsfForMaster: selectTotalKsfForMaster,
   loadout: {
     data: selectLoadout,
     startValidation: createLoadoutValidation("start"),
