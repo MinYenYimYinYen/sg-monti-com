@@ -30,7 +30,6 @@ This is the key design decision: mixed product assignment is **per-master-produc
 per-package or per-machine globally. The same machine can mix different products for
 Round 1 vs. Round 2 because each master product has its own `subProductConfigDocs`.
 
-**Example:**
 ```
 ProductMaster "Round 1":
   subProductConfigDocs:

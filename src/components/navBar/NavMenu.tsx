@@ -50,6 +50,11 @@ const schedulingSection: NavSection = {
       href: "/scheduling/prenotify",
       roles: ["admin", "office"],
     },
+    {
+      title: "Daily Inventory",
+      href: "/scheduling/dailyInventory",
+      roles: ["admin", "office", "tech"],
+    }
   ],
 };
 
