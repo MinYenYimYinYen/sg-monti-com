@@ -98,7 +98,7 @@ export type LoadoutDoc = {
     startAmount: number | null;
     finishAmount: number | null;
     unitId: number;
-    equipmentEntries: {
+    equipments: {
       equipmentId: string;
       mixProductId: number;
       mixProductUnitId: number;

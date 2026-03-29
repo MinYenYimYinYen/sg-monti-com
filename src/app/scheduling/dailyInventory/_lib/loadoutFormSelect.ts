@@ -98,11 +98,11 @@ const selectUsedProductIds = createSelector(
     // From masters
     loadout.masters.forEach((master) => {
       // From equipments
-      master.equipments.forEach((entry) => {
+      master.equipments.forEach((equipment) => {
         // mixProduct (water)
-        usedIds.add(entry.mixProduct.productId);
-        // entry subProducts
-        entry.subProducts.forEach((sub: { product: { productId: number } }) => {
+        usedIds.add(equipment.mixProduct.productId);
+        // equipment subProducts
+        equipment.subProducts.forEach((sub: { product: { productId: number } }) => {
           usedIds.add(sub.product.productId);
         });
       });

@@ -250,11 +250,11 @@ const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescri
   saveMasterEquipmentPackages: {
     roles: ["admin"],
     handler: async (params) => {
-      const { masterId, equipmentPackageIds } = params;
+      const { masterId, equipmentPackageIds, defaultPackageId } = params;
       await connectToMongoDB();
       const result = await ProductDocPropsModel.findOneAndUpdate(
         { productId: masterId },
-        { equipmentPackageIds },
+        { equipmentPackageIds, defaultPackageId: defaultPackageId ?? null },
         { upsert: true, new: true },
       ).lean();
       if (!result || !result.productId) {

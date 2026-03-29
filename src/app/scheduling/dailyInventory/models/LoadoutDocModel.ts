@@ -44,7 +44,7 @@ const MasterSchema = new mongoose.Schema(
     startAmount: { type: Number, default: null },
     finishAmount: { type: Number, default: null },
     unitId: { type: Number, required: true },
-    equipmentEntries: { type: [EquipmentEntrySchema], required: true },
+    equipments: { type: [EquipmentEntrySchema], required: true },
     subProducts: { type: [MasterSubProductSchema], required: true },
   },
   { _id: false },

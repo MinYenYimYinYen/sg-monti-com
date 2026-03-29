@@ -83,6 +83,9 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
   const [packageIds, setPackageIds] = useState<string[]>(
     master.equipmentPackageIds,
   );
+  const [defaultPackageId, setDefaultPackageId] = useState<string | null>(
+    master.defaultPackageId,
+  );
   const [pkgStatus, setPkgStatus] = useState<SaveStatus>("idle");
 
   // Reset all when the selected master changes
@@ -95,6 +98,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
     setSubsStatus("idle");
     setSearchTerm("");
     setPackageIds(master.equipmentPackageIds);
+    setDefaultPackageId(master.defaultPackageId);
     setPkgStatus("idle");
   }, [
     master.productId,
@@ -103,6 +107,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
     master.unit.desc,
     master.subProductConfigDocs,
     master.equipmentPackageIds,
+    master.defaultPackageId,
   ]);
 
   const canSaveCategory =
@@ -584,25 +589,24 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                                   variant="outline"
                                   size="sm"
                                   className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                                  onClick={() =>
-                                    setPackageIds((prev) =>
-                                      prev.filter((id) => id !== pkgId),
-                                    )
-                                  }
+                  onClick={() => {
+                    setPackageIds((prev) => prev.filter((id) => id !== pkgId));
+                    if (defaultPackageId === pkgId) setDefaultPackageId(null);
+                  }}
                                 >
                                   ×
                                 </Button>
                               </div>
-                              {hydrated && hydrated.equipments.map((entry: Equipment) => (
+                              {hydrated && hydrated.equipments.map((equipment: Equipment) => (
                                 <div
-                                  key={entry.equipmentId}
+                                  key={equipment.equipmentId}
                                   className="flex items-center gap-2 pl-2 text-xs text-muted-foreground"
                                 >
-                                  <span className="font-mono">{entry.equipmentId}</span>
+                                  <span className="font-mono">{equipment.equipmentId}</span>
                                   <span>→</span>
-                                  <span>{entry.appMethod.description}</span>
+                                  <span>{equipment.appMethod.description}</span>
                                   {/*<span className="ml-auto">*/}
-                                  {/*  {entry.waterRate.toFixed(2)} gal/ksf*/}
+                                  {/*  {equipment.waterRate.toFixed(2)} gal/ksf*/}
                                   {/*</span>*/}
                                 </div>
                               ))}
@@ -615,10 +619,45 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                 </div>
               </div>
 
+              {/* Default Package selector */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium whitespace-nowrap">Default Package:</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="flex-1 justify-between font-normal"
+                      disabled={packageIds.length === 0}
+                    >
+                      {defaultPackageId
+                        ? (allPackages.find((p) => p.packageId === defaultPackageId)?.description ?? defaultPackageId)
+                        : "None"}
+                      <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setDefaultPackageId(null)}>
+                      None
+                    </DropdownMenuItem>
+                    {packageIds.map((pkgId) => {
+                      const pkg = allPackages.find((p) => p.packageId === pkgId);
+                      return (
+                        <DropdownMenuItem key={pkgId} onClick={() => setDefaultPackageId(pkgId)}>
+                          {pkg?.description ?? pkgId}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
               <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setPackageIds(master.equipmentPackageIds)}
+                  onClick={() => {
+                    setPackageIds(master.equipmentPackageIds);
+                    setDefaultPackageId(master.defaultPackageId);
+                  }}
                   disabled={pkgStatus === "saving" || pkgStatus === "success"}
                 >
                   Reset
@@ -630,6 +669,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                       await updateMasterEquipmentPackages({
                         masterId: master.productId,
                         equipmentPackageIds: packageIds,
+                        defaultPackageId,
                       });
                       setPkgStatus("success");
                     } catch (e) {

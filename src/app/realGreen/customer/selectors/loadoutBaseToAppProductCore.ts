@@ -9,8 +9,8 @@ import { AppProductCore } from "@/app/realGreen/_lib/subTypes/AppProduct";
  *
  * Three sources are included:
  *   1. `master.subProducts[]`                    — non-equipment sub-products (manual rates)
- *   2. `master.equipments[].subProducts[]` — mixed products inside each equipment entry
- *   3. `master.equipments[]`               — the water carrier row (one per entry)
+ *   2. `master.equipments[].subProducts[]` — mixed products inside each equipment
+ *   3. `master.equipments[]`               — the water carrier row (one per equipment)
  *
  * `servId` is stamped on every row so the result can be used directly in
  * `bizPlan` selectors that group by service.
@@ -31,9 +31,9 @@ export function loadoutBaseToAppProductCore(
       size: master.plannedAmount,
     })),
 
-    // 2. Mixed sub-products inside each equipment entry
-    ...master.equipments.flatMap((entry) =>
-      entry.subProducts.map((sub) => ({
+    // 2. Mixed sub-products inside each equipment
+    ...master.equipments.flatMap((equipment) =>
+      equipment.subProducts.map((sub) => ({
         productId: sub.productId,
         servId,
         amount: sub.plannedAmount,
@@ -41,11 +41,11 @@ export function loadoutBaseToAppProductCore(
       })),
     ),
 
-    // 3. Water carrier row — one per equipment entry
-    ...master.equipments.map((entry) => ({
-      productId: entry.mixProductId,
+    // 3. Water carrier row — one per equipment
+    ...master.equipments.map((equipment) => ({
+      productId: equipment.mixProductId,
       servId,
-      amount: entry.plannedAmount,
+      amount: equipment.plannedAmount,
       size: master.plannedAmount,
     })),
   ]);

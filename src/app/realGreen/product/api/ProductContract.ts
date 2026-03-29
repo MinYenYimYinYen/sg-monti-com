@@ -41,7 +41,7 @@ export interface ProductContract extends ApiContract {
   };
 
   saveMasterEquipmentPackages: {
-    params: { masterId: number; equipmentPackageIds: string[] };
+    params: { masterId: number; equipmentPackageIds: string[]; defaultPackageId: string | null };
     result: SuccessResponse;
   };
 }

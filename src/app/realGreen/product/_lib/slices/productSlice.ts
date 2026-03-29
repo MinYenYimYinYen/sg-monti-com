@@ -109,6 +109,7 @@ const productSlice = createSlice({
       action: PayloadAction<{
         masterId: number;
         equipmentPackageIds: string[];
+        defaultPackageId: string | null;
       }>,
     ) => {
       const matchingMaster = state.productMasterDocs.find(
@@ -116,6 +117,7 @@ const productSlice = createSlice({
       );
       if (matchingMaster) {
         matchingMaster.equipmentPackageIds = action.payload.equipmentPackageIds;
+        matchingMaster.defaultPackageId = action.payload.defaultPackageId;
       }
     },
   },

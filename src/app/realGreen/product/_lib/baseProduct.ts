@@ -55,6 +55,7 @@ export const baseProductMasterDocProps: ProductMasterDocProps = {
   productId: baseNumId,
   subProductConfigDocs: [],
   equipmentPackageIds: [],
+  defaultPackageId: null,
   category: baseStrId,
   unit: baseUnitCRM,
   createdAt: "",
@@ -69,6 +70,7 @@ export const baseProductMasterDoc: ProductMasterDoc = {
 export const baseProductMasterProps: ProductMasterProps = {
   subProductConfigs: [],
   equipmentPackages: [],
+  defaultPackage: null,
   unitConfig: baseProductUnitConfig,
   unitConfigDisplay: new UnitConfigDisplay(baseProductUnitConfig),
   productType: "master",

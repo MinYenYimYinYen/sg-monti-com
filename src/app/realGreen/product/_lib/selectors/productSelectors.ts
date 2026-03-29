@@ -89,17 +89,24 @@ const selectProductMasters = createSelector(
         unitConfigMap,
       );
 
+        const equipmentPackages = hydrateEquipmentPackages(
+          doc.equipmentPackageIds ?? [],
+          equipmentPackageMap,
+          equipmentMap,
+          appMethodMap,
+        );
+
+        const defaultPackage: EquipmentPackage | null = doc.defaultPackageId
+          ? (equipmentPackages.find((p) => p.packageId === doc.defaultPackageId) ?? null)
+          : null;
+
         return {
           ...doc,
-          productType: "master",
+          productType: "master" as const,
           unitConfig,
           unitConfigDisplay,
-          equipmentPackages: hydrateEquipmentPackages(
-            doc.equipmentPackageIds ?? [],
-            equipmentPackageMap,
-            equipmentMap,
-            appMethodMap,
-          ),
+          equipmentPackages,
+          defaultPackage,
           subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
             const subProduct = subsMap.get(configDoc.subId);
             const rate = hydrateRate({ subProductConfigDoc: configDoc, appMethodMap });

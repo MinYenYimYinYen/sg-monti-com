@@ -97,18 +97,20 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean }) {
   const updateMasterEquipmentPackages = (params: {
     masterId: number;
     equipmentPackageIds: string[];
+    defaultPackageId: string | null;
   }) => {
-    const { masterId, equipmentPackageIds } = params;
+    const { masterId, equipmentPackageIds, defaultPackageId } = params;
     dispatch(
       productActions.updateMasterEquipmentPackages({
         masterId,
         equipmentPackageIds,
+        defaultPackageId,
       }),
     );
 
     return dispatch(
       productActions.saveMasterEquipmentPackages({
-        params,
+        params: { masterId, equipmentPackageIds, defaultPackageId },
         config: {
           force: true,
           showLoading: false,

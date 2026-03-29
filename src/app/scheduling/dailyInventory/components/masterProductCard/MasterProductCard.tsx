@@ -38,12 +38,17 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
     packageSelections.find((s) => s.masterProductId === masterProductId)
       ?.selectedPackageId ?? null;
 
-  // Auto-select when there is exactly one package
+  // Auto-select: use the master's defaultPackage if configured, otherwise fall back to
+  // auto-selecting when there is exactly one package. The worker can always override.
   useEffect(() => {
-    if (packages.length === 1 && !selectedPackageId) {
+    if (selectedPackageId) return;
+    const defaultPkg = masterProduct?.product.defaultPackage;
+    if (defaultPkg) {
+      setPackageSelection(masterProductId, defaultPkg.packageId);
+    } else if (packages.length === 1) {
       setPackageSelection(masterProductId, packages[0].packageId);
     }
-  }, [masterProductId, packages, selectedPackageId, setPackageSelection]);
+  }, [masterProductId, masterProduct, packages, selectedPackageId, setPackageSelection]);
 
   if (!masterProduct) return null;
 
@@ -89,11 +94,11 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
       )}
 
       {/* Equipment Entries Section */}
-      {masterProduct.equipments.map((entry) => (
+      {masterProduct.equipments.map((equipment) => (
         <EquipmentSection
-          key={entry.equipmentId}
+          key={equipment.equipmentId}
           masterProductId={masterProductId}
-          equipmentId={entry.equipmentId}
+          equipmentId={equipment.equipmentId}
         />
       ))}
 

@@ -33,6 +33,10 @@ const ProductDocPropsSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    defaultPackageId: {
+      type: String,
+      default: null,
+    },
 
     // ProductSubDocProps fields
     appMethodId: {

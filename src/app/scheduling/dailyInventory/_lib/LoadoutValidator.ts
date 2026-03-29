@@ -1,7 +1,7 @@
 import { BaseValidator, ValidatorSchema } from "@/lib/validation/BaseValidator";
 import { LoadoutBase } from "./LoadoutTypes";
 
-type EquipmentEntry = LoadoutBase["masters"][number]["equipments"][number];
+type LoadoutEquipment = LoadoutBase["masters"][number]["equipments"][number];
 
 export type LoadoutPhase = "start" | "finish";
 
@@ -17,7 +17,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
       equipments: {
         startAmount: {
           label: "Mix Product Start Amount",
-          validate: ({ value, parent }: { value: number | null; parent: EquipmentEntry }) => {
+          validate: ({ value, parent }: { value: number | null; parent: LoadoutEquipment }) => {
             if (this.phase !== "start") return null;
 
             // Skip validation for non-tank equipment (backpack, hose, etc.)
@@ -32,7 +32,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
         },
         finishAmount: {
           label: "Mix Product Finish Amount",
-          validate: ({ value, parent }: { value: number | null; parent: EquipmentEntry }) => {
+          validate: ({ value, parent }: { value: number | null; parent: LoadoutEquipment }) => {
             if (this.phase !== "finish") return null;
 
             // Skip validation for non-tank equipment

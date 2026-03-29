@@ -71,21 +71,17 @@ function hydrateMasterInventory(params: {
 }): LoadoutBase["masters"][number] {
   const { master, size, packageSelections } = params;
 
-  // Find the selected package for this master
+  // Find the selected package for this master — explicit runtime selection takes priority.
+  // Falls back to master.defaultPackage for consumers that don't provide packageSelections
+  // (e.g. centralSelectors, forecasting). When neither is available, equipments is empty.
   const selection = packageSelections.find(
     (s) => s.masterProductId === master.productId,
   );
 
-  // If no package selected → equipments is empty (UI will prompt for selection)
-  if (!selection) {
-    return buildMasterEntry({ master, size, equipmentEntries: [] });
-  }
+  const selectedPackage = selection
+    ? master.equipmentPackages.find((p) => p.packageId === selection.selectedPackageId) ?? null
+    : master.defaultPackage;
 
-  const selectedPackage = master.equipmentPackages.find(
-    (p) => p.packageId === selection.selectedPackageId,
-  );
-
-  // Package not found (stale selection) → empty entries
   if (!selectedPackage) {
     return buildMasterEntry({ master, size, equipmentEntries: [] });
   }

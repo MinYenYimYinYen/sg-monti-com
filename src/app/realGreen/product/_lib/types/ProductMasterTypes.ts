@@ -51,6 +51,8 @@ export type ProductMasterDocProps = CreatedUpdated &
     subProductConfigDocs: SubProductConfigDoc[];
     /** Equipment packages configured for this master product (FK references to EquipmentPackage). */
     equipmentPackageIds: string[];
+    /** The package used when no runtime selection has been made (e.g. for forecasting, cover sheets). */
+    defaultPackageId: string | null;
   };
 
 export type ProductMasterDoc = ProductMasterCore & ProductMasterDocProps;
@@ -59,6 +61,8 @@ export type ProductMasterProps = ProductCommonProps & {
   subProductConfigs: SubProductConfig[];
   /** Hydrated equipment packages (equipmentIds resolved to Equipment[]). */
   equipmentPackages: EquipmentPackage[];
+  /** Hydrated from defaultPackageId. Null when no default is configured. */
+  defaultPackage: EquipmentPackage | null;
 };
 
 export type ProductMaster = ProductMasterDoc & ProductMasterProps;
