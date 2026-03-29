@@ -2,24 +2,23 @@ import { useSelector, useDispatch } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
 import { loadoutFormActions } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
 import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
 import { useEffect, useState } from "react";
-import { MasterProductCard } from "./loadoutPlanSections/MasterProductCard";
-import { AdditionalProductsSection } from "./loadoutPlanSections/AdditionalProductsSection";
+import { MasterProductCard } from "./masterProductCard/MasterProductCard";
+import { AdditionalProductsSection } from "./additionalProductsSection/AdditionalProductsSection";
 import { Container } from "@/components/Containers";
 import { loadoutHelper } from "@/app/scheduling/dailyInventory/components/loadoutFormHelpers";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
-import { useAppDispatch } from "@/lib/hooks/redux";
-import { loadoutActions } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
 
 export function LoadoutForm() {
   const dispatch = useDispatch();
-  const appDispatch = useAppDispatch();
   const { updateLoadout } = useLoadoutForm();
+  const { upsertLoadout } = useLoadout();
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
   const services = useSelector(loadoutFormSelect.services);
-  const loadoutInventory = useSelector(loadoutFormSelect.serviceResolvedLoadoutInventory);
+  const loadoutInventory = useSelector(loadoutFormSelect.serviceResolvedLoadout);
   const loadout = useSelector(loadoutFormSelect.loadout.data);
   const hasIssues = useSelector(loadoutFormSelect.loadout.startValidation.hasIssues);
   const tech = useSelector(loadoutFormSelect.tech);
@@ -44,6 +43,7 @@ export function LoadoutForm() {
   const handleSave = async () => {
     if (hasIssues) {
       dispatch(loadoutFormActions.setShouldShowAllStartLoadoutIssues(true));
+
       return;
     }
 
@@ -59,18 +59,8 @@ export function LoadoutForm() {
       rideOnId: rideOnId ?? "",
     });
 
-    const result = await appDispatch(
-      loadoutActions.upsertLoadout({
-        params: { loadout: loadoutDoc },
-        config: { loadingMsg: "Saving loadout..." },
-      }),
-    );
-
-    if (loadoutActions.upsertLoadout.fulfilled.match(result)) {
-      setSaveStatus("success");
-    } else {
-      setSaveStatus("idle");
-    }
+    const success = await upsertLoadout(loadoutDoc);
+    setSaveStatus(success ? "success" : "idle");
   };
 
   if (!services.length) return <div className={"text-center text-foreground/50 py-8"}>

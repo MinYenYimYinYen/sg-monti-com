@@ -8,14 +8,14 @@ import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { getFieldPath } from "@/lib/validation/getFieldPath";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { TankWizardPopover } from "@/app/scheduling/dailyInventory/components/loadoutPlanSections/TankWizardPopover";
+import { MixWizard } from "@/app/scheduling/dailyInventory/components/loadoutPlanSections/MixWizard";
 
 type AppMethodSectionProps = {
   masterProductId: number;
   equipmentId: string;
 };
 
-export function AppMethodSection({
+export function EquipmentSection({
   masterProductId,
   equipmentId,
 }: AppMethodSectionProps) {
@@ -23,39 +23,42 @@ export function AppMethodSection({
   const { updateLoadout } = useLoadoutForm();
 
   const loadoutInventory = useSelector(
-    loadoutFormSelect.serviceResolvedLoadoutInventory,
+    loadoutFormSelect.serviceResolvedLoadout,
   );
   const loadout = useSelector(loadoutFormSelect.loadout.data);
 
-  // Find planned master and equipment entry
+  // Dual-tree lookups: equipmentId is passed as a prop (not the object) so React's key-based
+  // reconciliation works correctly. We look up from two separate trees:
+  //   - plannedEquipment: from the inventory selector (display/planned data)
+  //   - startEntry: from the loadout state (editable amounts)
+  // masterIndex and entryIndex are derived from the loadout state for index-based field paths
+  // used by the validation system.
   const plannedMaster = loadoutInventory.masters.find(
     (m) => m.product.productId === masterProductId,
   );
-  const plannedEquipment = plannedMaster?.equipmentEntries.find(
+  const plannedEquipment = plannedMaster?.equipments.find(
     (e) => e.equipmentId === equipmentId,
   );
 
-  // Find actual master and equipment entry in state
   const startMaster = loadout.masters.find(
     (m) => m.product.productId === masterProductId,
   );
-  const startEntry = startMaster?.equipmentEntries.find(
+  const startEntry = startMaster?.equipments.find(
     (e) => e.equipmentId === equipmentId,
   );
 
-  // Build field path for validation
   const masterIndex = loadout.masters.findIndex(
     (m) => m.product.productId === masterProductId,
   );
   const entryIndex =
-    startMaster?.equipmentEntries.findIndex(
+    startMaster?.equipments.findIndex(
       (e) => e.equipmentId === equipmentId,
     ) ?? -1;
 
   const fieldPath = getFieldPath<LoadoutBase>()
     .field("masters")
     .index(masterIndex)
-    .field("equipmentEntries")
+    .field("equipments")
     .index(entryIndex)
     .field("startAmount")
     .toString();
@@ -69,10 +72,8 @@ export function AppMethodSection({
   );
   const fieldIssue = shouldShow ? allIssues[fieldPath] : undefined;
 
-  // eslint-disable-next-line react-compiler/react-compiler
   if (!plannedEquipment) return null;
 
-  // Non-tank equipment (backpack, hose) doesn't need start/finish amount input
   const tracksTankLevel = plannedEquipment.appMethod.tracksTankLevel;
 
   // showFlOz is encoded in the mixProduct's unitConfig: app = "Fl Oz" means showFlOz: true.
@@ -94,7 +95,7 @@ export function AppMethodSection({
       if (m.product.productId === masterProductId) {
         return {
           ...m,
-          equipmentEntries: m.equipmentEntries.map((e) => {
+          equipments: m.equipments.map((e) => {
             if (e.equipmentId === equipmentId) {
               // Derive sub-product start amounts proportionally from the tank level.
               // ratio = entered tank amount / planned tank amount (both in app units).
@@ -143,12 +144,12 @@ export function AppMethodSection({
         <div>
           <div className={"flex-1 text-foreground/90"}>
             {tracksTankLevel && plannedEquipment.appMethod.needsWater ? (
-              <TankWizardPopover
+              <MixWizard
                 plannedEquipment={plannedEquipment}
                 masterProductId={masterProductId}
               >
                 {equipmentId}
-              </TankWizardPopover>
+              </MixWizard>
             ) : (
               plannedEquipment.appMethod.needsWater
                 ? equipmentId

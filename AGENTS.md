@@ -239,12 +239,13 @@ export function useSchedPromise() {
 - **Summary**: Handles complex data fetching (Customers → Programs -> Services) using a streaming pipeline and "Search Schemes".
 
 ## Session Learnings (Key Conventions)
-*   **Silent Error Handling**: Use `handleError(e, { silent: true })` to suppress toasts for expected errors.
-*   **Admin-Assisted Auth**: Password resets are handled via admin approval, not email.
-*   **"Applied" Role**: New users are gated with an "applied" role until approved.
-*   **Modal Architecture**: Use `Modal` (Portal + GSAP) and `TabControl` for complex dialogs.
-*   **File Structure**: Prefer `camelCase` for route folders (e.g., `changePassword`).
-*   **Styling Workflow**: Use semantic colors (`bg-primary`, `bg-accent`, `text-foreground`) with variant + intensity props. Never use hardcoded colors (`bg-blue-500`). See styling rules above.
+* **Silent Error Handling**: Use `handleError(e, { silent: true })` to suppress toasts for expected errors.
+* **Admin-Assisted Auth**: Password resets are handled via admin approval, not email.
+* **"Applied" Role**: New users are gated with an "applied" role until approved.
+* **Modal Architecture**: Use `Modal` (Portal + GSAP) and `TabControl` for complex dialogs.
+* **File Structure**: Prefer `camelCase` for route folders (e.g., `changePassword`).
+* **Styling Workflow**: Use semantic colors (`bg-primary`, `bg-accent`, `text-foreground`) with variant + intensity props. Never use hardcoded colors (`bg-blue-500`). See styling rules above.
+* **tsc**: Do not do tsc checks on markdown files.
 
 # For markdown files on Windows, write with UTF-8 BOM encoding
 (echo -ne '\xEF\xBB\xBF'; cat <<'EOF'

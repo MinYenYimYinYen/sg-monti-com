@@ -2,7 +2,7 @@ import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 /**
  * Aggregates loadout inventories from multiple services into a single consolidated inventory.
- * Totals amounts at every level of the tree (masters → equipmentEntries → subProducts).
+ * Totals amounts at every level of the tree (masters → equipments → subProducts).
  */
 export function aggregateLoadoutInventory(inventories: LoadoutBase[]): LoadoutBase {
   // Flatten all masters from all inventories
@@ -28,7 +28,7 @@ export function aggregateLoadoutInventory(inventories: LoadoutBase[]): LoadoutBa
 
 /**
  * Aggregates multiple masters with the same productId.
- * Sums amounts and recursively aggregates equipmentEntries and sub-products.
+ * Sums amounts and recursively aggregates equipments and sub-products.
  */
 function aggregateMasters(
   masters: LoadoutBase["masters"][number][],
@@ -40,11 +40,11 @@ function aggregateMasters(
     masters.reduce((sum, master) => sum + master.plannedAmount, 0),
   );
 
-  // Flatten and group equipmentEntries by equipmentId
-  const allEquipmentEntries = masters.flatMap((master) => master.equipmentEntries);
+  // Flatten and group equipments by equipmentId
+  const allEquipmentEntries = masters.flatMap((master) => master.equipments);
   const equipmentEntriesMap = new Map<
     string,
-    LoadoutBase["masters"][number]["equipmentEntries"][number][]
+    LoadoutBase["masters"][number]["equipments"][number][]
   >();
 
   allEquipmentEntries.forEach((entry) => {
@@ -88,7 +88,7 @@ function aggregateMasters(
     finishAmount: null,
     unitId: first.unit.unitId,
     unit: first.unit,
-    equipmentEntries: aggregatedEquipmentEntries,
+    equipments: aggregatedEquipmentEntries,
     subProducts: aggregatedSubProducts,
   };
 }
@@ -98,8 +98,8 @@ function aggregateMasters(
  * Sums amounts for each sub-product within the entry.
  */
 function aggregateEquipmentEntries(
-  entries: LoadoutBase["masters"][number]["equipmentEntries"][number][],
-): LoadoutBase["masters"][number]["equipmentEntries"][number] {
+  entries: LoadoutBase["masters"][number]["equipments"][number][],
+): LoadoutBase["masters"][number]["equipments"][number] {
   const first = entries[0];
 
   // Sum amounts across all entries
@@ -113,7 +113,7 @@ function aggregateEquipmentEntries(
   // Group by sub-product productId
   const subProductsMap = new Map<
     number,
-    LoadoutBase["masters"][number]["equipmentEntries"][number]["subProducts"][number][]
+    LoadoutBase["masters"][number]["equipments"][number]["subProducts"][number][]
   >();
 
   allSubProducts.forEach((sub) => {

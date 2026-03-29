@@ -10,7 +10,7 @@ import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
  *
  * Hierarchy:
  *   masters[]
- *     equipmentEntries[]   ← one per piece of equipment in the selected scenario
+ *     equipments[]   ← one per piece of equipment in the selected scenario
  *       mixProduct         ← water carrier (auto-generated from waterProduct constant)
  *       subProducts[]      ← mixed products for this equipment
  *     subProducts[]        ← non-equipment sub-products (manual rates)
@@ -27,7 +27,7 @@ export type LoadoutBase = {
     unitId: number;
     unit: UnitCRM;
     /** Equipment entries from the selected scenario. Empty until a scenario is selected. */
-    equipmentEntries: {
+    equipments: {
       /** Bucket key — matches Equipment.equipmentId */
       equipmentId: string;
       appMethod: AppMethod;

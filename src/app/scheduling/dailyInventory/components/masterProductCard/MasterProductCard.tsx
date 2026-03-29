@@ -1,9 +1,9 @@
 import { useSelector } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { AppMethodSection } from "./AppMethodSection";
-import { SubProductSection } from "./SubProductSection";
+import { EquipmentSection } from "./equipmentSection/EquipmentSection";
+import { SubProductSection } from "../subProductSections/SubProductSection";
 import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
 import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
@@ -16,15 +16,23 @@ type MasterProductCardProps = {
 };
 
 export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
-  const loadoutInventory = useSelector(loadoutFormSelect.serviceResolvedLoadoutInventory);
+  const loadoutInventory = useSelector(
+    loadoutFormSelect.serviceResolvedLoadout,
+  );
   const packageSelections = useSelector(loadoutFormSelect.packageSelections);
   const { setPackageSelection } = useLoadoutForm();
 
-  const master = loadoutInventory.masters.find(
+  // ID-based lookup: receives masterProductId (not the object) so React's key-based
+  // reconciliation works correctly. The planned inventory and the loadout state are two
+  // separate trees; we look up from the planned inventory here to get display data.
+  const masterProduct = loadoutInventory.masters.find(
     (m) => m.product.productId === masterProductId,
   );
 
-  const packages = master?.product.equipmentPackages ?? [];
+  const packages = useMemo(
+    () => masterProduct?.product.equipmentPackages ?? [],
+    [masterProduct],
+  );
 
   const selectedPackageId =
     packageSelections.find((s) => s.masterProductId === masterProductId)
@@ -37,21 +45,23 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
     }
   }, [masterProductId, packages, selectedPackageId, setPackageSelection]);
 
-  if (!master) return null;
+  if (!masterProduct) return null;
 
   return (
     <div className={"flex flex-col gap-2 w-full bg-accent/20 rounded-lg p-3"}>
       {/* Master Header */}
       <div className={"flex justify-between items-center"}>
         <div className={"text-xl font-bold text-foreground"}>
-          {master.product.description}
+          {masterProduct.product.description}
         </div>
       </div>
 
       {/* Equipment Package selector — only shown when 2+ packages */}
       {packages.length > 1 && (
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground whitespace-nowrap">Package:</span>
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            Package:
+          </span>
           <MultiSelect
             mode="single"
             value={selectedPackageId ? [selectedPackageId] : []}
@@ -59,7 +69,8 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
               if (ids[0]) setPackageSelection(masterProductId, ids[0]);
             }}
             getDisplayValue={(id) =>
-              packages.find((p: EquipmentPackage) => p.packageId === id)?.description ?? id
+              packages.find((p: EquipmentPackage) => p.packageId === id)
+                ?.description ?? id
             }
             className="bg-card rounded-md flex-1"
           >
@@ -78,8 +89,8 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
       )}
 
       {/* Equipment Entries Section */}
-      {master.equipmentEntries.map((entry) => (
-        <AppMethodSection
+      {masterProduct.equipments.map((entry) => (
+        <EquipmentSection
           key={entry.equipmentId}
           masterProductId={masterProductId}
           equipmentId={entry.equipmentId}

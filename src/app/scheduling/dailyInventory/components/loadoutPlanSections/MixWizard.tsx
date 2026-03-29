@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSelector } from "react-redux";
-import { LandPlot } from "lucide-react";
+import { LandPlot, ThumbsUp } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -16,7 +16,7 @@ import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
 import { Number } from "@/components/Number";
 
-type PlannedEquipment = LoadoutBase["masters"][number]["equipmentEntries"][number];
+type PlannedEquipment = LoadoutBase["masters"][number]["equipments"][number];
 
 type TankWizardPopoverProps = {
   plannedEquipment: PlannedEquipment;
@@ -24,7 +24,7 @@ type TankWizardPopoverProps = {
   children: React.ReactNode;
 };
 
-export function TankWizardPopover({
+export function MixWizard({
   plannedEquipment,
   masterProductId,
   children,
@@ -33,6 +33,7 @@ export function TankWizardPopover({
   const [currentMix, setCurrentMix] = useState<number | null>(null);
   const [sliderGallons, setSliderGallons] = useState<number | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const sliderWrapperRef = useRef<HTMLDivElement>(null);
 
   const totalKsfForMaster = useSelector(
     loadoutFormSelect.totalKsfForMaster(masterProductId),
@@ -223,6 +224,66 @@ export function TankWizardPopover({
                   ? (sliderGallons / totalPlannedGallons) * totalKsfForMaster
                   : totalKsfForMaster;
 
+                const sliderRange = gallonsAvailable - totalPlannedGallons;
+
+                // Sweet spot = 10% buffer, capped at available space
+                const sweetSpot = Math.min(totalPlannedGallons * 1.1, gallonsAvailable);
+                const sweetSpotPct = sliderRange > 0
+                  ? ((sweetSpot - totalPlannedGallons) / sliderRange) * 100
+                  : 0;
+
+                // Badge tracks the thumb: t = 0 at min, 1 at max
+                const sliderT = sliderRange > 0
+                  ? (sliderGallons - totalPlannedGallons) / sliderRange
+                  : 0;
+
+                // Radix slider thumb is inset by half its width (w-4 = 16px → 8px) on each side.
+                // Map sliderT to pixel position within the actual thumb travel range so the badge
+                // stays aligned at the extremes.
+                const thumbRadius = 8;
+                const containerWidth = sliderWrapperRef.current?.offsetWidth ?? 0;
+                const badgeLeftPx = containerWidth > 0
+                  ? thumbRadius + sliderT * (containerWidth - thumbRadius * 2)
+                  : null;
+                const sliderPct = sliderT * 100;
+
+                // OKLCH keyframes: primary(blue) → accent(green) → secondary(orange) → destructive(burnt orange)
+                // Keyframe positions in t: 0, sweetSpotT, 0.65, 1.0
+                const sweetSpotT = sliderRange > 0
+                  ? (sweetSpot - totalPlannedGallons) / sliderRange
+                  : 0.1;
+
+                type OklchColor = [number, number, number]; // [L, C, H]
+                const colorPrimary: OklchColor    = [0.534, 0.042, 239.5];
+                const colorAccent: OklchColor     = [0.628, 0.145, 142.4];
+                const colorSecondary: OklchColor  = [0.691, 0.137,  42.8];
+                const colorDestructive: OklchColor = [0.525, 0.173,  38.4];
+
+                const lerpColor = (a: OklchColor, b: OklchColor, t: number): OklchColor => [
+                  a[0] + (b[0] - a[0]) * t,
+                  a[1] + (b[1] - a[1]) * t,
+                  // Hue interpolation: take the shortest arc
+                  a[2] + ((((b[2] - a[2]) % 360) + 540) % 360 - 180) * t,
+                ];
+
+                const badgeColor = (() => {
+                  let color: OklchColor;
+                  if (sliderT <= sweetSpotT) {
+                    // primary → accent
+                    const segT = sweetSpotT > 0 ? sliderT / sweetSpotT : 0;
+                    color = lerpColor(colorPrimary, colorAccent, segT);
+                  } else if (sliderT <= 0.65) {
+                    // accent → secondary
+                    const segT = (sliderT - sweetSpotT) / (0.65 - sweetSpotT);
+                    color = lerpColor(colorAccent, colorSecondary, segT);
+                  } else {
+                    // secondary → destructive
+                    const segT = (sliderT - 0.65) / 0.35;
+                    color = lerpColor(colorSecondary, colorDestructive, segT);
+                  }
+                  return `oklch(${color[0].toFixed(3)} ${color[1].toFixed(3)} ${color[2].toFixed(1)})`;
+                })();
+
                 return (
                   <div className="flex flex-col gap-2">
                     <div className="flex justify-between text-xs text-foreground/60">
@@ -241,13 +302,44 @@ export function TankWizardPopover({
                         </span>
                       </div>
                     </div>
-                    <Slider
-                      min={totalPlannedGallons}
-                      max={gallonsAvailable}
-                      step={0.1}
-                      value={[sliderGallons]}
-                      onValueChange={(values) => setSliderGallons(values[0])}
-                    />
+
+                    {/* Slider with tracking badge above and sweet spot tick on the track */}
+                    <div ref={sliderWrapperRef} className="relative pt-8">
+                      {/* Tracking badge — follows the thumb, pixel-aligned to compensate for thumb inset */}
+                      <div
+                        className="absolute top-0 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+                        style={badgeLeftPx != null ? { left: `${badgeLeftPx}px` } : { left: `${sliderPct}%` }}
+                      >
+                        <span
+                          className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium"
+                          style={{ backgroundColor: badgeColor, color: "oklch(0.98 0 0)" }}
+                        >
+                          <LandPlot className="w-3 h-3" />
+                          <Number>{coverableKsfAtSlider}</Number>
+                        </span>
+                        <span
+                          className="text-xs leading-none"
+                          style={{ color: badgeColor }}
+                        >▼</span>
+                      </div>
+
+                      {/* Sweet spot marker — thumbs up centered above the track */}
+                      <div
+                        className="absolute -translate-x-1/2 pointer-events-none flex justify-center"
+                        style={{ left: `${sweetSpotPct}%`, bottom: "calc(100% - 30px)" }}
+                      >
+                        <ThumbsUp className="w-3 h-3 text-accent/70" />
+                      </div>
+
+                      <Slider
+                        min={totalPlannedGallons}
+                        max={gallonsAvailable}
+                        step={0.1}
+                        value={[sliderGallons]}
+                        onValueChange={(values) => setSliderGallons(values[0])}
+                      />
+                    </div>
+
                     <p className="flex items-center justify-center gap-1 text-xs text-center text-foreground/70">
                       Mixing {sliderGallons.toFixed(1)} Gal
                       <span className="flex items-center gap-0.5 text-foreground/50">

@@ -8,13 +8,15 @@ export function useLoadout() {
   const dispatch = useAppDispatch();
 
   return {
-    upsertLoadout: (loadout: LoadoutDoc) =>
-      dispatch(
+    upsertLoadout: async (loadout: LoadoutDoc): Promise<boolean> => {
+      const result = await dispatch(
         loadoutActions.upsertLoadout({
           params: { loadout },
           config: { showLoading: false, force: true },
         }),
-      ),
+      );
+      return loadoutActions.upsertLoadout.fulfilled.match(result);
+    },
     getLoadout: ({
       employeeId,
       routeDate,

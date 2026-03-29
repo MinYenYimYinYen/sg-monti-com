@@ -1,7 +1,7 @@
 import { BaseValidator, ValidatorSchema } from "@/lib/validation/BaseValidator";
 import { LoadoutBase } from "./LoadoutTypes";
 
-type EquipmentEntry = LoadoutBase["masters"][number]["equipmentEntries"][number];
+type EquipmentEntry = LoadoutBase["masters"][number]["equipments"][number];
 
 export type LoadoutPhase = "start" | "finish";
 
@@ -14,7 +14,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
     masters: {
       // masters[].startAmount and finishAmount are derived from the route (ksf),
       // not user-entered fields — no validation needed here.
-      equipmentEntries: {
+      equipments: {
         startAmount: {
           label: "Mix Product Start Amount",
           validate: ({ value, parent }: { value: number | null; parent: EquipmentEntry }) => {

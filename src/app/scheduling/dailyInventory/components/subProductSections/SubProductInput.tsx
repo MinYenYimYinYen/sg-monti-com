@@ -8,15 +8,11 @@ import { getFieldPath } from "@/lib/validation/getFieldPath";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 type SubProductInputProps = {
-  masterProductId: number;
-  subProductId: number;
   masterIndex: number;
   subProductIndex: number;
 };
 
 export function SubProductInput({
-  masterProductId,
-  subProductId,
   masterIndex,
   subProductIndex,
 }: SubProductInputProps) {
@@ -25,7 +21,9 @@ export function SubProductInput({
 
   const loadout = useSelector(loadoutFormSelect.loadout.data);
 
-  // Find the specific master and sub product
+  // Index-based lookups: masterIndex and subProductIndex are passed as props (not objects)
+  // because the validation field path system requires stable numeric indices into the
+  // loadout state array. The subProduct object is derived here from those indices.
   const master = loadout.masters[masterIndex];
   const subProduct = master?.subProducts[subProductIndex];
 

@@ -76,7 +76,7 @@ function hydrateMasterInventory(params: {
     (s) => s.masterProductId === master.productId,
   );
 
-  // If no package selected → equipmentEntries is empty (UI will prompt for selection)
+  // If no package selected → equipments is empty (UI will prompt for selection)
   if (!selection) {
     return buildMasterEntry({ master, size, equipmentEntries: [] });
   }
@@ -91,7 +91,7 @@ function hydrateMasterInventory(params: {
   }
 
   // Build equipment entries from the selected package's hydrated equipment items
-  const equipmentEntries: LoadoutBase["masters"][number]["equipmentEntries"] =
+  const equipmentEntries: LoadoutBase["masters"][number]["equipments"] =
     selectedPackage.equipments.map((equipment: Equipment) => {
       // Water carrier: build per-equipment unit config based on showFlOz, then override
       // productCode/description with equipmentId so the UI labels the row by machine name.
@@ -201,7 +201,7 @@ function calcPlannedWaterAmount(
 function buildMasterEntry(params: {
   master: ProductMaster;
   size: number;
-  equipmentEntries: LoadoutBase["masters"][number]["equipmentEntries"];
+  equipmentEntries: LoadoutBase["masters"][number]["equipments"];
   subProducts?: LoadoutBase["masters"][number]["subProducts"];
 }): LoadoutBase["masters"][number] {
   const { master, size, equipmentEntries, subProducts } = params;
@@ -227,7 +227,7 @@ function buildMasterEntry(params: {
     finishAmount: null,
     unitId: master.unit.unitId,
     unit: master.unit,
-    equipmentEntries,
+    equipments: equipmentEntries,
     subProducts: fallbackSubProducts,
   };
 }

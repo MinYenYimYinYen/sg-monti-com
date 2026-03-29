@@ -97,8 +97,8 @@ const selectUsedProductIds = createSelector(
 
     // From masters
     loadout.masters.forEach((master) => {
-      // From equipmentEntries
-      master.equipmentEntries.forEach((entry) => {
+      // From equipments
+      master.equipments.forEach((entry) => {
         // mixProduct (water)
         usedIds.add(entry.mixProduct.productId);
         // entry subProducts
@@ -197,13 +197,13 @@ const selectIsFieldTouched = (fieldPath: string) =>
   )
 
 /**
- * selectServiceResolvedLoadoutInventory — re-runs hydrateLoadoutInventory for each service
+ * selectServiceResolvedLoadout — re-runs hydrateLoadoutInventory for each service
  * with the worker's current packageSelections, then aggregates across all services.
  *
  * This is the package-aware version of the inventory. service.loadoutInventory (baked into
  * centralSelectors) is package-agnostic; this selector applies the runtime package choice.
  */
-const selectServiceResolvedLoadoutInventory = createSelector(
+const selectServiceResolvedLoadout = createSelector(
   [selectServices, selectPackageSelections, progServBaseSelect.basicServCodeMap],
   (services, packageSelections, servCodeMap) => {
     const inventories = services.map((service) =>
@@ -266,7 +266,7 @@ export const loadoutFormSelect = {
   packageSelections: selectPackageSelections,
   truckId: selectTruckId,
   rideOnId: selectRideOnId,
-  serviceResolvedLoadoutInventory: selectServiceResolvedLoadoutInventory,
+  serviceResolvedLoadout: selectServiceResolvedLoadout,
   totalKsfForMaster: selectTotalKsfForMaster,
   loadout: {
     data: selectLoadout,

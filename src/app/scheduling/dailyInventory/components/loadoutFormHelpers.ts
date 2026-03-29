@@ -7,7 +7,7 @@ function initializeLoadout(loadoutInventory: LoadoutBase) {
       // startAmount is the planned ksf for this master — always known from the route.
       startAmount: master.plannedAmount,
       finishAmount: null,
-      equipmentEntries: master.equipmentEntries.map((entry) => ({
+      equipmentEntries: master.equipments.map((entry) => ({
         ...entry,
         startAmount: null,
         finishAmount: null,
@@ -53,7 +53,7 @@ function serializeLoadout(params: {
       startAmount: master.startAmount,
       finishAmount: master.finishAmount,
       unitId: master.unitId,
-      equipmentEntries: master.equipmentEntries.map((entry) => ({
+      equipmentEntries: master.equipments.map((entry) => ({
         equipmentId: entry.equipmentId,
         mixProductId: entry.mixProductId,
         mixProductUnitId: entry.mixProductUnitId,
