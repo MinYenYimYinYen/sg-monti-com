@@ -57,6 +57,7 @@ export function LoadoutForm() {
       routeDate,
       truckId,
       rideOnId: rideOnId ?? "",
+      isStored: false,
     });
 
     const success = await upsertLoadout(loadoutDoc);

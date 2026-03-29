@@ -71,6 +71,22 @@ export function useLoadoutForm() {
     dispatch(loadoutFormActions.clearPackageSelections());
   };
 
+  const updateFinishLoadout = (loadout: Partial<LoadoutBase>) => {
+    dispatch(loadoutFormActions.updateFinishLoadout(loadout));
+  };
+
+  const markFinishLoadoutFieldTouched = (fieldPath: string) => {
+    dispatch(loadoutFormActions.markFinishLoadoutFieldTouched(fieldPath));
+  };
+
+  const setShouldShowAllFinishLoadoutIssues = (show: boolean) => {
+    dispatch(loadoutFormActions.setShouldShowAllFinishLoadoutIssues(show));
+  };
+
+  const clearFinishLoadoutForm = () => {
+    dispatch(loadoutFormActions.clearFinishLoadoutForm());
+  };
+
   return {
     setRouteDate,
     setTech,
@@ -87,5 +103,9 @@ export function useLoadoutForm() {
     clearPendingSlotInputs,
     setPackageSelection,
     clearPackageSelections,
+    updateFinishLoadout,
+    markFinishLoadoutFieldTouched,
+    setShouldShowAllFinishLoadoutIssues,
+    clearFinishLoadoutForm,
   };
 }

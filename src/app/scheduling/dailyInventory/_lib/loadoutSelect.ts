@@ -3,7 +3,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 
 const selectLoadouts = (state: AppState) => state.loadout.loadouts;
-const selectMyLoadout = (state: AppState) => state.loadout.myLoadout;
+const selectFinishLoadout = (state: AppState) => state.loadout.finishLoadout;
 
 /** Map keyed by `"${employeeId}:${routeDate}"` for O(1) lookups. */
 const selectLoadoutMap = createSelector([selectLoadouts], (loadouts) =>
@@ -12,6 +12,6 @@ const selectLoadoutMap = createSelector([selectLoadouts], (loadouts) =>
 
 export const loadoutSelect = {
   loadouts: selectLoadouts,
-  myLoadout: selectMyLoadout,
+  finishLoadout: selectFinishLoadout,
   loadoutMap: selectLoadoutMap,
 };

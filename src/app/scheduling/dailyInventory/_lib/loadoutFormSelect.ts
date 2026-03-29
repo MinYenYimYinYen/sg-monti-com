@@ -11,6 +11,7 @@ import { LoadoutValidator, LoadoutPhase } from "@/app/scheduling/dailyInventory/
 import { hydrateLoadoutInventory, getProductMasters } from "@/app/realGreen/customer/selectors/hydrateLoadoutInventory";
 import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
+import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 const selectAuthTech = createSelector([authSelect.user], (user) => user?.saId);
 const selectTech = (state: AppState) => state.loadoutForm.tech;
@@ -232,12 +233,16 @@ const selectTotalKsfForMaster = (masterProductId: number) =>
       }, 0),
   );
 
+const selectFinishLoadout = (state: AppState) => state.loadoutForm.finishLoadout;
+const selectFinishLoadoutTouchedFields = (state: AppState) => state.loadoutForm.finishLoadoutTouchedFields;
+const selectShowAllFinishLoadoutIssues = (state: AppState) => state.loadoutForm.showAllFinishLoadoutIssues;
+
 // Factory function to create phase-specific validation selectors
-const createLoadoutValidation = (phase: LoadoutPhase) =>
+const createLoadoutValidation = (phase: LoadoutPhase, selectData: (state: AppState) => LoadoutBase, selectTouchedFields: (state: AppState) => Set<string>, selectShowAll: (state: AppState) => boolean) =>
   createValidationSelectors({
-    selectData: (state: AppState) => state.loadoutForm.loadout,
-    selectTouchedFields: (state: AppState) => state.loadoutForm.loadoutTouchedFields,
-    selectShowAll: (state: AppState) => state.loadoutForm.showAllLoadoutIssues,
+    selectData,
+    selectTouchedFields,
+    selectShowAll,
     validator: class extends LoadoutValidator {
       constructor() {
         super(phase);
@@ -268,9 +273,28 @@ export const loadoutFormSelect = {
   rideOnId: selectRideOnId,
   serviceResolvedLoadout: selectServiceResolvedLoadout,
   totalKsfForMaster: selectTotalKsfForMaster,
+  finishLoadout: {
+    data: selectFinishLoadout,
+    finishValidation: createLoadoutValidation(
+      "finish",
+      selectFinishLoadout,
+      selectFinishLoadoutTouchedFields,
+      selectShowAllFinishLoadoutIssues,
+    ),
+  },
   loadout: {
     data: selectLoadout,
-    startValidation: createLoadoutValidation("start"),
-    finishValidation: createLoadoutValidation("finish"),
+    startValidation: createLoadoutValidation(
+      "start",
+      selectLoadout,
+      (state: AppState) => state.loadoutForm.loadoutTouchedFields,
+      (state: AppState) => state.loadoutForm.showAllLoadoutIssues,
+    ),
+    finishValidation: createLoadoutValidation(
+      "finish",
+      selectLoadout,
+      (state: AppState) => state.loadoutForm.loadoutTouchedFields,
+      (state: AppState) => state.loadoutForm.showAllLoadoutIssues,
+    ),
   },
 };

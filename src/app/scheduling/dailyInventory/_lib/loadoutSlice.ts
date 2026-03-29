@@ -5,10 +5,10 @@ import { LoadoutContract } from "@/app/scheduling/dailyInventory/api/LoadoutCont
 
 type LoadoutState = {
   loadouts: LoadoutDoc[];
-  myLoadout: LoadoutDoc | null;
+  finishLoadout: LoadoutDoc | null;
 };
 
-const initialState: LoadoutState = { loadouts: [], myLoadout: null };
+const initialState: LoadoutState = { loadouts: [], finishLoadout: null };
 
 const upsertLoadout = createStandardThunk<LoadoutContract, "upsertLoadout">({
   typePrefix: "loadout/upsertLoadout",
@@ -31,10 +31,14 @@ const getLoadouts = createStandardThunk<LoadoutContract, "getLoadouts">({
 const loadoutSlice = createSlice({
   name: "loadout",
   initialState,
-  reducers: {},
+  reducers: {
+    clearFinishLoadout: (state) => {
+      state.finishLoadout = null;
+    },
+  },
   extraReducers: (builder) => {
     builder.addCase(getLoadout.fulfilled, (state, action) => {
-      state.myLoadout = action.payload;
+      state.finishLoadout = action.payload;
     });
 
     builder.addCase(getLoadouts.fulfilled, (state, action) => {
@@ -54,12 +58,12 @@ const loadoutSlice = createSlice({
         state.loadouts.push(upserted);
       }
 
-      // Keep myLoadout in sync if it matches
+      // Keep finishLoadout in sync if it matches
       if (
-        state.myLoadout?.employeeId === upserted.employeeId &&
-        state.myLoadout?.routeDate === upserted.routeDate
+        state.finishLoadout?.employeeId === upserted.employeeId &&
+        state.finishLoadout?.routeDate === upserted.routeDate
       ) {
-        state.myLoadout = upserted;
+        state.finishLoadout = upserted;
       }
     });
   },

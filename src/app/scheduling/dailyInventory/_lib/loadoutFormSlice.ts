@@ -31,6 +31,10 @@ type LoadoutFormState = {
   pendingSlotAmounts: Record<string, string>;
   /** Worker's equipment package selection per master product. Not persisted between sessions. */
   packageSelections: PackageSelection[];
+  /** Finish loadout — populated from the persisted LoadoutDoc when the worker opens the finish form. */
+  finishLoadout: LoadoutBase;
+  finishLoadoutTouchedFields: Set<string>;
+  showAllFinishLoadoutIssues: boolean;
 };
 
 const initialState: LoadoutFormState = {
@@ -45,6 +49,9 @@ const initialState: LoadoutFormState = {
   pendingSlotProducts: {},
   pendingSlotAmounts: {},
   packageSelections: [],
+  finishLoadout: baseLoadout,
+  finishLoadoutTouchedFields: new Set<string>(),
+  showAllFinishLoadoutIssues: false,
 };
 
 export const loadoutFormSlice = createSlice({
@@ -195,6 +202,24 @@ export const loadoutFormSlice = createSlice({
 
     setShouldShowAllStartLoadoutIssues: (state, action: PayloadAction<boolean>) => {
       state.showAllLoadoutIssues = action.payload;
+    },
+
+    updateFinishLoadout: (state, action: PayloadAction<Partial<LoadoutBase>>) => {
+      state.finishLoadout = { ...state.finishLoadout, ...action.payload };
+    },
+
+    markFinishLoadoutFieldTouched: (state, action: PayloadAction<string>) => {
+      state.finishLoadoutTouchedFields.add(action.payload);
+    },
+
+    setShouldShowAllFinishLoadoutIssues: (state, action: PayloadAction<boolean>) => {
+      state.showAllFinishLoadoutIssues = action.payload;
+    },
+
+    clearFinishLoadoutForm: (state) => {
+      state.finishLoadout = baseLoadout;
+      state.finishLoadoutTouchedFields = new Set<string>();
+      state.showAllFinishLoadoutIssues = false;
     },
 
     setPackageSelection: (

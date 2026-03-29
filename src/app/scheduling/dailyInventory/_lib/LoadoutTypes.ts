@@ -92,6 +92,7 @@ export type LoadoutDoc = {
   routeDate: string;
   truckId: string;
   rideOnId: string;
+  isStored: boolean;
   masters: {
     productId: number;
     plannedAmount: number;
@@ -136,5 +137,6 @@ export type LoadoutDoc = {
   }[];
 };
 
+//todo: this can be used to sort finished loadouts from unfinished when we get to reporting
 export type LoadoutFinal = DeepNonNullable<LoadoutDoc>
 

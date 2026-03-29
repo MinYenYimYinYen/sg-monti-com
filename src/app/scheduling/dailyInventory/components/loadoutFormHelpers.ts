@@ -39,14 +39,17 @@ function serializeLoadout(params: {
   routeDate: string;
   truckId: string;
   rideOnId: string;
+  isStored: boolean;
 }): LoadoutDoc {
-  const { loadout, employeeId, routeDate, truckId, rideOnId } = params;
+  const { loadout, employeeId, routeDate, truckId, rideOnId, isStored } = params;
 
   return {
     employeeId,
     routeDate,
     truckId,
     rideOnId,
+    isStored,
+
     masters: loadout.masters.map((master) => ({
       productId: master.productId,
       plannedAmount: master.plannedAmount,

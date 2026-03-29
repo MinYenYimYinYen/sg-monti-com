@@ -75,6 +75,7 @@ const LoadoutDocSchema = new mongoose.Schema<LoadoutDoc>({
   routeDate: { type: String, required: true },
   truckId: { type: String, required: true, default: "" },
   rideOnId: { type: String, required: true, default: "" },
+  isStored: { type: Boolean, required: true, default: false },
   masters: { type: [MasterSchema], required: true },
   /** Singles are "unplannable" products added ad-hoc by the tech. */
   singles: { type: [TopLevelSingleSchema], default: [] },
