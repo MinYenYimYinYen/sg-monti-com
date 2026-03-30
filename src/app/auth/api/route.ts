@@ -118,7 +118,7 @@ const handlers: HandlerMap<AuthContract> = {
       await connectToMongoDB();
 
       // 1. Find User
-      const userDoc = await UserModel.findOne({ userName }).lean();
+      const userDoc = await UserModel.findOne({ userName: { $regex: new RegExp(`^${userName}$`, "i") } }).lean();
       if (!userDoc) {
         throw new AppError({
           message: "Invalid credentials",
@@ -262,7 +262,7 @@ const handlers: HandlerMap<AuthContract> = {
       await connectToMongoDB();
 
       // 1. Find User
-      const user = await UserModel.findOne({ userName });
+      const user = await UserModel.findOne({ userName: { $regex: new RegExp(`^${userName}$`, "i") } });
 
       // Security: Always return success to prevent username enumeration
       if (!user) {

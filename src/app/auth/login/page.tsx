@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, EyeOff } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth/_hooks/useAuth";
@@ -26,6 +27,7 @@ function LoginContent() {
     userName: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   // Declarative Redirect
   useEffect(() => {
@@ -86,21 +88,35 @@ function LoginContent() {
             required
             placeholder="Enter your username"
             autoComplete="username"
+            autoCapitalize={"off"}
           />
         </FormGroup>
 
         <FormGroup>
           <Label htmlFor="password">Password</Label>
-          <Input
-            type="password"
-            id="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            placeholder="Enter your password"
-            autoComplete="current-password"
-          />
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              autoCapitalize={"off"}
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+              tabIndex={-1}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <Eye size={16} className={"text-muted-foreground"} /> : <EyeOff size={16} className={"text-muted-foreground/50"} />}
+            </button>
+          </div>
         </FormGroup>
 
         <Button type="submit" className="w-full">
