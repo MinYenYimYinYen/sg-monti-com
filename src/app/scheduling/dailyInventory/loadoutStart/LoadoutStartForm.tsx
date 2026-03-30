@@ -1,32 +1,36 @@
 import { useSelector, useDispatch } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { loadoutFormActions } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { useRouter } from "next/navigation";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
+import { loadoutStartActions } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
+import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
 import { useEffect, useState } from "react";
-import { MasterProductCard } from "./masterProductCard/MasterProductCard";
-import { AdditionalProductsSection } from "./additionalProductsSection/AdditionalProductsSection";
+import { MasterProductCard } from "./components/MasterProductCard";
+import { AdditionalProductsSection } from "./components/AdditionalProductsSection";
 import { Container } from "@/components/Containers";
 import { loadoutHelper } from "@/app/scheduling/dailyInventory/components/loadoutFormHelpers";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { baseLoadout } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
 
-export function LoadoutForm() {
+export function LoadoutStartForm() {
   const dispatch = useDispatch();
-  const { updateLoadout } = useLoadoutForm();
+  const router = useRouter();
+  const { updateLoadout } = useLoadoutStartForm();
   const { upsertLoadout } = useLoadout();
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
-  const services = useSelector(loadoutFormSelect.services);
-  const loadoutInventory = useSelector(loadoutFormSelect.serviceResolvedLoadout);
-  const loadout = useSelector(loadoutFormSelect.loadout.data);
-  const hasIssues = useSelector(loadoutFormSelect.loadout.startValidation.hasIssues);
-  const tech = useSelector(loadoutFormSelect.tech);
-  const routeDate = useSelector(loadoutFormSelect.routeDate);
-  const truckId = useSelector(loadoutFormSelect.truckId);
-  const rideOnId = useSelector(loadoutFormSelect.rideOnId);
+  const services = useSelector(loadoutStartSelect.services);
+  const loadoutInventory = useSelector(loadoutStartSelect.serviceResolvedLoadout);
+  const loadout = useSelector(loadoutStartSelect.loadout.data);
+  const hasIssues = useSelector(loadoutStartSelect.loadout.startValidation.hasIssues);
+  const tech = useSelector(loadoutStartSelect.tech);
+  const routeDate = useSelector(loadoutStartSelect.routeDate);
+  const truckId = useSelector(loadoutStartSelect.truckId);
+  const rideOnId = useSelector(loadoutStartSelect.rideOnId);
+  const allIssues = useSelector(loadoutStartSelect.loadout.startValidation.issues);
+  console.log("all Issues" ,allIssues);
 
   // Initialize (or re-initialize) the loadout whenever the inventory structure changes.
   // This handles both the initial load and package selection changes, which alter which
@@ -50,10 +54,10 @@ export function LoadoutForm() {
 
   const canSubmit = !!tech && !!routeDate && !!truckId && !hasIssues;
 
+
   const handleSave = async () => {
     if (hasIssues) {
-      dispatch(loadoutFormActions.setShouldShowAllStartLoadoutIssues(true));
-
+      dispatch(loadoutStartActions.setShouldShowAllStartLoadoutIssues(true));
       return;
     }
 
@@ -72,14 +76,15 @@ export function LoadoutForm() {
 
     const success = await upsertLoadout(loadoutDoc);
     if (success) {
-      dispatch(loadoutFormActions.clearStartForm());
+      dispatch(loadoutStartActions.clearStartForm());
+      router.push("/scheduling/dailyInventory");
     }
     setSaveStatus(success ? "success" : "idle");
   };
 
   if (!services.length) return <div className={"text-center text-foreground/50 py-8"}>
     <div>No route found. </div>
-  </div>
+  </div>;
 
   return (
     <Container variant={"page"}>

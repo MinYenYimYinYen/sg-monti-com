@@ -1,8 +1,8 @@
 import { useSelector } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { EquipmentSection } from "./equipmentSection/EquipmentSection";
-import { SubProductSection } from "../subProductSections/SubProductSection";
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
+import { EquipmentSection } from "./EquipmentSection";
+import { SubProductSection } from "./SubProductSection";
+import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { useEffect, useMemo } from "react";
 import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
@@ -17,10 +17,10 @@ type MasterProductCardProps = {
 
 export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
   const loadoutInventory = useSelector(
-    loadoutFormSelect.serviceResolvedLoadout,
+    loadoutStartSelect.serviceResolvedLoadout,
   );
-  const packageSelections = useSelector(loadoutFormSelect.packageSelections);
-  const { setPackageSelection } = useLoadoutForm();
+  const packageSelections = useSelector(loadoutStartSelect.packageSelections);
+  const { setPackageSelection } = useLoadoutStartForm();
 
   // ID-based lookup: receives masterProductId (not the object) so React's key-based
   // reconciliation works correctly. The planned inventory and the loadout state are two

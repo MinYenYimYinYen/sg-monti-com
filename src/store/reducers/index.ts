@@ -24,7 +24,8 @@ import { appMethodReducer } from "@/app/appMethod/appMethodSlice";
 import { equipmentReducer } from "@/app/equipment/equipmentSlice";
 import { equipmentPackageReducer } from "@/app/equipment/equipmentPackage/equipmentPackageSlice";
 import createAppMethodReducer from "@/app/appMethod/appMethodCreate/createAppMethodSlice";
-import { loadoutFormReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
+import { loadoutStartReducer } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
+import { loadoutFinishReducer } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSlice";
 import { loadoutReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
 
 const rootReducer = combineReducers({
@@ -41,7 +42,8 @@ const rootReducer = combineReducers({
   employee: employeeReducer,
   flag: flagReducer,
   loadout: loadoutReducer,
-  loadoutForm: loadoutFormReducer,
+  loadoutStart: loadoutStartReducer,
+  loadoutFinish: loadoutFinishReducer,
   priceTable: priceTableReducer,
   product: productReducer,
   unitConfig: unitConfigReducer,

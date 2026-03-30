@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { loadoutFormActions } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
+import { loadoutStartActions } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
+import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { Input } from "@/style/components/input";
 import { X } from "lucide-react";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
@@ -14,9 +14,9 @@ type SingleProductInputProps = {
 
 export function SingleProductInput({ singleIndex }: SingleProductInputProps) {
   const dispatch = useDispatch();
-  const { updateLoadout, removeProductFromLoadout } = useLoadoutForm();
+  const { updateLoadout, removeProductFromLoadout } = useLoadoutStartForm();
 
-  const loadout = useSelector(loadoutFormSelect.loadout.data);
+  const loadout = useSelector(loadoutStartSelect.loadout.data);
   const single = loadout.singles[singleIndex];
 
   // Build field path for validation
@@ -28,9 +28,9 @@ export function SingleProductInput({ singleIndex }: SingleProductInputProps) {
 
   // Use proper validation selectors that respect touched state
   const shouldShow = useSelector(
-    loadoutFormSelect.loadout.startValidation.shouldShowFieldIssue(fieldPath)
+    loadoutStartSelect.loadout.startValidation.shouldShowFieldIssue(fieldPath),
   );
-  const allIssues = useSelector(loadoutFormSelect.loadout.startValidation.issues);
+  const allIssues = useSelector(loadoutStartSelect.loadout.startValidation.issues);
   const fieldIssue = shouldShow ? allIssues[fieldPath] : undefined;
 
   // Conditional render - check if single exists AFTER all hooks
@@ -45,7 +45,7 @@ export function SingleProductInput({ singleIndex }: SingleProductInputProps) {
           single.startAmount,
           "app",
           "load",
-          single.product.unitConfig
+          single.product.unitConfig,
         )
       : "";
 
@@ -81,13 +81,13 @@ export function SingleProductInput({ singleIndex }: SingleProductInputProps) {
                     loadValue,
                     "load",
                     "app",
-                    single.product.unitConfig
+                    single.product.unitConfig,
                   )
                 : null;
             handleAmountChange(appValue);
           }}
           onBlur={() => {
-            dispatch(loadoutFormActions.markStartLoadoutFieldTouched(fieldPath));
+            dispatch(loadoutStartActions.markStartLoadoutFieldTouched(fieldPath));
           }}
         />
         {fieldIssue && (

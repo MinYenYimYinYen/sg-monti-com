@@ -1,14 +1,14 @@
 "use client";
 
 import { useSelector, useDispatch } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { loadoutFormActions } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
+import { loadoutStartActions } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
+import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { getFieldPath } from "@/lib/validation/getFieldPath";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { MixWizard } from "@/app/scheduling/dailyInventory/components/loadoutPlanSections/MixWizard";
+import { MixWizard } from "@/app/scheduling/dailyInventory/components/mixWizard/MixWizard";
 
 type AppMethodSectionProps = {
   masterProductId: number;
@@ -20,12 +20,12 @@ export function EquipmentSection({
   equipmentId,
 }: AppMethodSectionProps) {
   const dispatch = useDispatch();
-  const { updateLoadout } = useLoadoutForm();
+  const { updateLoadout } = useLoadoutStartForm();
 
   const loadoutInventory = useSelector(
-    loadoutFormSelect.serviceResolvedLoadout,
+    loadoutStartSelect.serviceResolvedLoadout,
   );
-  const loadout = useSelector(loadoutFormSelect.loadout.data);
+  const loadout = useSelector(loadoutStartSelect.loadout.data);
 
   // Dual-tree lookups: equipmentId is passed as a prop (not the object) so React's key-based
   // reconciliation works correctly. We look up from two separate trees:
@@ -65,10 +65,10 @@ export function EquipmentSection({
 
   // Use proper validation selectors that respect touched state
   const shouldShow = useSelector(
-    loadoutFormSelect.loadout.startValidation.shouldShowFieldIssue(fieldPath),
+    loadoutStartSelect.loadout.startValidation.shouldShowFieldIssue(fieldPath),
   );
   const allIssues = useSelector(
-    loadoutFormSelect.loadout.startValidation.issues,
+    loadoutStartSelect.loadout.startValidation.issues,
   );
   const fieldIssue = shouldShow ? allIssues[fieldPath] : undefined;
 
@@ -187,7 +187,7 @@ export function EquipmentSection({
               }}
               onBlur={() => {
                 dispatch(
-                  loadoutFormActions.markStartLoadoutFieldTouched(fieldPath),
+                  loadoutStartActions.markStartLoadoutFieldTouched(fieldPath),
                 );
               }}
             />

@@ -7,15 +7,15 @@ import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSel
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { createValidationSelectors } from "@/lib/validation/createValidationSelectors";
-import { LoadoutValidator, LoadoutPhase } from "@/app/scheduling/dailyInventory/_lib/LoadoutValidator";
+import { LoadoutValidator } from "@/app/scheduling/dailyInventory/_lib/LoadoutValidator";
 import { hydratePlannedLoadout, getProductMasters } from "@/app/realGreen/customer/selectors/hydratePlannedLoadout";
 import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
+import { PendingProductSlot } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
 
 const selectAuthTech = createSelector([authSelect.user], (user) => user?.saId);
-const selectTech = (state: AppState) => state.loadoutForm.tech;
+const selectTech = (state: AppState) => state.loadoutStart.tech;
 
 const selectDefaultTech = createSelector(
   [selectAuthTech, selectTech],
@@ -29,7 +29,6 @@ const selectRoutesByDate = createSelector(
 
     byDateAndEmployee.forEach((employeeMap, date) => {
       const services = employeeMap.get(defaultTech ?? "");
-      // const services = employeeMap.get("1BT");
       if (services) {
         result.set(date, services);
       }
@@ -41,24 +40,19 @@ const selectRoutesByDate = createSelector(
 
 const selectRouteDates = createSelector(
   [selectRoutesByDate],
-  (routesByDate) => {
-    return Array.from(routesByDate.keys());
-  },
+  (routesByDate) => Array.from(routesByDate.keys()),
 );
 
 const selectGetRouteForDate = (date: string) =>
-  createSelector([selectRoutesByDate], (routesByDate) => {
-    return routesByDate.get(date) ?? [];
-  });
+  createSelector([selectRoutesByDate], (routesByDate) => routesByDate.get(date) ?? []);
 
-const selectRouteDate = (state: AppState) => state.loadoutForm.routeDate;
+const selectRouteDate = (state: AppState) => state.loadoutStart.routeDate;
 
 const selectServices = createSelector(
   [selectRouteDate, selectRoutesByDate],
   (routeDate, routesByDate) => {
     if (!routeDate) return [];
-    const services = routesByDate.get(routeDate) ?? [];
-    return services;
+    return routesByDate.get(routeDate) ?? [];
   },
 );
 
@@ -75,47 +69,31 @@ const selectAvailableTechs = createSelector(
   },
 );
 
-const selectLoadout = (state: AppState) => state.loadoutForm.loadout;
-
-const selectPendingProductSlots = (state: AppState) =>
-  state.loadoutForm.pendingProductSlots;
-
-const selectPendingSlotProducts = (state: AppState) =>
-  state.loadoutForm.pendingSlotProducts;
-
-const selectPendingSlotAmounts = (state: AppState) =>
-  state.loadoutForm.pendingSlotAmounts;
-
-const selectPackageSelections = (state: AppState) =>
-  state.loadoutForm.packageSelections;
-
-const selectTruckId = (state: AppState) => state.loadoutForm.truckId;
-const selectRideOnId = (state: AppState) => state.loadoutForm.rideOnId;
+const selectLoadout = (state: AppState) => state.loadoutStart.loadout;
+const selectPendingProductSlots = (state: AppState) => state.loadoutStart.pendingProductSlots;
+const selectPendingSlotProducts = (state: AppState) => state.loadoutStart.pendingSlotProducts;
+const selectPendingSlotAmounts = (state: AppState) => state.loadoutStart.pendingSlotAmounts;
+const selectPackageSelections = (state: AppState) => state.loadoutStart.packageSelections;
+const selectTruckId = (state: AppState) => state.loadoutStart.truckId;
+const selectRideOnId = (state: AppState) => state.loadoutStart.rideOnId;
 
 const selectUsedProductIds = createSelector(
   [selectLoadout],
   (loadout) => {
     const usedIds = new Set<number>();
 
-    // From masters
     loadout.masters.forEach((master) => {
-      // From equipments
       master.equipments.forEach((equipment) => {
-        // mixProduct (water)
         usedIds.add(equipment.mixProduct.productId);
-        // equipment subProducts
         equipment.subProducts.forEach((sub: { product: { productId: number } }) => {
           usedIds.add(sub.product.productId);
         });
       });
-
-      // From master subProducts
       master.subProducts.forEach((sub) => {
         usedIds.add(sub.product.productId);
       });
     });
 
-    // From CustomProducts
     loadout.singles.forEach((single) => {
       usedIds.add(single.product.productId);
     });
@@ -132,31 +110,17 @@ const selectProductCategories = createSelector(
   [productSelect.productSubs, productSelect.productSingles],
   (subs, singles) => {
     const categories = new Set<string>();
-
-    subs.forEach((sub) => {
-      if (sub.category) categories.add(sub.category);
-    });
-
-    singles.forEach((single) => {
-      if (single.category) categories.add(single.category);
-    });
-
+    subs.forEach((sub) => { if (sub.category) categories.add(sub.category); });
+    singles.forEach((single) => { if (single.category) categories.add(single.category); });
     return Array.from(categories).sort();
   },
 );
 
 const selectAvailableProducts = createSelector(
-  [
-    productSelect.productSubs,
-    productSelect.productSingles,
-    selectUsedProductIds,
-  ],
+  [productSelect.productSubs, productSelect.productSingles, selectUsedProductIds],
   (subs, singles, usedIds): (ProductSub | ProductSingle)[] => {
     const availableSubs = subs.filter((sub) => !usedIds.has(sub.productId));
-    const availableSingles = singles.filter(
-      (single) => !usedIds.has(single.productId),
-    );
-
+    const availableSingles = singles.filter((single) => !usedIds.has(single.productId));
     return [...availableSubs, ...availableSingles].sort((a, b) =>
       a.description.localeCompare(b.description),
     );
@@ -176,11 +140,8 @@ const selectProductsForPendingSlots = createSelector(
 
     pendingSlots.forEach((slot) => {
       const filteredProducts = slot.categoryFilter
-        ? availableProducts.filter(
-            (product) => product.category === slot.categoryFilter,
-          )
+        ? availableProducts.filter((product) => product.category === slot.categoryFilter)
         : availableProducts;
-
       productsMap.set(slot.id, filteredProducts);
     });
 
@@ -188,15 +149,13 @@ const selectProductsForPendingSlots = createSelector(
   },
 );
 
-const selectLoadoutTouchedFields = (state: AppState) => {
-  return state.loadoutForm.loadoutTouchedFields;
-};
+const selectLoadoutTouchedFields = (state: AppState) => state.loadoutStart.loadoutTouchedFields;
 
 const selectIsFieldTouched = (fieldPath: string) =>
   createSelector(
     [selectLoadoutTouchedFields],
-    (touchedFields) => touchedFields.has(fieldPath)
-  )
+    (touchedFields) => touchedFields.has(fieldPath),
+  );
 
 /**
  * selectServiceResolvedLoadout — re-runs hydratePlannedLoadout for each service
@@ -234,34 +193,35 @@ const selectTotalKsfForMaster = (masterProductId: number) =>
       }, 0),
   );
 
-const selectFinishLoadout = loadoutSelect.hydratedFinishLoadout;
-const selectFinishLoadoutTouchedFields = (state: AppState) => state.loadoutForm.finishLoadoutTouchedFields;
-const selectShowAllFinishLoadoutIssues = (state: AppState) => state.loadoutForm.showAllFinishLoadoutIssues;
+const selectStartValidation = createValidationSelectors({
+  selectData: selectLoadout,
+  selectTouchedFields: selectLoadoutTouchedFields,
+  selectShowAll: (state: AppState) => state.loadoutStart.showAllLoadoutIssues,
+  validator: class extends LoadoutValidator {
+    constructor() {
+      super("start");
+    }
+  },
+});
 
-// Factory function to create phase-specific validation selectors
-const createLoadoutValidation = (phase: LoadoutPhase, selectData: (state: AppState) => LoadoutBase, selectTouchedFields: (state: AppState) => Set<string>, selectShowAll: (state: AppState) => boolean) =>
-  createValidationSelectors({
-    selectData,
-    selectTouchedFields,
-    selectShowAll,
-    validator: class extends LoadoutValidator {
-      constructor() {
-        super(phase);
-      }
-    },
-  });
-
-export const loadoutFormSelect = {
+export const loadoutStartSelect = {
+  tech: selectDefaultTech,
+  routeDate: selectRouteDate,
+  truckId: selectTruckId,
+  rideOnId: selectRideOnId,
   routesByDate: selectRoutesByDate,
   routeDates: selectRouteDates,
   getRouteForDate: selectGetRouteForDate,
-  routeDate: selectRouteDate,
   services: selectServices,
   availableTechs: selectAvailableTechs,
-  tech: selectDefaultTech,
+  loadout: {
+    data: selectLoadout,
+    startValidation: selectStartValidation,
+  },
   pendingProductSlots: selectPendingProductSlots,
   pendingSlotProducts: selectPendingSlotProducts,
   pendingSlotAmounts: selectPendingSlotAmounts,
+  packageSelections: selectPackageSelections,
   usedProductIds: selectUsedProductIds,
   productCategories: selectProductCategories,
   availableProducts: selectAvailableProducts,
@@ -269,33 +229,6 @@ export const loadoutFormSelect = {
   productsForPendingSlots: selectProductsForPendingSlots,
   loadoutTouchedFields: selectLoadoutTouchedFields,
   isFieldTouched: selectIsFieldTouched,
-  packageSelections: selectPackageSelections,
-  truckId: selectTruckId,
-  rideOnId: selectRideOnId,
   serviceResolvedLoadout: selectServiceResolvedLoadout,
   totalKsfForMaster: selectTotalKsfForMaster,
-  finishLoadout: {
-    data: selectFinishLoadout,
-    finishValidation: createLoadoutValidation(
-      "finish",
-      selectFinishLoadout,
-      selectFinishLoadoutTouchedFields,
-      selectShowAllFinishLoadoutIssues,
-    ),
-  },
-  loadout: {
-    data: selectLoadout,
-    startValidation: createLoadoutValidation(
-      "start",
-      selectLoadout,
-      (state: AppState) => state.loadoutForm.loadoutTouchedFields,
-      (state: AppState) => state.loadoutForm.showAllLoadoutIssues,
-    ),
-    finishValidation: createLoadoutValidation(
-      "finish",
-      selectLoadout,
-      (state: AppState) => state.loadoutForm.loadoutTouchedFields,
-      (state: AppState) => state.loadoutForm.showAllLoadoutIssues,
-    ),
-  },
 };

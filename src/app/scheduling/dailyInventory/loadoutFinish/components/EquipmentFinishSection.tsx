@@ -1,8 +1,8 @@
 "use client";
 
 import { useSelector, useDispatch } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { loadoutFormActions } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
+import { loadoutFinishSelect } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSelect";
+import { loadoutFinishActions } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSlice";
 import { loadoutActions } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
 import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
@@ -22,7 +22,7 @@ export function EquipmentFinishSection({
 }: EquipmentFinishSectionProps) {
   const dispatch = useDispatch();
 
-  const finishLoadout = useSelector(loadoutFormSelect.finishLoadout.data);
+  const finishLoadout = useSelector(loadoutFinishSelect.finishLoadout.data);
 
   const finishMaster = finishLoadout.masters.find(
     (m) => m.product.productId === masterProductId,
@@ -48,10 +48,10 @@ export function EquipmentFinishSection({
     .toString();
 
   const shouldShow = useSelector(
-    loadoutFormSelect.finishLoadout.finishValidation.shouldShowFieldIssue(fieldPath),
+    loadoutFinishSelect.finishLoadout.finishValidation.shouldShowFieldIssue(fieldPath),
   );
   const allIssues = useSelector(
-    loadoutFormSelect.finishLoadout.finishValidation.issues,
+    loadoutFinishSelect.finishLoadout.finishValidation.issues,
   );
   const fieldIssue = shouldShow ? allIssues[fieldPath] : undefined;
 
@@ -150,7 +150,7 @@ export function EquipmentFinishSection({
               }}
               onBlur={() => {
                 dispatch(
-                  loadoutFormActions.markFinishLoadoutFieldTouched(fieldPath),
+                  loadoutFinishActions.markFinishLoadoutFieldTouched(fieldPath),
                 );
               }}
             />

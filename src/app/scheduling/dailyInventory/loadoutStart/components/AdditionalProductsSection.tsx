@@ -1,16 +1,16 @@
 import { useSelector } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
+import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { Plus } from "lucide-react";
 import { PendingProductSlot } from "./PendingProductSlot";
 import { SingleProductInput } from "./SingleProductInput";
 import { CustomSubProductInput } from "./CustomSubProductInput";
 
 export function AdditionalProductsSection() {
-  const { addPendingProductSlot } = useLoadoutForm();
+  const { addPendingProductSlot } = useLoadoutStartForm();
 
-  const loadout = useSelector(loadoutFormSelect.loadout.data);
-  const pendingSlots = useSelector(loadoutFormSelect.pendingProductSlots);
+  const loadout = useSelector(loadoutStartSelect.loadout.data);
+  const pendingSlots = useSelector(loadoutStartSelect.pendingProductSlots);
 
   // Filter pending slots for custom products (no masterId)
   const customPendingSlots = pendingSlots.filter(

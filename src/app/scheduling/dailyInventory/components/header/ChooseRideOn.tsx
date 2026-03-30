@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
+import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { rideOns } from "@/app/machines/MachineTypes";
 import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
@@ -9,8 +9,8 @@ import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent"
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 
 export function ChooseRideOn() {
-  const { setRideOnId } = useLoadoutForm();
-  const rideOnId = useSelector(loadoutFormSelect.rideOnId);
+  const { setRideOnId } = useLoadoutStartForm();
+  const rideOnId = useSelector(loadoutStartSelect.rideOnId);
 
   return (
     <MultiSelect

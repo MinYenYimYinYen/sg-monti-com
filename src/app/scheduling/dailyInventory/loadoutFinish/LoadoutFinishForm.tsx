@@ -1,28 +1,31 @@
 import { useSelector } from "react-redux";
 import { useState } from "react";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
+import { useRouter } from "next/navigation";
+import { loadoutFinishSelect } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSelect";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
 import { loadoutActions } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { useLoadoutFinishForm } from "@/app/scheduling/dailyInventory/loadoutFinish/useLoadoutFinishForm";
 import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
 import { Container } from "@/components/Containers";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { loadoutHelper } from "@/app/scheduling/dailyInventory/components/loadoutFormHelpers";
-import { EquipmentFinishSection } from "./masterProductCard/equipmentSection/EquipmentFinishSection";
+import { EquipmentFinishSection } from "./components/EquipmentFinishSection";
 import { useAppDispatch } from "@/lib/hooks/redux";
 
 export function LoadoutFinishForm() {
   const appDispatch = useAppDispatch();
-  const { setShouldShowAllFinishLoadoutIssues } = useLoadoutForm();
+  const router = useRouter();
+  const { setShouldShowAllFinishLoadoutIssues } = useLoadoutFinishForm();
   const { upsertLoadout } = useLoadout();
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
   const finishLoadoutDoc = useSelector(loadoutSelect.finishLoadout);
-  const finishLoadout = useSelector(loadoutFormSelect.finishLoadout.data);
-  const hasIssues = useSelector(loadoutFormSelect.finishLoadout.finishValidation.hasIssues);
-  const tech = useSelector(loadoutFormSelect.tech);
-  const routeDate = useSelector(loadoutFormSelect.routeDate);
+  const finishLoadout = useSelector(loadoutFinishSelect.finishLoadout.data);
+  const hasIssues = useSelector(loadoutFinishSelect.finishLoadout.finishValidation.hasIssues);
+  const tech = useSelector(loadoutStartSelect.tech);
+  const routeDate = useSelector(loadoutStartSelect.routeDate);
 
   const isStored = finishLoadoutDoc?.isStored ?? false;
   // truckId and rideOnId come from the persisted doc — the tech doesn't re-enter them for the finish form.
@@ -54,6 +57,7 @@ export function LoadoutFinishForm() {
     if (success) {
       setSaveStatus("success");
       appDispatch(loadoutActions.clearFinishLoadout());
+      router.push("/scheduling/dailyInventory");
     } else {
       setSaveStatus("idle");
     }

@@ -1,79 +1,61 @@
 "use client";
-import { Container } from "@/components/Containers";
-import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCustomers";
-import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
-import { useRecentProduction } from "@/app/realGreen/customer/hooks/useRecentProduction";
-
-import { ChooseRouteDate } from "@/app/scheduling/dailyInventory/components/header/ChooseRouteDate";
-import { ChooseTech } from "@/app/scheduling/dailyInventory/components/header/ChooseTech";
-import { ChooseTruck } from "@/app/scheduling/dailyInventory/components/header/ChooseTruck";
-import { ChooseRideOn } from "@/app/scheduling/dailyInventory/components/header/ChooseRideOn";
-import { cn, md } from "@/style/utils";
-import { LoadoutForm } from "@/app/scheduling/dailyInventory/components/LoadoutForm";
-import { LoadoutFinishForm } from "@/app/scheduling/dailyInventory/components/LoadoutFinishForm";
-import { ScrollArea } from "@/style/components/scroll-area";
+import Link from "next/link";
+import { ClipboardList, ClipboardCheck } from "lucide-react";
 import { useSelector } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
-import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
-import { useEffect } from "react";
+import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { ServiceQuery } from "@/app/realGreen/customer/_lib/classes/ServiceQuery";
 
-export default function TechRoute() {
-  usePrintedCustomers({ autoLoad: true });
-  useRecentProduction();
-  useLoadoutFormDeps();
-
-  const { getLoadout } = useLoadout();
-
-  const tech = useSelector(loadoutFormSelect.tech);
-  const routeDate = useSelector(loadoutFormSelect.routeDate);
-  const finishLoadoutDoc = useSelector(loadoutSelect.finishLoadout);
-
-  // When tech + routeDate are both set, fetch the persisted loadout.
-  // If one exists, finishLoadoutDoc will be populated and we show the finish form.
-  useEffect(() => {
-    if (!tech || !routeDate) return;
-    getLoadout({ employeeId: tech, routeDate });
-  }, [tech, routeDate, getLoadout]);
-
-  // Show finish form if a persisted loadout exists for the current tech + routeDate
-  const showFinishForm =
-    !!finishLoadoutDoc &&
-    finishLoadoutDoc.employeeId === tech &&
-    finishLoadoutDoc.routeDate === routeDate;
+export default function DailyInventoryPage() {
+  const services = useSelector(centralSelect.services);
+  const printedServices = new ServiceQuery(services).byStatus("printed").results
+  //todo: get unique dates.  Display date dropdown.
+  // set formStart date based on selection
 
   return (
-    <Container
-      variant={"fluid"}
-      className="flex flex-col h-full overflow-hidden"
-    >
-      <div className={"text-2xl font-bold"}>Daily Inventory</div>
-      <ScrollArea className="flex-1 space-y-1">
-        <div
-          className={cn(
-            "flex flex-col gap-1",
-            md("flex-row gap-4 flex-wrap"),
-          )}
+    <div className="flex flex-col gap-6 py-6 max-w-2xl">
+      <p className="text-foreground/70 text-sm">
+        Select a task below to get started.
+      </p>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {/* Start Loadout Card */}
+        <Link
+          href="/scheduling/dailyInventory/loadoutStart"
+          className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md hover:border-primary/40"
         >
-          <div className={"w-48"}>
-            <ChooseTech />
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+              <ClipboardList className="h-5 w-5" />
+            </div>
+            <h2 className="text-lg font-semibold text-foreground">Start Loadout</h2>
           </div>
-          <div className={"w-40"}>
-            <ChooseRouteDate />
+          <p className="text-sm text-foreground/60">
+            Enter the starting product amounts loaded onto the truck before heading out on a route.
+          </p>
+          <span className="mt-auto text-sm font-medium text-primary group-hover:underline">
+            Enter amounts →
+          </span>
+        </Link>
+
+        {/* Finish Loadout Card */}
+        <Link
+          href="/scheduling/dailyInventory/loadoutFinish"
+          className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md hover:border-accent/40"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent group-hover:bg-accent/20 transition-colors">
+              <ClipboardCheck className="h-5 w-5" />
+            </div>
+            <h2 className="text-lg font-semibold text-foreground">Finish Loadout</h2>
           </div>
-          {!showFinishForm && (
-            <>
-              <div className={"w-36"}>
-                <ChooseTruck />
-              </div>
-              <div className={"w-36"}>
-                <ChooseRideOn />
-              </div>
-            </>
-          )}
-        </div>
-        {showFinishForm ? <LoadoutFinishForm /> : <LoadoutForm />}
-      </ScrollArea>
-    </Container>
+          <p className="text-sm text-foreground/60">
+            Record the remaining product amounts after completing the route to close out the loadout.
+          </p>
+          <span className="mt-auto text-sm font-medium text-accent group-hover:underline">
+            Enter amounts →
+          </span>
+        </Link>
+      </div>
+    </div>
   );
 }

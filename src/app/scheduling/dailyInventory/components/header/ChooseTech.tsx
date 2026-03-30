@@ -1,10 +1,7 @@
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { useSelector } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import {
-  MultiSelect,
-
-} from "@/components/multiselect/MultiSelect";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
+import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
 import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
@@ -12,9 +9,9 @@ import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 
 export function ChooseTech() {
-  const { setTech } = useLoadoutForm();
-  const techId = useSelector(loadoutFormSelect.tech);
-  const availableTechs = useSelector(loadoutFormSelect.availableTechs);
+  const { setTech } = useLoadoutStartForm();
+  const techId = useSelector(loadoutStartSelect.tech);
+  const availableTechs = useSelector(loadoutStartSelect.availableTechs);
   const employeeMap = useSelector(employeeSelect.employeeMap);
 
   return (

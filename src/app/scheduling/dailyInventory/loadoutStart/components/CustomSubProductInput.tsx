@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { loadoutFormActions } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
+import { loadoutStartActions } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
+import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { Input } from "@/style/components/input";
 import { X } from "lucide-react";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
@@ -16,9 +16,9 @@ export function CustomSubProductInput({
   subProductIndex,
 }: CustomSubProductInputProps) {
   const dispatch = useDispatch();
-  const { updateLoadout, removeProductFromLoadout } = useLoadoutForm();
+  const { updateLoadout, removeProductFromLoadout } = useLoadoutStartForm();
 
-  const loadout = useSelector(loadoutFormSelect.loadout.data);
+  const loadout = useSelector(loadoutStartSelect.loadout.data);
   const subProduct = loadout.subProducts[subProductIndex];
 
   // Build field path for validation
@@ -30,9 +30,9 @@ export function CustomSubProductInput({
 
   // Use proper validation selectors that respect touched state
   const shouldShow = useSelector(
-    loadoutFormSelect.loadout.startValidation.shouldShowFieldIssue(fieldPath)
+    loadoutStartSelect.loadout.startValidation.shouldShowFieldIssue(fieldPath),
   );
-  const allIssues = useSelector(loadoutFormSelect.loadout.startValidation.issues);
+  const allIssues = useSelector(loadoutStartSelect.loadout.startValidation.issues);
   const fieldIssue = shouldShow ? allIssues[fieldPath] : undefined;
 
   // Conditional render - check if subProduct exists AFTER all hooks
@@ -47,7 +47,7 @@ export function CustomSubProductInput({
           subProduct.startAmount,
           "app",
           "load",
-          subProduct.product.unitConfig
+          subProduct.product.unitConfig,
         )
       : "";
 
@@ -83,13 +83,13 @@ export function CustomSubProductInput({
                     loadValue,
                     "load",
                     "app",
-                    subProduct.product.unitConfig
+                    subProduct.product.unitConfig,
                   )
                 : null;
             handleAmountChange(appValue);
           }}
           onBlur={() => {
-            dispatch(loadoutFormActions.markStartLoadoutFieldTouched(fieldPath));
+            dispatch(loadoutStartActions.markStartLoadoutFieldTouched(fieldPath));
           }}
         />
         {fieldIssue && (

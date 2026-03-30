@@ -1,6 +1,6 @@
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { useSelector } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
@@ -8,9 +8,9 @@ import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent"
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 
 export function ChooseRouteDate() {
-  const { setRouteDate } = useLoadoutForm();
-  const routeDate = useSelector(loadoutFormSelect.routeDate);
-  const routeDates = useSelector(loadoutFormSelect.routeDates);
+  const { setRouteDate } = useLoadoutStartForm();
+  const routeDate = useSelector(loadoutStartSelect.routeDate);
+  const routeDates = useSelector(loadoutStartSelect.routeDates);
 
   return (
     <MultiSelect

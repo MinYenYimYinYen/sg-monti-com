@@ -1,10 +1,7 @@
 import { useSelector } from "react-redux";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
-import {
-  MultiSelect,
-
-} from "@/components/multiselect/MultiSelect";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
+import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
+import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { X } from "lucide-react";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
@@ -22,11 +19,11 @@ export function PendingProductSlot({ slotId }: PendingProductSlotProps) {
     updatePendingSlotCategory,
     addProductToLoadout,
     removePendingProductSlot,
-  } = useLoadoutForm();
+  } = useLoadoutStartForm();
 
-  const productCategories = useSelector(loadoutFormSelect.productCategories);
-  const productsForSlots = useSelector(loadoutFormSelect.productsForPendingSlots);
-  const pendingSlots = useSelector(loadoutFormSelect.pendingProductSlots);
+  const productCategories = useSelector(loadoutStartSelect.productCategories);
+  const productsForSlots = useSelector(loadoutStartSelect.productsForPendingSlots);
+  const pendingSlots = useSelector(loadoutStartSelect.pendingProductSlots);
 
   const slot = pendingSlots.find((s) => s.id === slotId);
   const availableProducts = productsForSlots.get(slotId) ?? [];

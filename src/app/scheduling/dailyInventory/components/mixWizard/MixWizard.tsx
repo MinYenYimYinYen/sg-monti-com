@@ -13,7 +13,7 @@ import { Input } from "@/style/components/input";
 import { Slider } from "@/style/components/slider";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
+import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { Number } from "@/components/Number";
 
 type PlannedEquipment = LoadoutBase["masters"][number]["equipments"][number];
@@ -36,7 +36,7 @@ export function MixWizard({
   const sliderWrapperRef = useRef<HTMLDivElement>(null);
 
   const totalKsfForMaster = useSelector(
-    loadoutFormSelect.totalKsfForMaster(masterProductId),
+    loadoutStartSelect.totalKsfForMaster(masterProductId),
   );
 
   // plannedAmount is in app units (Fl Oz or Gal); convert to Gal for comparison

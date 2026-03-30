@@ -4,18 +4,18 @@ import { ProductSub, isProductSubCore } from "@/app/realGreen/product/_lib/types
 import { ProductSingle, isProductSingleCore } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductCore } from "@/app/realGreen/product/_lib/types/ProductTypes";
 
-type PendingProductSlot = {
+export type PendingProductSlot = {
   id: string;
   masterId?: number;
   categoryFilter: string | null;
 };
 
-type PackageSelection = {
+export type PackageSelection = {
   masterProductId: number;
   selectedPackageId: string;
 };
 
-type LoadoutFormState = {
+type LoadoutStartState = {
   tech: string | null;
   routeDate: string | null;
   truckId: string | null;
@@ -28,11 +28,9 @@ type LoadoutFormState = {
   pendingSlotAmounts: Record<string, string>;
   /** Worker's equipment package selection per master product. Not persisted between sessions. */
   packageSelections: PackageSelection[];
-  finishLoadoutTouchedFields: Set<string>;
-  showAllFinishLoadoutIssues: boolean;
 };
 
-const initialState: LoadoutFormState = {
+const initialState: LoadoutStartState = {
   tech: null,
   routeDate: null,
   truckId: null,
@@ -44,18 +42,16 @@ const initialState: LoadoutFormState = {
   pendingSlotProducts: {},
   pendingSlotAmounts: {},
   packageSelections: [],
-  finishLoadoutTouchedFields: new Set<string>(),
-  showAllFinishLoadoutIssues: false,
 };
 
-export const loadoutFormSlice = createSlice({
-  name: "techRoute",
+export const loadoutStartSlice = createSlice({
+  name: "loadoutStart",
   initialState,
   reducers: {
-    setTech: (state, action) => {
+    setTech: (state, action: PayloadAction<string>) => {
       state.tech = action.payload;
     },
-    setRouteDate: (state, action) => {
+    setRouteDate: (state, action: PayloadAction<string>) => {
       state.routeDate = action.payload;
     },
     setTruckId: (state, action: PayloadAction<string | null>) => {
@@ -198,19 +194,6 @@ export const loadoutFormSlice = createSlice({
       state.showAllLoadoutIssues = action.payload;
     },
 
-    markFinishLoadoutFieldTouched: (state, action: PayloadAction<string>) => {
-      state.finishLoadoutTouchedFields.add(action.payload);
-    },
-
-    setShouldShowAllFinishLoadoutIssues: (state, action: PayloadAction<boolean>) => {
-      state.showAllFinishLoadoutIssues = action.payload;
-    },
-
-    clearFinishLoadoutForm: (state) => {
-      state.finishLoadoutTouchedFields = new Set<string>();
-      state.showAllFinishLoadoutIssues = false;
-    },
-
     setPackageSelection: (
       state,
       action: PayloadAction<{ masterProductId: number; selectedPackageId: string }>,
@@ -246,5 +229,5 @@ export const loadoutFormSlice = createSlice({
   },
 });
 
-export const loadoutFormActions = { ...loadoutFormSlice.actions };
-export const loadoutFormReducer = loadoutFormSlice.reducer;
+export const loadoutStartActions = { ...loadoutStartSlice.actions };
+export const loadoutStartReducer = loadoutStartSlice.reducer;
