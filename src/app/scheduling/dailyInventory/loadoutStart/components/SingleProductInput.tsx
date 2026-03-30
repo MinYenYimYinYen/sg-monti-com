@@ -63,13 +63,18 @@ export function SingleProductInput({ singleIndex }: SingleProductInputProps) {
     <div
       className={"flex items-center gap-2 bg-accent/10 rounded px-2 py-1"}
     >
-      <div className={"flex-1 text-sm text-foreground/90"}>
-        {single.product.description}
+      <div>
+        <div className={"flex-1 text-sm text-foreground/90"}>
+          {single.product.description}
+        </div>
+        <div className={"text-xs text-foreground/70"}>
+          {single.product.unitConfig.conversions.load.unitLabel}
+        </div>
       </div>
       <div className="flex flex-col items-end">
         <Input
           type="number"
-          placeholder="Start amount"
+          placeholder={single.product.unitConfig.conversions.load.unitLabel}
           className={`w-24 ${fieldIssue ? "border-red-500" : ""}`}
           value={displayValue}
           onChange={(e) => {

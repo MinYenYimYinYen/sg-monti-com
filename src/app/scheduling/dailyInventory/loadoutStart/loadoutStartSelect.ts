@@ -76,6 +76,19 @@ const selectPendingSlotAmounts = (state: AppState) => state.loadoutStart.pending
 const selectPackageSelections = (state: AppState) => state.loadoutStart.packageSelections;
 const selectTruckId = (state: AppState) => state.loadoutStart.truckId;
 const selectRideOnId = (state: AppState) => state.loadoutStart.rideOnId;
+const selectTruckTouched = (state: AppState) => state.loadoutStart.truckTouched;
+const selectRideOnTouched = (state: AppState) => state.loadoutStart.rideOnTouched;
+const selectShowAllLoadoutIssues = (state: AppState) => state.loadoutStart.showAllLoadoutIssues;
+
+const selectShowTruckError = createSelector(
+  [selectTruckId, selectTruckTouched, selectShowAllLoadoutIssues],
+  (truckId, truckTouched, showAll) => !truckId && (truckTouched || showAll),
+);
+
+const selectShowRideOnError = createSelector(
+  [selectRideOnId, selectRideOnTouched, selectShowAllLoadoutIssues],
+  (rideOnId, rideOnTouched, showAll) => !rideOnId && (rideOnTouched || showAll),
+);
 
 const selectUsedProductIds = createSelector(
   [selectLoadout],
@@ -231,4 +244,6 @@ export const loadoutStartSelect = {
   isFieldTouched: selectIsFieldTouched,
   serviceResolvedLoadout: selectServiceResolvedLoadout,
   totalKsfForMaster: selectTotalKsfForMaster,
+  showTruckError: selectShowTruckError,
+  showRideOnError: selectShowRideOnError,
 };

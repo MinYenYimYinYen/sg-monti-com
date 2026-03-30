@@ -9,8 +9,9 @@ import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent"
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 
 export function ChooseTruck() {
-  const { setTruckId } = useLoadoutStartForm();
+  const { setTruckId, markTruckTouched } = useLoadoutStartForm();
   const truckId = useSelector(loadoutStartSelect.truckId);
+  const showError = useSelector(loadoutStartSelect.showTruckError);
 
   return (
     <MultiSelect
@@ -20,7 +21,10 @@ export function ChooseTruck() {
       getDisplayValue={(id) => trucks.find((t) => t.machineId === id)?.name ?? id}
       className="bg-accent/20 rounded-md"
     >
-      <MultiSelectTrigger>
+      <MultiSelectTrigger
+        className={showError ? "border-destructive" : undefined}
+        onBlur={markTruckTouched}
+      >
         <MultiSelectValue placeholder="Select truck" />
       </MultiSelectTrigger>
       <MultiSelectContent>

@@ -9,8 +9,9 @@ import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent"
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 
 export function ChooseRideOn() {
-  const { setRideOnId } = useLoadoutStartForm();
+  const { setRideOnId, markRideOnTouched } = useLoadoutStartForm();
   const rideOnId = useSelector(loadoutStartSelect.rideOnId);
+  const showError = useSelector(loadoutStartSelect.showRideOnError);
 
   return (
     <MultiSelect
@@ -20,7 +21,10 @@ export function ChooseRideOn() {
       getDisplayValue={(id) => rideOns.find((r) => r.machineId === id)?.name ?? id}
       className="bg-accent/20 rounded-md"
     >
-      <MultiSelectTrigger>
+      <MultiSelectTrigger
+        className={showError ? "border-destructive" : undefined}
+        onBlur={markRideOnTouched}
+      >
         <MultiSelectValue placeholder="Select ride-on" />
       </MultiSelectTrigger>
       <MultiSelectContent>

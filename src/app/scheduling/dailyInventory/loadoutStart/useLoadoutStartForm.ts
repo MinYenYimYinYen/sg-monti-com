@@ -71,6 +71,14 @@ export function useLoadoutStartForm() {
     dispatch(loadoutStartActions.markStartLoadoutFieldTouched(fieldPath));
   };
 
+  const markTruckTouched = () => {
+    dispatch(loadoutStartActions.markTruckTouched());
+  };
+
+  const markRideOnTouched = () => {
+    dispatch(loadoutStartActions.markRideOnTouched());
+  };
+
   const setShouldShowAllStartLoadoutIssues = (show: boolean) => {
     dispatch(loadoutStartActions.setShouldShowAllStartLoadoutIssues(show));
   };
@@ -96,6 +104,8 @@ export function useLoadoutStartForm() {
     setPackageSelection,
     clearPackageSelections,
     markStartLoadoutFieldTouched,
+    markTruckTouched,
+    markRideOnTouched,
     setShouldShowAllStartLoadoutIssues,
     clearStartForm,
   };

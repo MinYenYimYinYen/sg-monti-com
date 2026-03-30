@@ -20,6 +20,8 @@ type LoadoutStartState = {
   routeDate: string | null;
   truckId: string | null;
   rideOnId: string | null;
+  truckTouched: boolean;
+  rideOnTouched: boolean;
   loadout: LoadoutBase;
   loadoutTouchedFields: Set<string>;
   showAllLoadoutIssues: boolean;
@@ -35,6 +37,8 @@ const initialState: LoadoutStartState = {
   routeDate: null,
   truckId: null,
   rideOnId: null,
+  truckTouched: false,
+  rideOnTouched: false,
   loadout: baseLoadout,
   loadoutTouchedFields: new Set<string>(),
   showAllLoadoutIssues: false,
@@ -59,6 +63,12 @@ export const loadoutStartSlice = createSlice({
     },
     setRideOnId: (state, action: PayloadAction<string | null>) => {
       state.rideOnId = action.payload;
+    },
+    markTruckTouched: (state) => {
+      state.truckTouched = true;
+    },
+    markRideOnTouched: (state) => {
+      state.rideOnTouched = true;
     },
     updateLoadout: (state, action: PayloadAction<Partial<LoadoutBase>>) => {
       state.loadout = { ...state.loadout, ...action.payload };
@@ -218,6 +228,8 @@ export const loadoutStartSlice = createSlice({
       state.routeDate = null;
       state.truckId = null;
       state.rideOnId = null;
+      state.truckTouched = false;
+      state.rideOnTouched = false;
       state.loadout = baseLoadout;
       state.loadoutTouchedFields = new Set<string>();
       state.showAllLoadoutIssues = false;
