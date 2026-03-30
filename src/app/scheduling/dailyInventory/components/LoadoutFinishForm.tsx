@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
 import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
 import { loadoutActions } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
@@ -10,15 +10,10 @@ import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { loadoutHelper } from "@/app/scheduling/dailyInventory/components/loadoutFormHelpers";
 import { EquipmentFinishSection } from "./masterProductCard/equipmentSection/EquipmentFinishSection";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
-import { equipmentSelect } from "@/app/equipment/equipmentSelect";
-import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { baseProductMaster } from "@/app/realGreen/product/_lib/baseProduct";
 
 export function LoadoutFinishForm() {
   const appDispatch = useAppDispatch();
-  const { updateFinishLoadout, setShouldShowAllFinishLoadoutIssues, clearFinishLoadoutForm } = useLoadoutForm();
+  const { setShouldShowAllFinishLoadoutIssues } = useLoadoutForm();
   const { upsertLoadout } = useLoadout();
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -28,109 +23,13 @@ export function LoadoutFinishForm() {
   const hasIssues = useSelector(loadoutFormSelect.finishLoadout.finishValidation.hasIssues);
   const tech = useSelector(loadoutFormSelect.tech);
   const routeDate = useSelector(loadoutFormSelect.routeDate);
-  const truckId = useSelector(loadoutFormSelect.truckId);
-  const rideOnId = useSelector(loadoutFormSelect.rideOnId);
-
-  const appMethodMap = useSelector(appMethodSelect.appMethodMap);
-  const equipmentMap = useSelector(equipmentSelect.equipmentMap);
-  const productMastersMap = useSelector(productSelect.productMastersMap);
-  const productSubsMap = useSelector(productSelect.productSubsMap);
 
   const isStored = finishLoadoutDoc?.isStored ?? false;
+  // truckId and rideOnId come from the persisted doc — the tech doesn't re-enter them for the finish form.
+  const truckId = finishLoadoutDoc?.truckId ?? null;
+  const rideOnId = finishLoadoutDoc?.rideOnId ?? null;
 
-  // Hydrate finishLoadout in Redux from the persisted LoadoutDoc when it changes.
-  // This converts the ID-only LoadoutDoc into a full LoadoutBase with hydrated product objects.
-  useEffect(() => {
-    if (!finishLoadoutDoc) return;
-
-    const hydratedLoadout: LoadoutBase = {
-      masters: finishLoadoutDoc.masters.map((masterDoc) => {
-        const masterProduct = productMastersMap.get(masterDoc.productId) ?? baseProductMaster;
-
-        return {
-          productId: masterDoc.productId,
-          product: masterProduct,
-          plannedAmount: masterDoc.plannedAmount,
-          startAmount: masterDoc.startAmount,
-          finishAmount: masterDoc.finishAmount,
-          unitId: masterDoc.unitId,
-          unit: masterProduct.unit,
-          equipments: masterDoc.equipments.map((eDoc) => {
-            const equipment = equipmentMap.get(eDoc.equipmentId);
-            const appMethod = equipment
-              ? appMethodMap.get(equipment.defaultAppMethodId)
-              : undefined;
-            const mixProduct = productSubsMap.get(eDoc.mixProductId);
-
-            // Fall back to first equipment's appMethod if not found
-            const resolvedAppMethod = appMethod ?? masterProduct.equipmentPackages[0]?.equipments[0]?.appMethod;
-
-            return {
-              equipmentId: eDoc.equipmentId,
-              appMethod: resolvedAppMethod!,
-              mixProductId: eDoc.mixProductId,
-              mixProduct: mixProduct!,
-              mixProductUnitId: eDoc.mixProductUnitId,
-              mixProductUnit: mixProduct?.unit ?? masterProduct.unit,
-              plannedAmount: eDoc.plannedAmount,
-              startAmount: eDoc.startAmount,
-              finishAmount: eDoc.finishAmount,
-              subProducts: eDoc.subProducts.map((sDoc) => {
-                const sub = productSubsMap.get(sDoc.productId);
-                return {
-                  productId: sDoc.productId,
-                  product: sub!,
-                  plannedAmount: sDoc.plannedAmount,
-                  startAmount: sDoc.startAmount,
-                  finishAmount: sDoc.finishAmount,
-                  unitId: sDoc.unitId,
-                  unit: sub?.unit ?? masterProduct.unit,
-                };
-              }),
-            };
-          }),
-          subProducts: masterDoc.subProducts.map((sDoc) => {
-            const sub = productSubsMap.get(sDoc.productId);
-            return {
-              productId: sDoc.productId,
-              product: sub!,
-              plannedAmount: sDoc.plannedAmount,
-              startAmount: sDoc.startAmount,
-              finishAmount: sDoc.finishAmount,
-              unitId: sDoc.unitId,
-              unit: sub?.unit ?? masterProduct.unit,
-            };
-          }),
-        };
-      }),
-      singles: finishLoadoutDoc.singles.map((sDoc) => {
-        const single = productSubsMap.get(sDoc.productId);
-        return {
-          productId: sDoc.productId,
-          product: single as any,
-          unitId: sDoc.unitId,
-          unit: single?.unit ?? { unitId: sDoc.unitId, desc: "", metric: "" } as any,
-          startAmount: sDoc.startAmount,
-          finishAmount: sDoc.finishAmount,
-        };
-      }),
-      subProducts: finishLoadoutDoc.subProducts.map((sDoc) => {
-        const sub = productSubsMap.get(sDoc.productId);
-        return {
-          productId: sDoc.productId,
-          product: sub!,
-          unitId: sDoc.unitId,
-          unit: sub?.unit ?? { unitId: sDoc.unitId, desc: "", metric: "" } as any,
-          startAmount: sDoc.startAmount,
-          finishAmount: sDoc.finishAmount,
-        };
-      }),
-    };
-
-    updateFinishLoadout(hydratedLoadout);
-  }, [finishLoadoutDoc, productMastersMap, productSubsMap, equipmentMap, appMethodMap, updateFinishLoadout]);
-
-  const canSubmit = !!tech && !!routeDate && !!truckId && !isStored;
+  const canSubmit = !!tech && !!routeDate && !!truckId && !isStored && !hasIssues;
 
   const handleSave = async () => {
     if (hasIssues) {
@@ -154,7 +53,6 @@ export function LoadoutFinishForm() {
     const success = await upsertLoadout(loadoutDoc);
     if (success) {
       setSaveStatus("success");
-      clearFinishLoadoutForm();
       appDispatch(loadoutActions.clearFinishLoadout());
     } else {
       setSaveStatus("idle");

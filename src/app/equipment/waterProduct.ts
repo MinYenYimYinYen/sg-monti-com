@@ -9,7 +9,7 @@ import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfig
  *
  * Sentinel product ID for the water carrier sub-product.
  * Negative to avoid collision with real RealGreen product IDs.
- * Used by hydrateLoadoutInventory and loadout selectors to identify
+ * Used by hydratePlannedLoadout and loadout selectors to identify
  * the auto-generated water row when an AppMethod has needsWater = true.
  */
 export const WATER_PRODUCT_ID = -2;
@@ -95,7 +95,7 @@ const defaultWaterUnitConfig = buildWaterUnitConfig(false);
  * Not stored in MongoDB — synthesized at runtime when an AppMethod
  * with needsWater = true is associated with a master product.
  *
- * Uses showFlOz: false (Gal-only) as the default. hydrateLoadoutInventory
+ * Uses showFlOz: false (Gal-only) as the default. hydratePlannedLoadout
  * overrides unitConfig/unitConfigDisplay per equipment entry using
  * buildWaterUnitConfig(entry.showFlOz).
  */

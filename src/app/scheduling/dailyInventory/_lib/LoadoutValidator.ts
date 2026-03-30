@@ -43,7 +43,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
             }
 
             if (parent.startAmount !== null && value > parent.startAmount) {
-              return `Finish amount cannot be greater than start amount (${parent.startAmount})`;
+              return `Finish amount cannot be greater than start amount`;
             }
 
             return null;
@@ -72,7 +72,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
               }
 
               if (parent.startAmount !== null && value > parent.startAmount) {
-                return `Finish amount cannot be greater than start amount (${parent.startAmount})`;
+                return `Finish amount cannot be greater than start amount`;
               }
 
               return null;
@@ -103,7 +103,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
             }
 
             if (parent.startAmount !== null && value > parent.startAmount) {
-              return `Finish amount cannot be greater than start amount (${parent.startAmount})`;
+              return `Finish amount cannot be greater than start amount`;
             }
 
             return null;
@@ -134,7 +134,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
           }
 
           if (parent.startAmount !== null && value > parent.startAmount) {
-            return `Finish amount cannot be greater than start amount (${parent.startAmount})`;
+            return `Finish amount cannot be greater than start amount`;
           }
 
           return null;
@@ -164,7 +164,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
           }
 
           if (parent.startAmount !== null && value > parent.startAmount) {
-            return `Finish amount cannot be greater than start amount (${parent.startAmount})`;
+            return `Finish amount cannot be greater than start amount`;
           }
 
           return null;

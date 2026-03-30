@@ -9,6 +9,8 @@ import { AdditionalProductsSection } from "./additionalProductsSection/Additiona
 import { Container } from "@/components/Containers";
 import { loadoutHelper } from "@/app/scheduling/dailyInventory/components/loadoutFormHelpers";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
+import { baseLoadout } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
 
 export function LoadoutForm() {
   const dispatch = useDispatch();
@@ -26,19 +28,27 @@ export function LoadoutForm() {
   const truckId = useSelector(loadoutFormSelect.truckId);
   const rideOnId = useSelector(loadoutFormSelect.rideOnId);
 
-  // Initialize startLoadout with structure from loadoutInventory
+  // Initialize (or re-initialize) the loadout whenever the inventory structure changes.
+  // This handles both the initial load and package selection changes, which alter which
+  // equipment entries are present.
   useEffect(() => {
-    if (
-      loadoutInventory.masters.length > 0 &&
-      loadout.masters.length === 0
-    ) {
-      const initializedLoadout =
-        loadoutHelper.initializeLoadout(loadoutInventory);
-      updateLoadout(initializedLoadout);
-    }
-  }, [loadoutInventory, loadout.masters.length, loadout, updateLoadout]);
+    if (loadoutInventory.masters.length === 0) return;
 
-  const canSubmit = !!tech && !!routeDate && !!truckId;
+    const inventoryStructure = loadoutInventory.masters.map((m) => ({
+      productId: m.product.productId,
+      equipmentIds: m.equipments.map((e) => e.equipmentId),
+    }));
+    const loadoutStructure = loadout.masters.map((m) => ({
+      productId: m.productId,
+      equipmentIds: m.equipments.map((e) => e.equipmentId),
+    }));
+
+    if (!deepEqual(inventoryStructure, loadoutStructure)) {
+      updateLoadout(loadoutHelper.initializeLoadout(loadoutInventory));
+    }
+  }, [loadoutInventory, loadout, updateLoadout]);
+
+  const canSubmit = !!tech && !!routeDate && !!truckId && !hasIssues;
 
   const handleSave = async () => {
     if (hasIssues) {
@@ -61,6 +71,9 @@ export function LoadoutForm() {
     });
 
     const success = await upsertLoadout(loadoutDoc);
+    if (success) {
+      dispatch(loadoutFormActions.clearStartForm());
+    }
     setSaveStatus(success ? "success" : "idle");
   };
 

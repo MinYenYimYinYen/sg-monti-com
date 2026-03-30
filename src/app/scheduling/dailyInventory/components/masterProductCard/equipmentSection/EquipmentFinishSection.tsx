@@ -3,7 +3,7 @@
 import { useSelector, useDispatch } from "react-redux";
 import { loadoutFormSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSelect";
 import { loadoutFormActions } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
-import { useLoadoutForm } from "@/app/scheduling/dailyInventory/_lib/useLoadoutForm";
+import { loadoutActions } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
 import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { getFieldPath } from "@/lib/validation/getFieldPath";
@@ -21,7 +21,6 @@ export function EquipmentFinishSection({
   isStored,
 }: EquipmentFinishSectionProps) {
   const dispatch = useDispatch();
-  const { updateFinishLoadout } = useLoadoutForm();
 
   const finishLoadout = useSelector(loadoutFormSelect.finishLoadout.data);
 
@@ -60,53 +59,47 @@ export function EquipmentFinishSection({
 
   const tracksTankLevel = finishEntry.appMethod.tracksTankLevel;
 
-  const showFlOz =
-    finishEntry.mixProduct.unitConfig.conversions.app.unitLabel === "Fl Oz";
-
   const startAmountDisplay =
     finishEntry.startAmount != null
       ? finishEntry.mixProduct.unitConfigDisplay.format({
           amount: finishEntry.startAmount,
-          targetContexts: showFlOz ? ["load", "app"] : ["load"],
+          targetContexts: ["load"],
           rounding: "ceil",
         }).formattedString
       : "—";
 
   const handleFinishAmountChange = (value: number | null) => {
-    if (!finishMaster) return;
+    // Derive sub-product finish amounts proportionally from the finish tank level.
+    const ratio =
+      value != null && finishEntry.startAmount != null && finishEntry.startAmount > 0
+        ? value / finishEntry.startAmount
+        : null;
 
-    const updatedMasters = finishLoadout.masters.map((m) => {
-      if (m.product.productId === masterProductId) {
-        return {
-          ...m,
-          equipments: m.equipments.map((e) => {
-            if (e.equipmentId === equipmentId) {
-              // Derive sub-product finish amounts proportionally from the finish tank level.
-              const ratio =
-                value != null && finishEntry.startAmount != null && finishEntry.startAmount > 0
-                  ? value / finishEntry.startAmount
-                  : null;
+    dispatch(
+      loadoutActions.updateFinishLoadoutEquipmentAmount({
+        masterProductId,
+        equipmentId,
+        field: "finishAmount",
+        value,
+      }),
+    );
 
-              return {
-                ...e,
-                finishAmount: value,
-                subProducts: e.subProducts.map((sub) => ({
-                  ...sub,
-                  finishAmount:
-                    ratio != null && sub.startAmount != null
-                      ? Math.round(ratio * sub.startAmount * 100) / 100
-                      : null,
-                })),
-              };
-            }
-            return e;
-          }),
-        };
-      }
-      return m;
+    // Propagate proportional finish amounts to sub-products.
+    finishEntry.subProducts.forEach((sub) => {
+      const subFinish =
+        ratio != null && sub.startAmount != null
+          ? Math.round(ratio * sub.startAmount * 100) / 100
+          : null;
+      dispatch(
+        loadoutActions.updateFinishLoadoutEquipmentSubAmount({
+          masterProductId,
+          equipmentId,
+          subProductId: sub.product.productId,
+          field: "finishAmount",
+          value: subFinish,
+        }),
+      );
     });
-
-    updateFinishLoadout({ masters: updatedMasters });
   };
 
   const displayValue =

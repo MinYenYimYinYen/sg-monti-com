@@ -41,7 +41,7 @@ export type PackageSelection = {
   selectedPackageId: string;
 };
 
-export function hydrateLoadoutInventory(params: {
+export function hydratePlannedLoadout(params: {
   servDoc: ServiceDoc;
   servCodeMap: Map<string, ServCode>;
   packageSelections?: PackageSelection[];

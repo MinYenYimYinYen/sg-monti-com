@@ -2,9 +2,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import {
   loadoutFormActions,
 } from "@/app/scheduling/dailyInventory/_lib/loadoutFormSlice";
-import {
-  LoadoutBase,
-} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 
@@ -71,10 +69,6 @@ export function useLoadoutForm() {
     dispatch(loadoutFormActions.clearPackageSelections());
   };
 
-  const updateFinishLoadout = (loadout: Partial<LoadoutBase>) => {
-    dispatch(loadoutFormActions.updateFinishLoadout(loadout));
-  };
-
   const markFinishLoadoutFieldTouched = (fieldPath: string) => {
     dispatch(loadoutFormActions.markFinishLoadoutFieldTouched(fieldPath));
   };
@@ -103,7 +97,6 @@ export function useLoadoutForm() {
     clearPendingSlotInputs,
     setPackageSelection,
     clearPackageSelections,
-    updateFinishLoadout,
     markFinishLoadoutFieldTouched,
     setShouldShowAllFinishLoadoutIssues,
     clearFinishLoadoutForm,

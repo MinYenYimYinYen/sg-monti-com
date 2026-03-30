@@ -1,8 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import {
-  baseLoadout,
-  LoadoutBase,
-} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutBase, baseLoadout } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { ProductSub, isProductSubCore } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle, isProductSingleCore } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductCore } from "@/app/realGreen/product/_lib/types/ProductTypes";
@@ -31,8 +28,6 @@ type LoadoutFormState = {
   pendingSlotAmounts: Record<string, string>;
   /** Worker's equipment package selection per master product. Not persisted between sessions. */
   packageSelections: PackageSelection[];
-  /** Finish loadout — populated from the persisted LoadoutDoc when the worker opens the finish form. */
-  finishLoadout: LoadoutBase;
   finishLoadoutTouchedFields: Set<string>;
   showAllFinishLoadoutIssues: boolean;
 };
@@ -49,7 +44,6 @@ const initialState: LoadoutFormState = {
   pendingSlotProducts: {},
   pendingSlotAmounts: {},
   packageSelections: [],
-  finishLoadout: baseLoadout,
   finishLoadoutTouchedFields: new Set<string>(),
   showAllFinishLoadoutIssues: false,
 };
@@ -204,10 +198,6 @@ export const loadoutFormSlice = createSlice({
       state.showAllLoadoutIssues = action.payload;
     },
 
-    updateFinishLoadout: (state, action: PayloadAction<Partial<LoadoutBase>>) => {
-      state.finishLoadout = { ...state.finishLoadout, ...action.payload };
-    },
-
     markFinishLoadoutFieldTouched: (state, action: PayloadAction<string>) => {
       state.finishLoadoutTouchedFields.add(action.payload);
     },
@@ -217,7 +207,6 @@ export const loadoutFormSlice = createSlice({
     },
 
     clearFinishLoadoutForm: (state) => {
-      state.finishLoadout = baseLoadout;
       state.finishLoadoutTouchedFields = new Set<string>();
       state.showAllFinishLoadoutIssues = false;
     },
@@ -239,6 +228,20 @@ export const loadoutFormSlice = createSlice({
 
     clearPackageSelections: (state) => {
       state.packageSelections = [];
+    },
+
+    clearStartForm: (state) => {
+      state.tech = null;
+      state.routeDate = null;
+      state.truckId = null;
+      state.rideOnId = null;
+      state.loadout = baseLoadout;
+      state.loadoutTouchedFields = new Set<string>();
+      state.showAllLoadoutIssues = false;
+      state.packageSelections = [];
+      state.pendingProductSlots = [];
+      state.pendingSlotProducts = {};
+      state.pendingSlotAmounts = {};
     },
   },
 });

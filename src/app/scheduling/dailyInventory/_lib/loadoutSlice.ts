@@ -1,5 +1,5 @@
 import { LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { LoadoutContract } from "@/app/scheduling/dailyInventory/api/LoadoutContract";
 
@@ -34,6 +34,44 @@ const loadoutSlice = createSlice({
   reducers: {
     clearFinishLoadout: (state) => {
       state.finishLoadout = null;
+    },
+    /** Patches finish amounts directly on the persisted LoadoutDoc. The selector re-derives the display. */
+    updateFinishLoadoutEquipmentAmount: (
+      state,
+      action: PayloadAction<{
+        masterProductId: number;
+        equipmentId: string;
+        field: "finishAmount";
+        value: number | null;
+      }>,
+    ) => {
+      if (!state.finishLoadout) return;
+      const { masterProductId, equipmentId, field, value } = action.payload;
+      const master = state.finishLoadout.masters.find((m) => m.productId === masterProductId);
+      if (!master) return;
+      const equipment = master.equipments.find((e) => e.equipmentId === equipmentId);
+      if (!equipment) return;
+      equipment[field] = value;
+    },
+    updateFinishLoadoutEquipmentSubAmount: (
+      state,
+      action: PayloadAction<{
+        masterProductId: number;
+        equipmentId: string;
+        subProductId: number;
+        field: "finishAmount";
+        value: number | null;
+      }>,
+    ) => {
+      if (!state.finishLoadout) return;
+      const { masterProductId, equipmentId, subProductId, field, value } = action.payload;
+      const master = state.finishLoadout.masters.find((m) => m.productId === masterProductId);
+      if (!master) return;
+      const equipment = master.equipments.find((e) => e.equipmentId === equipmentId);
+      if (!equipment) return;
+      const sub = equipment.subProducts.find((s) => s.productId === subProductId);
+      if (!sub) return;
+      sub[field] = value;
     },
   },
   extraReducers: (builder) => {

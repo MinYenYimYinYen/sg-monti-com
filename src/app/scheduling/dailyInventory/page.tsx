@@ -61,12 +61,16 @@ export default function TechRoute() {
           <div className={"w-40"}>
             <ChooseRouteDate />
           </div>
-          <div className={"w-36"}>
-            <ChooseTruck />
-          </div>
-          <div className={"w-36"}>
-            <ChooseRideOn />
-          </div>
+          {!showFinishForm && (
+            <>
+              <div className={"w-36"}>
+                <ChooseTruck />
+              </div>
+              <div className={"w-36"}>
+                <ChooseRideOn />
+              </div>
+            </>
+          )}
         </div>
         {showFinishForm ? <LoadoutFinishForm /> : <LoadoutForm />}
       </ScrollArea>

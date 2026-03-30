@@ -8,10 +8,11 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { createValidationSelectors } from "@/lib/validation/createValidationSelectors";
 import { LoadoutValidator, LoadoutPhase } from "@/app/scheduling/dailyInventory/_lib/LoadoutValidator";
-import { hydrateLoadoutInventory, getProductMasters } from "@/app/realGreen/customer/selectors/hydrateLoadoutInventory";
+import { hydratePlannedLoadout, getProductMasters } from "@/app/realGreen/customer/selectors/hydratePlannedLoadout";
 import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
 
 const selectAuthTech = createSelector([authSelect.user], (user) => user?.saId);
 const selectTech = (state: AppState) => state.loadoutForm.tech;
@@ -198,7 +199,7 @@ const selectIsFieldTouched = (fieldPath: string) =>
   )
 
 /**
- * selectServiceResolvedLoadout — re-runs hydrateLoadoutInventory for each service
+ * selectServiceResolvedLoadout — re-runs hydratePlannedLoadout for each service
  * with the worker's current packageSelections, then aggregates across all services.
  *
  * This is the package-aware version of the inventory. service.loadoutInventory (baked into
@@ -208,7 +209,7 @@ const selectServiceResolvedLoadout = createSelector(
   [selectServices, selectPackageSelections, progServBaseSelect.basicServCodeMap],
   (services, packageSelections, servCodeMap) => {
     const inventories = services.map((service) =>
-      hydrateLoadoutInventory({ servDoc: service, servCodeMap, packageSelections }),
+      hydratePlannedLoadout({ servDoc: service, servCodeMap, packageSelections }),
     );
     return aggregateLoadoutInventory(inventories);
   },
@@ -233,7 +234,7 @@ const selectTotalKsfForMaster = (masterProductId: number) =>
       }, 0),
   );
 
-const selectFinishLoadout = (state: AppState) => state.loadoutForm.finishLoadout;
+const selectFinishLoadout = loadoutSelect.hydratedFinishLoadout;
 const selectFinishLoadoutTouchedFields = (state: AppState) => state.loadoutForm.finishLoadoutTouchedFields;
 const selectShowAllFinishLoadoutIssues = (state: AppState) => state.loadoutForm.showAllFinishLoadoutIssues;
 
