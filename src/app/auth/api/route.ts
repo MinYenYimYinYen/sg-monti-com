@@ -36,17 +36,16 @@ const handlers: HandlerMap<AuthContract> = {
     handler: async ({ saId }) => {
       await connectToMongoDB();
 
-      const alreadyExists = !!(await UserModel.findOne({ saId }));
+      const alreadyExists = !!(await UserModel.findOne({ saId: { $regex: new RegExp(`^${saId}$`, "i") } }));
       // If exists locally, it's invalid for registration.
       // If not, check RealGreen.
+      const rgEmployee = await rgApi<EmployeeRaw | null>({
+        path: `/Employee/${saId}`,
+        method: "GET",
+      });
       const isValid =
         !alreadyExists &&
-        (
-          await rgApi<EmployeeRaw | null>({
-            path: `/Employee/${saId}`,
-            method: "GET",
-          })
-        )?.id === saId;
+        rgEmployee?.id?.toLowerCase() === saId.toLowerCase();
 
       const checkedId: CheckedId = {
         checked: true,

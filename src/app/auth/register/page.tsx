@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/_hooks/useAuth";
 import { RegisterForm } from "@/app/auth/_types/authTypes";
@@ -13,12 +13,23 @@ import { AuthCard } from "@/app/auth/_components/AuthCard";
 import { FormGroup } from "@/components/FormGroup";
 import { InfoBox } from "@/style/componentsLegacy/InfoBox";
 import { Label } from "@/style/components/label";
-import {Button} from "@/style/components/button";
+import { Button } from "@/style/components/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/style/components/alert-dialog";
 
 export default function RegisterPage() {
-  const router = useRouter(); //todo: after registration, route to "/"
-  const { register, checkEligibility, resetEligibility } = useAuth();
+  const router = useRouter();
+  const { register, checkEligibility, resetEligibility, logout } = useAuth();
   const eligibility = useSelector(authSelect.registrationEligibility);
+  const isAuthenticated = useSelector(authSelect.isAuthenticated);
+  const [showDialog, setShowDialog] = useState(false);
 
   const [form, setForm] = useState<RegisterForm>({
     userName: "",
@@ -41,9 +52,22 @@ export default function RegisterPage() {
       toast.error("Please fill in all fields");
       return;
     }
+
     checkEligibility({
       saId: form.saId,
     });
+  };
+
+  // Show dialog when registration succeeds (isAuthenticated becomes true)
+  useEffect(() => {
+    if (isAuthenticated) {
+      setShowDialog(true);
+    }
+  }, [isAuthenticated]);
+
+  const handleLoginRedirect = () => {
+    logout();
+    router.push("/auth/login");
   };
 
   // STEP 2: Complete Registration
@@ -124,99 +148,117 @@ export default function RegisterPage() {
 
   // RENDER: Step 2 (Profile Creation)
   return (
-    <AuthCard
-      title="Complete Registration"
-      description="Set up your profile and password."
-      footer={
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => resetEligibility()}
-          className="w-full"
-        >
-          Back
-        </Button>
-      }
-    >
-      <form onSubmit={handleRegister} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
-          <div className="text-left">ID: {form.saId}</div>
-          <div className="text-right">{form.email}</div>
-        </div>
+    <>
+      <AuthCard
+        title="Complete Registration"
+        description="Set up your profile and password."
+        footer={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => resetEligibility()}
+            className="w-full"
+          >
+            Back
+          </Button>
+        }
+      >
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+            <div className="text-left">ID: {form.saId}</div>
+            <div className="text-right">{form.email}</div>
+          </div>
 
-        <FormGroup>
-          <Label htmlFor="userName">Username</Label>
-          <Input
-            type="text"
-            id="userName"
-            name="userName"
-            value={form.userName}
-            onChange={handleChange}
-            required
-            placeholder="Choose a username"
-            autoComplete="username"
-          />
-        </FormGroup>
-
-        <div className="grid grid-cols-2 gap-4">
           <FormGroup>
-            <Label htmlFor="firstName">First Name</Label>
+            <Label htmlFor="userName">Username</Label>
             <Input
               type="text"
-              id="firstName"
-              name="firstName"
-              value={form.firstName}
+              id="userName"
+              name="userName"
+              value={form.userName}
               onChange={handleChange}
               required
-              autoComplete="given-name"
+              placeholder="Choose a username"
+              autoComplete="username"
             />
           </FormGroup>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormGroup>
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                type="text"
+                id="firstName"
+                name="firstName"
+                value={form.firstName}
+                onChange={handleChange}
+                required
+                autoComplete="given-name"
+              />
+            </FormGroup>
+            <FormGroup>
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                type="text"
+                id="lastName"
+                name="lastName"
+                value={form.lastName}
+                onChange={handleChange}
+                required
+                autoComplete="family-name"
+              />
+            </FormGroup>
+          </div>
+
           <FormGroup>
-            <Label htmlFor="lastName">Last Name</Label>
+            <Label htmlFor="password">Password</Label>
             <Input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={form.lastName}
+              type="password"
+              id="password"
+              name="password"
+              value={form.password}
               onChange={handleChange}
               required
-              autoComplete="family-name"
+              placeholder="Min 4 characters"
+              autoComplete="new-password"
             />
           </FormGroup>
-        </div>
 
-        <FormGroup>
-          <Label htmlFor="password">Password</Label>
-          <Input
-            type="password"
-            id="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            placeholder="Min 4 characters"
-            autoComplete="new-password"
-          />
-        </FormGroup>
+          <FormGroup>
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              required
+              placeholder="Re-enter password"
+              autoComplete="new-password"
+            />
+          </FormGroup>
 
-        <FormGroup>
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
-          <Input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            required
-            placeholder="Re-enter password"
-            autoComplete="new-password"
-          />
-        </FormGroup>
+          <Button type="submit" className="w-full">
+            Create Account
+          </Button>
+        </form>
+      </AuthCard>
 
-        <Button type="submit" className="w-full">
-          Create Account
-        </Button>
-      </form>
-    </AuthCard>
+      <AlertDialog open={showDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registration Complete</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your account has been created. Please click OK to log in.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleLoginRedirect}>
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

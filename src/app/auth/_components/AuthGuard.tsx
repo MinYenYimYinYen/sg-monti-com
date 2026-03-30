@@ -19,7 +19,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Only redirect if we are initialized and definitely not authenticated
     if (isInitialized && !isPublic && !isAuthenticated) {
-      const loginUrl = `auth/login?from=${encodeURIComponent(pathname)}`;
+      const loginUrl = `/auth/login?from=${encodeURIComponent(pathname)}`;
       router.push(loginUrl);
     }
   }, [isPublic, isAuthenticated, isInitialized, pathname, router]);
