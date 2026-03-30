@@ -25,6 +25,7 @@ export const machines: Machine[] = [
   { machineId: "toro7", machineType: "RideOn", name: "Toro 7" },
   { machineId: "toro8", machineType: "RideOn", name: "Toro 8" },
   { machineId: "toro9", machineType: "RideOn", name: "Toro 9" },
+  { machineId: "noToro", machineType: "RideOn", name: "No Toro" },
 ];
 
 export const trucks = machines.filter((m) => m.machineType === "Truck");

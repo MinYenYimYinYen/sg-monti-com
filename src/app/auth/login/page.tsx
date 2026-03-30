@@ -43,8 +43,9 @@ function LoginContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedUserName = form.userName.trim();
     login({
-      userName: form.userName,
+      userName: trimmedUserName,
       password: form.password,
     });
   };
