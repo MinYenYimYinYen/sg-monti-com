@@ -10,6 +10,7 @@ import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { EquipmentPackage } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
+import { LandPlot } from "lucide-react";
 
 type MasterProductCardProps = {
   masterProductId: number;
@@ -21,6 +22,7 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
   );
   const packageSelections = useSelector(loadoutStartSelect.packageSelections);
   const { setPackageSelection } = useLoadoutStartForm();
+  const totalSize = useSelector(loadoutStartSelect.totalKsfForMaster(masterProductId))
 
   // ID-based lookup: receives masterProductId (not the object) so React's key-based
   // reconciliation works correctly. The planned inventory and the loadout state are two
@@ -58,6 +60,10 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
       <div className={"flex justify-between items-center"}>
         <div className={"text-xl font-bold text-foreground"}>
           {masterProduct.product.description}
+        </div>
+        <div className="flex items-center gap-2">
+          <LandPlot />
+          <p>{totalSize}</p>
         </div>
       </div>
 

@@ -10,7 +10,6 @@ import { AdditionalProductsSection } from "./components/AdditionalProductsSectio
 import { Container } from "@/components/Containers";
 import { loadoutHelper } from "@/app/scheduling/dailyInventory/components/loadoutFormHelpers";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
-import { baseLoadout } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
 
 export function LoadoutStartForm() {
@@ -29,8 +28,6 @@ export function LoadoutStartForm() {
   const routeDate = useSelector(loadoutStartSelect.routeDate);
   const truckId = useSelector(loadoutStartSelect.truckId);
   const rideOnId = useSelector(loadoutStartSelect.rideOnId);
-  const allIssues = useSelector(loadoutStartSelect.loadout.startValidation.issues);
-  console.log("all Issues" ,allIssues);
 
   // Initialize (or re-initialize) the loadout whenever the inventory structure changes.
   // This handles both the initial load and package selection changes, which alter which

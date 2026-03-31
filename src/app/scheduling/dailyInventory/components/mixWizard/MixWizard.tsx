@@ -47,8 +47,12 @@ export function MixWizard({
     plannedEquipment.mixProduct.unitConfig,
   );
 
-  // Sum of all liquid sub-products' plannedAmount converted to gallons.
-  // Only volume-metric products displace tank space; weight-metric (granular) products do not.
+  // Sum of liquid sub-products' per-fill share converted to gallons.
+  // sub.plannedAmount includes the overlap factor (it's the total chemical applied over the
+  // whole job across all passes). The total mix volume (plannedWaterGallons) is also
+  // overlap-adjusted via the AppMethod solver. To get the chemical's actual fraction of one
+  // tank fill we divide by overlap, which cancels the overlap out of the ratio.
+  // Weight-metric (granular) products do not displace tank space and are excluded.
   const plannedLiquidSubGallons = plannedEquipment.subProducts
     .filter(
       (sub) =>
@@ -58,7 +62,7 @@ export function MixWizard({
       return (
         sum +
         convertQuantity(
-          sub.plannedAmount,
+          sub.plannedAmount / plannedEquipment.appMethod.overlap,
           "app",
           "load",
           sub.product.unitConfig,
@@ -66,8 +70,10 @@ export function MixWizard({
       );
     }, 0);
 
-  // Total planned mix volume: water + liquid products
-  const totalPlannedGallons = plannedWaterGallons + plannedLiquidSubGallons;
+  // Total planned mix volume: the coverage rate already measures the total mixed solution
+  // (water + all liquid products) coming out of the nozzle, so plannedWaterGallons IS the
+  // total mix volume. Adding plannedLiquidSubGallons would double-count the chemical.
+  const totalPlannedGallons = plannedWaterGallons;
 
   const gallonsAvailable =
     tankCapacity != null && currentMix != null
@@ -374,7 +380,10 @@ export function MixWizard({
                     </span>
                   </div>
                   {plannedEquipment.subProducts.map((sub) => {
-                    const neededAmount = ratio * sub.plannedAmount;
+                    // Divide by overlap for the same reason as plannedLiquidSubGallons:
+                    // sub.plannedAmount is the total chemical for the whole job (overlap-adjusted),
+                    // but we want the per-fill amount proportional to the mix ratio.
+                    const neededAmount = ratio * sub.plannedAmount / plannedEquipment.appMethod.overlap;
                     const display = sub.product.unitConfigDisplay.format({
                       amount: neededAmount,
                       targetContexts: ["load", "app"],
