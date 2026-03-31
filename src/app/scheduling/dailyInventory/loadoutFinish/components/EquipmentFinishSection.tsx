@@ -61,7 +61,7 @@ export function EquipmentFinishSection({
 
   const startAmountDisplay =
     finishEntry.startAmount != null
-      ? finishEntry.mixProduct.unitConfigDisplay.format({
+      ? finishEntry.carrierProduct.unitConfigDisplay.format({
           amount: finishEntry.startAmount,
           targetContexts: ["load"],
           rounding: "ceil",
@@ -108,7 +108,7 @@ export function EquipmentFinishSection({
           finishEntry.finishAmount,
           "app",
           "load",
-          finishEntry.mixProduct.unitConfig,
+          finishEntry.carrierProduct.unitConfig,
         )
       : "";
 
@@ -117,7 +117,7 @@ export function EquipmentFinishSection({
       <div className={"flex items-center justify-between gap-2"}>
         <div>
           <div className={"flex-1 text-foreground/90"}>
-            {finishEntry.appMethod.needsWater ? equipmentId : finishEntry.mixProduct.productCode}
+            {finishEntry.appMethod.needsWater ? equipmentId : finishEntry.carrierProduct.productCode}
           </div>
           <div className={"text-xs text-foreground/70"}>
             Start: {startAmountDisplay}
@@ -128,7 +128,7 @@ export function EquipmentFinishSection({
             <Input
               type="number"
               placeholder={
-                finishEntry.mixProduct.unitConfig.conversions.load.unitLabel
+                finishEntry.carrierProduct.unitConfig.conversions.load.unitLabel
               }
               className={`w-32 ${fieldIssue ? "border-red-500" : ""}`}
               value={displayValue}
@@ -143,7 +143,7 @@ export function EquipmentFinishSection({
                         loadValue,
                         "load",
                         "app",
-                        finishEntry.mixProduct.unitConfig,
+                        finishEntry.carrierProduct.unitConfig,
                       )
                     : null;
                 handleFinishAmountChange(appValue);

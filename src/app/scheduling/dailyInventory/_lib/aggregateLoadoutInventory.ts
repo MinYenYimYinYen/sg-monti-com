@@ -126,16 +126,16 @@ function aggregateEquipments(
 
   // Aggregate each group of sub-products
   const aggregatedSubProducts = Array.from(subProductsMap.values()).map(
-    (subs) => aggregateSubProducts(subs),
+    (subs) => aggregateEquipmentSubProducts(subs),
   );
 
   return {
     equipmentId: first.equipmentId,
     appMethod: first.appMethod,
-    mixProductId: first.mixProduct.productId,
-    mixProduct: first.mixProduct,
-    mixProductUnitId: first.mixProductUnit.unitId,
-    mixProductUnit: first.mixProductUnit,
+    carrierProductId: first.carrierProduct.productId,
+    carrierProduct: first.carrierProduct,
+    carrierProductUnitId: first.carrierProductUnit.unitId,
+    carrierProductUnit: first.carrierProductUnit,
     plannedAmount: totalAmount,
     startAmount: null,
     finishAmount: null,
@@ -146,6 +146,7 @@ function aggregateEquipments(
 /**
  * Aggregates multiple sub-products with the same productId.
  * Sums amounts (base case - no further nesting).
+ * ratePerKsf is a constant per product — take from first entry (not summed).
  */
 function aggregateSubProducts(
   subProducts: LoadoutBase["masters"][number]["subProducts"][number][],
@@ -161,6 +162,31 @@ function aggregateSubProducts(
     productId: first.product.productId,
     product: first.product,
     plannedAmount: totalAmount,
+    startAmount: null,
+    finishAmount: null,
+    unitId: first.unit.unitId,
+    unit: first.unit,
+  };
+}
+
+/**
+ * Aggregates multiple equipment sub-products with the same productId.
+ * Sums plannedAmount; ratePerKsf is a constant per product — take from first entry.
+ */
+function aggregateEquipmentSubProducts(
+  subProducts: LoadoutBase["masters"][number]["equipments"][number]["subProducts"][number][],
+): LoadoutBase["masters"][number]["equipments"][number]["subProducts"][number] {
+  const first = subProducts[0];
+
+  const totalAmount = Math.round(
+    subProducts.reduce((sum, sub) => sum + sub.plannedAmount, 0),
+  );
+
+  return {
+    productId: first.product.productId,
+    product: first.product,
+    plannedAmount: totalAmount,
+    ratePerKsf: first.ratePerKsf,
     startAmount: null,
     finishAmount: null,
     unitId: first.unit.unitId,

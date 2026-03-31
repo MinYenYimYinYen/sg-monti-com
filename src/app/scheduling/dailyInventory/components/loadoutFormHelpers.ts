@@ -58,8 +58,9 @@ function serializeLoadout(params: {
       unitId: master.unitId,
       equipments: master.equipments.map((equipment) => ({
         equipmentId: equipment.equipmentId,
-        mixProductId: equipment.mixProductId,
-        mixProductUnitId: equipment.mixProductUnitId,
+        appMethodId: equipment.appMethod.appMethodId,
+        carrierProductId: equipment.carrierProductId,
+        carrierProductUnitId: equipment.carrierProductUnitId,
         plannedAmount: equipment.plannedAmount,
         startAmount: equipment.startAmount,
         finishAmount: equipment.finishAmount,

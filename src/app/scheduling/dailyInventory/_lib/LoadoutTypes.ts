@@ -11,8 +11,10 @@ import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
  * Hierarchy:
  *   masters[]
  *     equipments[]   ← one per piece of equipment in the selected scenario
- *       mixProduct         ← water carrier (auto-generated from waterProduct constant)
- *       subProducts[]      ← mixed products for this equipment
+ *       carrierProduct     ← water carrier (auto-generated from waterProduct constant)
+ *                            plannedAmount = total mixed solution volume (carrier + solutes)
+ *       subProducts[]      ← solutes mixed into the carrier for this equipment
+ *                            ratePerKsf = label rate (single-pass, no overlap) for Mixture
  *     subProducts[]        ← non-equipment sub-products (manual rates)
  *   singles[]
  *   subProducts[]          ← custom/additional sub-products
@@ -31,10 +33,10 @@ export type LoadoutBase = {
       /** Bucket key — matches Equipment.equipmentId */
       equipmentId: string;
       appMethod: AppMethod;
-      mixProductId: number;
-      mixProduct: ProductSub;
-      mixProductUnitId: number;
-      mixProductUnit: UnitCRM;
+      carrierProductId: number;
+      carrierProduct: ProductSub;
+      carrierProductUnitId: number;
+      carrierProductUnit: UnitCRM;
       plannedAmount: number;
       startAmount: number | null;
       finishAmount: number | null;
@@ -42,6 +44,8 @@ export type LoadoutBase = {
         productId: number;
         product: ProductSub;
         plannedAmount: number;
+        /** Label rate (config.rate, single-pass, no overlap) — used to construct Mixture */
+        ratePerKsf: number;
         startAmount: number | null;
         finishAmount: number | null;
         unitId: number;
@@ -101,8 +105,10 @@ export type LoadoutDoc = {
     unitId: number;
     equipments: {
       equipmentId: string;
-      mixProductId: number;
-      mixProductUnitId: number;
+      /** The AppMethod actually used for this loadout (may differ from equipment default). */
+      appMethodId: string;
+      carrierProductId: number;
+      carrierProductUnitId: number;
       plannedAmount: number;
       startAmount: number | null;
       finishAmount: number | null;

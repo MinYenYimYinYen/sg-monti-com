@@ -76,13 +76,13 @@ export function EquipmentSection({
 
   const tracksTankLevel = plannedEquipment.appMethod.tracksTankLevel;
 
-  // showFlOz is encoded in the mixProduct's unitConfig: app = "Fl Oz" means showFlOz: true.
+  // showFlOz is encoded in the carrierProduct's unitConfig: app = "Fl Oz" means showFlOz: true.
   // When true, display as compound "X Gal Y Fl Oz"; when false, display as decimal gallons.
   const showFlOz =
-    plannedEquipment.mixProduct.unitConfig.conversions.app.unitLabel === "Fl Oz";
+    plannedEquipment.carrierProduct.unitConfig.conversions.app.unitLabel === "Fl Oz";
 
-  const mixProductAmountDisplay =
-    plannedEquipment.mixProduct.unitConfigDisplay.format({
+  const carrierProductAmountDisplay =
+    plannedEquipment.carrierProduct.unitConfigDisplay.format({
       amount: plannedEquipment.plannedAmount,
       targetContexts: showFlOz ? ["load", "app"] : ["load"],
       rounding: "ceil",
@@ -133,13 +133,13 @@ export function EquipmentSection({
           startEntry.startAmount,
           "app",
           "load",
-          plannedEquipment.mixProduct.unitConfig,
+          plannedEquipment.carrierProduct.unitConfig,
         )
       : "";
 
   return (
     <div className={"flex flex-col gap-2 bg-accent/30 rounded-sm p-1"}>
-      {/* MixProduct with Input */}
+      {/* Carrier product row with Input */}
       <div className={"flex items-center justify-between gap-2"}>
         <div>
           <div className={"flex-1 text-foreground/90"}>
@@ -153,11 +153,11 @@ export function EquipmentSection({
             ) : (
               plannedEquipment.appMethod.needsWater
                 ? equipmentId
-                : plannedEquipment.mixProduct.productCode
+                : plannedEquipment.carrierProduct.productCode  // eslint-disable-line @typescript-eslint/no-unnecessary-condition
             )}
           </div>
           <div className={"text-xs text-foreground/70"}>
-            Planned: {mixProductAmountDisplay}
+            Planned: {carrierProductAmountDisplay}
           </div>
         </div>
         {tracksTankLevel && (
@@ -165,7 +165,7 @@ export function EquipmentSection({
             <Input
               type="number"
               placeholder={
-                plannedEquipment.mixProduct.unitConfig.conversions.load.unitLabel
+                plannedEquipment.carrierProduct.unitConfig.conversions.load.unitLabel
               }
               className={`w-32 ${fieldIssue ? "border-red-500" : ""}`}
               value={displayValue}
@@ -180,7 +180,7 @@ export function EquipmentSection({
                         loadValue,
                         "load",
                         "app",
-                        plannedEquipment.mixProduct.unitConfig,
+                        plannedEquipment.carrierProduct.unitConfig,
                       )
                     : null;
                 handleAmountChange(appValue);

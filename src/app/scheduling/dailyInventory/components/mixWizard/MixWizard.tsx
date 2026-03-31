@@ -44,7 +44,7 @@ export function MixWizard({
     plannedEquipment.plannedAmount,
     "app",
     "load",
-    plannedEquipment.mixProduct.unitConfig,
+    plannedEquipment.carrierProduct.unitConfig,
   );
 
   // Sum of liquid sub-products' per-fill share converted to gallons.
@@ -367,12 +367,12 @@ export function MixWizard({
                   <div className="flex justify-between text-sm border-b border-border pb-1 mb-1">
                     <span className="text-foreground/80">Water</span>
                     <span className="font-medium text-foreground">
-                      {plannedEquipment.mixProduct.unitConfigDisplay.format({
+                      {plannedEquipment.carrierProduct.unitConfigDisplay.format({
                         amount: convertQuantity(
                           waterGallons,
                           "load",
                           "app",
-                          plannedEquipment.mixProduct.unitConfig,
+                          plannedEquipment.carrierProduct.unitConfig,
                         ),
                         targetContexts: ["load", "app"],
                         rounding: "ceil",

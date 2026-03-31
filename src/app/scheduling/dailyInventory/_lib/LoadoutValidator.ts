@@ -24,14 +24,14 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
             if (!parent.appMethod.tracksTankLevel) return null;
 
             if (value === null) {
-              return `Start amount is required for ${parent.mixProduct.productCode}`;
+              return `Start amount is required for ${parent.carrierProduct.productCode}`;
             }
 
             return null;
           },
         },
         finishAmount: {
-          label: "Mix Product Finish Amount",
+          label: "Carrier Product Finish Amount",
           validate: ({ value, parent }: { value: number | null; parent: LoadoutEquipment }) => {
             if (this.phase !== "finish") return null;
 
@@ -39,7 +39,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
             if (!parent.appMethod.tracksTankLevel) return null;
 
             if (value === null) {
-              return `Finish amount is required for ${parent.mixProduct.productCode}`;
+              return `Finish amount is required for ${parent.carrierProduct.productCode}`;
             }
 
             if (parent.startAmount !== null && value > parent.startAmount) {

@@ -97,7 +97,7 @@ const selectUsedProductIds = createSelector(
 
     loadout.masters.forEach((master) => {
       master.equipments.forEach((equipment) => {
-        usedIds.add(equipment.mixProduct.productId);
+        usedIds.add(equipment.carrierProductId);
         equipment.subProducts.forEach((sub: { product: { productId: number } }) => {
           usedIds.add(sub.product.productId);
         });

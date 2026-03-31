@@ -16,8 +16,9 @@ const EquipmentEntrySubProductSchema = new mongoose.Schema(
 const EquipmentEntrySchema = new mongoose.Schema(
   {
     equipmentId: { type: String, required: true },
-    mixProductId: { type: Number, required: true },
-    mixProductUnitId: { type: Number, required: true },
+    appMethodId: { type: String, required: true },
+    carrierProductId: { type: Number, required: true },
+    carrierProductUnitId: { type: Number, required: true },
     plannedAmount: { type: Number, required: true },
     startAmount: { type: Number, default: null },
     finishAmount: { type: Number, default: null },

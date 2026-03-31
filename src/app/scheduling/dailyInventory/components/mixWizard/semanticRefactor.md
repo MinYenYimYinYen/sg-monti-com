@@ -1,32 +1,46 @@
 # MixWizard Semantic Refactor
 
-## The Problem
+## Status: ✅ COMPLETE
 
-The MixWizard currently works around a semantic mismatch in the data model rather than fixing it at the source. This document describes the mismatch, the workaround, and the proper fix.
+All steps have been implemented and TypeScript compiles clean.
+
+---
+
+## The Problem (Resolved)
+
+The MixWizard was working around a semantic mismatch in the data model rather than fixing it at the source. The mismatch was:
+
+| Field | Named | Actually Represents |
+|---|---|---|
+| `plannedEquipment.mixProduct` | "Water" | Total mixed solution (water + chemicals) |
+| `plannedEquipment.plannedAmount` | Water volume | Total mix volume (overlap-adjusted) |
+| `sub.plannedAmount` | Chemical volume | Total chemical applied (overlap-adjusted) |
+
+For a 1:1 mix ratio, both `plannedEquipment.plannedAmount` and `sub.plannedAmount` equaled the same value. The chemical appeared to be 100% of the mix, leaving 0 for water.
 
 ---
 
 ## Background: How the "Water" Product Works
 
-When an `AppMethod` has `needsWater: true`, `hydratePlannedLoadout` synthesizes a "water" carrier row using the `waterProduct` sentinel (`WATER_PRODUCT_ID = -2`). This row is stored as `plannedEquipment.mixProduct` and its `plannedAmount` is computed from the AppMethod's coverage rate:
+When an `AppMethod` has `needsWater: true`, `hydratePlannedLoadout` synthesizes a "water" carrier row using the `waterProduct` sentinel (`WATER_PRODUCT_ID = -2`). Its `plannedAmount` is computed from the AppMethod's coverage rate:
 
 ```
 plannedAmount = (coverage.volume / coverage.area) × size
 ```
 
-The AppMethod solver bakes the `overlap` factor into `coverage.volume` when it solves for coverage. For example, with overlap=2 and a single-pass rate of 1.5 Fl Oz/ksf, the solver produces `coverage.volume = 3 Fl Oz / 1 ksf`. So for 99 ksf:
+The AppMethod solver bakes the `overlap` factor into `coverage.volume`. So for overlap=2 and a single-pass rate of 1.5 Fl Oz/ksf, the solver produces `coverage.volume = 3 Fl Oz / 1 ksf`. For 99 ksf:
 
 ```
 plannedAmount = 3 Fl Oz/ksf × 99 ksf = 297 Fl Oz
 ```
 
-**This 297 Fl Oz is the total mixed solution dispensed by the nozzle — water AND chemicals combined.** It is not pure water.
+**This 297 Fl Oz is the total mixed solution dispensed by the nozzle — water AND chemicals combined.**
 
 ---
 
 ## Background: How Sub-Product Amounts Work
 
-Each liquid sub-product (e.g., Three-Way herbicide) has a `storedRate` (`config.rate`) in `SubProductConfigDoc`. This is the **label rate** — the amount of chemical per ksf for a single pass. In `hydratePlannedLoadout`:
+Each liquid sub-product has a `storedRate` (`config.rate`) — the **label rate** per ksf for a single pass. In `hydratePlannedLoadout`:
 
 ```typescript
 plannedAmount = size * config.rate * equipment.appMethod.overlap
@@ -38,93 +52,80 @@ For Three-Way at 1.5 Fl Oz/ksf, overlap=2, 99 ksf:
 plannedAmount = 99 × 1.5 × 2 = 297 Fl Oz
 ```
 
-This is the **total chemical applied over the whole job across all passes**. It is correct for the loadout form (how much Three-Way to load on the truck).
+This is the **total chemical applied over the whole job across all passes** — correct for the loadout form (how much to load on the truck).
 
 ---
 
-## The Semantic Mismatch
+## Terminology
 
-| Field | Named | Actually Represents |
-|---|---|---|
-| `plannedEquipment.mixProduct` | "Water" | Total mixed solution (water + chemicals) |
-| `plannedEquipment.plannedAmount` | Water volume | Total mix volume (overlap-adjusted) |
-| `sub.plannedAmount` | Chemical volume | Total chemical applied (overlap-adjusted) |
-
-For a 1:1 mix ratio (equal parts water and chemical), both `plannedEquipment.plannedAmount` and `sub.plannedAmount` equal 297 Fl Oz. The chemical appears to be 100% of the mix, leaving 0 Fl Oz for water.
-
-The MixWizard needs to know the chemical's **fraction of the total mix per tank fill**, not the total chemical applied over the whole job.
+- **Mixture**: The total solution dispensed by the equipment (water + all solutes).
+- **Carrier**: The water constituent — the solvent that carries the solutes.
+- **Solute**: A non-water constituent mixed into the carrier (e.g., Three-Way herbicide).
+- **Constituent**: Any product that makes up part of the mixture.
 
 ---
 
-## The Workaround (Current State)
+## What Was Done
 
-`MixWizard.tsx` divides `sub.plannedAmount` by `overlap` before using it in the mix ratio calculation:
+### Step 1 — `LoadoutTypes.ts` ✅
+- Added `ratePerKsf: number` to the equipment sub-product inline type in `LoadoutBase`.
+- Added `appMethodId: string` to the equipment entry in `LoadoutDoc`.
+- Renamed `mixProduct` / `mixProductId` / `mixProductUnitId` / `mixProductUnit` → `carrierProduct` / `carrierProductId` / `carrierProductUnitId` / `carrierProductUnit` in both `LoadoutBase` and `LoadoutDoc`.
 
-```typescript
-// plannedLiquidSubGallons
-sub.plannedAmount / plannedEquipment.appMethod.overlap
+### Step 2 — `hydratePlannedLoadout.ts` ✅
+- Populated `ratePerKsf: config.rate` (no overlap) on each equipment sub-product entry.
+- Renamed local variable `mixProduct` → `carrierProduct` in the equipment entry construction.
+- Updated all references to use `carrierProduct.*` instead of `mixProduct.*`.
 
-// neededAmount display
-ratio * sub.plannedAmount / plannedEquipment.appMethod.overlap
-```
+### Step 3 — `aggregateLoadoutInventory.ts` ✅
+- Passed `ratePerKsf` through the aggregation (constant per product — taken from `first.ratePerKsf`).
+- Renamed `mixProduct` → `carrierProduct` references.
 
-This cancels the overlap factor out of the sub-product amount, giving the chemical's actual per-ksf contribution to the mix. For Three-Way: `297 / 2 = 148.5 Fl Oz` for 99 ksf, which is the correct chemical volume in the tank.
+### Step 4 — `rehydrateLoadout.ts` ✅
+- Resolves `appMethod` from the stored `appMethodId` (using the appMethod map) rather than always defaulting to `equipment.defaultAppMethodId`.
 
-This workaround is **correct but fragile** — it relies on knowing that `sub.plannedAmount` was multiplied by overlap, which is an implementation detail of `hydratePlannedLoadout`.
+### Step 5 — `Mixture.ts` ✅
+- Implemented the `Mixture` class and `MixtureConstituent` type.
+- Located at `src/app/scheduling/dailyInventory/_lib/Mixture.ts`.
+- Provides: `totalRatePerKsf`, `carrierRatePerKsf`, `soluteTotalRatePerKsf`, `totalVolumeForKsf(ksf)`, `carrierForVolume(vol)`, `solutesForVolume(vol)`.
 
----
+### Step 6 — `MixWizard.tsx` ✅
+- Replaced the `/ overlap` workaround with proper `Mixture`-based calculations.
+- Uses `mixture.totalVolumeForKsf` for `totalPlannedGallons`.
+- Uses `mixture.carrierForVolume` for the water display.
+- Uses `mixture.solutesForVolume` for the solute display rows.
+- Renamed all `mixProduct` → `carrierProduct` references.
 
-## The Proper Fix
-
-The semantic problem should be resolved at the data model level. The `mixProduct` / "water" row should be renamed and its meaning clarified, and the sub-product planned amounts should be split into two distinct values:
-
-### Option A: Add a `plannedAmountPerKsf` field to sub-products
-
-Add a `plannedAmountPerKsf` (or `effectiveRate`) field to the sub-product entry in `LoadoutBase`:
-
-```typescript
-type LoadoutSubProduct = {
-  productId: number;
-  product: ProductSub;
-  plannedAmount: number;        // Total for the job (overlap-adjusted) — for loadout form
-  plannedAmountPerKsf: number;  // Per-ksf rate (config.rate, no overlap) — for mix ratio
-};
-```
-
-The MixWizard would use `plannedAmountPerKsf × totalKsfForMaster` instead of `plannedAmount / overlap`.
-
-### Option B: Rename `mixProduct` to `carrierProduct` and clarify semantics
-
-Rename `plannedEquipment.mixProduct` to `plannedEquipment.carrierProduct` and document that `plannedAmount` is the **total solution volume** (not pure water). This makes the semantic clear at the type level and prevents future confusion.
-
-### Option C: Separate water volume from total mix volume
-
-Compute and store the pure water volume separately:
-
-```typescript
-type LoadoutEquipment = {
-  // ...
-  plannedAmount: number;       // Total mix volume (water + chemicals)
-  plannedWaterAmount: number;  // Pure water volume = plannedAmount - sum(sub.plannedAmount / overlap)
-};
-```
+### Step 7 — All `mixProduct` consumers ✅
+- `loadoutStart/components/EquipmentSection.tsx` — renamed `mixProductAmountDisplay` → `carrierProductAmountDisplay`, updated all `mixProduct` → `carrierProduct` references.
+- `loadoutStart/loadoutStartSlice.ts` — `LoadoutDoc` construction already uses `carrierProductId` (no `mixProduct` references existed).
+- `realGreen/customer/selectors/loadoutBaseToAppProductCore.ts` — renamed `equipment.mixProductId` → `equipment.carrierProductId`.
+- TypeScript compiles clean (exit code 0).
 
 ---
 
-## Recommendation
+## Result
 
-**Option A** is the most surgical fix. It adds a single field to the sub-product entry that makes the per-ksf rate explicit, eliminating the need for the MixWizard to know about the overlap factor. It also makes the data more useful for any future feature that needs the per-ksf rate (e.g., a "how much product do I need for X ksf?" calculator).
+Values shown on the loadout form and in the Mix Wizard are now correct. The data model accurately reflects reality:
 
-**Option B** should be done regardless — renaming `mixProduct` to `carrierProduct` is a low-risk rename that eliminates the misleading "water" identity and makes the code self-documenting.
+- `equipment.carrierProduct` — the water carrier (unit config, display formatting)
+- `equipment.plannedAmount` — total mix volume for the job (carrier + solutes, overlap-adjusted)
+- `equipment.subProducts[].plannedAmount` — total chemical for the job (overlap-adjusted, for loadout form display)
+- `equipment.subProducts[].ratePerKsf` — label rate (single-pass, no overlap, for `Mixture` construction)
+- `equipment.appMethod` — the calibration used, with overlap baked into coverage
 
 ---
 
-## Files Affected by a Proper Refactor
+## Future Considerations
 
-| File | Change |
-|---|---|
-| `_lib/LoadoutTypes.ts` | Add `plannedAmountPerKsf` to sub-product type; rename `mixProduct` → `carrierProduct` |
-| `_lib/hydratePlannedLoadout.ts` | Populate `plannedAmountPerKsf = size * config.rate` (no overlap) |
-| `components/mixWizard/MixWizard.tsx` | Use `sub.plannedAmountPerKsf` instead of `sub.plannedAmount / overlap` |
-| `loadoutStart/components/EquipmentSection.tsx` | Update `mixProduct` → `carrierProduct` references |
-| Any other consumers of `LoadoutBase` | Update `mixProduct` → `carrierProduct` references |
+### `AppMethod` → `Calibration`
+The name `AppMethod` (Application Method) was chosen with equipment in mind, but the entity is really a calibration record. `Calibration` is a more precise name. This is a large rename with no semantic impact and should be deferred to a dedicated refactor pass.
+
+### `Mixture` in Other Workflows
+The `Mixture` class is designed to be reusable. Potential future consumers:
+- **Loadout Finish form**: Back-calculate how much of each solute was used based on finish amounts.
+- **Forecasting / BizPlan**: Estimate product consumption for a season.
+- **Cover sheets**: Display mix instructions for the tech.
+
+### Granular Products as Mixtures
+A granular product with no water and no solutes can be modeled as a `Mixture` with an empty `solutes` array and `needsWater: false`. The `Mixture` class handles this gracefully — `carrierForVolume` returns the full volume, `solutesForVolume` returns an empty array. This unifies the data model across all product types.

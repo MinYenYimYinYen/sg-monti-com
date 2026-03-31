@@ -43,7 +43,7 @@ export function loadoutBaseToAppProductCore(
 
     // 3. Water carrier row — one per equipment
     ...master.equipments.map((equipment) => ({
-      productId: equipment.mixProductId,
+      productId: equipment.carrierProductId,
       servId,
       amount: equipment.plannedAmount,
       size: master.plannedAmount,

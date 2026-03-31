@@ -92,7 +92,7 @@ function hydrateMasterInventory(params: {
       // Water carrier: build per-equipment unit config based on showFlOz, then override
       // productCode/description with equipmentId so the UI labels the row by machine name.
       const waterUnitConfig = buildWaterUnitConfig(equipment.showFlOz);
-      const mixProduct: ProductSub = {
+      const carrierProduct: ProductSub = {
         ...waterProduct,
         productCode: equipment.equipmentId,
         description: equipment.equipmentId,
@@ -101,14 +101,17 @@ function hydrateMasterInventory(params: {
       };
 
       // Mixed sub-products: those tagged with this equipment's ID on the master's sub-config.
-      // Multiply by overlap because the label rate is a single-pass rate; with double overlap
-      // the tech makes two passes over each unit area, so twice the product is consumed.
+      // plannedAmount includes overlap (label rate × overlap) — this is the total chemical
+      // applied over the whole job across all passes, correct for loadout form display.
+      // ratePerKsf stores the label rate without overlap — used by Mixture to compute the
+      // chemical's fraction of the total mix per tank fill.
       const entrySubProducts = master.subProductConfigs
         .filter((config) => config.mixedByEquipmentIds.includes(equipment.equipmentId))
         .map((config) => ({
           productId: config.subProduct.productId,
           product: config.subProduct,
           plannedAmount: size * config.rate * equipment.appMethod.overlap,
+          ratePerKsf: config.rate,
           startAmount: null,
           finishAmount: null,
           unitId: config.subProduct.unit.unitId,
@@ -118,10 +121,10 @@ function hydrateMasterInventory(params: {
       return {
         equipmentId: equipment.equipmentId,
         appMethod: equipment.appMethod,
-        mixProductId: mixProduct.productId,
-        mixProduct,
-        mixProductUnitId: mixProduct.unit.unitId,
-        mixProductUnit: mixProduct.unit,
+        carrierProductId: carrierProduct.productId,
+        carrierProduct: carrierProduct,
+        carrierProductUnitId: carrierProduct.unit.unitId,
+        carrierProductUnit: carrierProduct.unit,
         plannedAmount: calcPlannedWaterAmount(equipment.appMethod, size, equipment.showFlOz),
         startAmount: null,
         finishAmount: null,
