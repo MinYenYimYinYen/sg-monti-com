@@ -11,6 +11,7 @@ import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent"
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { EquipmentPackage } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
 import { LandPlot } from "lucide-react";
+import { cn, md } from "@/style/utils";
 
 type MasterProductCardProps = {
   masterProductId: number;
@@ -55,10 +56,10 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
   if (!masterProduct) return null;
 
   return (
-    <div className={"flex flex-col gap-2 w-full bg-accent/20 rounded-lg p-3"}>
+    <div className={cn("flex flex-col gap-2 w-full bg-accent/20 rounded-lg p-2", md("p-3"))}>
       {/* Master Header */}
       <div className={"flex justify-between items-center"}>
-        <div className={"text-xl font-bold text-foreground"}>
+        <div className={cn("text-base font-bold text-foreground", md("text-xl"))}>
           {masterProduct.product.description}
         </div>
         <div className="flex items-center gap-2">
@@ -69,8 +70,8 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
 
       {/* Equipment Package selector — only shown when 2+ packages */}
       {packages.length > 1 && (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
+        <div className={cn("flex flex-col gap-1", md("flex-row items-center gap-2"))}>
+          <span className="text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">
             Package:
           </span>
           <MultiSelect
@@ -83,9 +84,9 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
               packages.find((p: EquipmentPackage) => p.packageId === id)
                 ?.description ?? id
             }
-            className="bg-card rounded-md flex-1"
+            className={cn("bg-card rounded-md w-full", md("flex-1"))}
           >
-            <MultiSelectTrigger>
+            <MultiSelectTrigger className="w-full overflow-hidden">
               <MultiSelectValue placeholder="Select equipment package…" />
             </MultiSelectTrigger>
             <MultiSelectContent>

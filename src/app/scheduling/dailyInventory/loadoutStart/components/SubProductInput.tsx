@@ -6,6 +6,7 @@ import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { getFieldPath } from "@/lib/validation/getFieldPath";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { cn, md } from "@/style/utils";
 
 type SubProductInputProps = {
   masterIndex: number;
@@ -92,7 +93,7 @@ export function SubProductInput({
       }
     >
       <div>
-        <div className={"flex-1 text-sm text-foreground/90"}>
+        <div className={cn("flex-1 text-xs text-foreground/90", md("text-sm"))}>
           {subProduct.product.productCode}
         </div>
         <div className={"text-xs text-foreground/70"}>
@@ -102,10 +103,11 @@ export function SubProductInput({
       <div className="flex flex-col items-end">
         <Input
           type="number"
+          inputMode="decimal"
           placeholder={
             subProduct.product.unitConfig.conversions.load.unitLabel
           }
-          className={`w-32 ${fieldIssue ? "border-red-500" : ""}`}
+          className={cn("w-20", md("w-32"), fieldIssue ? "border-red-500" : "")}
           value={displayValue}
           onChange={(e) => {
             const loadValue = e.target.value ? parseFloat(e.target.value) : null;

@@ -3,7 +3,7 @@ import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterT
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
-import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
+import { DeepNonNullable, isDeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
 import { LoadoutConstituent, Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
 
 /**
@@ -148,3 +148,4 @@ export type LoadoutDoc = {
 
 //todo: this can be used to sort finished loadouts from unfinished when we get to reporting
 export type LoadoutFinal = DeepNonNullable<LoadoutDoc>
+export const isLoadoutFinal = (doc: LoadoutDoc) => isDeepNonNullable(doc);

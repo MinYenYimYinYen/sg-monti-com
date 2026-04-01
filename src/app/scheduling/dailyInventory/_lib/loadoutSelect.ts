@@ -5,7 +5,7 @@ import { rehydrateLoadout } from "@/app/scheduling/dailyInventory/_lib/rehydrate
 import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { baseLoadout } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { baseLoadout, isLoadoutFinal, LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 const selectLoadouts = (state: AppState) => state.loadout.loadouts;
 const selectFinishLoadoutDoc = (state: AppState) => state.loadout.finishLoadout;
@@ -14,6 +14,30 @@ const selectFinishLoadoutDoc = (state: AppState) => state.loadout.finishLoadout;
 const selectLoadoutMap = createSelector([selectLoadouts], (loadouts) =>
   new Grouper(loadouts).toUniqueMap((doc) => `${doc.employeeId}:${doc.routeDate}`),
 );
+
+/** Returns the set of employeeIds that have a LoadoutDoc for the given routeDate. */
+const selectStartedEmployeeIdsByDate = (routeDate: string) =>
+  createSelector([selectLoadouts], (loadouts) => {
+    const ids = new Set<string>();
+    loadouts.forEach((doc) => {
+      if (doc.routeDate === routeDate) ids.add(doc.employeeId);
+    });
+    return ids;
+  });
+
+/**
+ * Returns a map of employeeId → LoadoutDoc for all loadouts on the given date.
+ * Components can use `isLoadoutFinal(doc)` to distinguish started-but-unfinished from fully finished.
+ */
+const selectLoadoutsByDate = (routeDate: string | null) =>
+  createSelector([selectLoadouts], (loadouts) => {
+    if (!routeDate) return new Map<string, LoadoutDoc>();
+    const map = new Map<string, LoadoutDoc>();
+    loadouts.forEach((doc) => {
+      if (doc.routeDate === routeDate) map.set(doc.employeeId, doc);
+    });
+    return map;
+  });
 
 /** Derives a fully hydrated LoadoutBase from the persisted LoadoutDoc. */
 const selectHydratedFinishLoadout = createSelector(
@@ -35,4 +59,6 @@ export const loadoutSelect = {
   finishLoadout: selectFinishLoadoutDoc,
   hydratedFinishLoadout: selectHydratedFinishLoadout,
   loadoutMap: selectLoadoutMap,
+  startedEmployeeIdsByDate: selectStartedEmployeeIdsByDate,
+  loadoutsByDate: selectLoadoutsByDate,
 };

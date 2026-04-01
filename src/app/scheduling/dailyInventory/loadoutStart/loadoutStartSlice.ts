@@ -130,13 +130,13 @@ export const loadoutStartSlice = createSlice({
             }
           }
         } else {
-          state.loadout.subProducts.push({
+        state.loadout.subProducts.push({
             productId: productSub.productId,
             product: productSub,
             unitId: productSub.unitId,
             unit: productSub.unit,
             startAmount: amount,
-            finishAmount: 0,
+            finishAmount: null,
           });
         }
       } else if (isProductSingleCore(product as ProductCore)) {
@@ -148,7 +148,7 @@ export const loadoutStartSlice = createSlice({
           unitId: productSingle.unitId,
           unit: productSingle.unit,
           startAmount: amount,
-          finishAmount: 0,
+          finishAmount: null,
         });
       }
 

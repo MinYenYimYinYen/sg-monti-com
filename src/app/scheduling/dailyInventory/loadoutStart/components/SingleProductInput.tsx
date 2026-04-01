@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { getFieldPath } from "@/lib/validation/getFieldPath";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { cn, md } from "@/style/utils";
 
 type SingleProductInputProps = {
   singleIndex: number;
@@ -63,19 +64,20 @@ export function SingleProductInput({ singleIndex }: SingleProductInputProps) {
     <div
       className={"flex items-center gap-2 bg-accent/10 rounded px-2 py-1"}
     >
-      <div>
-        <div className={"flex-1 text-sm text-foreground/90"}>
+      <div className="flex-1 min-w-0">
+        <div className={cn("text-xs text-foreground/90 truncate", md("text-sm"))}>
           {single.product.description}
         </div>
         <div className={"text-xs text-foreground/70"}>
           {single.product.unitConfig.conversions.load.unitLabel}
         </div>
       </div>
-      <div className="flex flex-col items-end">
+      <div className="flex flex-col items-end flex-shrink-0">
         <Input
           type="number"
+          inputMode="decimal"
           placeholder={single.product.unitConfig.conversions.load.unitLabel}
-          className={`w-24 ${fieldIssue ? "border-red-500" : ""}`}
+          className={cn("w-16", md("w-24"), fieldIssue ? "border-red-500" : "")}
           value={displayValue}
           onChange={(e) => {
             const loadValue = e.target.value ? parseFloat(e.target.value) : null;

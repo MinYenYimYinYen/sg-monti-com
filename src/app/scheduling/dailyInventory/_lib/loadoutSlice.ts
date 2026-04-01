@@ -73,6 +73,48 @@ const loadoutSlice = createSlice({
       if (!constituent) return;
       constituent[field] = value;
     },
+    updateFinishLoadoutMasterSubProductAmount: (
+      state,
+      action: PayloadAction<{
+        masterProductId: number;
+        subProductId: number;
+        value: number | null;
+      }>,
+    ) => {
+      if (!state.finishLoadout) return;
+      const { masterProductId, subProductId, value } = action.payload;
+      const master = state.finishLoadout.masters.find((m) => m.productId === masterProductId);
+      if (!master) return;
+      const sub = master.subProducts.find((s) => s.productId === subProductId);
+      if (!sub) return;
+      sub.finishAmount = value;
+    },
+    updateFinishLoadoutSingleAmount: (
+      state,
+      action: PayloadAction<{
+        productId: number;
+        value: number | null;
+      }>,
+    ) => {
+      if (!state.finishLoadout) return;
+      const { productId, value } = action.payload;
+      const single = state.finishLoadout.singles.find((s) => s.productId === productId);
+      if (!single) return;
+      single.finishAmount = value;
+    },
+    updateFinishLoadoutSubProductAmount: (
+      state,
+      action: PayloadAction<{
+        productId: number;
+        value: number | null;
+      }>,
+    ) => {
+      if (!state.finishLoadout) return;
+      const { productId, value } = action.payload;
+      const sub = state.finishLoadout.subProducts.find((s) => s.productId === productId);
+      if (!sub) return;
+      sub.finishAmount = value;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(getLoadout.fulfilled, (state, action) => {

@@ -68,7 +68,7 @@ export function hydratePlannedLoadout(params: {
       master,
       size: servDoc.size,
       packageSelections,
-      debug: !hasDebugged && servDoc.size === 10,
+      debug: false // !hasDebugged && servDoc.size === 10,
     }),
   );
 

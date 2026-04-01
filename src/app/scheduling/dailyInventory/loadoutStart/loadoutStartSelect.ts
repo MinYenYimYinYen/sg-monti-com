@@ -1,6 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
-import { authSelect } from "@/app/auth/authSlice";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { AppState } from "@/store";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
@@ -12,18 +11,11 @@ import { hydratePlannedLoadout, getProductMasters } from "@/app/realGreen/custom
 import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { PendingProductSlot } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
 
-const selectAuthTech = createSelector([authSelect.user], (user) => user?.saId);
 const selectTech = (state: AppState) => state.loadoutStart.tech;
 
-const selectDefaultTech = createSelector(
-  [selectAuthTech, selectTech],
-  (authTech, tech) => (tech ? tech : authTech),
-);
-
 const selectRoutesByDate = createSelector(
-  [coverSheetsSelect.servicesByDateAndEmployee, selectDefaultTech],
+  [coverSheetsSelect.servicesByDateAndEmployee, selectTech],
   (byDateAndEmployee, defaultTech) => {
     const result = new Map<string, Service[]>();
 
@@ -217,7 +209,7 @@ const selectStartValidation = createValidationSelectors({
 });
 
 export const loadoutStartSelect = {
-  tech: selectDefaultTech,
+  tech: selectTech,
   routeDate: selectRouteDate,
   truckId: selectTruckId,
   rideOnId: selectRideOnId,

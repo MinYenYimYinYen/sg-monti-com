@@ -9,6 +9,7 @@ import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitC
 import { getFieldPath } from "@/lib/validation/getFieldPath";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { MixWizard } from "@/app/scheduling/dailyInventory/components/mixWizard/MixWizard";
+import { cn, md } from "@/style/utils";
 
 type AppMethodSectionProps = {
   masterProductId: number;
@@ -169,10 +170,11 @@ export function EquipmentSection({
           <div className="flex flex-col items-end">
             <Input
               type="number"
+              inputMode="decimal"
               placeholder={
                 carrierConstituent.product.unitConfig.conversions.load.unitLabel
               }
-              className={`w-32 ${fieldIssue ? "border-red-500" : ""}`}
+              className={cn("w-20", md("w-32"), fieldIssue ? "border-red-500" : "")}
               value={displayValue}
               onChange={(e) => {
                 const loadValue = e.target.value

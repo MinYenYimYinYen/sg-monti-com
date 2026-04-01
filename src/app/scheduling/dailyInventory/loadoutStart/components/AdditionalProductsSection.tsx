@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { PendingProductSlot } from "./PendingProductSlot";
 import { SingleProductInput } from "./SingleProductInput";
 import { CustomSubProductInput } from "./CustomSubProductInput";
+import { cn, md } from "@/style/utils";
 
 export function AdditionalProductsSection() {
   const { addPendingProductSlot } = useLoadoutStartForm();
@@ -18,8 +19,8 @@ export function AdditionalProductsSection() {
   );
 
   return (
-    <div className={"flex flex-col gap-2 w-full bg-accent/20 rounded-lg p-3"}>
-      <div className={"text-xl font-bold text-foreground"}>
+    <div className={cn("flex flex-col gap-2 w-full bg-accent/20 rounded-lg p-2", md("p-3"))}>
+      <div className={cn("text-base font-bold text-foreground", md("text-xl"))}>
         Additional Products
       </div>
 

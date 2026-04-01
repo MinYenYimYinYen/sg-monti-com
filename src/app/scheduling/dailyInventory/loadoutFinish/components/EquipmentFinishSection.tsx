@@ -1,6 +1,7 @@
 "use client";
 
 import { useSelector, useDispatch } from "react-redux";
+import { useState } from "react";
 import { loadoutFinishSelect } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSelect";
 import { loadoutFinishActions } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSlice";
 import { loadoutActions } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
@@ -8,6 +9,7 @@ import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { getFieldPath } from "@/lib/validation/getFieldPath";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { cn, md } from "@/style/utils";
 
 type EquipmentFinishSectionProps = {
   masterProductId: number;
@@ -55,12 +57,28 @@ export function EquipmentFinishSection({
   );
   const fieldIssue = shouldShow ? allIssues[fieldPath] : undefined;
 
-  if (!finishEntry) return null;
+  // The carrier is always constituents[0].
+  const carrierConstituent = finishEntry?.constituents[0];
+
+  // Local string state intermediates between the user's raw input and the Redux number.
+  // Initialized from the persisted finish amount (converted to load units for display).
+  const initialDisplayValue =
+    finishEntry?.finishAmount != null && carrierConstituent
+      ? String(
+          convertQuantity(
+            finishEntry.finishAmount,
+            "app",
+            "load",
+            carrierConstituent.product.unitConfig,
+          ),
+        )
+      : "";
+
+  const [inputValue, setInputValue] = useState(initialDisplayValue);
+
+  if (!finishEntry || !carrierConstituent) return null;
 
   const tracksTankLevel = finishEntry.appMethod.tracksTankLevel;
-
-  // The carrier is always constituents[0].
-  const carrierConstituent = finishEntry.constituents[0];
 
   const startAmountDisplay =
     finishEntry.startAmount != null
@@ -105,16 +123,6 @@ export function EquipmentFinishSection({
     });
   };
 
-  const displayValue =
-    finishEntry.finishAmount != null
-      ? convertQuantity(
-          finishEntry.finishAmount,
-          "app",
-          "load",
-          carrierConstituent.product.unitConfig,
-        )
-      : "";
-
   return (
     <div className={"flex flex-col gap-2 bg-accent/30 rounded-sm p-1"}>
       <div className={"flex items-center justify-between gap-2"}>
@@ -130,18 +138,20 @@ export function EquipmentFinishSection({
           <div className="flex flex-col items-end">
             <Input
               type="number"
+              inputMode="decimal"
               placeholder={
                 carrierConstituent.product.unitConfig.conversions.load.unitLabel
               }
-              className={`w-32 ${fieldIssue ? "border-red-500" : ""}`}
-              value={displayValue}
+              className={cn("w-20", md("w-32"), fieldIssue ? "border-red-500" : "")}
+              value={inputValue}
               disabled={isStored}
               onChange={(e) => {
-                const loadValue = e.target.value
-                  ? parseFloat(e.target.value)
-                  : null;
+                setInputValue(e.target.value);
+              }}
+              onBlur={() => {
+                const loadValue = inputValue ? parseFloat(inputValue) : null;
                 const appValue =
-                  loadValue != null
+                  loadValue != null && !isNaN(loadValue)
                     ? convertQuantity(
                         loadValue,
                         "load",
@@ -150,8 +160,6 @@ export function EquipmentFinishSection({
                       )
                     : null;
                 handleFinishAmountChange(appValue);
-              }}
-              onBlur={() => {
                 dispatch(
                   loadoutFinishActions.markFinishLoadoutFieldTouched(fieldPath),
                 );

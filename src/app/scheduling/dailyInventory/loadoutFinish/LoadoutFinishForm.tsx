@@ -11,7 +11,10 @@ import { Container } from "@/components/Containers";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { loadoutHelper } from "@/app/scheduling/dailyInventory/components/loadoutFormHelpers";
 import { EquipmentFinishSection } from "./components/EquipmentFinishSection";
+import { SubProductFinishInput } from "./components/SubProductFinishInput";
+import { AdditionalProductsFinishSection } from "./components/AdditionalProductsFinishSection";
 import { useAppDispatch } from "@/lib/hooks/redux";
+import { cn, md } from "@/style/utils";
 
 export function LoadoutFinishForm() {
   const appDispatch = useAppDispatch();
@@ -23,25 +26,30 @@ export function LoadoutFinishForm() {
 
   const finishLoadoutDoc = useSelector(loadoutSelect.finishLoadout);
   const finishLoadout = useSelector(loadoutFinishSelect.finishLoadout.data);
-  const hasIssues = useSelector(loadoutFinishSelect.finishLoadout.finishValidation.hasIssues);
+  const hasIssues = useSelector(
+    loadoutFinishSelect.finishLoadout.finishValidation.hasIssues,
+  );
   const tech = useSelector(loadoutStartSelect.tech);
   const routeDate = useSelector(loadoutStartSelect.routeDate);
+  const issues = useSelector(
+    loadoutFinishSelect.finishLoadout.finishValidation.issues,
+  );
+  const showAllIssues = useSelector(
+    loadoutFinishSelect.showAllFinishLoadoutIssues,
+  );
+
+  console.log(issues);
 
   const isStored = finishLoadoutDoc?.isStored ?? false;
   // truckId and rideOnId come from the persisted doc — the tech doesn't re-enter them for the finish form.
   const truckId = finishLoadoutDoc?.truckId ?? null;
   const rideOnId = finishLoadoutDoc?.rideOnId ?? null;
 
-  const canSubmit = !!tech && !!routeDate && !!truckId && !isStored && !hasIssues;
+  const canSubmit =
+    !!tech && !!routeDate && !!truckId && !isStored && !hasIssues;
 
   const handleSave = async () => {
-    if (hasIssues) {
-      setShouldShowAllFinishLoadoutIssues(true);
-      return;
-    }
-
     if (!tech || !routeDate || !truckId || !finishLoadoutDoc) return;
-
     setSaveStatus("saving");
 
     const loadoutDoc = loadoutHelper.serializeLoadout({
@@ -75,13 +83,13 @@ export function LoadoutFinishForm() {
         )}
 
         {/* Master Product Cards */}
-        {finishLoadout.masters.map((master) => (
+        {finishLoadout.masters.map((master, masterIndex) => (
           <div
             key={master.productId}
-            className={"flex flex-col gap-2 w-full bg-accent/20 rounded-lg p-3"}
+            className={cn("flex flex-col gap-2 w-full bg-accent/20 rounded-lg p-2", md("p-3"))}
           >
             {/* Master Header */}
-            <div className={"text-xl font-bold text-foreground"}>
+            <div className={cn("text-base font-bold text-foreground", md("text-xl"))}>
               {master.product.description}
             </div>
 
@@ -95,35 +103,25 @@ export function LoadoutFinishForm() {
               />
             ))}
 
-            {/* Non-equipment sub-products (read-only display) */}
+            {/* Sub-products attached to this master (editable finish amounts) */}
             {master.subProducts.length > 0 && (
               <div className={"flex flex-col gap-1"}>
-                {master.subProducts.map((sub) => (
-                  <div
+                {master.subProducts.map((sub, subProductIndex) => (
+                  <SubProductFinishInput
                     key={sub.productId}
-                    className={"flex items-center justify-between gap-2 bg-accent/10 rounded px-1 py-1"}
-                  >
-                    <div>
-                      <div className={"text-sm text-foreground/90"}>
-                        {sub.product.productCode}
-                      </div>
-                      <div className={"text-xs text-foreground/70"}>
-                        Start:{" "}
-                        {sub.startAmount != null
-                          ? sub.product.unitConfigDisplay.format({
-                              amount: sub.startAmount,
-                              targetContexts: ["load"],
-                              rounding: "none",
-                            }).formattedString
-                          : "—"}
-                      </div>
-                    </div>
-                  </div>
+                    masterProductId={master.productId}
+                    masterIndex={masterIndex}
+                    subProductIndex={subProductIndex}
+                    isStored={isStored}
+                  />
                 ))}
               </div>
             )}
           </div>
         ))}
+
+        {/* Additional Products (singles + custom sub-products) */}
+        <AdditionalProductsFinishSection isStored={isStored} />
 
         {/* Empty State */}
         {finishLoadout.masters.length === 0 && (
@@ -133,7 +131,8 @@ export function LoadoutFinishForm() {
         )}
 
         {/* Submit */}
-        {finishLoadout.masters.length > 0 && (
+        <div onClick={() => setShouldShowAllFinishLoadoutIssues(true)}>
+
           <SaveButton
             status={saveStatus}
             disabled={!canSubmit}
@@ -142,6 +141,15 @@ export function LoadoutFinishForm() {
           >
             Save Finish Loadout
           </SaveButton>
+        </div>
+        {showAllIssues && Object.values(issues).length > 0 && (
+          <div className={"text-center text-red-500 py-2"}>
+            {Object.values(issues).map((issue, index) => (
+              <div key={index} className={"text-sm"}>
+                {issue}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </Container>

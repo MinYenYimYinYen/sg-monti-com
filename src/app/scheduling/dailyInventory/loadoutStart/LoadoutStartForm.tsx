@@ -11,6 +11,7 @@ import { Container } from "@/components/Containers";
 import { loadoutHelper } from "@/app/scheduling/dailyInventory/components/loadoutFormHelpers";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
+import { cn, md } from "@/style/utils"; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 export function LoadoutStartForm() {
   const dispatch = useDispatch();
@@ -84,8 +85,8 @@ export function LoadoutStartForm() {
   </div>;
 
   return (
-    <Container variant={"page"}>
-      <div className={"flex flex-col gap-3 max-w-xl"}>
+    <Container variant={"page"} className={cn("px-2 py-2", md("px-4 py-8"))}>
+      <div className={cn("flex flex-col gap-2 max-w-xl overflow-hidden", md("gap-3"))}>
         {/* Master Product Cards */}
         {loadoutInventory.masters.map((master) => (
           <MasterProductCard
