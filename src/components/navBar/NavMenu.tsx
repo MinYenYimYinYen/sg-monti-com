@@ -28,12 +28,10 @@ type NavItem = {
 type NavSection = {
   title: string;
   navItems: NavItem[];
-  roles: Role[];
 };
 
 const schedulingSection: NavSection = {
   title: "Scheduling",
-  roles: ["admin", "office"],
   navItems: [
     {
       title: "Routing",
@@ -60,7 +58,6 @@ const schedulingSection: NavSection = {
 
 const prepaySection: NavSection = {
   title: "Prepay Letters",
-  roles: ["admin", "office"],
   navItems: [
     {
       title: "Email",
@@ -73,7 +70,6 @@ const prepaySection: NavSection = {
 
 const realGreenParams: NavSection = {
   title: "Real Green",
-  roles: ["admin"],
   navItems: [
     { title: "Products", href: "/realGreen/product/list", roles: ["admin"] },
     {
@@ -91,7 +87,6 @@ const realGreenParams: NavSection = {
 
 const bizPlanSection: NavSection = {
   title: "Biz Plan",
-  roles: ["admin"],
   navItems: [
     { title: "Products", href: "/bizPlan/products", roles: ["admin"] },
   ],
@@ -112,13 +107,11 @@ export default function NavMenu() {
   if (!isClient) return null;
 
   const userSections = menuSections
-    .filter((section) => section.roles.includes(role))
-    .map((section) => {
-      return {
-        title: section.title,
-        navItems: section.navItems.filter((item) => item.roles.includes(role)),
-      };
-    });
+    .map((section) => ({
+      title: section.title,
+      navItems: section.navItems.filter((item) => item.roles.includes(role)),
+    }))
+    .filter((section) => section.navItems.length > 0);
 
   return (
     <DropdownMenu>
