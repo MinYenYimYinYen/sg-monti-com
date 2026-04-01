@@ -42,7 +42,7 @@ export function MixWizard({
     loadoutStartSelect.totalKsfForMaster(masterProductId),
   );
 
-  const mixture = new Mixture(plannedEquipment.constituents);
+  const mixture = plannedEquipment.plannedMixture;
 
   // The carrier is always constituents[0] (WATER_PRODUCT_ID).
   const carrierConstituent = plannedEquipment.constituents[0];

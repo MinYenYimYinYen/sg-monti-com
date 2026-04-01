@@ -1,5 +1,5 @@
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { LoadoutConstituent } from "@/app/scheduling/dailyInventory/_lib/Mixture";
+import { LoadoutConstituent, Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
 
 /**
  * Aggregates loadout inventories from multiple services into a single consolidated inventory.
@@ -135,6 +135,7 @@ function aggregateEquipments(
     startAmount: null,
     finishAmount: null,
     constituents: aggregatedConstituents,
+    plannedMixture: new Mixture(aggregatedConstituents),
   };
 }
 

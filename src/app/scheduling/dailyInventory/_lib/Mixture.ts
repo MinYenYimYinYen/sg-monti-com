@@ -1,5 +1,6 @@
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM, UL_METRIC_MAP, UnitLabel, VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 
 /**
  * A constituent of the mixture (carrier or solute).
@@ -70,6 +71,35 @@ export class Mixture {
    */
   get waterOnlyAmount(): number {
     return this.carrier.plannedAmount;
+  }
+
+  /**
+   * Total planned mix volume for the full job, in the carrier's app unit.
+   * = waterOnlyAmount + sum of all solute volumes converted to the carrier's app unit.
+   *
+   * Used by EquipmentSection to display the "Planned:" total for the equipment row.
+   */
+  get totalPlannedAmount(): number {
+    const carrierAppUnit = this.carrier.product.unitConfig.conversions.app.unitLabel;
+
+    const soluteTotalInCarrierUnit = this.solutes.reduce((sum, solute) => {
+      const metric = UL_METRIC_MAP[solute.unit.desc as keyof typeof UL_METRIC_MAP];
+      if (metric !== "volume") return sum;
+
+      const soluteAppUnit = solute.product.unitConfig.conversions.app.unitLabel;
+      if (soluteAppUnit === carrierAppUnit) {
+        return sum + solute.plannedAmount;
+      }
+
+      // Convert solute volume to carrier's app unit via Fl Oz as the common base.
+      const soluteFlOz = UnitUtils.volume(
+        solute.plannedAmount,
+        soluteAppUnit as VolumeUnit["desc"],
+      ).to(UnitLabel.flOz);
+      return sum + UnitUtils.volume(soluteFlOz, UnitLabel.flOz).to(carrierAppUnit as VolumeUnit["desc"]);
+    }, 0);
+
+    return this.waterOnlyAmount + soluteTotalInCarrierUnit;
   }
 
   /**

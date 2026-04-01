@@ -4,7 +4,7 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
-import { LoadoutConstituent } from "@/app/scheduling/dailyInventory/_lib/Mixture";
+import { LoadoutConstituent, Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
 
 /**
  * LoadoutBase — the runtime loadout tree.
@@ -14,9 +14,10 @@ import { LoadoutConstituent } from "@/app/scheduling/dailyInventory/_lib/Mixture
  *     equipments[]   ← one per piece of equipment in the selected scenario
  *       constituents[]  ← all mixture components for this equipment:
  *                          [0] = water carrier (WATER_PRODUCT_ID, ratePerKsf = 0)
- *                               plannedAmount = total mixed solution volume
+ *                               plannedAmount = water-only volume
  *                          [1..n] = solutes (chemical products)
  *                               ratePerKsf = label rate (single-pass, no overlap)
+ *       plannedMixture  ← runtime Mixture instance (never serialized)
  *     subProducts[]        ← non-equipment sub-products (manual rates)
  *   singles[]
  *   subProducts[]          ← custom/additional sub-products
@@ -44,6 +45,12 @@ export type LoadoutBase = {
        * constituents[1..n] are solutes (chemical products mixed into the carrier).
        */
       constituents: LoadoutConstituent[];
+      /**
+       * Runtime-only Mixture instance for this equipment.
+       * Constructed during hydration from constituents. Never serialized or stored.
+       * Use this as the source of truth for all mix math (totalPlannedAmount, scaleMixture, etc.).
+       */
+      plannedMixture: Mixture;
     }[];
     subProducts: {
       productId: number;

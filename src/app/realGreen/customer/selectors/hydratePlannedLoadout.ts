@@ -1,7 +1,7 @@
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { LoadoutConstituent } from "@/app/scheduling/dailyInventory/_lib/Mixture";
+import { LoadoutConstituent, Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import {
@@ -195,6 +195,8 @@ function hydrateMasterInventory(params: {
         unit: carrierProduct.unit,
       };
 
+      const plannedMixture = new Mixture([carrierConstituent, ...soluteConstituents]);
+
       return {
         equipmentId: equipment.equipmentId,
         appMethod: equipment.appMethod,
@@ -202,6 +204,7 @@ function hydrateMasterInventory(params: {
         startAmount: null,
         finishAmount: null,
         constituents: [carrierConstituent, ...soluteConstituents],
+        plannedMixture,
       };
     });
 

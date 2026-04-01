@@ -84,9 +84,11 @@ export function EquipmentSection({
   const showFlOz =
     carrierConstituent.product.unitConfig.conversions.app.unitLabel === "Fl Oz";
 
+  // Use plannedMixture.totalPlannedAmount for the "Planned:" display — this is the total
+  // mix volume (water + solutes) in the carrier's app unit, the source of truth.
   const carrierProductAmountDisplay =
     carrierConstituent.product.unitConfigDisplay.format({
-      amount: plannedEquipment.plannedAmount,
+      amount: plannedEquipment.plannedMixture.totalPlannedAmount,
       targetContexts: showFlOz ? ["load", "app"] : ["load"],
       rounding: "ceil",
     }).formattedString;

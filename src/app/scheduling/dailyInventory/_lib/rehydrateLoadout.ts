@@ -1,5 +1,5 @@
 import { LoadoutBase, LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { LoadoutConstituent } from "@/app/scheduling/dailyInventory/_lib/Mixture";
+import { LoadoutConstituent, Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Equipment } from "@/app/equipment/EquipmentTypes";
@@ -94,6 +94,7 @@ export function rehydrateLoadout(params: {
             startAmount: eDoc.startAmount,
             finishAmount: eDoc.finishAmount,
             constituents,
+            plannedMixture: new Mixture(constituents),
           };
         }),
         subProducts: masterDoc.subProducts.map((sDoc) => {
