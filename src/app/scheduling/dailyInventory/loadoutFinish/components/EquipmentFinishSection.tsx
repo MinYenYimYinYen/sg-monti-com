@@ -59,9 +59,12 @@ export function EquipmentFinishSection({
 
   const tracksTankLevel = finishEntry.appMethod.tracksTankLevel;
 
+  // The carrier is always constituents[0].
+  const carrierConstituent = finishEntry.constituents[0];
+
   const startAmountDisplay =
     finishEntry.startAmount != null
-      ? finishEntry.carrierProduct.unitConfigDisplay.format({
+      ? carrierConstituent.product.unitConfigDisplay.format({
           amount: finishEntry.startAmount,
           targetContexts: ["load"],
           rounding: "ceil",
@@ -69,7 +72,7 @@ export function EquipmentFinishSection({
       : "—";
 
   const handleFinishAmountChange = (value: number | null) => {
-    // Derive sub-product finish amounts proportionally from the finish tank level.
+    // Derive constituent finish amounts proportionally from the finish tank level.
     const ratio =
       value != null && finishEntry.startAmount != null && finishEntry.startAmount > 0
         ? value / finishEntry.startAmount
@@ -84,19 +87,19 @@ export function EquipmentFinishSection({
       }),
     );
 
-    // Propagate proportional finish amounts to sub-products.
-    finishEntry.subProducts.forEach((sub) => {
-      const subFinish =
-        ratio != null && sub.startAmount != null
-          ? Math.round(ratio * sub.startAmount * 100) / 100
+    // Propagate proportional finish amounts to all constituents.
+    finishEntry.constituents.forEach((constituent) => {
+      const constituentFinish =
+        ratio != null && constituent.startAmount != null
+          ? Math.round(ratio * constituent.startAmount * 100) / 100
           : null;
       dispatch(
-        loadoutActions.updateFinishLoadoutEquipmentSubAmount({
+        loadoutActions.updateFinishLoadoutEquipmentConstituentAmount({
           masterProductId,
           equipmentId,
-          subProductId: sub.product.productId,
+          constituentProductId: constituent.product.productId,
           field: "finishAmount",
-          value: subFinish,
+          value: constituentFinish,
         }),
       );
     });
@@ -108,7 +111,7 @@ export function EquipmentFinishSection({
           finishEntry.finishAmount,
           "app",
           "load",
-          finishEntry.carrierProduct.unitConfig,
+          carrierConstituent.product.unitConfig,
         )
       : "";
 
@@ -117,7 +120,7 @@ export function EquipmentFinishSection({
       <div className={"flex items-center justify-between gap-2"}>
         <div>
           <div className={"flex-1 text-foreground/90"}>
-            {finishEntry.appMethod.needsWater ? equipmentId : finishEntry.carrierProduct.productCode}
+            {finishEntry.appMethod.needsWater ? equipmentId : carrierConstituent.product.productCode}
           </div>
           <div className={"text-xs text-foreground/70"}>
             Start: {startAmountDisplay}
@@ -128,7 +131,7 @@ export function EquipmentFinishSection({
             <Input
               type="number"
               placeholder={
-                finishEntry.carrierProduct.unitConfig.conversions.load.unitLabel
+                carrierConstituent.product.unitConfig.conversions.load.unitLabel
               }
               className={`w-32 ${fieldIssue ? "border-red-500" : ""}`}
               value={displayValue}
@@ -143,7 +146,7 @@ export function EquipmentFinishSection({
                         loadValue,
                         "load",
                         "app",
-                        finishEntry.carrierProduct.unitConfig,
+                        carrierConstituent.product.unitConfig,
                       )
                     : null;
                 handleFinishAmountChange(appValue);

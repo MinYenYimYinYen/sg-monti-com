@@ -1,5 +1,6 @@
 import { BaseValidator, ValidatorSchema } from "@/lib/validation/BaseValidator";
 import { LoadoutBase } from "./LoadoutTypes";
+import { LoadoutConstituent } from "./Mixture";
 
 type LoadoutEquipment = LoadoutBase["masters"][number]["equipments"][number];
 
@@ -24,7 +25,9 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
             if (!parent.appMethod.tracksTankLevel) return null;
 
             if (value === null) {
-              return `Start amount is required for ${parent.carrierProduct.productCode}`;
+              // Identify the carrier by its position (constituents[0]) for the error label
+              const carrierCode = parent.constituents[0]?.product.productCode ?? "equipment";
+              return `Start amount is required for ${carrierCode}`;
             }
 
             return null;
@@ -39,7 +42,8 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
             if (!parent.appMethod.tracksTankLevel) return null;
 
             if (value === null) {
-              return `Finish amount is required for ${parent.carrierProduct.productCode}`;
+              const carrierCode = parent.constituents[0]?.product.productCode ?? "equipment";
+              return `Finish amount is required for ${carrierCode}`;
             }
 
             if (parent.startAmount !== null && value > parent.startAmount) {
@@ -49,10 +53,10 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
             return null;
           },
         },
-        subProducts: {
+        constituents: {
           startAmount: {
-            label: "Sub Product Start Amount",
-            validate: ({ value, parent }) => {
+            label: "Constituent Start Amount",
+            validate: ({ value, parent }: { value: number | null; parent: LoadoutConstituent }) => {
               if (this.phase !== "start") return null;
 
               if (value === null) {
@@ -63,8 +67,8 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
             },
           },
           finishAmount: {
-            label: "Sub Product Finish Amount",
-            validate: ({ value, parent }) => {
+            label: "Constituent Finish Amount",
+            validate: ({ value, parent }: { value: number | null; parent: LoadoutConstituent }) => {
               if (this.phase !== "finish") return null;
 
               if (value === null) {
@@ -83,7 +87,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
       subProducts: {
         startAmount: {
           label: "Sub Product Start Amount",
-          validate: ({ value, parent }) => {
+          validate: ({ value, parent }: { value: number | null; parent: LoadoutBase["masters"][number]["subProducts"][number] }) => {
             if (this.phase !== "start") return null;
 
             if (value === null) {
@@ -95,7 +99,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
         },
         finishAmount: {
           label: "Sub Product Finish Amount",
-          validate: ({ value, parent }) => {
+          validate: ({ value, parent }: { value: number | null; parent: LoadoutBase["masters"][number]["subProducts"][number] }) => {
             if (this.phase !== "finish") return null;
 
             if (value === null) {
@@ -114,7 +118,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
     singles: {
       startAmount: {
         label: "Single Product Start Amount",
-        validate: ({ value, parent }) => {
+        validate: ({ value, parent }: { value: number | null; parent: LoadoutBase["singles"][number] }) => {
           if (this.phase !== "start") return null;
 
           if (value === null) {
@@ -126,7 +130,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
       },
       finishAmount: {
         label: "Single Product Finish Amount",
-        validate: ({ value, parent }) => {
+        validate: ({ value, parent }: { value: number | null; parent: LoadoutBase["singles"][number] }) => {
           if (this.phase !== "finish") return null;
 
           if (value === null) {
@@ -144,7 +148,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
     subProducts: {
       startAmount: {
         label: "Sub Product Start Amount",
-        validate: ({ value, parent }) => {
+        validate: ({ value, parent }: { value: number | null; parent: LoadoutBase["subProducts"][number] }) => {
           if (this.phase !== "start") return null;
 
           if (value === null) {
@@ -156,7 +160,7 @@ export class LoadoutValidator extends BaseValidator<LoadoutBase> {
       },
       finishAmount: {
         label: "Sub Product Finish Amount",
-        validate: ({ value, parent }) => {
+        validate: ({ value, parent }: { value: number | null; parent: LoadoutBase["subProducts"][number] }) => {
           if (this.phase !== "finish") return null;
 
           if (value === null) {

@@ -1,12 +1,11 @@
-import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
-import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
-import { UnitLabel, VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 
 /**
- * A solute is a non-carrier constituent of the mixture (e.g., Three-Way herbicide).
+ * A constituent of the mixture (carrier or solute).
  * ratePerKsf is the label rate (single-pass, no overlap) — the amount of this product
- * applied per ksf in a single pass.
+ * applied per ksf in a single pass. For the water carrier, ratePerKsf is 0 (derived
+ * from AppMethod coverage minus solute rates).
  */
 export type MixtureConstituent = {
   product: ProductSub;
@@ -14,89 +13,87 @@ export type MixtureConstituent = {
 };
 
 /**
- * Mixture — encapsulates the composition of a tank mix and provides reusable
- * computation methods for the MixWizard and any future workflow that needs to
- * reason about tank fills.
+ * LoadoutConstituent — extends MixtureConstituent with loadout-tracking fields.
  *
- * The AppMethod's coverage rate (volume/area) represents the total mixed solution
- * dispensed by the nozzle — carrier (water) AND solutes combined. The overlap factor
- * is already baked into coverage.volume by the AppMethod solver.
+ * Used in LoadoutBase equipment entries. The water carrier is always the first
+ * constituent (identifiable by product.productId === WATER_PRODUCT_ID).
+ * Solutes follow in subsequent entries.
  *
- * Each solute's ratePerKsf is the label rate (single-pass, no overlap). The solute's
- * actual contribution to the mix per ksf is ratePerKsf × overlap, because the tech
- * makes `overlap` passes over each unit area.
+ * For the carrier: plannedAmount = water-only volume in the carrier's app unit
+ * (Fl Oz or Gal). Computed as total mix volume − sum of volumetric solute volumes.
  *
- * Carrier (water) per ksf = totalRatePerKsf − sum(solute.ratePerKsf × overlap)
+ * For solutes: plannedAmount = that solute's own volume for the job
+ * (label rate × overlap × job size), in the solute's app unit.
+ */
+export type LoadoutConstituent = MixtureConstituent & {
+  plannedAmount: number;
+  startAmount: number | null;
+  finishAmount: number | null;
+  unitId: number;
+  unit: UnitCRM;
+};
+
+/**
+ * ScaledConstituent — the result of scaling a constituent by a mix ratio.
+ * amount is in the constituent's own app unit (as stored in plannedAmount).
+ */
+export type ScaledConstituent = {
+  constituent: LoadoutConstituent;
+  /** Scaled amount in the constituent's own app unit. */
+  amount: number;
+};
+
+/**
+ * Mixture — encapsulates the composition of a tank mix and provides scaling
+ * for the MixWizard.
+ *
+ * The carrier constituent's plannedAmount is the water-only volume for the full job,
+ * pre-computed in hydratePlannedLoadout as: total mix volume − sum of volumetric solute volumes.
+ * Solute plannedAmounts are each solute's own volume for the full job.
+ *
+ * scaleMixture(ratio) scales every constituent by the given ratio, where ratio =
+ * gallonsToMix / totalPlannedGallons. This gives the correct per-constituent amounts
+ * for any partial or full tank fill.
  */
 export class Mixture {
-  constructor(
-    private readonly appMethod: AppMethod,
-    private readonly solutes: MixtureConstituent[],
-  ) {}
+  private readonly carrier: LoadoutConstituent;
+  private readonly solutes: LoadoutConstituent[];
 
-  /**
-   * Total mix rate per ksf (Fl Oz/ksf), derived from AppMethod coverage.
-   * Overlap is already baked in by the solver.
-   */
-  get totalRatePerKsf(): number {
-    const { coverage } = this.appMethod;
-    if (!coverage.area || !coverage.volume || !coverage.volumeUnit || !coverage.areaUnit) return 0;
-
-    // Convert coverage rate to Fl Oz/ksf
-    const rateInCoverageUnits = coverage.volume / coverage.area;
-    const rateInFlOzPerCoverageArea = UnitUtils.volume(
-      rateInCoverageUnits,
-      coverage.volumeUnit as VolumeUnit["desc"],
-    ).to(UnitLabel.flOz);
-
-    // coverage.areaUnit is already ksf in practice, but convert explicitly for safety
-    return UnitUtils.area(rateInFlOzPerCoverageArea, coverage.areaUnit).to(UnitLabel.ksf);
+  constructor(private readonly constituents: LoadoutConstituent[]) {
+    this.carrier = constituents[0];
+    this.solutes = constituents.slice(1);
   }
 
   /**
-   * Sum of all solute rates per ksf (Fl Oz/ksf), overlap-adjusted.
-   * Each solute contributes ratePerKsf × overlap to the mix per ksf.
+   * Water-only volume for the full job, in the carrier's app unit.
+   * Pre-computed in hydratePlannedLoadout as total mix − volumetric solute volumes.
    */
-  get soluteTotalRatePerKsf(): number {
-    return this.solutes.reduce(
-      (sum, s) => sum + s.ratePerKsf * this.appMethod.overlap,
-      0,
-    );
+  get waterOnlyAmount(): number {
+    return this.carrier.plannedAmount;
   }
 
   /**
-   * Carrier (water) rate per ksf (Fl Oz/ksf).
-   * = totalRatePerKsf − sum(solute.ratePerKsf × overlap)
+   * Scale all constituents by the given ratio.
+   *
+   * ratio = gallonsToMix / totalPlannedGallons
+   *
+   * Returns an array of ScaledConstituent where:
+   * - [0] is the carrier (water), with amount = waterOnlyAmount × ratio
+   * - [1..n] are solutes, with amount = solute.plannedAmount × ratio
+   *
+   * All amounts are in each constituent's own app unit.
    */
-  get carrierRatePerKsf(): number {
-    return this.totalRatePerKsf - this.soluteTotalRatePerKsf;
-  }
+  scaleMixture(ratio: number): ScaledConstituent[] {
+    const carrierScaled: ScaledConstituent = {
+      constituent: this.carrier,
+      amount: this.waterOnlyAmount * ratio,
+    };
 
-  /**
-   * Total mix volume (Fl Oz) needed to cover a given job size (ksf).
-   */
-  totalVolumeForKsf(ksf: number): number {
-    return this.totalRatePerKsf * ksf;
-  }
-
-  /**
-   * Carrier (water) volume (Fl Oz) for a given total mix volume.
-   * Scales proportionally: carrier fraction = carrierRatePerKsf / totalRatePerKsf.
-   */
-  carrierForVolume(totalVolume: number): number {
-    if (this.totalRatePerKsf === 0) return totalVolume;
-    return (this.carrierRatePerKsf / this.totalRatePerKsf) * totalVolume;
-  }
-
-  /**
-   * Volume of each solute (Fl Oz) for a given total mix volume.
-   * Scales proportionally: solute fraction = (ratePerKsf × overlap) / totalRatePerKsf.
-   */
-  solutesForVolume(totalVolume: number): { product: ProductSub; volume: number }[] {
-    if (this.totalRatePerKsf === 0) return [];
-    return this.solutes.map((s) => ({
-      product: s.product,
-      volume: ((s.ratePerKsf * this.appMethod.overlap) / this.totalRatePerKsf) * totalVolume,
+    const solutesScaled: ScaledConstituent[] = this.solutes.map((solute) => ({
+      constituent: solute,
+      amount: solute.plannedAmount * ratio,
     }));
+
+    return [carrierScaled, ...solutesScaled];
   }
 }

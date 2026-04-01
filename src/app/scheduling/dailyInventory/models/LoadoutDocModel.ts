@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { createModel } from "@/lib/mongoose/createModel";
 
-const EquipmentEntrySubProductSchema = new mongoose.Schema(
+const ConstituentSchema = new mongoose.Schema(
   {
     productId: { type: Number, required: true },
     plannedAmount: { type: Number, required: true },
@@ -17,12 +17,10 @@ const EquipmentEntrySchema = new mongoose.Schema(
   {
     equipmentId: { type: String, required: true },
     appMethodId: { type: String, required: true },
-    carrierProductId: { type: Number, required: true },
-    carrierProductUnitId: { type: Number, required: true },
     plannedAmount: { type: Number, required: true },
     startAmount: { type: Number, default: null },
     finishAmount: { type: Number, default: null },
-    subProducts: { type: [EquipmentEntrySubProductSchema], required: true },
+    constituents: { type: [ConstituentSchema], required: true },
   },
   { _id: false },
 );

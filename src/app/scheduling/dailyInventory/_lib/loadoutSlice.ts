@@ -53,25 +53,25 @@ const loadoutSlice = createSlice({
       if (!equipment) return;
       equipment[field] = value;
     },
-    updateFinishLoadoutEquipmentSubAmount: (
+    updateFinishLoadoutEquipmentConstituentAmount: (
       state,
       action: PayloadAction<{
         masterProductId: number;
         equipmentId: string;
-        subProductId: number;
+        constituentProductId: number;
         field: "finishAmount";
         value: number | null;
       }>,
     ) => {
       if (!state.finishLoadout) return;
-      const { masterProductId, equipmentId, subProductId, field, value } = action.payload;
+      const { masterProductId, equipmentId, constituentProductId, field, value } = action.payload;
       const master = state.finishLoadout.masters.find((m) => m.productId === masterProductId);
       if (!master) return;
       const equipment = master.equipments.find((e) => e.equipmentId === equipmentId);
       if (!equipment) return;
-      const sub = equipment.subProducts.find((s) => s.productId === subProductId);
-      if (!sub) return;
-      sub[field] = value;
+      const constituent = equipment.constituents.find((c) => c.productId === constituentProductId);
+      if (!constituent) return;
+      constituent[field] = value;
     },
   },
   extraReducers: (builder) => {

@@ -1,4 +1,5 @@
 import { LoadoutBase, LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutConstituent } from "@/app/scheduling/dailyInventory/_lib/Mixture";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Equipment } from "@/app/equipment/EquipmentTypes";
@@ -15,9 +16,9 @@ import { baseAppMethod } from "@/app/appMethod/AppMethodTypes";
  * re-attaching hydrated product objects, app methods, and unit configs from
  * the provided lookup maps.
  *
- * Water carrier entries (carrierProductId === WATER_PRODUCT_ID) are reconstructed
- * using buildWaterUnitConfig(equipment.showFlOz) to restore the correct unit
- * config (Fl Oz app / Gal load for small tanks, Gal / Gal for large tanks).
+ * The water carrier is always constituents[0] (productId === WATER_PRODUCT_ID).
+ * It is reconstructed using buildWaterUnitConfig(equipment.showFlOz) to restore
+ * the correct unit config (Fl Oz app / Gal load for small tanks, Gal / Gal for large).
  *
  * appMethodId is stored in LoadoutDoc so we restore the exact AppMethod used at
  * loadout time rather than always falling back to the equipment's current default.
@@ -52,50 +53,47 @@ export function rehydrateLoadout(params: {
             appMethodMap.get(eDoc.appMethodId) ??
             (equipment ? (appMethodMap.get(equipment.defaultAppMethodId) ?? baseAppMethod) : baseAppMethod);
 
-          // Carrier is a synthetic product not stored in productSubsMap.
-          // Reconstruct it using buildWaterUnitConfig(equipment.showFlOz) so the
-          // unit config matches what was used when the start loadout was saved.
-          const isWaterProduct = eDoc.carrierProductId === WATER_PRODUCT_ID;
-          const carrierProduct: ProductSub = isWaterProduct
-            ? (() => {
-                const waterUnitConfig = buildWaterUnitConfig(equipment?.showFlOz ?? false);
-                return {
-                  ...waterProduct,
-                  productCode: eDoc.equipmentId,
-                  description: eDoc.equipmentId,
-                  unitConfig: waterUnitConfig,
-                  unitConfigDisplay: new UnitConfigDisplay(waterUnitConfig),
-                };
-              })()
-            : (productSubsMap.get(eDoc.carrierProductId) ?? baseProductSub);
+          const constituents: LoadoutConstituent[] = eDoc.constituents.map((cDoc) => {
+            const isWaterCarrier = cDoc.productId === WATER_PRODUCT_ID;
+
+            // Water carrier is a synthetic product not stored in productSubsMap.
+            // Reconstruct it using buildWaterUnitConfig(equipment.showFlOz) so the
+            // unit config matches what was used when the start loadout was saved.
+            const product: ProductSub = isWaterCarrier
+              ? (() => {
+                  const waterUnitConfig = buildWaterUnitConfig(equipment?.showFlOz ?? false);
+                  return {
+                    ...waterProduct,
+                    productCode: eDoc.equipmentId,
+                    description: eDoc.equipmentId,
+                    unitConfig: waterUnitConfig,
+                    unitConfigDisplay: new UnitConfigDisplay(waterUnitConfig),
+                  };
+                })()
+              : (productSubsMap.get(cDoc.productId) ?? baseProductSub);
+
+            return {
+              product,
+              // ratePerKsf is not stored in LoadoutDoc (it's derivable from the product config).
+              // On rehydration we default to 0; the Mixture class uses appMethod coverage
+              // to compute the total mix rate, and ratePerKsf is only needed for the MixWizard
+              // which operates on the planned (not rehydrated) loadout.
+              ratePerKsf: 0,
+              plannedAmount: cDoc.plannedAmount,
+              startAmount: cDoc.startAmount,
+              finishAmount: cDoc.finishAmount,
+              unitId: cDoc.unitId,
+              unit: product.unit,
+            };
+          });
 
           return {
             equipmentId: eDoc.equipmentId,
             appMethod,
-            carrierProductId: eDoc.carrierProductId,
-            carrierProduct,
-            carrierProductUnitId: eDoc.carrierProductUnitId,
-            carrierProductUnit: carrierProduct.unit,
             plannedAmount: eDoc.plannedAmount,
             startAmount: eDoc.startAmount,
             finishAmount: eDoc.finishAmount,
-            subProducts: eDoc.subProducts.map((sDoc) => {
-              const sub = productSubsMap.get(sDoc.productId) ?? baseProductSub;
-              // ratePerKsf is not stored in LoadoutDoc (it's derivable from the product config).
-              // On rehydration we default to 0; the Mixture class will use appMethod coverage
-              // to compute the total mix rate, and ratePerKsf is only needed for the MixWizard
-              // which operates on the planned (not rehydrated) loadout.
-              return {
-                productId: sDoc.productId,
-                product: sub,
-                plannedAmount: sDoc.plannedAmount,
-                ratePerKsf: 0,
-                startAmount: sDoc.startAmount,
-                finishAmount: sDoc.finishAmount,
-                unitId: sDoc.unitId,
-                unit: sub.unit,
-              };
-            }),
+            constituents,
           };
         }),
         subProducts: masterDoc.subProducts.map((sDoc) => {

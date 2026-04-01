@@ -6,9 +6,6 @@ import { useSelector } from "react-redux";
 import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 
 export function useEquipment({ autoLoad }: { autoLoad?: boolean }) {
-  const equipment = useSelector(equipmentSelect.equipmentDocs);
-  console.log("equipment", equipment);
-
   const dispatch = useAppDispatch();
 
   useEffect(() => {

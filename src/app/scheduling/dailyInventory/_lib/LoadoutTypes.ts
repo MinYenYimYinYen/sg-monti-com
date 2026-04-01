@@ -4,6 +4,7 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
+import { LoadoutConstituent } from "@/app/scheduling/dailyInventory/_lib/Mixture";
 
 /**
  * LoadoutBase — the runtime loadout tree.
@@ -11,10 +12,11 @@ import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
  * Hierarchy:
  *   masters[]
  *     equipments[]   ← one per piece of equipment in the selected scenario
- *       carrierProduct     ← water carrier (auto-generated from waterProduct constant)
- *                            plannedAmount = total mixed solution volume (carrier + solutes)
- *       subProducts[]      ← solutes mixed into the carrier for this equipment
- *                            ratePerKsf = label rate (single-pass, no overlap) for Mixture
+ *       constituents[]  ← all mixture components for this equipment:
+ *                          [0] = water carrier (WATER_PRODUCT_ID, ratePerKsf = 0)
+ *                               plannedAmount = total mixed solution volume
+ *                          [1..n] = solutes (chemical products)
+ *                               ratePerKsf = label rate (single-pass, no overlap)
  *     subProducts[]        ← non-equipment sub-products (manual rates)
  *   singles[]
  *   subProducts[]          ← custom/additional sub-products
@@ -33,24 +35,15 @@ export type LoadoutBase = {
       /** Bucket key — matches Equipment.equipmentId */
       equipmentId: string;
       appMethod: AppMethod;
-      carrierProductId: number;
-      carrierProduct: ProductSub;
-      carrierProductUnitId: number;
-      carrierProductUnit: UnitCRM;
       plannedAmount: number;
       startAmount: number | null;
       finishAmount: number | null;
-      subProducts: {
-        productId: number;
-        product: ProductSub;
-        plannedAmount: number;
-        /** Label rate (config.rate, single-pass, no overlap) — used to construct Mixture */
-        ratePerKsf: number;
-        startAmount: number | null;
-        finishAmount: number | null;
-        unitId: number;
-        unit: UnitCRM;
-      }[];
+      /**
+       * All mixture constituents for this equipment.
+       * constituents[0] is always the water carrier (productId === WATER_PRODUCT_ID, ratePerKsf = 0).
+       * constituents[1..n] are solutes (chemical products mixed into the carrier).
+       */
+      constituents: LoadoutConstituent[];
     }[];
     subProducts: {
       productId: number;
@@ -107,12 +100,15 @@ export type LoadoutDoc = {
       equipmentId: string;
       /** The AppMethod actually used for this loadout (may differ from equipment default). */
       appMethodId: string;
-      carrierProductId: number;
-      carrierProductUnitId: number;
       plannedAmount: number;
       startAmount: number | null;
       finishAmount: number | null;
-      subProducts: {
+      /**
+       * All mixture constituents for this equipment (IDs only).
+       * constituents[0] is always the water carrier (productId === WATER_PRODUCT_ID).
+       * constituents[1..n] are solutes.
+       */
+      constituents: {
         productId: number;
         plannedAmount: number;
         startAmount: number | null;
@@ -145,4 +141,3 @@ export type LoadoutDoc = {
 
 //todo: this can be used to sort finished loadouts from unfinished when we get to reporting
 export type LoadoutFinal = DeepNonNullable<LoadoutDoc>
-

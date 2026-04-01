@@ -11,10 +11,13 @@ import {
 import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
 import { Slider } from "@/style/components/slider";
-import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { Number } from "@/components/Number";
+import { UnitLabel, VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
+import { WATER_PRODUCT_ID } from "@/app/equipment/waterProduct";
 
 type PlannedEquipment = LoadoutBase["masters"][number]["equipments"][number];
 
@@ -39,41 +42,19 @@ export function MixWizard({
     loadoutStartSelect.totalKsfForMaster(masterProductId),
   );
 
-  // plannedAmount is in app units (Fl Oz or Gal); convert to Gal for comparison
-  const plannedWaterGallons = convertQuantity(
-    plannedEquipment.plannedAmount,
-    "app",
-    "load",
-    plannedEquipment.carrierProduct.unitConfig,
+  const mixture = new Mixture(plannedEquipment.constituents);
+
+  // The carrier is always constituents[0] (WATER_PRODUCT_ID).
+  const carrierConstituent = plannedEquipment.constituents[0];
+
+  // Solutes are all constituents except the carrier (water).
+  const soluteConstituents = plannedEquipment.constituents.filter(
+    (c) => c.product.productId !== WATER_PRODUCT_ID,
   );
 
-  // Sum of liquid sub-products' per-fill share converted to gallons.
-  // sub.plannedAmount includes the overlap factor (it's the total chemical applied over the
-  // whole job across all passes). The total mix volume (plannedWaterGallons) is also
-  // overlap-adjusted via the AppMethod solver. To get the chemical's actual fraction of one
-  // tank fill we divide by overlap, which cancels the overlap out of the ratio.
-  // Weight-metric (granular) products do not displace tank space and are excluded.
-  const plannedLiquidSubGallons = plannedEquipment.subProducts
-    .filter(
-      (sub) =>
-        sub.product.unitConfig.conversions.app.baseMetric === "volume",
-    )
-    .reduce((sum, sub) => {
-      return (
-        sum +
-        convertQuantity(
-          sub.plannedAmount / plannedEquipment.appMethod.overlap,
-          "app",
-          "load",
-          sub.product.unitConfig,
-        )
-      );
-    }, 0);
-
-  // Total planned mix volume: the coverage rate already measures the total mixed solution
-  // (water + all liquid products) coming out of the nozzle, so plannedWaterGallons IS the
-  // total mix volume. Adding plannedLiquidSubGallons would double-count the chemical.
-  const totalPlannedGallons = plannedWaterGallons;
+  // equipment.plannedAmount is the total mix volume (water + solutes) for the full job in Gal.
+  // This is the slider's "just enough" anchor.
+  const totalPlannedGallons = plannedEquipment.plannedAmount;
 
   const gallonsAvailable =
     tankCapacity != null && currentMix != null
@@ -116,11 +97,13 @@ export function MixWizard({
       ? gallonsAvailable ?? 0
       : (sliderGallons ?? gallonsAvailable ?? 0);
 
-  // Ratio of total mix gallons to total planned gallons — scales all amounts proportionally
-  const ratio = totalPlannedGallons > 0 ? mixGallons / totalPlannedGallons : 0;
+  // Scale ratio: what fraction of the full planned job are we mixing?
+  // Mixture.scaleMixture uses this to derive correct per-constituent amounts.
+  const mixRatio = totalPlannedGallons > 0 ? mixGallons / totalPlannedGallons : 0;
 
-  // Water to add = total mix minus the liquid sub-products' share
-  const waterGallons = mixGallons - ratio * plannedLiquidSubGallons;
+  // Scaled constituent amounts for the current mix volume.
+  // [0] = water-only amount (total mix − solutes), [1..n] = each solute.
+  const scaledConstituents = mixture.scaleMixture(mixRatio);
 
   // For the "tank already full" message: how much surplus and how many ksf it covers
   const excessPct =
@@ -357,46 +340,28 @@ export function MixWizard({
                 );
               })()}
 
-              {/* Sub-product amounts */}
+              {/* Constituent amounts */}
               {!tankAlreadyFull && (
                 <div className="flex flex-col gap-1">
                   <p className="text-xs font-medium text-foreground/80">
                     Add to your tank:
                   </p>
-                  {/* Water row — amount is total mix minus liquid products */}
-                  <div className="flex justify-between text-sm border-b border-border pb-1 mb-1">
-                    <span className="text-foreground/80">Water</span>
-                    <span className="font-medium text-foreground">
-                      {plannedEquipment.carrierProduct.unitConfigDisplay.format({
-                        amount: convertQuantity(
-                          waterGallons,
-                          "load",
-                          "app",
-                          plannedEquipment.carrierProduct.unitConfig,
-                        ),
-                        targetContexts: ["load", "app"],
-                        rounding: "ceil",
-                      }).formattedString}
-                    </span>
-                  </div>
-                  {plannedEquipment.subProducts.map((sub) => {
-                    // Divide by overlap for the same reason as plannedLiquidSubGallons:
-                    // sub.plannedAmount is the total chemical for the whole job (overlap-adjusted),
-                    // but we want the per-fill amount proportional to the mix ratio.
-                    const neededAmount = ratio * sub.plannedAmount / plannedEquipment.appMethod.overlap;
-                    const display = sub.product.unitConfigDisplay.format({
-                      amount: neededAmount,
+                  {scaledConstituents.map(({ constituent, amount }, index) => {
+                    const display = constituent.product.unitConfigDisplay.format({
+                      amount,
                       targetContexts: ["load", "app"],
                       rounding: "ceil",
                     }).formattedString;
 
+                    const isCarrier = index === 0;
+
                     return (
                       <div
-                        key={sub.productId}
-                        className="flex justify-between text-sm"
+                        key={constituent.product.productId}
+                        className={`flex justify-between text-sm ${isCarrier ? "border-b border-border pb-1 mb-1" : ""}`}
                       >
                         <span className="text-foreground/80">
-                          {sub.product.productCode}
+                          {isCarrier ? "Water" : constituent.product.productCode}
                         </span>
                         <span className="font-medium text-foreground">
                           {display}
@@ -407,9 +372,9 @@ export function MixWizard({
                 </div>
               )}
 
-              {!tankAlreadyFull && plannedEquipment.subProducts.length === 0 && (
+              {!tankAlreadyFull && soluteConstituents.length === 0 && (
                 <p className="text-xs text-foreground/60 italic">
-                  No mixed products configured for this equipment.
+                  No solutes configured for this equipment.
                 </p>
               )}
 

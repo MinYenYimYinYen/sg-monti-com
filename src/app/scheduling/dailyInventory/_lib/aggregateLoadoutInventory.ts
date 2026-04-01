@@ -1,8 +1,9 @@
 import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutConstituent } from "@/app/scheduling/dailyInventory/_lib/Mixture";
 
 /**
  * Aggregates loadout inventories from multiple services into a single consolidated inventory.
- * Totals amounts at every level of the tree (masters → equipments → subProducts).
+ * Totals amounts at every level of the tree (masters → equipments → constituents).
  */
 export function aggregateLoadoutInventory(inventories: LoadoutBase[]): LoadoutBase {
   // Flatten all masters from all inventories
@@ -95,7 +96,7 @@ function aggregateMasters(
 
 /**
  * Aggregates multiple equipments with the same equipmentId.
- * Sums amounts for each sub-product within the equipment.
+ * Sums the equipment plannedAmount and aggregates each constituent by productId.
  */
 function aggregateEquipments(
   equipments: LoadoutBase["masters"][number]["equipments"][number][],
@@ -107,46 +108,39 @@ function aggregateEquipments(
     equipments.reduce((sum, equipment) => sum + equipment.plannedAmount, 0),
   );
 
-  // Flatten all sub-products from all equipments
-  const allSubProducts = equipments.flatMap((equipment) => equipment.subProducts);
+  // Flatten all constituents from all equipments
+  const allConstituents = equipments.flatMap((equipment) => equipment.constituents);
 
-  // Group by sub-product productId
-  const subProductsMap = new Map<
-    number,
-    LoadoutBase["masters"][number]["equipments"][number]["subProducts"][number][]
-  >();
+  // Group by constituent productId
+  const constituentsMap = new Map<number, LoadoutConstituent[]>();
 
-  allSubProducts.forEach((sub) => {
-    const productId = sub.product.productId;
-    if (!subProductsMap.has(productId)) {
-      subProductsMap.set(productId, []);
+  allConstituents.forEach((constituent) => {
+    const productId = constituent.product.productId;
+    if (!constituentsMap.has(productId)) {
+      constituentsMap.set(productId, []);
     }
-    subProductsMap.get(productId)!.push(sub);
+    constituentsMap.get(productId)!.push(constituent);
   });
 
-  // Aggregate each group of sub-products
-  const aggregatedSubProducts = Array.from(subProductsMap.values()).map(
-    (subs) => aggregateEquipmentSubProducts(subs),
+  // Aggregate each group of constituents.
+  // Preserve insertion order so the carrier (always first) stays first.
+  const aggregatedConstituents = Array.from(constituentsMap.values()).map(
+    (constituents) => aggregateConstituents(constituents),
   );
 
   return {
     equipmentId: first.equipmentId,
     appMethod: first.appMethod,
-    carrierProductId: first.carrierProduct.productId,
-    carrierProduct: first.carrierProduct,
-    carrierProductUnitId: first.carrierProductUnit.unitId,
-    carrierProductUnit: first.carrierProductUnit,
     plannedAmount: totalAmount,
     startAmount: null,
     finishAmount: null,
-    subProducts: aggregatedSubProducts,
+    constituents: aggregatedConstituents,
   };
 }
 
 /**
  * Aggregates multiple sub-products with the same productId.
  * Sums amounts (base case - no further nesting).
- * ratePerKsf is a constant per product — take from first entry (not summed).
  */
 function aggregateSubProducts(
   subProducts: LoadoutBase["masters"][number]["subProducts"][number][],
@@ -170,23 +164,20 @@ function aggregateSubProducts(
 }
 
 /**
- * Aggregates multiple equipment sub-products with the same productId.
+ * Aggregates multiple constituents with the same productId.
  * Sums plannedAmount; ratePerKsf is a constant per product — take from first entry.
  */
-function aggregateEquipmentSubProducts(
-  subProducts: LoadoutBase["masters"][number]["equipments"][number]["subProducts"][number][],
-): LoadoutBase["masters"][number]["equipments"][number]["subProducts"][number] {
-  const first = subProducts[0];
+function aggregateConstituents(constituents: LoadoutConstituent[]): LoadoutConstituent {
+  const first = constituents[0];
 
   const totalAmount = Math.round(
-    subProducts.reduce((sum, sub) => sum + sub.plannedAmount, 0),
+    constituents.reduce((sum, constituent) => sum + constituent.plannedAmount, 0),
   );
 
   return {
-    productId: first.product.productId,
     product: first.product,
-    plannedAmount: totalAmount,
     ratePerKsf: first.ratePerKsf,
+    plannedAmount: totalAmount,
     startAmount: null,
     finishAmount: null,
     unitId: first.unit.unitId,

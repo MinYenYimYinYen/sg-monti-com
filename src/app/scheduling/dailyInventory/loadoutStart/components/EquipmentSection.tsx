@@ -76,13 +76,16 @@ export function EquipmentSection({
 
   const tracksTankLevel = plannedEquipment.appMethod.tracksTankLevel;
 
-  // showFlOz is encoded in the carrierProduct's unitConfig: app = "Fl Oz" means showFlOz: true.
+  // The carrier is always constituents[0] (WATER_PRODUCT_ID).
+  const carrierConstituent = plannedEquipment.constituents[0];
+
+  // showFlOz is encoded in the carrier's unitConfig: app = "Fl Oz" means showFlOz: true.
   // When true, display as compound "X Gal Y Fl Oz"; when false, display as decimal gallons.
   const showFlOz =
-    plannedEquipment.carrierProduct.unitConfig.conversions.app.unitLabel === "Fl Oz";
+    carrierConstituent.product.unitConfig.conversions.app.unitLabel === "Fl Oz";
 
   const carrierProductAmountDisplay =
-    plannedEquipment.carrierProduct.unitConfigDisplay.format({
+    carrierConstituent.product.unitConfigDisplay.format({
       amount: plannedEquipment.plannedAmount,
       targetContexts: showFlOz ? ["load", "app"] : ["load"],
       rounding: "ceil",
@@ -97,7 +100,7 @@ export function EquipmentSection({
           ...m,
           equipments: m.equipments.map((e) => {
             if (e.equipmentId === equipmentId) {
-              // Derive sub-product start amounts proportionally from the tank level.
+              // Derive constituent start amounts proportionally from the tank level.
               // ratio = entered tank amount / planned tank amount (both in app units).
               const ratio =
                 value != null && plannedEquipment.plannedAmount > 0
@@ -107,11 +110,11 @@ export function EquipmentSection({
               return {
                 ...e,
                 startAmount: value,
-                subProducts: e.subProducts.map((sub) => ({
-                  ...sub,
+                constituents: e.constituents.map((constituent) => ({
+                  ...constituent,
                   startAmount:
                     ratio != null
-                      ? Math.round(ratio * sub.plannedAmount * 100) / 100
+                      ? Math.round(ratio * constituent.plannedAmount * 100) / 100
                       : null,
                 })),
               };
@@ -133,7 +136,7 @@ export function EquipmentSection({
           startEntry.startAmount,
           "app",
           "load",
-          plannedEquipment.carrierProduct.unitConfig,
+          carrierConstituent.product.unitConfig,
         )
       : "";
 
@@ -153,7 +156,7 @@ export function EquipmentSection({
             ) : (
               plannedEquipment.appMethod.needsWater
                 ? equipmentId
-                : plannedEquipment.carrierProduct.productCode  // eslint-disable-line @typescript-eslint/no-unnecessary-condition
+                : carrierConstituent.product.productCode  // eslint-disable-line @typescript-eslint/no-unnecessary-condition
             )}
           </div>
           <div className={"text-xs text-foreground/70"}>
@@ -165,7 +168,7 @@ export function EquipmentSection({
             <Input
               type="number"
               placeholder={
-                plannedEquipment.carrierProduct.unitConfig.conversions.load.unitLabel
+                carrierConstituent.product.unitConfig.conversions.load.unitLabel
               }
               className={`w-32 ${fieldIssue ? "border-red-500" : ""}`}
               value={displayValue}
@@ -180,7 +183,7 @@ export function EquipmentSection({
                         loadValue,
                         "load",
                         "app",
-                        plannedEquipment.carrierProduct.unitConfig,
+                        carrierConstituent.product.unitConfig,
                       )
                     : null;
                 handleAmountChange(appValue);

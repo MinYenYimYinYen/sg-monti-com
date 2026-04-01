@@ -11,8 +11,8 @@ function initializeLoadout(loadoutInventory: LoadoutBase) {
         ...equipment,
         startAmount: null,
         finishAmount: null,
-        subProducts: equipment.subProducts.map((sub) => ({
-          ...sub,
+        constituents: equipment.constituents.map((constituent) => ({
+          ...constituent,
           startAmount: null,
           finishAmount: null,
         })),
@@ -59,17 +59,15 @@ function serializeLoadout(params: {
       equipments: master.equipments.map((equipment) => ({
         equipmentId: equipment.equipmentId,
         appMethodId: equipment.appMethod.appMethodId,
-        carrierProductId: equipment.carrierProductId,
-        carrierProductUnitId: equipment.carrierProductUnitId,
         plannedAmount: equipment.plannedAmount,
         startAmount: equipment.startAmount,
         finishAmount: equipment.finishAmount,
-        subProducts: equipment.subProducts.map((sub) => ({
-          productId: sub.productId,
-          plannedAmount: sub.plannedAmount,
-          startAmount: sub.startAmount,
-          finishAmount: sub.finishAmount,
-          unitId: sub.unitId,
+        constituents: equipment.constituents.map((constituent) => ({
+          productId: constituent.product.productId,
+          plannedAmount: constituent.plannedAmount,
+          startAmount: constituent.startAmount,
+          finishAmount: constituent.finishAmount,
+          unitId: constituent.unitId,
         })),
       })),
       subProducts: master.subProducts.map((sub) => ({
