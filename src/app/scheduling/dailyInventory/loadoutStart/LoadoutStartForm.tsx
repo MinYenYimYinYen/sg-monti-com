@@ -25,6 +25,8 @@ export function LoadoutStartForm() {
   const loadoutInventory = useSelector(loadoutStartSelect.serviceResolvedLoadout);
   const loadout = useSelector(loadoutStartSelect.loadout.data);
   const hasIssues = useSelector(loadoutStartSelect.loadout.startValidation.hasIssues);
+  const issues = useSelector(loadoutStartSelect.loadout.startValidation.issues);
+  const showAllIssues = useSelector((state: Parameters<typeof loadoutStartSelect.tech>[0]) => state.loadoutStart.showAllLoadoutIssues);
   const tech = useSelector(loadoutStartSelect.tech);
   const routeDate = useSelector(loadoutStartSelect.routeDate);
   const truckId = useSelector(loadoutStartSelect.truckId);
@@ -107,14 +109,16 @@ export function LoadoutStartForm() {
 
         {/* Submit */}
         {loadoutInventory.masters.length > 0 && (
-          <SaveButton
-            status={saveStatus}
-            disabled={!canSubmit}
-            onClick={handleSave}
-            onSuccessComplete={() => setSaveStatus("idle")}
-          >
-            Save Start Loadout
-          </SaveButton>
+          <div onClick={() => dispatch(loadoutStartActions.setShouldShowAllStartLoadoutIssues(true))}>
+            <SaveButton
+              status={saveStatus}
+              disabled={!canSubmit}
+              onClick={handleSave}
+              onSuccessComplete={() => setSaveStatus("idle")}
+            >
+              Save Start Loadout
+            </SaveButton>
+          </div>
         )}
       </div>
     </Container>

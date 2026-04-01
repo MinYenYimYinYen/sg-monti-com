@@ -5,7 +5,8 @@ import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCu
 import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
 import { useRecentProduction } from "@/app/realGreen/customer/hooks/useRecentProduction";
 import Link from "next/link";
-import { CalendarSync } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ArrowLeft, CalendarSync } from "lucide-react";
 
 export default function DailyInventoryLayout({
   children,
@@ -16,8 +17,8 @@ export default function DailyInventoryLayout({
   useRecentProduction();
   useLoadoutFormDeps();
 
-
-
+  const pathname = usePathname();
+  const isRoot = pathname === "/scheduling/dailyInventory";
 
   return (
     <Container
@@ -25,9 +26,16 @@ export default function DailyInventoryLayout({
       className="flex flex-col h-full overflow-hidden"
     >
       <div className={"flex gap-1"}>
-        <Link href={"/scheduling/dailyInventory"}>
-          <div className={"text-2xl font-bold"}>Daily Inventory</div>
-        </Link>
+        {isRoot ? (
+          <div className={"text-xl font-bold"}>Daily Inventory</div>
+        ) : (
+          <Link href={"/scheduling/dailyInventory"}>
+            <div className={"flex items-center gap-1"}>
+              <ArrowLeft />
+              <div className={"text-xl font-bold"}>Daily Inventory</div>
+            </div>
+          </Link>
+        )}
       </div>
       <ScrollArea className="flex-1">{children}</ScrollArea>
     </Container>

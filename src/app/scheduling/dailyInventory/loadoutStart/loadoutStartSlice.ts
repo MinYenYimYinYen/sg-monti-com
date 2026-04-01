@@ -53,6 +53,18 @@ export const loadoutStartSlice = createSlice({
   initialState,
   reducers: {
     setTech: (state, action: PayloadAction<string>) => {
+      // Reset all form state when the tech changes — a different tech means a different route.
+      state.truckId = null;
+      state.rideOnId = null;
+      state.truckTouched = false;
+      state.rideOnTouched = false;
+      state.loadout = baseLoadout;
+      state.loadoutTouchedFields = new Set<string>();
+      state.showAllLoadoutIssues = false;
+      state.packageSelections = [];
+      state.pendingProductSlots = [];
+      state.pendingSlotProducts = {};
+      state.pendingSlotAmounts = {};
       state.tech = action.payload;
     },
     setRouteDate: (state, action: PayloadAction<string>) => {
