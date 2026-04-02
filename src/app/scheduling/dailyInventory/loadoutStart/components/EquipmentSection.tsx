@@ -37,6 +37,7 @@ export function EquipmentSection({
   const plannedMaster = loadoutInventory.masters.find(
     (m) => m.product.productId === masterProductId,
   );
+
   const plannedEquipment = plannedMaster?.equipments.find(
     (e) => e.equipmentId === equipmentId,
   );

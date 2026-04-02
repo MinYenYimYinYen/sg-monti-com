@@ -10,12 +10,17 @@ import { ProgramDoc } from "../../entities/types/ProgramTypes";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServiceSearchCriteria } from "../searchCriteria/types/ServSearch";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { AppError } from "@/lib/errors/AppError";
 
 type SearchSchemeParams = {
   season: number;
+  schemeParams?: Record<string, unknown>;
 };
 
-const activeCustomers = ({ season }: SearchSchemeParams): SearchScheme => {
+const activeCustomers = ({
+  season,
+  schemeParams,
+}: SearchSchemeParams): SearchScheme => {
   return {
     schemeName: "activeCustomers",
     steps: [
@@ -141,9 +146,7 @@ const lastSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => {
   };
 };
 
-const recentProduction = ({
-  season,
-}: SearchSchemeParams): SearchScheme => {
+const recentProduction = ({ season }: SearchSchemeParams): SearchScheme => {
   const today = dateStrings.today();
   return {
     schemeName: "production",
@@ -183,9 +186,60 @@ const recentProduction = ({
   };
 };
 
+const singleCustomer = ({
+  season,
+  schemeParams,
+}: SearchSchemeParams): SearchScheme => {
+  const custId = schemeParams?.custId;
+
+  // early return for invalid customer ID
+  if (!custId || typeof custId !== "number") {
+    return {
+      schemeName: "singleCustomer",
+      steps: [],
+    };
+  }
+
+  return {
+    schemeName: "singleCustomer",
+    steps: [
+      createPaginationStep({
+        stepName: "customers",
+        optimizerKey: "singleCustomer",
+        searchCriteria: {
+          custIds: [custId],
+        },
+      }),
+      createBatchSizeStep({
+        stepName: "programs",
+        optimizerKey: "singleCustomerPrograms",
+        getIds: (pipelineData) => {
+          const dupedIds = (pipelineData as CustomerDoc[]).map((c) => c.custId);
+          return [...new Set(dupedIds)];
+        },
+        getSearchCriteria: (ids) => ({
+          custIds: ids,
+        }),
+      }),
+      createBatchSizeStep({
+        stepName: "services",
+        optimizerKey: "singleCustomerServices",
+        getIds: (pipelineData) => {
+          const dupedIds = (pipelineData as ProgramDoc[]).map((p) => p.progId);
+          return [...new Set(dupedIds)];
+        },
+        getSearchCriteria: (ids) => ({
+          progIds: ids,
+        }),
+      }),
+    ],
+  };
+};
+
 export const searchScheme = {
   activeCustomers,
   printedCustomers,
   lastSeasonProduction,
   recentProduction,
+  singleCustomer,
 };

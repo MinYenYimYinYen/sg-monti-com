@@ -2,7 +2,7 @@ import { useSelector } from "react-redux";
 import { useEffect } from "react";
 import {
   lastSeasonProductionGetDocs,
-} from "@/app/realGreen/customer/slices/customerReducers";
+} from "@/app/realGreen/customer/slices/customerSlices";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";

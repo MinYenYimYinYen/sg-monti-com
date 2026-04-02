@@ -27,6 +27,7 @@ import createAppMethodReducer from "@/app/appMethod/appMethodCreate/createAppMet
 import { loadoutStartReducer } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
 import { loadoutFinishReducer } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSlice";
 import { loadoutReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
+import { templateReducer } from "@/app/quickSend/templates/templateSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -55,6 +56,7 @@ const rootReducer = combineReducers({
   equipmentPackage: equipmentPackageReducer,
   customer: customerReducer,
   csv: csvReducer,
+  template: templateReducer,
 });
 
 export default rootReducer;

@@ -8,10 +8,6 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 export default function ProgServListPage() {
   useProgServ({ autoLoad: true });
 
-  //todo: Make this UI like the product, appmethod, or equipment ui configs
-  //todo: Enable editing the rule
-  //todo: We should be setting the default here, and allowing for multiple other possibilities
-  //todo: Loadout form should be allowed to choose from the other possibilities.
   return (
     <Container variant="page" title="Program & Service Codes">
       <div className="mb-6">

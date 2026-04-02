@@ -15,13 +15,15 @@ import {
   printedCustomersGetDocs,
   recentProductionActions,
   recentProductionGetDocs,
-} from "@/app/realGreen/customer/slices/customerReducers";
+  singleCustomerActions,
+} from "@/app/realGreen/customer/slices/customerSlices";
 
 export type CustomerContextMode =
   | "active"
   | "printed"
   | "lastSeasonProduction"
-  | "recentProduction";
+  | "recentProduction"
+  | "single";
 
 interface CentralCustomerState extends CentralCustomerStateData {
   activeContexts: CustomerContextMode[];
@@ -100,8 +102,16 @@ export const centralCustomerSlice = createSlice({
       },
     );
 
+    // Recent Production - Streaming
     builder.addCase(recentProductionActions.receiveChunk, (state, action) => {
       if (state.activeContexts.includes("recentProduction")) {
+        mergeChunk(state, action.payload);
+      }
+    });
+    
+    // Single Customer - Streaming
+    builder.addCase(singleCustomerActions.receiveChunk, (state, action) => {
+      if (state.activeContexts.includes("single")) {
         mergeChunk(state, action.payload);
       }
     });
@@ -142,6 +152,14 @@ export const centralCustomerSlice = createSlice({
         state.ServDocMap.clear();
       }
     })
+
+    builder.addCase(singleCustomerActions.getDocs.pending, (state) => {
+      if (state.activeContexts.includes("single")) {
+        state.CustDocMap.clear();
+        state.ProgDocMap.clear();
+        state.ServDocMap.clear();
+      }
+    })
   },
 });
 
@@ -169,8 +187,9 @@ export const switchContexts =
         sourceState = state.customer.lastSeasonProduction;
       } else if (context === "recentProduction") {
         sourceState = state.customer.recentProduction;
-      }
-      else {
+      } else if (context === "single") {
+        sourceState = state.customer.single;
+      } else {
         return;
       }
 

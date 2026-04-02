@@ -4,7 +4,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { useSelector } from "react-redux";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
-import { printedCustomersGetDocs } from "@/app/realGreen/customer/slices/customerReducers";
+import { printedCustomersGetDocs } from "@/app/realGreen/customer/slices/customerSlices";
 
 export function usePrintedCustomers({
   autoLoad = false,

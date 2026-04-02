@@ -4,7 +4,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
-import { activeCustomersGetDocs } from "@/app/realGreen/customer/slices/customerReducers";
+import { activeCustomersGetDocs } from "@/app/realGreen/customer/slices/customerSlices";
 
 export function useActiveCustomers({ autoLoad = false }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();

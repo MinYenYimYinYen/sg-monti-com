@@ -9,6 +9,7 @@ type SubProductSectionProps = {
 
 export function SubProductSection({ masterProductId }: SubProductSectionProps) {
   const loadoutInventory = useSelector(loadoutStartSelect.serviceResolvedLoadout);
+  console.log("loadoutInventory", loadoutInventory);
   const loadout = useSelector(loadoutStartSelect.loadout.data);
   const pendingSlots = useSelector(loadoutStartSelect.pendingProductSlots);
 

@@ -26,10 +26,10 @@ const handlers: HandlerMap<CustomerContract> = {
       return new ReadableStream({
         async start(controller) {
           try {
-            const { schemeName, season } = params;
+            const { schemeName, season, schemeParams } = params;
             const schemeFactory =
               searchScheme[schemeName as keyof typeof searchScheme];
-            const scheme = schemeFactory({ season });
+            const scheme = schemeFactory({ season, schemeParams });
             const { steps } = scheme;
 
             let pipelineData: PipelineData | null = null;

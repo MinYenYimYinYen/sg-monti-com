@@ -75,6 +75,11 @@ export const recentProductionGetDocs = createGetCustDocsThunk("recentProduction"
 export const recentProductionActions = { ...recentProductionSlice.actions, getDocs: recentProductionGetDocs}
 export const recentProductionReducer = recentProductionSlice.reducer;
 
+export const singleCustomerSlice = createCustomerSlice("singleCustomer");
+export const singleCustomerGetDocs = createGetCustDocsThunk("singleCustomer", singleCustomerSlice);
+export const singleCustomerActions = { ...singleCustomerSlice.actions, getDocs: singleCustomerGetDocs}
+export const singleCustomerReducer = singleCustomerSlice.reducer;
+
 
 
 

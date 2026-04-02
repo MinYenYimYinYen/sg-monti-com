@@ -4,14 +4,15 @@ import csvReducer from "@/app/csv/_lib/csvSlice";
 import {
   activeCustomerReducer,
   lastSeasonProductionReducer,
-  printedCustomerReducer,
-} from "@/app/realGreen/customer/slices/customerReducers";
+  printedCustomerReducer, singleCustomerReducer,
+} from "@/app/realGreen/customer/slices/customerSlices";
 
 export const customerReducer = combineReducers({
   active: activeCustomerReducer,
   lastSeasonProduction: lastSeasonProductionReducer,
   printed: printedCustomerReducer,
   recentProduction: printedCustomerReducer,
+  single: singleCustomerReducer,
   central: centralCustomerReducer,
   csv: csvReducer,
 });

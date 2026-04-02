@@ -3,7 +3,7 @@ import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { useSelector } from "react-redux";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useEffect } from "react";
-import { recentProductionGetDocs } from "@/app/realGreen/customer/slices/customerReducers";
+import { recentProductionGetDocs } from "@/app/realGreen/customer/slices/customerSlices";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
 export function useRecentProduction() {
