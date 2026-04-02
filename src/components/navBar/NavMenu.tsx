@@ -52,7 +52,7 @@ const schedulingSection: NavSection = {
       title: "Daily Inventory",
       href: "/scheduling/dailyInventory",
       roles: ["admin", "office", "tech"],
-    }
+    },
   ],
 };
 
@@ -65,6 +65,7 @@ const prepaySection: NavSection = {
       roles: ["admin", "office"],
     },
     { title: "PDF", href: "/prepayLetters/pdf", roles: ["admin", "office"] },
+    { title: "QuickSend", href: "/quickSend", roles: ["admin", "office"] },
   ],
 };
 
