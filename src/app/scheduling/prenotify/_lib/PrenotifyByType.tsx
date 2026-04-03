@@ -174,7 +174,7 @@ function PreNotifyManual({ data }: { data: PrenotificationData[] }) {
                 </Badge>
               ))}
             </div>
-            <div className={"flex gap-2 max-h-[3rem]"}>
+            <div className={"flex gap-2"}>
               {notes.map((note, index) => {
                 return (
                   <div key={index} className={"flex-1"}>
@@ -184,7 +184,7 @@ function PreNotifyManual({ data }: { data: PrenotificationData[] }) {
               })}
             </div>
             <Tabs defaultValue="email">
-              <TabsList className={"grid w-full grid-cols-2"}>
+              <TabsList className={"grid w-full grid-cols-2 border rounded-lg border-primary/30"}>
                 <TabsTrigger value="email">Email</TabsTrigger>
                 <TabsTrigger value="text">Text</TabsTrigger>
               </TabsList>

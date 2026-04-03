@@ -42,26 +42,6 @@ export default function Prenotify() {
   const [selectedNotificationType, setSelectedNotificationType] =
     useState<NotificationType>(selectedPrenotifies[0]?.[0] ?? "");
 
-
-  const services = useSelector(centralSelect.services);
-  const promised = new ServiceQuery(services).hasPromise(true).results;
-
-  // console.log("promised", promised
-  //   .filter(s=>s.status==="$")
-  //   .map((s) => {
-  //   return {
-  //     custId: s.custId,
-  //     servCodeId: s.servCodeId,
-  //     combinedPromises: s.x.promises,
-  //     servPromise: s.promise,
-  //     progPromise: s.program.promise,
-  //     custPromise: s.program.customer.promise,
-  //     technotes: s.x.allTechNotes,
-  //
-  //   }
-  // }));
-
-
   return (
     <Container variant={"page"} className="h-full flex flex-col flex-1">
       <h1 className={"text-2xl font-bold"}>Prenotify</h1>

@@ -7,14 +7,12 @@ import { keywordSelect } from "@/app/realGreen/callAhead/selectors/keywordSelect
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 import { NotificationType } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
-import {
-  MultiSelect,
-
-} from "@/components/multiselect/MultiSelect";
+import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
 import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
+import { Toggle } from "@/style/components/toggle";
 
 const notificationTypeLabels: Record<NotificationType, string> = {
   [NotificationType.Text]: "Text",
@@ -34,9 +32,11 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
   const [selectedKeywordIds, setSelectedKeywordIds] = useState<string[]>(
     doc?.keywordIds || [],
   );
-  const [selectedNotificationTypes, setSelectedNotificationTypes] = useState<NotificationType[]>(
-    doc?.notificationTypes || [],
-  );
+  const [selectedNotificationTypes, setSelectedNotificationTypes] = useState<
+    NotificationType[]
+  >(doc?.notificationTypes || []);
+  const [eta, setEta] = useState(false);
+
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
   // Update local state if doc properties change externally
@@ -44,6 +44,7 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
     if (doc) {
       setSelectedKeywordIds(doc.keywordIds);
       setSelectedNotificationTypes(doc.notificationTypes);
+      setEta(doc.hasETA);
     }
   }, [doc]);
 
@@ -53,7 +54,9 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
     JSON.stringify([...selectedKeywordIds].sort()) !==
       JSON.stringify([...doc.keywordIds].sort()) ||
     JSON.stringify([...selectedNotificationTypes].sort()) !==
-      JSON.stringify([...doc.notificationTypes].sort());
+      JSON.stringify([...doc.notificationTypes].sort()) ||
+    eta !== doc.hasETA;
+
   const canSave = hasChanges;
 
   const handleSave = async () => {
@@ -65,6 +68,7 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
         callAheadId: doc.callAheadId,
         keywordIds: selectedKeywordIds,
         notificationTypes: selectedNotificationTypes,
+        hasETA: eta,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
       });
@@ -78,8 +82,6 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
   const handleSuccessComplete = () => {
     setSaveStatus("idle");
   };
-
-
 
   return (
     <div className={"flex items-center gap-2"}>
@@ -115,7 +117,9 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
           <MultiSelectValue placeholder="none">
             {(values) =>
               values.length > 0
-                ? values.map((v) => notificationTypeLabels[v as NotificationType]).join(", ")
+                ? values
+                    .map((v) => notificationTypeLabels[v as NotificationType])
+                    .join(", ")
                 : "none"
             }
           </MultiSelectValue>
@@ -128,6 +132,9 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
           ))}
         </MultiSelectContent>
       </MultiSelect>
+      <Toggle pressed={eta} onPressedChange={setEta}>
+        ETA
+      </Toggle>
 
       <SaveButton
         status={saveStatus}

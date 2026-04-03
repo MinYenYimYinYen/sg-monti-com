@@ -30,6 +30,7 @@ export type CallAheadDocProps = CreatedUpdated & {
   callAheadId: number;
   keywordIds: string[];
   notificationTypes: NotificationType[];
+  hasETA: boolean;
 };
 
 export type CallAheadDoc = CallAheadCore & CallAheadDocProps;
