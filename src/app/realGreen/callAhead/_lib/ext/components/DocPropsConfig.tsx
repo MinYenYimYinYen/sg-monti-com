@@ -44,7 +44,7 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
     if (doc) {
       setSelectedKeywordIds(doc.keywordIds);
       setSelectedNotificationTypes(doc.notificationTypes);
-      setEta(doc.hasETA);
+      setEta(doc.hasEta);
     }
   }, [doc]);
 
@@ -55,7 +55,7 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
       JSON.stringify([...doc.keywordIds].sort()) ||
     JSON.stringify([...selectedNotificationTypes].sort()) !==
       JSON.stringify([...doc.notificationTypes].sort()) ||
-    eta !== doc.hasETA;
+    eta !== doc.hasEta;
 
   const canSave = hasChanges;
 
@@ -68,7 +68,7 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
         callAheadId: doc.callAheadId,
         keywordIds: selectedKeywordIds,
         notificationTypes: selectedNotificationTypes,
-        hasETA: eta,
+        hasEta: eta,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
       });

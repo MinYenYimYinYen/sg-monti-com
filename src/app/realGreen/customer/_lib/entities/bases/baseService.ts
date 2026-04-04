@@ -39,6 +39,7 @@ export const baseServiceCore: ServiceCore = {
 export const baseServiceDocProps: ServiceDocProps = {
   servId: baseNumId,
   assignments: [],
+  eta: null,
   createdAt: "",
   updatedAt: "",
 };
@@ -53,6 +54,8 @@ export const baseAssignmentDoc: AssignmentDoc = {
   employeeId: "",
   schedDate: "",
   status: "",
+  eta: null,
+  sequence: 0,
 };
 
 export const baseAssignmentProps: AssignmentProps = {

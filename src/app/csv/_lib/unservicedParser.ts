@@ -4,12 +4,16 @@ import { dateParser } from "@/lib/primatives/dates/dateParse";
 import { ParseConfig } from "./ParserTypes";
 import { createCSVParser } from "@/app/csv/_lib/parserFactory";
 
-// Zod schema for ServiceUnserviced validation
+// eta is not present in the CSV — it is entered by the user at runtime.
+// The parserFactory injects { eta: null } as a default before Zod validation,
+// so the schema includes it as z.null() to satisfy AssignmentDoc's shape.
 const ServiceUnservicedSchema = z.object({
   servId: z.number().positive("Service ID must be a positive number"),
   employeeId: z.string().min(1, "Employee ID cannot be empty"),
   schedDate: z.string().min(1, "Scheduled date cannot be empty"),
   status: z.string().min(1, "Status cannot be empty"),
+  sequence: z.number().positive("Sequence must be a positive number"),
+  eta: z.null(),
 });
 
 const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {
@@ -18,12 +22,14 @@ const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {
     AssignedToEmployeeId: "employeeId",
     ScheduledDateAsDate: "schedDate",
     ServiceStatus: "status",
+    Sequence: "sequence",
   },
   requiredColumns: [
     "ServiceId",
     "AssignedToEmployeeId",
     "ScheduledDateAsDate",
     "ServiceStatus",
+    "Sequence"
   ],
   optionalColumns: [],
   transformations: {
@@ -37,14 +43,15 @@ const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {
     //Todo: this is just to double check we're only taking printed services.
     ServiceStatus: (val) => val.trim(),
 
-    // Date transformation can be added here if needed
-    // "Service Date": (val) => new Date(val).toISOString(),
+    // RealGreen stores sequence multiplied by 10; divide to normalize.
+    Sequence: (val) => parseInt(val, 10) / 10,
   },
   schema: ServiceUnservicedSchema,
 };
 
 /**
- * Parses CSV file into ServiceUnserviced array using configured parser with Zod validation
+ * Parses CSV file into AssignmentDoc array using configured parser with Zod validation.
+ * eta is not present in the CSV — it defaults to null and is set by the user at runtime.
  * @param file - CSV file to parse
  * @returns Promise with ParseResult containing validated data or errors
  */

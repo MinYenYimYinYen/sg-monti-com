@@ -1,6 +1,5 @@
 import { combineReducers } from "redux";
 import centralCustomerReducer from "@/app/realGreen/customer/slices/centralCustomerSlice";
-import csvReducer from "@/app/csv/_lib/csvSlice";
 import {
   activeCustomerReducer,
   lastSeasonProductionReducer,
@@ -14,7 +13,6 @@ export const customerReducer = combineReducers({
   recentProduction: printedCustomerReducer,
   single: singleCustomerReducer,
   central: centralCustomerReducer,
-  csv: csvReducer,
 });
 
 export type CustomerState = ReturnType<typeof customerReducer>;

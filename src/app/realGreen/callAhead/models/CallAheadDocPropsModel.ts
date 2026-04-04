@@ -8,7 +8,7 @@ const CallAheadDocPropsSchema = new mongoose.Schema<CallAheadDocProps>(
     callAheadId: { type: Number, required: true, unique: true },
     keywordIds: { type: [String], required: true, default: [] },
     notificationTypes: { type: [String], required: true, default: [] },
-    hasETA: { type: Boolean, required: true, default: false },
+    hasEta: { type: Boolean, required: true, default: false },
   },
   { timestamps: true },
 );

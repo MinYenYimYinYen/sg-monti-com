@@ -249,7 +249,35 @@ Dark mode is controlled by the `.dark` class on the root element. Variables auto
 - Brand colors get brighter (higher lightness in OKLCH)
 - Soft intensity uses 30% opacity instead of 20%
 
-## 9. File Locations
+## 9. Scrollable Layouts (`flex-1 min-h-0`)
+
+When using `ScrollArea` inside a flex column layout, the scroll area will not work unless every flex ancestor between the fixed-height root and the `ScrollArea` has `min-h-0`.
+
+### Why it breaks
+By default, a flex item's `min-height` is `auto` — meaning it will always be at least as tall as its content. This prevents the browser from constraining the element's height, so `ScrollArea` never gets a bounded height to scroll within.
+
+### The fix
+Add `min-h-0` to every `flex flex-col` ancestor in the chain:
+
+```
+body (h-screen flex flex-col)
+  └── main (flex-1 flex flex-col overflow-hidden)
+        └── Container variant="page" (flex-1 flex flex-col min-h-0)  ← required
+              └── Tabs (flex-1 min-h-0)                               ← required
+                    └── TabsContent (flex-1 flex flex-col min-h-0)    ← required
+                          └── YourPanel (flex-1 min-h-0)              ← required
+                                └── ScrollArea (flex-1)               ← scrolls ✓
+```
+
+### Rule of thumb
+> **Any `flex flex-col` element that uses `flex-1` and sits between the root and a `ScrollArea` must also have `min-h-0`.**
+
+If a `ScrollArea` isn't scrolling, walk up the DOM tree and add `min-h-0` to each `flex` ancestor until you reach one with a fixed height (e.g. `h-screen`). Usually it's only 1–2 levels up.
+
+### `Container variant="page"` already handles this
+The `page` variant includes `flex flex-col min-h-0`, so pages using `<Container variant="page">` are already set up correctly. You only need to continue the chain in the page's own content.
+
+## 10. File Locations
 
 - **CSS Variables**: `src/style/tailwind.css`
 - **Components**: `src/style/components/*.tsx`

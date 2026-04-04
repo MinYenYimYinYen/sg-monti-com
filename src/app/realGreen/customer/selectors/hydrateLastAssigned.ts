@@ -33,6 +33,8 @@ export function hydrateLastAssigned(
     status: serviceDoc.status,
     schedDate: programDoc.nextDate,
     employeeId: baseStrId,
+    eta: null,
+    sequence: 0,
   };
 
   const shouldHaveAssignment = () => {

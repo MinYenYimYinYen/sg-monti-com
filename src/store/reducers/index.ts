@@ -18,7 +18,7 @@ import { serviceConditionReducer } from "@/app/realGreen/serviceCondition/_lib/s
 import taxCodeReducer from "@/app/realGreen/taxCode/taxCodeSlice";
 import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
-import csvReducer from "@/app/csv/_lib/csvSlice";
+import centralDocPropsReducer from "@/app/csv/_lib/centralDocPropsSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
 import { appMethodReducer } from "@/app/appMethod/appMethodSlice";
 import { equipmentReducer } from "@/app/equipment/equipmentSlice";
@@ -55,7 +55,7 @@ const rootReducer = combineReducers({
   equipment: equipmentReducer,
   equipmentPackage: equipmentPackageReducer,
   customer: customerReducer,
-  csv: csvReducer,
+  centralDocProps: centralDocPropsReducer,
   template: templateReducer,
 });
 

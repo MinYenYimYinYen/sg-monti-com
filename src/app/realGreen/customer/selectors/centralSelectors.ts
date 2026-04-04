@@ -18,7 +18,7 @@ import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { hydrateFlags } from "@/app/realGreen/customer/selectors/hydrateFlags";
 import { hydrateLastAssigned } from "@/app/realGreen/customer/selectors/hydrateLastAssigned";
-import { csvSelect } from "@/app/csv/_lib/csvSelect";
+import { centralDocPropsSelect } from "@/app/csv/_lib/centralDocPropsSelect";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
@@ -88,7 +88,8 @@ export const selectCustomers = createSelector(
     employeeSelect.employeeMap,
     flagSelect.flagDocMap,
     custFlagSelect.custIdFlagIds,
-    csvSelect.assignments,
+    centralDocPropsSelect.assignments,
+    centralDocPropsSelect.pendingEtas,
     serviceConditionSelect.serviceConditionsByServId,
   ],
   (
@@ -106,6 +107,7 @@ export const selectCustomers = createSelector(
     flagDocMap,
     custIdFlagIds,
     newAssignments,
+    pendingEtas,
     serviceConditionsByServId,
   ) => {
     // Builder types for type-safe construction without 'x'
@@ -183,6 +185,8 @@ export const selectCustomers = createSelector(
 
           const serviceBuilder: ServiceBuilder = {
             ...servDoc,
+            // Merge optimistic ETA override from centralDocProps state
+            eta: pendingEtas[servDoc.servId] !== undefined ? pendingEtas[servDoc.servId] : servDoc.eta,
             program: programBuilder as Program,
             servCode,
             callAhead: callAheadDocMap.get(servDoc.callAheadId) ?? null,

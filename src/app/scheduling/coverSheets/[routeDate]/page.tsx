@@ -6,6 +6,8 @@ import { Container } from "@/components/Containers";
 import { Document, Page, PDFViewer, View, Text } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { useCoverSheetDeps } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheetDeps";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/style/components/tabs";
+import { EtaSetupPanel } from "@/app/scheduling/coverSheets/_lib/components/EtaSetupPanel";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { useServCodes } from "@/app/realGreen/customer/_lib/hooks/useServCodes";
 import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
@@ -22,6 +24,7 @@ import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import { ScrollArea } from "@/style/components/scroll-area";
 
 export type RouteDatePageProps = {
   params: Promise<{
@@ -68,23 +71,36 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
 
   return (
     <Container variant={"page"}>
-      <div>{routeDate}</div>
+      <div className="text-lg font-semibold">{routeDate}</div>
 
-      <div className={"w-full h-[75vh] overflow-y-auto"}>
-        {loadingCount > 0 && <div>Loading...</div>}
-        {loadingCount === 0 && (
-          <PDFViewer style={{ width: "100%", height: "100%" }}>
-            <CoverSheetsPDF
-              routeDate={routeDate}
-              serviceByEmployee={serviceByEmployee}
-              getPlannedAppProductTotal={getPlannedAppProductTotal}
-              getServCodeCounts={getServCodeCounts}
-              getServicesByRuleDesc={getServicesByRuleDesc}
-              productCommonMap={productCommonMap}
-            />
-          </PDFViewer>
-        )}
-      </div>
+      <Tabs defaultValue="eta" className="w-full flex-1 min-h-0 flex flex-col">
+        <TabsList>
+          <TabsTrigger value="eta">ETA Setup</TabsTrigger>
+          <TabsTrigger value="pdf">Cover Sheet</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="eta" className="mt-2 flex flex-col flex-1 min-h-0">
+          <EtaSetupPanel serviceByEmployee={serviceByEmployee} />
+        </TabsContent>
+
+        <TabsContent value="pdf" className="mt-2">
+          <div className={"w-full h-[75vh] overflow-y-auto"}>
+            {loadingCount > 0 && <div>Loading...</div>}
+            {loadingCount === 0 && (
+              <PDFViewer style={{ width: "100%", height: "100%" }}>
+                <CoverSheetsPDF
+                  routeDate={routeDate}
+                  serviceByEmployee={serviceByEmployee}
+                  getPlannedAppProductTotal={getPlannedAppProductTotal}
+                  getServCodeCounts={getServCodeCounts}
+                  getServicesByRuleDesc={getServicesByRuleDesc}
+                  productCommonMap={productCommonMap}
+                />
+              </PDFViewer>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </Container>
   );
 }

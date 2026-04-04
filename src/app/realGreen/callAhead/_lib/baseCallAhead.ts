@@ -19,6 +19,7 @@ export const baseCallAheadDocProps: CallAheadDocProps = {
   callAheadId: baseNumId,
   keywordIds: [],
   notificationTypes: [],
+  hasEta: false,
   createdAt: "",
   updatedAt: "",
 };

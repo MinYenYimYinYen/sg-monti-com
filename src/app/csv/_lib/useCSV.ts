@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { parseAssignmentFromUnservicedReport } from "@/app/csv/_lib/unservicedParser";
-import { csvActions } from "@/app/csv/_lib/csvSlice";
+import { centralDocPropsActions } from "@/app/csv/_lib/centralDocPropsSlice";
 
 export function useCSV() {
   const dispatch = useAppDispatch();
@@ -15,8 +15,8 @@ export function useCSV() {
 
       if (result.success) {
         dispatch(
-          csvActions.saveAssignments({
-            params: {assignments: result.data},
+          centralDocPropsActions.saveAssignments({
+            params: { assignments: result.data },
             config: { force: true, showLoading: false },
           }),
         );
