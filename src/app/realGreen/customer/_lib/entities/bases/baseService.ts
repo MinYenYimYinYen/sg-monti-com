@@ -54,7 +54,6 @@ export const baseAssignmentDoc: AssignmentDoc = {
   employeeId: "",
   schedDate: "",
   status: "",
-  eta: null,
   sequence: 0,
 };
 

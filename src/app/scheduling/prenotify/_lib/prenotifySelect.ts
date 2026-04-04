@@ -8,6 +8,7 @@ import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { ContactPoint } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { chunkObjectArray } from "@/lib/primatives/typeUtils/chunkArray";
+import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 
 export type PrenotificationData = {
   customer: Customer;
@@ -163,6 +164,32 @@ export type TextPreNotifData = {
   hashKey: string;
 };
 
+type ServiceDisplay = {
+  serviceName: string;
+  sharedEta: string | null;
+};
+
+/**
+ * Builds the service name string and resolves a shared ETA for the message template.
+ * - All same ETA (or all null): ETA is returned as `sharedEta` to be placed after the date.
+ * - Mixed ETAs: each service name gets its own ETA in parens; `sharedEta` is null.
+ */
+function buildServiceDisplay(services: Service[]): ServiceDisplay {
+  const etas = services.map((s) => s.eta ?? null);
+  const uniqueEtas = new Set(etas.map((e) => e ?? ""));
+  const allSameEta = uniqueEtas.size === 1;
+  const sharedEta = allSameEta ? (etas[0] ?? null) : null;
+
+  const serviceNames = services.map((service) => {
+    if (!allSameEta && service.eta) {
+      return `${service.servCode.longName} (${service.eta})`;
+    }
+    return service.servCode.longName;
+  });
+
+  return { serviceName: serviceNames.join(", "), sharedEta };
+}
+
 export const getMessages = {
   [NotificationType.Phone]: (
     _date: string,
@@ -195,7 +222,7 @@ export const getMessages = {
 
     prenotificationData.forEach((pnData) => {
       const { services, callAheads, contactPoints } = pnData;
-      const serviceName = services.map((s) => s.servCode.longName).join(", ");
+      const { serviceName, sharedEta } = buildServiceDisplay(services);
 
       // Build keyword ID to message mapping and collect unique keyword IDs
       const uniqueKeywordIds = new Set<string>();
@@ -209,7 +236,7 @@ export const getMessages = {
       });
 
       const keywordIds = Array.from(uniqueKeywordIds).join(",");
-      const hashKey = serviceName + "♪" + keywordIds;
+      const hashKey = serviceName + "♪" + keywordIds + "♪" + (sharedEta ?? "");
       const existingPoints = pointsByServCodeAndMsg.get(hashKey) || [];
       pointsByServCodeAndMsg.set(hashKey, [
         ...existingPoints,
@@ -219,16 +246,18 @@ export const getMessages = {
     const emailDataUnchunked: EmailPreNotifData[] = Array.from(
       pointsByServCodeAndMsg.entries(),
     ).map(([hashKey, points]) => {
-      const [serviceName, keywordIdsStr] = hashKey.split("♪");
+      const [serviceName, keywordIdsStr, etaStr] = hashKey.split("♪");
       const keywordIds = keywordIdsStr ? keywordIdsStr.split(",") : [];
       const keywordMessage = keywordIds
         .map((id) => keywordIdToMessage.get(id))
         .filter(Boolean)
         .join(" ");
-      const baseMessage = `Hello!\nWe have your ${serviceName} scheduled for ${date}, weather permitting.\nThank You!\nSpring-Green\nFeel free to call or text us at 763-489-0007`;
+      const etaSuffix = etaStr ? ` (${etaStr})` : "";
+      const baseMessage = `Hello!\nWe have your ${serviceName} scheduled for ${date}${etaSuffix}, weather permitting.\nThank You!\nSpring-Green\nFeel free to call or text us at 763-489-0007`;
       const message = [baseMessage, keywordMessage].join(" ").trim();
       const subject = `Spring-Green: ${serviceName} scheduled for ${date}`;
-      return { subject, message, points, hashKey: hashKey.replace("♪", "-") };
+      const displayKey = serviceName + (keywordIdsStr ? `-${keywordIdsStr}` : "");
+      return { subject, message, points, hashKey: displayKey };
     });
 
     const emailData: EmailPreNotifData[] = chunkObjectArray(
@@ -247,7 +276,7 @@ export const getMessages = {
 
     prenotificationData.forEach((pnData) => {
       const { services, callAheads, contactPoints } = pnData;
-      const serviceName = services.map((s) => s.servCode.longName).join(", ");
+      const { serviceName, sharedEta } = buildServiceDisplay(services);
 
       // Build keyword ID to message mapping and collect unique keyword IDs
       const uniqueKeywordIds = new Set<string>();
@@ -261,7 +290,7 @@ export const getMessages = {
       });
 
       const keywordIds = Array.from(uniqueKeywordIds).join(",");
-      const hashKey = serviceName + "♪" + keywordIds;
+      const hashKey = serviceName + "♪" + keywordIds + "♪" + (sharedEta ?? "");
       const existingPoints = pointsByServCodeAndMsg.get(hashKey) || [];
       pointsByServCodeAndMsg.set(hashKey, [
         ...existingPoints,
@@ -271,15 +300,17 @@ export const getMessages = {
     const textDataUnchunked: TextPreNotifData[] = Array.from(
       pointsByServCodeAndMsg.entries(),
     ).map(([hashKey, points]) => {
-      const [serviceName, keywordIdsStr] = hashKey.split("♪");
+      const [serviceName, keywordIdsStr, etaStr] = hashKey.split("♪");
       const keywordIds = keywordIdsStr ? keywordIdsStr.split(",") : [];
       const keywordMessage = keywordIds
         .map((id) => keywordIdToMessage.get(id))
         .filter(Boolean)
         .join(" ");
-      const baseMessage = `Hi, this is Spring-Green! We have your ${serviceName} scheduled for ${date}, weather permitting.`;
+      const etaSuffix = etaStr ? ` (${etaStr})` : "";
+      const baseMessage = `Hi, this is Spring-Green! We have your ${serviceName} scheduled for ${date}${etaSuffix}, weather permitting.`;
       const message = [baseMessage, keywordMessage].join(" ").trim();
-      return { message, points, hashKey: hashKey.replace("♪", "-") };
+      const displayKey = serviceName + (keywordIdsStr ? `-${keywordIdsStr}` : "");
+      return { message, points, hashKey: displayKey };
     });
 
     const textData: TextPreNotifData[] = chunkObjectArray(
@@ -306,7 +337,7 @@ const selectPrenotificationMessagePoints = (
     (prenotificationsByCustId) => {
       if (!prenotificationsByCustId) return [];
       const prenotifications = Array.from(prenotificationsByCustId.values());
-      return getMessages[type](date, prenotifications);
+      return getMessages[type](prettyDate(date, "EEE, MMM d"), prenotifications);
       // const messageData = prenotifications.map((p) => {
       //   const { customer, services, callAheads, contactPoints } = p;
       //   const serviceName = services

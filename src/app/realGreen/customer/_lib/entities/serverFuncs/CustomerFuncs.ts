@@ -9,7 +9,7 @@ import { ContactPoint } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 
 function mapContactPoints(raw: CustomerRaw): ContactPoint[] {
   const phoneContacts = raw.phones.map((phone) => ({
-    point: phone.number,
+    point: phone.number.replace(/\D/g, "").slice(0, 10),
     type: phone.type,
   }));
 

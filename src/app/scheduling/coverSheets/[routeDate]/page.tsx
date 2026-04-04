@@ -269,6 +269,12 @@ function CoverSheetsPDF({
                 ])
                 .map((ca) => ca.description)
                 .join(", ");
+              const hasEta =
+                service.callAhead?.hasEta ||
+                service.program.callAhead?.hasEta ||
+                service.program.customer.callAhead?.hasEta ||
+                false;
+              const eta = hasEta && service.eta ? `ETA: ${service.eta}` : null;
               const asap = service.asapSince && "ASAP";
               const promised = service.isPromised && "PROMISED";
 
@@ -478,6 +484,7 @@ function CoverSheetsPDF({
                       )}
                     >
                       {preNotify && <Text>{preNotify}</Text>}
+                      {eta && <Text>{eta}</Text>}
                       {asap && <Text>{asap}</Text>}
                       {promised && <Text>{promised}</Text>}
                     </View>

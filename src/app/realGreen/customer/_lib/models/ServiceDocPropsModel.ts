@@ -13,7 +13,6 @@ const assignmentSchema = new mongoose.Schema<AssignmentDoc>(
     employeeId: { type: String, required: true },
     schedDate: { type: String, required: true },
     status: { type: String, required: true },
-    eta: { type: String, default: null },
     sequence: { type: Number, required: true, default: 0 },
   },
   {
