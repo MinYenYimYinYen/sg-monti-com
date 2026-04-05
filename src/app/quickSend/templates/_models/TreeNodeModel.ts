@@ -8,7 +8,8 @@ const FragmentBlockSchema = new mongoose.Schema(
     label: { type: String },
     feature: { type: String, required: true },
     content: { type: String, default: "" },
-    blockId: { type: Number, required: true, default: 1 },
+    choiceId: { type: Number, required: true, default: 1 },
+    groupId: { type: Number, required: true, default: 1 },
   },
   { _id: false },
 );

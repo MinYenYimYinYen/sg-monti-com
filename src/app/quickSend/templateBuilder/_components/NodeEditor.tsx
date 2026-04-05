@@ -6,10 +6,10 @@ import { templateSelect } from "@/app/quickSend/templates/templateSelect";
 import { useTemplate } from "@/app/quickSend/templates/useTemplate";
 import { TreeNodeDoc, FragmentBlock } from "@/app/quickSend/templates/TemplateTypes";
 import {
-  DATA_FEATURES,
-  CONTENT_FEATURES,
-  getFeatureDef,
-  TemplateFeatureKey,
+  DATA_FEATURE_DEFS,
+  CONTENT_FEATURE_DEFS,
+  getContentFeatureDef,
+  DataFeatureKey,
 } from "@/app/quickSend/templates/templateFeatures";
 import { DataFeaturePicker, ContentFeaturePicker } from "./FeaturePicker";
 import { BlockContentEditor } from "./BlockContentEditor";
@@ -51,8 +51,8 @@ interface NodeEditorFormProps {
 function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
   const [label, setLabel] = useState(node.label);
   const [order, setOrder] = useState(node.order);
-  const [dataFeatures, setDataFeatures] = useState<TemplateFeatureKey[]>(
-    (node.fragment?.dataFeatures ?? []) as TemplateFeatureKey[],
+  const [dataFeatures, setDataFeatures] = useState<DataFeatureKey[]>(
+    (node.fragment?.dataFeatures ?? []) as DataFeatureKey[],
   );
   const [blocks, setBlocks] = useState<FragmentBlock[]>(
     node.fragment?.blocks ?? [],
@@ -146,15 +146,13 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
             <TabsContent value="features" className="gap-4 mt-3">
               <DataFeaturePicker
                 title="Data Features"
-                available={DATA_FEATURES}
+                available={DATA_FEATURE_DEFS}
                 activeKeys={dataFeatures}
-                onChange={(keys) =>
-                  setDataFeatures(keys as TemplateFeatureKey[])
-                }
+                onChange={(keys) => setDataFeatures(keys as DataFeatureKey[])}
               />
               <ContentFeaturePicker
                 title="Content Features"
-                available={CONTENT_FEATURES}
+                available={CONTENT_FEATURE_DEFS}
                 blocks={blocks}
                 onChange={setBlocks}
               />
@@ -170,12 +168,15 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
                 <div className="flex flex-col gap-4">
                   {variablesEnabled && (
                     <p className="text-xs text-muted-foreground">
-                      Type <kbd className="px-1 py-0.5 rounded border border-border bg-muted text-xs">@</kbd> to insert a customer variable.
+                      Type{" "}
+                      <kbd className="px-1 py-0.5 rounded border border-border bg-muted text-xs">
+                        @
+                      </kbd>{" "}
+                      to insert a customer variable.
                     </p>
                   )}
                   {blocks.map((block) => {
-                    const def = getFeatureDef(block.feature);
-                    const isMultiLine = block.feature === "paragraph";
+                    const def = getContentFeatureDef(block.feature);
                     return (
                       <div key={block.blockKey} className="flex flex-col gap-1">
                         <Label>{block.label ?? def.label}</Label>
@@ -184,7 +185,7 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
                           onChange={(html) =>
                             updateBlockContent(block.blockKey, html)
                           }
-                          multiLine={isMultiLine}
+                          multiLine={def.multiLine}
                           variablesEnabled={variablesEnabled}
                           placeholder={`Enter ${def.label.toLowerCase()}...`}
                         />

@@ -1,52 +1,61 @@
-/**
- * Defines all available template features with their display metadata.
- * Use `TEMPLATE_FEATURE_DEFS` as the single source of truth for feature configuration.
- */
-export const TEMPLATE_FEATURE_DEFS = [
-  // --- Data Features ---
-  // These are UI-level features that affect how the send view behaves.
-  // They do not produce content blocks themselves.
+// ─── Data Features ──────────────────────────────────────────────────────────
+// UI-level features that affect send-view behavior.
+// They do not produce content blocks.
+
+export type DataFeatureDef = {
+  key: string;
+  label: string;
+  description: string;
+};
+
+export const DATA_FEATURE_DEFS = [
   {
     key: "custIdSearch",
     label: "Customer Lookup",
-    category: "data" as const,
-    description: "Adds a customer ID input to the send view. Enables @-mention variables.",
-    isContentBlock: false,
+    description:
+      "Adds a customer ID input to the send view. Enables @-mention variables.",
   },
+] as const satisfies readonly DataFeatureDef[];
 
-  // --- Content Features ---
-  // These produce content blocks that the user fills in via a Tiptap editor.
-  // textLine: single-line (Enter suppressed). paragraph: multi-line.
+export type DataFeatureKey = (typeof DATA_FEATURE_DEFS)[number]["key"];
+
+export function getDataFeatureDef(key: DataFeatureKey): DataFeatureDef {
+  return DATA_FEATURE_DEFS.find((f) => f.key === key)!;
+}
+
+// ─── Content Features ────────────────────────────────────────────────────────
+// Features that produce content blocks the user fills in via a Tiptap editor.
+
+export type ContentFeatureDef = {
+  key: string;
+  label: string;
+  description: string;
+  /** Whether the Tiptap editor allows multiple lines. False = Enter suppressed. */
+  multiLine: boolean;
+};
+
+export const CONTENT_FEATURE_DEFS = [
   {
     key: "textLine",
     label: "Text Line",
-    category: "content" as const,
     description: "A single line of text (e.g. greeting or subject line).",
-    isContentBlock: true,
+    multiLine: false,
   },
   {
     key: "paragraph",
     label: "Paragraph",
-    category: "content" as const,
     description: "A multi-line block of text.",
-    isContentBlock: true,
+    multiLine: true,
   },
-] as const;
+] as const satisfies readonly ContentFeatureDef[];
 
-export type TemplateFeatureKey = (typeof TEMPLATE_FEATURE_DEFS)[number]["key"];
-export type TemplateFeatureCategory = "data" | "content";
+export type ContentFeatureKey = (typeof CONTENT_FEATURE_DEFS)[number]["key"];
 
-export type TemplateFeatureDef = (typeof TEMPLATE_FEATURE_DEFS)[number];
-
-export const DATA_FEATURES = TEMPLATE_FEATURE_DEFS.filter(
-  (f) => f.category === "data",
-);
-
-export const CONTENT_FEATURES = TEMPLATE_FEATURE_DEFS.filter(
-  (f) => f.category === "content",
-);
-
-/** Look up a feature definition by key. */
-export function getFeatureDef(key: TemplateFeatureKey): TemplateFeatureDef {
-  return TEMPLATE_FEATURE_DEFS.find((f) => f.key === key)!;
+export function getContentFeatureDef(key: ContentFeatureKey): ContentFeatureDef {
+  return CONTENT_FEATURE_DEFS.find((f) => f.key === key)!;
 }
+
+// ─── Union ───────────────────────────────────────────────────────────────────
+// Used only where a value could be either kind (e.g. legacy storage migration).
+
+export type TemplateFeatureKey = DataFeatureKey | ContentFeatureKey;

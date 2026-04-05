@@ -1,4 +1,4 @@
-import type { TemplateFeatureKey } from "./templateFeatures";
+import type { ContentFeatureKey, DataFeatureKey } from "./templateFeatures";
 
 export type TreeNodeType = "category" | "fragment";
 
@@ -12,15 +12,22 @@ export type FragmentBlock = {
   /** Optional user-entered display name. Overrides the auto-generated blockKey label in the UI. */
   label?: string;
   /** Which content feature this block uses (e.g. "textLine", "paragraph"). */
-  feature: TemplateFeatureKey;
+  feature: ContentFeatureKey;
   /** User-authored text with optional {{customer.*}} placeholders. */
   content: string;
   /**
-   * Slot number — internal only, never shown to the user.
-   * Blocks sharing the same blockId form a "choice group": the sender picks one.
+   * Choice slot — internal only, never shown to the user.
+   * Blocks sharing the same choiceId form a choice group: the sender picks one.
    * Auto-assigned sequentially; "Create Choice" sets selected blocks to the same value.
    */
-  blockId: number;
+  choiceId: number;
+  /**
+   * Output group — internal only, never shown to the user.
+   * Blocks sharing the same groupId are assembled in order into a single output
+   * (one Tiptap editor / copyable unit). Defaults to a unique value per block
+   * (no grouping). "Create Group" sets selected blocks to the same value.
+   */
+  groupId: number;
 };
 
 export type TreeNodeDoc = {
@@ -33,7 +40,7 @@ export type TreeNodeDoc = {
     /** Points to a componentRegistry entry for dynamic content generation. */
     registryKey?: string;
     /** Active data features (e.g. ["custIdSearch"]). Affect send-view behavior. */
-    dataFeatures?: TemplateFeatureKey[];
+    dataFeatures?: DataFeatureKey[];
     /** Ordered content blocks. Source of truth for content — no separate contentFeatures array. */
     blocks?: FragmentBlock[];
   };

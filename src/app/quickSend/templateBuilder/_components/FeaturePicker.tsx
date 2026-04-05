@@ -7,21 +7,18 @@ import { Input } from "@/style/components/input";
 import { cn } from "@/style/utils";
 import { ChevronRight, ChevronLeft, ChevronUp, ChevronDown } from "lucide-react";
 import { Checkbox } from "@/style/components/checkbox";
-import type { TemplateFeatureDef, TemplateFeatureKey } from "@/app/quickSend/templates/templateFeatures";
+import type { DataFeatureDef, ContentFeatureDef, ContentFeatureKey } from "@/app/quickSend/templates/templateFeatures";
 import type { FragmentBlock } from "@/app/quickSend/templates/TemplateTypes";
 
 // ─── Data Feature Picker ────────────────────────────────────────────────────
 
 interface DataFeaturePickerProps {
-  available: readonly TemplateFeatureDef[];
+  available: readonly DataFeatureDef[];
   activeKeys: string[];
   onChange: (keys: string[]) => void;
   title: string;
 }
 
-/**
- * Dual-listbox for data features (no slot numbers — just active/inactive).
- */
 export function DataFeaturePicker({
   available,
   activeKeys,
@@ -34,7 +31,7 @@ export function DataFeaturePicker({
   const inactiveFeatures = available.filter((f) => !activeKeys.includes(f.key));
   const activeFeatures = activeKeys
     .map((key) => available.find((f) => f.key === key))
-    .filter((f): f is TemplateFeatureDef => f !== undefined);
+    .filter((f): f is DataFeatureDef => f !== undefined);
 
   const moveToActive = (key: string) => {
     if (activeKeys.includes(key)) return;
@@ -53,7 +50,7 @@ export function DataFeaturePicker({
         {title}
       </span>
       <div className="flex gap-2 items-center h-28">
-        <FeatureList
+        <DataFeatureList
           features={inactiveFeatures}
           selectedKey={leftSelected}
           onSelect={setLeftSelected}
@@ -82,7 +79,7 @@ export function DataFeaturePicker({
             <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
-        <FeatureList
+        <DataFeatureList
           features={activeFeatures}
           selectedKey={rightSelected}
           onSelect={setRightSelected}
@@ -98,35 +95,27 @@ export function DataFeaturePicker({
 // ─── Content Feature Picker ─────────────────────────────────────────────────
 
 interface ContentFeaturePickerProps {
-  available: readonly TemplateFeatureDef[];
+  available: readonly ContentFeatureDef[];
   blocks: FragmentBlock[];
   onChange: (blocks: FragmentBlock[]) => void;
   title: string;
 }
 
-/** Abbreviation prefix for blockKey generation, keyed by feature. */
-const FEATURE_PREFIX: Record<TemplateFeatureKey, string> = {
-  custIdSearch: "cis",
+const FEATURE_PREFIX: Record<ContentFeatureKey, string> = {
   textLine: "tl",
   paragraph: "p",
 };
 
-function generateBlockKey(feature: TemplateFeatureKey, existing: FragmentBlock[]): string {
+function generateBlockKey(feature: ContentFeatureKey, existing: FragmentBlock[]): string {
   const prefix = FEATURE_PREFIX[feature];
   const count = existing.filter((b) => b.feature === feature).length + 1;
   return `${prefix}${count}`;
 }
 
-function nextBlockId(blocks: FragmentBlock[]): number {
-  return blocks.length === 0 ? 1 : Math.max(...blocks.map((b) => b.blockId)) + 1;
+function nextId(blocks: FragmentBlock[], field: "choiceId" | "groupId"): number {
+  return blocks.length === 0 ? 1 : Math.max(...blocks.map((b) => b[field])) + 1;
 }
 
-/**
- * Content block manager.
- * Left side: add buttons for each available feature type.
- * Right side: ordered list of active blocks with multi-select + Create/Break Choice.
- * Slot numbers (blockId) and blockKeys are never shown to the user.
- */
 export function ContentFeaturePicker({
   available,
   blocks,
@@ -138,19 +127,17 @@ export function ContentFeaturePicker({
   const toggleSelect = (blockKey: string) => {
     setSelectedKeys((prev) => {
       const next = new Set(prev);
-      if (next.has(blockKey)) {
-        next.delete(blockKey);
-      } else {
-        next.add(blockKey);
-      }
+      if (next.has(blockKey)) next.delete(blockKey);
+      else next.add(blockKey);
       return next;
     });
   };
 
-  const addBlock = (feature: TemplateFeatureKey) => {
+  const addBlock = (feature: ContentFeatureKey) => {
     const blockKey = generateBlockKey(feature, blocks);
-    const blockId = nextBlockId(blocks);
-    const newBlock: FragmentBlock = { blockKey, feature, content: "", blockId };
+    const choiceId = nextId(blocks, "choiceId") + blocks.length;
+    const groupId = nextId(blocks, "groupId") + blocks.length;
+    const newBlock: FragmentBlock = { blockKey, feature, content: "", choiceId, groupId };
     onChange([...blocks, newBlock]);
   };
 
@@ -164,108 +151,112 @@ export function ContentFeaturePicker({
   };
 
   const selectedBlocks = blocks.filter((b) => selectedKeys.has(b.blockKey));
-  const selectedBlockIds = new Set(selectedBlocks.map((b) => b.blockId));
 
-  // "Create Choice": 2+ selected, not all already in the same group
-  const canCreateChoice =
-    selectedBlocks.length >= 2 && selectedBlockIds.size > 1;
-
-  // "Break Choice": 2+ selected, all in the same group
-  const canBreakChoice =
-    selectedBlocks.length >= 2 && selectedBlockIds.size === 1;
+  // ── Choice actions ──
+  const selectedChoiceIds = new Set(selectedBlocks.map((b) => b.choiceId));
+  const canCreateChoice = selectedBlocks.length >= 2 && selectedChoiceIds.size > 1;
+  const canBreakChoice = selectedBlocks.length >= 2 && selectedChoiceIds.size === 1;
 
   const createChoice = () => {
-    const targetId = Math.min(...selectedBlocks.map((b) => b.blockId));
-    // Assign same blockId and make selected blocks adjacent (grouped together)
-    const groupedBlocks = selectedBlocks.map((b) => ({ ...b, blockId: targetId }));
-    const otherBlocks = blocks.filter((b) => !selectedKeys.has(b.blockKey));
-    // Insert the group at the position of the first selected block in the original array
-    const firstSelectedIndex = blocks.findIndex((b) => selectedKeys.has(b.blockKey));
-    const result = [
-      ...otherBlocks.slice(0, firstSelectedIndex - (blocks.slice(0, firstSelectedIndex).filter((b) => selectedKeys.has(b.blockKey)).length)),
-      ...groupedBlocks,
-      ...otherBlocks.slice(firstSelectedIndex - (blocks.slice(0, firstSelectedIndex).filter((b) => selectedKeys.has(b.blockKey)).length)),
-    ];
-    onChange(result);
+    const targetId = Math.min(...selectedBlocks.map((b) => b.choiceId));
+    onChange(blocks.map((b) => (selectedKeys.has(b.blockKey) ? { ...b, choiceId: targetId } : b)));
   };
 
   const breakChoice = () => {
-    let nextId = nextBlockId(blocks.filter((b) => !selectedKeys.has(b.blockKey)));
+    let next = nextId(blocks, "choiceId");
     onChange(
       blocks.map((b) => {
         if (!selectedKeys.has(b.blockKey)) return b;
-        return { ...b, blockId: nextId++ };
+        return { ...b, choiceId: next++ };
       }),
     );
     setSelectedKeys(new Set());
   };
 
-  /**
-   * Builds a list of logical units for reordering.
-   * Each unit is an array of blocks sharing the same blockId (choice group),
-   * or a single-element array for standalone blocks.
-   * Units preserve the order of their first occurrence in the blocks array.
-   */
+  // ── Group actions ──
+  const selectedGroupIds = new Set(selectedBlocks.map((b) => b.groupId));
+  const canCreateGroup = selectedBlocks.length >= 2 && selectedGroupIds.size > 1;
+  const canBreakGroup = selectedBlocks.length >= 2 && selectedGroupIds.size === 1;
+
+  const createGroup = () => {
+    const targetId = Math.min(...selectedBlocks.map((b) => b.groupId));
+    onChange(blocks.map((b) => (selectedKeys.has(b.blockKey) ? { ...b, groupId: targetId } : b)));
+  };
+
+  const breakGroup = () => {
+    let next = nextId(blocks, "groupId");
+    onChange(
+      blocks.map((b) => {
+        if (!selectedKeys.has(b.blockKey)) return b;
+        return { ...b, groupId: next++ };
+      }),
+    );
+    setSelectedKeys(new Set());
+  };
+
+  // ── Reorder (logical units = choice groups) ──
   const toLogicalUnits = (blockList: FragmentBlock[]): FragmentBlock[][] => {
     const units: FragmentBlock[][] = [];
     const seen = new Set<number>();
     for (const block of blockList) {
-      if (seen.has(block.blockId)) continue;
-      const group = blockList.filter((b) => b.blockId === block.blockId);
-      units.push(group);
-      seen.add(block.blockId);
+      if (seen.has(block.choiceId)) continue;
+      units.push(blockList.filter((b) => b.choiceId === block.choiceId));
+      seen.add(block.choiceId);
     }
     return units;
   };
 
   const moveUnit = (blockKey: string, direction: "up" | "down") => {
     const units = toLogicalUnits(blocks);
-    const unitIndex = units.findIndex((unit) =>
-      unit.some((b) => b.blockKey === blockKey),
-    );
+    const unitIndex = units.findIndex((unit) => unit.some((b) => b.blockKey === blockKey));
     if (unitIndex === -1) return;
     const targetIndex = direction === "up" ? unitIndex - 1 : unitIndex + 1;
     if (targetIndex < 0 || targetIndex >= units.length) return;
     const reordered = [...units];
-    [reordered[unitIndex], reordered[targetIndex]] = [
-      reordered[targetIndex],
-      reordered[unitIndex],
-    ];
+    [reordered[unitIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[unitIndex]];
     onChange(reordered.flat());
   };
 
-  // Logical units for determining first/last position (for disabling ↑/↓)
   const logicalUnits = toLogicalUnits(blocks);
-
   const isFirstUnit = (blockKey: string) =>
     logicalUnits[0]?.some((b) => b.blockKey === blockKey) ?? false;
-
   const isLastUnit = (blockKey: string) =>
-    logicalUnits[logicalUnits.length - 1]?.some((b) => b.blockKey === blockKey) ??
-    false;
+    logicalUnits[logicalUnits.length - 1]?.some((b) => b.blockKey === blockKey) ?? false;
 
-  // Group blocks by blockId to determine choice groups
-  const blockIdCounts = blocks.reduce<Record<number, number>>((acc, b) => {
-    acc[b.blockId] = (acc[b.blockId] ?? 0) + 1;
+  // ── Color coding ──
+  // Choice groups: blocks sharing a choiceId (count > 1)
+  const choiceIdCounts = blocks.reduce<Record<number, number>>((acc, b) => {
+    acc[b.choiceId] = (acc[b.choiceId] ?? 0) + 1;
     return acc;
   }, {});
-
-  // Assign a stable color index to each choice group (blockId with count > 1)
   const choiceGroupIds = [...new Set(
-    blocks.filter((b) => blockIdCounts[b.blockId] > 1).map((b) => b.blockId),
+    blocks.filter((b) => choiceIdCounts[b.choiceId] > 1).map((b) => b.choiceId),
   )].sort((a, b) => a - b);
 
-  const choiceGroupColor = (blockId: number): string | null => {
-    const idx = choiceGroupIds.indexOf(blockId);
-    if (idx === -1) return null;
-    const colors = [
-      "border-l-primary",
-      "border-l-accent",
-      "border-l-secondary",
-      "border-l-destructive",
-    ];
-    return colors[idx % colors.length];
+  // Output groups: blocks sharing a groupId (count > 1)
+  const groupIdCounts = blocks.reduce<Record<number, number>>((acc, b) => {
+    acc[b.groupId] = (acc[b.groupId] ?? 0) + 1;
+    return acc;
+  }, {});
+  const outputGroupIds = [...new Set(
+    blocks.filter((b) => groupIdCounts[b.groupId] > 1).map((b) => b.groupId),
+  )].sort((a, b) => a - b);
+
+  const CHOICE_COLORS = ["border-l-primary", "border-l-accent", "border-l-secondary", "border-l-destructive"];
+  const GROUP_BG_COLORS = ["bg-primary/5", "bg-accent/5", "bg-secondary/5", "bg-destructive/5"];
+
+  const choiceBorderColor = (choiceId: number): string | null => {
+    const idx = choiceGroupIds.indexOf(choiceId);
+    return idx === -1 ? null : CHOICE_COLORS[idx % CHOICE_COLORS.length];
   };
+
+  const groupBgColor = (groupId: number): string | null => {
+    const idx = outputGroupIds.indexOf(groupId);
+    return idx === -1 ? null : GROUP_BG_COLORS[idx % GROUP_BG_COLORS.length];
+  };
+
+  const hasChoiceActions = canCreateChoice || canBreakChoice;
+  const hasGroupActions = canCreateGroup || canBreakGroup;
 
   return (
     <div className="flex flex-col gap-2">
@@ -273,7 +264,6 @@ export function ContentFeaturePicker({
         {title}
       </span>
 
-      {/* Add buttons */}
       <div className="flex flex-wrap gap-1">
         {available.map((feature) => (
           <Button
@@ -281,39 +271,42 @@ export function ContentFeaturePicker({
             size="sm"
             variant="primary"
             intensity="soft"
-            onClick={() => addBlock(feature.key)}
+            onClick={() => addBlock(feature.key as ContentFeatureKey)}
           >
             + {feature.label}
           </Button>
         ))}
       </div>
 
-      {/* Active blocks list */}
       {blocks.length > 0 && (
         <ScrollArea className="rounded-md border border-border max-h-48">
           <div className="p-1 space-y-0.5">
             {blocks.map((block) => {
               const def = available.find((f) => f.key === block.feature);
               const isSelected = selectedKeys.has(block.blockKey);
-              const groupColor = choiceGroupColor(block.blockId);
-              const isInChoiceGroup = groupColor !== null;
+              const choiceColor = choiceBorderColor(block.choiceId);
+              const groupBg = groupBgColor(block.groupId);
+              const isInChoiceGroup = choiceColor !== null;
+              const isInOutputGroup = groupBg !== null;
+              // Only the first block in a choice group shows reorder arrows
+              const isChoiceGroupLeader =
+                !isInChoiceGroup ||
+                blocks.find((b) => b.choiceId === block.choiceId)?.blockKey === block.blockKey;
 
               return (
                 <div
                   key={block.blockKey}
                   className={cn(
                     "flex items-center gap-2 px-2 py-1.5 rounded select-none text-sm border-l-2",
-                    isSelected ? "bg-primary/10" : "hover:bg-muted/50",
-                    isInChoiceGroup ? groupColor : "border-l-transparent",
+                    isSelected ? "bg-primary/10" : isInOutputGroup ? groupBg : "hover:bg-muted/50",
+                    isInChoiceGroup ? choiceColor : "border-l-transparent",
                   )}
                 >
-                  {/* Checkbox — sole selection trigger */}
                   <Checkbox
                     checked={isSelected}
                     onCheckedChange={() => toggleSelect(block.blockKey)}
                   />
 
-                  {/* Feature type badge */}
                   <span
                     className={cn(
                       "text-[10px] font-semibold px-1 rounded shrink-0",
@@ -325,32 +318,25 @@ export function ContentFeaturePicker({
                     {def?.label ?? block.feature}
                   </span>
 
-                  {/* User-defined name input */}
                   <Input
                     className="h-6 text-xs flex-1 min-w-0"
                     placeholder={block.blockKey}
                     value={block.label ?? ""}
                     onChange={(e) => {
                       const label = e.target.value || undefined;
-                      onChange(
-                        blocks.map((b) =>
-                          b.blockKey === block.blockKey ? { ...b, label } : b,
-                        ),
-                      );
+                      onChange(blocks.map((b) => (b.blockKey === block.blockKey ? { ...b, label } : b)));
                     }}
                     onClick={(e) => e.stopPropagation()}
                   />
 
                   {isInChoiceGroup && (
-                    <span className="text-[10px] text-muted-foreground italic shrink-0">
-                      choice
-                    </span>
+                    <span className="text-[10px] text-muted-foreground italic shrink-0">choice</span>
+                  )}
+                  {isInOutputGroup && (
+                    <span className="text-[10px] text-muted-foreground italic shrink-0">group</span>
                   )}
 
-                  {/* Reorder buttons — only first member of a group shows them */}
-                  {(!isInChoiceGroup ||
-                    blocks.find((b) => b.blockId === block.blockId)?.blockKey ===
-                      block.blockKey) && (
+                  {isChoiceGroupLeader && (
                     <div className="flex flex-col shrink-0">
                       <button
                         className="text-foreground/30 hover:text-foreground disabled:opacity-20"
@@ -385,27 +371,26 @@ export function ContentFeaturePicker({
         </ScrollArea>
       )}
 
-      {/* Choice actions */}
-      {(canCreateChoice || canBreakChoice) && (
-        <div className="flex gap-2">
+      {(hasChoiceActions || hasGroupActions) && (
+        <div className="flex flex-wrap gap-2">
           {canCreateChoice && (
-            <Button
-              size="sm"
-              variant="secondary"
-              intensity="soft"
-              onClick={createChoice}
-            >
+            <Button size="sm" variant="secondary" intensity="soft" onClick={createChoice}>
               Create Choice
             </Button>
           )}
           {canBreakChoice && (
-            <Button
-              size="sm"
-              variant="outline"
-              intensity="ghost"
-              onClick={breakChoice}
-            >
+            <Button size="sm" variant="outline" intensity="ghost" onClick={breakChoice}>
               Break Choice
+            </Button>
+          )}
+          {canCreateGroup && (
+            <Button size="sm" variant="accent" intensity="soft" onClick={createGroup}>
+              Create Group
+            </Button>
+          )}
+          {canBreakGroup && (
+            <Button size="sm" variant="outline" intensity="ghost" onClick={breakGroup}>
+              Break Group
             </Button>
           )}
         </div>
@@ -414,10 +399,10 @@ export function ContentFeaturePicker({
   );
 }
 
-// ─── Shared FeatureList ──────────────────────────────────────────────────────
+// ─── Shared DataFeatureList ──────────────────────────────────────────────────
 
-interface FeatureListProps {
-  features: TemplateFeatureDef[];
+interface DataFeatureListProps {
+  features: DataFeatureDef[];
   selectedKey: string | null;
   onSelect: (key: string) => void;
   onDoubleClick: (key: string) => void;
@@ -425,14 +410,14 @@ interface FeatureListProps {
   isActive?: boolean;
 }
 
-function FeatureList({
+function DataFeatureList({
   features,
   selectedKey,
   onSelect,
   onDoubleClick,
   emptyText,
   isActive = false,
-}: FeatureListProps) {
+}: DataFeatureListProps) {
   return (
     <ScrollArea className="flex-1 h-full rounded-md border border-border">
       <div className="p-1 space-y-0.5">
