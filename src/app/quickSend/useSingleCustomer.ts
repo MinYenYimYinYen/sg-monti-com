@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { singleCustomerActions } from "@/app/realGreen/customer/slices/customerSlices";
 
-export function useQuickSendCustomer() {
+export function useSingleCustomer() {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const { season } = useSelector(globalSettingsSelect.settings);

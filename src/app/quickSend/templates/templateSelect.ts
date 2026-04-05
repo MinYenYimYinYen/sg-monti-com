@@ -1,21 +1,27 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
-import { TreeNodeDoc } from "@/app/quickSend/templates/TemplateTypes";
+import { TreeNodeDoc } from "./TemplateTypes";
 
 const selectTreeNodeDocs = (state: AppState): TreeNodeDoc[] =>
   state.template.treeNodeDocs;
 
-const selectChildrenOf = createSelector(
-  [selectTreeNodeDocs, (_: AppState, parentId: string | null) => parentId],
-  (nodes, parentId) => {
-    const children = nodes
-      .filter((node) => node.parentId === parentId)
-      .sort((a, b) => a.order - b.order);
-    return children;
-  },
-);
+/** Returns children of a given parentId, sorted by order. */
+const makeChildrenOf = (parentId: string | null) =>
+  createSelector([selectTreeNodeDocs], (nodes) =>
+    nodes
+      .filter((n) => n.parentId === parentId)
+      .sort((a, b) => a.order - b.order),
+  );
+
+/** Returns a single node by nodeId. */
+const makeNodeById = (nodeId: string) =>
+  createSelector(
+    [selectTreeNodeDocs],
+    (nodes) => nodes.find((n) => n.nodeId === nodeId) ?? null,
+  );
 
 export const templateSelect = {
   treeNodeDocs: selectTreeNodeDocs,
-  childrenOf: selectChildrenOf,
+  childrenOf: makeChildrenOf,
+  nodeById: makeNodeById,
 };

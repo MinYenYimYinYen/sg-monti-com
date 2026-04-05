@@ -2,6 +2,17 @@ import mongoose from "mongoose";
 import { createModel } from "@/lib/mongoose/createModel";
 import { TreeNodeDoc } from "@/app/quickSend/templates/TemplateTypes";
 
+const FragmentBlockSchema = new mongoose.Schema(
+  {
+    blockKey: { type: String, required: true },
+    label: { type: String },
+    feature: { type: String, required: true },
+    content: { type: String, default: "" },
+    blockId: { type: Number, required: true, default: 1 },
+  },
+  { _id: false },
+);
+
 const TreeNodeSchema = new mongoose.Schema<TreeNodeDoc>(
   {
     nodeId: { type: String, required: true, unique: true },
@@ -10,10 +21,9 @@ const TreeNodeSchema = new mongoose.Schema<TreeNodeDoc>(
     type: { type: String, required: true, enum: ["category", "fragment"] },
     order: { type: Number, required: true, default: 0 },
     fragment: {
-      blockId: { type: String },
       registryKey: { type: String },
-      body: { type: String },
-      subject: { type: String },
+      dataFeatures: [{ type: String }],
+      blocks: [FragmentBlockSchema],
     },
   },
   { timestamps: true },

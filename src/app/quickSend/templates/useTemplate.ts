@@ -1,22 +1,50 @@
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { getTreeNodes } from "@/app/quickSend/templates/templateSlice";
-
-const STALE_TIME_MS = 10 * 60 * 1000; // 10 minutes — tree data is stable
+import {
+  getTreeNodes,
+  createNode,
+  updateNode,
+  deleteNode,
+} from "./templateSlice";
+import { TreeNodeDoc } from "./TemplateTypes";
 
 export function useTemplate({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (!autoLoad) return;
+    if (autoLoad) {
+      dispatch(
+        getTreeNodes({
+          params: {},
+          config: { loadingMsg: "Loading templates..." },
+        }),
+      );
+    }
+  }, [autoLoad, dispatch]);
+
+  const addNode = (node: TreeNodeDoc) =>
     dispatch(
-      getTreeNodes({
-        params: {},
-        config: {
-          loadingMsg: "Loading templates...",
-          staleTime: STALE_TIME_MS,
-        },
+      createNode({
+        params: { node },
+        config: { showLoading: false, force: true },
       }),
     );
-  }, [autoLoad, dispatch]);
+
+  const saveNode = (node: TreeNodeDoc) =>
+    dispatch(
+      updateNode({
+        params: { node },
+        config: { showLoading: false, force: true },
+      }),
+    );
+
+  const removeNode = (nodeId: string) =>
+    dispatch(
+      deleteNode({
+        params: { nodeId },
+        config: { showLoading: false, force: true },
+      }),
+    );
+
+  return { addNode, saveNode, removeNode };
 }
