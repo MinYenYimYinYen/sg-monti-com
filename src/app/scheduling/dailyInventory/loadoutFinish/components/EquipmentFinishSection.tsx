@@ -105,12 +105,16 @@ export function EquipmentFinishSection({
       }),
     );
 
-    // Propagate proportional finish amounts to all constituents.
+    // Propagate finish amounts to all constituents.
+    // If ratio is available, scale proportionally. If the start tank was 0, the finish
+    // must also be 0 for all constituents (nothing was loaded, nothing remains).
     finishEntry.constituents.forEach((constituent) => {
       const constituentFinish =
         ratio != null && constituent.startAmount != null
           ? Math.round(ratio * constituent.startAmount * 100) / 100
-          : null;
+          : value != null && finishEntry.startAmount === 0
+            ? 0
+            : null;
       dispatch(
         loadoutActions.updateFinishLoadoutEquipmentConstituentAmount({
           masterProductId,
@@ -149,7 +153,7 @@ export function EquipmentFinishSection({
                 setInputValue(e.target.value);
               }}
               onBlur={() => {
-                const loadValue = inputValue ? parseFloat(inputValue) : null;
+                const loadValue = inputValue !== "" ? parseFloat(inputValue) : null;
                 const appValue =
                   loadValue != null && !isNaN(loadValue)
                     ? convertQuantity(

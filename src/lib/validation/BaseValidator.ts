@@ -24,6 +24,7 @@ export abstract class BaseValidator<T extends object> {
   protected abstract schema: ValidatorSchema<T>;
 
   public validate(data: T): Record<string, string> {
+    console.log("data", data);
     const errors: Record<string, string> = {};
 
     const walk = (

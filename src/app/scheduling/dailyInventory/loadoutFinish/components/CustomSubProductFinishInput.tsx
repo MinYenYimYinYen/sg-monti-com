@@ -79,7 +79,7 @@ export function CustomSubProductFinishInput({
             setInputValue(e.target.value);
           }}
           onBlur={() => {
-            const loadValue = inputValue ? parseFloat(inputValue) : null;
+            const loadValue = inputValue !== "" ? parseFloat(inputValue) : null;
             const appValue =
               loadValue != null && !isNaN(loadValue)
                 ? convertQuantity(

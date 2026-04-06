@@ -25,7 +25,7 @@ export default function RootLayout({
         <Providers>
           <NavBar />
           <GlobalLoader />
-          <main className="flex-1 flex flex-col overflow-hidden">
+          <main className="flex-1 flex flex-col overflow-y-auto">
             {children}
           </main>
         </Providers>
