@@ -4,6 +4,7 @@ import React from "react";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
+import { Checkbox } from "@/style/components/checkbox";
 import { cn } from "@/style/utils";
 import { ChevronRight, ChevronLeft, ChevronUp, ChevronDown } from "lucide-react";
 import type { DataFeatureDef, ContentFeatureDef, ContentFeatureKey } from "@/app/quickSend/templates/templateFeatures";
@@ -172,6 +173,24 @@ export function ContentFeaturePicker({
   onChange,
   title,
 }: ContentFeaturePickerProps) {
+  const [selectedBlockKeys, setSelectedBlockKeys] = React.useState<Set<string>>(new Set());
+
+  const toggleBlockSelection = (blockKey: string) => {
+    setSelectedBlockKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(blockKey)) {
+        next.delete(blockKey);
+      } else {
+        next.add(blockKey);
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedBlockKeys(new Set());
+  };
+
   const addBlock = (feature: ContentFeatureKey) => {
     const blockKey = generateBlockKey(feature, blocks);
     const choiceId = nextChoiceId(blocks) + blocks.length;
@@ -326,15 +345,152 @@ export function ContentFeaturePicker({
         ))}
       </div>
 
+      {/* Selection toolbar */}
+      {selectedBlockKeys.size >= 2 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-accent/10 border border-accent/30">
+          <span className="text-xs font-medium text-foreground/80">
+            {selectedBlockKeys.size} blocks selected
+          </span>
+          <div className="flex gap-1 flex-1">
+            <Button
+              size="sm"
+              variant="primary"
+              intensity="soft"
+              onClick={() => {
+                createGroup(Array.from(selectedBlockKeys));
+                clearSelection();
+              }}
+            >
+              Create Group
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              intensity="soft"
+              onClick={() => {
+                createChoice(Array.from(selectedBlockKeys));
+                clearSelection();
+              }}
+            >
+              Create Choice
+            </Button>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            intensity="ghost"
+            onClick={clearSelection}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
       {groupUnits.length > 0 && (
         <ScrollArea className="max-h-96">
           <div className="space-y-2 pr-1">
             {groupUnits.map((gu, gIdx) => {
+              const totalBlocksInGroup = gu.choiceUnits.flatMap((cu) => cu.blocks).length;
+              const isTrueGroup = totalBlocksInGroup > 1;
               const isMultiGroup = groupUnits.length > 1;
               const isFirstGroup = gIdx === 0;
               const isLastGroup = gIdx === groupUnits.length - 1;
               const groupId = gu.group.groupId;
 
+              // If single block group, render without group container
+              if (!isTrueGroup) {
+                return (
+                  <React.Fragment key={groupId}>
+                    {gu.choiceUnits.map((cu) => {
+                      const isChoice = choiceIdCounts[cu.choice.choiceId] > 1;
+                      const choiceColor = choiceColorMap.get(cu.choice.choiceId);
+                      const choiceId = cu.choice.choiceId;
+
+                      return (
+                        <div
+                          key={choiceId}
+                          className={cn(
+                            "rounded border bg-card p-1.5 space-y-1",
+                            isChoice ? "border-l-2" : "border-border",
+                            isChoice && choiceColor,
+                          )}
+                        >
+                          {/* Choice header (only shown when it's a real choice group) */}
+                          {isChoice && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wide shrink-0">
+                                Choice
+                              </span>
+                              <Input
+                                className="h-5 text-xs flex-1 min-w-0"
+                                placeholder="Choice name (optional)"
+                                value={cu.choice.label ?? ""}
+                                onChange={(e) => updateChoiceLabel(choiceId, e.target.value || undefined)}
+                              />
+                              <button
+                                className="text-foreground/30 hover:text-destructive text-[10px] font-semibold shrink-0"
+                                onClick={() => breakChoice(choiceId)}
+                                title="Break choice"
+                              >
+                                Break
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Blocks within this choice unit */}
+                          {cu.blocks.map((block) => {
+                            const def = available.find((f) => f.key === block.feature);
+                            const isSelected = selectedBlockKeys.has(block.blockKey);
+                            return (
+                              <div
+                                key={block.blockKey}
+                                className={cn(
+                                  "flex items-center gap-1.5 px-1 py-0.5 rounded text-sm",
+                                  isSelected ? "bg-accent/20" : "hover:bg-muted/40"
+                                )}
+                              >
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleBlockSelection(block.blockKey)}
+                                  className="shrink-0"
+                                />
+
+                                <span
+                                  className={cn(
+                                    "text-[10px] font-semibold px-1 rounded shrink-0",
+                                    block.feature === "paragraph"
+                                      ? "bg-accent/20 text-accent"
+                                      : "bg-primary/20 text-primary",
+                                  )}
+                                >
+                                  {def?.label ?? block.feature}
+                                </span>
+
+                                <Input
+                                  className="h-6 text-xs flex-1 min-w-0"
+                                  placeholder={block.blockKey}
+                                  value={block.label ?? ""}
+                                  onChange={(e) => updateBlockLabel(block.blockKey, e.target.value || undefined)}
+                                />
+
+                                <button
+                                  className="text-foreground/30 hover:text-destructive text-xs shrink-0"
+                                  onClick={() => removeBlock(block.blockKey)}
+                                  title="Remove block"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              }
+
+              // Multiple blocks - render full group container
               return (
                 <div
                   key={groupId}
@@ -442,11 +598,21 @@ export function ContentFeaturePicker({
                         {/* Blocks within this choice unit */}
                         {cu.blocks.map((block) => {
                           const def = available.find((f) => f.key === block.feature);
+                          const isSelected = selectedBlockKeys.has(block.blockKey);
                           return (
                             <div
                               key={block.blockKey}
-                              className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-muted/40 text-sm"
+                              className={cn(
+                                "flex items-center gap-1.5 px-1 py-0.5 rounded text-sm",
+                                isSelected ? "bg-accent/20" : "hover:bg-muted/40"
+                              )}
                             >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleBlockSelection(block.blockKey)}
+                                className="shrink-0"
+                              />
+
                               <span
                                 className={cn(
                                   "text-[10px] font-semibold px-1 rounded shrink-0",
@@ -475,75 +641,9 @@ export function ContentFeaturePicker({
                             </div>
                           );
                         })}
-
-                        {/* Add to choice / create choice actions */}
-                        {!isChoice && gu.choiceUnits.length > 1 && (
-                          <div className="flex gap-1 pt-0.5">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              intensity="soft"
-                              className="h-5 text-[10px] px-2"
-                              onClick={() => {
-                                // Merge this choice unit with the previous one
-                                const prevChoiceId = gu.choiceUnits[cIdx - 1]?.choice.choiceId;
-                                if (prevChoiceId !== undefined) {
-                                  createChoice([
-                                    ...cu.blocks.map((b) => b.blockKey),
-                                    ...gu.choiceUnits[cIdx - 1].blocks.map((b) => b.blockKey),
-                                  ]);
-                                }
-                              }}
-                              disabled={isFirstChoice}
-                            >
-                              Merge with above
-                            </Button>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
-
-                  {/* Group-level actions */}
-                  <div className="flex flex-wrap gap-1 pt-0.5">
-                    {gu.choiceUnits.length > 1 && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        intensity="soft"
-                        className="h-5 text-[10px] px-2"
-                        onClick={() => {
-                          // Merge all choice units in this group into one choice
-                          const allKeys = gu.choiceUnits.flatMap((cu) => cu.blocks.map((b) => b.blockKey));
-                          createChoice(allKeys);
-                        }}
-                      >
-                        Make all a choice
-                      </Button>
-                    )}
-                    {groupUnits.length > 1 && (
-                      <Button
-                        size="sm"
-                        variant="accent"
-                        intensity="soft"
-                        className="h-5 text-[10px] px-2"
-                        onClick={() => {
-                          // Merge this group with the next group
-                          const nextGroupId = groupUnits[gIdx + 1]?.group.groupId;
-                          if (nextGroupId !== undefined) {
-                            const allKeys = [
-                              ...gu.choiceUnits.flatMap((cu) => cu.blocks.map((b) => b.blockKey)),
-                              ...groupUnits[gIdx + 1].choiceUnits.flatMap((cu) => cu.blocks.map((b) => b.blockKey)),
-                            ];
-                            createGroup(allKeys);
-                          }
-                        }}
-                        disabled={isLastGroup}
-                      >
-                        Merge with next group
-                      </Button>
-                    )}
-                  </div>
                 </div>
               );
             })}
