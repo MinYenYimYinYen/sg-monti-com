@@ -38,8 +38,8 @@ export function MixWizard({
   children,
 }: TankWizardPopoverProps) {
   const [tankCapacity, setTankCapacity] = useState<number | null>(null);
-  const [currentMix, setCurrentMix] = useState<number | null>(null);
-  const [sliderGallons, setSliderGallons] = useState<number | null>(null);
+  const [currentMixGallons, setCurrentMixGallons] = useState<number | null>(null);
+  const [sliderTargetGallons, setSliderTargetGallons] = useState<number | null>(null);
   const sliderWrapperRef = useRef<HTMLDivElement>(null);
   // containerWidth is stored in state so it can be read during render without violating
   // the React Compiler's "no ref access during render" rule.
@@ -62,50 +62,54 @@ export function MixWizard({
   // This is the slider's "just enough" anchor.
   const totalPlannedGallons = plannedEquipment.plannedAmount;
 
-  const gallonsAvailable =
-    tankCapacity != null && currentMix != null
-      ? tankCapacity - currentMix
+  // How many gallons of empty space remain in the tank (tankCapacity − currentMixGallons).
+  const tankHeadroomGallons =
+    tankCapacity != null && currentMixGallons != null
+      ? tankCapacity - currentMixGallons
       : null;
 
-  const inputsReady = tankCapacity != null && currentMix != null;
+  const inputsReady = tankCapacity != null && currentMixGallons != null;
 
   // Case C: tank already full or overfull
-  const tankAlreadyFull = gallonsAvailable != null && gallonsAvailable <= 0;
+  const tankAlreadyFull = tankHeadroomGallons != null && tankHeadroomGallons <= 0;
 
-  // Case B: total mix needs more than tank can hold
-  const isOverCapacity =
-    gallonsAvailable != null && totalPlannedGallons > gallonsAvailable;
+  // Case B: the planned job volume exceeds the tank's remaining headroom
+  const jobExceedsTankHeadroom =
+    tankHeadroomGallons != null && totalPlannedGallons > tankHeadroomGallons;
 
-  // Safe fallbacks for preview rendering when inputs are not yet filled.
-  // gallonsAvailableSafe defaults to a full tank's worth so the slider has a valid range.
-  const gallonsAvailableSafe = gallonsAvailable ?? totalPlannedGallons * 1.5;
-  const sliderGallonsSafe =
-    sliderGallons ?? Math.min(totalPlannedGallons * 1.1, gallonsAvailableSafe);
+  // Fallbacks for preview rendering when inputs are not yet filled, so the slider
+  // always has a valid range to render against.
+  const tankCapacityOrFallback = tankCapacity ?? totalPlannedGallons * 1.5;
+  const tankHeadroomOrFallback = tankHeadroomGallons ?? totalPlannedGallons * 1.5;
+  const sliderTargetOrDefault =
+    sliderTargetGallons ?? Math.min(totalPlannedGallons * 1.1, tankCapacityOrFallback);
 
-  // Total gallons to mix: slider value (Case A) or full available (Case B)
-  const mixGallons = isOverCapacity ? gallonsAvailableSafe : sliderGallonsSafe;
+  // Total mix volume being targeted: slider value (Case A) or full headroom (Case B).
+  const totalMixTargetGallons = jobExceedsTankHeadroom
+    ? tankHeadroomOrFallback
+    : sliderTargetOrDefault;
 
   // Incremental gallons to ADD: total target mix minus what's already in the tank.
   // Assumes the existing mix is at the planned ratio (reasonable — the tech mixed it
   // using the same recipe). This drives the "Add to your tank" constituent amounts.
-  const addGallons = mixGallons - (currentMix ?? 0);
-  const addRatio = totalPlannedGallons > 0 ? addGallons / totalPlannedGallons : 0;
+  const gallonsToAdd = totalMixTargetGallons - (currentMixGallons ?? 0);
+  const addRatioOfPlanned = totalPlannedGallons > 0 ? gallonsToAdd / totalPlannedGallons : 0;
 
   // Scaled constituent amounts for what needs to be ADDED (not the full mix volume).
   // [0] = water-only amount (total mix − solutes), [1..n] = each solute.
-  const scaledConstituents = mixture.scaleMixture(addRatio);
+  const scaledConstituents = mixture.scaleMixture(addRatioOfPlanned);
 
   // For the "tank already full" message: how much surplus and how many ksf it covers
-  const excessPct =
+  const surplusPct =
     totalPlannedGallons > 0
       ? Math.round(
-          (((currentMix ?? 0) - totalPlannedGallons) / totalPlannedGallons) *
+          (((currentMixGallons ?? 0) - totalPlannedGallons) / totalPlannedGallons) *
             100,
         )
       : 0;
   const coverableKsf =
     totalPlannedGallons > 0
-      ? ((currentMix ?? 0) / totalPlannedGallons) * totalKsfForMaster
+      ? ((currentMixGallons ?? 0) / totalPlannedGallons) * totalKsfForMaster
       : totalKsfForMaster;
 
   return (
@@ -143,7 +147,7 @@ export function MixWizard({
                   setTankCapacity(
                     e.target.value ? parseFloat(e.target.value) : null,
                   );
-                  setSliderGallons(null);
+                  setSliderTargetGallons(null);
                 }}
               />
             </div>
@@ -157,12 +161,12 @@ export function MixWizard({
                 inputMode="decimal"
                 min={0}
                 placeholder="e.g. 0"
-                value={currentMix ?? ""}
+                value={currentMixGallons ?? ""}
                 onChange={(e) => {
-                  setCurrentMix(
+                  setCurrentMixGallons(
                     e.target.value ? parseFloat(e.target.value) : null,
                   );
-                  setSliderGallons(null);
+                  setSliderTargetGallons(null);
                 }}
               />
             </div>
@@ -175,7 +179,7 @@ export function MixWizard({
               <p className="text-sm text-foreground/70">
                 You have{" "}
                 <span className="font-medium text-foreground">
-                  {excessPct}%
+                  {surplusPct}%
                 </span>{" "}
                 more than you need to cover{" "}
                 <span className="font-medium text-foreground">
@@ -186,74 +190,73 @@ export function MixWizard({
             )}
 
             {/* Case B: over capacity */}
-            {!tankAlreadyFull && isOverCapacity && (
+            {!tankAlreadyFull && jobExceedsTankHeadroom && (
               <>
                 <div className="rounded-md bg-destructive/10 border border-destructive/30 p-2 text-xs text-destructive font-medium">
                   Bring extra alternative product. You&apos;re going to need it!
                 </div>
                 <p className="text-xs text-foreground/60">
-                  Showing amounts for a full tank (
-                  {gallonsAvailable?.toFixed(1)} Gal total mix). You need{" "}
+                  Showing amounts for a full tank ({tankHeadroomGallons?.toFixed(1)}{" "}
+                  Gal total mix). You need{" "}
                   {totalPlannedGallons.toFixed(1)} Gal total.
                 </p>
               </>
             )}
 
-            {/* Case A: slider — uses safe fallbacks so it always renders */}
+            {/* Case A: slider — uses fallbacks so it always renders */}
             {!tankAlreadyFull &&
-              !isOverCapacity &&
+              !jobExceedsTankHeadroom &&
               (() => {
-                const effectiveGallonsAvailable = gallonsAvailableSafe;
-                const effectiveSliderGallons = sliderGallonsSafe;
+                // Slider spans from "just enough" (totalPlannedGallons) to "fill the tank"
+                // (tankCapacityOrFallback). The max is the full tank capacity so dragging all
+                // the way right targets a completely full tank.
+                const tankCapacityGallons = tankCapacityOrFallback;
+                const sliderTargetGallons = sliderTargetOrDefault;
 
                 const coverableKsfAtMin = totalKsfForMaster;
                 const coverableKsfAtMax =
                   totalPlannedGallons > 0
-                    ? (effectiveGallonsAvailable / totalPlannedGallons) *
-                      totalKsfForMaster
+                    ? (tankCapacityGallons / totalPlannedGallons) * totalKsfForMaster
                     : totalKsfForMaster;
                 const coverableKsfAtSlider =
                   totalPlannedGallons > 0
-                    ? (effectiveSliderGallons / totalPlannedGallons) *
-                      totalKsfForMaster
+                    ? (sliderTargetGallons / totalPlannedGallons) * totalKsfForMaster
                     : totalKsfForMaster;
 
-                const sliderRange =
-                  effectiveGallonsAvailable - totalPlannedGallons;
+                const sliderRangeGallons = tankCapacityGallons - totalPlannedGallons;
 
-                // Sweet spot = 10% buffer, capped at available space
-                const sweetSpot = Math.min(
+                // Sweet spot = 10% buffer above "just enough", capped at tank capacity
+                const sweetSpotGallons = Math.min(
                   totalPlannedGallons * 1.1,
-                  effectiveGallonsAvailable,
+                  tankCapacityGallons,
                 );
                 const sweetSpotPct =
-                  sliderRange > 0
-                    ? ((sweetSpot - totalPlannedGallons) / sliderRange) * 100
+                  sliderRangeGallons > 0
+                    ? ((sweetSpotGallons - totalPlannedGallons) / sliderRangeGallons) * 100
                     : 0;
 
-                // Badge tracks the thumb: t = 0 at min, 1 at max
-                const sliderT =
-                  sliderRange > 0
-                    ? (effectiveSliderGallons - totalPlannedGallons) /
-                      sliderRange
+                // sliderProgress: 0 = thumb at min ("just enough"), 1 = thumb at max ("fill the tank")
+                const sliderProgress =
+                  sliderRangeGallons > 0
+                    ? (sliderTargetGallons - totalPlannedGallons) / sliderRangeGallons
                     : 0;
 
                 // Radix slider thumb is inset by half its width (w-4 = 16px → 8px) on each side.
-                // Map sliderT to pixel position within the actual thumb travel range so the badge
-                // stays aligned at the extremes. containerWidth comes from state (updated via
+                // Map sliderProgress to pixel position within the actual thumb travel range so the
+                // badge stays aligned at the extremes. containerWidth comes from state (updated via
                 // onLayout callback on the wrapper div) to avoid reading the ref during render.
                 const thumbRadius = 8;
                 const badgeLeftPx =
                   containerWidth > 0
-                    ? thumbRadius + sliderT * (containerWidth - thumbRadius * 2)
+                    ? thumbRadius + sliderProgress * (containerWidth - thumbRadius * 2)
                     : null;
-                const sliderPct = sliderT * 100;
+                const sliderProgressPct = sliderProgress * 100;
 
                 // OKLCH keyframes: primary(blue) → accent(green) → secondary(orange) → destructive(burnt orange)
-                // Keyframe positions in t: 0, sweetSpotT, 0.65, 1.0
-                const sweetSpotT =
-                  sliderRange > 0
-                    ? (sweetSpot - totalPlannedGallons) / sliderRange
+                // Keyframe positions in sliderProgress: 0, sweetSpotProgress, 0.65, 1.0
+                const sweetSpotProgress =
+                  sliderRangeGallons > 0
+                    ? (sweetSpotGallons - totalPlannedGallons) / sliderRangeGallons
                     : 0.1;
 
                 type OklchColor = [number, number, number]; // [L, C, H]
@@ -275,17 +278,17 @@ export function MixWizard({
 
                 const badgeColor = (() => {
                   let color: OklchColor;
-                  if (sliderT <= sweetSpotT) {
+                  if (sliderProgress <= sweetSpotProgress) {
                     // primary → accent
-                    const segT = sweetSpotT > 0 ? sliderT / sweetSpotT : 0;
+                    const segT = sweetSpotProgress > 0 ? sliderProgress / sweetSpotProgress : 0;
                     color = lerpColor(colorPrimary, colorAccent, segT);
-                  } else if (sliderT <= 0.65) {
+                  } else if (sliderProgress <= 0.65) {
                     // accent → secondary
-                    const segT = (sliderT - sweetSpotT) / (0.65 - sweetSpotT);
+                    const segT = (sliderProgress - sweetSpotProgress) / (0.65 - sweetSpotProgress);
                     color = lerpColor(colorAccent, colorSecondary, segT);
                   } else {
                     // secondary → destructive
-                    const segT = (sliderT - 0.65) / 0.35;
+                    const segT = (sliderProgress - 0.65) / 0.35;
                     color = lerpColor(colorSecondary, colorDestructive, segT);
                   }
                   return `oklch(${color[0].toFixed(3)} ${color[1].toFixed(3)} ${color[2].toFixed(1)})`;
@@ -331,7 +334,7 @@ export function MixWizard({
                         style={
                           badgeLeftPx != null
                             ? { left: `${badgeLeftPx}px` }
-                            : { left: `${sliderPct}%` }
+                            : { left: `${sliderProgressPct}%` }
                         }
                       >
                         <span
@@ -365,10 +368,10 @@ export function MixWizard({
 
                       <Slider
                         min={totalPlannedGallons}
-                        max={effectiveGallonsAvailable}
+                        max={tankCapacityGallons}
                         step={0.1}
-                        value={[effectiveSliderGallons]}
-                        onValueChange={(values) => setSliderGallons(values[0])}
+                        value={[sliderTargetGallons]}
+                        onValueChange={(values) => setSliderTargetGallons(values[0])}
                       />
                     </div>
 
@@ -376,7 +379,7 @@ export function MixWizard({
                     <div className="flex items-center gap-1 py-2 text-sm">
                       <p className="">Mixing</p>
                       <Number className={"font-bold"}>
-                        {effectiveSliderGallons}
+                        {sliderTargetGallons}
                       </Number>
                       <p>{" gallons"} covers</p>
                       <LandPlot className="" />
