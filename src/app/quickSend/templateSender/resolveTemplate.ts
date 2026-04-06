@@ -1,6 +1,12 @@
 import type { FragmentBlock } from "@/app/quickSend/templates/TemplateTypes";
 import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
-import { CUSTOMER_VARIABLES, type CustomerVariableKey } from "@/app/quickSend/templates/templateVariables";
+import type { GlobalSettings } from "@/app/globalSettings/_lib/GlobalSettingsTypes";
+import {
+  CUSTOMER_VARIABLES,
+  type CustomerVariableKey,
+  GLOBAL_SETTINGS_VARIABLES,
+  type GlobalSettingsVariableKey,
+} from "@/app/quickSend/templates/dataFeatures/dataFeatureVariables";
 
 export type ResolvedGroup = {
   groupId: number;
@@ -14,8 +20,8 @@ export type ResolvedGroup = {
  * Steps:
  * 1. For each choiceId with multiple blocks, keep only the block whose
  *    blockKey matches activeChoices[choiceId] (defaults to first block).
- * 2. Replace {{customer.<key>}} spans with the customer's actual value,
- *    or a [Label] placeholder if no customer is loaded.
+ * 2. Replace {{customer.<key>}} and {{globalSettings.<key>}} spans with actual values,
+ *    or [Label] placeholders if data is not loaded.
  * 3. Group surviving blocks by groupId (first-occurrence order) and
  *    concatenate their HTML.
  */
@@ -23,6 +29,7 @@ export function resolveTemplate(
   blocks: FragmentBlock[],
   activeChoices: Record<number, string>,
   customer: Customer | null,
+  globalSettings: GlobalSettings | null,
 ): ResolvedGroup[] {
   // Step 1: resolve choices
   const choiceWinners = resolveChoices(blocks, activeChoices);
@@ -30,7 +37,7 @@ export function resolveTemplate(
   // Step 2: resolve variables in each block's content
   const resolved = choiceWinners.map((block) => ({
     ...block,
-    content: resolveVariables(block.content, customer),
+    content: resolveVariables(block.content, customer, globalSettings),
   }));
 
   // Step 3: group by groupId in first-occurrence order
@@ -76,25 +83,49 @@ function resolveChoices(
 
 // ─── Variable resolution ─────────────────────────────────────────────────────
 
-// Matches <span ... data-type="mention" data-id="<key>">{{customer.<key>}}</span>
-// and plain {{customer.<key>}} text (fallback)
+// Matches <span ... data-type="mention" data-id="<key>">{{...}}</span>
+// The data-id can be "displayName" or "globalSettings.season"
 const MENTION_SPAN_RE =
   /<span[^>]*data-type="mention"[^>]*data-id="([^"]+)"[^>]*>.*?<\/span>/g;
-const PLAIN_VAR_RE = /\{\{customer\.([^}]+)\}\}/g;
+// Matches plain {{customer.<key>}} and {{globalSettings.<key>}} text (fallback)
+const PLAIN_CUSTOMER_VAR_RE = /\{\{customer\.([^}]+)\}\}/g;
+const PLAIN_GLOBAL_SETTINGS_VAR_RE = /\{\{globalSettings\.([^}]+)\}\}/g;
 
-function resolveVariables(html: string, customer: Customer | null): string {
-  const replace = (key: string): string => {
+function resolveVariables(
+  html: string,
+  customer: Customer | null,
+  globalSettings: GlobalSettings | null,
+): string {
+  const replaceCustomer = (key: string): string => {
     if (customer && key in customer) {
       return String(customer[key as keyof Customer]);
     }
-    // Placeholder: use the human-readable label if available
     const label = CUSTOMER_VARIABLES[key as CustomerVariableKey];
     return label ? `[${label}]` : `[${key}]`;
   };
 
+  const replaceGlobalSettings = (key: string): string => {
+    if (globalSettings && key in globalSettings) {
+      return String(globalSettings[key as keyof GlobalSettings]);
+    }
+    const label = GLOBAL_SETTINGS_VARIABLES[key as GlobalSettingsVariableKey];
+    return label ? `[${label}]` : `[${key}]`;
+  };
+
+  const replaceMentionSpan = (_match: string, id: string): string => {
+    // If id contains ".", it's "globalSettings.season" format
+    if (id.includes(".")) {
+      const key = id.split(".")[1]; // Extract "season" from "globalSettings.season"
+      return replaceGlobalSettings(key);
+    }
+    // Otherwise it's a customer variable key like "displayName"
+    return replaceCustomer(id);
+  };
+
   return html
-    .replace(MENTION_SPAN_RE, (_match, key: string) => replace(key))
-    .replace(PLAIN_VAR_RE, (_match, key: string) => replace(key));
+    .replace(MENTION_SPAN_RE, replaceMentionSpan)
+    .replace(PLAIN_CUSTOMER_VAR_RE, (_match, key: string) => replaceCustomer(key))
+    .replace(PLAIN_GLOBAL_SETTINGS_VAR_RE, (_match, key: string) => replaceGlobalSettings(key));
 }
 
 // ─── Group assembly ──────────────────────────────────────────────────────────

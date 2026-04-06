@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { quickSendSelect } from "@/app/quickSend/quickSendSelect";
+import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { resolveTemplate, type ResolvedGroup } from "./resolveTemplate";
 import type { TreeNodeDoc, FragmentBlock } from "@/app/quickSend/templates/TemplateTypes";
 
@@ -17,12 +18,13 @@ export type SenderState = {
 /**
  * Manages send-time state for a single fragment.
  * Initializes active choices to the first block per choiceId,
- * and derives resolved output groups whenever choices or customer change.
+ * and derives resolved output groups whenever choices, customer, or globalSettings change.
  */
 export function useSenderState(
   fragment: TreeNodeDoc["fragment"] | undefined,
 ): SenderState {
   const customer = useSelector(quickSendSelect.customer);
+  const globalSettings = useSelector(globalSettingsSelect.settings);
   const blocks: FragmentBlock[] = fragment?.blocks ?? [];
 
   // Build the initial active choices: first block per choiceId that has 2+ blocks
@@ -33,7 +35,7 @@ export function useSenderState(
     setActiveChoices((prev) => ({ ...prev, [choiceId]: blockKey }));
   };
 
-  const resolvedGroups = resolveTemplate(blocks, activeChoices, customer);
+  const resolvedGroups = resolveTemplate(blocks, activeChoices, customer, globalSettings);
 
   const hasChoices = Object.keys(initialChoices).length > 0;
 

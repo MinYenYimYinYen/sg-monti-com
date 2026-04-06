@@ -7,12 +7,9 @@ import { useTemplate } from "@/app/quickSend/templates/useTemplate";
 import { templateBuilderSelect } from "../templateBuilderSelect";
 import { useTemplateBuilder } from "../useTemplateBuilder";
 import { TreeNodeDoc, FragmentBlock } from "@/app/quickSend/templates/TemplateTypes";
-import {
-  DATA_FEATURE_DEFS,
-  CONTENT_FEATURE_DEFS,
-  getContentFeatureDef,
-  DataFeatureKey,
-} from "@/app/quickSend/templates/templateFeatures";
+import { DATA_FEATURE_DEFS, DataFeatureKey } from "@/app/quickSend/templates/dataFeatures/dataFeatures";
+import { CONTENT_FEATURE_DEFS, getContentFeatureDef } from "@/app/quickSend/templates/contentFeatures/contentFeatures";
+import { getBuilderFlags } from "@/app/quickSend/templates/dataFeatures/dataFeatureHelpers";
 import { DataFeaturePicker, ContentFeaturePicker } from "./FeaturePicker";
 import { BlockContentEditor } from "./BlockContentEditor";
 import { Input } from "@/style/components/input";
@@ -67,7 +64,7 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
   const { clearBlockSelection } = useTemplateBuilder();
 
   const isFragment = node.type === "fragment";
-  const variablesEnabled = dataFeatures.includes("custIdSearch");
+  const { customerVariablesEnabled, seasonVariableEnabled } = getBuilderFlags(dataFeatures);
 
   const updateBlockContent = (blockKey: string, content: string) => {
     setBlocks((prev) =>
@@ -203,13 +200,13 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
                 </p>
               ) : (
                 <div className="flex flex-col gap-4">
-                  {variablesEnabled && (
+                  {(customerVariablesEnabled || seasonVariableEnabled) && (
                     <p className="text-xs text-muted-foreground">
                       Type{" "}
                       <kbd className="px-1 py-0.5 rounded border border-border bg-muted text-xs">
                         @
                       </kbd>{" "}
-                      to insert a customer variable.
+                      to insert a variable.
                     </p>
                   )}
                   {blocks.map((block) => {
@@ -223,7 +220,8 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
                             updateBlockContent(block.blockKey, html)
                           }
                           multiLine={def.multiLine}
-                          variablesEnabled={variablesEnabled}
+                          customerVariablesEnabled={customerVariablesEnabled}
+                          seasonVariableEnabled={seasonVariableEnabled}
                           placeholder={`Enter ${def.label.toLowerCase()}...`}
                         />
                       </div>

@@ -6,21 +6,56 @@ import StarterKit from "@tiptap/starter-kit";
 import Mention from "@tiptap/extension-mention";
 import { ReactRenderer } from "@tiptap/react";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
-import { CUSTOMER_VARIABLES, type CustomerVariableKey } from "@/app/quickSend/templates/templateVariables";
+import {
+  CUSTOMER_VARIABLES,
+  type CustomerVariableKey,
+  GLOBAL_SETTINGS_VARIABLES,
+  type GlobalSettingsVariableKey,
+} from "@/app/quickSend/templates/dataFeatures/dataFeatureVariables";
 import { cn } from "@/style/utils";
 
 // ─── Suggestion items ───────────────────────────────────────────────────────
 
 // The Mention extension stores the selected item's `id` attribute.
 // We use `id` (not `key`) so `node.attrs.id` in renderHTML resolves correctly.
-type VariableItem = { id: CustomerVariableKey; label: string };
+type VariableItem = {
+  id: string; // Now a string to support both "displayName" and "globalSettings.season"
+  label: string;
+  namespace: "customer" | "globalSettings"; // Track which namespace this variable belongs to
+};
 
-const VARIABLE_ITEMS: VariableItem[] = (
-  Object.entries(CUSTOMER_VARIABLES) as [CustomerVariableKey, string][]
-).map(([key, label]) => ({ id: key, label }));
+function buildVariableItems(customerEnabled: boolean, seasonEnabled: boolean): VariableItem[] {
+  const items: VariableItem[] = [];
 
-function filterItems(query: string): VariableItem[] {
-  return VARIABLE_ITEMS.filter((item) =>
+  if (customerEnabled) {
+    items.push(
+      ...(Object.entries(CUSTOMER_VARIABLES) as [CustomerVariableKey, string][]).map(
+        ([key, label]) => ({
+          id: key,
+          label,
+          namespace: "customer" as const,
+        })
+      )
+    );
+  }
+
+  if (seasonEnabled) {
+    items.push(
+      ...(Object.entries(GLOBAL_SETTINGS_VARIABLES) as [GlobalSettingsVariableKey, string][]).map(
+        ([key, label]) => ({
+          id: `globalSettings.${key}`,
+          label,
+          namespace: "globalSettings" as const,
+        })
+      )
+    );
+  }
+
+  return items;
+}
+
+function filterItems(items: VariableItem[], query: string): VariableItem[] {
+  return items.filter((item) =>
     item.label.toLowerCase().includes(query.toLowerCase()),
   );
 }
@@ -95,27 +130,49 @@ SuggestionList.displayName = "SuggestionList";
 
 // ─── Mention extension config ────────────────────────────────────────────────
 
-function buildMentionExtension(enabled: boolean) {
+function buildMentionExtension(customerEnabled: boolean, seasonEnabled: boolean) {
+  const variableItems = buildVariableItems(customerEnabled, seasonEnabled);
+  const enabled = customerEnabled || seasonEnabled;
+
   return Mention.configure({
     HTMLAttributes: {
       class: "template-var",
     },
-    // Store the variable key as the mention id; render as {{customer.<key>}}
+    // Store the variable key as the mention id; render as {{customer.<key>}} or {{globalSettings.<key>}}
     renderHTML({ node }) {
+      const id = node.attrs.id;
+      // If id already includes namespace (globalSettings.season), use as-is
+      // Otherwise, prefix with customer. (displayName -> customer.displayName)
+      const displayText = id.includes(".") ? `{{${id}}}` : `{{customer.${id}}}`;
+
       return [
         "span",
         {
           class:
             "template-var inline-flex items-center rounded px-1 py-0.5 text-[11px] font-semibold bg-accent/20 text-accent",
           "data-type": "mention",
-          "data-id": node.attrs.id,
+          "data-id": id,
         },
-        `{{customer.${node.attrs.id}}}`,
+        displayText,
       ];
     },
     suggestion: enabled
       ? {
-          items: ({ query }) => filterItems(query),
+          items: ({ query }) => filterItems(variableItems, query),
+          // Custom command to insert mention WITHOUT trailing space
+          command: ({ editor, range, props }) => {
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(range, [
+                {
+                  type: "mention",
+                  attrs: { id: props.id, label: props.label },
+                },
+                // Don't add space - user can type it manually if needed
+              ])
+              .run();
+          },
           render: () => {
             let component: ReactRenderer<
               { onKeyDown: (event: KeyboardEvent) => boolean },
@@ -155,7 +212,9 @@ function buildMentionExtension(enabled: boolean) {
                 if (props.event.key === "Tab") {
                   props.event.preventDefault();
                   // Synthesize an Enter event to trigger selectItem in SuggestionList
-                  const enterEvent = new KeyboardEvent("keydown", { key: "Enter" });
+                  const enterEvent = new KeyboardEvent("keydown", {
+                    key: "Enter",
+                  });
                   return component.ref?.onKeyDown(enterEvent) ?? false;
                 }
                 return component.ref?.onKeyDown(props.event) ?? false;
@@ -180,21 +239,24 @@ interface BlockContentEditorProps {
   onChange: (html: string) => void;
   /** Whether to allow multiple lines (paragraph) or suppress Enter (textLine). */
   multiLine?: boolean;
-  /** Whether to enable the @ variable mention suggestion. */
-  variablesEnabled?: boolean;
+  /** Whether to enable customer variable @ mentions. */
+  customerVariablesEnabled?: boolean;
+  /** Whether to enable season variable @ mentions. */
+  seasonVariableEnabled?: boolean;
   placeholder?: string;
 }
 
 /**
  * A lightweight Tiptap editor for authoring a single content block.
- * Supports @ mentions for inserting {{customer.*}} variable placeholders.
+ * Supports @ mentions for inserting {{customer.*}} and {{globalSettings.*}} variable placeholders.
  * Stored content is HTML (Tiptap output) with placeholder spans inline.
  */
 export function BlockContentEditor({
   content,
   onChange,
   multiLine = true,
-  variablesEnabled = false,
+  customerVariablesEnabled = false,
+  seasonVariableEnabled = false,
   placeholder,
 }: BlockContentEditorProps) {
   const editor = useEditor({
@@ -204,7 +266,7 @@ export function BlockContentEditor({
         // Suppress hard breaks in single-line mode
         hardBreak: multiLine ? undefined : false,
       }),
-      buildMentionExtension(variablesEnabled),
+      buildMentionExtension(customerVariablesEnabled, seasonVariableEnabled),
     ],
     content: content || "",
     editorProps: {

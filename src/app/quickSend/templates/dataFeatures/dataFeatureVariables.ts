@@ -1,4 +1,5 @@
 import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
+import { GlobalSettings } from "@/app/globalSettings/_lib/GlobalSettingsTypes";
 
 /**
  * Allowlist of Customer properties that can be referenced in template bodies.
@@ -18,4 +19,13 @@ export const CUSTOMER_VARIABLES: Record<CustomerVariableKey, string> = {
   displayName: "Customer Name",
   email: "Email",
   size: "Size",
+};
+
+export type GlobalSettingsVariableKey = keyof Pick<
+  GlobalSettings,
+  "season"
+>;
+
+export const GLOBAL_SETTINGS_VARIABLES: Record<GlobalSettingsVariableKey, string> = {
+  season: "Season",
 };

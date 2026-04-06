@@ -7,8 +7,10 @@ import { templateSelect } from "@/app/quickSend/templates/templateSelect";
 import { TemplateNavTree } from "@/app/quickSend/templateSender/_components/TemplateNavTree";
 import { TemplateSender } from "@/app/quickSend/templateSender/TemplateSender";
 import { ScrollArea } from "@/style/components/scroll-area";
+import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 
 export function QuickSend() {
+  useCustomerContext({contexts: ["single"]})
   useTemplate({ autoLoad: true });
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 

@@ -1,4 +1,5 @@
-import type { ContentFeatureKey, DataFeatureKey } from "./templateFeatures";
+import type { ContentFeatureKey } from "./contentFeatures/contentFeatures";
+import type { DataFeatureKey } from "./dataFeatures/dataFeatures";
 
 export type TreeNodeType = "category" | "fragment";
 

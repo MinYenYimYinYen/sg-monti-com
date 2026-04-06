@@ -5,7 +5,9 @@ import { useSenderState } from "./useSenderState";
 import { ChoiceSelector } from "./_components/ChoiceSelector";
 import { OutputGroup } from "./_components/OutputGroup";
 import { Separator } from "@/style/components/separator";
+import { getSenderComponent } from "@/app/quickSend/templates/dataFeatures/dataFeatureHelpers";
 import type { TreeNodeDoc } from "@/app/quickSend/templates/TemplateTypes";
+import type { DataFeatureKey } from "@/app/quickSend/templates/dataFeatures/dataFeatures";
 
 interface TemplateSenderProps {
   fragment: TreeNodeDoc["fragment"] | undefined;
@@ -24,6 +26,7 @@ export function TemplateSender({ fragment, label }: TemplateSenderProps) {
     useSenderState(fragment);
 
   const blocks = fragment?.blocks ?? [];
+  const dataFeatures = (fragment?.dataFeatures ?? []) as DataFeatureKey[];
 
   if (blocks.length === 0) {
     return (
@@ -40,6 +43,18 @@ export function TemplateSender({ fragment, label }: TemplateSenderProps) {
       {label && (
         <h2 className="text-base font-semibold text-foreground">{label}</h2>
       )}
+
+      {/* Render UI components for enabled data features */}
+      {dataFeatures.map((featureKey) => {
+        const Component = getSenderComponent(featureKey);
+        if (!Component) return null;
+        return (
+          <React.Fragment key={featureKey}>
+            <Component />
+            <Separator />
+          </React.Fragment>
+        );
+      })}
 
       {hasChoices && (
         <>

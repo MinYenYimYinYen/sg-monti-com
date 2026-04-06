@@ -219,6 +219,7 @@ const singleCustomer = ({
         },
         getSearchCriteria: (ids) => ({
           custIds: ids,
+          season: { min: season, max: season },
         }),
       }),
       createBatchSizeStep({
@@ -230,6 +231,7 @@ const singleCustomer = ({
         },
         getSearchCriteria: (ids) => ({
           progIds: ids,
+          season: { min: season, max: season },
         }),
       }),
     ],
