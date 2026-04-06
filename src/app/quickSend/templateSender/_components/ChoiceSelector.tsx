@@ -15,17 +15,16 @@ interface ChoiceSelectorProps {
  * The user picks one option per choice group; the active selection is highlighted.
  */
 export function ChoiceSelector({ blocks, activeChoices, setChoice }: ChoiceSelectorProps) {
-  // Build choice groups: only choiceIds with 2+ blocks
   const choiceGroups = buildChoiceGroups(blocks);
 
   if (choiceGroups.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-3">
-      {choiceGroups.map(({ choiceId, options }) => (
+      {choiceGroups.map(({ choiceId, choiceLabel, options }) => (
         <div key={choiceId} className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wide">
-            Choose one
+            {choiceLabel ?? "Choose one"}
           </span>
           <div className="flex flex-wrap gap-1">
             {options.map((block) => {
@@ -56,12 +55,13 @@ export function ChoiceSelector({ blocks, activeChoices, setChoice }: ChoiceSelec
 
 type ChoiceGroup = {
   choiceId: number;
+  choiceLabel?: string;
   options: FragmentBlock[];
 };
 
 function buildChoiceGroups(blocks: FragmentBlock[]): ChoiceGroup[] {
   const choiceIdCounts = blocks.reduce<Record<number, number>>((acc, b) => {
-    acc[b.choiceId] = (acc[b.choiceId] ?? 0) + 1;
+    acc[b.choice.choiceId] = (acc[b.choice.choiceId] ?? 0) + 1;
     return acc;
   }, {});
 
@@ -69,12 +69,14 @@ function buildChoiceGroups(blocks: FragmentBlock[]): ChoiceGroup[] {
   const seen = new Set<number>();
 
   for (const block of blocks) {
-    if (choiceIdCounts[block.choiceId] > 1 && !seen.has(block.choiceId)) {
+    const { choiceId, label: choiceLabel } = block.choice;
+    if (choiceIdCounts[choiceId] > 1 && !seen.has(choiceId)) {
       groups.push({
-        choiceId: block.choiceId,
-        options: blocks.filter((b) => b.choiceId === block.choiceId),
+        choiceId,
+        choiceLabel,
+        options: blocks.filter((b) => b.choice.choiceId === block.choice.choiceId),
       });
-      seen.add(block.choiceId);
+      seen.add(choiceId);
     }
   }
 

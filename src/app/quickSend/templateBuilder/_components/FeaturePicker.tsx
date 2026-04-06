@@ -6,9 +6,8 @@ import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
 import { cn } from "@/style/utils";
 import { ChevronRight, ChevronLeft, ChevronUp, ChevronDown } from "lucide-react";
-import { Checkbox } from "@/style/components/checkbox";
 import type { DataFeatureDef, ContentFeatureDef, ContentFeatureKey } from "@/app/quickSend/templates/templateFeatures";
-import type { FragmentBlock } from "@/app/quickSend/templates/TemplateTypes";
+import type { FragmentBlock, BlockChoice, BlockGroup } from "@/app/quickSend/templates/TemplateTypes";
 
 // ─── Data Feature Picker ────────────────────────────────────────────────────
 
@@ -112,8 +111,59 @@ function generateBlockKey(feature: ContentFeatureKey, existing: FragmentBlock[])
   return `${prefix}${count}`;
 }
 
-function nextId(blocks: FragmentBlock[], field: "choiceId" | "groupId"): number {
-  return blocks.length === 0 ? 1 : Math.max(...blocks.map((b) => b[field])) + 1;
+function nextChoiceId(blocks: FragmentBlock[]): number {
+  return blocks.length === 0 ? 1 : Math.max(...blocks.map((b) => b.choice.choiceId)) + 1;
+}
+
+function nextGroupId(blocks: FragmentBlock[]): number {
+  return blocks.length === 0 ? 1 : Math.max(...blocks.map((b) => b.group.groupId)) + 1;
+}
+
+// ─── Nested visual layout helpers ───────────────────────────────────────────
+
+type GroupUnit = {
+  group: BlockGroup;
+  // Ordered list of choice units within this group
+  choiceUnits: ChoiceUnit[];
+};
+
+type ChoiceUnit = {
+  choice: BlockChoice;
+  blocks: FragmentBlock[];
+};
+
+function toGroupUnits(blocks: FragmentBlock[]): GroupUnit[] {
+  const groupOrder: number[] = [];
+  const groupMap = new Map<number, { group: BlockGroup; choiceOrder: number[]; choiceMap: Map<number, { choice: BlockChoice; blocks: FragmentBlock[] }> }>();
+
+  for (const block of blocks) {
+    const gid = block.group.groupId;
+    const cid = block.choice.choiceId;
+
+    if (!groupMap.has(gid)) {
+      groupMap.set(gid, { group: block.group, choiceOrder: [], choiceMap: new Map() });
+      groupOrder.push(gid);
+    }
+    const gEntry = groupMap.get(gid)!;
+
+    if (!gEntry.choiceMap.has(cid)) {
+      gEntry.choiceMap.set(cid, { choice: block.choice, blocks: [] });
+      gEntry.choiceOrder.push(cid);
+    }
+    gEntry.choiceMap.get(cid)!.blocks.push(block);
+  }
+
+  return groupOrder.map((gid) => {
+    const gEntry = groupMap.get(gid)!;
+    return {
+      group: gEntry.group,
+      choiceUnits: gEntry.choiceOrder.map((cid) => gEntry.choiceMap.get(cid)!),
+    };
+  });
+}
+
+function fromGroupUnits(units: GroupUnit[]): FragmentBlock[] {
+  return units.flatMap((gu) => gu.choiceUnits.flatMap((cu) => cu.blocks));
 }
 
 export function ContentFeaturePicker({
@@ -122,141 +172,139 @@ export function ContentFeaturePicker({
   onChange,
   title,
 }: ContentFeaturePickerProps) {
-  const [selectedKeys, setSelectedKeys] = React.useState<Set<string>>(new Set());
-
-  const toggleSelect = (blockKey: string) => {
-    setSelectedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(blockKey)) next.delete(blockKey);
-      else next.add(blockKey);
-      return next;
-    });
-  };
-
   const addBlock = (feature: ContentFeatureKey) => {
     const blockKey = generateBlockKey(feature, blocks);
-    const choiceId = nextId(blocks, "choiceId") + blocks.length;
-    const groupId = nextId(blocks, "groupId") + blocks.length;
-    const newBlock: FragmentBlock = { blockKey, feature, content: "", choiceId, groupId };
+    const choiceId = nextChoiceId(blocks) + blocks.length;
+    const groupId = nextGroupId(blocks) + blocks.length;
+    const newBlock: FragmentBlock = {
+      blockKey,
+      feature,
+      content: "",
+      choice: { choiceId },
+      group: { groupId },
+    };
     onChange([...blocks, newBlock]);
   };
 
   const removeBlock = (blockKey: string) => {
     onChange(blocks.filter((b) => b.blockKey !== blockKey));
-    setSelectedKeys((prev) => {
-      const next = new Set(prev);
-      next.delete(blockKey);
-      return next;
-    });
   };
 
-  const selectedBlocks = blocks.filter((b) => selectedKeys.has(b.blockKey));
-
-  // ── Choice actions ──
-  const selectedChoiceIds = new Set(selectedBlocks.map((b) => b.choiceId));
-  const canCreateChoice = selectedBlocks.length >= 2 && selectedChoiceIds.size > 1;
-  const canBreakChoice = selectedBlocks.length >= 2 && selectedChoiceIds.size === 1;
-
-  const createChoice = () => {
-    const targetId = Math.min(...selectedBlocks.map((b) => b.choiceId));
-    onChange(blocks.map((b) => (selectedKeys.has(b.blockKey) ? { ...b, choiceId: targetId } : b)));
+  const updateBlockLabel = (blockKey: string, label: string | undefined) => {
+    onChange(blocks.map((b) => (b.blockKey === blockKey ? { ...b, label } : b)));
   };
 
-  const breakChoice = () => {
-    let next = nextId(blocks, "choiceId");
+  const updateGroupLabel = (groupId: number, label: string | undefined) => {
     onChange(
-      blocks.map((b) => {
-        if (!selectedKeys.has(b.blockKey)) return b;
-        return { ...b, choiceId: next++ };
-      }),
+      blocks.map((b) =>
+        b.group.groupId === groupId ? { ...b, group: { ...b.group, label } } : b,
+      ),
     );
-    setSelectedKeys(new Set());
+  };
+
+  const updateChoiceLabel = (choiceId: number, label: string | undefined) => {
+    onChange(
+      blocks.map((b) =>
+        b.choice.choiceId === choiceId ? { ...b, choice: { ...b.choice, label } } : b,
+      ),
+    );
   };
 
   // ── Group actions ──
-  const selectedGroupIds = new Set(selectedBlocks.map((b) => b.groupId));
-  const canCreateGroup = selectedBlocks.length >= 2 && selectedGroupIds.size > 1;
-  const canBreakGroup = selectedBlocks.length >= 2 && selectedGroupIds.size === 1;
-
-  const createGroup = () => {
-    const targetId = Math.min(...selectedBlocks.map((b) => b.groupId));
-    onChange(blocks.map((b) => (selectedKeys.has(b.blockKey) ? { ...b, groupId: targetId } : b)));
+  const createGroup = (blockKeys: string[]) => {
+    const targetGroupId = Math.min(
+      ...blocks.filter((b) => blockKeys.includes(b.blockKey)).map((b) => b.group.groupId),
+    );
+    const targetLabel = blocks.find((b) => blockKeys.includes(b.blockKey) && b.group.groupId === targetGroupId)?.group.label;
+    onChange(
+      blocks.map((b) =>
+        blockKeys.includes(b.blockKey)
+          ? { ...b, group: { groupId: targetGroupId, label: targetLabel } }
+          : b,
+      ),
+    );
   };
 
-  const breakGroup = () => {
-    let next = nextId(blocks, "groupId");
+  const breakGroup = (groupId: number) => {
+    let next = nextGroupId(blocks);
     onChange(
       blocks.map((b) => {
-        if (!selectedKeys.has(b.blockKey)) return b;
-        return { ...b, groupId: next++ };
+        if (b.group.groupId !== groupId) return b;
+        return { ...b, group: { groupId: next++ } };
       }),
     );
-    setSelectedKeys(new Set());
   };
 
-  // ── Reorder (logical units = choice groups) ──
-  const toLogicalUnits = (blockList: FragmentBlock[]): FragmentBlock[][] => {
-    const units: FragmentBlock[][] = [];
-    const seen = new Set<number>();
-    for (const block of blockList) {
-      if (seen.has(block.choiceId)) continue;
-      units.push(blockList.filter((b) => b.choiceId === block.choiceId));
-      seen.add(block.choiceId);
-    }
-    return units;
+  // ── Choice actions ──
+  const createChoice = (blockKeys: string[]) => {
+    const targetChoiceId = Math.min(
+      ...blocks.filter((b) => blockKeys.includes(b.blockKey)).map((b) => b.choice.choiceId),
+    );
+    const targetLabel = blocks.find((b) => blockKeys.includes(b.blockKey) && b.choice.choiceId === targetChoiceId)?.choice.label;
+    onChange(
+      blocks.map((b) =>
+        blockKeys.includes(b.blockKey)
+          ? { ...b, choice: { choiceId: targetChoiceId, label: targetLabel } }
+          : b,
+      ),
+    );
   };
 
-  const moveUnit = (blockKey: string, direction: "up" | "down") => {
-    const units = toLogicalUnits(blocks);
-    const unitIndex = units.findIndex((unit) => unit.some((b) => b.blockKey === blockKey));
-    if (unitIndex === -1) return;
-    const targetIndex = direction === "up" ? unitIndex - 1 : unitIndex + 1;
-    if (targetIndex < 0 || targetIndex >= units.length) return;
+  const breakChoice = (choiceId: number) => {
+    let next = nextChoiceId(blocks);
+    onChange(
+      blocks.map((b) => {
+        if (b.choice.choiceId !== choiceId) return b;
+        return { ...b, choice: { choiceId: next++ } };
+      }),
+    );
+  };
+
+  // ── Reorder group units ──
+  const moveGroupUnit = (groupId: number, direction: "up" | "down") => {
+    const units = toGroupUnits(blocks);
+    const idx = units.findIndex((u) => u.group.groupId === groupId);
+    if (idx === -1) return;
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= units.length) return;
     const reordered = [...units];
-    [reordered[unitIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[unitIndex]];
-    onChange(reordered.flat());
+    [reordered[idx], reordered[targetIdx]] = [reordered[targetIdx], reordered[idx]];
+    onChange(fromGroupUnits(reordered));
   };
 
-  const logicalUnits = toLogicalUnits(blocks);
-  const isFirstUnit = (blockKey: string) =>
-    logicalUnits[0]?.some((b) => b.blockKey === blockKey) ?? false;
-  const isLastUnit = (blockKey: string) =>
-    logicalUnits[logicalUnits.length - 1]?.some((b) => b.blockKey === blockKey) ?? false;
+  // ── Reorder choice units within a group ──
+  const moveChoiceUnit = (groupId: number, choiceId: number, direction: "up" | "down") => {
+    const units = toGroupUnits(blocks);
+    const gIdx = units.findIndex((u) => u.group.groupId === groupId);
+    if (gIdx === -1) return;
+    const choiceUnits = units[gIdx].choiceUnits;
+    const cIdx = choiceUnits.findIndex((cu) => cu.choice.choiceId === choiceId);
+    if (cIdx === -1) return;
+    const targetCIdx = direction === "up" ? cIdx - 1 : cIdx + 1;
+    if (targetCIdx < 0 || targetCIdx >= choiceUnits.length) return;
+    const reorderedChoices = [...choiceUnits];
+    [reorderedChoices[cIdx], reorderedChoices[targetCIdx]] = [reorderedChoices[targetCIdx], reorderedChoices[cIdx]];
+    const reorderedUnits = [...units];
+    reorderedUnits[gIdx] = { ...units[gIdx], choiceUnits: reorderedChoices };
+    onChange(fromGroupUnits(reorderedUnits));
+  };
 
-  // ── Color coding ──
-  // Choice groups: blocks sharing a choiceId (count > 1)
+  const groupUnits = toGroupUnits(blocks);
+
+  const CHOICE_COLORS = [
+    "border-l-primary",
+    "border-l-secondary",
+    "border-l-destructive",
+    "border-l-accent",
+  ];
+
+  // Assign a stable color index to each unique choiceId that has 2+ blocks
   const choiceIdCounts = blocks.reduce<Record<number, number>>((acc, b) => {
-    acc[b.choiceId] = (acc[b.choiceId] ?? 0) + 1;
+    acc[b.choice.choiceId] = (acc[b.choice.choiceId] ?? 0) + 1;
     return acc;
   }, {});
-  const choiceGroupIds = [...new Set(
-    blocks.filter((b) => choiceIdCounts[b.choiceId] > 1).map((b) => b.choiceId),
-  )].sort((a, b) => a - b);
-
-  // Output groups: blocks sharing a groupId (count > 1)
-  const groupIdCounts = blocks.reduce<Record<number, number>>((acc, b) => {
-    acc[b.groupId] = (acc[b.groupId] ?? 0) + 1;
-    return acc;
-  }, {});
-  const outputGroupIds = [...new Set(
-    blocks.filter((b) => groupIdCounts[b.groupId] > 1).map((b) => b.groupId),
-  )].sort((a, b) => a - b);
-
-  const CHOICE_COLORS = ["border-l-primary", "border-l-accent", "border-l-secondary", "border-l-destructive"];
-  const GROUP_BG_COLORS = ["bg-primary/5", "bg-accent/5", "bg-secondary/5", "bg-destructive/5"];
-
-  const choiceBorderColor = (choiceId: number): string | null => {
-    const idx = choiceGroupIds.indexOf(choiceId);
-    return idx === -1 ? null : CHOICE_COLORS[idx % CHOICE_COLORS.length];
-  };
-
-  const groupBgColor = (groupId: number): string | null => {
-    const idx = outputGroupIds.indexOf(groupId);
-    return idx === -1 ? null : GROUP_BG_COLORS[idx % GROUP_BG_COLORS.length];
-  };
-
-  const hasChoiceActions = canCreateChoice || canBreakChoice;
-  const hasGroupActions = canCreateGroup || canBreakGroup;
+  const multiChoiceIds = [...new Set(blocks.filter((b) => choiceIdCounts[b.choice.choiceId] > 1).map((b) => b.choice.choiceId))].sort((a, b) => a - b);
+  const choiceColorMap = new Map(multiChoiceIds.map((id, i) => [id, CHOICE_COLORS[i % CHOICE_COLORS.length]]));
 
   return (
     <div className="flex flex-col gap-2">
@@ -278,122 +326,229 @@ export function ContentFeaturePicker({
         ))}
       </div>
 
-      {blocks.length > 0 && (
-        <ScrollArea className="rounded-md border border-border max-h-48">
-          <div className="p-1 space-y-0.5">
-            {blocks.map((block) => {
-              const def = available.find((f) => f.key === block.feature);
-              const isSelected = selectedKeys.has(block.blockKey);
-              const choiceColor = choiceBorderColor(block.choiceId);
-              const groupBg = groupBgColor(block.groupId);
-              const isInChoiceGroup = choiceColor !== null;
-              const isInOutputGroup = groupBg !== null;
-              // Only the first block in a choice group shows reorder arrows
-              const isChoiceGroupLeader =
-                !isInChoiceGroup ||
-                blocks.find((b) => b.choiceId === block.choiceId)?.blockKey === block.blockKey;
+      {groupUnits.length > 0 && (
+        <ScrollArea className="max-h-96">
+          <div className="space-y-2 pr-1">
+            {groupUnits.map((gu, gIdx) => {
+              const isMultiGroup = groupUnits.length > 1;
+              const isFirstGroup = gIdx === 0;
+              const isLastGroup = gIdx === groupUnits.length - 1;
+              const groupId = gu.group.groupId;
 
               return (
                 <div
-                  key={block.blockKey}
-                  className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 rounded select-none text-sm border-l-2",
-                    isSelected ? "bg-primary/10" : isInOutputGroup ? groupBg : "hover:bg-muted/50",
-                    isInChoiceGroup ? choiceColor : "border-l-transparent",
-                  )}
+                  key={groupId}
+                  className="rounded-md border border-border bg-muted/20 p-2 space-y-1.5"
                 >
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => toggleSelect(block.blockKey)}
-                  />
-
-                  <span
-                    className={cn(
-                      "text-[10px] font-semibold px-1 rounded shrink-0",
-                      block.feature === "paragraph"
-                        ? "bg-accent/20 text-accent"
-                        : "bg-primary/20 text-primary",
+                  {/* Group header */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wide shrink-0">
+                      Group
+                    </span>
+                    <Input
+                      className="h-6 text-xs flex-1 min-w-0"
+                      placeholder="Group name (optional)"
+                      value={gu.group.label ?? ""}
+                      onChange={(e) => updateGroupLabel(groupId, e.target.value || undefined)}
+                    />
+                    {isMultiGroup && (
+                      <div className="flex flex-col shrink-0">
+                        <button
+                          className="text-foreground/30 hover:text-foreground disabled:opacity-20"
+                          disabled={isFirstGroup}
+                          onClick={() => moveGroupUnit(groupId, "up")}
+                          title="Move group up"
+                        >
+                          <ChevronUp className="h-3 w-3" />
+                        </button>
+                        <button
+                          className="text-foreground/30 hover:text-foreground disabled:opacity-20"
+                          disabled={isLastGroup}
+                          onClick={() => moveGroupUnit(groupId, "down")}
+                          title="Move group down"
+                        >
+                          <ChevronDown className="h-3 w-3" />
+                        </button>
+                      </div>
                     )}
-                  >
-                    {def?.label ?? block.feature}
-                  </span>
-
-                  <Input
-                    className="h-6 text-xs flex-1 min-w-0"
-                    placeholder={block.blockKey}
-                    value={block.label ?? ""}
-                    onChange={(e) => {
-                      const label = e.target.value || undefined;
-                      onChange(blocks.map((b) => (b.blockKey === block.blockKey ? { ...b, label } : b)));
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-
-                  {isInChoiceGroup && (
-                    <span className="text-[10px] text-muted-foreground italic shrink-0">choice</span>
-                  )}
-                  {isInOutputGroup && (
-                    <span className="text-[10px] text-muted-foreground italic shrink-0">group</span>
-                  )}
-
-                  {isChoiceGroupLeader && (
-                    <div className="flex flex-col shrink-0">
+                    {isMultiGroup && (
                       <button
-                        className="text-foreground/30 hover:text-foreground disabled:opacity-20"
-                        disabled={isFirstUnit(block.blockKey)}
-                        onClick={() => moveUnit(block.blockKey, "up")}
-                        title="Move up"
+                        className="text-foreground/30 hover:text-accent text-[10px] font-semibold shrink-0"
+                        onClick={() => breakGroup(groupId)}
+                        title="Break group"
                       >
-                        <ChevronUp className="h-3 w-3" />
+                        Ungroup
                       </button>
-                      <button
-                        className="text-foreground/30 hover:text-foreground disabled:opacity-20"
-                        disabled={isLastUnit(block.blockKey)}
-                        onClick={() => moveUnit(block.blockKey, "down")}
-                        title="Move down"
-                      >
-                        <ChevronDown className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  <button
-                    className="text-foreground/30 hover:text-destructive text-xs shrink-0"
-                    onClick={() => removeBlock(block.blockKey)}
-                    title="Remove"
-                  >
-                    ✕
-                  </button>
+                  {/* Choice units within this group */}
+                  {gu.choiceUnits.map((cu, cIdx) => {
+                    const isChoice = choiceIdCounts[cu.choice.choiceId] > 1;
+                    const choiceColor = choiceColorMap.get(cu.choice.choiceId);
+                    const isFirstChoice = cIdx === 0;
+                    const isLastChoice = cIdx === gu.choiceUnits.length - 1;
+                    const choiceId = cu.choice.choiceId;
+
+                    return (
+                      <div
+                        key={choiceId}
+                        className={cn(
+                          "rounded border bg-card p-1.5 space-y-1",
+                          isChoice ? "border-l-2" : "border-border",
+                          isChoice && choiceColor,
+                        )}
+                      >
+                        {/* Choice header (only shown when it's a real choice group) */}
+                        {isChoice && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wide shrink-0">
+                              Choice
+                            </span>
+                            <Input
+                              className="h-5 text-xs flex-1 min-w-0"
+                              placeholder="Choice name (optional)"
+                              value={cu.choice.label ?? ""}
+                              onChange={(e) => updateChoiceLabel(choiceId, e.target.value || undefined)}
+                            />
+                            <div className="flex flex-col shrink-0">
+                              <button
+                                className="text-foreground/30 hover:text-foreground disabled:opacity-20"
+                                disabled={isFirstChoice}
+                                onClick={() => moveChoiceUnit(groupId, choiceId, "up")}
+                                title="Move choice up"
+                              >
+                                <ChevronUp className="h-3 w-3" />
+                              </button>
+                              <button
+                                className="text-foreground/30 hover:text-foreground disabled:opacity-20"
+                                disabled={isLastChoice}
+                                onClick={() => moveChoiceUnit(groupId, choiceId, "down")}
+                                title="Move choice down"
+                              >
+                                <ChevronDown className="h-3 w-3" />
+                              </button>
+                            </div>
+                            <button
+                              className="text-foreground/30 hover:text-destructive text-[10px] font-semibold shrink-0"
+                              onClick={() => breakChoice(choiceId)}
+                              title="Break choice"
+                            >
+                              Break
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Blocks within this choice unit */}
+                        {cu.blocks.map((block) => {
+                          const def = available.find((f) => f.key === block.feature);
+                          return (
+                            <div
+                              key={block.blockKey}
+                              className="flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-muted/40 text-sm"
+                            >
+                              <span
+                                className={cn(
+                                  "text-[10px] font-semibold px-1 rounded shrink-0",
+                                  block.feature === "paragraph"
+                                    ? "bg-accent/20 text-accent"
+                                    : "bg-primary/20 text-primary",
+                                )}
+                              >
+                                {def?.label ?? block.feature}
+                              </span>
+
+                              <Input
+                                className="h-6 text-xs flex-1 min-w-0"
+                                placeholder={block.blockKey}
+                                value={block.label ?? ""}
+                                onChange={(e) => updateBlockLabel(block.blockKey, e.target.value || undefined)}
+                              />
+
+                              <button
+                                className="text-foreground/30 hover:text-destructive text-xs shrink-0"
+                                onClick={() => removeBlock(block.blockKey)}
+                                title="Remove block"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          );
+                        })}
+
+                        {/* Add to choice / create choice actions */}
+                        {!isChoice && gu.choiceUnits.length > 1 && (
+                          <div className="flex gap-1 pt-0.5">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              intensity="soft"
+                              className="h-5 text-[10px] px-2"
+                              onClick={() => {
+                                // Merge this choice unit with the previous one
+                                const prevChoiceId = gu.choiceUnits[cIdx - 1]?.choice.choiceId;
+                                if (prevChoiceId !== undefined) {
+                                  createChoice([
+                                    ...cu.blocks.map((b) => b.blockKey),
+                                    ...gu.choiceUnits[cIdx - 1].blocks.map((b) => b.blockKey),
+                                  ]);
+                                }
+                              }}
+                              disabled={isFirstChoice}
+                            >
+                              Merge with above
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Group-level actions */}
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {gu.choiceUnits.length > 1 && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        intensity="soft"
+                        className="h-5 text-[10px] px-2"
+                        onClick={() => {
+                          // Merge all choice units in this group into one choice
+                          const allKeys = gu.choiceUnits.flatMap((cu) => cu.blocks.map((b) => b.blockKey));
+                          createChoice(allKeys);
+                        }}
+                      >
+                        Make all a choice
+                      </Button>
+                    )}
+                    {groupUnits.length > 1 && (
+                      <Button
+                        size="sm"
+                        variant="accent"
+                        intensity="soft"
+                        className="h-5 text-[10px] px-2"
+                        onClick={() => {
+                          // Merge this group with the next group
+                          const nextGroupId = groupUnits[gIdx + 1]?.group.groupId;
+                          if (nextGroupId !== undefined) {
+                            const allKeys = [
+                              ...gu.choiceUnits.flatMap((cu) => cu.blocks.map((b) => b.blockKey)),
+                              ...groupUnits[gIdx + 1].choiceUnits.flatMap((cu) => cu.blocks.map((b) => b.blockKey)),
+                            ];
+                            createGroup(allKeys);
+                          }
+                        }}
+                        disabled={isLastGroup}
+                      >
+                        Merge with next group
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
         </ScrollArea>
-      )}
-
-      {(hasChoiceActions || hasGroupActions) && (
-        <div className="flex flex-wrap gap-2">
-          {canCreateChoice && (
-            <Button size="sm" variant="secondary" intensity="soft" onClick={createChoice}>
-              Create Choice
-            </Button>
-          )}
-          {canBreakChoice && (
-            <Button size="sm" variant="outline" intensity="ghost" onClick={breakChoice}>
-              Break Choice
-            </Button>
-          )}
-          {canCreateGroup && (
-            <Button size="sm" variant="accent" intensity="soft" onClick={createGroup}>
-              Create Group
-            </Button>
-          )}
-          {canBreakGroup && (
-            <Button size="sm" variant="outline" intensity="ghost" onClick={breakGroup}>
-              Break Group
-            </Button>
-          )}
-        </div>
       )}
     </div>
   );

@@ -2,14 +2,30 @@ import mongoose from "mongoose";
 import { createModel } from "@/lib/mongoose/createModel";
 import { TreeNodeDoc } from "@/app/quickSend/templates/TemplateTypes";
 
+const BlockChoiceSchema = new mongoose.Schema(
+  {
+    choiceId: { type: Number, required: true, default: 1 },
+    label: { type: String },
+  },
+  { _id: false },
+);
+
+const BlockGroupSchema = new mongoose.Schema(
+  {
+    groupId: { type: Number, required: true, default: 1 },
+    label: { type: String },
+  },
+  { _id: false },
+);
+
 const FragmentBlockSchema = new mongoose.Schema(
   {
     blockKey: { type: String, required: true },
     label: { type: String },
     feature: { type: String, required: true },
     content: { type: String, default: "" },
-    choiceId: { type: Number, required: true, default: 1 },
-    groupId: { type: Number, required: true, default: 1 },
+    choice: { type: BlockChoiceSchema, required: true },
+    group: { type: BlockGroupSchema, required: true },
   },
   { _id: false },
 );

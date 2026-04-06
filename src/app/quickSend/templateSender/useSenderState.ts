@@ -44,7 +44,7 @@ export function useSenderState(
 
 function buildInitialChoices(blocks: FragmentBlock[]): Record<number, string> {
   const choiceIdCounts = blocks.reduce<Record<number, number>>((acc, b) => {
-    acc[b.choiceId] = (acc[b.choiceId] ?? 0) + 1;
+    acc[b.choice.choiceId] = (acc[b.choice.choiceId] ?? 0) + 1;
     return acc;
   }, {});
 
@@ -52,9 +52,10 @@ function buildInitialChoices(blocks: FragmentBlock[]): Record<number, string> {
   const seen = new Set<number>();
 
   for (const block of blocks) {
-    if (choiceIdCounts[block.choiceId] > 1 && !seen.has(block.choiceId)) {
-      choices[block.choiceId] = block.blockKey;
-      seen.add(block.choiceId);
+    const choiceId = block.choice.choiceId;
+    if (choiceIdCounts[choiceId] > 1 && !seen.has(choiceId)) {
+      choices[choiceId] = block.blockKey;
+      seen.add(choiceId);
     }
   }
 

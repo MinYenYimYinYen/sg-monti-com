@@ -4,6 +4,7 @@ import { CUSTOMER_VARIABLES, type CustomerVariableKey } from "@/app/quickSend/te
 
 export type ResolvedGroup = {
   groupId: number;
+  label?: string;
   html: string;
 };
 
@@ -42,9 +43,9 @@ function resolveChoices(
   blocks: FragmentBlock[],
   activeChoices: Record<number, string>,
 ): FragmentBlock[] {
-  // Build a set of choiceIds that have multiple blocks
+  // Build a count of blocks per choiceId
   const choiceIdCounts = blocks.reduce<Record<number, number>>((acc, b) => {
-    acc[b.choiceId] = (acc[b.choiceId] ?? 0) + 1;
+    acc[b.choice.choiceId] = (acc[b.choice.choiceId] ?? 0) + 1;
     return acc;
   }, {});
 
@@ -52,19 +53,20 @@ function resolveChoices(
   const result: FragmentBlock[] = [];
 
   for (const block of blocks) {
-    const isChoice = choiceIdCounts[block.choiceId] > 1;
+    const { choiceId } = block.choice;
+    const isChoice = choiceIdCounts[choiceId] > 1;
 
     if (!isChoice) {
       result.push(block);
       continue;
     }
 
-    if (seen.has(block.choiceId)) continue;
-    seen.add(block.choiceId);
+    if (seen.has(choiceId)) continue;
+    seen.add(choiceId);
 
     // Find the active selection for this choiceId, defaulting to the first block
-    const activeKey = activeChoices[block.choiceId];
-    const choiceBlocks = blocks.filter((b) => b.choiceId === block.choiceId);
+    const activeKey = activeChoices[choiceId];
+    const choiceBlocks = blocks.filter((b) => b.choice.choiceId === choiceId);
     const winner = choiceBlocks.find((b) => b.blockKey === activeKey) ?? choiceBlocks[0];
     result.push(winner);
   }
@@ -99,18 +101,22 @@ function resolveVariables(html: string, customer: Customer | null): string {
 
 function buildGroups(blocks: FragmentBlock[]): ResolvedGroup[] {
   const groupMap = new Map<number, string[]>();
+  const groupLabelMap = new Map<number, string | undefined>();
   const groupOrder: number[] = [];
 
   for (const block of blocks) {
-    if (!groupMap.has(block.groupId)) {
-      groupMap.set(block.groupId, []);
-      groupOrder.push(block.groupId);
+    const { groupId, label } = block.group;
+    if (!groupMap.has(groupId)) {
+      groupMap.set(groupId, []);
+      groupLabelMap.set(groupId, label);
+      groupOrder.push(groupId);
     }
-    groupMap.get(block.groupId)!.push(block.content);
+    groupMap.get(groupId)!.push(block.content);
   }
 
   return groupOrder.map((groupId) => ({
     groupId,
+    label: groupLabelMap.get(groupId),
     html: groupMap.get(groupId)!.join(""),
   }));
 }

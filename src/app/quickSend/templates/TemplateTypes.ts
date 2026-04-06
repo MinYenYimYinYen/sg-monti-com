@@ -2,6 +2,28 @@ import type { ContentFeatureKey, DataFeatureKey } from "./templateFeatures";
 
 export type TreeNodeType = "category" | "fragment";
 
+/**
+ * A choice group descriptor. Blocks sharing the same `choiceId` form a
+ * mutually-exclusive set — the sender picks one at send time.
+ */
+export type BlockChoice = {
+  /** Stable internal key. Auto-assigned; never shown to the user. */
+  choiceId: number;
+  /** User-visible name for this choice group, e.g. "Program Tier". */
+  label?: string;
+};
+
+/**
+ * An output group descriptor. Blocks sharing the same `groupId` are assembled
+ * in order into a single copyable output unit (one Tiptap editor).
+ */
+export type BlockGroup = {
+  /** Stable internal key. Auto-assigned; never shown to the user. */
+  groupId: number;
+  /** User-visible name for this output group, e.g. "Email Body". */
+  label?: string;
+};
+
 /** A single content block authored by the user inside a fragment. */
 export type FragmentBlock = {
   /**
@@ -9,25 +31,24 @@ export type FragmentBlock = {
    * Generated once at add time; never shown to the user.
    */
   blockKey: string;
-  /** Optional user-entered display name. Overrides the auto-generated blockKey label in the UI. */
+  /** Optional user-entered display name shown in the builder block list. */
   label?: string;
   /** Which content feature this block uses (e.g. "textLine", "paragraph"). */
   feature: ContentFeatureKey;
   /** User-authored text with optional {{customer.*}} placeholders. */
   content: string;
   /**
-   * Choice slot — internal only, never shown to the user.
-   * Blocks sharing the same choiceId form a choice group: the sender picks one.
-   * Auto-assigned sequentially; "Create Choice" sets selected blocks to the same value.
+   * Choice group this block belongs to.
+   * Blocks sharing the same `choice.choiceId` form a mutually-exclusive set.
+   * Each block gets a unique choiceId by default (no choice grouping).
    */
-  choiceId: number;
+  choice: BlockChoice;
   /**
-   * Output group — internal only, never shown to the user.
-   * Blocks sharing the same groupId are assembled in order into a single output
-   * (one Tiptap editor / copyable unit). Defaults to a unique value per block
-   * (no grouping). "Create Group" sets selected blocks to the same value.
+   * Output group this block belongs to.
+   * Blocks sharing the same `group.groupId` are assembled into one output.
+   * Each block gets a unique groupId by default (no output grouping).
    */
-  groupId: number;
+  group: BlockGroup;
 };
 
 export type TreeNodeDoc = {

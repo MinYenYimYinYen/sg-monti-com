@@ -53,11 +53,11 @@ export function TemplateSender({ fragment, label }: TemplateSenderProps) {
       )}
 
       <div className="flex flex-col gap-4">
-        {resolvedGroups.map((group, index) => (
+        {resolvedGroups.map((group) => (
           <OutputGroup
             key={group.groupId}
             html={group.html}
-            label={resolvedGroups.length > 1 ? `Output ${index + 1}` : undefined}
+            label={group.label ?? (resolvedGroups.length > 1 ? `Group ${group.groupId}` : undefined)}
           />
         ))}
       </div>
