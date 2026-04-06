@@ -76,6 +76,20 @@ const selectServicesByDateAndEmployee = createSelector(
   },
 );
 
+const selectAllDates = createSelector(
+  [selectServicesByDateAndEmployee],
+  (byDateAndEmployee): string[] => Array.from(byDateAndEmployee.keys()),
+);
+
+const selectEmployeeIdsForDate = (routeDate: string | null) =>
+  createSelector(
+    [selectServicesByDateAndEmployee],
+    (byDateAndEmployee): string[] => {
+      if (!routeDate) return [];
+      return Array.from(byDateAndEmployee.get(routeDate)?.keys() ?? []);
+    },
+  );
+
 // Derived selector: flatten to services by date (for card headers)
 const selectServicesByDate = createSelector(
   [selectServicesByDateAndEmployee],
@@ -116,4 +130,6 @@ export const coverSheetsSelect = {
   servicesByDateAndEmployee: selectServicesByDateAndEmployee,
   servicesByDate: selectServicesByDate,
   promiseDetails: selectPromiseDetails,
+  allDates: selectAllDates,
+  employeeIdsForDate: selectEmployeeIdsForDate,
 };

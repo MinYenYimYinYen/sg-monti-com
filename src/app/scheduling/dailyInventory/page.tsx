@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import {
   ClipboardList,
   ClipboardCheck,
@@ -13,7 +12,6 @@ import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/c
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
-import { isLoadoutFinal } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
 import { useRecentProduction } from "@/app/realGreen/customer/hooks/useRecentProduction";
@@ -30,9 +28,7 @@ export default function DailyInventoryPage() {
   const { getLoadouts } = useLoadout();
 
   const routeDate = useSelector(loadoutStartSelect.routeDate);
-  const servicesByDateAndEmployee = useSelector(
-    coverSheetsSelect.servicesByDateAndEmployee,
-  );
+  const allDates = useSelector(coverSheetsSelect.allDates);
   const employeeMap = useSelector(employeeSelect.employeeMap);
   const startedEmployeeIds = useSelector(
     routeDate
@@ -40,6 +36,8 @@ export default function DailyInventoryPage() {
       : () => new Set<string>(),
   );
   const loadoutsByDate = useSelector(loadoutSelect.loadoutsByDate(routeDate));
+  const startEmployeesForDate = useSelector(loadoutSelect.startEmployeeIdsForDate(routeDate));
+  const finishEmployeesForDate = useSelector(loadoutSelect.finishEmployeeIdsForDate(routeDate));
 
   const {
     refresh: refreshRecentProduction,
@@ -56,12 +54,6 @@ export default function DailyInventoryPage() {
     if (!routeDate) return;
     getLoadouts({ min: routeDate, max: routeDate });
   }, [routeDate, getLoadouts]);
-
-  const allDates = Array.from(servicesByDateAndEmployee.keys());
-
-  const employeesForDate = routeDate
-    ? Array.from(servicesByDateAndEmployee.get(routeDate)?.keys() ?? [])
-    : [];
 
   const handleDateChange = (dates: string[]) => {
     setRouteDate(dates[0]);
@@ -133,13 +125,13 @@ export default function DailyInventoryPage() {
             <p className="text-sm text-foreground/40 italic">
               Select a date to see assigned techs.
             </p>
-          ) : employeesForDate.length === 0 ? (
+          ) : startEmployeesForDate.length === 0 ? (
             <p className="text-sm text-foreground/40 italic">
               No techs assigned for this date.
             </p>
           ) : (
             <div className="flex flex-wrap gap-2 mt-1">
-              {employeesForDate.map((employeeId) => {
+              {startEmployeesForDate.map((employeeId) => {
                 const isStarted = startedEmployeeIds.has(employeeId);
                 return (
                   <button
@@ -189,13 +181,13 @@ export default function DailyInventoryPage() {
             <p className="text-sm text-foreground/40 italic">
               Select a date to see assigned techs.
             </p>
-          ) : employeesForDate.length === 0 ? (
+          ) : finishEmployeesForDate.length === 0 ? (
             <p className="text-sm text-foreground/40 italic">
               No techs assigned for this date.
             </p>
           ) : (
             <div className="flex flex-wrap gap-2 mt-1">
-              {employeesForDate.map((employeeId) => {
+              {finishEmployeesForDate.map((employeeId) => {
                 const doc = loadoutsByDate.get(employeeId);
                 if (!doc) {
                   // No loadout started yet — not clickable

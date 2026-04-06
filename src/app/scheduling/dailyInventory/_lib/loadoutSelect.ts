@@ -5,7 +5,8 @@ import { rehydrateLoadout } from "@/app/scheduling/dailyInventory/_lib/rehydrate
 import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { baseLoadout, isLoadoutFinal, LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { baseLoadout, LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 
 const selectLoadouts = (state: AppState) => state.loadout.loadouts;
 const selectFinishLoadoutDoc = (state: AppState) => state.loadout.finishLoadout;
@@ -39,6 +40,42 @@ const selectLoadoutsByDate = (routeDate: string | null) =>
     return map;
   });
 
+/**
+ * Returns the sorted union of employeeIds for the Start Loadout card:
+ * - Employees from cover sheets for the date (have pending/printed services)
+ * - Employees who have a LoadoutDoc for the date (already started — chip stays visible as "done")
+ */
+const selectStartEmployeeIdsForDate = (routeDate: string | null) =>
+  createSelector(
+    [selectLoadoutsByDate(routeDate), coverSheetsSelect.servicesByDateAndEmployee],
+    (loadoutsByDate, servicesByDateAndEmployee): string[] => {
+      const ids = new Set<string>();
+      loadoutsByDate.forEach((_, employeeId) => ids.add(employeeId));
+      if (routeDate) {
+        servicesByDateAndEmployee.get(routeDate)?.forEach((_, employeeId) => ids.add(employeeId));
+      }
+      return Array.from(ids).sort();
+    },
+  );
+
+/**
+ * Returns the sorted union of employeeIds for the Finish Loadout card:
+ * - Employees who have a LoadoutDoc for the date (started a loadout, may have finished all services)
+ * - Employees from cover sheets for the date (have pending/printed services)
+ */
+const selectFinishEmployeeIdsForDate = (routeDate: string | null) =>
+  createSelector(
+    [selectLoadoutsByDate(routeDate), coverSheetsSelect.servicesByDateAndEmployee],
+    (loadoutsByDate, servicesByDateAndEmployee): string[] => {
+      const ids = new Set<string>();
+      loadoutsByDate.forEach((_, employeeId) => ids.add(employeeId));
+      if (routeDate) {
+        servicesByDateAndEmployee.get(routeDate)?.forEach((_, employeeId) => ids.add(employeeId));
+      }
+      return Array.from(ids).sort();
+    },
+  );
+
 /** Derives a fully hydrated LoadoutBase from the persisted LoadoutDoc. */
 const selectHydratedFinishLoadout = createSelector(
   [
@@ -61,4 +98,6 @@ export const loadoutSelect = {
   loadoutMap: selectLoadoutMap,
   startedEmployeeIdsByDate: selectStartedEmployeeIdsByDate,
   loadoutsByDate: selectLoadoutsByDate,
+  startEmployeeIdsForDate: selectStartEmployeeIdsForDate,
+  finishEmployeeIdsForDate: selectFinishEmployeeIdsForDate,
 };
