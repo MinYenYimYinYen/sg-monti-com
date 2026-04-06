@@ -28,6 +28,7 @@ import { loadoutStartReducer } from "@/app/scheduling/dailyInventory/loadoutStar
 import { loadoutFinishReducer } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSlice";
 import { loadoutReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
 import { templateReducer } from "@/app/quickSend/templates/templateSlice";
+import { templateBuilderReducer } from "@/app/quickSend/templateBuilder/templateBuilderSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -57,6 +58,7 @@ const rootReducer = combineReducers({
   customer: customerReducer,
   centralDocProps: centralDocPropsReducer,
   template: templateReducer,
+  templateBuilder: templateBuilderReducer,
 });
 
 export default rootReducer;

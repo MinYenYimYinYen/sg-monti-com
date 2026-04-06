@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { useSelector } from "react-redux";
 import { useTemplate } from "@/app/quickSend/templates/useTemplate";
+import { useTemplateBuilder } from "./useTemplateBuilder";
+import { templateBuilderSelect } from "./templateBuilderSelect";
 import { NodeTree } from "./_components/NodeTree";
 import { NodeEditor } from "./_components/NodeEditor";
 import { ScrollArea } from "@/style/components/scroll-area";
 
 export function TemplateBuilder() {
   useTemplate({ autoLoad: true });
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const selectedNodeId = useSelector(templateBuilderSelect.selectedNodeId);
+  const { selectNode } = useTemplateBuilder();
 
   return (
     <div className="flex h-full w-full overflow-hidden">
@@ -23,7 +27,7 @@ export function TemplateBuilder() {
         <ScrollArea className="flex-1 px-2 py-2">
           <NodeTree
             selectedNodeId={selectedNodeId}
-            onSelect={setSelectedNodeId}
+            onSelect={selectNode}
           />
         </ScrollArea>
       </div>

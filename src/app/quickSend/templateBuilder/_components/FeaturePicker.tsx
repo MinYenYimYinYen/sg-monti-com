@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSelector } from "react-redux";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
@@ -9,6 +10,8 @@ import { cn } from "@/style/utils";
 import { ChevronRight, ChevronLeft, ChevronUp, ChevronDown } from "lucide-react";
 import type { DataFeatureDef, ContentFeatureDef, ContentFeatureKey } from "@/app/quickSend/templates/templateFeatures";
 import type { FragmentBlock, BlockChoice, BlockGroup } from "@/app/quickSend/templates/TemplateTypes";
+import { useTemplateBuilder } from "../useTemplateBuilder";
+import { templateBuilderSelect } from "../templateBuilderSelect";
 
 // ─── Data Feature Picker ────────────────────────────────────────────────────
 
@@ -173,23 +176,8 @@ export function ContentFeaturePicker({
   onChange,
   title,
 }: ContentFeaturePickerProps) {
-  const [selectedBlockKeys, setSelectedBlockKeys] = React.useState<Set<string>>(new Set());
-
-  const toggleBlockSelection = (blockKey: string) => {
-    setSelectedBlockKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(blockKey)) {
-        next.delete(blockKey);
-      } else {
-        next.add(blockKey);
-      }
-      return next;
-    });
-  };
-
-  const clearSelection = () => {
-    setSelectedBlockKeys(new Set());
-  };
+  const selectedBlockKeySet = useSelector(templateBuilderSelect.selectedBlockKeySet);
+  const { toggleBlockSelection, clearBlockSelection } = useTemplateBuilder();
 
   const addBlock = (feature: ContentFeatureKey) => {
     const blockKey = generateBlockKey(feature, blocks);
@@ -345,46 +333,7 @@ export function ContentFeaturePicker({
         ))}
       </div>
 
-      {/* Selection toolbar */}
-      {selectedBlockKeys.size >= 2 && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-accent/10 border border-accent/30">
-          <span className="text-xs font-medium text-foreground/80">
-            {selectedBlockKeys.size} blocks selected
-          </span>
-          <div className="flex gap-1 flex-1">
-            <Button
-              size="sm"
-              variant="primary"
-              intensity="soft"
-              onClick={() => {
-                createGroup(Array.from(selectedBlockKeys));
-                clearSelection();
-              }}
-            >
-              Create Group
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              intensity="soft"
-              onClick={() => {
-                createChoice(Array.from(selectedBlockKeys));
-                clearSelection();
-              }}
-            >
-              Create Choice
-            </Button>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            intensity="ghost"
-            onClick={clearSelection}
-          >
-            Clear
-          </Button>
-        </div>
-      )}
+      {/* Selection toolbar - now moved to NodeEditor save area */}
 
       {groupUnits.length > 0 && (
         <ScrollArea className="max-h-96">
@@ -440,7 +389,7 @@ export function ContentFeaturePicker({
                           {/* Blocks within this choice unit */}
                           {cu.blocks.map((block) => {
                             const def = available.find((f) => f.key === block.feature);
-                            const isSelected = selectedBlockKeys.has(block.blockKey);
+                            const isSelected = selectedBlockKeySet.has(block.blockKey);
                             return (
                               <div
                                 key={block.blockKey}
@@ -598,7 +547,7 @@ export function ContentFeaturePicker({
                         {/* Blocks within this choice unit */}
                         {cu.blocks.map((block) => {
                           const def = available.find((f) => f.key === block.feature);
-                          const isSelected = selectedBlockKeys.has(block.blockKey);
+                          const isSelected = selectedBlockKeySet.has(block.blockKey);
                           return (
                             <div
                               key={block.blockKey}

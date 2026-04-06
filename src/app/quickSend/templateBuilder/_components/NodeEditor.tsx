@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { templateSelect } from "@/app/quickSend/templates/templateSelect";
 import { useTemplate } from "@/app/quickSend/templates/useTemplate";
+import { templateBuilderSelect } from "../templateBuilderSelect";
+import { useTemplateBuilder } from "../useTemplateBuilder";
 import { TreeNodeDoc, FragmentBlock } from "@/app/quickSend/templates/TemplateTypes";
 import {
   DATA_FEATURE_DEFS,
@@ -15,6 +17,7 @@ import { DataFeaturePicker, ContentFeaturePicker } from "./FeaturePicker";
 import { BlockContentEditor } from "./BlockContentEditor";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
+import { Button } from "@/style/components/button";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { Separator } from "@/style/components/separator";
 import { FormGroup } from "@/components/FormGroup";
@@ -59,6 +62,10 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
   );
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
+  const selectedBlockKeys = useSelector(templateBuilderSelect.selectedBlockKeys);
+  const canCreateGroup = useSelector(templateBuilderSelect.canCreateGroup);
+  const { clearBlockSelection } = useTemplateBuilder();
+
   const isFragment = node.type === "fragment";
   const variablesEnabled = dataFeatures.includes("custIdSearch");
 
@@ -66,6 +73,36 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
     setBlocks((prev) =>
       prev.map((b) => (b.blockKey === blockKey ? { ...b, content } : b)),
     );
+  };
+
+  const handleCreateGroup = () => {
+    const targetGroupId = Math.min(
+      ...blocks.filter((b) => selectedBlockKeys.includes(b.blockKey)).map((b) => b.group.groupId),
+    );
+    const targetLabel = blocks.find((b) => selectedBlockKeys.includes(b.blockKey) && b.group.groupId === targetGroupId)?.group.label;
+    setBlocks(
+      blocks.map((b) =>
+        selectedBlockKeys.includes(b.blockKey)
+          ? { ...b, group: { groupId: targetGroupId, label: targetLabel } }
+          : b,
+      ),
+    );
+    clearBlockSelection();
+  };
+
+  const handleCreateChoice = () => {
+    const targetChoiceId = Math.min(
+      ...blocks.filter((b) => selectedBlockKeys.includes(b.blockKey)).map((b) => b.choice.choiceId),
+    );
+    const targetLabel = blocks.find((b) => selectedBlockKeys.includes(b.blockKey) && b.choice.choiceId === targetChoiceId)?.choice.label;
+    setBlocks(
+      blocks.map((b) =>
+        selectedBlockKeys.includes(b.blockKey)
+          ? { ...b, choice: { choiceId: targetChoiceId, label: targetLabel } }
+          : b,
+      ),
+    );
+    clearBlockSelection();
   };
 
   const handleSave = async () => {
@@ -199,14 +236,54 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
         </>
       )}
 
-      <div className="flex gap-2 pt-2">
-        <SaveButton
-          status={saveStatus}
-          onClick={handleSave}
-          onSuccessComplete={() => setSaveStatus("idle")}
-        >
-          Save
-        </SaveButton>
+      <div className="flex flex-col gap-2 pt-2">
+        {isFragment && selectedBlockKeys.length >= 2 && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-accent/10 border border-accent/30">
+            <span className="text-xs font-medium text-foreground/80">
+              {selectedBlockKeys.length} blocks selected
+            </span>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <SaveButton
+            status={saveStatus}
+            onClick={handleSave}
+            onSuccessComplete={() => setSaveStatus("idle")}
+          >
+            Save
+          </SaveButton>
+          {isFragment && (
+            <>
+              <Button
+                size="default"
+                variant="primary"
+                intensity="soft"
+                disabled={!canCreateGroup}
+                onClick={handleCreateGroup}
+              >
+                Create Group
+              </Button>
+              <Button
+                size="default"
+                variant="secondary"
+                intensity="soft"
+                disabled={!canCreateGroup}
+                onClick={handleCreateChoice}
+              >
+                Create Choice
+              </Button>
+              <Button
+                size="default"
+                variant="outline"
+                intensity="ghost"
+                disabled={selectedBlockKeys.length === 0}
+                onClick={clearBlockSelection}
+              >
+                Clear
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -102,6 +102,7 @@ function resolveVariables(html: string, customer: Customer | null): string {
 function buildGroups(blocks: FragmentBlock[]): ResolvedGroup[] {
   const groupMap = new Map<number, string[]>();
   const groupLabelMap = new Map<number, string | undefined>();
+  const firstBlockLabelMap = new Map<number, string | undefined>();
   const groupOrder: number[] = [];
 
   for (const block of blocks) {
@@ -109,14 +110,20 @@ function buildGroups(blocks: FragmentBlock[]): ResolvedGroup[] {
     if (!groupMap.has(groupId)) {
       groupMap.set(groupId, []);
       groupLabelMap.set(groupId, label);
+      firstBlockLabelMap.set(groupId, block.label); // Track first block's label
       groupOrder.push(groupId);
     }
     groupMap.get(groupId)!.push(block.content);
   }
 
-  return groupOrder.map((groupId) => ({
-    groupId,
-    label: groupLabelMap.get(groupId),
-    html: groupMap.get(groupId)!.join(""),
-  }));
+  return groupOrder.map((groupId) => {
+    const groupLabel = groupLabelMap.get(groupId);
+    const firstBlockLabel = firstBlockLabelMap.get(groupId);
+    return {
+      groupId,
+      // Use group label if defined, otherwise fall back to first block's label
+      label: groupLabel ?? firstBlockLabel,
+      html: groupMap.get(groupId)!.join(""),
+    };
+  });
 }
