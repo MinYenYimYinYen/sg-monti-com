@@ -90,7 +90,7 @@ const selectPrenotifications = createSelector(
             customer.contactPoints
               .filter((cp) => allowedContactTypes?.includes(cp.type))
               .forEach((cp) => {
-                contactPointMap.set(`${cp.type}:${cp.point}`, cp);
+                contactPointMap.set(cp.point, cp);
               });
 
             typeMap.set(customer.custId, {

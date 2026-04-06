@@ -26,11 +26,13 @@ export default function RootLayout({
           <NavBar />
           <GlobalLoader />
           <main className="flex-1 flex flex-col overflow-y-auto">
-            {children}
+            <div className="flex-1">
+              {children}
+            </div>
+            <div id="footer-portal" />
           </main>
         </Providers>
         <ToastContainer />
-        <div id="footer-portal" />
       </body>
     </html>
   );
