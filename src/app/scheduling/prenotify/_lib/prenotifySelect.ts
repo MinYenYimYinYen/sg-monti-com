@@ -90,6 +90,8 @@ const selectPrenotifications = createSelector(
             customer.contactPoints
               .filter((cp) => allowedContactTypes?.includes(cp.type))
               .forEach((cp) => {
+                // Deduplicate by phone number/email only — the same point may appear
+                // under multiple ContactTypes (e.g., Cell and Home both set to the same number).
                 contactPointMap.set(cp.point, cp);
               });
 

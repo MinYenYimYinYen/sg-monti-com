@@ -27,6 +27,11 @@ const handlers: HandlerMap<LoadoutContract> = {
     handler: async ({ dateRange }) => {
       await connectToMongoDB();
       const { min, max } = dateRange;
+
+      // One time START
+
+      // One time END
+
       const loadouts = await LoadoutDocModel.find({
         routeDate: { $gte: min, $lte: max },
       }).lean();

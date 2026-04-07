@@ -1,0 +1,431 @@
+[{
+  "_id": {
+    "$oid": "69d39d7efc6dcc7d3046abf1"
+  },
+  "employeeId": "1LS",
+  "routeDate": "2026-04-06",
+  "__v": 0,
+  "isStored": true,
+  "masters": [
+    {
+      "productId": 691,
+      "plannedAmount": 105,
+      "startAmount": 105,
+      "finishAmount": null,
+      "unitId": 4,
+      "equipments": [
+        {
+          "equipmentId": "Main Tank",
+          "appMethodId": "Tank Mix",
+          "plannedAmount": 183,
+          "startAmount": 0,
+          "finishAmount": 0,
+          "constituents": [
+            {
+              "productId": -2,
+              "plannedAmount": 182,
+              "startAmount": 0,
+              "finishAmount": 0,
+              "unitId": -2
+            },
+            {
+              "productId": 342,
+              "plannedAmount": 114,
+              "startAmount": 0,
+              "finishAmount": 0,
+              "unitId": 3
+            },
+            {
+              "productId": 468,
+              "plannedAmount": 37,
+              "startAmount": 0,
+              "finishAmount": 0,
+              "unitId": 5
+            }
+          ]
+        }
+      ],
+      "subProducts": []
+    },
+    {
+      "productId": 695,
+      "plannedAmount": 75,
+      "startAmount": 75,
+      "finishAmount": null,
+      "unitId": 4,
+      "equipments": [],
+      "subProducts": [
+        {
+          "productId": 643,
+          "plannedAmount": 233,
+          "startAmount": 800,
+          "finishAmount": 175,
+          "unitId": 3
+        }
+      ]
+    }
+  ],
+  "rideOnId": "toro6",
+  "singles": [],
+  "subProducts": [
+    {
+      "productId": 539,
+      "startAmount": 50,
+      "finishAmount": 50,
+      "unitId": 3
+    }
+  ],
+  "truckId": "truck6"
+},
+{
+  "_id": {
+    "$oid": "69d39dfcfc6dcc7d3046b83b"
+  },
+  "employeeId": "1BT",
+  "routeDate": "2026-04-06",
+  "__v": 0,
+  "isStored": true,
+  "masters": [
+    {
+      "productId": 691,
+      "plannedAmount": 143,
+      "startAmount": 143,
+      "finishAmount": null,
+      "unitId": 4,
+      "equipments": [
+        {
+          "equipmentId": "Main Tank",
+          "appMethodId": "Tank Mix",
+          "plannedAmount": 249,
+          "startAmount": 345,
+          "finishAmount": 10,
+          "constituents": [
+            {
+              "productId": -2,
+              "plannedAmount": 248,
+              "startAmount": 343.61,
+              "finishAmount": 9.96,
+              "unitId": -2
+            },
+            {
+              "productId": 342,
+              "plannedAmount": 155,
+              "startAmount": 214.76,
+              "finishAmount": 6.22,
+              "unitId": 3
+            },
+            {
+              "productId": 468,
+              "plannedAmount": 50,
+              "startAmount": 69.28,
+              "finishAmount": 2.01,
+              "unitId": 5
+            }
+          ]
+        }
+      ],
+      "subProducts": []
+    }
+  ],
+  "rideOnId": "",
+  "singles": [],
+  "subProducts": [
+    {
+      "productId": 643,
+      "startAmount": 100,
+      "finishAmount": 100,
+      "unitId": 3
+    },
+    {
+      "productId": 539,
+      "startAmount": 50,
+      "finishAmount": 50,
+      "unitId": 3
+    }
+  ],
+  "truckId": "truck8"
+},
+{
+  "_id": {
+    "$oid": "69d39e28fc6dcc7d3046bc44"
+  },
+  "employeeId": "1RR",
+  "routeDate": "2026-04-06",
+  "__v": 0,
+  "isStored": true,
+  "masters": [
+    {
+      "productId": 695,
+      "plannedAmount": 164,
+      "startAmount": 164,
+      "finishAmount": null,
+      "unitId": 4,
+      "equipments": [],
+      "subProducts": [
+        {
+          "productId": 643,
+          "plannedAmount": 508,
+          "startAmount": 1000,
+          "finishAmount": 250,
+          "unitId": 3
+        }
+      ]
+    },
+    {
+      "productId": 691,
+      "plannedAmount": 85,
+      "startAmount": 85,
+      "finishAmount": null,
+      "unitId": 4,
+      "equipments": [
+        {
+          "equipmentId": "Main Tank",
+          "appMethodId": "Tank Mix",
+          "plannedAmount": 148,
+          "startAmount": 0,
+          "finishAmount": 0,
+          "constituents": [
+            {
+              "productId": -2,
+              "plannedAmount": 148,
+              "startAmount": 0,
+              "finishAmount": 0,
+              "unitId": -2
+            },
+            {
+              "productId": 342,
+              "plannedAmount": 92,
+              "startAmount": 0,
+              "finishAmount": 0,
+              "unitId": 3
+            },
+            {
+              "productId": 468,
+              "plannedAmount": 30,
+              "startAmount": 0,
+              "finishAmount": 0,
+              "unitId": 5
+            }
+          ]
+        }
+      ],
+      "subProducts": []
+    }
+  ],
+  "rideOnId": "toro1",
+  "singles": [],
+  "subProducts": [],
+  "truckId": "truck7"
+},
+{
+  "_id": {
+    "$oid": "69d39f81fc6dcc7d3046dc83"
+  },
+  "employeeId": "1VC",
+  "routeDate": "2026-04-06",
+  "__v": 0,
+  "isStored": true,
+  "masters": [
+    {
+      "productId": 691,
+      "plannedAmount": 172,
+      "startAmount": 172,
+      "finishAmount": null,
+      "unitId": 4,
+      "equipments": [
+        {
+          "equipmentId": "Main Tank",
+          "appMethodId": "Tank Mix",
+          "plannedAmount": 299,
+          "startAmount": 0,
+          "finishAmount": 0,
+          "constituents": [
+            {
+              "productId": -2,
+              "plannedAmount": 299,
+              "startAmount": 0,
+              "finishAmount": 0,
+              "unitId": -2
+            },
+            {
+              "productId": 342,
+              "plannedAmount": 187,
+              "startAmount": 0,
+              "finishAmount": 0,
+              "unitId": 3
+            },
+            {
+              "productId": 468,
+              "plannedAmount": 60,
+              "startAmount": 0,
+              "finishAmount": 0,
+              "unitId": 5
+            }
+          ]
+        }
+      ],
+      "subProducts": []
+    }
+  ],
+  "rideOnId": "toro7",
+  "singles": [],
+  "subProducts": [
+    {
+      "productId": 643,
+      "startAmount": 750,
+      "finishAmount": 50,
+      "unitId": 3
+    },
+    {
+      "productId": 539,
+      "startAmount": 50,
+      "finishAmount": 50,
+      "unitId": 3
+    }
+  ],
+  "truckId": "truck4"
+},
+{
+  "_id": {
+    "$oid": "69d4ed8bfc6dcc7d3065e6e1"
+  },
+  "employeeId": "1RR",
+  "routeDate": "2026-04-07",
+  "__v": 0,
+  "isStored": false,
+  "masters": [
+    {
+      "productId": 691,
+      "plannedAmount": 129,
+      "startAmount": 129,
+      "finishAmount": null,
+      "unitId": 4,
+      "equipments": [
+        {
+          "equipmentId": "Main Tank",
+          "appMethodId": "Tank Mix",
+          "plannedAmount": 224,
+          "startAmount": 0,
+          "finishAmount": null,
+          "constituents": [
+            {
+              "productId": -2,
+              "plannedAmount": 224,
+              "startAmount": 0,
+              "finishAmount": null,
+              "unitId": -2
+            },
+            {
+              "productId": 342,
+              "plannedAmount": 140,
+              "startAmount": 0,
+              "finishAmount": null,
+              "unitId": 3
+            },
+            {
+              "productId": 468,
+              "plannedAmount": 45,
+              "startAmount": 0,
+              "finishAmount": null,
+              "unitId": 5
+            }
+          ]
+        }
+      ],
+      "subProducts": []
+    },
+    {
+      "productId": 695,
+      "plannedAmount": 86,
+      "startAmount": 86,
+      "finishAmount": null,
+      "unitId": 4,
+      "equipments": [],
+      "subProducts": [
+        {
+          "productId": 643,
+          "plannedAmount": 267,
+          "startAmount": 850,
+          "finishAmount": null,
+          "unitId": 3
+        }
+      ]
+    }
+  ],
+  "rideOnId": "toro1",
+  "singles": [],
+  "subProducts": [],
+  "truckId": "truck7"
+},
+{
+  "_id": {
+    "$oid": "69d4eed3fc6dcc7d306605a5"
+  },
+  "employeeId": "1JD",
+  "routeDate": "2026-04-07",
+  "__v": 0,
+  "isStored": false,
+  "masters": [
+    {
+      "productId": 695,
+      "plannedAmount": 141,
+      "startAmount": 141,
+      "finishAmount": null,
+      "unitId": 4,
+      "equipments": [],
+      "subProducts": [
+        {
+          "productId": 643,
+          "plannedAmount": 437,
+          "startAmount": 800,
+          "finishAmount": null,
+          "unitId": 3
+        }
+      ]
+    },
+    {
+      "productId": 691,
+      "plannedAmount": 85,
+      "startAmount": 85,
+      "finishAmount": null,
+      "unitId": 4,
+      "equipments": [
+        {
+          "equipmentId": "Main Tank",
+          "appMethodId": "Tank Mix",
+          "plannedAmount": 148,
+          "startAmount": 0,
+          "finishAmount": null,
+          "constituents": [
+            {
+              "productId": -2,
+              "plannedAmount": 148,
+              "startAmount": 0,
+              "finishAmount": null,
+              "unitId": -2
+            },
+            {
+              "productId": 342,
+              "plannedAmount": 92,
+              "startAmount": 0,
+              "finishAmount": null,
+              "unitId": 3
+            },
+            {
+              "productId": 468,
+              "plannedAmount": 30,
+              "startAmount": 0,
+              "finishAmount": null,
+              "unitId": 5
+            }
+          ]
+        }
+      ],
+      "subProducts": []
+    }
+  ],
+  "rideOnId": "toro8",
+  "singles": [],
+  "subProducts": [],
+  "truckId": "truck9"
+}]
