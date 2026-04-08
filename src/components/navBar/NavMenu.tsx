@@ -49,7 +49,7 @@ const schedulingSection: NavSection = {
       roles: ["admin", "office"],
     },
     {
-      title: "Daily Inventory",
+      title: "Loadout",
       href: "/scheduling/dailyInventory",
       roles: ["admin", "office", "tech"],
     },

@@ -22,14 +22,30 @@ const selectCompletedServicesForTech = (
       )
         return false;
       console.log("doneDate", service.production.doneDate, routeDate);
-      if (routeDate === service.production.doneDate)
-        return true;
+      if (routeDate === service.production.doneDate) return true;
     });
     console.log("services", services);
     console.log("completedServices", completedServices);
     return completedServices;
   });
 
+const selectScheduledServicesForTech = (
+  employeeId: string,
+  routeDate: string,
+) =>
+  createSelector([centralSelect.services], (services) => {
+    const scheduledServices = services.filter((service) => {
+      const matchingAssignment = service.assignments.find(
+        (assignment) =>
+          assignment.employeeId === employeeId &&
+          assignment.schedDate === routeDate,
+      );
+      return matchingAssignment !== undefined;
+    });
+    return scheduledServices;
+  });
+
 export const feedbackSelect = {
   completedServicesForTech: selectCompletedServicesForTech,
+  scheduledServicesForTech: selectScheduledServicesForTech,
 };

@@ -18,7 +18,7 @@ export default function LoadoutFeedbackPage({
 
   const { getLoadout } = useLoadout();
 
-  const completedServices = useSelector(
+  const services = useSelector(
     feedbackSelect.completedServicesForTech(employeeId, routeDate),
   );
   const loadout = useSelector(
@@ -33,7 +33,7 @@ export default function LoadoutFeedbackPage({
     getLoadout({ employeeId, routeDate });
   }, [employeeId, getLoadout, routeDate]);
 
-  console.log("completedServices", completedServices);
+  console.log("services", services);
   console.log("hydratedLoadout", loadout);
 
   const context = useSelector(centralSelect.context)
