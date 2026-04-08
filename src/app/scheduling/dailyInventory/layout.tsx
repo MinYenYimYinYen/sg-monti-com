@@ -1,11 +1,10 @@
 "use client";
 import { Container } from "@/components/Containers";
 import { ScrollArea } from "@/style/components/scroll-area";
-import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCustomers";
-import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import React from "react";
 
 export default function DailyInventoryLayout({
   children,

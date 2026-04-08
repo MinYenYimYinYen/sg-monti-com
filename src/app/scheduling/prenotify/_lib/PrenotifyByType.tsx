@@ -107,7 +107,7 @@ function PreNotifyEmail({ data }: { data: EmailPreNotifData[] }) {
             </div>
             <CopyDiv>{emailData.subject}</CopyDiv>
             <CopyDiv>{emailData.message}</CopyDiv>
-            <CopyDiv>{emailData.points.join(",")}</CopyDiv>
+            <CopyDiv>{emailData.points.join(";")}</CopyDiv>
           </div>
         );
       })}
@@ -193,7 +193,7 @@ function PreNotifyManual({ data }: { data: PrenotificationData[] }) {
                   <div key={idx} className={"space-y-1"}>
                     <CopyDiv>{email.subject}</CopyDiv>
                     <CopyDiv>{email.message}</CopyDiv>
-                    <CopyDiv>{email.points.join(",")}</CopyDiv>
+                    <CopyDiv>{email.points.join(";")}</CopyDiv>
                   </div>
                 ))}
               </TabsContent>

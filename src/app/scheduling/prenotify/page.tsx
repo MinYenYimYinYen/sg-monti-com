@@ -122,7 +122,7 @@ export default function Prenotify() {
               );
             })}
             <TabsContent value={"promises"}>
-              <PromiseDisplay />
+              <PromiseDisplay schedDate={selectedDate[0] ?? ""} />
             </TabsContent>
           </Tabs>
         </div>

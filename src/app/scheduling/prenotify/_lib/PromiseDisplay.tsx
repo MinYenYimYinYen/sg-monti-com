@@ -12,9 +12,28 @@ import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 export function PromiseDisplay({ schedDate }: { schedDate?: string }) {
   const promiseDetails = useSelector(coverSheetsSelect.promiseDetails);
   //todo: filter optionally by schedDate
+  const forDate = schedDate
+    ? promiseDetails.filter((detail) => detail.schedDate === schedDate)
+    : promiseDetails;
+
+  const sorted = [...forDate].sort((a, b) => {
+    // 1. Sort by Date
+    const dateCompare = b.schedDate.localeCompare(a.schedDate);
+    if (dateCompare !== 0) return dateCompare;
+
+    // 2. If dates are equal, sort by Employee ID
+    const empA = a.service.lastAssigned.employeeId;
+    const empB = b.service.lastAssigned.employeeId;
+    const empCompare = empA.toString().localeCompare(empB.toString());
+    if (empCompare !== 0) return empCompare;
+
+    // 3. If employees are also equal, sort by Sequence
+    return a.service.lastAssigned.sequence - b.service.lastAssigned.sequence;
+  });
+
   return (
     <div>
-      {promiseDetails.map((detail) => {
+      {sorted.map((detail) => {
         const { service, schedDate, promiseDetails } = detail;
 
         const displayName = service.x.customer.displayName;
@@ -35,6 +54,10 @@ export function PromiseDisplay({ schedDate }: { schedDate?: string }) {
                 <div className={"grid grid-cols-[10rem_1fr]"}>
                   <div>Promise Checked?</div>
                   <div>{service.isPromised ? "Yes" : "No"}</div>
+
+                  <div>Stop #:</div>
+                  <div>{service.program.tempSeq}</div>
+
                   <div className={""}>Customer Note:</div>
                   <div>{custNote}</div>
 
