@@ -101,4 +101,11 @@ export class ServiceUtils {
       }
     })
   }
+
+  public get isPaperInvoice() {
+    const customer = this.customer;
+    const hasEmail = customer.email.length > 0;
+    const dontEmail = customer.contactPreference.dontEmailInvoice;
+    return !hasEmail || dontEmail;
+  }
 }

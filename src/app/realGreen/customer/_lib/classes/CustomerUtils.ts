@@ -26,4 +26,5 @@ export class CustomerUtils {
   public get programQuery(): ProgramQuery {
     return new ProgramQuery(this.programs);
   }
+
 }

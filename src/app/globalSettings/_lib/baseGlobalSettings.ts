@@ -10,7 +10,7 @@ export const baseGlobalSettings: GlobalSettings = {
     "Phone": ["Home", "Cell", "Other"],
     "Text": ["Home", "Cell", "Other", "Text"],
     "Email": ["Email"],
-    "Manual": ["Home", "Cell", "Other"]
+    "Manual": []
   },
   companyId: 592421,
 };

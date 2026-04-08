@@ -383,6 +383,10 @@ function CoverSheetsPDF({
                 };
               });
 
+              //OTHER
+              const isPaper = service.x.isPaperInvoice;
+
+
               return (
                 <View
                   id={"SERVICE"}
@@ -397,7 +401,7 @@ function CoverSheetsPDF({
                     <View
                       id={"TEMP_SEQ"}
                       style={tw(
-                        "border border-black rounded-full w-12 h-12 flex items-center justify-center",
+                        `border border-black rounded-${isPaper ? "sm" : "full"} w-12 h-12 flex items-center justify-center`,
                       )}
                     >
                       <Text
