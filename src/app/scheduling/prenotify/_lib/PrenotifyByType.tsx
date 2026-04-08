@@ -16,6 +16,7 @@ import { Badge } from "@/style/components/badge";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { Tabs, TabsContent, TabsTrigger } from "@/style/components/tabs";
 import { TabsList } from "@radix-ui/react-tabs";
+import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 
 export function PrenotifyByType({
   date,
@@ -34,13 +35,17 @@ export function PrenotifyByType({
       case "Text":
         return PreNotifyText;
       case "Manual":
-        return PreNotifyManual;
+        return null;
       default:
         throw new Error(`Unknown notification type: ${type}`);
     }
   }, [type]);
 
-  return <Component data={messagePoints as any} />;
+  if (type === "Manual") {
+    return <PreNotifyManual data={messagePoints as PrenotificationData[]} />;
+  }
+
+  return Component ? <Component data={messagePoints as any} /> : null;
 }
 
 function PreNotifyRobo({ data }: { data: RoboPreNotifData[] }) {
@@ -135,6 +140,8 @@ function PreNotifyText({ data }: { data: TextPreNotifData[] }) {
 }
 
 function PreNotifyManual({ data }: { data: PrenotificationData[] }) {
+  const settings = useSelector(globalSettingsSelect.settings);
+
   return (
     <div>
       {data.map((manualData) => {
@@ -142,15 +149,26 @@ function PreNotifyManual({ data }: { data: PrenotificationData[] }) {
         const allNotes = services.flatMap((service) => service.x.allTechNotes);
         const notes = Array.from(new Set(allNotes));
 
-        const emailPN: EmailPreNotifData[] = getMessages[
-          NotificationType.Email
-        ](prettyDate(services[0].lastAssigned.schedDate, "EEE, MMM d"), [
-          manualData,
-        ]);
+        const emailAllowedTypes = settings.phoneMap[NotificationType.Email];
+        const textAllowedTypes = settings.phoneMap[NotificationType.Text];
+
+        const emailContactPoints = customer.contactPoints.filter((cp) =>
+          emailAllowedTypes?.includes(cp.type),
+        );
+        const textContactPoints = customer.contactPoints.filter((cp) =>
+          textAllowedTypes?.includes(cp.type),
+        );
+
+        const formattedDate = prettyDate(services[0].lastAssigned.schedDate, "EEE, MMM d");
+
+        const emailPN: EmailPreNotifData[] = getMessages[NotificationType.Email](
+          formattedDate,
+          [{ ...manualData, contactPoints: emailContactPoints }],
+        );
 
         const textPN: TextPreNotifData[] = getMessages[NotificationType.Text](
-          prettyDate(services[0].lastAssigned.schedDate, "EEE, MMM d"),
-          [manualData],
+          formattedDate,
+          [{ ...manualData, contactPoints: textContactPoints }],
         );
 
         return (
