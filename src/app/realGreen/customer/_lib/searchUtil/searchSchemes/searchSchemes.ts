@@ -11,6 +11,8 @@ import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/Service
 import { ServiceSearchCriteria } from "../searchCriteria/types/ServSearch";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { AppError } from "@/lib/errors/AppError";
+import { isTRangeOfString, TRange } from "@/lib/primatives/tRange/TRange";
+import { parseDateRange } from "@/app/schedPromise/dateRangeParse";
 
 type SearchSchemeParams = {
   season: number;
@@ -146,8 +148,19 @@ const lastSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => {
   };
 };
 
-const recentProduction = ({ season }: SearchSchemeParams): SearchScheme => {
+const recentProduction = ({ season, schemeParams }: SearchSchemeParams): SearchScheme => {
   const today = dateStrings.today();
+  const dateRangeMaybe = schemeParams?.dateRange ?? schemeParams?.updateRange;
+  let dateRange: TRange<string> | undefined;
+
+  if (dateRangeMaybe && isTRangeOfString(dateRangeMaybe)) {
+    dateRange = dateRangeMaybe;
+  } else {
+    dateRange = dateStrings.padDateRange({ min: today, max: today }, 7);
+  }
+
+
+
   return {
     schemeName: "production",
     steps: [
@@ -157,7 +170,7 @@ const recentProduction = ({ season }: SearchSchemeParams): SearchScheme => {
         searchCriteria: {
           season: { min: season, max: season },
           servStats: getServiceStatuses(["completed"]),
-          updated: dateStrings.padDateRange({ min: today, max: today }, 7),
+          updated: dateRange,
         },
       }),
       createBatchSizeStep({

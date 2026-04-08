@@ -9,11 +9,13 @@ import { useEffect } from "react";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
 import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
+import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
 
 
 export default function LoadoutFinishPage() {
+  useLoadoutFormDeps();
   const router = useRouter();
-  const { getLoadout } = useLoadout();
+  const { getFinishFormLoadout } = useLoadout();
 
   const tech = useSelector(loadoutStartSelect.tech);
   const routeDate = useSelector(loadoutStartSelect.routeDate);
@@ -30,10 +32,8 @@ export default function LoadoutFinishPage() {
   // LoadoutFinishForm renders null until finishLoadoutDoc is populated.
   useEffect(() => {
     if (!tech || !routeDate) return;
-    getLoadout({ employeeId: tech, routeDate });
-  }, [tech, routeDate, getLoadout]);
-
-  if (!tech || !routeDate) return null;
+    getFinishFormLoadout({ employeeId: tech, routeDate });
+  }, [tech, routeDate, getFinishFormLoadout]);
 
   return (
     <div className={cn("flex flex-col gap-2 py-1", md("gap-3 py-3"))}>

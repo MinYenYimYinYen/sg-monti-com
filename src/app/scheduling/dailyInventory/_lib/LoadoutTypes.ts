@@ -86,17 +86,16 @@ export const baseLoadout: LoadoutBase = {
   subProducts: [],
 };
 
-/**
- * LoadoutDoc — the persisted MongoDB shape.
- *
- * Mirrors LoadoutBase but without hydrated objects (IDs only).
- */
-export type LoadoutDoc = {
+export type LoadoutDocProps = {
   employeeId: string;
   routeDate: string;
   truckId: string;
   rideOnId: string;
   isStored: boolean;
+}
+
+export type LoadoutDoc = LoadoutDocProps & {
+
   masters: {
     productId: number;
     plannedAmount: number;
@@ -105,7 +104,6 @@ export type LoadoutDoc = {
     unitId: number;
     equipments: {
       equipmentId: string;
-      /** The AppMethod actually used for this loadout (may differ from equipment default). */
       appMethodId: string;
       plannedAmount: number;
       startAmount: number | null;
@@ -147,5 +145,7 @@ export type LoadoutDoc = {
 };
 
 //todo: this can be used to sort finished loadouts from unfinished when we get to reporting
-export type LoadoutFinal = DeepNonNullable<LoadoutDoc>
-export const isLoadoutFinal = (doc: LoadoutDoc) => isDeepNonNullable(doc);
+export type LoadoutFinalDoc = DeepNonNullable<LoadoutDoc>
+export const isLoadoutFinalDoc = (doc: LoadoutDoc) => isDeepNonNullable(doc);
+
+export type LoadoutFinal = LoadoutDocProps & DeepNonNullable<LoadoutBase>

@@ -42,6 +42,7 @@ export type ServiceHistoryCore = {
   temperature: number;
   windSpeed: number;
   timeRange: TRange<string>;
+  doneDate: string;
   crewSize: number;
 };
 
@@ -68,15 +69,12 @@ export function remapServiceHistory(
     startInt = endInt;
   }
 
+  // Slice to yyyy-MM-dd only — date may already contain a T time component
+  const dateOnly = date.slice(0, 10);
+
   const timeRange: TRange<string> = {
-    min:
-      date +
-      "T" +
-      (startInt !== undefined ? timeIntToMilitaryString(startInt) : "00:00:00"),
-    max:
-      date +
-      "T" +
-      (endInt !== undefined ? timeIntToMilitaryString(endInt) : "00:00:00"),
+    min: dateOnly + "T" + (startInt !== undefined ? timeIntToMilitaryString(startInt) : "00:00:00"),
+    max: dateOnly + "T" + (endInt !== undefined ? timeIntToMilitaryString(endInt) : "00:00:00"),
   };
 
   return {
@@ -89,6 +87,7 @@ export function remapServiceHistory(
     //   startInt !== undefined ? timeIntToMilitaryString(startInt) : "00:00:00",
     // end: endInt !== undefined ? timeIntToMilitaryString(endInt) : "00:00:00",
     timeRange,
+    doneDate: dateOnly,
 
     crewSize: raw.crewSize || 0,
   };

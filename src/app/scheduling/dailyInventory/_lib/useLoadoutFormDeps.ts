@@ -8,7 +8,7 @@ import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipme
 import { useEquipment } from "@/app/equipment/useEquipment";
 
 export function useLoadoutFormDeps() {
-  useCustomerContext({ contexts: ["printed", "recentProduction"] });
+  useCustomerContext({ contexts: ["printed"] });
   usePrintedCustomers({ autoLoad: true });
   useProgServ({ autoLoad: true });
   useUnitConfig({ autoLoad: true });

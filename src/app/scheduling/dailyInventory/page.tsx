@@ -14,15 +14,16 @@ import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart
 import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
 import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
-import { useRecentProduction } from "@/app/realGreen/customer/hooks/useRecentProduction";
 import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCustomers";
 import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
 import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
+import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
 
 export default function DailyInventoryPage() {
+  useLoadoutFormDeps();
   const router = useRouter();
   const { setTech, setRouteDate } = useLoadoutStartForm();
   const { getLoadouts } = useLoadout();
@@ -36,13 +37,12 @@ export default function DailyInventoryPage() {
       : () => new Set<string>(),
   );
   const loadoutsByDate = useSelector(loadoutSelect.loadoutsByDate(routeDate));
-  const startEmployeesForDate = useSelector(loadoutSelect.startEmployeeIdsForDate(routeDate));
-  const finishEmployeesForDate = useSelector(loadoutSelect.finishEmployeeIdsForDate(routeDate));
-
-  const {
-    refresh: refreshRecentProduction,
-    canRefresh: canRefreshRecentProduction,
-  } = useRecentProduction();
+  const startEmployeesForDate = useSelector(
+    loadoutSelect.startEmployeeIdsForDate(routeDate),
+  );
+  const finishEmployeesForDate = useSelector(
+    loadoutSelect.finishEmployeeIdsForDate(routeDate),
+  );
 
   const {
     refresh: refreshPrintedCustomers,
@@ -164,12 +164,6 @@ export default function DailyInventoryPage() {
             <h2 className="text-lg font-semibold text-foreground">
               Finish Loadout
             </h2>
-            {canRefreshRecentProduction && (
-              <CalendarSync
-                className="cursor-pointer hover:text-accent transition-colors bg-accent/30 p-1 rounded-full ml-2 size-8"
-                onClick={() => refreshRecentProduction()}
-              />
-            )}
           </div>
           <p className="text-sm text-foreground/60">
             Record the remaining product amounts after completing the route to

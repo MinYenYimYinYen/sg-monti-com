@@ -9,8 +9,10 @@ import { useEffect } from "react";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
+import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
 
 export default function LoadoutStartPage() {
+  useLoadoutFormDeps();
   const router = useRouter();
   const tech = useSelector(loadoutStartSelect.tech);
   const routeDate = useSelector(loadoutStartSelect.routeDate);
@@ -36,12 +38,22 @@ export default function LoadoutStartPage() {
       {(techName || formattedDate) && (
         <div className="flex items-center gap-2 text-foreground/60">
           {techName && (
-            <span className={cn("rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary", md("px-3 py-1 text-sm"))}>
+            <span
+              className={cn(
+                "rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary",
+                md("px-3 py-1 text-sm"),
+              )}
+            >
               {techName}
             </span>
           )}
           {formattedDate && (
-            <span className={cn("rounded-full bg-secondary/10 px-2 py-0.5 text-xs font-medium text-secondary", md("px-3 py-1 text-sm"))}>
+            <span
+              className={cn(
+                "rounded-full bg-secondary/10 px-2 py-0.5 text-xs font-medium text-secondary",
+                md("px-3 py-1 text-sm"),
+              )}
+            >
               {formattedDate}
             </span>
           )}

@@ -5,20 +5,29 @@ import { rehydrateLoadout } from "@/app/scheduling/dailyInventory/_lib/rehydrate
 import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { baseLoadout, LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import {
+  baseLoadout,
+  isLoadoutFinalDoc,
+  LoadoutBase,
+  LoadoutDoc,
+  LoadoutDocProps,
+} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
+import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
 
-const selectLoadouts = (state: AppState) => state.loadout.loadouts;
-const selectFinishLoadoutDoc = (state: AppState) => state.loadout.finishLoadout;
+const selectLoadoutDocs = (state: AppState) => state.loadout.loadoutDocs;
+const selectFinishLoadoutDoc = (state: AppState) => state.loadout.finishLoadoutDoc;
 
 /** Map keyed by `"${employeeId}:${routeDate}"` for O(1) lookups. */
-const selectLoadoutMap = createSelector([selectLoadouts], (loadouts) =>
-  new Grouper(loadouts).toUniqueMap((doc) => `${doc.employeeId}:${doc.routeDate}`),
+const selectLoadoutDocMap = createSelector([selectLoadoutDocs], (loadouts) =>
+  new Grouper(loadouts).toUniqueMap(
+    (doc) => `${doc.employeeId}:${doc.routeDate}`,
+  ),
 );
 
 /** Returns the set of employeeIds that have a LoadoutDoc for the given routeDate. */
 const selectStartedEmployeeIdsByDate = (routeDate: string) =>
-  createSelector([selectLoadouts], (loadouts) => {
+  createSelector([selectLoadoutDocs], (loadouts) => {
     const ids = new Set<string>();
     loadouts.forEach((doc) => {
       if (doc.routeDate === routeDate) ids.add(doc.employeeId);
@@ -31,7 +40,7 @@ const selectStartedEmployeeIdsByDate = (routeDate: string) =>
  * Components can use `isLoadoutFinal(doc)` to distinguish started-but-unfinished from fully finished.
  */
 const selectLoadoutsByDate = (routeDate: string | null) =>
-  createSelector([selectLoadouts], (loadouts) => {
+  createSelector([selectLoadoutDocs], (loadouts) => {
     if (!routeDate) return new Map<string, LoadoutDoc>();
     const map = new Map<string, LoadoutDoc>();
     loadouts.forEach((doc) => {
@@ -47,12 +56,17 @@ const selectLoadoutsByDate = (routeDate: string | null) =>
  */
 const selectStartEmployeeIdsForDate = (routeDate: string | null) =>
   createSelector(
-    [selectLoadoutsByDate(routeDate), coverSheetsSelect.servicesByDateAndEmployee],
+    [
+      selectLoadoutsByDate(routeDate),
+      coverSheetsSelect.servicesByDateAndEmployee,
+    ],
     (loadoutsByDate, servicesByDateAndEmployee): string[] => {
       const ids = new Set<string>();
       loadoutsByDate.forEach((_, employeeId) => ids.add(employeeId));
       if (routeDate) {
-        servicesByDateAndEmployee.get(routeDate)?.forEach((_, employeeId) => ids.add(employeeId));
+        servicesByDateAndEmployee
+          .get(routeDate)
+          ?.forEach((_, employeeId) => ids.add(employeeId));
       }
       return Array.from(ids).sort();
     },
@@ -65,12 +79,17 @@ const selectStartEmployeeIdsForDate = (routeDate: string | null) =>
  */
 const selectFinishEmployeeIdsForDate = (routeDate: string | null) =>
   createSelector(
-    [selectLoadoutsByDate(routeDate), coverSheetsSelect.servicesByDateAndEmployee],
+    [
+      selectLoadoutsByDate(routeDate),
+      coverSheetsSelect.servicesByDateAndEmployee,
+    ],
     (loadoutsByDate, servicesByDateAndEmployee): string[] => {
       const ids = new Set<string>();
       loadoutsByDate.forEach((_, employeeId) => ids.add(employeeId));
       if (routeDate) {
-        servicesByDateAndEmployee.get(routeDate)?.forEach((_, employeeId) => ids.add(employeeId));
+        servicesByDateAndEmployee
+          .get(routeDate)
+          ?.forEach((_, employeeId) => ids.add(employeeId));
       }
       return Array.from(ids).sort();
     },
@@ -87,17 +106,75 @@ const selectHydratedFinishLoadout = createSelector(
   ],
   (doc, equipmentMap, appMethodMap, productMastersMap, productSubsMap) => {
     if (!doc) return baseLoadout;
-    return rehydrateLoadout({ doc, productMastersMap, productSubsMap, equipmentMap, appMethodMap });
+    return rehydrateLoadout({
+      doc,
+      productMastersMap,
+      productSubsMap,
+      equipmentMap,
+      appMethodMap,
+    });
   },
 );
 
+const selectFinishedLoadoutMap = createSelector(
+  [
+    selectLoadoutDocMap,
+    productSelect.productMastersMap,
+    productSelect.productSubsMap,
+    equipmentSelect.equipmentMap,
+    appMethodSelect.appMethodMap,
+  ],
+  (
+    loadoutDocMap,
+    productMastersMap,
+    productSubsMap,
+    equipmentMap,
+    appMethodMap,
+  ) => {
+    const hydrated = new Map<
+      string,
+      DeepNonNullable<LoadoutDocProps> & LoadoutBase
+    >();
+    loadoutDocMap.forEach((doc, key) => {
+      if (!isLoadoutFinalDoc(doc)) return;
+      const { masters, singles, subProducts, ...docScalars } = doc;
+      const base = rehydrateLoadout({
+        doc,
+        productMastersMap,
+        productSubsMap,
+        equipmentMap,
+        appMethodMap,
+      });
+      const loadoutFinal = { ...docScalars, ...base };
+      if (!isLoadoutFinalDoc(doc)) return;
+      hydrated.set(key, loadoutFinal);
+    });
+    return hydrated;
+  },
+);
+
+const selectGetFinishedLoadout = ({
+  employeeId,
+  routeDate,
+}: {
+  employeeId: string;
+  routeDate: string;
+}) =>
+  createSelector([selectFinishedLoadoutMap], (loadoutMap) => {
+    const final = loadoutMap.get(`${employeeId}:${routeDate}`);
+    if (!final) return null;
+    return final;
+  });
+
 export const loadoutSelect = {
-  loadouts: selectLoadouts,
+  loadouts: selectLoadoutDocs,
   finishLoadout: selectFinishLoadoutDoc,
   hydratedFinishLoadout: selectHydratedFinishLoadout,
-  loadoutMap: selectLoadoutMap,
+  loadoutDocMap: selectLoadoutDocMap,
   startedEmployeeIdsByDate: selectStartedEmployeeIdsByDate,
   loadoutsByDate: selectLoadoutsByDate,
   startEmployeeIdsForDate: selectStartEmployeeIdsForDate,
   finishEmployeeIdsForDate: selectFinishEmployeeIdsForDate,
+  finishedLoadoutMap: selectFinishedLoadoutMap,
+  getFinishedLoadout: selectGetFinishedLoadout,
 };

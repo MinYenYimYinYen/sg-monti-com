@@ -4,17 +4,25 @@ import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { LoadoutContract } from "@/app/scheduling/dailyInventory/api/LoadoutContract";
 
 type LoadoutState = {
-  loadouts: LoadoutDoc[];
-  finishLoadout: LoadoutDoc | null;
+  loadoutDocs: LoadoutDoc[];
+  finishLoadoutDoc: LoadoutDoc | null;
 };
 
-const initialState: LoadoutState = { loadouts: [], finishLoadout: null };
+const initialState: LoadoutState = { loadoutDocs: [], finishLoadoutDoc: null };
 
 const upsertLoadout = createStandardThunk<LoadoutContract, "upsertLoadout">({
   typePrefix: "loadout/upsertLoadout",
   opName: "upsertLoadout",
   apiPath: "/scheduling/dailyInventory/api",
 });
+
+const getFinishFormLoadout = createStandardThunk<LoadoutContract, "getLoadout">(
+  {
+    typePrefix: "loadout/getFinishFormLoadout",
+    opName: "getLoadout",
+    apiPath: "/scheduling/dailyInventory/api",
+  },
+);
 
 const getLoadout = createStandardThunk<LoadoutContract, "getLoadout">({
   typePrefix: "loadout/getLoadout",
@@ -33,7 +41,7 @@ const loadoutSlice = createSlice({
   initialState,
   reducers: {
     clearFinishLoadout: (state) => {
-      state.finishLoadout = null;
+      state.finishLoadoutDoc = null;
     },
     /** Patches finish amounts directly on the persisted LoadoutDoc. The selector re-derives the display. */
     updateFinishLoadoutEquipmentAmount: (
@@ -45,11 +53,15 @@ const loadoutSlice = createSlice({
         value: number | null;
       }>,
     ) => {
-      if (!state.finishLoadout) return;
+      if (!state.finishLoadoutDoc) return;
       const { masterProductId, equipmentId, field, value } = action.payload;
-      const master = state.finishLoadout.masters.find((m) => m.productId === masterProductId);
+      const master = state.finishLoadoutDoc.masters.find(
+        (m) => m.productId === masterProductId,
+      );
       if (!master) return;
-      const equipment = master.equipments.find((e) => e.equipmentId === equipmentId);
+      const equipment = master.equipments.find(
+        (e) => e.equipmentId === equipmentId,
+      );
       if (!equipment) return;
       equipment[field] = value;
     },
@@ -63,13 +75,25 @@ const loadoutSlice = createSlice({
         value: number | null;
       }>,
     ) => {
-      if (!state.finishLoadout) return;
-      const { masterProductId, equipmentId, constituentProductId, field, value } = action.payload;
-      const master = state.finishLoadout.masters.find((m) => m.productId === masterProductId);
+      if (!state.finishLoadoutDoc) return;
+      const {
+        masterProductId,
+        equipmentId,
+        constituentProductId,
+        field,
+        value,
+      } = action.payload;
+      const master = state.finishLoadoutDoc.masters.find(
+        (m) => m.productId === masterProductId,
+      );
       if (!master) return;
-      const equipment = master.equipments.find((e) => e.equipmentId === equipmentId);
+      const equipment = master.equipments.find(
+        (e) => e.equipmentId === equipmentId,
+      );
       if (!equipment) return;
-      const constituent = equipment.constituents.find((c) => c.productId === constituentProductId);
+      const constituent = equipment.constituents.find(
+        (c) => c.productId === constituentProductId,
+      );
       if (!constituent) return;
       constituent[field] = value;
     },
@@ -81,9 +105,11 @@ const loadoutSlice = createSlice({
         value: number | null;
       }>,
     ) => {
-      if (!state.finishLoadout) return;
+      if (!state.finishLoadoutDoc) return;
       const { masterProductId, subProductId, value } = action.payload;
-      const master = state.finishLoadout.masters.find((m) => m.productId === masterProductId);
+      const master = state.finishLoadoutDoc.masters.find(
+        (m) => m.productId === masterProductId,
+      );
       if (!master) return;
       const sub = master.subProducts.find((s) => s.productId === subProductId);
       if (!sub) return;
@@ -96,9 +122,11 @@ const loadoutSlice = createSlice({
         value: number | null;
       }>,
     ) => {
-      if (!state.finishLoadout) return;
+      if (!state.finishLoadoutDoc) return;
       const { productId, value } = action.payload;
-      const single = state.finishLoadout.singles.find((s) => s.productId === productId);
+      const single = state.finishLoadoutDoc.singles.find(
+        (s) => s.productId === productId,
+      );
       if (!single) return;
       single.finishAmount = value;
     },
@@ -109,41 +137,59 @@ const loadoutSlice = createSlice({
         value: number | null;
       }>,
     ) => {
-      if (!state.finishLoadout) return;
+      if (!state.finishLoadoutDoc) return;
       const { productId, value } = action.payload;
-      const sub = state.finishLoadout.subProducts.find((s) => s.productId === productId);
+      const sub = state.finishLoadoutDoc.subProducts.find(
+        (s) => s.productId === productId,
+      );
       if (!sub) return;
       sub.finishAmount = value;
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getLoadout.fulfilled, (state, action) => {
-      state.finishLoadout = action.payload;
+    builder.addCase(getFinishFormLoadout.fulfilled, (state, action) => {
+      state.finishLoadoutDoc = action.payload;
     });
 
     builder.addCase(getLoadouts.fulfilled, (state, action) => {
-      state.loadouts = action.payload;
+      state.loadoutDocs = action.payload;
+    });
+    builder.addCase(getLoadout.fulfilled, (state, action) => {
+      const loadout = action.payload;
+      if (!loadout) return;
+      const existingIndex = state.loadoutDocs.findIndex(
+        (doc) =>
+          doc.employeeId === loadout.employeeId &&
+          doc.routeDate === loadout.routeDate,
+      );
+      if (existingIndex !== -1) {
+        state.loadoutDocs[existingIndex] = loadout;
+      } else {
+        state.loadoutDocs.push(loadout);
+      }
     });
 
     builder.addCase(upsertLoadout.fulfilled, (state, action) => {
       const upserted = action.payload;
 
       // Update or insert in the loadouts list
-      const existingIndex = state.loadouts.findIndex(
-        (doc) => doc.employeeId === upserted.employeeId && doc.routeDate === upserted.routeDate,
+      const existingIndex = state.loadoutDocs.findIndex(
+        (doc) =>
+          doc.employeeId === upserted.employeeId &&
+          doc.routeDate === upserted.routeDate,
       );
       if (existingIndex !== -1) {
-        state.loadouts[existingIndex] = upserted;
+        state.loadoutDocs[existingIndex] = upserted;
       } else {
-        state.loadouts.push(upserted);
+        state.loadoutDocs.push(upserted);
       }
 
       // Keep finishLoadout in sync if it matches
       if (
-        state.finishLoadout?.employeeId === upserted.employeeId &&
-        state.finishLoadout?.routeDate === upserted.routeDate
+        state.finishLoadoutDoc?.employeeId === upserted.employeeId &&
+        state.finishLoadoutDoc?.routeDate === upserted.routeDate
       ) {
-        state.finishLoadout = upserted;
+        state.finishLoadoutDoc = upserted;
       }
     });
   },
@@ -152,7 +198,8 @@ const loadoutSlice = createSlice({
 export const loadoutActions = {
   ...loadoutSlice.actions,
   upsertLoadout,
-  getLoadout,
+  getFinishFormLoadout,
   getLoadouts,
+  getLoadout,
 };
 export const loadoutReducer = loadoutSlice.reducer;

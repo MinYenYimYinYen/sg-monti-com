@@ -1,7 +1,7 @@
 import {
   format,
-  subDays,
-  addDays,
+  subDays as fnsSubDays,
+  addDays as fnsAddDays,
   subWeeks,
   addWeeks,
   subMonths,
@@ -14,6 +14,8 @@ import {
   endOfMonth,
   startOfYear,
   endOfYear,
+  parseISO,
+  isWithinInterval,
 } from "date-fns";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 
@@ -28,11 +30,11 @@ function today(): string {
 }
 
 function daysAgo(n: number): string {
-  return format(subDays(new Date(), n), "yyyy-MM-dd");
+  return format(fnsSubDays(new Date(), n), "yyyy-MM-dd");
 }
 
 function daysFromNow(n: number): string {
-  return format(addDays(new Date(), n), "yyyy-MM-dd");
+  return format(fnsAddDays(new Date(), n), "yyyy-MM-dd");
 }
 
 function weeksAgo(n: number): string {
@@ -85,9 +87,25 @@ function yearEnd(): string {
 
 function padDateRange(dateRange: TRange<string>, days: number) {
   return {
-    min: format(addDays(new Date(dateRange.min), -days), "yyyy-MM-dd"),
-    max: format(addDays(new Date(dateRange.max), days), "yyyy-MM-dd"),
+    min: format(fnsAddDays(new Date(dateRange.min), -days), "yyyy-MM-dd"),
+    max: format(fnsAddDays(new Date(dateRange.max), days), "yyyy-MM-dd"),
   };
+}
+
+function addDays(date: string, days: number) {
+  return format(fnsAddDays(new Date(date), days), "yyyy-MM-dd");
+}
+
+function subDays(date: string, days: number) {
+  return format(fnsSubDays(new Date(date), days), "yyyy-MM-dd");
+}
+
+function isInRange(date: string, dateRange: TRange<string>): boolean {
+  const parsedDate = parseISO(date);
+  const parsedMin = parseISO(dateRange.min);
+  const parsedMax = parseISO(dateRange.max);
+
+  return isWithinInterval(parsedDate, { start: parsedMin, end: parsedMax });
 }
 
 export const dateStrings = {
@@ -107,4 +125,7 @@ export const dateStrings = {
   yearStart,
   yearEnd,
   padDateRange,
+  addDays,
+  subDays,
+  isInRange,
 };

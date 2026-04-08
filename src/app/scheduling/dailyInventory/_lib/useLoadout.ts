@@ -17,7 +17,7 @@ export function useLoadout() {
       );
       return loadoutActions.upsertLoadout.fulfilled.match(result);
     },
-    getLoadout: ({
+    getFinishFormLoadout: ({
       employeeId,
       routeDate,
     }: {
@@ -25,7 +25,7 @@ export function useLoadout() {
       routeDate: string;
     }) =>
       dispatch(
-        loadoutActions.getLoadout({
+        loadoutActions.getFinishFormLoadout({
           params: { employeeId, routeDate },
           config: {
             loadingMsg: "Getting loadout...",
@@ -34,12 +34,31 @@ export function useLoadout() {
         }),
       ),
     getLoadouts: (dateRange: TRange<string>) =>
-      dispatch(loadoutActions.getLoadouts({
-        params: { dateRange },
-        config: {
-          loadingMsg: "Getting loadouts...",
-          staleTime: realGreenConst.paramTypesCacheTime,
-        }
-      })),
+      dispatch(
+        loadoutActions.getLoadouts({
+          params: { dateRange },
+          config: {
+            loadingMsg: "Getting loadouts...",
+            staleTime: realGreenConst.paramTypesCacheTime,
+          },
+        }),
+      ),
+    getLoadout: ({
+      employeeId,
+      routeDate,
+    }: {
+      employeeId: string;
+      routeDate: string;
+    }) => {
+      dispatch(
+        loadoutActions.getLoadout({
+          params: { employeeId, routeDate },
+          config: {
+            loadingMsg: "Getting loadout...",
+            staleTime: realGreenConst.paramTypesCacheTime,
+          },
+        }),
+      );
+    },
   };
 }

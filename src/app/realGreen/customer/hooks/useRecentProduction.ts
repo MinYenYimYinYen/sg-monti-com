@@ -5,8 +5,9 @@ import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSe
 import { useEffect } from "react";
 import { recentProductionGetDocs } from "@/app/realGreen/customer/slices/customerSlices";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 
-export function useRecentProduction() {
+export function useRecentProduction(dateRange: TRange<string>) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
@@ -18,13 +19,14 @@ export function useRecentProduction() {
         params: {
           schemeName: "recentProduction",
           season,
+          schemeParams: { dateRange: dateRange },
         },
         config: {
           staleTime: realGreenConst.paramTypesCacheTime,
         },
       }),
     );
-  }, [dispatch, season]);
+  }, [dateRange, dispatch, season]);
 
   const refresh = () => {
     if (!season) return;
@@ -33,6 +35,7 @@ export function useRecentProduction() {
         params: {
           schemeName: "recentProduction",
           season,
+          schemeParams: { dateRange: dateRange },
         },
         config: {
           force: true,
