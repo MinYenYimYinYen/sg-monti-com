@@ -103,15 +103,20 @@ export class Mixture {
   }
 
   /**
-   * Scales all constituents by the ratio of product consumed from the tank.
+   * Scales all constituents by the ratio of product consumed relative to the planned volume.
    *
    * Used by LoadoutFeedback to back-calculate per-chemical usage from the
    * equipment-level start/finish amounts the tech physically measured.
-   * The ratio is derived as (startAmount - finishAmount) / startAmount.
+   *
+   * The ratio is (startAmount − finishAmount) / plannedAmount — not divided by startAmount.
+   * This keeps chemical amounts consistent with the ksf calculation: if the tech loaded
+   * more than planned and used it all, both the chemicals and the ksf scale proportionally
+   * above plan. Dividing by startAmount would instead normalize to what was loaded,
+   * hiding the over-application.
    */
-  public scaleByUsage(startAmount: number, finishAmount: number): ScaledConstituent[] {
-    if (startAmount === 0) return this.scaleMixture(0);
-    const usageRatio = (startAmount - finishAmount) / startAmount;
+  public scaleByUsage(startAmount: number, finishAmount: number, plannedAmount: number): ScaledConstituent[] {
+    if (plannedAmount === 0) return this.scaleMixture(0);
+    const usageRatio = (startAmount - finishAmount) / plannedAmount;
     return this.scaleMixture(usageRatio);
   }
 

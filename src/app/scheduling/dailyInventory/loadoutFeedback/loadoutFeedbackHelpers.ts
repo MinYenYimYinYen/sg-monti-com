@@ -52,6 +52,7 @@ function accumulateEquipmentConstituents(
   const scaledConstituents = equipment.plannedMixture.scaleByUsage(
     equipment.startAmount,
     equipment.finishAmount,
+    equipment.plannedAmount,
   );
 
   for (const { constituent, amount } of scaledConstituents) {
