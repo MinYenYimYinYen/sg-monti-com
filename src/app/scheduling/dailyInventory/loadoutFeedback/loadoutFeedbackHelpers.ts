@@ -2,7 +2,8 @@ import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTyp
 import { LoadoutFinal } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { WATER_PRODUCT_ID } from "@/app/equipment/waterProduct";
-import { EquipmentMixFeedback, ProductFeedbackEntry } from "./LoadoutFeedback";
+import { EquipmentMixFeedback, MasterProductFeedbackEntry, ProductFeedbackEntry } from "./LoadoutFeedback";
+import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 
 // ---------------------------------------------------------------------------
 // Shared internal type
@@ -12,6 +13,7 @@ export type ProductAmountEntry = {
   amount: number;
   description: string;
   unit: UnitCRM;
+  unitConfigDisplay: UnitConfigDisplay;
 };
 
 // ---------------------------------------------------------------------------
@@ -27,12 +29,13 @@ function accumulateProduct(
   amount: number,
   description: string,
   unit: UnitCRM,
+  unitConfigDisplay: UnitConfigDisplay,
 ) {
   const existing = productMap.get(productId);
   if (existing) {
     existing.amount += amount;
   } else {
-    productMap.set(productId, { amount, description, unit });
+    productMap.set(productId, { amount, description, unit, unitConfigDisplay });
   }
 }
 
@@ -63,6 +66,7 @@ function accumulateEquipmentConstituents(
       amount,
       constituent.product.description,
       constituent.unit,
+      constituent.product.unitConfigDisplay as UnitConfigDisplay,
     );
   }
 }
@@ -105,23 +109,23 @@ export function buildActualUsedByProduct(loadout: LoadoutFinal): Map<number, Pro
       (sum, equipment) => sum + calcEquipmentActualKsf(equipment, master.plannedAmount),
       0,
     );
-    accumulateProduct(productMap, master.productId, actualKsf, master.product.description, master.unit);
+    accumulateProduct(productMap, master.productId, actualKsf, master.product.description, master.unit, master.product.unitConfigDisplay as UnitConfigDisplay);
 
     for (const equipment of master.equipments) {
       accumulateEquipmentConstituents(productMap, equipment);
     }
 
     for (const sub of master.subProducts) {
-      accumulateProduct(productMap, sub.productId, sub.startAmount - sub.finishAmount, sub.product.description, sub.unit);
+      accumulateProduct(productMap, sub.productId, sub.startAmount - sub.finishAmount, sub.product.description, sub.unit, sub.product.unitConfigDisplay as UnitConfigDisplay);
     }
   }
 
   for (const single of loadout.singles) {
-    accumulateProduct(productMap, single.productId, single.startAmount - single.finishAmount, single.product.description, single.unit);
+    accumulateProduct(productMap, single.productId, single.startAmount - single.finishAmount, single.product.description, single.unit, single.product.unitConfigDisplay as UnitConfigDisplay);
   }
 
   for (const sub of loadout.subProducts) {
-    accumulateProduct(productMap, sub.productId, sub.startAmount - sub.finishAmount, sub.product.description, sub.unit);
+    accumulateProduct(productMap, sub.productId, sub.startAmount - sub.finishAmount, sub.product.description, sub.unit, sub.product.unitConfigDisplay as UnitConfigDisplay);
   }
 
   return productMap;
@@ -153,6 +157,7 @@ export function buildCrmUsedByProduct(completed: Service[]): Map<number, Product
           amount: appProduct.amount,
           description: appProduct.productCommon.description,
           unit: appProduct.productCommon.unit,
+          unitConfigDisplay: appProduct.productCommon.unitConfigDisplay as UnitConfigDisplay,
         });
       }
     }
@@ -187,6 +192,7 @@ export function buildPlannedUsedByProduct(loadout: LoadoutFinal): Map<number, Pr
       master.plannedAmount,
       master.product.description,
       master.unit,
+      master.product.unitConfigDisplay as UnitConfigDisplay,
     );
 
     // Equipment constituents — per-chemical planned amounts (rate × size, overlap-adjusted)
@@ -199,6 +205,7 @@ export function buildPlannedUsedByProduct(loadout: LoadoutFinal): Map<number, Pr
           constituent.plannedAmount,
           constituent.product.description,
           constituent.unit,
+          constituent.product.unitConfigDisplay as UnitConfigDisplay,
         );
       }
     }
@@ -211,6 +218,7 @@ export function buildPlannedUsedByProduct(loadout: LoadoutFinal): Map<number, Pr
         sub.plannedAmount,
         sub.product.description,
         sub.unit,
+        sub.product.unitConfigDisplay as UnitConfigDisplay,
       );
     }
   }
@@ -223,14 +231,19 @@ export function buildPlannedUsedByProduct(loadout: LoadoutFinal): Map<number, Pr
 // ---------------------------------------------------------------------------
 
 /**
- * Returns the total mixture consumed per equipment entry (startAmount − finishAmount).
- * This is the tank-level measurement the tech physically observes.
+ * Returns per-equipment mix amounts for the feedback display.
+ * Amounts are in the carrier's app unit (gallons).
+ * unitConfigDisplay is sourced from the water carrier constituent (constituents[0]).
  */
 export function buildEquipmentMixFeedback(loadout: LoadoutFinal): EquipmentMixFeedback[] {
   return loadout.masters.flatMap((master) =>
     master.equipments.map((equipment) => ({
       equipmentId: equipment.equipmentId,
+      plannedAmount: equipment.plannedAmount,
+      startAmount: equipment.startAmount,
+      finishAmount: equipment.finishAmount,
       totalMixUsed: equipment.startAmount - equipment.finishAmount,
+      unitConfigDisplay: equipment.constituents[0].product.unitConfigDisplay as UnitConfigDisplay,
     })),
   );
 }
@@ -239,49 +252,99 @@ export function buildEquipmentMixFeedback(loadout: LoadoutFinal): EquipmentMixFe
 // productFeedback helper
 // ---------------------------------------------------------------------------
 
+function buildEntry(
+  productId: number,
+  actualMap: Map<number, ProductAmountEntry>,
+  crmMap: Map<number, ProductAmountEntry>,
+  plannedMap: Map<number, ProductAmountEntry>,
+): ProductFeedbackEntry | null {
+  const actual = actualMap.get(productId);
+  const crm = crmMap.get(productId);
+  const planned = plannedMap.get(productId);
+
+  const actualUsed = actual?.amount ?? 0;
+  const crmUsed = crm?.amount ?? 0;
+  const plannedUsed = planned?.amount ?? 0;
+
+  const description = actual?.description ?? crm?.description ?? planned?.description ?? `Product ${productId}`;
+  const unit = actual?.unit ?? crm?.unit ?? planned?.unit;
+  const unitConfigDisplay = actual?.unitConfigDisplay ?? crm?.unitConfigDisplay ?? planned?.unitConfigDisplay;
+
+  if (!unit || !unitConfigDisplay) return null;
+
+  return {
+    productId,
+    description,
+    unit,
+    unitConfigDisplay,
+    actualUsed,
+    crmUsed,
+    plannedUsed,
+    actualVsCrm: actualUsed - crmUsed,
+    actualVsPlanned: actualUsed - plannedUsed,
+  };
+}
+
 /**
- * Merges the three product maps into a unified per-product feedback array.
- * Includes every product that appears in any of the three sources.
- * Products with no resolvable unit are skipped.
+ * Merges the three product maps into a grouped per-master feedback array.
+ *
+ * Master products (from loadout.masters) are the top-level rows. Their sub-products
+ * (equipment constituents + standalone sub-products) are nested beneath them.
+ * Any products not associated with a master (singles, top-level subProducts) are
+ * appended as standalone master entries with no sub-products.
  */
 export function buildProductFeedback(
   actualMap: Map<number, ProductAmountEntry>,
   crmMap: Map<number, ProductAmountEntry>,
   plannedMap: Map<number, ProductAmountEntry>,
-): ProductFeedbackEntry[] {
+  loadout: LoadoutFinal,
+): MasterProductFeedbackEntry[] {
+  // Track which productIds have been assigned to a master to catch orphans
+  const assignedIds = new Set<number>();
+
+  const masterEntries: MasterProductFeedbackEntry[] = [];
+
+  for (const master of loadout.masters) {
+    assignedIds.add(master.productId);
+
+    const masterEntry = buildEntry(master.productId, actualMap, crmMap, plannedMap);
+    if (!masterEntry) continue;
+
+    // Collect sub-product IDs for this master: constituents (non-water) + standalone sub-products
+    const subProductIds = new Set<number>();
+    for (const equipment of master.equipments) {
+      for (const constituent of equipment.constituents) {
+        if (constituent.product.productId !== WATER_PRODUCT_ID) {
+          subProductIds.add(constituent.product.productId);
+        }
+      }
+    }
+    for (const sub of master.subProducts) {
+      subProductIds.add(sub.productId);
+    }
+
+    const subProducts: ProductFeedbackEntry[] = [];
+    for (const subId of subProductIds) {
+      assignedIds.add(subId);
+      const subEntry = buildEntry(subId, actualMap, crmMap, plannedMap);
+      if (subEntry) subProducts.push(subEntry);
+    }
+
+    masterEntries.push({ ...masterEntry, subProducts });
+  }
+
+  // Orphaned products (singles, top-level subProducts, or CRM-only products)
   const allProductIds = new Set<number>([
     ...actualMap.keys(),
     ...crmMap.keys(),
     ...plannedMap.keys(),
   ]);
 
-  const entries: ProductFeedbackEntry[] = [];
+  for (const productId of allProductIds) {
+    if (assignedIds.has(productId)) continue;
+    const entry = buildEntry(productId, actualMap, crmMap, plannedMap);
+    if (entry) masterEntries.push({ ...entry, subProducts: [] });
+  }
 
-  allProductIds.forEach((productId) => {
-    const actual = actualMap.get(productId);
-    const crm = crmMap.get(productId);
-    const planned = plannedMap.get(productId);
-
-    const actualUsed = actual?.amount ?? 0;
-    const crmUsed = crm?.amount ?? 0;
-    const plannedUsed = planned?.amount ?? 0;
-
-    const description = actual?.description ?? crm?.description ?? `Product ${productId}`;
-    const unit = actual?.unit ?? crm?.unit;
-
-    if (!unit) return;
-
-    entries.push({
-      productId,
-      description,
-      unit,
-      actualUsed,
-      crmUsed,
-      plannedUsed,
-      actualVsCrm: actualUsed - crmUsed,
-      actualVsPlanned: actualUsed - plannedUsed,
-    });
-  });
-
-  return entries;
+  return masterEntries;
 }

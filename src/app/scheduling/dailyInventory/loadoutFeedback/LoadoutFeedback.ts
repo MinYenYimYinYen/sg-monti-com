@@ -1,6 +1,7 @@
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { LoadoutFinal } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import type { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import {
   buildActualUsedByProduct,
   buildCrmUsedByProduct,
@@ -8,26 +9,16 @@ import {
   buildPlannedUsedByProduct,
   buildProductFeedback,
 } from "./loadoutFeedbackHelpers";
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-/**
- * One row per product in the merged feedback table.
- *
- * Three amounts are tracked per product:
- *   - actualUsed:  what the tech physically measured (loadout start − finish,
- *                  back-calculated per-chemical via the equipment mix ratio)
- *   - crmUsed:     what RealGreen recorded in production.usedAppProducts
- *                  (derived from service size, not a physical measurement)
- *   - plannedUsed: what should have been used based on configured rates
- *                  (storedRate × service.size, summed across completed services)
- */
 export type ProductFeedbackEntry = {
   productId: number;
   description: string;
   unit: UnitCRM;
+  /** Display helper for formatting amounts in app or load units. */
+  unitConfigDisplay: UnitConfigDisplay;
   actualUsed: number;
   crmUsed: number;
   plannedUsed: number;
@@ -38,14 +29,28 @@ export type ProductFeedbackEntry = {
 };
 
 /**
+ * A master product row with its sub-products (constituents + standalone sub-products)
+ * nested beneath it. Sub-products are hidden by default and revealed on click.
+ */
+export type MasterProductFeedbackEntry = ProductFeedbackEntry & {
+  subProducts: ProductFeedbackEntry[];
+};
+
+/**
  * One row per equipment entry in the loadout.
- * Represents the total mixture consumed (water + chemicals combined),
- * as measured by the tech at the tank level.
+ * Amounts are in the carrier's app unit (gallons).
+ * unitConfigDisplay is from the water carrier constituent and supports
+ * formatting in app unit, load unit, or percentage views.
  */
 export type EquipmentMixFeedback = {
   equipmentId: string;
-  /** startAmount − finishAmount in gallons. */
+  plannedAmount: number;
+  startAmount: number;
+  finishAmount: number;
+  /** startAmount − finishAmount */
   totalMixUsed: number;
+  /** Carrier's unit display helper for app/load unit formatting. */
+  unitConfigDisplay: UnitConfigDisplay;
 };
 
 // ---------------------------------------------------------------------------
@@ -77,11 +82,12 @@ export class LoadoutFeedback {
   }
 
   /** Merged per-product summary across physical measurement, CRM records, and planned rates. */
-  public get productFeedback(): ProductFeedbackEntry[] {
+  public get productFeedback(): MasterProductFeedbackEntry[] {
     return buildProductFeedback(
       this.actualUsedByProduct,
       this.crmUsedByProduct,
       this.plannedUsedByProduct,
+      this.loadout,
     );
   }
 
