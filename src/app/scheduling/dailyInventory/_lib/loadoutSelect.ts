@@ -11,6 +11,7 @@ import {
   LoadoutBase,
   LoadoutDoc,
   LoadoutDocProps,
+  LoadoutFinal,
 } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
@@ -131,10 +132,7 @@ const selectFinishedLoadoutMap = createSelector(
     equipmentMap,
     appMethodMap,
   ) => {
-    const hydrated = new Map<
-      string,
-      DeepNonNullable<LoadoutDocProps> & LoadoutBase
-    >();
+    const hydrated = new Map<string, LoadoutFinal>();
     loadoutDocMap.forEach((doc, key) => {
       if (!isLoadoutFinalDoc(doc)) return;
       const { masters, singles, subProducts, ...docScalars } = doc;
@@ -145,8 +143,7 @@ const selectFinishedLoadoutMap = createSelector(
         equipmentMap,
         appMethodMap,
       });
-      const loadoutFinal = { ...docScalars, ...base };
-      if (!isLoadoutFinalDoc(doc)) return;
+      const loadoutFinal = { ...docScalars, ...base } as LoadoutFinal;
       hydrated.set(key, loadoutFinal);
     });
     return hydrated;

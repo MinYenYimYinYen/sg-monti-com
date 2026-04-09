@@ -5,7 +5,8 @@ import { feedbackSelect } from "@/app/scheduling/dailyInventory/loadoutFeedback/
 import { useLoadoutFeedbackDeps } from "@/app/scheduling/dailyInventory/loadoutFeedback/useLoadoutFeedbackDeps";
 import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
 import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
-import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { LoadoutFeedback } from "@/app/scheduling/dailyInventory/loadoutFeedback/LoadoutFeedback";
+import { LoadoutFeedbackDisplay } from "@/app/scheduling/dailyInventory/loadoutFeedback/LoadoutFeedbackDisplay";
 
 // dailyInventory/loadoutFeedback/1BT/2026-04-06
 export default function LoadoutFeedbackPage({
@@ -18,14 +19,14 @@ export default function LoadoutFeedbackPage({
 
   const { getLoadout } = useLoadout();
 
-  const services = useSelector(
+  const completedServices = useSelector(
     feedbackSelect.completedServicesForTech(employeeId, routeDate),
   );
+  const scheduledServices = useSelector(
+    feedbackSelect.scheduledServicesForTech(employeeId, routeDate),
+  );
   const loadout = useSelector(
-    loadoutSelect.getFinishedLoadout({
-      employeeId,
-      routeDate: routeDate,
-    }),
+    loadoutSelect.getFinishedLoadout({ employeeId, routeDate }),
   );
 
   useEffect(() => {
@@ -33,11 +34,21 @@ export default function LoadoutFeedbackPage({
     getLoadout({ employeeId, routeDate });
   }, [employeeId, getLoadout, routeDate]);
 
-  console.log("services", services);
-  console.log("hydratedLoadout", loadout);
+  if (!loadout) {
+    return (
+      <div className="flex flex-col gap-4 py-4">
+        <p className="text-foreground/60 text-sm">
+          Feedback report for <strong>{employeeId}</strong> on{" "}
+          <strong>{routeDate}</strong>
+        </p>
+        <p className="text-foreground/40 text-xs italic">
+          No finished loadout found for this date.
+        </p>
+      </div>
+    );
+  }
 
-  const context = useSelector(centralSelect.context)
-  console.log("context", context);
+  const feedback = new LoadoutFeedback(completedServices, scheduledServices, loadout);
 
   return (
     <div className="flex flex-col gap-4 py-4">
@@ -45,9 +56,7 @@ export default function LoadoutFeedbackPage({
         Feedback report for <strong>{employeeId}</strong> on{" "}
         <strong>{routeDate}</strong>
       </p>
-      <p className="text-foreground/40 text-xs italic">
-        (Check console for completedServices and hydratedLoadout)
-      </p>
+      <LoadoutFeedbackDisplay feedback={feedback} />
     </div>
   );
 }

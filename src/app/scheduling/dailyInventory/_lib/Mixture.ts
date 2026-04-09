@@ -103,6 +103,19 @@ export class Mixture {
   }
 
   /**
+   * Scales all constituents by the ratio of product consumed from the tank.
+   *
+   * Used by LoadoutFeedback to back-calculate per-chemical usage from the
+   * equipment-level start/finish amounts the tech physically measured.
+   * The ratio is derived as (startAmount - finishAmount) / startAmount.
+   */
+  public scaleByUsage(startAmount: number, finishAmount: number): ScaledConstituent[] {
+    if (startAmount === 0) return this.scaleMixture(0);
+    const usageRatio = (startAmount - finishAmount) / startAmount;
+    return this.scaleMixture(usageRatio);
+  }
+
+  /**
    * Scale all constituents by the given ratio.
    *
    * ratio = gallonsToMix / totalPlannedGallons

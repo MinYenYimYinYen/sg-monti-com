@@ -1,10 +1,14 @@
-// A utility to recursively strip nulls from a type
+// A utility to recursively strip nulls from a type.
+// Functions and class instances (non-plain objects) are passed through unchanged
+// so that methods remain callable and class instances are not destructured.
 export type DeepNonNullable<T> = {
-  [P in keyof T]: T[P] extends (infer U)[]
-    ? DeepNonNullable<U>[]
-    : T[P] extends object
-      ? DeepNonNullable<T[P]>
-      : NonNullable<T[P]>;
+  [P in keyof T]: T[P] extends (...args: never[]) => unknown
+    ? T[P]
+    : T[P] extends (infer U)[]
+      ? DeepNonNullable<U>[]
+      : T[P] extends object
+        ? DeepNonNullable<T[P]>
+        : NonNullable<T[P]>;
 };
 
 /**
