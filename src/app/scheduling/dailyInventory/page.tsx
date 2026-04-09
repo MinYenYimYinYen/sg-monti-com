@@ -71,6 +71,11 @@ export default function DailyInventoryPage() {
     router.push("/scheduling/dailyInventory/loadoutFinish");
   };
 
+  const handleViewFeedbackClick = (employeeId: string) => {
+    if (!routeDate) return;
+    router.push(`/scheduling/dailyInventory/loadoutFeedback/${employeeId}/${routeDate}`);
+  };
+
   return (
     <div className="flex flex-col gap-6 py-6 max-w-2xl">
       <p className="text-foreground/70 text-sm">
@@ -199,12 +204,13 @@ export default function DailyInventoryPage() {
                   <button
                     key={employeeId}
                     onClick={() =>
-                      !doc.isStored && handleFinishLoadoutClick(employeeId)
+                      doc.isStored
+                        ? handleViewFeedbackClick(employeeId)
+                        : handleFinishLoadoutClick(employeeId)
                     }
-                    disabled={doc.isStored}
                     className={
                       doc.isStored
-                        ? "flex items-center gap-1 rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent/60 cursor-not-allowed"
+                        ? "flex items-center gap-1 rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent hover:bg-accent/20 transition-colors cursor-pointer"
                         : "rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent hover:bg-accent/20 transition-colors cursor-pointer"
                     }
                   >

@@ -80,6 +80,11 @@ export const singleCustomerGetDocs = createGetCustDocsThunk("singleCustomer", si
 export const singleCustomerActions = { ...singleCustomerSlice.actions, getDocs: singleCustomerGetDocs}
 export const singleCustomerReducer = singleCustomerSlice.reducer;
 
+export const byAssignmentSlice = createCustomerSlice("byAssignment");
+export const byAssignmentGetDocs = createGetCustDocsThunk("byAssignment", byAssignmentSlice);
+export const byAssignmentActions = { ...byAssignmentSlice.actions, getDocs: byAssignmentGetDocs}
+export const byAssignmentReducer = byAssignmentSlice.reducer;
+
 
 
 

@@ -1,5 +1,12 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { AppState } from "@/store";
+
+// This is for the hook to use to dispatch the service search
+const selectAssignedServIds = (state: AppState) => {
+  const assignments = state.assignment.byEmployeeIdAndSchedDate;
+  return assignments.map((a) => a.servId);
+};
 
 /**
  * Returns all completed services (status "S") where the given employee appears
@@ -21,11 +28,8 @@ const selectCompletedServicesForTech = (
         )
       )
         return false;
-      console.log("doneDate", service.production.doneDate, routeDate);
       if (routeDate === service.production.doneDate) return true;
     });
-    console.log("services", services);
-    console.log("completedServices", completedServices);
     return completedServices;
   });
 
@@ -46,6 +50,7 @@ const selectScheduledServicesForTech = (
   });
 
 export const feedbackSelect = {
+  assignedServIds: selectAssignedServIds,
   completedServicesForTech: selectCompletedServicesForTech,
   scheduledServicesForTech: selectScheduledServicesForTech,
 };

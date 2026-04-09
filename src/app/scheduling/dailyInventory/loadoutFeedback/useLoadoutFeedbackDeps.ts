@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useEffect } from "react";
 import {
+  byAssignmentActions,
   recentProductionActions,
 } from "@/app/realGreen/customer/slices/customerSlices";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
@@ -16,6 +17,9 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipmentPackage";
 import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig";
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
+import { assignmentActions } from "@/app/assignment/assignmentSlice";
+import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
+import { feedbackSelect } from "@/app/scheduling/dailyInventory/loadoutFeedback/feedbackSelect";
 
 export function useLoadoutFeedbackDeps({
   employeeId,
@@ -27,44 +31,61 @@ export function useLoadoutFeedbackDeps({
   showLoading: boolean;
 }) {
   const dispatch = useAppDispatch();
-  useCustomerContext({ contexts: ["recentProduction"] });
-  useProduct({autoLoad: true})
-  useAppMethod({autoLoad: true})
-  useEquipment({autoLoad: true})
-  useEquipmentPackage({autoLoad: true})
-  useProgServ({autoLoad: true})
-  useUnitConfig({autoLoad: true})
-  useEmployee({autoLoad: true})
+  useCustomerContext({ contexts: ["byAssignment"] });
+  useProduct({ autoLoad: true });
+  useAppMethod({ autoLoad: true });
+  useEquipment({ autoLoad: true });
+  useEquipmentPackage({ autoLoad: true });
+  useProgServ({ autoLoad: true });
+  useUnitConfig({ autoLoad: true });
+  useEmployee({ autoLoad: true });
 
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
 
   useEffect(() => {
+    if (!employeeId || !routeDate) return;
     if (!season) return;
     dispatch(
-      recentProductionActions.getDocs({
-        params: {
-          schemeName: "recentProduction",
-          season,
-          schemeParams: {
-            dateRange: { min: routeDate, max: dateStrings.addDays(routeDate, 5) },
-          },
-        },
+      assignmentActions.getByEmployeeIdAndSchedDate({
+        params: { employeeId, schedDate: routeDate },
         config: {
-          force: true,
-          loadingMsg: "Loading production data",
           showLoading,
+          loadingMsg: `Loading for ${employeeId} on ${routeDate}...`,
+          staleTime: realGreenConst.paramTypesCacheTime,
         },
       }),
     );
+  }, [employeeId, routeDate, season, dispatch, showLoading]);
+
+  const assignedServIds = useSelector(feedbackSelect.assignedServIds);
+  useEffect(() => {
+    if (!assignedServIds.length || !season) return;
+    dispatch(
+      byAssignmentActions.getDocs({
+        params: {
+          schemeName: "byServIds",
+          season,
+          schemeParams: { servIds: assignedServIds },
+        },
+        config: {
+          loadingMsg: "Loading production data",
+          showLoading,
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
+      }),
+    );
+  }, [assignedServIds, dispatch, season, showLoading]);
+
+  useEffect(() => {
     dispatch(
       loadoutActions.getLoadout({
-        params: {employeeId, routeDate},
+        params: { employeeId, routeDate },
         config: {
           showLoading,
-          loadingMsg: `Loading loadout for ${employeeId} on ${routeDate}...`
-        }
-      })
-    )
-  }, [dispatch, employeeId, routeDate, season, showLoading]);
+          loadingMsg: `Loading loadout for ${employeeId} on ${routeDate}...`,
+        },
+      }),
+    );
+  }, [dispatch, employeeId, routeDate, showLoading]);
 }

@@ -10,9 +10,7 @@ import { ProgramDoc } from "../../entities/types/ProgramTypes";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServiceSearchCriteria } from "../searchCriteria/types/ServSearch";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
-import { AppError } from "@/lib/errors/AppError";
 import { isTRangeOfString, TRange } from "@/lib/primatives/tRange/TRange";
-import { parseDateRange } from "@/app/schedPromise/dateRangeParse";
 
 type SearchSchemeParams = {
   season: number;
@@ -251,8 +249,56 @@ const singleCustomer = ({
   };
 };
 
+const byServIds = ({ season, schemeParams }: SearchSchemeParams): SearchScheme => {
+  const servIds = schemeParams?.servIds;
+  if (!servIds || !Array.isArray(servIds) || !servIds.every((id) => typeof id === "number")) {
+    return {
+      schemeName: "byServIds",
+      steps: [],
+    };
+  }
+
+  return {
+    schemeName: "byServIds",
+    steps: [
+      createBatchSizeStep({
+        stepName: "services",
+        optimizerKey: "byServIds",
+        getIds: (_pipelineData) => servIds as number[],
+        getSearchCriteria: (ids) => ({
+          servIds: ids,
+          season: { min: season, max: season },
+        }),
+      }),
+      createBatchSizeStep({
+        stepName: "programs",
+        optimizerKey: "byServIdsPrograms",
+        getIds: (pipelineData) => {
+          const dupedIds = (pipelineData as ServiceDoc[]).map((s) => s.progId);
+          return [...new Set(dupedIds)];
+        },
+        getSearchCriteria: (ids) => ({
+          progIds: ids,
+        }),
+      }),
+      createBatchSizeStep({
+        stepName: "customers",
+        optimizerKey: "byServIdsCustomers",
+        getIds: (pipelineData) => {
+          const dupedIds = (pipelineData as ProgramDoc[]).map((p) => p.custId);
+          return [...new Set(dupedIds)];
+        },
+        getSearchCriteria: (ids) => ({
+          custIds: ids,
+        }),
+      }),
+    ],
+  };
+};
+
 export const searchScheme = {
   activeCustomers,
+  byServIds,
   printedCustomers,
   lastSeasonProduction,
   recentProduction,

@@ -9,6 +9,8 @@ import { AppState, AppThunk } from "@/store";
 import {
   activeCustomersActions,
   activeCustomersGetDocs,
+  byAssignmentActions,
+  byAssignmentGetDocs,
   lastSeasonProductionActions,
   lastSeasonProductionGetDocs,
   printedCustomersActions,
@@ -20,6 +22,7 @@ import {
 
 export type CustomerContextMode =
   | "active"
+  | "byAssignment"
   | "printed"
   | "lastSeasonProduction"
   | "recentProduction"
@@ -92,6 +95,13 @@ export const centralCustomerSlice = createSlice({
       }
     });
 
+    // By Assignment - Streaming
+    builder.addCase(byAssignmentActions.receiveChunk, (state, action) => {
+      if (state.activeContexts.includes("byAssignment")) {
+        mergeChunk(state, action.payload);
+      }
+    });
+
     // Last Season Production - Streaming
     builder.addCase(
       lastSeasonProductionActions.receiveChunk,
@@ -108,7 +118,7 @@ export const centralCustomerSlice = createSlice({
         mergeChunk(state, action.payload);
       }
     });
-    
+
     // Single Customer - Streaming
     builder.addCase(singleCustomerActions.receiveChunk, (state, action) => {
       if (state.activeContexts.includes("single")) {
@@ -123,6 +133,14 @@ export const centralCustomerSlice = createSlice({
 
     builder.addCase(activeCustomersGetDocs.pending, (state) => {
       if (state.activeContexts.includes("active")) {
+        state.CustDocMap.clear();
+        state.ProgDocMap.clear();
+        state.ServDocMap.clear();
+      }
+    });
+
+    builder.addCase(byAssignmentGetDocs.pending, (state) => {
+      if (state.activeContexts.includes("byAssignment")) {
         state.CustDocMap.clear();
         state.ProgDocMap.clear();
         state.ServDocMap.clear();
@@ -151,7 +169,7 @@ export const centralCustomerSlice = createSlice({
         state.ProgDocMap.clear();
         state.ServDocMap.clear();
       }
-    })
+    });
 
     builder.addCase(singleCustomerActions.getDocs.pending, (state) => {
       if (state.activeContexts.includes("single")) {
@@ -159,7 +177,7 @@ export const centralCustomerSlice = createSlice({
         state.ProgDocMap.clear();
         state.ServDocMap.clear();
       }
-    })
+    });
   },
 });
 
@@ -189,6 +207,8 @@ export const switchContexts =
         sourceState = state.customer.recentProduction;
       } else if (context === "single") {
         sourceState = state.customer.single;
+      } else if (context === "byAssignment") {
+        sourceState = state.customer.byAssignment;
       } else {
         return;
       }

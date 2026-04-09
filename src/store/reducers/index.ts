@@ -29,11 +29,13 @@ import { loadoutFinishReducer } from "@/app/scheduling/dailyInventory/loadoutFin
 import { loadoutReducer } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
 import { templateReducer } from "@/app/quickSend/templates/templateSlice";
 import { templateBuilderReducer } from "@/app/quickSend/templateBuilder/templateBuilderSlice";
+import assignmentReducer from "@/app/assignment/assignmentSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
   ui: uiReducer,
   appMethod: appMethodReducer,
+  assignment: assignmentReducer,
   createAppMethod: createAppMethodReducer,
   auth: authReducer,
   callAhead: callAheadReducer,

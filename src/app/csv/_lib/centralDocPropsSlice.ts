@@ -1,8 +1,8 @@
-import { AssignmentDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { createSlice } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { CSVContract } from "@/app/csv/api/csvContract";
 import { WriteError } from "mongodb";
+import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 
 type CentralDocPropsState = {
   assignments: AssignmentDoc[];

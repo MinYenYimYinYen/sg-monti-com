@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 import {
-  AssignmentDoc,
   ServiceDocProps,
 } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { createModel } from "@/lib/mongoose/createModel";
+import {AssignmentDoc} from "@/app/assignment/AssignmentTypes";
 
 interface ServiceDocPropsDoc extends mongoose.Document, ServiceDocProps {}
 

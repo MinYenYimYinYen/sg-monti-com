@@ -2,15 +2,19 @@ import { combineReducers } from "redux";
 import centralCustomerReducer from "@/app/realGreen/customer/slices/centralCustomerSlice";
 import {
   activeCustomerReducer,
+  byAssignmentReducer,
   lastSeasonProductionReducer,
-  printedCustomerReducer, singleCustomerReducer,
+  printedCustomerReducer,
+  recentProductionReducer,
+  singleCustomerReducer,
 } from "@/app/realGreen/customer/slices/customerSlices";
 
 export const customerReducer = combineReducers({
   active: activeCustomerReducer,
+  byAssignment: byAssignmentReducer,
   lastSeasonProduction: lastSeasonProductionReducer,
   printed: printedCustomerReducer,
-  recentProduction: printedCustomerReducer,
+  recentProduction: recentProductionReducer,
   single: singleCustomerReducer,
   central: centralCustomerReducer,
 });

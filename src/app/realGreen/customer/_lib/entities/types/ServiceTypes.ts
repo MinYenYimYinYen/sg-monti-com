@@ -1,7 +1,5 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import {
-  AppProductRaw,
-} from "@/app/realGreen/_lib/subTypes/AppProduct";
+import { AppProductRaw } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { ServiceHistoryRaw } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import { DoneByRaw } from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import {
@@ -10,18 +8,12 @@ import {
 } from "@/app/realGreen/_lib/subTypes/Production";
 import { Program } from "./ProgramTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import {
-  CallAhead,
-} from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
+import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
-import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
-import {
-  SchedPromise,
-} from "@/app/schedPromise/SchedPromiseTypes";
-import {
-  LoadoutBase,
-} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
+import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { Assignment, AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 
 export type ServiceRaw = {
   // actualManHours?: number;
@@ -113,23 +105,6 @@ export type ServiceCore = {
   techNote: string;
   productionCore: ProductionCore | null;
 };
-
-export type AssignmentDoc = {
-  servId: number;
-  employeeId: string;
-  schedDate: string;
-  status: string;
-  // sequence added from CSV for the purpose of detecting change to route order.
-  // If different than the previous assignment doc for a service, it should nullify the eta.
-  // The source of truth for sequence elsewhere in the app is program.tempSeq, direct from RealGreen api.
-  sequence: number;
-};
-
-export type AssignmentProps = {
-  employee: Employee;
-};
-
-export type Assignment = AssignmentDoc & AssignmentProps;
 
 export type ServiceDocProps = CreatedUpdated & {
   servId: number;

@@ -3,9 +3,7 @@ import { CSVContract } from "@/app/csv/api/csvContract";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { ServiceDocPropsModel } from "@/app/realGreen/customer/_lib/models/ServiceDocPropsModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import {
-  cleanMongoArray,
-} from "@/lib/mongoose/cleanMongoObj";
+import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { ServiceDocProps } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { baseServiceDocProps } from "@/app/realGreen/customer/_lib/entities/bases/baseService";

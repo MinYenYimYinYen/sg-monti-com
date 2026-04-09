@@ -1,7 +1,7 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
-import { AssignmentDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { DataResponse } from "@/lib/api/types/responses";
 import { WriteError } from "mongodb";
+import {AssignmentDoc} from "@/app/assignment/AssignmentTypes";
 
 export interface CSVContract extends ApiContract {
   saveAssignments: {

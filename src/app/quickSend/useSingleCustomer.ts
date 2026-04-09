@@ -9,7 +9,6 @@ export function useSingleCustomer() {
   useGlobalSettings({ autoLoad: true });
   const { season } = useSelector(globalSettingsSelect.settings);
   const lookup = (custId: number) => {
-    console.log("season", season);
     if (!season) return;
     if (!custId || custId < 0) return;
     dispatch(

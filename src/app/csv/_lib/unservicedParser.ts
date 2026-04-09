@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { AssignmentDoc } from "../../realGreen/customer/_lib/entities/types/ServiceTypes";
 import { dateParser } from "@/lib/primatives/dates/dateParse";
 import { ParseConfig } from "./ParserTypes";
 import { createCSVParser } from "@/app/csv/_lib/parserFactory";
+import {AssignmentDoc} from "@/app/assignment/AssignmentTypes";
 
 const ServiceUnservicedSchema = z.object({
   servId: z.number().positive("Service ID must be a positive number"),

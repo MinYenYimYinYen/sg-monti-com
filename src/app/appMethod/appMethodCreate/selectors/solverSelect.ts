@@ -170,7 +170,6 @@ const selectSolution = createSelector(
 const selectCanSave = createSelector(
   [selectAppMethodId, selectDescription, selectSolution],
   (appMethodId, description, solution) => {
-    console.log("selectCanSave", appMethodId, description, solution);
     return Boolean(appMethodId && description && solution && solution.success);
   },
 );

@@ -1,6 +1,4 @@
 import {
-  Assignment,
-  AssignmentDoc,
   ServiceDoc,
 } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { baseAssignment } from "@/app/realGreen/customer/_lib/entities/bases/baseService";
@@ -8,6 +6,7 @@ import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProgramDoc } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { baseEmployee } from "@/app/realGreen/employee/_lib/baseEmployee";
+import { Assignment, AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 
 export function hydrateLastAssigned(
   serviceDoc: ServiceDoc,
@@ -52,7 +51,7 @@ export function hydrateLastAssigned(
 
   return {
     ...doc,
-    schedDate: doc.schedDate.split('T')[0], // Normalize to YYYY-MM-DD format
+    schedDate: doc.schedDate.split("T")[0], // Normalize to YYYY-MM-DD format
     employee,
   };
 }

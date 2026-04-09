@@ -28,7 +28,6 @@ export function useEquipment({ autoLoad }: { autoLoad?: boolean }) {
     );
 
   const upsertEquipment = (equipment: EquipmentDoc) => {
-    console.log("upsertEquipment", equipment);
     dispatch(
       equipmentActions.upsert({
         params: { equipment },

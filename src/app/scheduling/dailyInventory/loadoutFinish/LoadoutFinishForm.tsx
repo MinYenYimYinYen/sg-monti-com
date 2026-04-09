@@ -65,7 +65,7 @@ export function LoadoutFinishForm() {
     if (success) {
       setSaveStatus("success");
       appDispatch(loadoutActions.clearFinishLoadout());
-      router.push("/scheduling/dailyInventory");
+      router.push(`/scheduling/dailyInventory/loadoutFeedback/${tech}/${routeDate}`);
     } else {
       setSaveStatus("idle");
     }
