@@ -163,6 +163,12 @@ const selectGetFinishedLoadout = ({
     return final;
   });
 
+const selectLoadoutKeys = (state: AppState) => state.loadout.loadoutKeys;
+const selectLoadoutKeyMap = createSelector(
+  [selectLoadoutKeys],
+  (keys) => new Grouper(keys).toUniqueMap((key) => key.employeeId)
+)
+
 export const loadoutSelect = {
   loadouts: selectLoadoutDocs,
   finishLoadout: selectFinishLoadoutDoc,
@@ -174,4 +180,5 @@ export const loadoutSelect = {
   finishEmployeeIdsForDate: selectFinishEmployeeIdsForDate,
   finishedLoadoutMap: selectFinishedLoadoutMap,
   getFinishedLoadout: selectGetFinishedLoadout,
+  loadoutKeys: selectLoadoutKeys,
 };

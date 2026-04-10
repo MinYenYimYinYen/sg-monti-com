@@ -6,9 +6,16 @@ import { LoadoutContract } from "@/app/scheduling/dailyInventory/api/LoadoutCont
 type LoadoutState = {
   loadoutDocs: LoadoutDoc[];
   finishLoadoutDoc: LoadoutDoc | null;
+
+  loadoutKeys: { employeeId: string; routeDates: string[] }[];
 };
 
-const initialState: LoadoutState = { loadoutDocs: [], finishLoadoutDoc: null };
+const initialState: LoadoutState = {
+  loadoutDocs: [],
+  finishLoadoutDoc: null,
+
+  loadoutKeys: [],
+};
 
 const upsertLoadout = createStandardThunk<LoadoutContract, "upsertLoadout">({
   typePrefix: "loadout/upsertLoadout",
