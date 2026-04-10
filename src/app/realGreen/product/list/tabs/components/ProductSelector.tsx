@@ -61,6 +61,7 @@ export function ProductSelector({
                   }`}
                 >
                   <div className="font-medium text-sm">{product.productCode}</div>
+                  <div className="font-mono text-xs opacity-60">#{product.productId}</div>
                   <div className="text-xs opacity-90 mt-1 line-clamp-2">
                     {product.description}
                   </div>

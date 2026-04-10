@@ -1,10 +1,13 @@
 "use client";
 import { useSelector } from "react-redux";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart2 } from "lucide-react";
 import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
+import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
+import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { ScrollArea } from "@/style/components/scroll-area";
 import {
   CardStack,
@@ -16,23 +19,17 @@ import {
 
 export function FeedbackHistorySection() {
   const router = useRouter();
-  const finishedLoadoutMap = useSelector(loadoutSelect.finishedLoadoutMap);
+  const { getLoadoutKeys } = useLoadout();
+  const keysByEmployee = useSelector(loadoutSelect.loadoutKeysByEmployee);
   const employeeMap = useSelector(employeeSelect.employeeMap);
 
-  // Group finished loadouts by employeeId
-  const byEmployee = new Map<string, { employeeId: string; routeDate: string }[]>();
-  finishedLoadoutMap.forEach((_, key) => {
-    const [employeeId, routeDate] = key.split(":");
-    if (!byEmployee.has(employeeId)) byEmployee.set(employeeId, []);
-    byEmployee.get(employeeId)!.push({ employeeId, routeDate });
-  });
+  // Fetch all loadout keys for the current season on mount
+  useEffect(() => {
+    const year = new Date().getFullYear();
+    getLoadoutKeys({ min: `${year}-01-01`, max: `${year}-12-31` });
+  }, [getLoadoutKeys]);
 
-  // Sort each employee's dates descending
-  byEmployee.forEach((entries) => {
-    entries.sort((a, b) => b.routeDate.localeCompare(a.routeDate));
-  });
-
-  const employees = Array.from(byEmployee.entries()).sort(([a], [b]) => {
+  const employees = Array.from(keysByEmployee.entries()).sort(([a], [b]) => {
     const nameA = employeeMap.get(a)?.name ?? a;
     const nameB = employeeMap.get(b)?.name ?? b;
     return nameA.localeCompare(nameB);
@@ -58,20 +55,22 @@ export function FeedbackHistorySection() {
       </h2>
       <CardStack>
         <CardStackList>
-          {employees.map(([employeeId, entries]) => {
+          {employees.map(([employeeId, routeDates]) => {
             const name = employeeMap.get(employeeId)?.name ?? employeeId;
             return (
               <CardStackCard key={employeeId} id={employeeId}>
                 <CardStackHeader>
                   <div className="p-4">
                     <p className="font-semibold text-foreground">{name}</p>
-                    <p className="text-xs text-foreground/50">{entries.length} loadout{entries.length !== 1 ? "s" : ""}</p>
+                    <p className="text-xs text-foreground/50">
+                      {routeDates.length} loadout{routeDates.length !== 1 ? "s" : ""}
+                    </p>
                   </div>
                 </CardStackHeader>
                 <CardStackBody>
                   <ScrollArea className="h-48 px-4 pb-4">
                     <div className="flex flex-col gap-1">
-                      {entries.map(({ routeDate }) => (
+                      {routeDates.map((routeDate) => (
                         <button
                           key={routeDate}
                           onClick={() =>

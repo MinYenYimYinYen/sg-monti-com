@@ -1,19 +1,17 @@
 import { LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
-import { LoadoutContract } from "@/app/scheduling/dailyInventory/api/LoadoutContract";
+import { LoadoutContract, LoadoutKey } from "@/app/scheduling/dailyInventory/api/LoadoutContract";
 
 type LoadoutState = {
   loadoutDocs: LoadoutDoc[];
   finishLoadoutDoc: LoadoutDoc | null;
-
-  loadoutKeys: { employeeId: string; routeDates: string[] }[];
+  loadoutKeys: LoadoutKey[];
 };
 
 const initialState: LoadoutState = {
   loadoutDocs: [],
   finishLoadoutDoc: null,
-
   loadoutKeys: [],
 };
 
@@ -40,6 +38,12 @@ const getLoadout = createStandardThunk<LoadoutContract, "getLoadout">({
 const getLoadouts = createStandardThunk<LoadoutContract, "getLoadouts">({
   typePrefix: "loadout/getLoadouts",
   opName: "getLoadouts",
+  apiPath: "/scheduling/dailyInventory/api",
+});
+
+const getLoadoutKeys = createStandardThunk<LoadoutContract, "getLoadoutKeys">({
+  typePrefix: "loadout/getLoadoutKeys",
+  opName: "getLoadoutKeys",
   apiPath: "/scheduling/dailyInventory/api",
 });
 
@@ -176,6 +180,10 @@ const loadoutSlice = createSlice({
       }
     });
 
+    builder.addCase(getLoadoutKeys.fulfilled, (state, action) => {
+      state.loadoutKeys = action.payload;
+    });
+
     builder.addCase(upsertLoadout.fulfilled, (state, action) => {
       const upserted = action.payload;
 
@@ -208,5 +216,6 @@ export const loadoutActions = {
   getFinishFormLoadout,
   getLoadouts,
   getLoadout,
+  getLoadoutKeys,
 };
 export const loadoutReducer = loadoutSlice.reducer;

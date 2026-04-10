@@ -1,11 +1,10 @@
-import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { LoadoutFinal } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutActuals } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import type { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import {
   buildEquipmentChemicalFeedback,
   buildEquipmentMixFeedback,
-  buildGranularFeedback,
+  buildOtherFeedback,
 } from "./loadoutFeedbackHelpers";
 
 // ---------------------------------------------------------------------------
@@ -18,11 +17,23 @@ import {
  */
 export type EquipmentMixFeedback = {
   equipmentId: string;
+  /** Actual treated ksf for this master, derived from matched services' CRM data. */
+  completedKsf: number;
   plannedAmount: number;
   startAmount: number;
   finishAmount: number;
   /** startAmount − finishAmount */
   totalMixUsed: number;
+  /**
+   * Expected mix volume for completedKsf based on appMethod coverage rate.
+   * Null when completedKsf = 0 (no matched services logged this equipment's products).
+   */
+  expectedMixUsed: number | null;
+  /**
+   * totalMixUsed − expectedMixUsed. Positive = tech used more than expected.
+   * Null when expectedMixUsed is null.
+   */
+  mixVsExpected: number | null;
   unitConfigDisplay: UnitConfigDisplay;
 };
 
@@ -41,21 +52,27 @@ export type EquipmentChemicalFeedback = {
 };
 
 /**
- * One row per sub-product (chemical) in a granular master.
- * Planned is scaled to completed services using per-product size completion ratios.
+ * One row per sub-product in an other (non-equipment) master.
+ * Planned is scaled to completed services using per-product size from CRM data.
  */
-export type GranularSubProductFeedback = {
+export type OtherSubProductFeedback = {
   productId: number;
   description: string;
   unit: UnitCRM;
   unitConfigDisplay: UnitConfigDisplay;
   /** Planned rate in sub-product units per ksf (derived from loadout). */
   plannedRate: number;
-  /** plannedRate × completed ksf for this product. */
+  /** plannedRate × completedKsf. */
   plannedUsed: number;
+  /** Raw start amount from the loadout. */
+  startAmount: number;
+  /** Raw finish amount from the loadout. */
+  finishAmount: number;
   /** startAmount − finishAmount from the loadout. */
   actualUsed: number;
-  /** From production.usedAppProducts[]. */
+  /** Actual treated ksf from matched services' CRM data. */
+  completedKsf: number;
+  /** Σ appProduct.amount for this productId across matched services. */
   crmUsed: number;
   /** Positive = tech used more than CRM recorded. */
   actualVsCrm: number;
@@ -69,47 +86,53 @@ export type GranularSubProductFeedback = {
 
 export class LoadoutFeedback {
   constructor(
-    private readonly completed: Service[],
-    private readonly scheduled: Service[],
-    private readonly loadout: LoadoutFinal,
+    private readonly _actuals: LoadoutActuals,
+    private readonly _completedCount: number,
+    private readonly _scheduledCount: number,
+    private readonly _completedSize: number,
+    private readonly _scheduledSize: number,
   ) {}
 
+  public get actuals(): LoadoutActuals {
+    return this._actuals;
+  }
+
   public get scheduleCount() {
-    return this.scheduled.length;
+    return this._scheduledCount;
   }
 
   public get completedCount() {
-    return this.completed.length;
+    return this._completedCount;
   }
 
   public get completionRate() {
-    return this.scheduleCount > 0 ? this.completedCount / this.scheduleCount : 0;
+    return this._scheduledCount > 0 ? this._completedCount / this._scheduledCount : 0;
   }
 
   public get completedSize() {
-    return this.completed.reduce((sum, s) => sum + s.size, 0);
+    return this._completedSize;
   }
 
   public get scheduledSize() {
-    return this.scheduled.reduce((sum, s) => sum + s.size, 0);
+    return this._scheduledSize;
   }
 
   public get sizeCompletionRate() {
-    return this.scheduledSize > 0 ? this.completedSize / this.scheduledSize : 0;
+    return this._scheduledSize > 0 ? this._completedSize / this._scheduledSize : 0;
   }
 
   /** Tank-level start/finish/used per equipment entry. */
   public get equipmentMixFeedback(): EquipmentMixFeedback[] {
-    return buildEquipmentMixFeedback(this.loadout);
+    return buildEquipmentMixFeedback(this._actuals);
   }
 
   /** Per-chemical back-calculated amounts for tank-mixed equipment entries. */
   public get equipmentChemicalFeedback(): EquipmentChemicalFeedback[] {
-    return buildEquipmentChemicalFeedback(this.loadout);
+    return buildEquipmentChemicalFeedback(this._actuals);
   }
 
-  /** Flat per-sub-product rows for granular masters (no equipment). */
-  public get granularFeedback(): GranularSubProductFeedback[] {
-    return buildGranularFeedback(this.completed, this.scheduled, this.loadout);
+  /** Flat per-sub-product rows for other (non-equipment) masters. */
+  public get otherFeedback(): OtherSubProductFeedback[] {
+    return buildOtherFeedback(this._actuals);
   }
 }

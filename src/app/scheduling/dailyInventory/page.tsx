@@ -14,6 +14,7 @@ import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoad
 import { StartLoadoutCard } from "@/app/scheduling/dailyInventory/pageComponents/StartLoadoutCard";
 import { FinishLoadoutCard } from "@/app/scheduling/dailyInventory/pageComponents/FinishLoadoutCard";
 import { FeedbackHistorySection } from "@/app/scheduling/dailyInventory/pageComponents/FeedbackHistorySection";
+import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 export default function DailyInventoryPage() {
   useLoadoutFormDeps();
@@ -23,6 +24,15 @@ export default function DailyInventoryPage() {
   const routeDate = useSelector(loadoutStartSelect.routeDate);
   const allDates = useSelector(coverSheetsSelect.allDates);
 
+  const today = dateStrings.today();
+
+  useEffect(() => {
+    if (allDates.includes(today)) {
+      setRouteDate(today);
+    }
+  }, [allDates, setRouteDate, today]);
+  
+  
   // Fetch existing loadouts for the selected date so we can show which techs already started/finished.
   useEffect(() => {
     if (!routeDate) return;
@@ -63,7 +73,7 @@ export default function DailyInventoryPage() {
         <FinishLoadoutCard />
       </div>
 
-      {/*<FeedbackHistorySection />*/}
+      <FeedbackHistorySection />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { DeepNonNullable, isDeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
 import { LoadoutConstituent, Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
+import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 
 /**
  * LoadoutBase — the runtime loadout tree.
@@ -149,3 +150,43 @@ export type LoadoutFinalDoc = DeepNonNullable<LoadoutDoc>
 export const isLoadoutFinalDoc = (doc: LoadoutDoc) => isDeepNonNullable(doc);
 
 export type LoadoutFinal = LoadoutDocProps & DeepNonNullable<LoadoutBase>
+
+// ---------------------------------------------------------------------------
+// LoadoutActuals
+// ---------------------------------------------------------------------------
+
+/** Equipment master entry in LoadoutActuals — sourced from LoadoutFinal (non-nullable). */
+type ActualsEquipmentMaster = DeepNonNullable<LoadoutBase["masters"][number]> & {
+  matchedServices: Service[];
+};
+
+/** Other (non-equipment) master sub-product entry in LoadoutActuals. */
+type ActualsOtherSubProduct = DeepNonNullable<LoadoutBase["masters"][number]["subProducts"][number]> & {
+  matchedServices: Service[];
+};
+
+/** Other (non-equipment) master entry in LoadoutActuals. */
+type ActualsOtherMaster = Omit<DeepNonNullable<LoadoutBase["masters"][number]>, "equipments" | "subProducts"> & {
+  subProducts: ActualsOtherSubProduct[];
+};
+
+/**
+ * LoadoutActuals — mirrors the LoadoutFinal master hierarchy but attaches the
+ * matched completed Service objects to each entry instead of aggregated numbers.
+ *
+ * Equipment masters: services are matched when their usedAppProducts is a superset
+ * of the master's non-water constituent productIds.
+ *
+ * Other masters (no equipment): each sub-product's services are matched when
+ * usedAppProducts contains that sub-product's productId.
+ *
+ * Services that don't match any loadout entry are collected in `unmatchedServices`.
+ */
+export type LoadoutActuals = {
+  /** Masters that have at least one equipment entry (tank-mixed products). */
+  equipmentMasters: ActualsEquipmentMaster[];
+  /** Masters with no equipment entries (products not applied by tank equipment). */
+  otherMasters: ActualsOtherMaster[];
+  /** Completed services that did not match any loadout entry. */
+  unmatchedServices: Service[];
+};

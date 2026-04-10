@@ -1,5 +1,5 @@
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
-import { LoadoutContract } from "@/app/scheduling/dailyInventory/api/LoadoutContract";
+import { LoadoutContract, LoadoutKey } from "@/app/scheduling/dailyInventory/api/LoadoutContract";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { LoadoutDocModel } from "@/app/scheduling/dailyInventory/models/LoadoutDocModel";
 import { cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
@@ -54,6 +54,28 @@ const handlers: HandlerMap<LoadoutContract> = {
       }
 
       return { success: true, payload: cleanMongoObject(loadout) };
+    },
+  },
+
+  getLoadoutKeys: {
+    roles: ["admin", "office", "tech"],
+    handler: async ({ dateRange }) => {
+      await connectToMongoDB();
+      const { min, max } = dateRange;
+
+      const docs = await LoadoutDocModel.find(
+        { routeDate: { $gte: min, $lte: max } },
+        { employeeId: 1, routeDate: 1, _id: 0 },
+      )
+        .sort({ routeDate: -1 })
+        .lean();
+
+      const keys: LoadoutKey[] = docs.map((doc) => ({
+        employeeId: doc.employeeId,
+        routeDate: doc.routeDate,
+      }));
+
+      return { success: true, payload: keys };
     },
   },
 };

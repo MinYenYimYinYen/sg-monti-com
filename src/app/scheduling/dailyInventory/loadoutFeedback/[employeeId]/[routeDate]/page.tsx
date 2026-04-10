@@ -7,6 +7,7 @@ import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
 import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
 import { LoadoutFeedback } from "@/app/scheduling/dailyInventory/loadoutFeedback/LoadoutFeedback";
 import { LoadoutFeedbackDisplay } from "@/app/scheduling/dailyInventory/loadoutFeedback/LoadoutFeedbackDisplay";
+import { buildLoadoutActuals } from "@/app/scheduling/dailyInventory/loadoutFeedback/loadoutFeedbackHelpers";
 
 // dailyInventory/loadoutFeedback/1BT/2026-04-06
 export default function LoadoutFeedbackPage({
@@ -48,7 +49,16 @@ export default function LoadoutFeedbackPage({
     );
   }
 
-  const feedback = new LoadoutFeedback(completedServices, scheduledServices, loadout);
+  const actuals = buildLoadoutActuals(completedServices, loadout);
+  const completedSize = completedServices.reduce((sum, s) => sum + s.size, 0);
+  const scheduledSize = scheduledServices.reduce((sum, s) => sum + s.size, 0);
+  const feedback = new LoadoutFeedback(
+    actuals,
+    completedServices.length,
+    scheduledServices.length,
+    completedSize,
+    scheduledSize,
+  );
 
   return (
     <div className="flex flex-col gap-4 py-4">

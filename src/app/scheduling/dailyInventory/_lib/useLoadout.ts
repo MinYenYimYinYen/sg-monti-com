@@ -60,5 +60,15 @@ export function useLoadout() {
         }),
       );
     },
+    getLoadoutKeys: (dateRange: TRange<string>) =>
+      dispatch(
+        loadoutActions.getLoadoutKeys({
+          params: { dateRange },
+          config: {
+            loadingMsg: "Getting loadout history...",
+            staleTime: realGreenConst.paramTypesCacheTime,
+          },
+        }),
+      ),
   };
 }

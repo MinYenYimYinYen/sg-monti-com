@@ -164,10 +164,25 @@ const selectGetFinishedLoadout = ({
   });
 
 const selectLoadoutKeys = (state: AppState) => state.loadout.loadoutKeys;
-const selectLoadoutKeyMap = createSelector(
+
+/** Map of employeeId → routeDates[] (sorted descending), derived from loadoutKeys. */
+const selectLoadoutKeysByEmployee = createSelector(
   [selectLoadoutKeys],
-  (keys) => new Grouper(keys).toUniqueMap((key) => key.employeeId)
-)
+  (keys) => {
+    const map = new Map<string, string[]>();
+    for (const key of keys) {
+      const existing = map.get(key.employeeId);
+      if (existing) {
+        existing.push(key.routeDate);
+      } else {
+        map.set(key.employeeId, [key.routeDate]);
+      }
+    }
+    // Sort each employee's dates descending
+    map.forEach((dates) => dates.sort((a, b) => b.localeCompare(a)));
+    return map;
+  },
+);
 
 export const loadoutSelect = {
   loadouts: selectLoadoutDocs,
@@ -181,4 +196,5 @@ export const loadoutSelect = {
   finishedLoadoutMap: selectFinishedLoadoutMap,
   getFinishedLoadout: selectGetFinishedLoadout,
   loadoutKeys: selectLoadoutKeys,
+  loadoutKeysByEmployee: selectLoadoutKeysByEmployee,
 };
