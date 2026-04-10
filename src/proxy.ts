@@ -169,9 +169,10 @@ export async function proxy(request: NextRequest) {
   }
 
   // GATE E: Already Logged In
-  // Active user trying to access a public route (Login/Register) -> Home
+  // Active user trying to access a public route (Login/Register) -> Home (or original destination)
   if (isAuthenticated && isPublic) {
-    return NextResponse.redirect(new URL("/", request.url));
+    const from = request.nextUrl.searchParams.get("from") || "/";
+    return NextResponse.redirect(new URL(from, request.url));
   }
 
   // GATE F: Default Pass-through
