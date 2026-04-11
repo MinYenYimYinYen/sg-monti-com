@@ -160,37 +160,36 @@ function ServiceProductsCell({ service }: { service: Service }) {
   const appProducts = service.production?.usedAppProducts?.filter(
     (ap) => ap.productCommon.unit.metric !== "area",
   );
-  // todo: This discrepancy check logic needs to be moved to the LoadoutFeedback class
-  // The ProductMaster row records treated area in ksf — if any master's treated ≠ service.size,
-  // the tablet auto-filled stale data and all sub-product amounts for this service are suspect.
-  const hasMasterTreatedDiscrepancy =
-    service.production?.usedAppProducts?.some(
-      (ap) =>
-        isProductMasterCore(ap.productCommon) &&
-        Math.abs(ap.amount - service.size) >= TREATED_THRESHOLD,
-    ) ?? false;
 
   if (!appProducts || appProducts.length === 0)
     return <span className="text-foreground/40">—</span>;
 
-  if (hasMasterTreatedDiscrepancy) {
-    console.log(
-      `Service ${service.servCodeId}-${service.x.customer.displayName} has master treated discrepancy: ${hasMasterTreatedDiscrepancy}`,
-    );
+  // The ProductMaster row records treated area in ksf — if any master's amount ≠ service.size,
+  // the tablet auto-filled stale data and all sub-product amounts for this service are suspect.
+
+  const discrepancies: string[] = [];
+  for (const ap of service.production?.usedAppProducts ?? []) {
+    if (
+      isProductMasterCore(ap.productCommon) &&
+      Math.abs(ap.amount - service.size) >= TREATED_THRESHOLD
+    ) {
+      discrepancies.push(
+        `${ap.productCommon.productCode} recorded ${ap.amount} and service size is ${service.size}`,
+      );
+    }
   }
+
   return (
     <TooltipProvider>
       <span className="flex flex-wrap gap-x-1">
         {appProducts.map((ap, index) => {
-          const treatedDiscrepancy =
-            hasMasterTreatedDiscrepancy ||
-            Math.abs(ap.treated - service.size) >= TREATED_THRESHOLD;
           const code = ap.productCommon.productCode;
+          const hasDiscrepancy = discrepancies.length > 0;
 
           return (
             <span key={ap.productId}>
               {index > 0 && <span className="text-foreground/40">, </span>}
-              {treatedDiscrepancy ? (
+              {hasDiscrepancy ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -201,20 +200,7 @@ function ServiceProductsCell({ service }: { service: Service }) {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>
-                      Tablet recorded:{" "}
-                      {ap.treated.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      ksf
-                    </p>
-                    <p>
-                      Service size:{" "}
-                      {service.size.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      ksf
-                    </p>
+                    <p>{discrepancies.join(". ")}</p>
                   </TooltipContent>
                 </Tooltip>
               ) : (
