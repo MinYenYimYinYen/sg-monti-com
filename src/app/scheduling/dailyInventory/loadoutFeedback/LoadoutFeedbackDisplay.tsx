@@ -178,6 +178,11 @@ function ServiceProductsCell({ service }: { service: Service }) {
       );
     }
   }
+  if (discrepancies.length > 0) {
+    discrepancies.push(
+      "This has been corrected for in this report, but the customer received incorrect product amounts in their emailed invoice",
+    );
+  }
 
   return (
     <TooltipProvider>
@@ -199,7 +204,7 @@ function ServiceProductsCell({ service }: { service: Service }) {
                       {code}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>
+                  <TooltipContent className="max-w-[300px]">
                     <p>{discrepancies.join(". ")}</p>
                   </TooltipContent>
                 </Tooltip>
