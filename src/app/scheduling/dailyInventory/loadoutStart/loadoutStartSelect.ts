@@ -17,7 +17,7 @@ const selectRouteDate = (state: AppState) => state.loadoutStart.routeDate;
 
 /**
  * Services for the selected tech on the selected date.
- * Derived from the byAssignment customer context (loaded via useLoadoutDeps).
+ * Derived from the byAssignment customer context (loaded via useLoadoutPageDeps).
  * Filters centralSelect.services by matching assignment records for the current date.
  */
 const selectServices = createSelector(

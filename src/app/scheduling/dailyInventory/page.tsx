@@ -10,11 +10,17 @@ import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger"
 import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
-import { useLoadoutDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutDeps";
+import { useLoadoutPageDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutPageDeps";
 import { StartLoadoutCard } from "@/app/scheduling/dailyInventory/pageComponents/StartLoadoutCard";
 import { FinishLoadoutCard } from "@/app/scheduling/dailyInventory/pageComponents/FinishLoadoutCard";
 import { FeedbackHistorySection } from "@/app/scheduling/dailyInventory/pageComponents/FeedbackHistorySection";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { BarChart2, ChevronDown } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/style/components/collapsible";
 
 export default function DailyInventoryPage() {
   const { setRouteDate } = useLoadoutStartForm();
@@ -23,18 +29,13 @@ export default function DailyInventoryPage() {
   const routeDate = useSelector(loadoutStartSelect.routeDate);
   const availableDates = useSelector(assignmentSelect.availableDates);
 
-
-  // const x = useSelector(loadoutStartSelect.services)
-  // const josh = x.filter((s) => {
-  //   const assignm
-  // })
-
-  useLoadoutDeps({ routeDate });
+  useLoadoutPageDeps({ routeDate });
 
   const today = dateStrings.today();
 
   useEffect(() => {
-    if (availableDates.includes(today)) {
+    console.log("Available dates:", availableDates);
+    if (availableDates.length && availableDates.includes(today)) {
       setRouteDate(today);
     }
   }, [availableDates, setRouteDate, today]);
@@ -51,7 +52,9 @@ export default function DailyInventoryPage() {
 
   return (
     <div className="flex flex-col gap-6 py-6 max-w-2xl">
-      <p className="text-foreground/70 text-sm">Select a task below to get started.</p>
+      <p className="text-foreground/70 text-sm">
+        Select a task below to get started.
+      </p>
 
       {/* Date Selector */}
       <div className="w-48">
@@ -79,7 +82,16 @@ export default function DailyInventoryPage() {
         <FinishLoadoutCard />
       </div>
 
-      <FeedbackHistorySection />
+      <Collapsible className={"p-2 border rounded-md"}>
+        <CollapsibleTrigger className="flex items-center gap-2 text-foreground font-semibold text-sm group w-full">
+          <BarChart2 className="h-4 w-4" />
+          Feedback History
+          <ChevronDown className="h-4 w-4 ml-auto text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-4">
+          <FeedbackHistorySection />
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }

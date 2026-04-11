@@ -15,25 +15,9 @@ import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 import { byAssignmentActions } from "@/app/realGreen/customer/slices/customerSlices";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
-/**
- * Loads all dependencies for the daily inventory page.
- *
- * Data strategy: uses the assignment-based approach (same as loadoutFeedback) instead of
- * the heavy printedCustomers stream. When a routeDate is selected:
- *   1. getBySchedDate → fetches all AssignmentDocs for that date (lightweight)
- *   2. byAssignmentActions.getDocs → fetches only the assigned services via byServIds scheme
- *
- * On mount: getAvailableDates → populates the date picker from the assignments collection.
- *
- * TODO: Evaluate whether useCustomerContext (and the "byAssignment" context) can be
- * eliminated in favour of a more direct selector approach that doesn't require the
- * central customer slice context machinery.
- */
-export function useLoadoutDeps({ routeDate }: { routeDate: string | null }) {
+export function useLoadoutPageDeps({ routeDate }: { routeDate: string | null }) {
   const dispatch = useAppDispatch();
 
-  // TODO: Investigate removing useCustomerContext entirely — the byAssignment context
-  // clears the central Maps on every fetch, which may be unnecessary overhead here.
   useCustomerContext({ contexts: ["byAssignment"] });
   useEmployee({ autoLoad: true });
   useEquipment({ autoLoad: true });
@@ -65,7 +49,7 @@ export function useLoadoutDeps({ routeDate }: { routeDate: string | null }) {
         params: { schedDate: routeDate },
         config: {
           loadingMsg: `Loading assignments for ${routeDate}...`,
-          staleTime: realGreenConst.paramTypesCacheTime,
+          force: true,
         },
       }),
     );
@@ -84,7 +68,7 @@ export function useLoadoutDeps({ routeDate }: { routeDate: string | null }) {
         },
         config: {
           loadingMsg: "Loading route services...",
-          staleTime: realGreenConst.paramTypesCacheTime,
+          force: true,
         },
       }),
     );

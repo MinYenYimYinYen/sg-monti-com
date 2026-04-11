@@ -5,13 +5,18 @@ import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipmentPackage";
 import { useEquipment } from "@/app/equipment/useEquipment";
+import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 
 export function useLoadoutFormDeps() {
-  useProgServ({ autoLoad: true });
-  useUnitConfig({ autoLoad: true });
-  useProduct({ autoLoad: true });
+  useCustomerContext({ contexts: ["byAssignment"] });
   useEmployee({ autoLoad: true });
-  useEquipmentPackage({autoLoad: true})
-  useEquipment({ autoLoad: true})
+  useEquipment({ autoLoad: true });
+  useEquipmentPackage({ autoLoad: true });
+  useGlobalSettings({ autoLoad: true });
+  useProgServ({ autoLoad: true });
+  useProduct({ autoLoad: true });
+  useUnitConfig({ autoLoad: true });
+
+
 
 }
