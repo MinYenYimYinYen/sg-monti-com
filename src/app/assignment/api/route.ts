@@ -3,11 +3,13 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { AssignmentContract } from "@/app/assignment/api/AssignmentContract";
 import { ServiceDocPropsModel } from "@/app/realGreen/customer/_lib/models/ServiceDocPropsModel";
 import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
+import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 
 const handlers: HandlerMap<AssignmentContract> = {
   getByEmployeeIdAndSchedDate: {
     roles: ["office", "admin"],
     handler: async ({ employeeId, schedDate }) => {
+      await connectToMongoDB();
       const docs = await ServiceDocPropsModel.find(
         {
           "assignments.employeeId": employeeId,
@@ -29,6 +31,7 @@ const handlers: HandlerMap<AssignmentContract> = {
   getBySchedDate: {
     roles: ["office", "admin"],
     handler: async ({ schedDate }) => {
+      await connectToMongoDB();
       const docs = await ServiceDocPropsModel.find(
         { "assignments.schedDate": schedDate },
         { assignments: 1, _id: 0 },
@@ -45,6 +48,7 @@ const handlers: HandlerMap<AssignmentContract> = {
   getAvailableDates: {
     roles: ["office", "admin"],
     handler: async ({ season }) => {
+      await connectToMongoDB();
       // Derive year bounds from season (season = calendar year)
       const minDate = `${season}-01-01`;
       const maxDate = `${season}-12-31`;
