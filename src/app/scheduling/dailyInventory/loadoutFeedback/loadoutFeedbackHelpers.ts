@@ -1,5 +1,5 @@
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { LoadoutActuals, LoadoutFinal } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutActuals, LoadoutFinal } from "@/app/loadout/LoadoutTypes";
 import {
   EquipmentChemicalFeedback,
   EquipmentMixFeedback,

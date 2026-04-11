@@ -9,7 +9,7 @@ import {
 } from "@/app/realGreen/customer/slices/customerSlices";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
-import { loadoutActions } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
+import { loadoutActions } from "@/app/loadout/loadoutSlice";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { useAppMethod } from "@/app/appMethod/useAppMethod";
 import { useEquipment } from "@/app/equipment/useEquipment";

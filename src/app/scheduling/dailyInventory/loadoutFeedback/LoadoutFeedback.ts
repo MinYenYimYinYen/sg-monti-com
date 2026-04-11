@@ -1,4 +1,4 @@
-import { LoadoutActuals } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutActuals } from "@/app/loadout/LoadoutTypes";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import type { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import {

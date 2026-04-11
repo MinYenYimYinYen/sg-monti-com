@@ -12,8 +12,8 @@ import {
 } from "@/style/components/sheet";
 import { Input } from "@/style/components/input";
 import { Slider } from "@/style/components/slider";
-import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
+import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
+import { Mixture } from "@/app/loadout/Mixture";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { Number } from "@/components/Number";
 import {

@@ -12,7 +12,7 @@ import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
-import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
 import { Assignment, AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 
 export type ServiceRaw = {

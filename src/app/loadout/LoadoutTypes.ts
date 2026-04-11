@@ -4,7 +4,7 @@ import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { DeepNonNullable, isDeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
-import { LoadoutConstituent, Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
+import { LoadoutConstituent, Mixture } from "@/app/loadout/Mixture";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 
 /**

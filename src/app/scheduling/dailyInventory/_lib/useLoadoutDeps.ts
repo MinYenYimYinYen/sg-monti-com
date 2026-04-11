@@ -35,13 +35,13 @@ export function useLoadoutDeps({ routeDate }: { routeDate: string | null }) {
   // TODO: Investigate removing useCustomerContext entirely — the byAssignment context
   // clears the central Maps on every fetch, which may be unnecessary overhead here.
   useCustomerContext({ contexts: ["byAssignment"] });
-
-  useProgServ({ autoLoad: true });
-  useUnitConfig({ autoLoad: true });
-  useProduct({ autoLoad: true });
   useEmployee({ autoLoad: true });
-  useEquipmentPackage({ autoLoad: true });
   useEquipment({ autoLoad: true });
+  useEquipmentPackage({ autoLoad: true });
+  useProgServ({ autoLoad: true });
+  useProduct({ autoLoad: true });
+  useUnitConfig({ autoLoad: true });
+
 
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);

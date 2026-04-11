@@ -1,8 +1,8 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
 import { createValidationSelectors } from "@/lib/validation/createValidationSelectors";
-import { LoadoutValidator } from "@/app/scheduling/dailyInventory/_lib/LoadoutValidator";
-import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
+import { LoadoutValidator } from "@/app/loadout/LoadoutValidator";
+import { loadoutSelect } from "@/app/loadout/loadoutSelect";
 
 const selectFinishLoadoutTouchedFields = (state: AppState) =>
   state.loadoutFinish.finishLoadoutTouchedFields;

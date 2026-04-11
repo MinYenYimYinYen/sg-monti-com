@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
-import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
+import { useLoadout } from "@/app/loadout/useLoadout";
 import { MultiSelect } from "@/components/multiselect/MultiSelect";
 import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger";
 import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";

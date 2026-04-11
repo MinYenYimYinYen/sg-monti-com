@@ -1,7 +1,7 @@
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { LoadoutConstituent, Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
+import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
+import { LoadoutConstituent, Mixture } from "@/app/loadout/Mixture";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import {

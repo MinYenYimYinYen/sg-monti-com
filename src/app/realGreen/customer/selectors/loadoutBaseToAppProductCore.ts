@@ -1,4 +1,4 @@
-import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
 import { AppProductCore } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { WATER_PRODUCT_ID } from "@/app/equipment/waterProduct";
 

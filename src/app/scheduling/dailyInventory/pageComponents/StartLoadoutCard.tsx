@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
-import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
+import { loadoutSelect } from "@/app/loadout/loadoutSelect";
 import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 
 export function StartLoadoutCard() {

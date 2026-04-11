@@ -7,9 +7,9 @@ import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSel
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { createValidationSelectors } from "@/lib/validation/createValidationSelectors";
-import { LoadoutValidator } from "@/app/scheduling/dailyInventory/_lib/LoadoutValidator";
+import { LoadoutValidator } from "@/app/loadout/LoadoutValidator";
 import { hydratePlannedLoadout, getProductMasters } from "@/app/realGreen/customer/selectors/hydratePlannedLoadout";
-import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
+import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/loadoutStart/aggregateLoadoutInventory";
 import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
 
 const selectTech = (state: AppState) => state.loadoutStart.tech;

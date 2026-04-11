@@ -1,6 +1,6 @@
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { loadoutActions } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
+import { LoadoutDoc } from "@/app/loadout/LoadoutTypes";
+import { loadoutActions } from "@/app/loadout/loadoutSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 

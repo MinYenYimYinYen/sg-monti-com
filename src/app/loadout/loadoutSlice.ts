@@ -1,4 +1,4 @@
-import { LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutDoc } from "@/app/loadout/LoadoutTypes";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { LoadoutContract, LoadoutKey } from "@/app/scheduling/dailyInventory/api/LoadoutContract";

@@ -3,7 +3,7 @@ import { LoadoutContract, LoadoutKey } from "@/app/scheduling/dailyInventory/api
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { LoadoutDocModel } from "@/app/scheduling/dailyInventory/models/LoadoutDocModel";
 import { cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
-import { LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutDoc } from "@/app/loadout/LoadoutTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 
 const handlers: HandlerMap<LoadoutContract> = {

@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { loadoutStartActions } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
 import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
-import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
+import { useLoadout } from "@/app/loadout/useLoadout";
 import { useEffect, useState } from "react";
 import { MasterProductCard } from "./components/MasterProductCard";
 import { AdditionalProductsSection } from "./components/AdditionalProductsSection";

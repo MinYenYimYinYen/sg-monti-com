@@ -1,7 +1,7 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
-import { rehydrateLoadout } from "@/app/scheduling/dailyInventory/_lib/rehydrateLoadout";
+import { rehydrateLoadout } from "@/app/loadout/rehydrateLoadout";
 import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
@@ -10,7 +10,7 @@ import {
   isLoadoutFinalDoc,
   LoadoutDoc,
   LoadoutFinal,
-} from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+} from "@/app/loadout/LoadoutTypes";
 import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
 

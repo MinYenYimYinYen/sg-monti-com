@@ -1,5 +1,5 @@
-import { LoadoutBase, LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { LoadoutConstituent, Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
+import { LoadoutBase, LoadoutDoc } from "@/app/loadout/LoadoutTypes";
+import { LoadoutConstituent, Mixture } from "@/app/loadout/Mixture";
 import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Equipment } from "@/app/equipment/EquipmentTypes";

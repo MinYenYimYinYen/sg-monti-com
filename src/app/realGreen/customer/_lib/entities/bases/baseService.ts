@@ -9,7 +9,7 @@ import { baseProgram } from "./baseProgram";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { baseEmployee } from "@/app/realGreen/employee/_lib/baseEmployee";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
-import { baseLoadout } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { baseLoadout } from "@/app/loadout/LoadoutTypes";
 import {
   Assignment,
   AssignmentDoc,

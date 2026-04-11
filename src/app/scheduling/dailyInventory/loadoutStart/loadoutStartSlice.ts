@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { LoadoutBase, baseLoadout } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutBase, baseLoadout } from "@/app/loadout/LoadoutTypes";
 import { ProductSub, isProductSubCore } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle, isProductSingleCore } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductCore } from "@/app/realGreen/product/_lib/types/ProductTypes";

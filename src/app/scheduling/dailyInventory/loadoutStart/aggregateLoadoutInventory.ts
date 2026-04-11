@@ -1,5 +1,5 @@
-import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { LoadoutConstituent, Mixture } from "@/app/scheduling/dailyInventory/_lib/Mixture";
+import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
+import { LoadoutConstituent, Mixture } from "@/app/loadout/Mixture";
 
 /**
  * Aggregates loadout inventories from multiple services into a single consolidated inventory.

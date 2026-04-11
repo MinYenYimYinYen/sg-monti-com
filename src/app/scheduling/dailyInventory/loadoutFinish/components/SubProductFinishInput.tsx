@@ -2,11 +2,11 @@ import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import { loadoutFinishSelect } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSelect";
 import { loadoutFinishActions } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSlice";
-import { loadoutActions } from "@/app/scheduling/dailyInventory/_lib/loadoutSlice";
+import { loadoutActions } from "@/app/loadout/loadoutSlice";
 import { Input } from "@/style/components/input";
 import { convertQuantity } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { getFieldPath } from "@/lib/validation/getFieldPath";
-import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
 import { cn, md } from "@/style/utils";
 
 type SubProductFinishInputProps = {

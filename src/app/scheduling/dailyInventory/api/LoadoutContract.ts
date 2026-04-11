@@ -1,7 +1,7 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { DataResponse } from "@/lib/api/types/responses";
-import { LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutDoc } from "@/app/loadout/LoadoutTypes";
 
 export type LoadoutKey = { employeeId: string; routeDate: string };
 

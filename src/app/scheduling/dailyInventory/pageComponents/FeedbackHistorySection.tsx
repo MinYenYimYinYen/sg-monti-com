@@ -3,10 +3,10 @@ import { useSelector } from "react-redux";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart2 } from "lucide-react";
-import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
+import { loadoutSelect } from "@/app/loadout/loadoutSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
-import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
+import { useLoadout } from "@/app/loadout/useLoadout";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { ScrollArea } from "@/style/components/scroll-area";
 import {

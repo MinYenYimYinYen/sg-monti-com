@@ -7,8 +7,8 @@ import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
-import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
-import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
+import { loadoutSelect } from "@/app/loadout/loadoutSelect";
+import { useLoadout } from "@/app/loadout/useLoadout";
 import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
 
 

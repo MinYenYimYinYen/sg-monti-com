@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutDoc } from "@/app/loadout/LoadoutTypes";
 import { createModel } from "@/lib/mongoose/createModel";
 
 const ConstituentSchema = new mongoose.Schema(

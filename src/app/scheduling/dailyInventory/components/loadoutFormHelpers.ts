@@ -1,4 +1,4 @@
-import { LoadoutBase, LoadoutDoc } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
+import { LoadoutBase, LoadoutDoc } from "@/app/loadout/LoadoutTypes";
 
 /**
  * Returns the proportion of product remaining (0–1) given start and finish amounts.
