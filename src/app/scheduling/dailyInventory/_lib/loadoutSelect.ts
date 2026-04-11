@@ -8,12 +8,10 @@ import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSel
 import {
   baseLoadout,
   isLoadoutFinalDoc,
-  LoadoutBase,
   LoadoutDoc,
-  LoadoutDocProps,
   LoadoutFinal,
 } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
-import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
+import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
 
 const selectLoadoutDocs = (state: AppState) => state.loadout.loadoutDocs;
@@ -52,23 +50,16 @@ const selectLoadoutsByDate = (routeDate: string | null) =>
 
 /**
  * Returns the sorted union of employeeIds for the Start Loadout card:
- * - Employees from cover sheets for the date (have pending/printed services)
+ * - Employees from assignments for the date (no status filter — any assigned tech gets a chip)
  * - Employees who have a LoadoutDoc for the date (already started — chip stays visible as "done")
  */
 const selectStartEmployeeIdsForDate = (routeDate: string | null) =>
   createSelector(
-    [
-      selectLoadoutsByDate(routeDate),
-      coverSheetsSelect.servicesByDateAndEmployee,
-    ],
-    (loadoutsByDate, servicesByDateAndEmployee): string[] => {
+    [selectLoadoutsByDate(routeDate), assignmentSelect.techsForDate],
+    (loadoutsByDate, techsForDate): string[] => {
       const ids = new Set<string>();
       loadoutsByDate.forEach((_, employeeId) => ids.add(employeeId));
-      if (routeDate) {
-        servicesByDateAndEmployee
-          .get(routeDate)
-          ?.forEach((_, employeeId) => ids.add(employeeId));
-      }
+      techsForDate.forEach((employeeId) => ids.add(employeeId));
       return Array.from(ids).sort();
     },
   );
@@ -76,22 +67,15 @@ const selectStartEmployeeIdsForDate = (routeDate: string | null) =>
 /**
  * Returns the sorted union of employeeIds for the Finish Loadout card:
  * - Employees who have a LoadoutDoc for the date (started a loadout, may have finished all services)
- * - Employees from cover sheets for the date (have pending/printed services)
+ * - Employees from assignments for the date (no status filter)
  */
 const selectFinishEmployeeIdsForDate = (routeDate: string | null) =>
   createSelector(
-    [
-      selectLoadoutsByDate(routeDate),
-      coverSheetsSelect.servicesByDateAndEmployee,
-    ],
-    (loadoutsByDate, servicesByDateAndEmployee): string[] => {
+    [selectLoadoutsByDate(routeDate), assignmentSelect.techsForDate],
+    (loadoutsByDate, techsForDate): string[] => {
       const ids = new Set<string>();
       loadoutsByDate.forEach((_, employeeId) => ids.add(employeeId));
-      if (routeDate) {
-        servicesByDateAndEmployee
-          .get(routeDate)
-          ?.forEach((_, employeeId) => ids.add(employeeId));
-      }
+      techsForDate.forEach((employeeId) => ids.add(employeeId));
       return Array.from(ids).sort();
     },
   );

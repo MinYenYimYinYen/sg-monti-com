@@ -5,9 +5,15 @@ import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 
 type AssignmentState = {
   byEmployeeIdAndSchedDate: AssignmentDoc[];
+  bySchedDate: AssignmentDoc[];
+  availableDates: string[];
 };
 
-const initialState: AssignmentState = { byEmployeeIdAndSchedDate: [] };
+const initialState: AssignmentState = {
+  byEmployeeIdAndSchedDate: [],
+  bySchedDate: [],
+  availableDates: [],
+};
 
 const getByEmployeeIdAndSchedDate = createStandardThunk<
   AssignmentContract,
@@ -18,6 +24,18 @@ const getByEmployeeIdAndSchedDate = createStandardThunk<
   opName: "getByEmployeeIdAndSchedDate",
 });
 
+const getBySchedDate = createStandardThunk<AssignmentContract, "getBySchedDate">({
+  typePrefix: "assignment/getBySchedDate",
+  apiPath: "/assignment/api",
+  opName: "getBySchedDate",
+});
+
+const getAvailableDates = createStandardThunk<AssignmentContract, "getAvailableDates">({
+  typePrefix: "assignment/getAvailableDates",
+  apiPath: "/assignment/api",
+  opName: "getAvailableDates",
+});
+
 const assignmentSlice = createSlice({
   name: "assignment",
   initialState,
@@ -26,6 +44,12 @@ const assignmentSlice = createSlice({
     builder.addCase(getByEmployeeIdAndSchedDate.fulfilled, (state, action) => {
       state.byEmployeeIdAndSchedDate = action.payload;
     });
+    builder.addCase(getBySchedDate.fulfilled, (state, action) => {
+      state.bySchedDate = action.payload;
+    });
+    builder.addCase(getAvailableDates.fulfilled, (state, action) => {
+      state.availableDates = action.payload;
+    });
   },
 });
 
@@ -33,4 +57,6 @@ export default assignmentSlice.reducer;
 export const assignmentActions = {
   ...assignmentSlice.actions,
   getByEmployeeIdAndSchedDate,
+  getBySchedDate,
+  getAvailableDates,
 };

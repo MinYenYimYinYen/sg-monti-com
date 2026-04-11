@@ -1,7 +1,7 @@
 "use client";
 import { useSelector } from "react-redux";
 import { useEffect } from "react";
-import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
+import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
 import { useLoadout } from "@/app/scheduling/dailyInventory/_lib/useLoadout";
@@ -10,29 +10,35 @@ import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger"
 import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
-import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
+import { useLoadoutDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutDeps";
 import { StartLoadoutCard } from "@/app/scheduling/dailyInventory/pageComponents/StartLoadoutCard";
 import { FinishLoadoutCard } from "@/app/scheduling/dailyInventory/pageComponents/FinishLoadoutCard";
 import { FeedbackHistorySection } from "@/app/scheduling/dailyInventory/pageComponents/FeedbackHistorySection";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 export default function DailyInventoryPage() {
-  useLoadoutFormDeps();
   const { setRouteDate } = useLoadoutStartForm();
   const { getLoadouts } = useLoadout();
 
   const routeDate = useSelector(loadoutStartSelect.routeDate);
-  const allDates = useSelector(coverSheetsSelect.allDates);
+  const availableDates = useSelector(assignmentSelect.availableDates);
+
+
+  // const x = useSelector(loadoutStartSelect.services)
+  // const josh = x.filter((s) => {
+  //   const assignm
+  // })
+
+  useLoadoutDeps({ routeDate });
 
   const today = dateStrings.today();
 
   useEffect(() => {
-    if (allDates.includes(today)) {
+    if (availableDates.includes(today)) {
       setRouteDate(today);
     }
-  }, [allDates, setRouteDate, today]);
-  
-  
+  }, [availableDates, setRouteDate, today]);
+
   // Fetch existing loadouts for the selected date so we can show which techs already started/finished.
   useEffect(() => {
     if (!routeDate) return;
@@ -59,7 +65,7 @@ export default function DailyInventoryPage() {
             {routeDate ? prettyDate(routeDate, "eee, MMM dd") : "Select Date"}
           </MultiSelectTrigger>
           <MultiSelectContent>
-            {allDates.map((date) => (
+            {availableDates.map((date) => (
               <MultiSelectItem key={date} value={date}>
                 {prettyDate(date, "eee, MMM dd")}
               </MultiSelectItem>

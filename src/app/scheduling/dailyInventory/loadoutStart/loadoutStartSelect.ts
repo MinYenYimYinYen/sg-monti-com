@@ -1,7 +1,8 @@
 import { createSelector } from "@reduxjs/toolkit";
-import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { AppState } from "@/store";
+import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
@@ -10,22 +11,43 @@ import { LoadoutValidator } from "@/app/scheduling/dailyInventory/_lib/LoadoutVa
 import { hydratePlannedLoadout, getProductMasters } from "@/app/realGreen/customer/selectors/hydratePlannedLoadout";
 import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/_lib/aggregateLoadoutInventory";
 import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
-import { LoadoutBase } from "@/app/scheduling/dailyInventory/_lib/LoadoutTypes";
 
 const selectTech = (state: AppState) => state.loadoutStart.tech;
+const selectRouteDate = (state: AppState) => state.loadoutStart.routeDate;
 
+/**
+ * Services for the selected tech on the selected date.
+ * Derived from the byAssignment customer context (loaded via useLoadoutDeps).
+ * Filters centralSelect.services by matching assignment records for the current date.
+ */
+const selectServices = createSelector(
+  [centralSelect.services, assignmentSelect.servIdsByEmployee, selectTech],
+  (services, servIdsByEmployee, tech) => {
+    if (!tech) return [];
+    const assignmentsForTech = servIdsByEmployee.get(tech);
+    if (!assignmentsForTech || assignmentsForTech.length === 0) return [];
+    const servIdSet = new Set(assignmentsForTech.map((a) => a.servId));
+    return services.filter((s) => servIdSet.has(s.servId));
+  },
+);
+
+/**
+ * All techs that have assignments on the currently loaded date.
+ * Derived from the assignment slice (no customer data needed).
+ */
+const selectAvailableTechs = assignmentSelect.techsForDate;
+
+/**
+ * routesByDate is kept for backward compatibility with components that use it.
+ * Since we now load one date at a time, this always contains at most one entry.
+ */
 const selectRoutesByDate = createSelector(
-  [coverSheetsSelect.servicesByDateAndEmployee, selectTech],
-  (byDateAndEmployee, defaultTech) => {
+  [selectRouteDate, selectServices],
+  (routeDate, services): Map<string, Service[]> => {
     const result = new Map<string, Service[]>();
-
-    byDateAndEmployee.forEach((employeeMap, date) => {
-      const services = employeeMap.get(defaultTech ?? "");
-      if (services) {
-        result.set(date, services);
-      }
-    });
-
+    if (routeDate && services.length > 0) {
+      result.set(routeDate, services);
+    }
     return result;
   },
 );
@@ -37,29 +59,6 @@ const selectRouteDates = createSelector(
 
 const selectGetRouteForDate = (date: string) =>
   createSelector([selectRoutesByDate], (routesByDate) => routesByDate.get(date) ?? []);
-
-const selectRouteDate = (state: AppState) => state.loadoutStart.routeDate;
-
-const selectServices = createSelector(
-  [selectRouteDate, selectRoutesByDate],
-  (routeDate, routesByDate) => {
-    if (!routeDate) return [];
-    return routesByDate.get(routeDate) ?? [];
-  },
-);
-
-const selectAvailableTechs = createSelector(
-  [coverSheetsSelect.servicesByDateAndEmployee],
-  (byDateAndEmployee) => {
-    const techIds = new Set<string>();
-    byDateAndEmployee.forEach((employeeMap) => {
-      employeeMap.forEach((_, employeeId) => {
-        techIds.add(employeeId);
-      });
-    });
-    return Array.from(techIds).sort();
-  },
-);
 
 const selectLoadout = (state: AppState) => state.loadoutStart.loadout;
 const selectPendingProductSlots = (state: AppState) => state.loadoutStart.pendingProductSlots;

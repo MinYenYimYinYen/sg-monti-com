@@ -1,17 +1,15 @@
 "use client";
-import { ClipboardList, CalendarSync, CheckCircle } from "lucide-react";
+import { ClipboardList, CheckCircle } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSelect";
 import { loadoutSelect } from "@/app/scheduling/dailyInventory/_lib/loadoutSelect";
 import { useLoadoutStartForm } from "@/app/scheduling/dailyInventory/loadoutStart/useLoadoutStartForm";
-import { usePrintedCustomers } from "@/app/realGreen/customer/hooks/usePrintedCustomers";
 
 export function StartLoadoutCard() {
   const router = useRouter();
   const { setTech } = useLoadoutStartForm();
-  const { refresh: refreshPrintedCustomers, canRefresh: canRefreshPrintedCustomers } = usePrintedCustomers();
 
   const routeDate = useSelector(loadoutStartSelect.routeDate);
   const employeeMap = useSelector(employeeSelect.employeeMap);
@@ -35,12 +33,6 @@ export function StartLoadoutCard() {
           <ClipboardList className="h-5 w-5" />
         </div>
         <h2 className="text-lg font-semibold text-foreground">Start Loadout</h2>
-        {canRefreshPrintedCustomers && (
-          <CalendarSync
-            className="cursor-pointer hover:text-primary transition-colors bg-primary/30 p-1 rounded-full ml-2 size-8"
-            onClick={() => refreshPrintedCustomers()}
-          />
-        )}
       </div>
       <p className="text-sm text-foreground/60">
         Enter the starting product amounts loaded onto the truck before heading out on a route.
