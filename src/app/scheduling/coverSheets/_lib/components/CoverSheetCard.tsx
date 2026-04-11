@@ -95,7 +95,7 @@ export function CoverSheetCard({
                 </div>
                 <div className={"flex items-center"}>
                   <LandPlot className={"size-4"} />
-                  <Number>{product.size}</Number>
+                  <Number>{product.treated}</Number>
                 </div>
               </Fragment>
             ))}
@@ -185,7 +185,7 @@ export function CoverSheetCard({
                   </div>
                   <div className={"flex items-center"}>
                     <LandPlot className={"size-4"} />
-                    <Number>{product.size}</Number>
+                    <Number>{product.treated}</Number>
                   </div>
                 </Fragment>
               ))}

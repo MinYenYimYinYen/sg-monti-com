@@ -237,7 +237,7 @@ const selectProductsByCustomer = createSelector(
           (p) => p.enrichedAppProducts,
         );
         const totalArea = Math.round(
-          allEnrichedProducts.reduce((sum, e) => sum + e.size, 0),
+          allEnrichedProducts.reduce((sum, e) => sum + e.treated, 0),
         );
 
         return {
@@ -250,7 +250,7 @@ const selectProductsByCustomer = createSelector(
             services: p.enrichedAppProducts.map((e) => ({
               servId: e.servId,
               amount: Math.round(e.amount),
-              size: Math.round(e.size),
+              size: Math.round(e.treated),
               servCodeId: e.servCodeId,
               progId: e.program.progId,
             })),
@@ -313,7 +313,7 @@ const selectProductsByProgCode = createSelector(
           (p) => p.enrichedAppProducts,
         );
         const totalArea = Math.round(
-          allEnrichedProducts.reduce((sum, e) => sum + e.size, 0),
+          allEnrichedProducts.reduce((sum, e) => sum + e.treated, 0),
         );
         const uniquePrograms = new Set(
           allEnrichedProducts.map((e) => e.program.progId),

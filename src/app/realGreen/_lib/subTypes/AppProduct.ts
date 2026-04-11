@@ -12,10 +12,11 @@ export type AppProductRaw = {
 };
 
 export type AppProductCore = {
+  method: string;
   productId: number;
   servId: number;
   amount: number;
-  size: number;
+  treated: number;
 };
 
 
@@ -27,10 +28,11 @@ export type AppProduct = AppProductCore & AppProductProps;
 
 function remapUsedProduct(raw: AppProductRaw): AppProductCore {
   return {
+    method: raw.applicationMethod || "",
     productId: raw.productID,
     servId: raw.serviceID,
     amount: raw.actAmount || 0,
-    size: raw.treatedArea || 0,
+    treated: raw.treatedArea || 0,
   };
 }
 

@@ -27,8 +27,9 @@ export function loadoutBaseToAppProductCore(
     ...master.subProducts.map((sub) => ({
       productId: sub.productId,
       servId,
+      method: "",
       amount: sub.plannedAmount,
-      size: master.plannedAmount,
+      treated: master.plannedAmount,
     })),
 
     // 2. All mixture constituents (carrier + solutes) for each equipment entry
@@ -38,8 +39,9 @@ export function loadoutBaseToAppProductCore(
         .map((constituent) => ({
           productId: constituent.product.productId,
           servId,
+          method: "",
           amount: constituent.plannedAmount,
-          size: master.plannedAmount,
+          treated: master.plannedAmount,
         })),
     ),
 
@@ -49,8 +51,9 @@ export function loadoutBaseToAppProductCore(
       return {
         productId: carrier.product.productId,
         servId,
+        method: "",
         amount: equipment.plannedAmount,
-        size: master.plannedAmount,
+        treated: master.plannedAmount,
       };
     }),
   ]);

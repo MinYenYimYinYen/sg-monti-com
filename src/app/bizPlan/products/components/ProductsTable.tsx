@@ -178,7 +178,7 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
                                           };
                                         }
                                         acc[key].services += 1;
-                                        acc[key].totalSize += enriched.size;
+                                        acc[key].totalSize += enriched.treated;
                                         acc[key].totalAmount += enriched.amount;
                                         return acc;
                                       },

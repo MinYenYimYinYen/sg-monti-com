@@ -72,10 +72,10 @@ export type OtherSubProductFeedback = {
   actualUsed: number;
   /** Actual treated ksf from matched services' CRM data. */
   completedKsf: number;
-  /** Σ appProduct.amount for this productId across matched services. */
-  crmUsed: number;
-  /** Positive = tech used more than CRM recorded. */
-  actualVsCrm: number;
+  /** Σ (service.size × subProductConfig.rate) — the amount the CRM would post based on label rate × treated area. Contrasted with actualUsed (physical measurement) to surface CRM entry discrepancies. */
+  postedAmount: number;
+  /** actualUsed − postedAmount. Positive = tech physically used more than the posted rate implies. */
+  actualVsPosted: number;
   /** Positive = tech used more than planned. */
   actualVsPlanned: number;
 };

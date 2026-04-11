@@ -123,7 +123,7 @@ export function buildEquipmentMixFeedback(actuals: LoadoutActuals): EquipmentMix
         const ap = service.production?.usedAppProducts?.find(
           (p) => p.productId === firstConstituentId,
         );
-        if (ap) completedKsf += ap.size;
+        if (ap) completedKsf += service.size;
       }
     }
 
@@ -207,11 +207,13 @@ export function buildEquipmentChemicalFeedback(actuals: LoadoutActuals): Equipme
  * Builds flat per-sub-product feedback rows for other masters (masters with no equipment).
  *
  * For each sub-product across all other masters:
- *   - completedKsf = Σ appProduct.size for this sub-product's productId across matched services
+ *   - completedKsf = Σ service.size for matched services that used this sub-product
  *   - plannedRate = sub.plannedAmount / master.plannedAmount (units per ksf)
  *   - plannedUsed = plannedRate × completedKsf
  *   - actualUsed = startAmount − finishAmount (from the loadout sub-product entry)
- *   - crmUsed = Σ appProduct.amount for this productId across matched services
+ *   - postedAmount = Σ (service.size × subProductConfig.rate) — derived from the rate stored on
+ *     ProductMaster.subProductConfigs rather than ap.amount, which is unreliable due to
+ *     unexpected CRM tablet entry behaviour.
  */
 export function buildOtherFeedback(actuals: LoadoutActuals): OtherSubProductFeedback[] {
   if (actuals.otherMasters.length === 0) return [];
@@ -224,7 +226,7 @@ export function buildOtherFeedback(actuals: LoadoutActuals): OtherSubProductFeed
     finishAmount: number;
     actualUsed: number;
     completedKsf: number;
-    crmUsed: number;
+    postedAmount: number;
     description: string;
     unit: OtherSubProductFeedback["unit"];
     unitConfigDisplay: UnitConfigDisplay;
@@ -237,16 +239,41 @@ export function buildOtherFeedback(actuals: LoadoutActuals): OtherSubProductFeed
     if (masterPlannedKsf === 0) continue;
 
     for (const sub of master.subProducts) {
-      // Compute completedKsf and crmUsed from matched services for this sub-product
+      // Derive the label rate from ProductMaster.subProductConfigs rather than ap.amount.
+      // ap.amount is unreliable — techs enter incorrect values on the CRM tablet.
+      const subConfig = master.product.subProductConfigs.find(
+        (config) => config.subId === sub.productId,
+      );
+      const rate = subConfig?.rate ?? 0;
+
+      // Compute completedKsf and postedAmount from matched services for this sub-product
       let completedKsf = 0;
-      let crmUsed = 0;
+      let postedAmount = 0;
       for (const service of sub.matchedServices) {
         const ap = service.production?.usedAppProducts?.find(
           (p) => p.productId === sub.productId,
         );
         if (ap) {
-          completedKsf += ap.size;
-          crmUsed += ap.amount;
+          completedKsf += service.size;
+          postedAmount += service.size * rate;
+
+          const treatedDiff = ap.treated - service.size;
+          const expectedAmount = service.size * rate;
+          const amountDiff = ap.amount - expectedAmount;
+          if (Math.abs(treatedDiff) >= 0.1 || Math.abs(amountDiff) >= 0.01) {
+            console.log("[loadoutFeedback] discrepancy", {
+              servId: service.servId,
+              customer: service.x.customer.displayName,
+              productId: sub.productId,
+              "ap.treated": ap.treated,
+              "service.size": service.size,
+              treatedDiff,
+              "ap.amount": ap.amount,
+              expectedAmount,
+              amountDiff,
+              rate,
+            });
+          }
         }
       }
 
@@ -260,7 +287,7 @@ export function buildOtherFeedback(actuals: LoadoutActuals): OtherSubProductFeed
         existing.finishAmount += sub.finishAmount;
         existing.actualUsed += actualUsed;
         existing.completedKsf += completedKsf;
-        existing.crmUsed += crmUsed;
+        existing.postedAmount += postedAmount;
       } else {
         subAccMap.set(sub.productId, {
           weightedRateNumerator: sub.plannedAmount,
@@ -269,7 +296,7 @@ export function buildOtherFeedback(actuals: LoadoutActuals): OtherSubProductFeed
           finishAmount: sub.finishAmount,
           actualUsed,
           completedKsf,
-          crmUsed,
+          postedAmount,
           description: sub.product.description,
           unit: sub.unit,
           unitConfigDisplay: sub.product.unitConfigDisplay as UnitConfigDisplay,
@@ -298,8 +325,8 @@ export function buildOtherFeedback(actuals: LoadoutActuals): OtherSubProductFeed
       finishAmount: acc.finishAmount,
       actualUsed: acc.actualUsed,
       completedKsf: acc.completedKsf,
-      crmUsed: acc.crmUsed,
-      actualVsCrm: acc.actualUsed - acc.crmUsed,
+      postedAmount: acc.postedAmount,
+      actualVsPosted: acc.actualUsed - acc.postedAmount,
       actualVsPlanned: acc.actualUsed - plannedUsed,
     });
   }
