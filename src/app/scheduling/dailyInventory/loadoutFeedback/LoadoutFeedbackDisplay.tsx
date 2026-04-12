@@ -17,7 +17,6 @@ import {
 import { LandPlot, ChevronRight, ChevronDown } from "lucide-react";
 import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { isProductMasterCore } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 
 // ---------------------------------------------------------------------------
 // Shared view type
@@ -154,37 +153,30 @@ function getServiceCompliance(service: Service): "pass" | "fail" | "no-rule" {
 // ServiceProductsCell — per-product code tags with treated-area discrepancy tooltip
 // ---------------------------------------------------------------------------
 
-const TREATED_THRESHOLD = 0.1; // ksf — differences smaller than this are ignored
-
-function ServiceProductsCell({ service }: { service: Service }) {
+function ServiceProductsCell({
+  service,
+  serviceWarningMap,
+}: {
+  service: Service;
+  serviceWarningMap: Map<number, string[]>;
+}) {
   const appProducts = service.production?.usedAppProducts?.filter(
     (ap) => ap.productCommon.unit.metric !== "area",
   );
-  // todo: This discrepancy check logic needs to be moved to the LoadoutFeedback class
-  // The ProductMaster row records treated area in ksf — if any master's treated ≠ service.size,
-  // the tablet auto-filled stale data and all sub-product amounts for this service are suspect.
-  const hasMasterTreatedDiscrepancy =
-    service.production?.usedAppProducts?.some(
-      (ap) =>
-        isProductMasterCore(ap.productCommon) &&
-        Math.abs(ap.amount - service.size) >= TREATED_THRESHOLD,
-    ) ?? false;
 
   if (!appProducts || appProducts.length === 0)
     return <span className="text-foreground/40">—</span>;
 
-  if (hasMasterTreatedDiscrepancy) {
-    console.log(
-      `Service ${service.servCodeId}-${service.x.customer.displayName} has master treated discrepancy: ${hasMasterTreatedDiscrepancy}`,
-    );
-  }
+  const serviceWarnings = serviceWarningMap.get(service.servId);
+  // If the master "area" row has a treated discrepancy, all sub-products for this service are suspect.
+  const hasMasterTreatedDiscrepancy = serviceWarnings !== undefined && serviceWarnings.length > 0;
+
   return (
     <TooltipProvider>
       <span className="flex flex-wrap gap-x-1">
         {appProducts.map((ap, index) => {
           const treatedDiscrepancy =
-            hasMasterTreatedDiscrepancy ||
-            Math.abs(ap.treated - service.size) >= TREATED_THRESHOLD;
+            hasMasterTreatedDiscrepancy || ap.treated !== service.size;
           const code = ap.productCommon.productCode;
 
           return (
@@ -201,20 +193,26 @@ function ServiceProductsCell({ service }: { service: Service }) {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>
-                      Tablet recorded:{" "}
-                      {ap.treated.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      ksf
-                    </p>
-                    <p>
-                      Service size:{" "}
-                      {service.size.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      ksf
-                    </p>
+                    {hasMasterTreatedDiscrepancy ? (
+                      serviceWarnings.map((warning, i) => <p key={i}>{warning}</p>)
+                    ) : (
+                      <>
+                        <p>
+                          Tablet recorded:{" "}
+                          {ap.treated.toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                          ksf
+                        </p>
+                        <p>
+                          Service size:{" "}
+                          {service.size.toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                          ksf
+                        </p>
+                      </>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               ) : (
@@ -235,9 +233,11 @@ function ServiceProductsCell({ service }: { service: Service }) {
 function ServiceDetailTable({
   services,
   colSpan,
+  serviceWarningMap,
 }: {
   services: Service[];
   colSpan: number;
+  serviceWarningMap: Map<number, string[]>;
 }) {
   if (services.length === 0) {
     return (
@@ -290,7 +290,10 @@ function ServiceDetailTable({
                     })}
                   </td>
                   <td className="py-1 px-2 text-foreground/60">
-                    <ServiceProductsCell service={service} />
+                    <ServiceProductsCell
+                      service={service}
+                      serviceWarningMap={serviceWarningMap}
+                    />
                   </td>
                 </tr>
               );
@@ -402,21 +405,19 @@ function EquipmentMixRow({
   master,
   matchedServices,
   view,
+  serviceWarningMap,
 }: {
   entry: EquipmentMixFeedback;
   master: LoadoutFeedback["actuals"]["equipmentMasters"][number] | undefined;
   matchedServices: Service[];
   view: FeedbackView;
+  serviceWarningMap: Map<number, string[]>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const Chevron = expanded ? ChevronDown : ChevronRight;
-
-  // Non-water constituent productIds — the planned chemicals for this equipment
-  const plannedProductIds = new Set(
-    master?.equipments[0]?.constituents
-      .slice(1)
-      .map((c) => c.product.productId) ?? [],
-  );
+  // Start/Finish/Actual/Expected show raw app amounts regardless of view mode;
+  // only the delta column shows a percentage.
+  const amountView = view === "percent" ? "app" : view;
 
   return (
     <>
@@ -442,17 +443,17 @@ function EquipmentMixRow({
           {entry.unitConfigDisplay.getUnitLabel("app")}
         </td>
         <td className="py-2 text-foreground text-right tabular-nums">
-          {formatEquipmentAmount(entry, entry.startAmount, view)}
+          {formatEquipmentAmount(entry, entry.startAmount, amountView)}
         </td>
         <td className="py-2 text-foreground text-right tabular-nums">
-          {formatEquipmentAmount(entry, entry.finishAmount, view)}
+          {formatEquipmentAmount(entry, entry.finishAmount, amountView)}
         </td>
         <td className="py-2 text-foreground text-right tabular-nums">
-          {formatEquipmentAmount(entry, entry.totalMixUsed, view)}
+          {formatEquipmentAmount(entry, entry.totalMixUsed, amountView)}
         </td>
         <td className="py-2 text-foreground/60 text-right tabular-nums">
           {entry.expectedMixUsed !== null
-            ? formatEquipmentAmount(entry, entry.expectedMixUsed, view)
+            ? formatEquipmentAmount(entry, entry.expectedMixUsed, amountView)
             : "—"}
         </td>
         {entry.mixVsExpected !== null ? (
@@ -470,6 +471,7 @@ function EquipmentMixRow({
         <ServiceDetailTable
           services={matchedServices}
           colSpan={EQUIPMENT_MIX_COL_COUNT}
+          serviceWarningMap={serviceWarningMap}
         />
       )}
     </>
@@ -479,12 +481,13 @@ function EquipmentMixRow({
 function EquipmentMixSection({
   feedback,
   view,
+  serviceWarningMap,
 }: {
   feedback: LoadoutFeedback;
   view: FeedbackView;
+  serviceWarningMap: Map<number, string[]>;
 }) {
   const entries = feedback.equipmentMixFeedback;
-  const chemicals = feedback.equipmentChemicalFeedback;
   const actuals = feedback.actuals;
   if (entries.length === 0) return null;
 
@@ -518,6 +521,7 @@ function EquipmentMixSection({
                   master={master}
                   matchedServices={master?.matchedServices ?? []}
                   view={view}
+                  serviceWarningMap={serviceWarningMap}
                 />
               );
             })}
@@ -594,9 +598,11 @@ const OTHER_PRODUCTS_COL_COUNT = 8;
 function OtherProductsSection({
   feedback,
   view,
+  serviceWarningMap,
 }: {
   feedback: LoadoutFeedback;
   view: FeedbackView;
+  serviceWarningMap: Map<number, string[]>;
 }) {
   const entries = feedback.otherFeedback;
   const actuals = feedback.actuals;
@@ -643,6 +649,7 @@ function OtherProductsSection({
                 entry={entry}
                 matchedServices={matchedServicesMap.get(entry.productId) ?? []}
                 view={view}
+                serviceWarningMap={serviceWarningMap}
               />
             ))}
           </tbody>
@@ -656,13 +663,18 @@ function OtherProductRow({
   entry,
   matchedServices,
   view,
+  serviceWarningMap,
 }: {
   entry: OtherSubProductFeedback;
   matchedServices: Service[];
   view: FeedbackView;
+  serviceWarningMap: Map<number, string[]>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const Chevron = expanded ? ChevronDown : ChevronRight;
+  // Start/Finish/Actual/Posted show raw app amounts regardless of view mode;
+  // only the delta column shows a percentage.
+  const amountView = view === "percent" ? "app" : view;
 
   return (
     <>
@@ -688,32 +700,16 @@ function OtherProductRow({
           {entry.unit.desc}
         </td>
         <td className="py-2 text-foreground text-right tabular-nums">
-          {formatAmount(
-            entry.startAmount,
-            entry.unitConfigDisplay,
-            view === "percent" ? "app" : view,
-          )}
+          {formatAmount(entry.startAmount, entry.unitConfigDisplay, amountView)}
         </td>
         <td className="py-2 text-foreground text-right tabular-nums">
-          {formatAmount(
-            entry.finishAmount,
-            entry.unitConfigDisplay,
-            view === "percent" ? "app" : view,
-          )}
+          {formatAmount(entry.finishAmount, entry.unitConfigDisplay, amountView)}
         </td>
         <td className="py-2 text-foreground text-right tabular-nums">
-          {formatAmount(
-            entry.actualUsed,
-            entry.unitConfigDisplay,
-            view,
-            entry.postedAmount,
-          )}
+          {formatAmount(entry.actualUsed, entry.unitConfigDisplay, amountView)}
         </td>
         <td className="py-2 text-foreground text-right tabular-nums">
-          {/* Posted is the reference — show as 100% in percent mode, raw amount otherwise */}
-          {view === "percent"
-            ? "100%"
-            : formatAmount(entry.postedAmount, entry.unitConfigDisplay, view)}
+          {formatAmount(entry.postedAmount, entry.unitConfigDisplay, amountView)}
         </td>
         <DeltaCell
           value={entry.actualVsPosted}
@@ -726,6 +722,7 @@ function OtherProductRow({
         <ServiceDetailTable
           services={matchedServices}
           colSpan={OTHER_PRODUCTS_COL_COUNT}
+          serviceWarningMap={serviceWarningMap}
         />
       )}
     </>
@@ -742,6 +739,7 @@ export function LoadoutFeedbackDisplay({
   feedback: LoadoutFeedback;
 }) {
   const [view, setView] = useState<FeedbackView>("percent");
+  const serviceWarningMap = feedback.serviceWarningMap;
 
   return (
     <div className="flex flex-col gap-4">
@@ -757,8 +755,8 @@ export function LoadoutFeedbackDisplay({
         </RadioGroup>
       </div>
       <ScheduleSummary feedback={feedback} />
-      <EquipmentMixSection feedback={feedback} view={view} />
-      <OtherProductsSection feedback={feedback} view={view} />
+      <EquipmentMixSection feedback={feedback} view={view} serviceWarningMap={serviceWarningMap} />
+      <OtherProductsSection feedback={feedback} view={view} serviceWarningMap={serviceWarningMap} />
     </div>
   );
 }

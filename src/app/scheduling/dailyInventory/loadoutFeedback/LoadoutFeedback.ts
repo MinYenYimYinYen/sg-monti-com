@@ -1,10 +1,12 @@
 import { LoadoutActuals } from "@/app/loadout/LoadoutTypes";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import type { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
+import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import {
   buildEquipmentChemicalFeedback,
   buildEquipmentMixFeedback,
   buildOtherFeedback,
+  buildServiceWarnings,
 } from "./loadoutFeedbackHelpers";
 
 // ---------------------------------------------------------------------------
@@ -78,6 +80,21 @@ export type OtherSubProductFeedback = {
   actualVsPosted: number;
   /** Positive = tech used more than planned. */
   actualVsPlanned: number;
+  /** servIds where ap.treated !== service.size — tablet recorded stale treated area. */
+  discrepantServiceIds: Set<number>;
+};
+
+// ---------------------------------------------------------------------------
+// ServiceWarnings
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-service warnings derived from CRM production data.
+ * Only services with at least one warning are included in serviceWarnings.
+ */
+export type ServiceWarnings = {
+  service: Service;
+  warnings: string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -87,10 +104,8 @@ export type OtherSubProductFeedback = {
 export class LoadoutFeedback {
   constructor(
     private readonly _actuals: LoadoutActuals,
-    private readonly _completedCount: number,
-    private readonly _scheduledCount: number,
-    private readonly _completedSize: number,
-    private readonly _scheduledSize: number,
+    private readonly _completedServices: Service[],
+    private readonly _scheduledServices: Service[],
   ) {}
 
   public get actuals(): LoadoutActuals {
@@ -98,27 +113,44 @@ export class LoadoutFeedback {
   }
 
   public get scheduleCount() {
-    return this._scheduledCount;
+    return this._scheduledServices.length;
   }
 
   public get completedCount() {
-    return this._completedCount;
+    return this._completedServices.length;
   }
 
   public get completionRate() {
-    return this._scheduledCount > 0 ? this._completedCount / this._scheduledCount : 0;
+    return this._scheduledServices.length > 0
+      ? this._completedServices.length / this._scheduledServices.length
+      : 0;
   }
 
   public get completedSize() {
-    return this._completedSize;
+    return this._completedServices.reduce((sum, s) => sum + s.size, 0);
   }
 
   public get scheduledSize() {
-    return this._scheduledSize;
+    return this._scheduledServices.reduce((sum, s) => sum + s.size, 0);
   }
 
   public get sizeCompletionRate() {
-    return this._scheduledSize > 0 ? this._completedSize / this._scheduledSize : 0;
+    const scheduled = this.scheduledSize;
+    return scheduled > 0 ? this.completedSize / scheduled : 0;
+  }
+
+  public get serviceWarnings(): ServiceWarnings[] {
+    return buildServiceWarnings(this._completedServices);
+  }
+
+  /** O(1) lookup map from servId → warning strings. */
+  public get serviceWarningMap(): Map<number, string[]> {
+    return new Map(
+      this.serviceWarnings.map(({ service, warnings }) => [
+        service.servId,
+        warnings,
+      ]),
+    );
   }
 
   /** Tank-level start/finish/used per equipment entry. */
@@ -126,7 +158,10 @@ export class LoadoutFeedback {
     return buildEquipmentMixFeedback(this._actuals);
   }
 
-  /** Per-chemical back-calculated amounts for tank-mixed equipment entries. */
+  /** Per-chemical back-calculated amounts for tank-mixed equipment entries.
+   * This is unused by the LoadoutFeedback UI. But we'll keep it because it
+   * will be useful for analyzing the value of deviation from the planned mix.
+   * */
   public get equipmentChemicalFeedback(): EquipmentChemicalFeedback[] {
     return buildEquipmentChemicalFeedback(this._actuals);
   }

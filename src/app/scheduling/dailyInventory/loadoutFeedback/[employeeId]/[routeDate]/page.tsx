@@ -50,15 +50,7 @@ export default function LoadoutFeedbackPage({
   }
 
   const actuals = buildLoadoutActuals(completedServices, loadout);
-  const completedSize = completedServices.reduce((sum, s) => sum + s.size, 0);
-  const scheduledSize = scheduledServices.reduce((sum, s) => sum + s.size, 0);
-  const feedback = new LoadoutFeedback(
-    actuals,
-    completedServices.length,
-    scheduledServices.length,
-    completedSize,
-    scheduledSize,
-  );
+  const feedback = new LoadoutFeedback(actuals, completedServices, scheduledServices);
 
   return (
     <div className="flex flex-col gap-4 py-4">
