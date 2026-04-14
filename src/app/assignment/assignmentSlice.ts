@@ -39,7 +39,11 @@ const getAvailableDates = createStandardThunk<AssignmentContract, "getAvailableD
 const assignmentSlice = createSlice({
   name: "assignment",
   initialState,
-  reducers: {},
+  reducers: {
+    clearByEmployeeIdAndSchedDate: (state) => {
+      state.byEmployeeIdAndSchedDate = [];
+    },
+  },
   extraReducers: (builder) => {
     builder.addCase(getByEmployeeIdAndSchedDate.fulfilled, (state, action) => {
       state.byEmployeeIdAndSchedDate = action.payload;

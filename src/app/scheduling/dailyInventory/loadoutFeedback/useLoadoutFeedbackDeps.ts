@@ -46,13 +46,15 @@ export function useLoadoutFeedbackDeps({
   useEffect(() => {
     if (!employeeId || !routeDate) return;
     if (!season) return;
+    // Clear previous assignments to reset the data flow
+    dispatch(assignmentActions.clearByEmployeeIdAndSchedDate());
     dispatch(
       assignmentActions.getByEmployeeIdAndSchedDate({
         params: { employeeId, schedDate: routeDate },
         config: {
           showLoading,
           loadingMsg: `Loading for ${employeeId} on ${routeDate}...`,
-          staleTime: realGreenConst.paramTypesCacheTime,
+          staleTime: 500,
         },
       }),
     );
@@ -71,7 +73,7 @@ export function useLoadoutFeedbackDeps({
         config: {
           loadingMsg: "Loading production data",
           showLoading,
-          staleTime: realGreenConst.paramTypesCacheTime,
+          staleTime: 500,
         },
       }),
     );
