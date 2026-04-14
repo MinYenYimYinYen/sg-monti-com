@@ -108,6 +108,7 @@ interface ContentFeaturePickerProps {
 const FEATURE_PREFIX: Record<ContentFeatureKey, string> = {
   textLine: "tl",
   paragraph: "p",
+  table: "tb",
 };
 
 function generateBlockKey(feature: ContentFeatureKey, existing: FragmentBlock[]): string {
@@ -188,6 +189,9 @@ export function ContentFeaturePicker({
       blockKey,
       feature,
       content: "",
+      ...(feature === "table"
+        ? { tableConfig: { dataSource: "progCode.servCodes", showHeaders: false, columns: [] } }
+        : undefined),
       choice: { choiceId },
       group: { groupId },
     };

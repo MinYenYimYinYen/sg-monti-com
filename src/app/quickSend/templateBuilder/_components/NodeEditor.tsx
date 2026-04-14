@@ -7,11 +7,14 @@ import { useTemplate } from "@/app/quickSend/templates/useTemplate";
 import { templateBuilderSelect } from "../templateBuilderSelect";
 import { useTemplateBuilder } from "../useTemplateBuilder";
 import { TreeNodeDoc, FragmentBlock } from "@/app/quickSend/templates/TemplateTypes";
-import { DATA_FEATURE_DEFS, DataFeatureKey } from "@/app/quickSend/templates/dataFeatures/dataFeatures";
+import { DATA_FEATURE_DEFS, DataFeatureKey, type DataFeatureDef } from "@/app/quickSend/templates/dataFeatures/dataFeatures";
 import { CONTENT_FEATURE_DEFS, getContentFeatureDef } from "@/app/quickSend/templates/contentFeatures/contentFeatures";
 import { getBuilderFlags } from "@/app/quickSend/templates/dataFeatures/dataFeatureHelpers";
 import { DataFeaturePicker, ContentFeaturePicker } from "./FeaturePicker";
 import { BlockContentEditor } from "./BlockContentEditor";
+import { TableBlockEditor } from "./TableBlockEditor";
+import type { TableConfig } from "@/app/quickSend/templates/TemplateTypes";
+import { TABLE_DATA_SOURCES } from "@/app/quickSend/templates/dataFeatures/dataFeatureVariables";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 import { Button } from "@/style/components/button";
@@ -64,7 +67,15 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
   const { clearBlockSelection } = useTemplateBuilder();
 
   const isFragment = node.type === "fragment";
-  const { customerVariablesEnabled, seasonVariableEnabled } = getBuilderFlags(dataFeatures);
+  const { customerVariablesEnabled, seasonVariableEnabled, progCodeVariablesEnabled } = getBuilderFlags(dataFeatures);
+
+  // Derive the row columns for table blocks from the active data feature that has a tableDataSource.
+  // Cast to DataFeatureDef (the base type) so optional fields are accessible.
+  const tableDataSource = (DATA_FEATURE_DEFS as readonly DataFeatureDef[]).find(
+    (def) => dataFeatures.includes(def.key as DataFeatureKey) && def.tableDataSource,
+  )?.tableDataSource;
+  const tableRowColumns: Record<string, string> =
+    tableDataSource ? (TABLE_DATA_SOURCES[tableDataSource]?.rowColumns ?? {}) : {};
 
   const updateBlockContent = (blockKey: string, content: string) => {
     setBlocks((prev) =>
@@ -214,16 +225,39 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
                     return (
                       <div key={block.blockKey} className="flex flex-col gap-1">
                         <Label>{block.label ?? def.label}</Label>
-                        <BlockContentEditor
-                          content={block.content}
-                          onChange={(html) =>
-                            updateBlockContent(block.blockKey, html)
-                          }
-                          multiLine={def.multiLine}
-                          customerVariablesEnabled={customerVariablesEnabled}
-                          seasonVariableEnabled={seasonVariableEnabled}
-                          placeholder={`Enter ${def.label.toLowerCase()}...`}
-                        />
+                        {block.feature === "table" ? (
+                          <TableBlockEditor
+                            tableConfig={
+                              block.tableConfig ?? {
+                                dataSource: "progCode.servCodes",
+                                showHeaders: false,
+                                columns: [],
+                              }
+                            }
+                            rowColumns={tableRowColumns}
+                            onChange={(tableConfig: TableConfig) =>
+                              setBlocks((prev) =>
+                                prev.map((b) =>
+                                  b.blockKey === block.blockKey
+                                    ? { ...b, tableConfig }
+                                    : b,
+                                ),
+                              )
+                            }
+                          />
+                        ) : (
+                          <BlockContentEditor
+                            content={block.content}
+                            onChange={(html) =>
+                              updateBlockContent(block.blockKey, html)
+                            }
+                            multiLine={def.multiLine}
+                            customerVariablesEnabled={customerVariablesEnabled}
+                            seasonVariableEnabled={seasonVariableEnabled}
+                            progCodeVariablesEnabled={progCodeVariablesEnabled}
+                            placeholder={`Enter ${def.label.toLowerCase()}...`}
+                          />
+                        )}
                       </div>
                     );
                   })}

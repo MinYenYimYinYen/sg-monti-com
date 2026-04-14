@@ -18,12 +18,30 @@ const BlockGroupSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const TableColumnDefSchema = new mongoose.Schema(
+  {
+    field: { type: String, required: true },
+    header: { type: String },
+  },
+  { _id: false },
+);
+
+const TableConfigSchema = new mongoose.Schema(
+  {
+    dataSource: { type: String, required: true, default: "progCode.servCodes" },
+    showHeaders: { type: Boolean, required: true, default: false },
+    columns: { type: [TableColumnDefSchema], default: [] },
+  },
+  { _id: false },
+);
+
 const FragmentBlockSchema = new mongoose.Schema(
   {
     blockKey: { type: String, required: true },
     label: { type: String },
     feature: { type: String, required: true },
     content: { type: String, default: "" },
+    tableConfig: { type: TableConfigSchema },
     choice: { type: BlockChoiceSchema, required: true },
     group: { type: BlockGroupSchema, required: true },
   },

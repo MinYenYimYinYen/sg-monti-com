@@ -4,8 +4,10 @@ import React from "react";
 import { useSenderState } from "./useSenderState";
 import { ChoiceSelector } from "./_components/ChoiceSelector";
 import { OutputGroup } from "./_components/OutputGroup";
+import { TableOutputGroup } from "./_components/TableOutputGroup";
 import { Separator } from "@/style/components/separator";
-import { getSenderComponent } from "@/app/quickSend/templates/dataFeatures/dataFeatureHelpers";
+import { CustomerLookup } from "@/app/quickSend/templates/dataFeatures/custIdSearch/CustomerLookup";
+import { ProgramSelector } from "@/app/quickSend/templates/dataFeatures/progCode/ProgramSelector";
 import type { TreeNodeDoc } from "@/app/quickSend/templates/TemplateTypes";
 import type { DataFeatureKey } from "@/app/quickSend/templates/dataFeatures/dataFeatures";
 
@@ -20,9 +22,11 @@ interface TemplateSenderProps {
  * - Shows choice selectors if the fragment has any choice groups.
  * - Renders one copyable output group per groupId.
  * - Resolves {{customer.*}} variables against the currently loaded customer.
+ * - Renders ProgramSelector with props when progCode data feature is active.
+ * - Renders TableOutputGroup (plain HTML) for table blocks.
  */
 export function TemplateSender({ fragment, label }: TemplateSenderProps) {
-  const { activeChoices, setChoice, resolvedGroups, hasChoices } =
+  const { activeChoices, setChoice, resolvedGroups, hasChoices, selectedProgCodeId, setSelectedProgCodeId } =
     useSenderState(fragment);
 
   const blocks = fragment?.blocks ?? [];
@@ -45,16 +49,21 @@ export function TemplateSender({ fragment, label }: TemplateSenderProps) {
       )}
 
       {/* Render UI components for enabled data features */}
-      {dataFeatures.map((featureKey) => {
-        const Component = getSenderComponent(featureKey);
-        if (!Component) return null;
-        return (
-          <React.Fragment key={featureKey}>
-            <Component />
-            <Separator />
-          </React.Fragment>
-        );
-      })}
+      {dataFeatures.includes("custIdSearch") && (
+        <>
+          <CustomerLookup />
+          <Separator />
+        </>
+      )}
+      {dataFeatures.includes("progCode") && (
+        <>
+          <ProgramSelector
+            selectedProgCodeId={selectedProgCodeId}
+            onSelect={setSelectedProgCodeId}
+          />
+          <Separator />
+        </>
+      )}
 
       {hasChoices && (
         <>
@@ -68,13 +77,21 @@ export function TemplateSender({ fragment, label }: TemplateSenderProps) {
       )}
 
       <div className="flex flex-col gap-4">
-        {resolvedGroups.map((group) => (
-          <OutputGroup
-            key={group.groupId}
-            html={group.html}
-            label={group.label ?? (resolvedGroups.length > 1 ? `Group ${group.groupId}` : undefined)}
-          />
-        ))}
+        {resolvedGroups.map((group) =>
+          group.isTable ? (
+            <TableOutputGroup
+              key={group.groupId}
+              html={group.html}
+              label={group.label ?? (resolvedGroups.length > 1 ? `Group ${group.groupId}` : undefined)}
+            />
+          ) : (
+            <OutputGroup
+              key={group.groupId}
+              html={group.html}
+              label={group.label ?? (resolvedGroups.length > 1 ? `Group ${group.groupId}` : undefined)}
+            />
+          )
+        )}
       </div>
     </div>
   );

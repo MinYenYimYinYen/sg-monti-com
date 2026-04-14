@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { quickSendSelect } from "@/app/quickSend/quickSendSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { resolveTemplate, type ResolvedGroup } from "./resolveTemplate";
 import type { TreeNodeDoc, FragmentBlock } from "@/app/quickSend/templates/TemplateTypes";
+import type { DataFeatureKey } from "@/app/quickSend/templates/dataFeatures/dataFeatures";
 
 export type SenderState = {
   /** Active blockKey per choiceId. Only populated for choiceIds with 2+ blocks. */
@@ -13,6 +15,9 @@ export type SenderState = {
   resolvedGroups: ResolvedGroup[];
   /** True if any choiceId has 2+ blocks (i.e. the user needs to make a selection). */
   hasChoices: boolean;
+  /** Currently selected ProgCode ID (for the progCode data feature). */
+  selectedProgCodeId: string | null;
+  setSelectedProgCodeId: (id: string | null) => void;
 };
 
 /**
@@ -25,21 +30,29 @@ export function useSenderState(
 ): SenderState {
   const customer = useSelector(quickSendSelect.customer);
   const globalSettings = useSelector(globalSettingsSelect.settings);
+  const progCodes = useSelector(progServSelect.progCodes);
   const blocks: FragmentBlock[] = fragment?.blocks ?? [];
+  const dataFeatures = (fragment?.dataFeatures ?? []) as DataFeatureKey[];
 
   // Build the initial active choices: first block per choiceId that has 2+ blocks
   const initialChoices = buildInitialChoices(blocks);
   const [activeChoices, setActiveChoices] = useState<Record<number, string>>(initialChoices);
+  const [selectedProgCodeId, setSelectedProgCodeId] = useState<string | null>(null);
 
   const setChoice = (choiceId: number, blockKey: string) => {
     setActiveChoices((prev) => ({ ...prev, [choiceId]: blockKey }));
   };
 
-  const resolvedGroups = resolveTemplate(blocks, activeChoices, customer, globalSettings);
+  // Resolve the selected ProgCode entity when progCode feature is active
+  const progCode = dataFeatures.includes("progCode") && selectedProgCodeId
+    ? (progCodes.find((p) => p.progCodeId === selectedProgCodeId) ?? null)
+    : null;
+
+  const resolvedGroups = resolveTemplate(blocks, activeChoices, customer, globalSettings, progCode);
 
   const hasChoices = Object.keys(initialChoices).length > 0;
 
-  return { activeChoices, setChoice, resolvedGroups, hasChoices };
+  return { activeChoices, setChoice, resolvedGroups, hasChoices, selectedProgCodeId, setSelectedProgCodeId };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

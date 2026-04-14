@@ -1,6 +1,24 @@
 import type { ContentFeatureKey } from "./contentFeatures/contentFeatures";
 import type { DataFeatureKey } from "./dataFeatures/dataFeatures";
 
+/** A single column definition for a table block. */
+export type TableColumnDef = {
+  /** Which field on the data row to display (e.g. "longName", "invoiceMessage"). */
+  field: string;
+  /** Optional header label. If omitted, no header is shown for this column. */
+  header?: string;
+};
+
+/** Configuration for a table block — defines the data source and column layout. */
+export type TableConfig = {
+  /** Data source key. Currently only "progCode.servCodes" is supported. */
+  dataSource: "progCode.servCodes";
+  /** Whether to render a header row. */
+  showHeaders: boolean;
+  /** Ordered column definitions. */
+  columns: TableColumnDef[];
+};
+
 export type TreeNodeType = "category" | "fragment";
 
 /**
@@ -34,10 +52,15 @@ export type FragmentBlock = {
   blockKey: string;
   /** Optional user-entered display name shown in the builder block list. */
   label?: string;
-  /** Which content feature this block uses (e.g. "textLine", "paragraph"). */
+  /** Which content feature this block uses (e.g. "textLine", "paragraph", "table"). */
   feature: ContentFeatureKey;
-  /** User-authored text with optional {{customer.*}} placeholders. */
+  /** User-authored text with optional {{customer.*}} placeholders. Empty for table blocks. */
   content: string;
+  /**
+   * Table configuration. Only present when `feature === "table"`.
+   * Defines the data source and column layout for dynamic table generation.
+   */
+  tableConfig?: TableConfig;
   /**
    * Choice group this block belongs to.
    * Blocks sharing the same `choice.choiceId` form a mutually-exclusive set.

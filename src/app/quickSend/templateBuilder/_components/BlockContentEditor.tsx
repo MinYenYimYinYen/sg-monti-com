@@ -11,6 +11,8 @@ import {
   type CustomerVariableKey,
   GLOBAL_SETTINGS_VARIABLES,
   type GlobalSettingsVariableKey,
+  PROG_CODE_VARIABLES,
+  type ProgCodeVariableKey,
 } from "@/app/quickSend/templates/dataFeatures/dataFeatureVariables";
 import { cn } from "@/style/utils";
 
@@ -19,12 +21,15 @@ import { cn } from "@/style/utils";
 // The Mention extension stores the selected item's `id` attribute.
 // We use `id` (not `key`) so `node.attrs.id` in renderHTML resolves correctly.
 type VariableItem = {
-  id: string; // Now a string to support both "displayName" and "globalSettings.season"
+  id: string; // Namespaced: "displayName", "globalSettings.season", "progCode.description"
   label: string;
-  namespace: "customer" | "globalSettings"; // Track which namespace this variable belongs to
 };
 
-function buildVariableItems(customerEnabled: boolean, seasonEnabled: boolean): VariableItem[] {
+function buildVariableItems(
+  customerEnabled: boolean,
+  seasonEnabled: boolean,
+  progCodeEnabled: boolean,
+): VariableItem[] {
   const items: VariableItem[] = [];
 
   if (customerEnabled) {
@@ -33,7 +38,6 @@ function buildVariableItems(customerEnabled: boolean, seasonEnabled: boolean): V
         ([key, label]) => ({
           id: key,
           label,
-          namespace: "customer" as const,
         })
       )
     );
@@ -45,7 +49,17 @@ function buildVariableItems(customerEnabled: boolean, seasonEnabled: boolean): V
         ([key, label]) => ({
           id: `globalSettings.${key}`,
           label,
-          namespace: "globalSettings" as const,
+        })
+      )
+    );
+  }
+
+  if (progCodeEnabled) {
+    items.push(
+      ...(Object.entries(PROG_CODE_VARIABLES) as [ProgCodeVariableKey, string][]).map(
+        ([key, label]) => ({
+          id: `progCode.${key}`,
+          label,
         })
       )
     );
@@ -130,9 +144,9 @@ SuggestionList.displayName = "SuggestionList";
 
 // ─── Mention extension config ────────────────────────────────────────────────
 
-function buildMentionExtension(customerEnabled: boolean, seasonEnabled: boolean) {
-  const variableItems = buildVariableItems(customerEnabled, seasonEnabled);
-  const enabled = customerEnabled || seasonEnabled;
+function buildMentionExtension(customerEnabled: boolean, seasonEnabled: boolean, progCodeEnabled: boolean) {
+  const variableItems = buildVariableItems(customerEnabled, seasonEnabled, progCodeEnabled);
+  const enabled = customerEnabled || seasonEnabled || progCodeEnabled;
 
   return Mention.configure({
     HTMLAttributes: {
@@ -243,12 +257,14 @@ interface BlockContentEditorProps {
   customerVariablesEnabled?: boolean;
   /** Whether to enable season variable @ mentions. */
   seasonVariableEnabled?: boolean;
+  /** Whether to enable progCode scalar variable @ mentions. */
+  progCodeVariablesEnabled?: boolean;
   placeholder?: string;
 }
 
 /**
  * A lightweight Tiptap editor for authoring a single content block.
- * Supports @ mentions for inserting {{customer.*}} and {{globalSettings.*}} variable placeholders.
+ * Supports @ mentions for inserting {{customer.*}}, {{globalSettings.*}}, and {{progCode.*}} variable placeholders.
  * Stored content is HTML (Tiptap output) with placeholder spans inline.
  */
 export function BlockContentEditor({
@@ -257,6 +273,7 @@ export function BlockContentEditor({
   multiLine = true,
   customerVariablesEnabled = false,
   seasonVariableEnabled = false,
+  progCodeVariablesEnabled = false,
   placeholder,
 }: BlockContentEditorProps) {
   const editor = useEditor({
@@ -266,7 +283,7 @@ export function BlockContentEditor({
         // Suppress hard breaks in single-line mode
         hardBreak: multiLine ? undefined : false,
       }),
-      buildMentionExtension(customerVariablesEnabled, seasonVariableEnabled),
+      buildMentionExtension(customerVariablesEnabled, seasonVariableEnabled, progCodeVariablesEnabled),
     ],
     content: content || "",
     editorProps: {
