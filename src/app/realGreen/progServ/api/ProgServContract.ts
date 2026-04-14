@@ -21,4 +21,8 @@ export interface ProgServContract extends ApiContract {
     params: { unsavedChanges: UnsavedServCodeChanges[] };
     result: DataResponse<boolean>;
   };
+  saveProgCodeEconPriceTable: {
+    params: { progCodeId: string; econPriceTableId: number | null };
+    result: DataResponse<null>;
+  };
 }

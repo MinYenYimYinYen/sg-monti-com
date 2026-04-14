@@ -1,84 +1,139 @@
+import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
-import { progServBaseSelect } from "./progServBaseSelectors";
-import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { ProgCode } from "../types/ProgCodeTypes";
 import { ServCode } from "../types/ServCodeTypes";
+import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
+import { hydrateProductRules } from "./hydrateProductRules";
+import { priceTableSelect } from "@/app/realGreen/priceTable/priceTableSelect";
+import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 
-// Hydrate ProgCodes with Programs from Central
+const selectProgCodeDocs = (state: AppState) => state.progServ.progCodeDocs;
+const selectServCodeDocs = (state: AppState) => state.progServ.servCodeDocs;
+const selectProgServs = (state: AppState) => state.progServ.progServs;
+
+const selectProgServMap = createSelector([selectProgServs], (progServs) => {
+  return new Grouper(progServs).groupBy((ps) => ps.progDefId).toMap();
+});
+
+const selectServCodeDocMap = createSelector(
+  [selectServCodeDocs],
+  (servCodeDocs) => {
+    return new Grouper(servCodeDocs).toUniqueMap((s) => s.servCodeId);
+  },
+);
+
 const selectProgCodes = createSelector(
-  [progServBaseSelect.basicProgCodes, centralSelect.programs],
-  (basicProgCodes, allPrograms) => {
-    // Group programs by progDefId for fast lookup
-    const programsByDefId = new Grouper(allPrograms)
-      .groupBy((p) => p.progDefId)
-      .toMap();
+  [
+    selectProgCodeDocs,
+    selectProgServMap,
+    selectServCodeDocMap,
+    productSelect.productMastersMap,
+    priceTableSelect.priceTableMap,
+  ],
+  (
+    progCodeDocs,
+    progServMap,
+    servCodeDocMap,
+    productMasterMap,
+    priceTableMap,
+  ) => {
+    // Builder type for type-safe construction before the circle closes
+    type ProgCodeBuilder = Omit<ProgCode, "servCodes"> & {
+      servCodes: ServCode[];
+    };
 
-    return basicProgCodes.map((basicCode) => {
-      const programs = programsByDefId.get(basicCode.progDefId) || [];
+    const progCodes: ProgCode[] = progCodeDocs.map((progDoc) => {
+      const progServLinks = progServMap.get(progDoc.progDefId) || [];
 
-      // Create a new object to avoid mutating the basic code
-      const richCode: ProgCode = {
-        ...basicCode,
-        programs,
+      const isSpecial =
+        progServLinks.length === 1 &&
+        progServLinks[0].servCodeId === progDoc.progCodeId;
+
+      const priceTable =
+        priceTableMap.get(progDoc.priceTableId ?? baseNumId) ?? null;
+
+      const econPriceTable =
+        priceTableMap.get(progDoc.econPriceTableId ?? baseNumId) ?? null;
+
+      // Phase 1: Build progCode with empty servCodes
+      const progCodeBuilder: ProgCodeBuilder = {
+        ...progDoc,
+        isSpecial,
+        servCodes: [],
+        priceTable,
+        econPriceTable,
       };
 
-      // Also need to update the servCodes inside this progCode to point to the new richCode
-      // AND hydrate services into servCodes
-      // However, servCodes are nested inside progCode.
-      // We can't easily update them here without iterating them.
-      // But wait, selectServCodes below needs to do this too.
+      // Phase 2: Build servCodes referencing the progCode builder
+      const servCodes: ServCode[] = progServLinks
+        .map((link) => {
+          if (!link.servCodeId) return null;
 
-      // Let's hydrate servCodes here as well since they are part of the tree
-      // We need services grouped by servCodeId
-      // But services are not available here directly, we need to pass them or derive them.
-      // Actually, we can just leave servCodes as "Basic" inside the "Rich" ProgCode for now,
-      // unless we want full deep hydration.
-      // The requirement was "add services: Service[] to ServCodeProps".
+          const servDoc = servCodeDocMap.get(link.servCodeId);
+          if (!servDoc) return null;
 
-      // If we want rich servCodes inside rich progCodes, we need to do it here.
-      // But that requires allServices.
-      return richCode;
+          const servCode: ServCode = {
+            ...servDoc,
+            progCode: progCodeBuilder as ProgCode,
+            progCodeId: progCodeBuilder.progCodeId,
+            services: [],
+            isSpecial: progCodeBuilder.progCodeId === link.servCodeId,
+            productRules: hydrateProductRules(
+              servDoc.productRuleDocs,
+              productMasterMap,
+            ),
+          };
+
+          return servCode;
+        })
+        .filter((s): s is ServCode => s !== null)
+        .sort((a, b) => a.servCodeId.localeCompare(b.servCodeId));
+
+      // Mutate servCodes in place to close the circle — servCode.progCode.servCodes is now populated
+      progCodeBuilder.servCodes = servCodes;
+
+      return progCodeBuilder as ProgCode;
     });
+
+    // Filter out nested programs (programs that appear as services in other programs)
+    const allProgIds = new Set(progCodes.map((p) => p.progCodeId));
+    const programCodesToFilterOut = new Set<string>();
+
+    for (const programCode of progCodes) {
+      for (const serv of programCode.servCodes) {
+        if (
+          allProgIds.has(serv.servCodeId) &&
+          serv.servCodeId !== programCode.progCodeId
+        ) {
+          programCodesToFilterOut.add(serv.servCodeId);
+        }
+      }
+    }
+
+    return progCodes.filter((p) => !programCodesToFilterOut.has(p.progCodeId));
   },
 );
 
-// We need a second pass or a combined selector to hydrate services into servCodes
-const selectRichProgCodes = createSelector(
-  [selectProgCodes, centralSelect.services],
-  (progCodes, allServices) => {
-    const servicesByCodeId = new Grouper(allServices)
-      .groupBy((s) => s.servCodeId)
-      .toMap();
-
-    return progCodes.map((progCode) => {
-      const richServCodes = progCode.servCodes.map((basicServCode) => {
-        const services = servicesByCodeId.get(basicServCode.servCodeId) || [];
-        const richServCode: ServCode = {
-          ...basicServCode,
-          progCode, // Point back to the Rich ProgCode
-          services,
-        };
-        return richServCode;
-      });
-
-      // Return new ProgCode with Rich ServCodes
-      return {
-        ...progCode,
-        servCodes: richServCodes,
-      };
-    });
-  },
+const selectProgCodeMap = createSelector([selectProgCodes], (progCodes) =>
+  new Grouper(progCodes).toUniqueMap((p) => p.progCodeId),
 );
 
-const selectServCodes = createSelector([selectRichProgCodes], (progCodes) => {
+const selectServCodes = createSelector([selectProgCodes], (progCodes) => {
   return progCodes.flatMap((p) => p.servCodes);
 });
 
-
+const selectServCodeMap = createSelector([selectServCodes], (servCodes) => {
+  return new Grouper(servCodes).toUniqueMap((s) => s.servCodeId);
+});
 
 export const progServSelect = {
-  progCodeDocs: progServBaseSelect.progCodeDocs,
-  progCodes: selectRichProgCodes,
+  progCodeDocs: selectProgCodeDocs,
+  servCodeDocs: selectServCodeDocs,
+  progServMap: selectProgServMap,
+  servCodeDocMap: selectServCodeDocMap,
+  progCodes: selectProgCodes,
+  progCodeMap: selectProgCodeMap,
   servCodes: selectServCodes,
+  servCodeMap: selectServCodeMap,
 };

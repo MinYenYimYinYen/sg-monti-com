@@ -4,7 +4,7 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { basicTaxCodeSelect } from "@/app/realGreen/taxCode/taxCodeBaseSelectors";
@@ -62,14 +62,13 @@ const selectServiceDocMap = createSelector(
   },
 );
 
-// Use BASE selectors to avoid circular dependency
 const selectProgCodeMapByDefId = createSelector(
-  [progServBaseSelect.basicProgCodes],
+  [progServSelect.progCodes],
   (progCodes) => new Grouper(progCodes).toUniqueMap((p) => p.progDefId),
 );
 
 const selectServCodeMap = createSelector(
-  [progServBaseSelect.basicServCodes],
+  [progServSelect.servCodes],
   (servCodes) => new Grouper(servCodes).toUniqueMap((s) => s.servCodeId),
 );
 

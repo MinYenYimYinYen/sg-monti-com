@@ -8,7 +8,7 @@ import {
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export const basePriceTableCore: PriceTableCore = {
-  tableId: baseNumId,
+  priceTableId: baseNumId,
   desc: baseStrId,
   maxPrice: baseNumId,
   maxSize: baseNumId,
@@ -16,7 +16,7 @@ export const basePriceTableCore: PriceTableCore = {
 };
 
 export const basePriceTableDocProps: PriceTableDocProps = {
-  tableId: baseNumId,
+  priceTableId: baseNumId,
   ranges: [],
   createdAt: "",
   updatedAt: "",

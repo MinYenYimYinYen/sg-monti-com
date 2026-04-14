@@ -18,7 +18,7 @@ import { getBulkOpsResult } from "@/lib/mongoose/getBulkOpsResult";
 
 function remapPriceTable(raw: PriceTableRaw): Omit<PriceTableCore, "ranges"> {
   return {
-    tableId: raw.id,
+    priceTableId: raw.id,
     desc: raw.description,
     maxPrice: raw.maxRate,
     maxSize: raw.maxSize,
@@ -36,12 +36,12 @@ export async function extendPriceTables(
 ): Promise<Omit<PriceTableDoc, "ranges">[]> {
   const { extendEntities } = await import("@/app/realGreen/_lib/extendEntities");
   type PartialCore = Omit<PriceTableCore, "ranges">;
-  type PartialDocProps = { tableId: number };
+  type PartialDocProps = { priceTableId: number };
   type PartialDoc = Omit<PriceTableDoc, "ranges">;
 
   return extendEntities<PartialCore, PartialDocProps, PartialDoc>({
     cores: priceTables,
-    idField: "tableId",
+    idField: "priceTableId",
     baseDocProps: {} as PartialDocProps,
   });
 }
@@ -81,7 +81,7 @@ export async function fetchRGPriceTableDocs() {
   const priceTableCores = remapPriceTables(priceTablesRaw);
   const partialPriceTableDocs = await extendPriceTables(priceTableCores);
 
-  const tableIds = priceTableCores.map((p) => p.tableId);
+  const tableIds = priceTableCores.map((p) => p.priceTableId);
 
   const priceRangesRaw: PriceRangeRaw[] = [];
   for (const tableId of tableIds) {
@@ -100,7 +100,7 @@ export async function fetchRGPriceTableDocs() {
   const priceTableDocs: PriceTableDoc[] = partialPriceTableDocs.map((pt) => {
     return {
       ...pt,
-      ranges: priceRangesByTableId.get(pt.tableId) || [],
+      ranges: priceRangesByTableId.get(pt.priceTableId) || [],
     };
   });
   return priceTableDocs;
@@ -133,7 +133,7 @@ export async function cachePriceTableDocs(priceTableDocs: PriceTableDoc[]) {
   if (priceTableDocs.length > 0) {
     const bulkOps = priceTableDocs.map((pt) => ({
       updateOne: {
-        filter: { tableId: pt.tableId },
+        filter: { tableId: pt.priceTableId },
         update: { $set: pt },
         upsert: true,
       },

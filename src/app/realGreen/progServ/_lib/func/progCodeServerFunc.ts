@@ -19,6 +19,7 @@ export function remapProgramCode(raw: ProgCodeRaw): ProgCodeRemapped {
     programType: raw.programType,
     progDefId: raw.programDefinitionID,
     unitCode: raw.unitCode || baseNumId,
+    priceTableId: raw.priceID || baseNumId,
   };
 }
 

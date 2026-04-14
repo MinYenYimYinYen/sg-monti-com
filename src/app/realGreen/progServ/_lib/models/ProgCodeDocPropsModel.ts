@@ -6,8 +6,9 @@ import {
 interface ProgCodeDocPropsDoc extends mongoose.Document, ProgCodeDocProps {}
 
 const ProgCodeDocPropsSchema = new mongoose.Schema<ProgCodeDocPropsDoc>({
-  progCodeId: {type: String, required: true, unique: true},
-  precludedIds: {type: [String], required: true, default: []}
+  progCodeId: { type: String, required: true, unique: true },
+  precludedIds: { type: [String], required: true, default: [] },
+  econPriceTableId: { type: Number, default: null },
 })
 
 export const ProgCodeDocPropsModel =

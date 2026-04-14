@@ -10,7 +10,7 @@ import { createValidationSelectors } from "@/lib/validation/createValidationSele
 import { LoadoutValidator } from "@/app/loadout/LoadoutValidator";
 import { hydratePlannedLoadout, getProductMasters } from "@/app/realGreen/customer/selectors/hydratePlannedLoadout";
 import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/loadoutStart/aggregateLoadoutInventory";
-import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 
 const selectTech = (state: AppState) => state.loadoutStart.tech;
 const selectRouteDate = (state: AppState) => state.loadoutStart.routeDate;
@@ -168,7 +168,7 @@ const selectIsFieldTouched = (fieldPath: string) =>
  * centralSelectors) is package-agnostic; this selector applies the runtime package choice.
  */
 const selectServiceResolvedLoadout = createSelector(
-  [selectServices, selectPackageSelections, progServBaseSelect.basicServCodeMap],
+  [selectServices, selectPackageSelections, progServSelect.servCodeMap],
   (services, packageSelections, servCodeMap) => {
     const inventories = services.map((service) =>
       hydratePlannedLoadout({ servDoc: service, servCodeMap, packageSelections }),
@@ -184,7 +184,7 @@ const selectServiceResolvedLoadout = createSelector(
  */
 const selectTotalKsfForMaster = (masterProductId: number) =>
   createSelector(
-    [selectServices, progServBaseSelect.basicServCodeMap],
+    [selectServices, progServSelect.servCodeMap],
     (services, servCodeMap) =>
       services.reduce((sum, service) => {
         const servCode = servCodeMap.get(service.servCodeId);

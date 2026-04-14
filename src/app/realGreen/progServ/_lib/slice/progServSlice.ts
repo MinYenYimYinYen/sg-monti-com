@@ -41,6 +41,15 @@ export const saveServCodeChanges = createStandardThunk<
   opName: "saveServCodeChanges",
 });
 
+export const saveProgCodeEconPriceTable = createStandardThunk<
+  ProgServContract,
+  "saveProgCodeEconPriceTable"
+>({
+  typePrefix: "progServ/saveProgCodeEconPriceTable",
+  apiPath: "/realGreen/progServ/api",
+  opName: "saveProgCodeEconPriceTable",
+});
+
 const progServSlice = createSlice({
   name: "progServ",
   initialState,
@@ -69,6 +78,13 @@ const progServSlice = createSlice({
     builder.addCase(saveServCodeChanges.fulfilled, (state) => {
       state.unsavedServCodeChanges = [];
     });
+    builder.addCase(saveProgCodeEconPriceTable.fulfilled, (state, action) => {
+      const { progCodeId, econPriceTableId } = action.meta.arg.params;
+      const doc = state.progCodeDocs.find((p) => p.progCodeId === progCodeId);
+      if (doc) {
+        doc.econPriceTableId = econPriceTableId;
+      }
+    });
   },
 });
 
@@ -77,5 +93,6 @@ export const progServActions = {
   getProgCodeDocs,
   getServCodeDocs,
   saveServCodeChanges,
+  saveProgCodeEconPriceTable,
 };
 export default progServSlice.reducer;

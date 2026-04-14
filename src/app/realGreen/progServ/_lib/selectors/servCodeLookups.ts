@@ -1,22 +1,22 @@
 import { createSelector } from "@reduxjs/toolkit";
-import { progServBaseSelect } from "@/app/realGreen/progServ/_lib/selectors/progServBaseSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { AppState } from "@/store";
 
 const selectUnsavedChanges = (state: AppState) => state.progServ.unsavedServCodeChanges;
 
 const selectServCodeDocById = (servCodeId: string) =>
-  createSelector([progServBaseSelect.servCodeDocMap], (servCodeMap) =>
+  createSelector([progServSelect.servCodeDocMap], (servCodeMap) =>
     servCodeMap.get(servCodeId),
   );
 
-const selectBasicServCodeById = (servCodeId: string) =>
-  createSelector([progServBaseSelect.basicServCodeMap], (servCodeMap) => {
+const selectServCodeById = (servCodeId: string) =>
+  createSelector([progServSelect.servCodeMap], (servCodeMap) => {
     return servCodeMap.get(servCodeId);
-  })
+  });
 
 
 export const servCodeLookup = {
   unsavedChanges: selectUnsavedChanges,
   docById: selectServCodeDocById,
-  basicById: selectBasicServCodeById,
+  byId: selectServCodeById,
 };

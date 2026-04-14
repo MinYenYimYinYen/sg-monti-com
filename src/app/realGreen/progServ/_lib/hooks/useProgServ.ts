@@ -63,9 +63,22 @@ export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
     [dispatch],
   );
 
+  const saveProgCodeEconPriceTable = useCallback(
+    ({ progCodeId, econPriceTableId }: { progCodeId: string; econPriceTableId: number | null }) => {
+      return dispatch(
+        progServActions.saveProgCodeEconPriceTable({
+          params: { progCodeId, econPriceTableId },
+          config: { force: true },
+        }),
+      );
+    },
+    [dispatch],
+  );
+
   return {
     refresh,
     updateServCode,
     saveServCodeChanges,
+    saveProgCodeEconPriceTable,
   };
 }

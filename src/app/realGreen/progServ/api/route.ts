@@ -17,7 +17,9 @@ import {
 } from "@/app/realGreen/progServ/_lib/func/servCodeServerFunc";
 import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
 import ServCodeDocPropsModel from "@/app/realGreen/progServ/_lib/models/ServCodeDocPropsModel";
+import { ProgCodeDocPropsModel } from "@/app/realGreen/progServ/_lib/models/ProgCodeDocPropsModel";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 
 type UpdatableServCodeProps = Omit<
   ServCodeDocProps,
@@ -101,6 +103,20 @@ const handlers: HandlerMap<ProgServContract> = {
       }
 
       return { success: true, payload: true };
+    },
+  },
+
+  saveProgCodeEconPriceTable: {
+    roles: ["admin"],
+    handler: async (params) => {
+      const { progCodeId, econPriceTableId } = params;
+      await connectToMongoDB();
+      await ProgCodeDocPropsModel.updateOne(
+        { progCodeId },
+        { $set: { econPriceTableId } },
+        { upsert: true },
+      );
+      return { success: true, payload: null };
     },
   },
 };

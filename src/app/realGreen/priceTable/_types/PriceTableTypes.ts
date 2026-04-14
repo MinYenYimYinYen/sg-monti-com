@@ -17,7 +17,7 @@ export type PriceTableRaw = {
 };
 
 export type PriceTableCore = {
-  tableId: number;
+  priceTableId: number;
   desc: string;
   maxPrice: number;
   maxSize: number;
@@ -25,7 +25,7 @@ export type PriceTableCore = {
 };
 
 export type PriceTableDocProps = CreatedUpdated & {
-  tableId: number;
+  priceTableId: number;
   ranges: PriceRange[]
 };
 
