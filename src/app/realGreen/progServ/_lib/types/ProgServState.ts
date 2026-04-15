@@ -7,9 +7,15 @@ export interface UnsavedServCodeChanges {
   updated: ServCodeDoc;
 }
 
+export interface UnsavedProgCodeChanges {
+  original: ProgCodeDoc;
+  updated: ProgCodeDoc;
+}
+
 export interface ProgServState {
   progCodeDocs: ProgCodeDoc[];
   servCodeDocs: ServCodeDoc[];
   progServs: ProgServ[];
   unsavedServCodeChanges: UnsavedServCodeChanges[];
+  unsavedProgCodeChanges: UnsavedProgCodeChanges[];
 }

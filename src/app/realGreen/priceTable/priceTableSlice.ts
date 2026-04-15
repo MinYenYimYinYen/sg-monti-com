@@ -2,16 +2,13 @@ import { createSlice } from "@reduxjs/toolkit";
 import { PriceTableDoc } from "@/app/realGreen/priceTable/_types/PriceTableTypes";
 import { PriceTableContract } from "@/app/realGreen/priceTable/api/PriceTableContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
-import { PriceRangeDoc } from "@/app/realGreen/priceTable/_types/PriceRangeType";
 
 interface PriceTableState {
   priceTableDocs: PriceTableDoc[];
-  priceRangeDocs: PriceRangeDoc[];
 }
 
 const initialState: PriceTableState = {
   priceTableDocs: [],
-  priceRangeDocs: [],
 };
 
 const priceTableSlice = createSlice({

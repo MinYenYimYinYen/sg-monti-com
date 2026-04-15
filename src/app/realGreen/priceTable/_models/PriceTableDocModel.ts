@@ -5,7 +5,7 @@ interface PriceTableDocDoc extends mongoose.Document, PriceTableDoc {}
 
 const PriceRangeDocSchema = new mongoose.Schema(
   {
-    priceId: { type: Number, required: true, unique: true },
+    priceId: { type: Number, required: true },
     tableId: { type: Number, required: true },
     size: { type: Number, required: true },
     price: { type: Number, required: true },
@@ -15,7 +15,7 @@ const PriceRangeDocSchema = new mongoose.Schema(
 
 const PriceTableDocSchema = new mongoose.Schema(
   {
-    tableId: { type: Number, required: true, unique: true },
+    priceTableId: { type: Number, required: true, unique: true },
     desc: { type: String, required: true },
     maxPrice: { type: Number },
     maxSize: { type: Number },

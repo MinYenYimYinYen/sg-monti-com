@@ -19,7 +19,6 @@ import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
 import ServCodeDocPropsModel from "@/app/realGreen/progServ/_lib/models/ServCodeDocPropsModel";
 import { ProgCodeDocPropsModel } from "@/app/realGreen/progServ/_lib/models/ProgCodeDocPropsModel";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 
 type UpdatableServCodeProps = Omit<
   ServCodeDocProps,
@@ -106,17 +105,29 @@ const handlers: HandlerMap<ProgServContract> = {
     },
   },
 
-  saveProgCodeEconPriceTable: {
+  saveProgCodeChanges: {
     roles: ["admin"],
     handler: async (params) => {
-      const { progCodeId, econPriceTableId } = params;
-      await connectToMongoDB();
-      await ProgCodeDocPropsModel.updateOne(
-        { progCodeId },
-        { $set: { econPriceTableId } },
-        { upsert: true },
-      );
-      return { success: true, payload: null };
+      const { unsavedChanges } = params;
+
+      const ops = unsavedChanges.map((change) => ({
+        updateOne: {
+          filter: { progCodeId: change.updated.progCodeId },
+          update: {
+            $set: {
+              prefPriceTableId: change.updated.prefPriceTableId,
+              econPriceTableId: change.updated.econPriceTableId,
+            },
+          },
+          upsert: true,
+        },
+      }));
+
+      if (ops.length > 0) {
+        await ProgCodeDocPropsModel.bulkWrite(ops);
+      }
+
+      return { success: true, payload: true };
     },
   },
 };

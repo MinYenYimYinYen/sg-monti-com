@@ -133,7 +133,7 @@ export async function cachePriceTableDocs(priceTableDocs: PriceTableDoc[]) {
   if (priceTableDocs.length > 0) {
     const bulkOps = priceTableDocs.map((pt) => ({
       updateOne: {
-        filter: { tableId: pt.priceTableId },
+        filter: { priceTableId: pt.priceTableId },
         update: { $set: pt },
         upsert: true,
       },

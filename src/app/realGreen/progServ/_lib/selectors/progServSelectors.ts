@@ -6,7 +6,6 @@ import { ServCode } from "../types/ServCodeTypes";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { hydrateProductRules } from "./hydrateProductRules";
 import { priceTableSelect } from "@/app/realGreen/priceTable/priceTableSelect";
-import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 
 const selectProgCodeDocs = (state: AppState) => state.progServ.progCodeDocs;
 const selectServCodeDocs = (state: AppState) => state.progServ.servCodeDocs;
@@ -51,10 +50,14 @@ const selectProgCodes = createSelector(
         progServLinks[0].servCodeId === progDoc.progCodeId;
 
       const priceTable =
-        priceTableMap.get(progDoc.priceTableId ?? baseNumId) ?? null;
+        (progDoc.prefPriceTableId != null
+          ? priceTableMap.get(progDoc.prefPriceTableId)
+          : null) ?? null;
 
       const econPriceTable =
-        priceTableMap.get(progDoc.econPriceTableId ?? baseNumId) ?? null;
+        (progDoc.econPriceTableId != null
+          ? priceTableMap.get(progDoc.econPriceTableId)
+          : null) ?? null;
 
       // Phase 1: Build progCode with empty servCodes
       const progCodeBuilder: ProgCodeBuilder = {

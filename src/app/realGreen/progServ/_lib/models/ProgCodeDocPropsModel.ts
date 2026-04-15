@@ -1,16 +1,15 @@
 import mongoose from "mongoose";
-import {
-  ProgCodeDocProps,
-} from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import { ProgCodeDocProps } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import { createModel } from "@/lib/mongoose/createModel";
 
-interface ProgCodeDocPropsDoc extends mongoose.Document, ProgCodeDocProps {}
-
-const ProgCodeDocPropsSchema = new mongoose.Schema<ProgCodeDocPropsDoc>({
+const ProgCodeDocPropsSchema = new mongoose.Schema<ProgCodeDocProps>({
   progCodeId: { type: String, required: true, unique: true },
   precludedIds: { type: [String], required: true, default: [] },
+  prefPriceTableId: { type: Number, default: null },
   econPriceTableId: { type: Number, default: null },
-})
+});
 
-export const ProgCodeDocPropsModel =
-  (mongoose.models?.ProgCodeDocProps as mongoose.Model<ProgCodeDocProps>) ||
-  mongoose.model<ProgCodeDocProps>("ProgCodeDocProps", ProgCodeDocPropsSchema);
+export const ProgCodeDocPropsModel = createModel(
+  "ProgCodeDocProps",
+  ProgCodeDocPropsSchema,
+);

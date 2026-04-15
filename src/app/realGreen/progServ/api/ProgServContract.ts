@@ -1,9 +1,12 @@
 import { ProgServ } from "@/app/realGreen/progServ/_lib/types/ProgServ";
 import { ApiContract } from "@/lib/api/types/ApiContract";
-import { DataResponse, SuccessResponse } from "@/lib/api/types/responses";
+import { DataResponse } from "@/lib/api/types/responses";
 import { ProgCodeDoc } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { UnsavedServCodeChanges } from "@/app/realGreen/progServ/_lib/types/ProgServState";
+import {
+  UnsavedProgCodeChanges,
+  UnsavedServCodeChanges,
+} from "@/app/realGreen/progServ/_lib/types/ProgServState";
 
 export interface ProgServContract extends ApiContract {
   getProgCodes: {
@@ -21,8 +24,8 @@ export interface ProgServContract extends ApiContract {
     params: { unsavedChanges: UnsavedServCodeChanges[] };
     result: DataResponse<boolean>;
   };
-  saveProgCodeEconPriceTable: {
-    params: { progCodeId: string; econPriceTableId: number | null };
-    result: DataResponse<null>;
+  saveProgCodeChanges: {
+    params: { unsavedChanges: UnsavedProgCodeChanges[] };
+    result: DataResponse<boolean>;
   };
 }

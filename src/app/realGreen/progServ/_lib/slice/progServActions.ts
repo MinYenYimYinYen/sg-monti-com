@@ -1,13 +1,17 @@
 import { Draft, PayloadAction } from "@reduxjs/toolkit";
 import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import { ProgCodeDoc } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import {
   ProgServState,
+  UnsavedProgCodeChanges,
   UnsavedServCodeChanges,
 } from "@/app/realGreen/progServ/_lib/types/ProgServState";
 import {
   baseProductRule,
   ProductRuleDoc,
 } from "@/app/realGreen/progServ/_lib/types/ProductRule";
+
+// ─── ServCode actions ────────────────────────────────────────────────────────
 
 const executeUpdateServCode = (
   servCodeDocs: ServCodeDoc[],
@@ -67,17 +71,14 @@ const handleRevertServCode = (
   if (changeIndex !== -1) {
     const change = state.unsavedServCodeChanges[changeIndex];
 
-    // 1. Find the document in the main list
     const docIndex = state.servCodeDocs.findIndex(
       (d) => d.servCodeId === servCodeId,
     );
 
-    // 2. Restore original state if doc exists
     if (docIndex !== -1) {
       state.servCodeDocs[docIndex] = change.original;
     }
 
-    // 3. Remove from unsaved changes
     state.unsavedServCodeChanges.splice(changeIndex, 1);
   }
 };
@@ -227,6 +228,64 @@ const handleRemoveProductRuleProductMaster = (
   );
 };
 
+// ─── ProgCode actions ─────────────────────────────────────────────────────────
+
+const handleUpdateProgCode = (
+  state: Draft<ProgServState>,
+  action: PayloadAction<Partial<ProgCodeDoc>>,
+) => {
+  const { progCodeId, ...changes } = action.payload;
+  if (!progCodeId) return;
+
+  const index = state.progCodeDocs.findIndex(
+    (doc) => doc.progCodeId === progCodeId,
+  );
+  if (index === -1) return;
+
+  let unsavedChanges = state.unsavedProgCodeChanges.find(
+    (c) => c.updated.progCodeId === progCodeId,
+  );
+
+  if (!unsavedChanges) {
+    unsavedChanges = {
+      original: { ...state.progCodeDocs[index] },
+      updated: { ...state.progCodeDocs[index] },
+    };
+    state.unsavedProgCodeChanges.push(unsavedChanges);
+  }
+
+  unsavedChanges.updated = {
+    ...unsavedChanges.updated,
+    ...changes,
+  };
+
+  state.progCodeDocs[index] = unsavedChanges.updated;
+};
+
+const handleRevertProgCode = (
+  state: Draft<ProgServState>,
+  action: PayloadAction<{ progCodeId: string }>,
+) => {
+  const { progCodeId } = action.payload;
+  const changeIndex = state.unsavedProgCodeChanges.findIndex(
+    (c) => c.updated.progCodeId === progCodeId,
+  );
+
+  if (changeIndex !== -1) {
+    const change = state.unsavedProgCodeChanges[changeIndex];
+
+    const docIndex = state.progCodeDocs.findIndex(
+      (d) => d.progCodeId === progCodeId,
+    );
+
+    if (docIndex !== -1) {
+      state.progCodeDocs[docIndex] = change.original;
+    }
+
+    state.unsavedProgCodeChanges.splice(changeIndex, 1);
+  }
+};
+
 export const progServActionHandlers = {
   updateServCode: handleUpdateServCode,
   revertServCode: handleRevertServCode,
@@ -236,4 +295,6 @@ export const progServActionHandlers = {
   updateProductRuleOperator: handleUpdateProductRuleOperator,
   addProductRuleProductMaster: handleAddProductRuleProductMaster,
   removeProductRuleProductMaster: handleRemoveProductRuleProductMaster,
+  updateProgCode: handleUpdateProgCode,
+  revertProgCode: handleRevertProgCode,
 };

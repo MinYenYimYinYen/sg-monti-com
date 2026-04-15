@@ -3,7 +3,11 @@ import { useCallback, useEffect } from "react";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { UnsavedServCodeChanges } from "@/app/realGreen/progServ/_lib/types/ProgServState";
+import { ProgCodeDoc } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import {
+  UnsavedProgCodeChanges,
+  UnsavedServCodeChanges,
+} from "@/app/realGreen/progServ/_lib/types/ProgServState";
 
 export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();
@@ -49,8 +53,6 @@ export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
     [dispatch],
   );
 
-
-
   const saveServCodeChanges = useCallback(
     (unsavedChanges?: UnsavedServCodeChanges[]) => {
       return dispatch(
@@ -63,11 +65,25 @@ export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
     [dispatch],
   );
 
-  const saveProgCodeEconPriceTable = useCallback(
-    ({ progCodeId, econPriceTableId }: { progCodeId: string; econPriceTableId: number | null }) => {
+  const updateProgCode = useCallback(
+    (progCode: Partial<ProgCodeDoc>) => {
+      dispatch(progServActions.updateProgCode(progCode));
+    },
+    [dispatch],
+  );
+
+  const revertProgCode = useCallback(
+    (progCodeId: string) => {
+      dispatch(progServActions.revertProgCode({ progCodeId }));
+    },
+    [dispatch],
+  );
+
+  const saveProgCodeChanges = useCallback(
+    (unsavedChanges: UnsavedProgCodeChanges[]) => {
       return dispatch(
-        progServActions.saveProgCodeEconPriceTable({
-          params: { progCodeId, econPriceTableId },
+        progServActions.saveProgCodeChanges({
+          params: { unsavedChanges },
           config: { force: true },
         }),
       );
@@ -79,6 +95,8 @@ export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
     refresh,
     updateServCode,
     saveServCodeChanges,
-    saveProgCodeEconPriceTable,
+    updateProgCode,
+    revertProgCode,
+    saveProgCodeChanges,
   };
 }

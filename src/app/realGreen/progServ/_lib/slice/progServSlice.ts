@@ -1,10 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
-import {
-  progServActionHandlers
-
-} from "@/app/realGreen/progServ/_lib/slice/progServActions";
+import { progServActionHandlers } from "@/app/realGreen/progServ/_lib/slice/progServActions";
 import { ProgServState } from "@/app/realGreen/progServ/_lib/types/ProgServState";
 
 const initialState: ProgServState = {
@@ -12,6 +9,7 @@ const initialState: ProgServState = {
   servCodeDocs: [],
   progServs: [],
   unsavedServCodeChanges: [],
+  unsavedProgCodeChanges: [],
 };
 
 export const getProgCodeDocs = createStandardThunk<
@@ -41,13 +39,13 @@ export const saveServCodeChanges = createStandardThunk<
   opName: "saveServCodeChanges",
 });
 
-export const saveProgCodeEconPriceTable = createStandardThunk<
+export const saveProgCodeChanges = createStandardThunk<
   ProgServContract,
-  "saveProgCodeEconPriceTable"
+  "saveProgCodeChanges"
 >({
-  typePrefix: "progServ/saveProgCodeEconPriceTable",
+  typePrefix: "progServ/saveProgCodeChanges",
   apiPath: "/realGreen/progServ/api",
-  opName: "saveProgCodeEconPriceTable",
+  opName: "saveProgCodeChanges",
 });
 
 const progServSlice = createSlice({
@@ -59,12 +57,13 @@ const progServSlice = createSlice({
     addProductRule: progServActionHandlers.addProductRule,
     removeProductRule: progServActionHandlers.removeProductRule,
     updateProductRuleSize: progServActionHandlers.updateProductRuleSize,
-    updateProductRuleOperator:
-      progServActionHandlers.updateProductRuleOperator,
+    updateProductRuleOperator: progServActionHandlers.updateProductRuleOperator,
     addProductRuleProductMaster:
       progServActionHandlers.addProductRuleProductMaster,
     removeProductRuleProductMaster:
       progServActionHandlers.removeProductRuleProductMaster,
+    updateProgCode: progServActionHandlers.updateProgCode,
+    revertProgCode: progServActionHandlers.revertProgCode,
   },
   extraReducers: (builder) => {
     builder.addCase(getProgCodeDocs.fulfilled, (state, action) => {
@@ -78,12 +77,8 @@ const progServSlice = createSlice({
     builder.addCase(saveServCodeChanges.fulfilled, (state) => {
       state.unsavedServCodeChanges = [];
     });
-    builder.addCase(saveProgCodeEconPriceTable.fulfilled, (state, action) => {
-      const { progCodeId, econPriceTableId } = action.meta.arg.params;
-      const doc = state.progCodeDocs.find((p) => p.progCodeId === progCodeId);
-      if (doc) {
-        doc.econPriceTableId = econPriceTableId;
-      }
+    builder.addCase(saveProgCodeChanges.fulfilled, (state) => {
+      state.unsavedProgCodeChanges = [];
     });
   },
 });
@@ -93,6 +88,6 @@ export const progServActions = {
   getProgCodeDocs,
   getServCodeDocs,
   saveServCodeChanges,
-  saveProgCodeEconPriceTable,
+  saveProgCodeChanges,
 };
 export default progServSlice.reducer;

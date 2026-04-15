@@ -47,7 +47,7 @@ export type ProgCodeRaw = {
   // maximumRepetitions: number | null;
   // minimumRoundForCAW: number | null;
   // minimumRoundForFullProgram: number | null;
-  priceID: number | null;
+  // priceID: number | null;
   programCode: string;
   // programCodeIsSpecial: boolean;
   programDefinitionID: number;
@@ -73,12 +73,12 @@ export type ProgCodeRemapped = {
   programType: string | null;
   progDefId: number;
   unitCode: number;
-  priceTableId: number | null;
 };
 
 export type ProgCodeDocProps = CreatedUpdated & {
   progCodeId: string;
   precludedIds: string[];
+  prefPriceTableId: number | null;
   econPriceTableId: number | null
 };
 

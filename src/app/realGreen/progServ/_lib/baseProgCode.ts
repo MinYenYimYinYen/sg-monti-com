@@ -9,8 +9,9 @@ export const baseProgCodeDocProps: ProgCodeDocProps = {
   createdAt: "",
   updatedAt: "",
   precludedIds: [],
-  econPriceTableId: null
-}
+  prefPriceTableId: null,
+  econPriceTableId: null,
+};
 
 export const baseProgCode: ProgCode = {
   available: true,
@@ -20,8 +21,7 @@ export const baseProgCode: ProgCode = {
   unitCode: baseNumId,
   servCodes: [],
   isSpecial: false,
-  priceTableId: null,
   priceTable: null,
   econPriceTable: null,
-  ...baseProgCodeDocProps
+  ...baseProgCodeDocProps,
 };

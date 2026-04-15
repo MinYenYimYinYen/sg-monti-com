@@ -5,7 +5,13 @@ import { useSelector } from "react-redux";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { priceTableSelect } from "@/app/realGreen/priceTable/priceTableSelect";
-import { Card, CardContent, CardHeader, CardTitle } from "@/style/components/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/style/components/card";
 import { Label } from "@/style/components/label";
 import {
   Select,
@@ -14,7 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/style/components/select";
+import { Button } from "@/style/components/button";
 import { PriceTable } from "@/app/realGreen/priceTable/_types/PriceTableTypes";
+import { AppState } from "@/store";
 
 const NONE_VALUE = "__none__";
 
@@ -34,19 +42,51 @@ function PriceTableOptions({ priceTables }: { priceTables: PriceTable[] }) {
   return <>{items}</>;
 }
 
+const selectUnsavedProgCodeChanges = (state: AppState) =>
+  state.progServ.unsavedProgCodeChanges;
+
 export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
-  const { saveProgCodeEconPriceTable } = useProgServ({});
+  const { updateProgCode, revertProgCode, saveProgCodeChanges } = useProgServ(
+    {},
+  );
 
   const progCodeMap = useSelector(progServSelect.progCodeMap);
   const priceTables = useSelector(priceTableSelect.priceTables);
+  const unsavedProgCodeChanges = useSelector(selectUnsavedProgCodeChanges);
 
   const progCode = progCodeMap.get(progCodeId);
   if (!progCode) return null;
 
-  const handleEconChange = (value: string) => {
-    const econPriceTableId = value === NONE_VALUE ? null : Number(value);
-    saveProgCodeEconPriceTable({ progCodeId, econPriceTableId });
+  const isDirty = unsavedProgCodeChanges.some(
+    (c) => c.updated.progCodeId === progCodeId,
+  );
+
+  const handlePrefChange = (value: string) => {
+    updateProgCode({
+      progCodeId,
+      prefPriceTableId: value === NONE_VALUE ? null : Number(value),
+    });
   };
+
+  const handleEconChange = (value: string) => {
+    updateProgCode({
+      progCodeId,
+      econPriceTableId: value === NONE_VALUE ? null : Number(value),
+    });
+  };
+
+  const handleSave = () => {
+    saveProgCodeChanges(unsavedProgCodeChanges);
+  };
+
+  const handleRevert = () => {
+    revertProgCode(progCodeId);
+  };
+
+  const prefSelectValue =
+    progCode.prefPriceTableId != null
+      ? String(progCode.prefPriceTableId)
+      : NONE_VALUE;
 
   const econSelectValue =
     progCode.econPriceTableId != null
@@ -60,17 +100,28 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
         <p className="text-sm text-muted-foreground">{progCode.description}</p>
       </CardHeader>
 
-      <CardContent className="flex-1 p-4 pt-0">
+      <CardContent className="flex-1 p-4 pt-0 overflow-y-auto">
         <div className="space-y-6">
-          {/* Default Price Table (read-only) */}
+          {/* Preferred Price Table */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Default Price Table</Label>
-            <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-              {progCode.priceTable ? progCode.priceTable.desc : "None"}
-            </div>
+            <Label className="text-sm font-medium">Preferred Price Table</Label>
+            <p className="text-xs text-muted-foreground">
+              The standard price table used for this program.
+            </p>
+            <Select value={prefSelectValue} onValueChange={handlePrefChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a price table…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE_VALUE}>
+                  <span className="text-muted-foreground">None</span>
+                </SelectItem>
+                <PriceTableOptions priceTables={priceTables} />
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Econ Price Table (editable) */}
+          {/* Economy Price Table */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Economy Price Table</Label>
             <p className="text-xs text-muted-foreground">
@@ -90,6 +141,17 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
           </div>
         </div>
       </CardContent>
+
+      {isDirty && (
+        <CardFooter className="border-t py-3 gap-2 justify-end shrink-0">
+          <Button variant="secondary" intensity="ghost" onClick={handleRevert}>
+            Revert
+          </Button>
+          <Button variant="primary" intensity="solid" onClick={handleSave}>
+            Save Changes
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }
