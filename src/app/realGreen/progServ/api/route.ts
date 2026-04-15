@@ -2,10 +2,7 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { ProgServContract } from "@/app/realGreen/progServ/api/ProgServContract";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { ProgCodeRaw } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
-import {
-  ServCodeDocProps,
-  ServCodeRaw,
-} from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import { ServCodeRaw } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 
 import {
   extendProgCodes,
@@ -19,11 +16,6 @@ import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
 import ServCodeDocPropsModel from "@/app/realGreen/progServ/_lib/models/ServCodeDocPropsModel";
 import { ProgCodeDocPropsModel } from "@/app/realGreen/progServ/_lib/models/ProgCodeDocPropsModel";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-
-type UpdatableServCodeProps = Omit<
-  ServCodeDocProps,
-  "servCodeId" | "createdAt" | "updatedAt"
->;
 
 const handlers: HandlerMap<ProgServContract> = {
   getProgCodes: {
@@ -72,26 +64,13 @@ const handlers: HandlerMap<ProgServContract> = {
       const { unsavedChanges } = params;
 
       const ops = unsavedChanges.map((change) => {
-        // Enforce that all updatable properties are present
-        // If ServCodeDocProps changes, this will error until updated
-        const updatePayload: UpdatableServCodeProps = {
-          dateRange: change.updated.dateRange || change.original.dateRange,
-          alwaysAsap:
-            change.updated.alwaysAsap !== undefined
-              ? change.updated.alwaysAsap
-              : change.original.alwaysAsap,
-          productRuleDocs:
-            change.updated.productRuleDocs || change.original.productRuleDocs,
-        };
+        // Strip identity and timestamp fields; everything remaining is a user-editable DocProps field.
+        const { servCodeId, createdAt, updatedAt, ...docProps } = change.updated;
 
         return {
           updateOne: {
-            filter: { servCodeId: change.updated.servCodeId },
-            update: {
-              $set: {
-                ...updatePayload,
-              },
-            },
+            filter: { servCodeId },
+            update: { $set: { ...docProps } },
             upsert: true,
           },
         };
@@ -110,18 +89,18 @@ const handlers: HandlerMap<ProgServContract> = {
     handler: async (params) => {
       const { unsavedChanges } = params;
 
-      const ops = unsavedChanges.map((change) => ({
-        updateOne: {
-          filter: { progCodeId: change.updated.progCodeId },
-          update: {
-            $set: {
-              prefPriceTableId: change.updated.prefPriceTableId,
-              econPriceTableId: change.updated.econPriceTableId,
-            },
+      const ops = unsavedChanges.map((change) => {
+        // Strip identity and timestamp fields; everything remaining is a user-editable DocProps field.
+        const { progCodeId, createdAt, updatedAt, ...docProps } = change.updated;
+
+        return {
+          updateOne: {
+            filter: { progCodeId },
+            update: { $set: { ...docProps } },
+            upsert: true,
           },
-          upsert: true,
-        },
-      }));
+        };
+      });
 
       if (ops.length > 0) {
         await ProgCodeDocPropsModel.bulkWrite(ops);

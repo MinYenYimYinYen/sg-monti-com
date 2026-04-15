@@ -80,6 +80,7 @@ export type ProgCodeDocProps = CreatedUpdated & {
   precludedIds: string[];
   prefPriceTableId: number | null;
   econPriceTableId: number | null
+  minForPreferred: number | null;
 };
 
 export type ProgCodeDoc = ProgCodeRemapped & ProgCodeDocProps;

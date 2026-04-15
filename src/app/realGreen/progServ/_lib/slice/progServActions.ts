@@ -1,6 +1,12 @@
 import { Draft, PayloadAction } from "@reduxjs/toolkit";
-import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { ProgCodeDoc } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import {
+  ServCodeDoc,
+  ServCodeDocProps,
+} from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import {
+  ProgCodeDoc,
+  ProgCodeDocProps,
+} from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import {
   ProgServState,
   UnsavedProgCodeChanges,
@@ -13,11 +19,20 @@ import {
 
 // ─── ServCode actions ────────────────────────────────────────────────────────
 
+const extractServCodeDocProps = (doc: ServCodeDoc): ServCodeDocProps => ({
+  servCodeId: doc.servCodeId,
+  createdAt: doc.createdAt,
+  updatedAt: doc.updatedAt,
+  dateRange: doc.dateRange,
+  alwaysAsap: doc.alwaysAsap,
+  productRuleDocs: doc.productRuleDocs,
+});
+
 const executeUpdateServCode = (
   servCodeDocs: ServCodeDoc[],
   unsavedServCodeChanges: UnsavedServCodeChanges[],
   servCodeId: string,
-  changes: Partial<ServCodeDoc>,
+  changes: Partial<ServCodeDocProps>,
 ) => {
   const index = servCodeDocs.findIndex(
     (servCode) => servCode.servCodeId === servCodeId,
@@ -30,8 +45,8 @@ const executeUpdateServCode = (
 
     if (!unsavedChanges) {
       unsavedChanges = {
-        original: { ...servCodeDocs[index] },
-        updated: { ...servCodeDocs[index] },
+        original: extractServCodeDocProps(servCodeDocs[index]),
+        updated: extractServCodeDocProps(servCodeDocs[index]),
       };
       unsavedServCodeChanges.push(unsavedChanges);
     }
@@ -41,13 +56,17 @@ const executeUpdateServCode = (
       ...changes,
     };
 
-    servCodeDocs[index] = unsavedChanges.updated;
+    // Apply DocProps changes back to the full doc in state so the UI reflects them
+    servCodeDocs[index] = {
+      ...servCodeDocs[index],
+      ...changes,
+    };
   }
 };
 
 const handleUpdateServCode = (
   state: Draft<ProgServState>,
-  action: PayloadAction<Partial<ServCodeDoc>>,
+  action: PayloadAction<Partial<ServCodeDocProps>>,
 ) => {
   const { servCodeId, ...changes } = action.payload;
   if (!servCodeId) return;
@@ -76,7 +95,11 @@ const handleRevertServCode = (
     );
 
     if (docIndex !== -1) {
-      state.servCodeDocs[docIndex] = change.original;
+      // Restore only the DocProps fields; leave ServCodeCore fields untouched
+      state.servCodeDocs[docIndex] = {
+        ...state.servCodeDocs[docIndex],
+        ...change.original,
+      };
     }
 
     state.unsavedServCodeChanges.splice(changeIndex, 1);
@@ -230,9 +253,19 @@ const handleRemoveProductRuleProductMaster = (
 
 // ─── ProgCode actions ─────────────────────────────────────────────────────────
 
+const extractProgCodeDocProps = (doc: ProgCodeDoc): ProgCodeDocProps => ({
+  progCodeId: doc.progCodeId,
+  createdAt: doc.createdAt,
+  updatedAt: doc.updatedAt,
+  precludedIds: doc.precludedIds,
+  prefPriceTableId: doc.prefPriceTableId,
+  econPriceTableId: doc.econPriceTableId,
+  minForPreferred: doc.minForPreferred,
+});
+
 const handleUpdateProgCode = (
   state: Draft<ProgServState>,
-  action: PayloadAction<Partial<ProgCodeDoc>>,
+  action: PayloadAction<Partial<ProgCodeDocProps>>,
 ) => {
   const { progCodeId, ...changes } = action.payload;
   if (!progCodeId) return;
@@ -248,8 +281,8 @@ const handleUpdateProgCode = (
 
   if (!unsavedChanges) {
     unsavedChanges = {
-      original: { ...state.progCodeDocs[index] },
-      updated: { ...state.progCodeDocs[index] },
+      original: extractProgCodeDocProps(state.progCodeDocs[index]),
+      updated: extractProgCodeDocProps(state.progCodeDocs[index]),
     };
     state.unsavedProgCodeChanges.push(unsavedChanges);
   }
@@ -259,7 +292,11 @@ const handleUpdateProgCode = (
     ...changes,
   };
 
-  state.progCodeDocs[index] = unsavedChanges.updated;
+  // Apply DocProps changes back to the full doc in state so the UI reflects them
+  state.progCodeDocs[index] = {
+    ...state.progCodeDocs[index],
+    ...changes,
+  };
 };
 
 const handleRevertProgCode = (
@@ -279,7 +316,11 @@ const handleRevertProgCode = (
     );
 
     if (docIndex !== -1) {
-      state.progCodeDocs[docIndex] = change.original;
+      // Restore only the DocProps fields; leave ProgCodeRemapped fields untouched
+      state.progCodeDocs[docIndex] = {
+        ...state.progCodeDocs[docIndex],
+        ...change.original,
+      };
     }
 
     state.unsavedProgCodeChanges.splice(changeIndex, 1);

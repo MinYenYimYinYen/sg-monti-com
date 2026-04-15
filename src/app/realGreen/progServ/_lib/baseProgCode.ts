@@ -11,6 +11,7 @@ export const baseProgCodeDocProps: ProgCodeDocProps = {
   precludedIds: [],
   prefPriceTableId: null,
   econPriceTableId: null,
+  minForPreferred: null,
 };
 
 export const baseProgCode: ProgCode = {

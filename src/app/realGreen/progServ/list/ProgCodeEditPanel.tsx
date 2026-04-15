@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/style/components/select";
 import { Button } from "@/style/components/button";
+import { Input } from "@/style/components/input";
 import { PriceTable } from "@/app/realGreen/priceTable/_types/PriceTableTypes";
 import { AppState } from "@/store";
 
@@ -61,6 +62,11 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
     (c) => c.updated.progCodeId === progCodeId,
   );
 
+  const hasPrefTable = progCode.priceTable != null;
+  const hasMultipleServCodes = progCode.servCodes.length > 1;
+  const econEnabled = hasPrefTable && hasMultipleServCodes;
+  const minForPrefEnabled = hasPrefTable && progCode.econPriceTable != null;
+
   const handlePrefChange = (value: string) => {
     updateProgCode({
       progCodeId,
@@ -72,6 +78,14 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
     updateProgCode({
       progCodeId,
       econPriceTableId: value === NONE_VALUE ? null : Number(value),
+    });
+  };
+
+  const handleMinForPrefChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    updateProgCode({
+      progCodeId,
+      minForPreferred: raw === "" ? null : Number(raw),
     });
   };
 
@@ -93,11 +107,17 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
       ? String(progCode.econPriceTableId)
       : NONE_VALUE;
 
+  const minForPrefValue =
+    progCode.minForPreferred != null ? String(progCode.minForPreferred) : "";
+
   return (
     <Card className="h-full overflow-hidden flex flex-col">
       <CardHeader className="py-3 shrink-0">
         <CardTitle className="text-base">{progCodeId}</CardTitle>
         <p className="text-sm text-muted-foreground">{progCode.description}</p>
+        <p className="text-xs text-muted-foreground">
+          Service codes: {progCode.servCodes.length}
+        </p>
       </CardHeader>
 
       <CardContent className="flex-1 p-4 pt-0 overflow-y-auto">
@@ -123,11 +143,25 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
 
           {/* Economy Price Table */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Economy Price Table</Label>
+            <Label
+              className={
+                econEnabled ? "text-sm font-medium" : "text-sm font-medium text-muted-foreground"
+              }
+            >
+              Economy Price Table
+            </Label>
             <p className="text-xs text-muted-foreground">
-              Override the price table used for economy pricing calculations.
+              {!hasPrefTable
+                ? "Requires a preferred price table."
+                : !hasMultipleServCodes
+                  ? "Only available for programs with more than one service code."
+                  : "Override the price table used for economy pricing calculations."}
             </p>
-            <Select value={econSelectValue} onValueChange={handleEconChange}>
+            <Select
+              value={econSelectValue}
+              onValueChange={handleEconChange}
+              disabled={!econEnabled}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a price table…" />
               </SelectTrigger>
@@ -138,6 +172,36 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
                 <PriceTableOptions priceTables={priceTables} />
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Min For Preferred */}
+          <div className="space-y-1.5">
+            <Label
+              className={
+                minForPrefEnabled
+                  ? "text-sm font-medium"
+                  : "text-sm font-medium text-muted-foreground"
+              }
+            >
+              Min Rounds for Preferred
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {!hasPrefTable
+                ? "Requires a preferred price table."
+                : progCode.econPriceTable == null
+                  ? "Requires an economy price table."
+                  : "Minimum number of completed rounds before preferred pricing applies."}
+            </p>
+            <Input
+              type="number"
+              min={0}
+              step={1}
+              value={minForPrefValue}
+              onChange={handleMinForPrefChange}
+              disabled={!minForPrefEnabled}
+              placeholder="None"
+              className="w-full"
+            />
           </div>
         </div>
       </CardContent>

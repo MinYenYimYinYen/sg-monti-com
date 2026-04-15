@@ -6,7 +6,12 @@ import { Container } from "@/components/Containers";
 import { Document, Page, PDFViewer, View, Text } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { useCoverSheetDeps } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheetDeps";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/style/components/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/style/components/tabs";
 import { EtaSetupPanel } from "@/app/scheduling/coverSheets/_lib/components/EtaSetupPanel";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { useServCodes } from "@/app/realGreen/customer/_lib/hooks/useServCodes";
@@ -36,8 +41,6 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   const loadingCount = useSelector(uiSelect.loadingCount);
   useCoverSheetDeps();
 
-
-
   const isClient = useIsClient();
   const { routeDate: encodedRouteDate } = use(params);
   const routeDate = decodeURIComponent(encodedRouteDate);
@@ -56,11 +59,15 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
     allCores.forEach((core) => {
       const existing = productMap.get(core.productId);
       if (existing) {
-        productMap.set(core.productId, { ...existing, amount: existing.amount + core.amount });
+        productMap.set(core.productId, {
+          ...existing,
+          amount: existing.amount + core.amount,
+        });
       } else {
         productMap.set(core.productId, {
           ...core,
-          productCommon: productCommonMap.get(core.productId) ?? baseProductCommon,
+          productCommon:
+            productCommonMap.get(core.productId) ?? baseProductCommon,
         });
       }
     });
@@ -255,8 +262,7 @@ function CoverSheetsPDF({
                   .includes("Water")
               ) {
                 filtered = products.filter(
-                  (ap: AppProduct) =>
-                    ap.productCommon.description === "Water",
+                  (ap: AppProduct) => ap.productCommon.description === "Water",
                 );
               }
 
@@ -281,11 +287,13 @@ function CoverSheetsPDF({
               // TECH NOTES
               const servNote = service.techNote;
               const progNote = service.program.techNote;
-              const custNote = service.program.customer.techNote;
+              const custNote = service.x.customer.techNote;
+              const directions = service.x.customer.directions;
               const hasNotesArray = [
                 servNote.length ? 1 : 0,
                 progNote.length ? 1 : 0,
                 custNote.length ? 1 : 0,
+                directions.length ? 1 : 0,
               ];
               const notesCount = hasNotesArray.reduce(
                 (acc, curr) => acc + curr,
@@ -385,7 +393,6 @@ function CoverSheetsPDF({
 
               //OTHER
               const isPaper = service.x.isPaperInvoice;
-
 
               return (
                 <View
@@ -523,6 +530,12 @@ function CoverSheetsPDF({
                       <View style={tw("flex flex-col flex-1")}>
                         <Text style={tw("font-bold")}>Service Note:</Text>
                         <Text style={tw("p-1")}>{servNote}</Text>
+                      </View>
+                    )}
+                    {directions && (
+                      <View style={tw("flex flex-col flex-1")}>
+                        <Text style={tw("font-bold")}>**Directions**</Text>
+                        <Text style={tw("p-1")}>{directions}</Text>
                       </View>
                     )}
                   </View>

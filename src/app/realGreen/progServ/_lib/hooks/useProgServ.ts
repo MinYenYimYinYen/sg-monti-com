@@ -2,8 +2,8 @@ import { progServActions } from "@/app/realGreen/progServ/_lib/slice/progServSli
 import { useCallback, useEffect } from "react";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { ProgCodeDoc } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import { ServCodeDocProps } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import { ProgCodeDocProps } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import {
   UnsavedProgCodeChanges,
   UnsavedServCodeChanges,
@@ -47,7 +47,7 @@ export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
   const refresh = () => load({ force: true });
 
   const updateServCode = useCallback(
-    (servCode: Partial<ServCodeDoc>) => {
+    (servCode: Partial<ServCodeDocProps>) => {
       dispatch(progServActions.updateServCode(servCode));
     },
     [dispatch],
@@ -66,7 +66,7 @@ export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
   );
 
   const updateProgCode = useCallback(
-    (progCode: Partial<ProgCodeDoc>) => {
+    (progCode: Partial<ProgCodeDocProps>) => {
       dispatch(progServActions.updateProgCode(progCode));
     },
     [dispatch],

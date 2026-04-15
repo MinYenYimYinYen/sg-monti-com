@@ -7,6 +7,7 @@ const ProgCodeDocPropsSchema = new mongoose.Schema<ProgCodeDocProps>({
   precludedIds: { type: [String], required: true, default: [] },
   prefPriceTableId: { type: Number, default: null },
   econPriceTableId: { type: Number, default: null },
+  minForPreferred: { type: Number, default: null },
 });
 
 export const ProgCodeDocPropsModel = createModel(

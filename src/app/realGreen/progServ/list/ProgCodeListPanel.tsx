@@ -76,8 +76,8 @@ export function ProgCodeListPanel({
                     {pc.description}
                   </span>
                 </div>
-                {/* Line 2: price table badges */}
-                <div className="flex items-center gap-1.5 mt-1">
+                {/* Line 2: price table badges + service code count */}
+                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                   <Badge
                     variant="secondary"
                     intensity="soft"
@@ -99,6 +99,13 @@ export function ProgCodeListPanel({
                       Econ: {pc.econPriceTable.desc}
                     </Badge>
                   )}
+                  <Badge
+                    variant="secondary"
+                    intensity="ghost"
+                    className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground"
+                  >
+                    servCodes: {pc.servCodes.length}
+                  </Badge>
                 </div>
               </button>
             ))
