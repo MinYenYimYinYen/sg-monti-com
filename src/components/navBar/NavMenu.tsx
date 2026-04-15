@@ -79,8 +79,13 @@ const realGreenParams: NavSection = {
       roles: ["admin", "office", "tech"],
     },
     {
+      title: "Program Codes",
+      href: "/realGreen/progServ/progCode",
+      roles: ["admin"],
+    },
+    {
       title: "Service Codes",
-      href: "/realGreen/progServ/list/serviceCodes",
+      href: "/realGreen/progServ/servCode",
       roles: ["admin"],
     },
   ],

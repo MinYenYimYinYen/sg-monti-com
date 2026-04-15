@@ -76,7 +76,7 @@ export function ServCodeEditPanel({ servCodeId }: ServCodeEditPanelProps) {
             </div>
 
             {/* Always ASAP */}
-            <div className="flex flex-col items-center  shrink-0">
+            <div className="flex flex-col items-center shrink-0">
               <Label className="text-sm font-medium">Always ASAP</Label>
               <Toggle
                 pressed={servCodeDoc.alwaysAsap}

@@ -5,10 +5,10 @@ import {
   ProgCodeRemapped,
 } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
-import { ProgCodeDocPropsModel } from "../models/ProgCodeDocPropsModel";
+import { ProgCodeDocPropsModel } from "@/app/realGreen/progServ/_lib/models/ProgCodeDocPropsModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
-import { baseProgCodeDocProps } from "../baseProgCode";
+import { baseProgCodeDocProps } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 
 export function remapProgramCode(raw: ProgCodeRaw): ProgCodeRemapped {

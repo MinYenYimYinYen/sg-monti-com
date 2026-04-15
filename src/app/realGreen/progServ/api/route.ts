@@ -7,11 +7,11 @@ import { ServCodeRaw } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import {
   extendProgCodes,
   remapProgCodes,
-} from "@/app/realGreen/progServ/_lib/func/progCodeServerFunc";
+} from "@/app/realGreen/progServ/progCode/_func/progCodeServerFunc";
 import {
   extendServCodes,
   remapServCode,
-} from "@/app/realGreen/progServ/_lib/func/servCodeServerFunc";
+} from "@/app/realGreen/progServ/servCode/_func/servCodeServerFunc";
 import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
 import ServCodeDocPropsModel from "@/app/realGreen/progServ/_lib/models/ServCodeDocPropsModel";
 import { ProgCodeDocPropsModel } from "@/app/realGreen/progServ/_lib/models/ProgCodeDocPropsModel";

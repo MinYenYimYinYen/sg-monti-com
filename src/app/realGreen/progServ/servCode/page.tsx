@@ -2,9 +2,9 @@
 import React from "react";
 import { Container } from "@/components/Containers";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
-import { ServCodeTab } from "@/app/realGreen/progServ/list/serviceCodes/ServCodeTab";
+import { ServCodeTab } from "./_components/ServCodeTab";
 
-export default function ListServiceCodes() {
+export default function ServCodePage() {
   useProgServ({ autoLoad: true });
 
   return (

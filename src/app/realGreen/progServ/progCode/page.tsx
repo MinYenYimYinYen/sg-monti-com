@@ -6,10 +6,10 @@ import { Container } from "@/components/Containers";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
-import { ProgCodeListPanel } from "./ProgCodeListPanel";
-import { ProgCodeEditPanel } from "./ProgCodeEditPanel";
+import { ProgCodeListPanel } from "./_components/ProgCodeListPanel";
+import { ProgCodeEditPanel } from "./_components/ProgCodeEditPanel";
 
-export default function ProgServListPage() {
+export default function ProgCodePage() {
   useProgServ({ autoLoad: true });
   usePriceTable({ autoLoad: true });
 

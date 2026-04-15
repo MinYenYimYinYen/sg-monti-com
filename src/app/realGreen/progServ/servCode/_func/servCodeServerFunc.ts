@@ -26,7 +26,6 @@ export async function extendServCodes(
   const servCodeDocPropDocs = await ServCodeDocPropsModel.find().lean();
   const servCodeDocProps = cleanMongoArray(servCodeDocPropDocs);
 
-
   const docPropMap = new Grouper(servCodeDocProps).toUniqueMap(
     (sc) => sc.servCodeId,
   );

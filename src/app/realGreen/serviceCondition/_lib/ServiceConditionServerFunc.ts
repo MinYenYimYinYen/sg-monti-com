@@ -24,7 +24,7 @@ export async function extendServiceConditions(
   cores: ServiceConditionCore[],
 ): Promise<ServiceConditionDoc[]> {
   const docProps: ServiceConditionDocProps[] = cores.map((core) => {
-    console.warn("extendServiceConditions is not really implemented yet.");
+    // console.warn("extendServiceConditions is not really implemented yet.");
     return baseServiceConditionDocProps;
   });
   const docs: ServiceConditionDoc[] = cores.map((core, index) => {
