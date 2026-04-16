@@ -32,9 +32,9 @@ export default function MastersTab() {
     .sort((a, b) => a.productCode.localeCompare(b.productCode));
 
   return (
-    <div className="flex gap-4" style={{ height: "calc(100vh - 200px)" }}>
+    <div className="flex gap-4 flex-1 min-h-0">
       {/* ── Left: listbox ── */}
-      <div className="w-72 shrink-0 flex flex-col gap-2 h-full">
+      <div className="w-72 shrink-0 flex flex-col gap-2 min-h-0">
         {/* Search */}
         <div className="relative shrink-0">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -47,7 +47,7 @@ export default function MastersTab() {
         </div>
 
         {/* List */}
-        <ScrollArea className="rounded-md border bg-popover" style={{ height: "calc(100% - 44px)" }}>
+        <ScrollArea className="flex-1 rounded-md border bg-popover">
           <div className="p-1 space-y-0.5">
             {filteredMasters.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">

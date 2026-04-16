@@ -17,13 +17,10 @@ export default function DailyInventoryLayout({
   const isRoot = pathname === "/scheduling/dailyInventory";
 
   return (
-    <Container
-      variant={"fluid"}
-      className="flex flex-col h-full overflow-hidden"
-    >
+    <Container variant={"scroll-shell"}>
       <div className={"flex gap-1"}>
         {isRoot ? (
-          <div className={"text-xl font-bold"}>Daily Inventory</div>
+          <div className={"h-0"}/>
         ) : (
           <Link href={"/scheduling/dailyInventory"}>
             <div className={"flex items-center gap-1"}>

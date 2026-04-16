@@ -31,6 +31,9 @@ export function TemplateSender({ fragment, label }: TemplateSenderProps) {
 
   const blocks = fragment?.blocks ?? [];
   const dataFeatures = (fragment?.dataFeatures ?? []) as DataFeatureKey[];
+  const hasTableBlock = blocks.some((b) => b.feature === "table");
+
+  console.log("[TemplateSender] fragment:", fragment);
 
   if (blocks.length === 0) {
     return (
@@ -55,7 +58,7 @@ export function TemplateSender({ fragment, label }: TemplateSenderProps) {
           <Separator />
         </>
       )}
-      {dataFeatures.includes("progCode") && (
+      {(dataFeatures.includes("progCode") || hasTableBlock) && (
         <>
           <ProgramSelector
             selectedProgCodeId={selectedProgCodeId}

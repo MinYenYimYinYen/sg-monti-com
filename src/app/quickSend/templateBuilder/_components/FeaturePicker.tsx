@@ -319,12 +319,12 @@ export function ContentFeaturePicker({
   const choiceColorMap = new Map(multiChoiceIds.map((id, i) => [id, CHOICE_COLORS[i % CHOICE_COLORS.length]]));
 
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wide">
+    <div className="flex-1 flex flex-col gap-2 min-h-0">
+      <span className="shrink-0 text-xs font-semibold text-foreground/60 uppercase tracking-wide">
         {title}
       </span>
 
-      <div className="flex flex-wrap gap-1">
+      <div className="shrink-0 flex flex-wrap gap-1">
         {available.map((feature) => (
           <Button
             key={feature.key}
@@ -341,7 +341,7 @@ export function ContentFeaturePicker({
       {/* Selection toolbar - now moved to NodeEditor save area */}
 
       {groupUnits.length > 0 && (
-        <ScrollArea className="max-h-96">
+        <ScrollArea className="flex-1 h-full">
           <div className="space-y-2 pr-1">
             {groupUnits.map((gu, gIdx) => {
               const totalBlocksInGroup = gu.choiceUnits.flatMap((cu) => cu.blocks).length;
@@ -608,7 +608,7 @@ export function ContentFeaturePicker({
   );
 }
 
-// ─── Shared DataFeatureList ──────────────────────────────────────────────────
+// ─── Shared DataFeatureList ─────────────────────────────────────────────────
 
 interface DataFeatureListProps {
   features: DataFeatureDef[];

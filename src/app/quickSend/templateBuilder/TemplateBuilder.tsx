@@ -25,19 +25,18 @@ export function TemplateBuilder() {
           </p>
         </div>
         <ScrollArea className="flex-1 px-2 py-2">
-          <NodeTree
-            selectedNodeId={selectedNodeId}
-            onSelect={selectNode}
-          />
+          <NodeTree selectedNodeId={selectedNodeId} onSelect={selectNode} />
         </ScrollArea>
       </div>
 
       {/* Right panel — editor */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {selectedNodeId ? (
-          <ScrollArea className="flex-1">
-            <NodeEditor nodeId={selectedNodeId} />
-          </ScrollArea>
+          <div className={"flex-1 min-h-0"}>
+            <ScrollArea className="h-full">
+              <NodeEditor nodeId={selectedNodeId} />
+            </ScrollArea>
+          </div>
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
             Select a node to edit, or add a root category to get started.

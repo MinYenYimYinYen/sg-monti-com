@@ -41,7 +41,7 @@ export function FeedbackHistorySection() {
         const name = employeeMap.get(employeeId)?.name ?? employeeId;
         return (
           <AccordionItem key={employeeId} value={employeeId}>
-            <AccordionTrigger>
+            <AccordionTrigger className={"py-2"}>
               <span className="font-semibold text-foreground">{name}</span>
               <span className="text-xs text-foreground/50 ml-2 mr-auto">
                 {routeDates.length} loadout{routeDates.length !== 1 ? "s" : ""}
@@ -57,7 +57,7 @@ export function FeedbackHistorySection() {
                         `/scheduling/dailyInventory/loadoutFeedback/${employeeId}/${routeDate}`,
                       )
                     }
-                    className="flex items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-accent/10 transition-colors text-left"
+                    className="flex items-center justify-between rounded-md px-3 py-1 text-sm hover:bg-accent/10 transition-colors text-left"
                   >
                     <span className="text-foreground">
                       {prettyDate(routeDate, "eee, MMM dd, yyyy")}

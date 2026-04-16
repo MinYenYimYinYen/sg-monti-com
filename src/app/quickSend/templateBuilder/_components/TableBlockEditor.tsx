@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
 import { Checkbox } from "@/style/components/checkbox";
@@ -29,6 +29,19 @@ export function TableBlockEditor({ tableConfig, onChange, rowColumns }: TableBlo
 
   // Default field: first key in rowColumns, or empty string if none defined
   const defaultField = Object.keys(rowColumns)[0] ?? "";
+
+  // Auto-correct stale columns whose field is not in rowColumns (e.g. saved as "" before
+  // the progCode data feature was added to the fragment).
+  useEffect(() => {
+    const validFields = Object.keys(rowColumns);
+    if (validFields.length === 0) return;
+    const needsCorrection = columns.some((col) => !validFields.includes(col.field));
+    if (!needsCorrection) return;
+    const corrected = columns.map((col) =>
+      validFields.includes(col.field) ? col : { ...col, field: validFields[0] },
+    );
+    onChange({ ...tableConfig, columns: corrected });
+  }, [rowColumns]);
 
   const setShowHeaders = (value: boolean) => {
     onChange({ ...tableConfig, showHeaders: value });

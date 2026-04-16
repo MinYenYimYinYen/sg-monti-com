@@ -6,6 +6,8 @@ import { Condition } from "@/app/realGreen/conditionCode/_types/ConditionCodeTyp
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
+import { Discount } from "@/app/realGreen/discount/DiscountTypes";
+import { applyDiscounts } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 
 export class ServiceUtils {
   constructor(private readonly service: Omit<Service, "x">) {}
@@ -58,7 +60,7 @@ export class ServiceUtils {
       servNote: this.service.techNote,
       progNote: this.service.program.techNote,
       custNote: this.service.program.customer.techNote,
-    }
+    };
   }
 
   public get callAheads(): CallAhead[] {
@@ -94,12 +96,9 @@ export class ServiceUtils {
     return this.promises.map((promise) => {
       return {
         ...promise,
-        // servNote: this.service.techNote,
-        // progNote: this.service.program.techNote,
-        // custNote: this.service.program.customer.techNote,
         isPromised: this.service.isPromised,
-      }
-    })
+      };
+    });
   }
 
   public get isPaperInvoice() {
@@ -107,5 +106,32 @@ export class ServiceUtils {
     const hasEmail = customer.email.length > 0;
     const dontEmail = customer.contactPreference.dontEmailInvoice;
     return !hasEmail || dontEmail;
+  }
+
+  /**
+   * The discounts applicable to this service for pricing purposes.
+   * Includes the service-level discount and the program-level discount.
+   * Does NOT include the customer-level discount — that is the default
+   * applied when a new program is proposed, not to existing services.
+   */
+  public get applicableDiscounts(): Discount[] {
+    return typeGuard.definedArray([
+      this.service.discount,
+      this.service.program.discount,
+    ]);
+  }
+
+  /**
+   * Returns the service price after applying all applicable discounts
+   * (service-level and program-level).
+   *
+   * @param priceKey - "price" for the current season price,
+   *                   "nextPrice" for the planned next-season price.
+   */
+  public getPriceAfterDiscounts(priceKey: "price" | "nextPrice"): number {
+    return applyDiscounts({
+      price: this.service[priceKey],
+      discounts: this.applicableDiscounts,
+    });
   }
 }

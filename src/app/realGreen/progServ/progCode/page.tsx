@@ -17,7 +17,7 @@ export default function ProgCodePage() {
   const [selectedProgCodeId, setSelectedProgCodeId] = useState<string | null>(null);
 
   return (
-    <Container variant="page">
+    <Container variant="scroll-shell">
       <div className="mb-4">
         <h2 className="text-2xl font-semibold tracking-tight">Program Codes</h2>
         <p className="text-sm text-muted-foreground mt-1">
@@ -26,7 +26,7 @@ export default function ProgCodePage() {
       </div>
 
       {/* Two-column layout */}
-      <div className="flex gap-4" style={{ height: "calc(100vh - 180px)" }}>
+      <div className="flex gap-4 flex-1 min-h-0">
         {/* Left: list */}
         <ProgCodeListPanel
           progCodes={progCodes}

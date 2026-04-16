@@ -69,8 +69,6 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
   const isFragment = node.type === "fragment";
   const { customerVariablesEnabled, seasonVariableEnabled, progCodeVariablesEnabled } = getBuilderFlags(dataFeatures);
 
-  // Derive the row columns for table blocks from the active data feature that has a tableDataSource.
-  // Cast to DataFeatureDef (the base type) so optional fields are accessible.
   const tableDataSource = (DATA_FEATURE_DEFS as readonly DataFeatureDef[]).find(
     (def) => dataFeatures.includes(def.key as DataFeatureKey) && def.tableDataSource,
   )?.tableDataSource;
@@ -135,9 +133,9 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="h-full flex flex-col gap-3 p-3">
       {/* Node type badge + nodeId */}
-      <div className="flex items-center gap-2">
+      <div className="shrink-0 flex items-center gap-2">
         <span
           className={
             isFragment
@@ -153,7 +151,7 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
       </div>
 
       {/* Label + Order — always visible */}
-      <div className="flex items-end gap-3">
+      <div className="shrink-0 flex items-end gap-3">
         <FormGroup className="flex-1">
           <Label>Label</Label>
           <Input
@@ -175,10 +173,10 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
 
       {isFragment && (
         <>
-          <Separator />
+          <Separator className="shrink-0" />
 
-          <Tabs defaultValue="features">
-            <TabsList variant="primary">
+          <Tabs defaultValue="features" className="flex-1 flex flex-col min-h-0">
+            <TabsList variant="primary" className="shrink-0">
               <TabsTrigger value="features" variant="primary">
                 Features
               </TabsTrigger>
@@ -188,7 +186,7 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
             </TabsList>
 
             {/* ── Features tab ── */}
-            <TabsContent value="features" className="gap-4 mt-3">
+            <TabsContent value="features" className="flex-1 flex flex-col min-h-0 gap-4 mt-3">
               <DataFeaturePicker
                 title="Data Features"
                 available={DATA_FEATURE_DEFS}
@@ -268,7 +266,7 @@ function NodeEditorForm({ node, saveNode }: NodeEditorFormProps) {
         </>
       )}
 
-      <div className="flex flex-col gap-2 pt-2">
+      <div className="shrink-0 flex flex-col gap-2">
         {isFragment && selectedBlockKeys.length >= 2 && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-accent/10 border border-accent/30">
             <span className="text-xs font-medium text-foreground/80">

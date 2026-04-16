@@ -8,7 +8,7 @@ export default function ServCodePage() {
   useProgServ({ autoLoad: true });
 
   return (
-    <Container variant="page">
+    <Container variant="scroll-shell">
       <div className="mb-4">
         <h2 className="text-2xl font-semibold tracking-tight">Service Codes</h2>
       </div>

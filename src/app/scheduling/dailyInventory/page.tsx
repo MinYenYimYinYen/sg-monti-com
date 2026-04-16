@@ -51,13 +51,9 @@ export default function DailyInventoryPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 py-6 max-w-2xl">
-      <p className="text-foreground/70 text-sm">
-        Select a task below to get started.
-      </p>
-
+    <div className="h-full flex flex-col gap-6 max-w-2xl">
       {/* Date Selector */}
-      <div className="w-48">
+      <div className="shrink-0 w-48">
         <MultiSelect
           mode="single"
           value={routeDate ? [routeDate] : []}
@@ -77,18 +73,18 @@ export default function DailyInventoryPage() {
         </MultiSelect>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="shrink-0 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StartLoadoutCard />
         <FinishLoadoutCard />
       </div>
 
-      <Collapsible className={"p-2 border rounded-md"}>
-        <CollapsibleTrigger className="flex items-center gap-2 text-foreground font-semibold text-sm group w-full">
+      <Collapsible className="flex-1 flex flex-col min-h-0 p-2 border rounded-md">
+        <CollapsibleTrigger className="shrink-0 flex items-center gap-2 text-foreground font-semibold text-sm group w-full">
           <BarChart2 className="h-4 w-4" />
           Feedback History
           <ChevronDown className="h-4 w-4 ml-auto text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
         </CollapsibleTrigger>
-        <CollapsibleContent className="mt-4">
+        <CollapsibleContent className="flex-1 min-h-0 mt-4 overflow-y-auto">
           <FeedbackHistorySection />
         </CollapsibleContent>
       </Collapsible>

@@ -43,8 +43,9 @@ export function useSenderState(
     setActiveChoices((prev) => ({ ...prev, [choiceId]: blockKey }));
   };
 
-  // Resolve the selected ProgCode entity when progCode feature is active
-  const progCode = dataFeatures.includes("progCode") && selectedProgCodeId
+  // Resolve the selected ProgCode entity when progCode feature is active OR when a table block exists
+  const hasTableBlock = blocks.some((b) => b.feature === "table");
+  const progCode = (dataFeatures.includes("progCode") || hasTableBlock) && selectedProgCodeId
     ? (progCodes.find((p) => p.progCodeId === selectedProgCodeId) ?? null)
     : null;
 

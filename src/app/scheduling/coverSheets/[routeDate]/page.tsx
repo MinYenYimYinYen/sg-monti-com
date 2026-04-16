@@ -77,7 +77,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   if (!isClient || !serviceByEmployee) return null;
 
   return (
-    <Container variant={"page"}>
+    <Container variant={"scroll-shell"}>
       <div className="text-lg font-semibold">{routeDate}</div>
 
       <Tabs defaultValue="eta" className="w-full flex-1 min-h-0 flex flex-col">

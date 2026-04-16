@@ -47,7 +47,7 @@ export function ServCodeTab() {
       </div>
 
       {/* Two-column layout */}
-      <div className="flex gap-4" style={{ height: "calc(100vh - 220px)" }}>
+      <div className="flex gap-4 flex-1 min-h-0">
         {/* Left: listbox */}
         <ServCodeListPanel
           servCodes={servCodes}

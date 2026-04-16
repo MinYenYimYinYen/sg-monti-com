@@ -19,6 +19,7 @@ export type PriceTableRaw = {
 export type PriceTableCore = {
   priceTableId: number;
   desc: string;
+  // maxPrice is the price per ksf after maxSize.  Use ceil on decimal numbers.
   maxPrice: number;
   maxSize: number;
   ranges: PriceRange[];
