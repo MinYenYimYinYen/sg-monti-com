@@ -6,12 +6,6 @@ import { inventorySelectors } from "@/app/bizPlan/selectors/inventorySelectors";
 import { createInventorySelectors } from "@/app/bizPlan/selectors/createInventorySelectors";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/style/components/card";
-import {
   Tabs,
   TabsContent,
   TabsList,
