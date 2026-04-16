@@ -32,6 +32,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { Container } from "@/components/Containers";
+import { ScrollArea } from "@/style/components/scroll-area";
 
 export default function BizPlanProductsPage() {
   useCustomerContext({ contexts: ["active"] });
@@ -78,23 +79,21 @@ export default function BizPlanProductsPage() {
   const productsPlanned = useSelector(filteredSelectors.productsPlanned);
   const productsByServCode = useSelector(filteredSelectors.productsByServCode);
 
-  // Format large numbers with commas
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat("en-US").format(Math.round(num));
-  };
-
   return (
-    <Container variant={"page"}>
+    <Container variant={"scroll-shell"}>
       {/* Header Section */}
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Product Inventory Analysis</h1>
-            <p className="text-muted-foreground mt-1">
-              Season {currentSeason} - {summaryStats.totalServices} services loaded
+            <h1 className="text-2xl md:text-3xl font-bold">
+              Products Needed
+            </h1>
+            <p className="text-muted-foreground">
+              Season {currentSeason} - {summaryStats.totalServices} services
+              loaded
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-col gap-1 sm:flex-row">
             <RadioGroup
               variant="button-group"
               value={unitContext}
@@ -116,87 +115,29 @@ export default function BizPlanProductsPage() {
         </div>
       </div>
 
-      {/* Key Metrics Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">
-              Total Services
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatNumber(summaryStats.totalServices)}
-            </div>
-            <p className="text-xs text-muted-foreground">Across all programs</p>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Total Area</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold flex items-center gap-2">
-              <LandPlot size={24} />
-              <div>{formatNumber(summaryStats.totalArea)}</div>
-            </div>
-            <p className="text-xs text-muted-foreground">Service coverage</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">
-              Total Products
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatNumber(summaryStats.totalProducts)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Unique products used
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto md:h-9">
           <TabsTrigger value="product">By Product</TabsTrigger>
           <TabsTrigger value="servCode">By Service Code</TabsTrigger>
-          <TabsTrigger value="employee">By Employee</TabsTrigger>
-          <TabsTrigger value="comparison">LY vs TY</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="product">
-          <div className="mt-4">
-            <ProductsTable products={productsPlanned} unitContext={unitContext} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="servCode">
-          <div className="mt-4">
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <TabsContent value="product">
+            <ProductsTable
+              products={productsPlanned}
+              unitContext={unitContext}
+            />
+          </TabsContent>
+          <TabsContent value="servCode">
             <ServiceCodeTable
               servCodes={productsByServCode}
               unitContext={unitContext}
             />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="employee">
-          <div className="mt-4">
-            <p>By Employee tab - Coming soon</p>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="comparison">
-          <div className="mt-4">
-            <p>LY vs TY Comparison tab - Coming soon</p>
-          </div>
-        </TabsContent>
+          </TabsContent>
+        </div>
       </Tabs>
     </Container>
   );
