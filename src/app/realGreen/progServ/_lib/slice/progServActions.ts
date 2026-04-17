@@ -26,6 +26,7 @@ const extractServCodeDocProps = (doc: ServCodeDoc): ServCodeDocProps => ({
   dateRange: doc.dateRange,
   alwaysAsap: doc.alwaysAsap,
   productRuleDocs: doc.productRuleDocs,
+  callAheadTag: doc.callAheadTag ?? null,
 });
 
 const executeUpdateServCode = (

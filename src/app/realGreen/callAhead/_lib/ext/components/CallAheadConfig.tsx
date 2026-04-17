@@ -13,6 +13,7 @@ import { KeywordEdit } from "./KeywordEdit";
 import { callAheadSelect } from "@/app/realGreen/callAhead/selectors/callAheadSelect";
 import { DocPropsConfig } from "@/app/realGreen/callAhead/_lib/ext/components/DocPropsConfig";
 import { ScrollArea } from "@/style/components/scroll-area";
+import { ServCodeCallAheadTab } from "./ServCodeCallAheadTab";
 
 export function CallAheadConfig(props: ModalProps) {
   const { isOpen, onClose } = props;
@@ -31,6 +32,7 @@ export function CallAheadConfig(props: ModalProps) {
         <TabsList>
           <TabsTrigger value={"config"}>Config</TabsTrigger>
           <TabsTrigger value={"keywords"}>Keyword Messages</TabsTrigger>
+          <TabsTrigger value={"serviceCodes"}>Service Codes</TabsTrigger>
         </TabsList>
         <TabsContent value={"config"}>
           <ScrollArea className={"h-[calc(75vh-8rem)]"}>
@@ -51,6 +53,13 @@ export function CallAheadConfig(props: ModalProps) {
               {Array.from(keywordMap.keys()).map((keyword) => {
                 return <KeywordEdit key={keyword} keywordId={keyword} />;
               })}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+        <TabsContent value={"serviceCodes"}>
+          <ScrollArea className={"h-[calc(75vh-8rem)]"}>
+            <div className={"flex flex-col gap-4 p-4"}>
+              <ServCodeCallAheadTab />
             </div>
           </ScrollArea>
         </TabsContent>

@@ -24,6 +24,7 @@ const ServCodeSchema = new mongoose.Schema<ServCodeDocPropsDoc>(
     dateRange: { type: DateRangeSchema, default: () => ({ min: "", max: "" }) },
     alwaysAsap: { type: Boolean },
     productRuleDocs: [ServCodeProductSchema],
+    callAheadTag: { type: String, default: null },
   },
   { timestamps: true },
 );

@@ -21,6 +21,7 @@ export const baseServCodeDocProps: ServCodeDocProps = {
   dateRange: { min: "", max: "" },
   alwaysAsap: false,
   productRuleDocs: [],
+  callAheadTag: null,
   createdAt: "",
   updatedAt: "",
 }

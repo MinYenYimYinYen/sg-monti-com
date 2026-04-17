@@ -110,6 +110,7 @@ export type ServCodeDocProps = CreatedUpdated & {
   dateRange: TRange<string>;
   alwaysAsap: boolean;
   productRuleDocs: ProductRuleDoc[];
+  callAheadTag: string | null;
 };
 
 export type ServCodeDoc = ServCodeCore & ServCodeDocProps;
@@ -140,4 +141,5 @@ export const baseServCode: ServCode = {
   productRuleDocs: [],
   productRules: [],
   isSpecial: false,
+  callAheadTag: null,
 };

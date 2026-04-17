@@ -15,6 +15,7 @@ export type PrenotificationData = {
   services: Service[];
   callAheads: CallAhead[];
   contactPoints: ContactPoint[];
+  callAheadTag: string | null;
 };
 
 export type PrenotificationMap = Map<
@@ -41,6 +42,7 @@ const selectPrenotifications = createSelector(
             services: Service[];
             callAheads: CallAhead[];
             contactPoints: ContactPoint[];
+            callAheadTag: string | null;
           }
         >
       >
@@ -69,7 +71,18 @@ const selectPrenotifications = createSelector(
           });
           const uniqueCallAheads = Array.from(uniqueCallAheadsMap.values());
 
-          // Level 2: Group callAheads by NotificationType
+          // Collect unique non-null callAheadTags from all services' servCodes
+          const uniqueCallAheadTags = Array.from(
+            new Set(
+              services
+                .map((s) => s.servCode.callAheadTag)
+                .filter((tag): tag is string => tag != null && tag.trim() !== ""),
+            ),
+          );
+          const callAheadTag =
+            uniqueCallAheadTags.length > 0 ? uniqueCallAheadTags.join(" ") : null;
+
+          // Level 2: Group callAheads by NotificationType (Case A)
           const callAheadsByType = new Grouper(uniqueCallAheads)
             .groupBy((ca) => ca.type)
             .toMap();
@@ -100,8 +113,55 @@ const selectPrenotifications = createSelector(
               services, // ALL services for this date
               callAheads, // Only callAheads with this notificationType
               contactPoints: Array.from(contactPointMap.values()),
+              callAheadTag,
             });
           });
+
+          // Case B: services with no callAhead but with a servCode.callAheadTag
+          // Only process if this customer has no CallAhead-based Text entry already
+          const servicesWithTagOnly = services.filter(
+            (s) => s.callAhead === null && s.servCode.callAheadTag != null && s.servCode.callAheadTag.trim() !== "",
+          );
+
+          if (servicesWithTagOnly.length > 0) {
+            const textType = NotificationType.Text;
+
+            // Only add Case B entry if there is no existing Case A Text entry for this customer
+            const existingTextMap = dateMap.get(textType);
+            if (!existingTextMap?.has(customer.custId)) {
+              if (!dateMap.has(textType)) {
+                dateMap.set(textType, new Map());
+              }
+              const textTypeMap = dateMap.get(textType)!;
+
+              // Use text contact points from globalSettings phoneMap
+              const allowedTextContactTypes =
+                globalSettings.phoneMap[textType];
+              const textContactPointMap = new Map<string, ContactPoint>();
+              customer.contactPoints
+                .filter((cp) => allowedTextContactTypes?.includes(cp.type))
+                .forEach((cp) => {
+                  textContactPointMap.set(cp.point, cp);
+                });
+
+              // Collect callAheadTags from the tag-only services
+              const tagOnlyTags = Array.from(
+                new Set(
+                  servicesWithTagOnly
+                    .map((s) => s.servCode.callAheadTag)
+                    .filter((tag): tag is string => tag != null && tag.trim() !== ""),
+                ),
+              ).join(" ");
+
+              textTypeMap.set(customer.custId, {
+                customer,
+                services: servicesWithTagOnly,
+                callAheads: [],
+                contactPoints: Array.from(textContactPointMap.values()),
+                callAheadTag: tagOnlyTags || null,
+              });
+            }
+          }
         });
       });
 
@@ -223,7 +283,7 @@ export const getMessages = {
     const keywordIdToMessage = new Map<string, string>();
 
     prenotificationData.forEach((pnData) => {
-      const { services, callAheads, contactPoints } = pnData;
+      const { services, callAheads, contactPoints, callAheadTag } = pnData;
       const { serviceName, sharedEta } = buildServiceDisplay(services);
 
       // Build keyword ID to message mapping and collect unique keyword IDs
@@ -238,7 +298,14 @@ export const getMessages = {
       });
 
       const keywordIds = Array.from(uniqueKeywordIds).join(",");
-      const hashKey = serviceName + "♪" + keywordIds + "♪" + (sharedEta ?? "");
+      const hashKey =
+        serviceName +
+        "♪" +
+        keywordIds +
+        "♪" +
+        (sharedEta ?? "") +
+        "♪" +
+        (callAheadTag ?? "");
       const existingPoints = pointsByServCodeAndMsg.get(hashKey) || [];
       pointsByServCodeAndMsg.set(hashKey, [
         ...existingPoints,
@@ -248,7 +315,7 @@ export const getMessages = {
     const emailDataUnchunked: EmailPreNotifData[] = Array.from(
       pointsByServCodeAndMsg.entries(),
     ).map(([hashKey, points]) => {
-      const [serviceName, keywordIdsStr, etaStr] = hashKey.split("♪");
+      const [serviceName, keywordIdsStr, etaStr, tagStr] = hashKey.split("♪");
       const keywordIds = keywordIdsStr ? keywordIdsStr.split(",") : [];
       const keywordMessage = keywordIds
         .map((id) => keywordIdToMessage.get(id))
@@ -256,7 +323,10 @@ export const getMessages = {
         .join(" ");
       const etaSuffix = etaStr ? ` (${etaStr})` : "";
       const baseMessage = `Hello!\nWe have your ${serviceName} scheduled for ${date}${etaSuffix}, weather permitting.\nThank You!\nSpring-Green\nFeel free to call or text us at 763-489-0007`;
-      const message = [baseMessage, keywordMessage].join(" ").trim();
+      const message = [baseMessage, keywordMessage, tagStr || ""]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
       const subject = `Spring-Green: ${serviceName} scheduled for ${date}`;
       const displayKey = serviceName + (keywordIdsStr ? `-${keywordIdsStr}` : "");
       return { subject, message, points, hashKey: displayKey };
@@ -277,7 +347,7 @@ export const getMessages = {
     const keywordIdToMessage = new Map<string, string>();
 
     prenotificationData.forEach((pnData) => {
-      const { services, callAheads, contactPoints } = pnData;
+      const { services, callAheads, contactPoints, callAheadTag } = pnData;
       const { serviceName, sharedEta } = buildServiceDisplay(services);
 
       // Build keyword ID to message mapping and collect unique keyword IDs
@@ -292,7 +362,14 @@ export const getMessages = {
       });
 
       const keywordIds = Array.from(uniqueKeywordIds).join(",");
-      const hashKey = serviceName + "♪" + keywordIds + "♪" + (sharedEta ?? "");
+      const hashKey =
+        serviceName +
+        "♪" +
+        keywordIds +
+        "♪" +
+        (sharedEta ?? "") +
+        "♪" +
+        (callAheadTag ?? "");
       const existingPoints = pointsByServCodeAndMsg.get(hashKey) || [];
       pointsByServCodeAndMsg.set(hashKey, [
         ...existingPoints,
@@ -302,7 +379,7 @@ export const getMessages = {
     const textDataUnchunked: TextPreNotifData[] = Array.from(
       pointsByServCodeAndMsg.entries(),
     ).map(([hashKey, points]) => {
-      const [serviceName, keywordIdsStr, etaStr] = hashKey.split("♪");
+      const [serviceName, keywordIdsStr, etaStr, tagStr] = hashKey.split("♪");
       const keywordIds = keywordIdsStr ? keywordIdsStr.split(",") : [];
       const keywordMessage = keywordIds
         .map((id) => keywordIdToMessage.get(id))
@@ -310,7 +387,10 @@ export const getMessages = {
         .join(" ");
       const etaSuffix = etaStr ? ` (${etaStr})` : "";
       const baseMessage = `Hi, this is Spring-Green! We have your ${serviceName} scheduled for ${date}${etaSuffix}, weather permitting.`;
-      const message = [baseMessage, keywordMessage].join(" ").trim();
+      const message = [baseMessage, keywordMessage, tagStr || ""]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
       const displayKey = serviceName + (keywordIdsStr ? `-${keywordIdsStr}` : "");
       return { message, points, hashKey: displayKey };
     });
@@ -340,18 +420,6 @@ const selectPrenotificationMessagePoints = (
       if (!prenotificationsByCustId) return [];
       const prenotifications = Array.from(prenotificationsByCustId.values());
       return getMessages[type](prettyDate(date, "EEE, MMM d"), prenotifications);
-      // const messageData = prenotifications.map((p) => {
-      //   const { customer, services, callAheads, contactPoints } = p;
-      //   const serviceName = services
-      //     .map((s) => s.servCode.longName)
-      //     .join(", ");
-      //   const keywordMessages = callAheads.map((ca) => ca.keywordMessage);
-      //
-      //   return {
-      //     date,
-      //     type,
-      //   };
-      // });
     },
   );
 
