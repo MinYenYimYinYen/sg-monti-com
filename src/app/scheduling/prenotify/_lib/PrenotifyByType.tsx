@@ -82,7 +82,7 @@ function PreNotifyRobo({ data }: { data: RoboPreNotifData[] }) {
               </Toggle>
             </div>
             <CopyDiv disabled={selected.includes(servPoints.serviceName)}>
-              {servPoints.points.join(",")}
+              {servPoints.points.join("\n")}
             </CopyDiv>
           </div>
         );
