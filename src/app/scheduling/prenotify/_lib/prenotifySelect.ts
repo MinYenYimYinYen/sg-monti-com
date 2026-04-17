@@ -118,49 +118,49 @@ const selectPrenotifications = createSelector(
           });
 
           // Case B: services with no callAhead but with a servCode.callAheadTag
-          // Only process if this customer has no CallAhead-based Text entry already
+          // Default to both Phone and Text notification types
           const servicesWithTagOnly = services.filter(
             (s) => s.callAhead === null && s.servCode.callAheadTag != null && s.servCode.callAheadTag.trim() !== "",
           );
 
           if (servicesWithTagOnly.length > 0) {
-            const textType = NotificationType.Text;
+            // Collect callAheadTags from the tag-only services
+            const tagOnlyTags = Array.from(
+              new Set(
+                servicesWithTagOnly
+                  .map((s) => s.servCode.callAheadTag)
+                  .filter((tag): tag is string => tag != null && tag.trim() !== ""),
+              ),
+            ).join(" ");
 
-            // Only add Case B entry if there is no existing Case A Text entry for this customer
-            const existingTextMap = dateMap.get(textType);
-            if (!existingTextMap?.has(customer.custId)) {
-              if (!dateMap.has(textType)) {
-                dateMap.set(textType, new Map());
-              }
-              const textTypeMap = dateMap.get(textType)!;
+            const caseBTypes = [NotificationType.Text, NotificationType.Phone] as const;
 
-              // Use text contact points from globalSettings phoneMap
-              const allowedTextContactTypes =
-                globalSettings.phoneMap[textType];
-              const textContactPointMap = new Map<string, ContactPoint>();
-              customer.contactPoints
-                .filter((cp) => allowedTextContactTypes?.includes(cp.type))
-                .forEach((cp) => {
-                  textContactPointMap.set(cp.point, cp);
+            caseBTypes.forEach((notifType) => {
+              // Only add Case B entry if there is no existing Case A entry for this customer+type
+              const existingTypeMap = dateMap.get(notifType);
+              if (!existingTypeMap?.has(customer.custId)) {
+                if (!dateMap.has(notifType)) {
+                  dateMap.set(notifType, new Map());
+                }
+                const typeMap = dateMap.get(notifType)!;
+
+                const allowedContactTypes = globalSettings.phoneMap[notifType];
+                const contactPointMap = new Map<string, ContactPoint>();
+                customer.contactPoints
+                  .filter((cp) => allowedContactTypes?.includes(cp.type))
+                  .forEach((cp) => {
+                    contactPointMap.set(cp.point, cp);
+                  });
+
+                typeMap.set(customer.custId, {
+                  customer,
+                  services: servicesWithTagOnly,
+                  callAheads: [],
+                  contactPoints: Array.from(contactPointMap.values()),
+                  callAheadTag: tagOnlyTags || null,
                 });
-
-              // Collect callAheadTags from the tag-only services
-              const tagOnlyTags = Array.from(
-                new Set(
-                  servicesWithTagOnly
-                    .map((s) => s.servCode.callAheadTag)
-                    .filter((tag): tag is string => tag != null && tag.trim() !== ""),
-                ),
-              ).join(" ");
-
-              textTypeMap.set(customer.custId, {
-                customer,
-                services: servicesWithTagOnly,
-                callAheads: [],
-                contactPoints: Array.from(textContactPointMap.values()),
-                callAheadTag: tagOnlyTags || null,
-              });
-            }
+              }
+            });
           }
         });
       });
