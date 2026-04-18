@@ -30,8 +30,6 @@ export function LoadoutStartForm() {
   const truckId = useSelector(loadoutStartSelect.truckId);
   const rideOnId = useSelector(loadoutStartSelect.rideOnId);
 
-  console.log("loadout", loadout);
-
   // Initialize (or re-initialize) the loadout whenever the inventory structure changes.
   // This handles both the initial load and package selection changes, which alter which
   // equipment entries are present.
