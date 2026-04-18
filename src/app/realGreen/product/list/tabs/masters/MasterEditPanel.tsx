@@ -630,7 +630,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                       disabled={packageIds.length === 0}
                     >
                       {defaultPackageId
-                        ? (allPackages.find((p) => p.packageId === defaultPackageId)?.description ?? defaultPackageId)
+                        ? (allPackages.find((p) => p.packageId === defaultPackageId)?.packageId ?? defaultPackageId)
                         : "None"}
                       <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                     </Button>
@@ -643,7 +643,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                       const pkg = allPackages.find((p) => p.packageId === pkgId);
                       return (
                         <DropdownMenuItem key={pkgId} onClick={() => setDefaultPackageId(pkgId)}>
-                          {pkg?.description ?? pkgId}
+                          {pkg?.packageId ?? pkgId}
                         </DropdownMenuItem>
                       );
                     })}

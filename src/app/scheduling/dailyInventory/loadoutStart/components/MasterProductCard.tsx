@@ -82,7 +82,7 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
             }}
             getDisplayValue={(id) =>
               packages.find((p: EquipmentPackage) => p.packageId === id)
-                ?.description ?? id
+                ?.packageId ?? id
             }
             className={cn("bg-card rounded-md w-full", md("flex-1"))}
           >
@@ -92,7 +92,7 @@ export function MasterProductCard({ masterProductId }: MasterProductCardProps) {
             <MultiSelectContent>
               {packages.map((pkg: EquipmentPackage) => (
                 <MultiSelectItem key={pkg.packageId} value={pkg.packageId}>
-                  {pkg.description}
+                  {pkg.packageId}
                 </MultiSelectItem>
               ))}
             </MultiSelectContent>
