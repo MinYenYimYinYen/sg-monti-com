@@ -12,10 +12,10 @@ import { baseAppMethodResult } from "@/app/appMethod/appMethodSolver/AppMethodSo
  * {
  *   appMethodId: "BACKPACK_STD",
  *   description: "Standard Backpack Application",
- *   flowRate: { volume: 3, volumeUnit: "Mixed Gal", time: 1, timeUnit: "Seconds" },
+ *   flowRate: { volume: 3, volumeUnit: "Gal", time: 1, timeUnit: "Seconds" },
  *   groundSpeed: { distance: 90, distanceUnit: "Feet", time: 17.5, timeUnit: "Seconds" },
  *   patternWidth: { distance: 11, distanceUnit: "Feet" },
- *   coverage: { volume: 0.85, volumeUnit: "Mixed Gal", area: 1000, areaUnit: "1000 SF" },
+ *   coverage: { volume: 0.85, volumeUnit: "Gal", area: 1000, areaUnit: "1000 SF" },
  *   overlap: 2
  * }
  */

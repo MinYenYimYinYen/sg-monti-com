@@ -108,11 +108,11 @@ export class UnitUtils {
    *
    * @example
    * // Get all conversions
-   * UnitUtils.volume(5, AppUnit.mGal).toAll()  // { "Mixed Gal": 5, "Fl Oz": 640 }
+   * UnitUtils.volume(5, AppUnit.mGal).toAll()  // { "Gal": 5, "Fl Oz": 640 }
    *
    * @example
    * // Get all available units
-   * UnitUtils.volume.getAllUnits()  // ["Mixed Gal", "Fl Oz"]
+   * UnitUtils.volume.getAllUnits()  // ["Gal", "Fl Oz"]
    */
   static readonly volume: VolumeConverter = Object.assign(
     (value: number, fromUnit: VolumeUnit["desc"]) => {
