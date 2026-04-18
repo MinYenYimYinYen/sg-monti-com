@@ -17,19 +17,16 @@ import {
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
-import { Button } from "@/style/components/button";
-import { Badge } from "@/style/components/badge";
-import { Sheet, SheetContent } from "@/style/components/sheet";
 import {
+  buildMixChartGroups,
   generateMixChartData,
   generateMixChartByProductAmount,
+  MixChartConstituentKey,
 } from "@/app/realGreen/product/mixChart/_lib/mixChartUtils";
 import { MixChartPDF } from "./chartLayouts/mixChartBySize";
 import { MixChartByProductAmountPDF } from "./chartLayouts/mixChartByProductAmount";
 import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { ProductsFooter } from "@/app/realGreen/product/list/tabs/components/ProductsFooter";
-import { CustomAppMethodEditor } from "./components/CustomAppMethodEditor";
-import { Pencil, X } from "lucide-react";
 
 export default function MixChartPage() {
   useProduct({ autoLoad: true });
@@ -37,39 +34,76 @@ export default function MixChartPage() {
   const masters = useSelector(productSelect.productMasters);
 
   const [selectedMasterId, setSelectedMasterId] = useState<number | null>(null);
-  const [selectedSubId, setSelectedSubId] = useState<number | null>(null);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [selectedKey, setSelectedKey] = useState<MixChartConstituentKey | null>(null);
   const [unitContext, setUnitContext] = useState<UnitContext>("load");
   const [increment, setIncrement] = useState<number>(10);
   const [rowCount, setRowCount] = useState<number>(17);
-  const [customRates, setCustomRates] = useState<Map<number, number>>(new Map());
-  const [editingSubId, setEditingSubId] = useState<number | null>(null);
 
   // Debounce increment and row count to avoid re-rendering PDF on every keystroke
   const debouncedIncrement = useDebounce(increment, 100);
   const debouncedRowCount = useDebounce(rowCount, 100);
 
   const selectedMaster = masters.find((m) => m.productId === selectedMasterId);
-  const selectedSubConfig = selectedMaster?.subProductConfigs.find(
-    (config) => config.subId === selectedSubId
-  );
+
+  // Build equipment groups from the selected package (null = no package / fallback)
+  const groups = selectedMaster
+    ? buildMixChartGroups(selectedMaster, selectedPackageId)
+    : null;
+
+  // Resolve the selected key constituent's unit config display for the unit type selector
+  let selectedKeyUnitConfigDisplay = null;
+  if (selectedKey && groups) {
+    for (const group of groups) {
+      for (const constituent of group.constituents) {
+        if (
+          selectedKey.type === "water" &&
+          constituent.isWater &&
+          group.equipment.equipmentId === selectedKey.equipmentId
+        ) {
+          selectedKeyUnitConfigDisplay = constituent.unitConfigDisplay;
+          break;
+        }
+        if (
+          selectedKey.type === "solute" &&
+          !constituent.isWater &&
+          constituent.subProductConfig?.subId === selectedKey.subId
+        ) {
+          selectedKeyUnitConfigDisplay = constituent.unitConfigDisplay;
+          break;
+        }
+      }
+      if (selectedKeyUnitConfigDisplay) break;
+    }
+  } else if (selectedKey?.type === "solute" && !groups && selectedMaster) {
+    const config = selectedMaster.subProductConfigs.find(
+      (c) => c.subId === selectedKey.subId,
+    );
+    selectedKeyUnitConfigDisplay = config?.subProduct.unitConfigDisplay ?? null;
+  }
 
   // Calculate max values based on debounced increment and row count
   const maxSize = debouncedIncrement * debouncedRowCount;
   const maxUnits = debouncedIncrement * debouncedRowCount;
 
-  // Generate chart data based on layout type (uses debounced values and custom rates)
+  // Generate chart data
   const chartDataBySize = selectedMaster
-    ? generateMixChartData(selectedMaster, debouncedIncrement, maxSize, customRates)
+    ? generateMixChartData(selectedMaster, debouncedIncrement, maxSize, groups)
     : [];
 
   const chartDataByProductAmount =
-    selectedMaster && selectedSubId
-      ? generateMixChartByProductAmount(selectedMaster, selectedSubId, debouncedIncrement, maxUnits, unitContext, customRates)
+    selectedMaster && selectedKey
+      ? generateMixChartByProductAmount(
+          selectedMaster,
+          selectedKey,
+          debouncedIncrement,
+          maxUnits,
+          unitContext,
+          groups,
+        )
       : [];
 
-  const editingConfig = selectedMaster && editingSubId
-    ? selectedMaster.subProductConfigs.find(c => c.subId === editingSubId)
-    : null;
+  const hasKeySelected = selectedKey !== null;
 
   if (!isClient) return null;
 
@@ -78,193 +112,203 @@ export default function MixChartPage() {
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">Mix Chart</h1>
 
-        {/* Custom Rates Display */}
-        {customRates.size > 0 && selectedMaster && (
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-muted-foreground">Custom Rates:</span>
-            {Array.from(customRates.entries()).map(([subId, rate]) => {
-              const config = selectedMaster.subProductConfigs.find(c => c.subId === subId);
-              if (!config) return null;
-              return (
-                <Badge key={subId} variant="secondary" className="flex items-center gap-1">
-                  {config.subProduct.description}: {rate.toFixed(2)}
-                  <button
-                    onClick={() => {
-                      const newRates = new Map(customRates);
-                      newRates.delete(subId);
-                      setCustomRates(newRates);
-                    }}
-                    className="hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              );
-            })}
-          </div>
-        )}
-
         {/* Controls Row */}
         <div className="flex gap-4 items-end flex-wrap">
+          <div className="flex flex-col gap-2">
+            <Label>Master Product</Label>
+            <Select
+              value={selectedMasterId?.toString() || ""}
+              onValueChange={(value) => {
+                const master = masters.find((m) => m.productId === Number(value));
+                setSelectedMasterId(Number(value));
+                // Default to the master's default package
+                setSelectedPackageId(master?.defaultPackage?.packageId ?? null);
+                setSelectedKey(null);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Master Product" />
+              </SelectTrigger>
+              <SelectContent>
+                {masters.map((master) => (
+                  <SelectItem
+                    key={master.productId}
+                    value={master.productId.toString()}
+                  >
+                    {master.productCode} - {master.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Equipment Package Selector */}
+          {selectedMaster && selectedMaster.equipmentPackages.length > 0 && (
             <div className="flex flex-col gap-2">
-              <Label>Master Product</Label>
+              <Label>Equipment Package</Label>
               <Select
-                value={selectedMasterId?.toString() || ""}
-                onValueChange={(value) => setSelectedMasterId(Number(value))}
+                value={selectedPackageId ?? "none"}
+                onValueChange={(value) => {
+                  setSelectedPackageId(value === "none" ? null : value);
+                  setSelectedKey(null);
+                }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Master Product" />
+                  <SelectValue placeholder="None - Chemicals Only" />
                 </SelectTrigger>
                 <SelectContent>
-                  {masters.map((master) => (
-                    <SelectItem
-                      key={master.productId}
-                      value={master.productId.toString()}
-                    >
-                      {master.productCode} - {master.description}
+                  <SelectItem value="none">None - Chemicals Only</SelectItem>
+                  {selectedMaster.equipmentPackages.map((pkg) => (
+                    <SelectItem key={pkg.packageId} value={pkg.packageId}>
+                      {pkg.description}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+          )}
 
-            {/* Sub Product Selector - optional */}
-            {selectedMaster && (
-              <div className="flex flex-col gap-2">
-                <Label>Key Product (Optional)</Label>
-                <Select
-                  value={selectedSubId?.toString() || "none"}
-                  onValueChange={(value) =>
-                    setSelectedSubId(value === "none" ? null : Number(value))
+          {/* Key Constituent Selector */}
+          {selectedMaster && (
+            <div className="flex flex-col gap-2">
+              <Label>Key Product (Optional)</Label>
+              <Select
+                value={
+                  selectedKey
+                    ? selectedKey.type === "water"
+                      ? `water:${selectedKey.equipmentId}`
+                      : `solute:${selectedKey.subId}`
+                    : "none"
+                }
+                onValueChange={(value) => {
+                  if (value === "none") {
+                    setSelectedKey(null);
+                    return;
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="None - Chart by Size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None - Chart by Size</SelectItem>
-                    {selectedMaster.subProductConfigs.map((config) => (
-                      <SelectItem
-                        key={config.subId}
-                        value={config.subId.toString()}
-                      >
-                        {config.subProduct.description}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* UnitCRM Context Selector - only shown when Key Product selected */}
-            {selectedSubConfig && (
-              <div className="flex flex-col gap-2">
-                <Label>Unit Type</Label>
-                <RadioGroup
-                  variant="button-group"
-                  value={unitContext}
-                  onValueChange={(value) => setUnitContext(value as UnitContext)}
-                >
-                  <RadioGroupItem value="load">
-                    {selectedSubConfig.subProduct.unitConfig.conversions.load.unitLabel}
-                  </RadioGroupItem>
-                  <RadioGroupItem value="app">
-                    {selectedSubConfig.subProduct.unitConfig.conversions.app.unitLabel}
-                  </RadioGroupItem>
-                </RadioGroup>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-2">
-              <Label>
-                {selectedSubId ? "Increment" : "Size Increment"}
-              </Label>
-              <Input
-                type="number"
-                value={increment}
-                onChange={(e) => setIncrement(Number(e.target.value) || 1)}
-                className="w-32"
-                min={1}
-                max={50}
-              />
+                  if (value.startsWith("water:")) {
+                    setSelectedKey({ type: "water", equipmentId: value.slice(6) });
+                  } else if (value.startsWith("solute:")) {
+                    setSelectedKey({ type: "solute", subId: Number(value.slice(7)) });
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="None - Chart by Size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None - Chart by Size</SelectItem>
+                  {/* Water rows (only when a package is selected) */}
+                  {groups?.map((group) => (
+                    <SelectItem
+                      key={`water:${group.equipment.equipmentId}`}
+                      value={`water:${group.equipment.equipmentId}`}
+                    >
+                      Water ({group.equipment.description})
+                    </SelectItem>
+                  ))}
+                  {/* Chemical solute rows */}
+                  {groups
+                    ? // When package selected: show solutes that appear in any group
+                      groups
+                        .flatMap((group) =>
+                          group.constituents
+                            .filter((c) => !c.isWater)
+                            .map((c) => c.subProductConfig!)
+                            .filter(Boolean),
+                        )
+                        // Deduplicate by subId
+                        .filter(
+                          (config, idx, arr) =>
+                            arr.findIndex((c) => c.subId === config.subId) === idx,
+                        )
+                        .map((config) => (
+                          <SelectItem
+                            key={`solute:${config.subId}`}
+                            value={`solute:${config.subId}`}
+                          >
+                            {config.subProduct.description}
+                          </SelectItem>
+                        ))
+                    : // Fallback: all sub-product configs
+                      selectedMaster.subProductConfigs.map((config) => (
+                        <SelectItem
+                          key={`solute:${config.subId}`}
+                          value={`solute:${config.subId}`}
+                        >
+                          {config.subProduct.description}
+                        </SelectItem>
+                      ))}
+                </SelectContent>
+              </Select>
             </div>
+          )}
 
+          {/* Unit Type Selector — only shown when a key constituent is selected */}
+          {hasKeySelected && selectedKeyUnitConfigDisplay && (
             <div className="flex flex-col gap-2">
-              <Label>Row Count</Label>
-              <Input
-                type="number"
-                value={rowCount}
-                onChange={(e) => setRowCount(Number(e.target.value) || 1)}
-                className="w-32"
-                min={1}
-                max={100}
-              />
+              <Label>Unit Type</Label>
+              <RadioGroup
+                variant="button-group"
+                value={unitContext}
+                onValueChange={(value) => setUnitContext(value as UnitContext)}
+              >
+                <RadioGroupItem value="load">
+                  {selectedKeyUnitConfigDisplay.getUnitLabel("load")}
+                </RadioGroupItem>
+                <RadioGroupItem value="app">
+                  {selectedKeyUnitConfigDisplay.getUnitLabel("app")}
+                </RadioGroupItem>
+              </RadioGroup>
             </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            <Label>{hasKeySelected ? "Increment" : "Size Increment"}</Label>
+            <Input
+              type="number"
+              value={increment}
+              onChange={(e) => setIncrement(Number(e.target.value) || 1)}
+              className="w-32"
+              min={1}
+              max={50}
+            />
           </div>
 
-        {/* Customize Rates Section */}
-        {selectedMaster && selectedMaster.subProductConfigs.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Customize Rates</Label>
-            <div className="flex flex-wrap gap-2">
-              {selectedMaster.subProductConfigs.map((config) => (
-                <Button
-                  key={config.subId}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingSubId(config.subId)}
-                  className="flex items-center gap-2"
-                >
-                  <Pencil className="h-3 w-3" />
-                  {config.subProduct.description}
-                  {customRates.has(config.subId) && (
-                    <Badge className="ml-1 h-4 text-xs">Custom</Badge>
-                  )}
-                </Button>
-              ))}
-            </div>
+          <div className="flex flex-col gap-2">
+            <Label>Row Count</Label>
+            <Input
+              type="number"
+              value={rowCount}
+              onChange={(e) => setRowCount(Number(e.target.value) || 1)}
+              className="w-32"
+              min={1}
+              max={100}
+            />
           </div>
-        )}
+        </div>
 
         {/* PDF Viewer */}
         {selectedMaster && (
           <div className={"w-full h-[75vh] overflow-y-auto"}>
             <PDFViewer style={{ width: "100%", height: "100%" }}>
-              {selectedSubId ? (
+              {hasKeySelected && selectedKey ? (
                 <MixChartByProductAmountPDF
                   master={selectedMaster}
-                  selectedSubId={selectedSubId}
+                  selectedKey={selectedKey}
                   chartData={chartDataByProductAmount}
-                  customRates={customRates}
+                  groups={groups}
                 />
               ) : (
                 <MixChartPDF
                   master={selectedMaster}
                   chartData={chartDataBySize}
-                  customRates={customRates}
+                  groups={groups}
                 />
-
               )}
             </PDFViewer>
           </div>
         )}
       </div>
-
-      {/* Custom Rate Editor Sheet */}
-      {editingConfig && (
-        <Sheet open={!!editingSubId} onOpenChange={() => setEditingSubId(null)}>
-          <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto">
-            <CustomAppMethodEditor
-              config={editingConfig}
-              onRateCalculated={(subId, rate) => {
-                setCustomRates(prev => new Map(prev).set(subId, rate));
-                setEditingSubId(null);
-              }}
-              onCancel={() => setEditingSubId(null)}
-            />
-          </SheetContent>
-        </Sheet>
-      )}
 
       <ProductsFooter />
     </Container>
