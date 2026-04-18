@@ -402,13 +402,11 @@ function formatEquipmentAmount(
 
 function EquipmentMixRow({
   entry,
-  master,
   matchedServices,
   view,
   serviceWarningMap,
 }: {
   entry: EquipmentMixFeedback;
-  master: LoadoutFeedback["actuals"]["equipmentMasters"][number] | undefined;
   matchedServices: Service[];
   view: FeedbackView;
   serviceWarningMap: Map<number, string[]>;
@@ -518,7 +516,6 @@ function EquipmentMixSection({
                 <EquipmentMixRow
                   key={entry.equipmentId}
                   entry={entry}
-                  master={master}
                   matchedServices={master?.matchedServices ?? []}
                   view={view}
                   serviceWarningMap={serviceWarningMap}
@@ -528,66 +525,10 @@ function EquipmentMixSection({
           </tbody>
         </table>
       </div>
-
-      {/* Chemical breakdown */}
-      {/*{chemicals.length > 0 && (*/}
-      {/*  <div className="mt-4">*/}
-      {/*    <h3 className="text-foreground/70 text-xs font-semibold uppercase tracking-wide mb-2">*/}
-      {/*      Chemical Breakdown*/}
-      {/*    </h3>*/}
-      {/*    <div className="overflow-x-auto">*/}
-      {/*      <table className="w-full text-sm">*/}
-      {/*        <thead>*/}
-      {/*          <tr className="text-foreground/60 text-left border-b border-foreground/10">*/}
-      {/*            <th className="pb-2 font-medium">Product</th>*/}
-      {/*            <th className="pb-2 font-medium text-center">Tank</th>*/}
-      {/*            <th className="pb-2 font-medium text-right">Planned</th>*/}
-      {/*            <th className="pb-2 font-medium text-right">Actual</th>*/}
-      {/*          </tr>*/}
-      {/*        </thead>*/}
-      {/*        <tbody>*/}
-      {/*          {chemicals.map((chem, index) => (*/}
-      {/*            <ChemicalRow key={`${chem.equipmentId}-${chem.productId}-${index}`} chem={chem} view={view} />*/}
-      {/*          ))}*/}
-      {/*        </tbody>*/}
-      {/*      </table>*/}
-      {/*    </div>*/}
-      {/*  </div>*/}
-      {/*)}*/}
     </section>
   );
 }
 
-function ChemicalRow({
-  chem,
-  view,
-}: {
-  chem: EquipmentChemicalFeedback;
-  view: FeedbackView;
-}) {
-  return (
-    <tr className="border-b border-foreground/5">
-      <td className="py-2 text-foreground">{chem.description}</td>
-      <td className="py-2 text-foreground/60 text-center">
-        {chem.equipmentId}
-      </td>
-      <td className="py-2 text-foreground/60 text-right tabular-nums">
-        {/* In % mode, planned is the baseline — show as 100% reference */}
-        {view === "percent"
-          ? "100%"
-          : formatAmount(chem.plannedAmount, chem.unitConfigDisplay, view)}
-      </td>
-      <td className="py-2 text-foreground text-right tabular-nums">
-        {formatAmount(
-          chem.actualAmount,
-          chem.unitConfigDisplay,
-          view,
-          chem.plannedAmount,
-        )}
-      </td>
-    </tr>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Other Products Section (non-equipment masters)
@@ -736,7 +677,7 @@ function OtherProductRow({
 export function LoadoutFeedbackDisplay({
   feedback,
 }: {
-  feedback: LoadoutFeedback;
+  feedback: any // LoadoutFeedback;
 }) {
   const [view, setView] = useState<FeedbackView>("percent");
   const serviceWarningMap = feedback.serviceWarningMap;

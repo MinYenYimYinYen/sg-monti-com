@@ -18,7 +18,6 @@ import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerCo
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig";
-import { LandPlot } from "lucide-react";
 import {
   getServiceStatuses,
   ServiceStatusType,
@@ -26,7 +25,6 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { Container } from "@/components/Containers";
-import { ScrollArea } from "@/style/components/scroll-area";
 
 export default function BizPlanProductsPage() {
   useCustomerContext({ contexts: ["active"] });

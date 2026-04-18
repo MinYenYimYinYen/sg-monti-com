@@ -32,10 +32,10 @@ function lookupCustomerName(custId: string): string {
 }
 
 type Props = {
-  onCrmChange: (data: CrmData) => void;
+  onCrmChangeAction: (data: CrmData) => void;
 };
 
-export function TemplateTabs({ onCrmChange }: Props) {
+export function TemplateTabs({ onCrmChangeAction }: Props) {
   const [level1, setLevel1] = useState<Level1Value>("sales");
   const [salesSub, setSalesSub] = useState("web-lead");
   const [program, setProgram] = useState<ProgramType>(null);
@@ -65,19 +65,19 @@ export function TemplateTabs({ onCrmChange }: Props) {
 
   function handleSqFtChange(value: string) {
     setSqFt(value);
-    onCrmChange(buildCrmData({ sqFtVal: value, custIdVal: custId, programVal: program }));
+    onCrmChangeAction(buildCrmData({ sqFtVal: value, custIdVal: custId, programVal: program }));
   }
 
   function handleCustIdChange(value: string) {
     setCustId(value);
-    onCrmChange(buildCrmData({ sqFtVal: sqFt, custIdVal: value, programVal: program }));
+    onCrmChangeAction(buildCrmData({ sqFtVal: sqFt, custIdVal: value, programVal: program }));
   }
 
   function handleProgramChange(value: string) {
     // Clicking the active tab again deselects it (toggle off)
     const next = value === program ? null : (value as ProgramType);
     setProgram(next);
-    onCrmChange(buildCrmData({ sqFtVal: sqFt, custIdVal: custId, programVal: next }));
+    onCrmChangeAction(buildCrmData({ sqFtVal: sqFt, custIdVal: custId, programVal: next }));
   }
 
   return (

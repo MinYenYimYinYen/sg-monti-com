@@ -11,13 +11,13 @@ import { cn } from "@/style/utils";
 type ProgCodeListPanelProps = {
   progCodes: ProgCode[];
   selectedProgCodeId: string | null;
-  onSelect: (progCodeId: string) => void;
+  onSelectAction: (progCodeId: string) => void;
 };
 
 export function ProgCodeListPanel({
   progCodes,
   selectedProgCodeId,
-  onSelect,
+  onSelectAction,
 }: ProgCodeListPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -59,7 +59,7 @@ export function ProgCodeListPanel({
             filtered.map((pc) => (
               <button
                 key={pc.progCodeId}
-                onClick={() => onSelect(pc.progCodeId)}
+                onClick={() => onSelectAction(pc.progCodeId)}
                 className={cn(
                   "w-full text-left px-2.5 py-2 rounded-md transition-colors border",
                   selectedProgCodeId === pc.progCodeId

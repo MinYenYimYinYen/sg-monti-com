@@ -31,7 +31,7 @@ export default function ProgCodePage() {
         <ProgCodeListPanel
           progCodes={progCodes}
           selectedProgCodeId={selectedProgCodeId}
-          onSelect={setSelectedProgCodeId}
+          onSelectAction={setSelectedProgCodeId}
         />
 
         {/* Right: edit panel or empty state */}

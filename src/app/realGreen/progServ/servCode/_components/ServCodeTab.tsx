@@ -52,7 +52,7 @@ export function ServCodeTab() {
         <ServCodeListPanel
           servCodes={servCodes}
           selectedServCodeId={selectedServCodeId}
-          onSelect={setSelectedServCodeId}
+          onSelectAction={setSelectedServCodeId}
         />
 
         {/* Right: edit panel or empty state */}

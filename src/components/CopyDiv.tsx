@@ -8,12 +8,12 @@ import { cn } from "@/lib/tailwindUtils";
 
 type CopyDivProps = {
   children: ReactNode;
-  onClick?: () => void;
+  onClickAction?: () => void; //
   className?: string;
   disabled?: boolean;
 };
 
-export default function CopyDiv({ children, onClick, className, disabled }: CopyDivProps) {
+export default function CopyDiv({ children, onClickAction: onClick, className, disabled }: CopyDivProps) {
   const divRef = useRef<HTMLDivElement>(null);
   const checkRef = useRef<HTMLDivElement>(null);
   const [showCheck, setShowCheck] = useState(false);

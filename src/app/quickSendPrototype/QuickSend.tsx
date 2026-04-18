@@ -24,7 +24,7 @@ export function QuickSend() {
   return (
     <div className="flex h-full w-full gap-4 p-4">
       <div className="flex w-1/2 flex-col overflow-y-auto rounded-md border border-border bg-card">
-        <TemplateTabs onCrmChange={setCrmData} />
+        <TemplateTabs onCrmChangeAction={setCrmData} />
       </div>
       <div className="flex w-1/2 flex-col">
         <Editor crmData={crmData} />

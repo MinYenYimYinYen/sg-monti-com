@@ -11,13 +11,13 @@ import { cn } from "@/style/utils";
 type ServCodeListPanelProps = {
   servCodes: ServCode[];
   selectedServCodeId: string | null;
-  onSelect: (servCodeId: string) => void;
+  onSelectAction: (servCodeId: string) => void;
 };
 
 export function ServCodeListPanel({
   servCodes,
   selectedServCodeId,
-  onSelect,
+  onSelectAction,
 }: ServCodeListPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -60,7 +60,7 @@ export function ServCodeListPanel({
             filtered.map((sc) => (
               <button
                 key={`${sc.servCodeId}-${sc.progCodeId}`}
-                onClick={() => onSelect(sc.servCodeId)}
+                onClick={() => onSelectAction(sc.servCodeId)}
                 className={cn(
                   "w-full text-left px-2.5 py-2 rounded-md transition-colors border",
                   selectedServCodeId === sc.servCodeId
