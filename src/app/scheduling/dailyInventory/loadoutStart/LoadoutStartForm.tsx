@@ -11,7 +11,7 @@ import { Container } from "@/components/Containers";
 import { loadoutHelper } from "@/app/scheduling/dailyInventory/components/loadoutFormHelpers";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
-import { cn, md } from "@/style/utils"; // eslint-disable-line @typescript-eslint/no-unused-vars
+import { cn, md } from "@/style/utils";
 
 export function LoadoutStartForm() {
   const dispatch = useDispatch();
@@ -25,12 +25,12 @@ export function LoadoutStartForm() {
   const loadoutInventory = useSelector(loadoutStartSelect.serviceResolvedLoadout);
   const loadout = useSelector(loadoutStartSelect.loadout.data);
   const hasIssues = useSelector(loadoutStartSelect.loadout.startValidation.hasIssues);
-  const issues = useSelector(loadoutStartSelect.loadout.startValidation.issues);
-  const showAllIssues = useSelector((state: Parameters<typeof loadoutStartSelect.tech>[0]) => state.loadoutStart.showAllLoadoutIssues);
   const tech = useSelector(loadoutStartSelect.tech);
   const routeDate = useSelector(loadoutStartSelect.routeDate);
   const truckId = useSelector(loadoutStartSelect.truckId);
   const rideOnId = useSelector(loadoutStartSelect.rideOnId);
+
+  console.log("loadout", loadout);
 
   // Initialize (or re-initialize) the loadout whenever the inventory structure changes.
   // This handles both the initial load and package selection changes, which alter which

@@ -25,8 +25,9 @@ const selectLoadoutDocMap = createSelector([selectLoadoutDocs], (loadouts) =>
 );
 
 /** Returns the set of employeeIds that have a LoadoutDoc for the given routeDate. */
-const selectStartedEmployeeIdsByDate = (routeDate: string) =>
+const selectStartedEmployeeIdsByDate = (routeDate: string | null) =>
   createSelector([selectLoadoutDocs], (loadouts) => {
+    if (!routeDate) return new Set<string>();
     const ids = new Set<string>();
     loadouts.forEach((doc) => {
       if (doc.routeDate === routeDate) ids.add(doc.employeeId);

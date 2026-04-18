@@ -14,9 +14,7 @@ export function StartLoadoutCard() {
   const routeDate = useSelector(loadoutStartSelect.routeDate);
   const employeeMap = useSelector(employeeSelect.employeeMap);
   const startedEmployeeIds = useSelector(
-    routeDate
-      ? loadoutSelect.startedEmployeeIdsByDate(routeDate)
-      : () => new Set<string>(),
+    loadoutSelect.startedEmployeeIdsByDate(routeDate)
   );
   const startEmployeesForDate = useSelector(loadoutSelect.startEmployeeIdsForDate(routeDate));
 
