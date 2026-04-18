@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   LoadoutFeedback,
   EquipmentMixFeedback,
-  EquipmentChemicalFeedback,
   OtherSubProductFeedback,
 } from "./LoadoutFeedback";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";

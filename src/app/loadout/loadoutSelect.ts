@@ -12,7 +12,6 @@ import {
   LoadoutFinal,
 } from "@/app/loadout/LoadoutTypes";
 import { assignmentSelect } from "@/app/assignment/assignmentSelect";
-import { DeepNonNullable } from "@/lib/primatives/typeUtils/DeepNonNullable";
 
 const selectLoadoutDocs = (state: AppState) => state.loadout.loadoutDocs;
 const selectFinishLoadoutDoc = (state: AppState) => state.loadout.finishLoadoutDoc;
