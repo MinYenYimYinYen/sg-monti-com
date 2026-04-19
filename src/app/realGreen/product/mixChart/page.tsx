@@ -1,12 +1,15 @@
 "use client";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { Container } from "@/components/Containers";
 import { PDFViewer } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
+import { useEquipment } from "@/app/equipment/useEquipment";
+import { Input } from "@/style/components/input";
+import { Label } from "@/style/components/label";
+import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import {
   Select,
   SelectContent,
@@ -14,300 +17,214 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/style/components/select";
-import { Input } from "@/style/components/input";
-import { Label } from "@/style/components/label";
-import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
+import { ScrollArea } from "@/style/components/scroll-area";
 import {
-  buildMixChartGroups,
+  buildMixChartColumns,
+  calcWaterRatePerKsf,
   generateMixChartData,
   generateMixChartByProductAmount,
-  MixChartConstituentKey,
+  MixChartColumn,
+  MixChartKeyId,
 } from "@/app/realGreen/product/mixChart/_lib/mixChartUtils";
+import { MixChartConfig } from "@/app/realGreen/product/mixChart/_lib/MixChartTypes";
 import { MixChartPDF } from "./chartLayouts/mixChartBySize";
 import { MixChartByProductAmountPDF } from "./chartLayouts/mixChartByProductAmount";
+import { MixChartSetup } from "./setup/MixChartSetup";
 import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { ProductsFooter } from "@/app/realGreen/product/list/tabs/components/ProductsFooter";
+import { solverSelect } from "@/app/appMethod/appMethodCreate/selectors/solverSelect";
+import { useSelector as useReduxSelector } from "react-redux";
+
+const DEFAULT_CONFIG: MixChartConfig = {
+  equipment: null,
+  appMethodOverride: null,
+  includeWater: false,
+  products: [],
+};
 
 export default function MixChartPage() {
   useProduct({ autoLoad: true });
+  useEquipment({ autoLoad: true });
   const isClient = useIsClient();
-  const masters = useSelector(productSelect.productMasters);
 
-  const [selectedMasterId, setSelectedMasterId] = useState<number | null>(null);
-  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
-  const [selectedKey, setSelectedKey] = useState<MixChartConstituentKey | null>(null);
+  // Chart config — the full mix definition
+  const [config, setConfig] = useState<MixChartConfig>(DEFAULT_CONFIG);
+
+  // Chart display controls
+  const [keyId, setKeyId] = useState<MixChartKeyId | null>(null);
   const [unitContext, setUnitContext] = useState<UnitContext>("load");
   const [increment, setIncrement] = useState<number>(10);
   const [rowCount, setRowCount] = useState<number>(17);
 
-  // Debounce increment and row count to avoid re-rendering PDF on every keystroke
   const debouncedIncrement = useDebounce(increment, 100);
   const debouncedRowCount = useDebounce(rowCount, 100);
 
-  const selectedMaster = masters.find((m) => m.productId === selectedMasterId);
+  // Read the live solver solution for the AppMethod override
+  const solution = useReduxSelector(solverSelect.solution);
+  const effectiveAppMethod = solution?.success ? solution.result : config.equipment?.appMethod ?? null;
 
-  // Build equipment groups from the selected package (null = no package / fallback)
-  const groups = selectedMaster
-    ? buildMixChartGroups(selectedMaster, selectedPackageId)
-    : null;
+  // Derive water rate from the effective AppMethod
+  const waterRatePerKsf =
+    config.equipment && effectiveAppMethod && config.includeWater
+      ? calcWaterRatePerKsf(effectiveAppMethod, config.products, config.equipment.showFlOz)
+      : null;
 
-  // Resolve the selected key constituent's unit config display for the unit type selector
-  let selectedKeyUnitConfigDisplay = null;
-  if (selectedKey && groups) {
-    for (const group of groups) {
-      for (const constituent of group.constituents) {
-        if (
-          selectedKey.type === "water" &&
-          constituent.isWater &&
-          group.equipment.equipmentId === selectedKey.equipmentId
-        ) {
-          selectedKeyUnitConfigDisplay = constituent.unitConfigDisplay;
-          break;
-        }
-        if (
-          selectedKey.type === "solute" &&
-          !constituent.isWater &&
-          constituent.subProductConfig?.subId === selectedKey.subId
-        ) {
-          selectedKeyUnitConfigDisplay = constituent.unitConfigDisplay;
-          break;
-        }
-      }
-      if (selectedKeyUnitConfigDisplay) break;
-    }
-  } else if (selectedKey?.type === "solute" && !groups && selectedMaster) {
-    const config = selectedMaster.subProductConfigs.find(
-      (c) => c.subId === selectedKey.subId,
-    );
-    selectedKeyUnitConfigDisplay = config?.subProduct.unitConfigDisplay ?? null;
-  }
+  // Build columns
+  const columns: MixChartColumn[] = buildMixChartColumns({
+    products: config.products,
+    waterRatePerKsf,
+    includeWater: config.includeWater,
+    showFlOz: config.equipment?.showFlOz ?? false,
+  });
 
-  // Calculate max values based on debounced increment and row count
   const maxSize = debouncedIncrement * debouncedRowCount;
   const maxUnits = debouncedIncrement * debouncedRowCount;
 
   // Generate chart data
-  const chartDataBySize = selectedMaster
-    ? generateMixChartData(selectedMaster, debouncedIncrement, maxSize, groups)
-    : [];
+  const chartDataBySize = generateMixChartData(columns, debouncedIncrement, maxSize);
+
+  // Resolve key column
+  const keyColumn = keyId === null
+    ? null
+    : keyId === "water"
+      ? columns.find((c) => c.isWater) ?? null
+      : columns.find((c) => !c.isWater && c.label === keyId) ?? null;
+
+  const otherColumns = keyColumn ? columns.filter((c) => c !== keyColumn) : [];
 
   const chartDataByProductAmount =
-    selectedMaster && selectedKey
-      ? generateMixChartByProductAmount(
-          selectedMaster,
-          selectedKey,
-          debouncedIncrement,
-          maxUnits,
-          unitContext,
-          groups,
-        )
+    keyColumn && keyId !== null
+      ? generateMixChartByProductAmount(columns, keyId, debouncedIncrement, maxUnits, unitContext)
       : [];
 
-  const hasKeySelected = selectedKey !== null;
+  const hasColumns = columns.length > 0;
+  const hasKeySelected = keyId !== null && keyColumn !== null;
+
+  // Chart title
+  const chartTitle = config.equipment
+    ? `Mix Chart — ${config.equipment.description}`
+    : "Mix Chart";
 
   if (!isClient) return null;
 
   return (
-    <Container variant={"page"}>
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Mix Chart</h1>
+    <Container variant={"scroll-shell"}>
+      <div className="flex flex-col flex-1 min-h-0 gap-4">
+        <h1 className="text-2xl font-bold shrink-0">Mix Chart</h1>
 
-        {/* Controls Row */}
-        <div className="flex gap-4 items-end flex-wrap">
-          <div className="flex flex-col gap-2">
-            <Label>Master Product</Label>
-            <Select
-              value={selectedMasterId?.toString() || ""}
-              onValueChange={(value) => {
-                const master = masters.find((m) => m.productId === Number(value));
-                setSelectedMasterId(Number(value));
-                // Default to the master's default package
-                setSelectedPackageId(master?.defaultPackage?.packageId ?? null);
-                setSelectedKey(null);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Master Product" />
-              </SelectTrigger>
-              <SelectContent>
-                {masters.map((master) => (
-                  <SelectItem
-                    key={master.productId}
-                    value={master.productId.toString()}
-                  >
-                    {master.productCode} - {master.description}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="grid grid-cols-[auto_1fr] gap-6 flex-1 min-h-0">
+          {/* Left panel: Setup — scrolls independently */}
+          <div className="rounded-lg border border-border bg-card/30 overflow-hidden h-full">
+            <ScrollArea className="h-full">
+              <div className="p-4">
+                <MixChartSetup config={config} onConfigChange={setConfig} />
+              </div>
+            </ScrollArea>
           </div>
 
-          {/* Equipment Package Selector */}
-          {selectedMaster && selectedMaster.equipmentPackages.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <Label>Equipment Package</Label>
-              <Select
-                value={selectedPackageId ?? "none"}
-                onValueChange={(value) => {
-                  setSelectedPackageId(value === "none" ? null : value);
-                  setSelectedKey(null);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="None - Chemicals Only" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None - Chemicals Only</SelectItem>
-                  {selectedMaster.equipmentPackages.map((pkg) => (
-                    <SelectItem key={pkg.packageId} value={pkg.packageId}>
-                      {pkg.description}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Key Constituent Selector */}
-          {selectedMaster && (
-            <div className="flex flex-col gap-2">
-              <Label>Key Product (Optional)</Label>
-              <Select
-                value={
-                  selectedKey
-                    ? selectedKey.type === "water"
-                      ? `water:${selectedKey.equipmentId}`
-                      : `solute:${selectedKey.subId}`
-                    : "none"
-                }
-                onValueChange={(value) => {
-                  if (value === "none") {
-                    setSelectedKey(null);
-                    return;
-                  }
-                  if (value.startsWith("water:")) {
-                    setSelectedKey({ type: "water", equipmentId: value.slice(6) });
-                  } else if (value.startsWith("solute:")) {
-                    setSelectedKey({ type: "solute", subId: Number(value.slice(7)) });
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="None - Chart by Size" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None - Chart by Size</SelectItem>
-                  {/* Water rows (only when a package is selected) */}
-                  {groups?.map((group) => (
-                    <SelectItem
-                      key={`water:${group.equipment.equipmentId}`}
-                      value={`water:${group.equipment.equipmentId}`}
-                    >
-                      Water ({group.equipment.description})
-                    </SelectItem>
-                  ))}
-                  {/* Chemical solute rows */}
-                  {groups
-                    ? // When package selected: show solutes that appear in any group
-                      groups
-                        .flatMap((group) =>
-                          group.constituents
-                            .filter((c) => !c.isWater)
-                            .map((c) => c.subProductConfig!)
-                            .filter(Boolean),
-                        )
-                        // Deduplicate by subId
-                        .filter(
-                          (config, idx, arr) =>
-                            arr.findIndex((c) => c.subId === config.subId) === idx,
-                        )
-                        .map((config) => (
-                          <SelectItem
-                            key={`solute:${config.subId}`}
-                            value={`solute:${config.subId}`}
-                          >
-                            {config.subProduct.description}
-                          </SelectItem>
-                        ))
-                    : // Fallback: all sub-product configs
-                      selectedMaster.subProductConfigs.map((config) => (
+          {/* Right panel: Chart controls + PDF */}
+          <div className="flex flex-col h-full gap-4">
+            {/* Chart controls */}
+            <div className="flex gap-4 items-end flex-wrap shrink-0">
+              {/* Key Column Selector */}
+              {hasColumns && (
+                <div className="flex flex-col gap-2">
+                  <Label>Key Column (Optional)</Label>
+                  <Select
+                    value={keyId ?? "none"}
+                    onValueChange={(value) => {
+                      setKeyId(value === "none" ? null : (value as MixChartKeyId));
+                    }}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="None — Chart by Size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None — Chart by Size</SelectItem>
+                      {columns.map((col, idx) => (
                         <SelectItem
-                          key={`solute:${config.subId}`}
-                          value={`solute:${config.subId}`}
+                          key={idx}
+                          value={col.isWater ? "water" : col.label}
                         >
-                          {config.subProduct.description}
+                          {col.label}
                         </SelectItem>
                       ))}
-                </SelectContent>
-              </Select>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Unit Type Selector — only when key column is selected */}
+              {hasKeySelected && keyColumn && (
+                <div className="flex flex-col gap-2">
+                  <Label>Unit Type</Label>
+                  <RadioGroup
+                    variant="button-group"
+                    value={unitContext}
+                    onValueChange={(value) => setUnitContext(value as UnitContext)}
+                  >
+                    <RadioGroupItem value="load">
+                      {keyColumn.unitConfigDisplay.getUnitLabel("load")}
+                    </RadioGroupItem>
+                    <RadioGroupItem value="app">
+                      {keyColumn.unitConfigDisplay.getUnitLabel("app")}
+                    </RadioGroupItem>
+                  </RadioGroup>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2">
+                <Label>{hasKeySelected ? "Increment" : "Size Increment"}</Label>
+                <Input
+                  type="number"
+                  value={increment}
+                  onChange={(e) => setIncrement(Number(e.target.value) || 1)}
+                  className="w-28"
+                  min={1}
+                  max={50}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label>Row Count</Label>
+                <Input
+                  type="number"
+                  value={rowCount}
+                  onChange={(e) => setRowCount(Number(e.target.value) || 1)}
+                  className="w-28"
+                  min={1}
+                  max={100}
+                />
+              </div>
             </div>
-          )}
 
-          {/* Unit Type Selector — only shown when a key constituent is selected */}
-          {hasKeySelected && selectedKeyUnitConfigDisplay && (
-            <div className="flex flex-col gap-2">
-              <Label>Unit Type</Label>
-              <RadioGroup
-                variant="button-group"
-                value={unitContext}
-                onValueChange={(value) => setUnitContext(value as UnitContext)}
-              >
-                <RadioGroupItem value="load">
-                  {selectedKeyUnitConfigDisplay.getUnitLabel("load")}
-                </RadioGroupItem>
-                <RadioGroupItem value="app">
-                  {selectedKeyUnitConfigDisplay.getUnitLabel("app")}
-                </RadioGroupItem>
-              </RadioGroup>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2">
-            <Label>{hasKeySelected ? "Increment" : "Size Increment"}</Label>
-            <Input
-              type="number"
-              value={increment}
-              onChange={(e) => setIncrement(Number(e.target.value) || 1)}
-              className="w-32"
-              min={1}
-              max={50}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label>Row Count</Label>
-            <Input
-              type="number"
-              value={rowCount}
-              onChange={(e) => setRowCount(Number(e.target.value) || 1)}
-              className="w-32"
-              min={1}
-              max={100}
-            />
+            {/* PDF Viewer — fills remaining height in the right column */}
+            {hasColumns ? (
+              <div className="flex-1 min-h-0 w-full">
+                <PDFViewer style={{ width: "100%", height: "100%" }}>
+                  {hasKeySelected && keyColumn ? (
+                    <MixChartByProductAmountPDF
+                      title={chartTitle}
+                      keyColumn={keyColumn}
+                      otherColumns={otherColumns}
+                      chartData={chartDataByProductAmount}
+                    />
+                  ) : (
+                    <MixChartPDF
+                      title={chartTitle}
+                      columns={columns}
+                      chartData={chartDataBySize}
+                    />
+                  )}
+                </PDFViewer>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 rounded-lg border border-dashed border-border text-muted-foreground text-sm">
+                Add equipment and products to generate a chart.
+              </div>
+            )}
           </div>
         </div>
-
-        {/* PDF Viewer */}
-        {selectedMaster && (
-          <div className={"w-full h-[75vh] overflow-y-auto"}>
-            <PDFViewer style={{ width: "100%", height: "100%" }}>
-              {hasKeySelected && selectedKey ? (
-                <MixChartByProductAmountPDF
-                  master={selectedMaster}
-                  selectedKey={selectedKey}
-                  chartData={chartDataByProductAmount}
-                  groups={groups}
-                />
-              ) : (
-                <MixChartPDF
-                  master={selectedMaster}
-                  chartData={chartDataBySize}
-                  groups={groups}
-                />
-              )}
-            </PDFViewer>
-          </div>
-        )}
       </div>
 
       <ProductsFooter />

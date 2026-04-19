@@ -1,56 +1,23 @@
-import { ProductMaster, SubProductConfig } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { CompoundUnitDisplay, UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { Equipment } from "@/app/equipment/EquipmentTypes";
-import { EquipmentPackage } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
-import { LoadoutConstituent, Mixture } from "@/app/loadout/Mixture";
-import { waterProduct, buildWaterUnitConfig } from "@/app/equipment/waterProduct";
-import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
+import { AppMethodResult } from "@/app/appMethod/appMethodSolver/AppMethodSolverTypes";
+import { MixChartProductRow } from "@/app/realGreen/product/mixChart/_lib/MixChartTypes";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
-import { UnitLabel, UL_METRIC_MAP, VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitLabel, VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { buildWaterUnitConfig } from "@/app/equipment/waterProduct";
 
 export type MixChartAmount = CompoundUnitDisplay;
 
-export type MixChartRow = {
-  size: number;
-  amounts: MixChartAmount[];
-};
-
-/**
- * A constituent column in the mix chart — either the water carrier or a chemical solute.
- * Used as the column descriptor for both chart layouts.
- */
-export type MixChartConstituent = {
-  /** Display label for the column header. */
-  label: string;
-  isWater: boolean;
-  /** The unit config display used to format amounts for this constituent. */
-  unitConfigDisplay: UnitConfigDisplay;
-  /** Rate per ksf in the constituent's app unit. For water: water-only Gal (or FlOz) per ksf. */
-  ratePerKsf: number;
-  /** The sub-product config for solutes; null for water. */
-  subProductConfig: SubProductConfig | null;
-};
-
-/**
- * One equipment item's section in the mix chart.
- * Contains the water carrier column followed by all solute columns for that equipment.
- */
-export type MixChartEquipmentGroup = {
-  equipment: Equipment;
-  /** constituents[0] = water carrier, constituents[1..n] = solutes for this equipment. */
-  constituents: MixChartConstituent[];
-};
-
 // ---------------------------------------------------------------------------
-// Internal helpers (mirrors hydratePlannedLoadout logic)
+// Water rate derivation
 // ---------------------------------------------------------------------------
 
 /**
  * Computes total mix volume in Fl Oz for a given size (ksf) using the AppMethod coverage rate.
  * Returns 0 for granular methods or unconfigured AppMethods.
  */
-function calcTotalMixFlOz(appMethod: Equipment["appMethod"], size: number): number {
+function calcTotalMixFlOz(appMethod: AppMethodResult, size: number): number {
   const { coverage, productType } = appMethod;
   if (productType === "granular") return 0;
   if (!coverage.area || !coverage.areaUnit || !coverage.volumeUnit) return 0;
@@ -61,209 +28,117 @@ function calcTotalMixFlOz(appMethod: Equipment["appMethod"], size: number): numb
 }
 
 /**
- * Builds a Mixture for a given equipment + master at a unit size of 1 ksf.
- * Used internally to derive per-ksf rates for each constituent.
+ * Derives the water-only rate per ksf (in the carrier's app unit) from the effective AppMethod.
+ *
+ * The total mix volume from the AppMethod coverage rate includes all constituents.
+ * We subtract the volumetric product rows to get the water-only volume.
+ *
+ * Returns null if the AppMethod is granular or unconfigured.
  */
-function buildMixtureForEquipment(
-  equipment: Equipment,
-  master: ProductMaster,
-  size: number,
-): Mixture {
-  const waterUnitConfig = buildWaterUnitConfig(equipment.showFlOz);
-  const carrierProduct: ProductSub = {
-    ...waterProduct,
-    productCode: equipment.equipmentId,
-    description: equipment.description,
-    unitConfig: waterUnitConfig,
-    unitConfigDisplay: new UnitConfigDisplay(waterUnitConfig),
-  };
+export function calcWaterRatePerKsf(
+  appMethod: AppMethodResult,
+  products: MixChartProductRow[],
+  showFlOz: boolean,
+): number | null {
+  const unitSize = 1; // 1 ksf reference size
+  const totalMixFlOz = calcTotalMixFlOz(appMethod, unitSize);
+  if (totalMixFlOz === 0) return null;
 
-  const soluteConstituents: LoadoutConstituent[] = master.subProductConfigs
-    .filter((config) => config.mixedByEquipmentIds.includes(equipment.equipmentId))
-    .map((config) => ({
-      product: config.subProduct,
-      ratePerKsf: config.rate,
-      plannedAmount: size * config.rate,
-      startAmount: null,
-      finishAmount: null,
-      unitId: config.subProduct.unit.unitId,
-      unit: config.subProduct.unit,
-    }));
-
-  const totalMixFlOz = calcTotalMixFlOz(equipment.appMethod, size);
-
-  const soluteVolumeFlOz = soluteConstituents.reduce((sum, solute) => {
-    const metric = UL_METRIC_MAP[solute.unit.desc as keyof typeof UL_METRIC_MAP];
-    if (metric !== "volume") return sum;
-    return sum + UnitUtils.volume(solute.plannedAmount, solute.unit.desc as VolumeUnit["desc"]).to(UnitLabel.flOz);
+  // Subtract volumetric product rows (those whose app unit is a volume unit)
+  const soluteVolumeFlOz = products.reduce((sum, row) => {
+    const appUnitLabel = row.unitConfigDisplay.getUnitLabel("app");
+    // Only subtract volume-metric products
+    if (appUnitLabel !== UnitLabel.mGal && appUnitLabel !== UnitLabel.flOz) return sum;
+    const soluteFlOz = UnitUtils.volume(row.rate * unitSize, appUnitLabel as VolumeUnit["desc"]).to(UnitLabel.flOz);
+    return sum + soluteFlOz;
   }, 0);
 
   const waterFlOz = totalMixFlOz - soluteVolumeFlOz;
-  const carrierAppUnit = equipment.showFlOz ? UnitLabel.flOz : UnitLabel.mGal;
-  const waterPlannedAmount = UnitUtils.volume(waterFlOz, UnitLabel.flOz).to(carrierAppUnit);
-
-  const carrierConstituent: LoadoutConstituent = {
-    product: carrierProduct,
-    ratePerKsf: 0,
-    plannedAmount: waterPlannedAmount,
-    startAmount: null,
-    finishAmount: null,
-    unitId: carrierProduct.unit.unitId,
-    unit: carrierProduct.unit,
-  };
-
-  return new Mixture([carrierConstituent, ...soluteConstituents]);
-}
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-/**
- * Builds the equipment group descriptors for the mix chart from a selected package.
- *
- * Returns null when no package is selected or the package has no equipment,
- * which signals the chart to fall back to the old chemical-only layout.
- *
- * Each group contains:
- *   - constituents[0]: water carrier column (ratePerKsf = water-only Gal per ksf)
- *   - constituents[1..n]: solute columns for that equipment
- */
-export function buildMixChartGroups(
-  master: ProductMaster,
-  selectedPackageId: string | null,
-): MixChartEquipmentGroup[] | null {
-  if (!selectedPackageId) return null;
-
-  const pkg: EquipmentPackage | undefined = master.equipmentPackages.find(
-    (p) => p.packageId === selectedPackageId,
-  );
-  if (!pkg || pkg.equipments.length === 0) return null;
-
-  // Use size = 1 ksf to derive per-ksf rates from the Mixture.
-  const unitSize = 1;
-
-  return pkg.equipments.map((equipment) => {
-    const mixture = buildMixtureForEquipment(equipment, master, unitSize);
-    const scaled = mixture.scaleMixture(1); // ratio = 1 → amounts are per-ksf
-
-    const waterUnitConfig = buildWaterUnitConfig(equipment.showFlOz);
-    const waterUnitConfigDisplay = new UnitConfigDisplay(waterUnitConfig);
-
-    const waterConstituent: MixChartConstituent = {
-      label: `Water (${equipment.description})`,
-      isWater: true,
-      unitConfigDisplay: waterUnitConfigDisplay,
-      // scaled[0] is the carrier; amount is in the carrier's app unit per ksf
-      ratePerKsf: scaled[0].amount,
-      subProductConfig: null,
-    };
-
-    const soluteConfigs = master.subProductConfigs.filter((config) =>
-      config.mixedByEquipmentIds.includes(equipment.equipmentId),
-    );
-
-    const soluteConstituents: MixChartConstituent[] = soluteConfigs.map((config, idx) => ({
-      label: config.subProduct.description,
-      isWater: false,
-      unitConfigDisplay: config.subProduct.unitConfigDisplay,
-      // scaled[idx + 1] corresponds to the solute at position idx+1 in the Mixture
-      ratePerKsf: scaled[idx + 1]?.amount ?? config.rate * unitSize,
-      subProductConfig: config,
-    }));
-
-    return {
-      equipment,
-      constituents: [waterConstituent, ...soluteConstituents],
-    };
-  });
+  const carrierAppUnit = showFlOz ? UnitLabel.flOz : UnitLabel.mGal;
+  return UnitUtils.volume(waterFlOz, UnitLabel.flOz).to(carrierAppUnit);
 }
 
 /**
- * Single source of truth for product amount calculations.
- * Given a size and sub-product config, calculates the application amount.
+ * Returns the UnitConfigDisplay for the water carrier based on equipment.showFlOz.
  */
-export function calculateAmountNeeded({ size, rate }: { size: number; rate: number }): number {
-  return size * rate;
-}
-
-/**
- * Inverse calculation: given amount and rate, calculate size covered.
- */
-export function calculateSizeCovered({ appAmount, rate }: { appAmount: number; rate: number }): number {
-  return appAmount / rate;
+export function buildWaterUnitConfigDisplay(showFlOz: boolean): UnitConfigDisplay {
+  return new UnitConfigDisplay(buildWaterUnitConfig(showFlOz));
 }
 
 // ---------------------------------------------------------------------------
 // Chart by Size
 // ---------------------------------------------------------------------------
 
-export type MixChartEquipmentGroupRow = {
-  equipment: Equipment;
-  /** amounts[0] = water, amounts[1..n] = solutes for this equipment. */
-  amounts: MixChartAmount[];
+export type MixChartColumn = {
+  label: string;
+  isWater: boolean;
+  unitConfigDisplay: UnitConfigDisplay;
+  /** Rate per ksf in the column's app unit. */
+  ratePerKsf: number;
 };
 
-export type MixChartRowWithGroups = {
+export type MixChartRow = {
   size: number;
-  /** Present when a package is selected. */
-  equipmentGroupRows: MixChartEquipmentGroupRow[];
-  /** Present when no package is selected (fallback). */
   amounts: MixChartAmount[];
 };
 
 /**
+ * Builds the ordered column descriptors for the chart.
+ * Water column comes first (if included), then product rows in order.
+ */
+export function buildMixChartColumns(params: {
+  products: MixChartProductRow[];
+  waterRatePerKsf: number | null;
+  includeWater: boolean;
+  showFlOz: boolean;
+}): MixChartColumn[] {
+  const { products, waterRatePerKsf, includeWater, showFlOz } = params;
+
+  const columns: MixChartColumn[] = [];
+
+  if (includeWater && waterRatePerKsf !== null) {
+    columns.push({
+      label: "Water",
+      isWater: true,
+      unitConfigDisplay: buildWaterUnitConfigDisplay(showFlOz),
+      ratePerKsf: waterRatePerKsf,
+    });
+  }
+
+  for (const row of products) {
+    columns.push({
+      label: row.label,
+      isWater: false,
+      unitConfigDisplay: row.unitConfigDisplay,
+      ratePerKsf: row.rate,
+    });
+  }
+
+  return columns;
+}
+
+/**
  * Generates mix chart data (chart by size).
- *
- * When `groups` is null (no package selected), falls back to the old behavior:
- * one column per sub-product config, no water.
- *
- * When `groups` is provided, columns are grouped by equipment with water first.
  */
 export function generateMixChartData(
-  master: ProductMaster,
+  columns: MixChartColumn[],
   increment: number,
   maxSize: number,
-  groups: MixChartEquipmentGroup[] | null,
-): MixChartRowWithGroups[] {
+): MixChartRow[] {
   const sizes: number[] = [];
   for (let size = increment; size <= maxSize; size += increment) {
     sizes.push(size);
   }
 
-  if (!groups) {
-    // Fallback: chemical columns only (old behavior)
-    return sizes.map((size) => ({
-      size,
-      equipmentGroupRows: [],
-      amounts: master.subProductConfigs.map((config) => {
-        const appAmount = calculateAmountNeeded({ size, rate: config.rate });
-        return config.subProduct.unitConfigDisplay.format({
-          amount: appAmount,
-          targetContexts: ["load", "app"],
-        });
+  return sizes.map((size) => ({
+    size,
+    amounts: columns.map((col) =>
+      col.unitConfigDisplay.format({
+        amount: col.ratePerKsf * size,
+        targetContexts: ["load", "app"],
       }),
-    }));
-  }
-
-  return sizes.map((size) => {
-    const equipmentGroupRows: MixChartEquipmentGroupRow[] = groups.map((group) => {
-      const amounts: MixChartAmount[] = group.constituents.map((constituent) => {
-        const amount = constituent.ratePerKsf * size;
-        return constituent.unitConfigDisplay.format({
-          amount,
-          targetContexts: ["load", "app"],
-        });
-      });
-      return { equipment: group.equipment, amounts };
-    });
-
-    return {
-      size,
-      equipmentGroupRows,
-      amounts: [],
-    };
-  });
+    ),
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -274,142 +149,55 @@ export type MixChartByProductAmountRow = {
   amount: number;
   unit: string;
   sizeCovered: number;
-  /** Amounts for all OTHER constituents (not the key constituent). */
   amounts: MixChartAmount[];
-  /** When groups are present, amounts are grouped by equipment. */
-  equipmentGroupRows: MixChartEquipmentGroupRow[];
 };
 
 /**
- * Identifies a constituent in the mix chart — either a water row (by equipmentId)
- * or a chemical solute (by subId).
+ * Identifies the key column — either water or a product row by its id.
  */
-export type MixChartConstituentKey =
-  | { type: "water"; equipmentId: string }
-  | { type: "solute"; subId: number };
+export type MixChartKeyId = "water" | string; // string = MixChartProductRow.id
 
 /**
- * Generates mix chart data keyed on a specific constituent (chart by product amount).
- *
- * When `groups` is null, falls back to old behavior (chemical sub-products only).
- * When `groups` is provided, the key constituent can be water or a solute.
+ * Generates mix chart data keyed on a specific column (chart by product amount).
  */
 export function generateMixChartByProductAmount(
-  master: ProductMaster,
-  selectedKey: MixChartConstituentKey,
+  columns: MixChartColumn[],
+  keyId: MixChartKeyId,
   increment: number,
   maxUnits: number,
   unitContext: UnitContext = "load",
-  groups: MixChartEquipmentGroup[] | null,
 ): MixChartByProductAmountRow[] {
+  // Find the key column
+  const keyColumn = keyId === "water"
+    ? columns.find((c) => c.isWater)
+    : columns.find((c) => !c.isWater && c.label === keyId);
+
+  if (!keyColumn || keyColumn.ratePerKsf === 0) return [];
+
+  const conversion = keyColumn.unitConfigDisplay["unitConfig"].conversions[unitContext];
+  const otherColumns = columns.filter((c) => c !== keyColumn);
+
   const units: number[] = [];
   for (let unit = increment; unit <= maxUnits; unit += increment) {
     units.push(unit);
   }
 
-  if (!groups) {
-    // Fallback: old behavior — key must be a solute
-    if (selectedKey.type !== "solute") return [];
-
-    const selectedConfig = master.subProductConfigs.find(
-      (config) => config.subId === selectedKey.subId,
-    );
-    if (!selectedConfig) return [];
-
-    const conversion = selectedConfig.subProduct.unitConfig.conversions[unitContext];
-
-    return units.map((amount) => {
-      const appAmount = amount * conversion.conversionFactor;
-      const sizeCovered = calculateSizeCovered({ appAmount, rate: selectedConfig.rate });
-
-      const amounts = master.subProductConfigs
-        .filter((config) => config.subId !== selectedKey.subId)
-        .map((config) => {
-          const requiredAppAmount = calculateAmountNeeded({ size: sizeCovered, rate: config.rate });
-          return config.subProduct.unitConfigDisplay.format({
-            amount: requiredAppAmount,
-            targetContexts: ["load", "app"],
-          });
-        });
-
-      return {
-        amount,
-        unit: conversion.unitLabel,
-        sizeCovered,
-        amounts,
-        equipmentGroupRows: [],
-      };
-    });
-  }
-
-  // Find the key constituent across all groups
-  let keyConstituent: MixChartConstituent | null = null;
-  for (const group of groups) {
-    for (const constituent of group.constituents) {
-      if (
-        selectedKey.type === "water" &&
-        constituent.isWater &&
-        group.equipment.equipmentId === selectedKey.equipmentId
-      ) {
-        keyConstituent = constituent;
-        break;
-      }
-      if (
-        selectedKey.type === "solute" &&
-        !constituent.isWater &&
-        constituent.subProductConfig?.subId === selectedKey.subId
-      ) {
-        keyConstituent = constituent;
-        break;
-      }
-    }
-    if (keyConstituent) break;
-  }
-
-  if (!keyConstituent || keyConstituent.ratePerKsf === 0) return [];
-
-  const conversion = keyConstituent.unitConfigDisplay["unitConfig"].conversions[unitContext];
-
   return units.map((amount) => {
     const appAmount = amount * conversion.conversionFactor;
-    const sizeCovered = calculateSizeCovered({ appAmount, rate: keyConstituent!.ratePerKsf });
+    const sizeCovered = appAmount / keyColumn.ratePerKsf;
 
-    // Build "other" amounts grouped by equipment, excluding the key constituent
-    const equipmentGroupRows: MixChartEquipmentGroupRow[] = groups.map((group) => {
-      const amounts: MixChartAmount[] = group.constituents
-        .filter((constituent) => {
-          if (
-            selectedKey.type === "water" &&
-            constituent.isWater &&
-            group.equipment.equipmentId === selectedKey.equipmentId
-          ) {
-            return false;
-          }
-          if (
-            selectedKey.type === "solute" &&
-            !constituent.isWater &&
-            constituent.subProductConfig?.subId === selectedKey.subId
-          ) {
-            return false;
-          }
-          return true;
-        })
-        .map((constituent) => {
-          const requiredAmount = constituent.ratePerKsf * sizeCovered;
-          return constituent.unitConfigDisplay.format({
-            amount: requiredAmount,
-            targetContexts: ["load", "app"],
-          });
-        });
-      return { equipment: group.equipment, amounts };
-    });
+    const amounts = otherColumns.map((col) =>
+      col.unitConfigDisplay.format({
+        amount: col.ratePerKsf * sizeCovered,
+        targetContexts: ["load", "app"],
+      }),
+    );
 
     return {
       amount,
       unit: conversion.unitLabel,
       sizeCovered,
-      amounts: [],
-      equipmentGroupRows,
+      amounts,
     };
   });
 }
