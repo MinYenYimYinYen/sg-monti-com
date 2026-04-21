@@ -30,6 +30,7 @@ import { loadoutReducer } from "@/app/loadout/loadoutSlice";
 // import { templateReducer } from "@/app/quickSend_bad/templates/templateSlice";
 // import { templateBuilderReducer } from "@/app/quickSend_bad/templateBuilder/templateBuilderSlice";
 import assignmentReducer from "@/app/assignment/assignmentSlice";
+import quickSendReducer from "@/app/quickSend/quickSendSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -59,6 +60,7 @@ const rootReducer = combineReducers({
   equipmentPackage: equipmentPackageReducer,
   customer: customerReducer,
   centralDocProps: centralDocPropsReducer,
+  quickSend: quickSendReducer,
   // template: templateReducer,
   // templateBuilder: templateBuilderReducer,
 });

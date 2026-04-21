@@ -21,6 +21,21 @@ export function buildMentionSuggestion(): Partial<SuggestionOptions> {
       );
     },
 
+    // Override default command to insert mention WITHOUT a trailing space.
+    // Tiptap's default inserts a space node after the mention automatically.
+    command({ editor, range, props }) {
+      editor
+        .chain()
+        .focus()
+        .insertContentAt(range, [
+          {
+            type: "mention",
+            attrs: { id: props.id, label: props.label },
+          },
+        ])
+        .run();
+    },
+
     render() {
       let component: ReactRenderer;
       let popup: TippyInstance[];

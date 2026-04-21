@@ -1,36 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
-import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
-import { singleCustomerActions } from "@/app/realGreen/customer/slices/customerSlices";
-import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { useSingleCustomer } from "@/app/realGreen/customer/hooks/useSingleCustomer";
+import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
+import { quickSendActions } from "./quickSendSlice";
+import { quickSendSelect } from "./quickSendSelect";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 import { Button } from "@/style/components/button";
 import { Search, X } from "lucide-react";
-import type { QSCustomerState } from "./QuickSendTypes";
-import { useSingleCustomer } from "@/app/realGreen/customer/hooks/useSingleCustomer";
-import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
 
-type Props = {
-  state: QSCustomerState;
-  onChange: (state: QSCustomerState) => void;
-  showSize: boolean;
-};
-
-export function CustomerLookup({ state, onChange, showSize }: Props) {
-  useGlobalSettings({ autoLoad: true });
+export function CustomerLookup() {
+  const dispatch = useAppDispatch();
   const { lookup } = useSingleCustomer();
-  const season = useSelector(globalSettingsSelect.season);
-  const loadedCustomer = useSelector(singleCustSelect.customer)
+
+  const customerState = useSelector(quickSendSelect.customerState);
+  const activeVars = useSelector(quickSendSelect.activeVars);
+  const loadedCustomer = useSelector(singleCustSelect.customer);
 
   const [inputValue, setInputValue] = useState<string>(
-    state.custId !== null ? String(state.custId) : "",
+    customerState.custId !== null ? String(customerState.custId) : "",
   );
   const [error, setError] = useState<string | null>(null);
+
+  // When Redux delivers the customer from the single-customer slice, push it into quickSend state.
+  useEffect(() => {
+    if (loadedCustomer && loadedCustomer !== customerState.customer) {
+      dispatch(quickSendActions.setCustomer(loadedCustomer));
+    }
+  }, [dispatch, loadedCustomer, customerState.customer]);
 
   const handleSearch = () => {
     const parsed = parseInt(inputValue, 10);
@@ -38,42 +38,18 @@ export function CustomerLookup({ state, onChange, showSize }: Props) {
       setError("Enter a valid Customer ID.");
       return;
     }
-    if (!season) {
-      setError("Season not loaded yet.");
-      return;
-    }
     setError(null);
-    lookup(parseInt(inputValue));
-    // Optimistically store the custId; customer will arrive via Redux
-    onChange({
-      ...state,
-      custId: parsed,
-      customer: null,
-      nameOverride: "",
-      sizeOverride: "",
-    });
+    dispatch(quickSendActions.setCustId(parsed));
+    lookup(parsed);
   };
 
   const handleClear = () => {
     setInputValue("");
     setError(null);
-    onChange({
-      custId: null,
-      customer: null,
-      nameOverride: "",
-      sizeOverride: "",
-    });
+    dispatch(quickSendActions.clearCustomer());
   };
 
-
-  if (loadedCustomer && loadedCustomer !== state.customer) {
-    onChange({
-      ...state,
-      customer: loadedCustomer,
-      nameOverride: state.nameOverride || loadedCustomer.displayName,
-      sizeOverride: state.sizeOverride || String(loadedCustomer.size),
-    });
-  }
+  const showSize = activeVars.has("size");
 
   return (
     <div className="flex flex-col gap-3 px-4 py-3">
@@ -100,7 +76,7 @@ export function CustomerLookup({ state, onChange, showSize }: Props) {
           >
             <Search className="h-3.5 w-3.5" />
           </Button>
-          {state.custId !== null && (
+          {customerState.custId !== null && (
             <Button
               size="sm"
               variant="destructive"
@@ -113,11 +89,11 @@ export function CustomerLookup({ state, onChange, showSize }: Props) {
           )}
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
-        {state.customer && (
+        {customerState.customer && (
           <p className="text-xs text-muted-foreground">
             Loaded:{" "}
             <span className="font-medium text-foreground">
-              {state.customer.displayName}
+              {customerState.customer.displayName}
             </span>
           </p>
         )}
@@ -129,21 +105,23 @@ export function CustomerLookup({ state, onChange, showSize }: Props) {
         <Input
           className="h-8 text-sm"
           placeholder="Customer name…"
-          value={state.nameOverride}
-          onChange={(e) => onChange({ ...state, nameOverride: e.target.value })}
+          value={customerState.nameOverride}
+          onChange={(e) =>
+            dispatch(quickSendActions.setNameOverride(e.target.value))
+          }
         />
       </div>
 
-      {/* Size override — only shown when @size is active */}
+      {/* Size override — only shown when @size is active in the template */}
       {showSize && (
         <div className="flex flex-col gap-1">
           <Label className="text-xs text-muted-foreground">Size override</Label>
           <Input
             className="h-8 text-sm"
             placeholder="Lawn size…"
-            value={state.sizeOverride}
+            value={customerState.sizeOverride}
             onChange={(e) =>
-              onChange({ ...state, sizeOverride: e.target.value })
+              dispatch(quickSendActions.setSizeOverride(e.target.value))
             }
           />
         </div>
