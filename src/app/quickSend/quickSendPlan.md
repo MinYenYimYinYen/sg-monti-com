@@ -40,57 +40,114 @@ This is the opposite of `quickSend_bad`, where the left panel was statically con
 
 ### Development Steps
 
-#### Step 1 — Blank editor (current)
+#### Step 1 — Blank editor ✅ DONE
 **Goal:** Prove the editor works. No `@` support, no data fetching.
 
 Files:
 - `src/app/quickSend/page.tsx` — Next.js page entry
-- `src/app/quickSend/QuickSend.tsx` — Two-panel layout (left placeholder + right editor)
-- `src/app/quickSend/QuickSendEditor.tsx` — Tiptap editor with Copy button
-
-Left panel: fixed-width, placeholder text ("Controls coming soon").
-Right panel: Tiptap editor (StarterKit + table extensions), Copy button copies `text/html` + `text/plain`.
+- `src/app/quickSend/QuickSend.tsx` — Two-panel layout (left controls + right split editor)
+- `src/app/quickSend/QuickSendEditor.tsx` — Wraps TemplateEditor + PreviewEditor
+- `src/app/quickSend/TemplateEditor.tsx` — Tiptap editor for authoring (top pane)
+- `src/app/quickSend/PreviewEditor.tsx` — Tiptap editor for resolved preview (bottom pane)
 
 ---
 
-#### Step 2 — `@customerName` and `@customerSize` variables
+#### Step 2 — `@name` and `@size` variables ✅ DONE
 **Goal:** Live variable resolution from customer lookup or manual input.
 
-Behavior:
-- User types `@` in the editor → suggestion menu shows `customerName`, `customerSize`
-- Selecting one inserts a styled mention span (e.g. `{{customerName}}`)
-- Left panel **reacts**: when either variable is present in the editor, show:
-  - Customer ID input + Search button → dispatches customer lookup
-  - Manual name input (shown when no customer loaded, or to override)
-  - Manual size input (shown when `@customerSize` is present)
-- When customer is loaded or manual values change, the mention spans in the editor are replaced with the resolved values in real time
+**What was built:**
+- `src/app/quickSend/mentionSuggestion.ts` — Tiptap suggestion config. Inserts mention nodes without trailing space.
+- `src/app/quickSend/MentionList.tsx` — Dropdown UI for `@` suggestions.
+- `src/app/quickSend/CustomerLookup.tsx` — Left panel: custId search, name/size overrides.
+- `src/app/quickSend/quickSendSlice.ts` — Redux slice: `templateHtml`, `customer` (custId, customer, nameOverride, sizeOverride).
+- `src/app/quickSend/quickSendSelect.ts` — Selectors: `templateHtml`, `customerState`, `activeVars`, `resolvedVariables`, `unfulfilledVars`, `previewHtml`.
+- `src/app/quickSend/QuickSendTypes.ts` — `QSCustomerState`, `QSVariableKey`.
+
+**How it works:**
+- `TemplateEditor` dispatches `setTemplateHtml` on every editor change.
+- `selectPreviewHtml` replaces mention spans with resolved values (or `<mark>{{varName}}</mark>` for unfulfilled).
+- `PreviewEditor` calls `setContent(previewHtml)` when `previewHtml` changes, and uses `setNodeMarkup` to update mention labels in-place when only override values change (preserving user edits to surrounding text).
+- Unfulfilled variables render with a red background (`rgba(220,38,38,0.5)`) using the `Highlight` extension's `<mark style="...">` approach — the same technique used in `quickSendPrototype/Editor.tsx`.
+- Copy button is disabled when any unfulfilled variables are present.
+
+**Key files to re-read when resuming:**
+- `src/app/quickSend/quickSendSelect.ts` — all selector logic including unfulfilled detection and HTML replacement
+- `src/app/quickSend/PreviewEditor.tsx` — dual update strategy (setContent vs setNodeMarkup)
+- `src/app/quickSend/mentionSuggestion.ts` — custom command to suppress trailing space
+- `src/app/realGreen/customer/slices/centralCustomerSlice.ts` — why `useCustomerContext(["single"])` is needed in QuickSend.tsx
 
 ---
 
-#### Step 3 — `@progTable` insertion
-**Goal:** Insert a live-updating pricing table driven by progCode/servCode selection.
+#### Step 3 — Dot-notation program variables (NEXT)
+**Goal:** Support `@MLC.description`, `@MLC.servCount`, `@MLC.prefPrice`, etc. — dynamically generated from ProgCodes in Redux state.
 
-Behavior:
-- User types `@progTable` → inserts a table placeholder node into the editor
-- Left panel **reacts**: when a progTable is present, show:
-  - ProgCode selector (dropdown from Redux `progServSelect.progCodes`)
-  - ServCode deselect (checkboxes to exclude individual services from the selected progCode)
-  - Per-service price override (editable price per servCode row; default = calculated from # of services selected)
-- Table has no column headers
-- Table HTML is regenerated live whenever progCode, servCode selection, or prices change
-- The table node in the editor is replaced with the new HTML on each change
+**Design:**
+
+**Variable naming:** `{programCode}.{property}` where `programCode` is the RealGreen program code string (e.g. `"MLC"`) and `property` is one of:
+- `description` — `ProgCode.description`
+- `servCount` — number of included ServCodes
+- `prefPrice` — per-visit price from preferred price table + customer size
+- `econPrice` — per-visit price from economy price table + customer size
+- `price` — auto-selects pref or econ based on `isEcon({ minForPreferred, activeServiceCount })`
+- `totalPrice` — `price * servCount`
+
+**State additions to `quickSendSlice.ts`:**
+```ts
+type QSProgramConfig = {
+  includedServCodes: ServCode[]; // full objects; default = all non-service-call codes
+};
+
+// Added to QuickSendState:
+programConfigs: Record<string, QSProgramConfig>; // keyed by programCode e.g. "MLC"
+```
+
+**Auto-add behavior (Option A):** When the user selects a `@MLC.*` mention from the suggestion dropdown, if `"MLC"` is not yet in `programConfigs`, dispatch `addProgramConfig({ progCode })` which initializes it with all non-service-call ServCodes included. This makes persistence straightforward — `programConfigs` is always the explicit source of truth.
+
+**Persistence note:** When saving to Mongo, serialize `includedServCodes` down to `includedServCodeIds: string[]`. When loading, re-hydrate from Redux `progServSelectors` (ProgCode/ServCode data is always in Redux from `useProgServ({ autoLoad: true })`).
+
+**Dynamic suggestion items:** `buildMentionSuggestion()` needs to accept a `getProgCodes` callback so `TemplateEditor` can pass in live Redux data. The suggestion list is built at call time from all available ProgCodes.
+
+**Controls panel:** `selectActivePrograms` parses `templateHtml` for mention `data-id` attributes with dot notation, extracts unique program code prefixes, and returns the matching `QSProgramConfig[]`. The left panel renders one collapsible section per active program with ServCode checkboxes.
+
+**Selector additions to `quickSendSelect.ts`:**
+- `selectActivePrograms` — parses templateHtml for `{code}.*` mention IDs, returns `QSProgramConfig[]`
+- `selectProgramVariables` — for each active program, computes all resolved property values using `getPriceChartPrice` from `src/app/realGreen/priceTable/_lib/pricingFuncs.ts`
+- `selectPreviewHtml` extended — handles dot-notation mention spans in addition to `name`/`size`
+
+**Key files to read when resuming for Step 3:**
+- `src/app/realGreen/progServ/_lib/types/ProgCodeTypes.ts` — `ProgCode`, `ProgCodeDoc`, `ProgCodeProps`
+- `src/app/realGreen/progServ/_lib/types/ServCodeTypes.ts` — `ServCode`, `ServCodeDoc`
+- `src/app/realGreen/progServ/_lib/selectors/progServSelectors.ts` — how to select ProgCodes from Redux
+- `src/app/realGreen/priceTable/_lib/pricingFuncs.ts` — `getPriceChartPrice`, `isEcon`
+- `src/app/realGreen/priceTable/_types/PriceTableTypes.ts` — `PriceTable` shape
+- `src/app/realGreen/progServ/_lib/hooks/useProgServ.ts` — already written, add to QuickSend.tsx
+- `src/app/realGreen/priceTable/usePriceTable.ts` — already written, add to QuickSend.tsx
+- `src/app/quickSend/quickSendSlice.ts` — extend with `programConfigs`
+- `src/app/quickSend/quickSendSelect.ts` — extend with program variable selectors
+- `src/app/quickSend/mentionSuggestion.ts` — make dynamic (accept `getProgCodes` callback)
+- `src/app/quickSend/TemplateEditor.tsx` — pass progCodes into suggestion config
+- `src/app/quickSend/CustomerLookup.tsx` — add program config sections below customer controls
 
 ---
 
 #### Step 4 — Persistence (future)
 **Goal:** User can name and save a template.
 
-Storage model: flat document containing:
-- Template name
-- Tiptap HTML content (the raw editor HTML with mention spans intact)
-- Variable state snapshot (custId, manual overrides, progCode selection, servCode overrides, prices)
+**Storage model** (flat Mongo document):
+```ts
+type SavedQuickSendTemplate = {
+  templateId: string;       // natural key (user-defined name slug)
+  name: string;
+  templateHtml: string;     // Tiptap HTML with mention spans intact
+  programConfigs: {
+    programCode: string;
+    includedServCodeIds: string[]; // serialize down from full ServCode objects
+  }[];
+  // Note: customer state (custId, overrides) is NOT persisted — it's per-send, not per-template
+};
+```
 
-User can load a saved template, which restores the editor content and left-panel state.
+**Loading:** Restore `templateHtml` + hydrate `programConfigs` by looking up each `programCode` in Redux `progServSelectors`. The controls panel renders immediately from the restored state.
 
 ---
 

@@ -5,11 +5,14 @@ import { quickSendSelect } from "./quickSendSelect";
 import { TemplateEditor } from "./TemplateEditor";
 import { PreviewEditor } from "./PreviewEditor";
 import { CustomerLookup } from "./CustomerLookup";
-import { useContext } from "react";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
+import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
+import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
 
 export function QuickSend() {
   useCustomerContext({contexts: ["single"]})
+  useProgServ({autoLoad: true})
+  usePriceTable({autoLoad: true})
   const activeVars = useSelector(quickSendSelect.activeVars);
   const showCustomerPanel = activeVars.has("name") || activeVars.has("size");
 
