@@ -119,6 +119,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: ^3.22.0
         version: 3.22.0
+      '@tiptap/suggestion':
+        specifier: ^3.22.0
+        version: 3.22.0(@tiptap/core@3.22.0(@tiptap/pm@3.22.0))(@tiptap/pm@3.22.0)
       '@types/bcrypt':
         specifier: ^6.0.0
         version: 6.0.0

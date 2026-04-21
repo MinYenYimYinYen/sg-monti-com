@@ -27,8 +27,8 @@ import createAppMethodReducer from "@/app/appMethod/appMethodCreate/createAppMet
 import { loadoutStartReducer } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
 import { loadoutFinishReducer } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSlice";
 import { loadoutReducer } from "@/app/loadout/loadoutSlice";
-import { templateReducer } from "@/app/quickSend/templates/templateSlice";
-import { templateBuilderReducer } from "@/app/quickSend/templateBuilder/templateBuilderSlice";
+// import { templateReducer } from "@/app/quickSend_bad/templates/templateSlice";
+// import { templateBuilderReducer } from "@/app/quickSend_bad/templateBuilder/templateBuilderSlice";
 import assignmentReducer from "@/app/assignment/assignmentSlice";
 
 const rootReducer = combineReducers({
@@ -59,8 +59,8 @@ const rootReducer = combineReducers({
   equipmentPackage: equipmentPackageReducer,
   customer: customerReducer,
   centralDocProps: centralDocPropsReducer,
-  template: templateReducer,
-  templateBuilder: templateBuilderReducer,
+  // template: templateReducer,
+  // templateBuilder: templateBuilderReducer,
 });
 
 export default rootReducer;

@@ -1,0 +1,79 @@
+import { useState } from "react";
+import { useSelector } from "react-redux";
+import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
+import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { resolveTemplate, type ResolvedGroup } from "./resolveTemplate";
+import type { TreeNodeDoc, FragmentBlock } from "@/app/quickSend_bad/templates/TemplateTypes";
+import type { DataFeatureKey } from "@/app/quickSend_bad/templates/dataFeatures/dataFeatures";
+
+export type SenderState = {
+  /** Active blockKey per choiceId. Only populated for choiceIds with 2+ blocks. */
+  activeChoices: Record<number, string>;
+  setChoice: (choiceId: number, blockKey: string) => void;
+  /** Resolved output groups, ready to render. */
+  resolvedGroups: ResolvedGroup[];
+  /** True if any choiceId has 2+ blocks (i.e. the user needs to make a selection). */
+  hasChoices: boolean;
+  /** Currently selected ProgCode ID (for the progCode data feature). */
+  selectedProgCodeId: string | null;
+  setSelectedProgCodeId: (id: string | null) => void;
+};
+
+/**
+ * Manages send-time state for a single fragment.
+ * Initializes active choices to the first block per choiceId,
+ * and derives resolved output groups whenever choices, customer, or globalSettings change.
+ */
+export function useSenderState(
+  fragment: TreeNodeDoc["fragment"] | undefined,
+): SenderState {
+  const customer = useSelector(singleCustSelect.customer);
+  const globalSettings = useSelector(globalSettingsSelect.settings);
+  const progCodes = useSelector(progServSelect.progCodes);
+  const blocks: FragmentBlock[] = fragment?.blocks ?? [];
+  const dataFeatures = (fragment?.dataFeatures ?? []) as DataFeatureKey[];
+
+  // Build the initial active choices: first block per choiceId that has 2+ blocks
+  const initialChoices = buildInitialChoices(blocks);
+  const [activeChoices, setActiveChoices] = useState<Record<number, string>>(initialChoices);
+  const [selectedProgCodeId, setSelectedProgCodeId] = useState<string | null>(null);
+
+  const setChoice = (choiceId: number, blockKey: string) => {
+    setActiveChoices((prev) => ({ ...prev, [choiceId]: blockKey }));
+  };
+
+  // Resolve the selected ProgCode entity when progCode feature is active OR when a table block exists
+  const hasTableBlock = blocks.some((b) => b.feature === "table");
+  const progCode = (dataFeatures.includes("progCode") || hasTableBlock) && selectedProgCodeId
+    ? (progCodes.find((p) => p.progCodeId === selectedProgCodeId) ?? null)
+    : null;
+
+  const resolvedGroups = resolveTemplate(blocks, activeChoices, customer, globalSettings, progCode);
+
+  const hasChoices = Object.keys(initialChoices).length > 0;
+
+  return { activeChoices, setChoice, resolvedGroups, hasChoices, selectedProgCodeId, setSelectedProgCodeId };
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function buildInitialChoices(blocks: FragmentBlock[]): Record<number, string> {
+  const choiceIdCounts = blocks.reduce<Record<number, number>>((acc, b) => {
+    acc[b.choice.choiceId] = (acc[b.choice.choiceId] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const choices: Record<number, string> = {};
+  const seen = new Set<number>();
+
+  for (const block of blocks) {
+    const choiceId = block.choice.choiceId;
+    if (choiceIdCounts[choiceId] > 1 && !seen.has(choiceId)) {
+      choices[choiceId] = block.blockKey;
+      seen.add(choiceId);
+    }
+  }
+
+  return choices;
+}
