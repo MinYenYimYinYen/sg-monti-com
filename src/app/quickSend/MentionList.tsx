@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 
 type MentionItem = { id: string; label: string };
 
@@ -17,8 +17,7 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
   function MentionList({ items, command }, ref) {
     const [selectedIndex, setSelectedIndex] = useState(0);
 
-    useEffect(() => setSelectedIndex(0), [items]);
-
+    React.useEffect(() => setSelectedIndex(0), [items]);
     useImperativeHandle(ref, () => ({
       onKeyDown({ event }) {
         if (event.key === "ArrowUp") {
