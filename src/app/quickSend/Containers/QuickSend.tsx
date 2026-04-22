@@ -1,23 +1,25 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { quickSendSelect } from "./quickSendSelect";
+import { quickSendSelect } from "../quickSendSelect";
 import { QuickSendEditor } from "./QuickSendEditor";
-import { QuickSendMenubar } from "./QuickSendMenubar";
-import { CustomerLookup } from "./CustomerLookup";
-import { NameOverride } from "./NameOverride";
-import { SizeOverride } from "./SizeOverride";
-import { ProgramConfig } from "./ProgramConfig";
+import { QuickSendMenubar } from "../storedTemplates/components/QuickSendMenubar";
+import { CustomerLookup } from "../controls/CustomerLookup";
+import { NameOverride } from "../controls/NameOverride";
+import { SizeOverride } from "../controls/SizeOverride";
+import { ProgramConfig } from "../controls/ProgramConfig";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
-import { useStoredTemplates } from "./storedTemplates/useStoredTemplates";
-import type { TemplateControlId } from "./QuickSendTypes";
+import { useStoredTemplates } from "../storedTemplates/useStoredTemplates";
+import type { TemplateControlId } from "../QuickSendTypes";
+import { usePrepay } from "@/app/realGreen/prepay/usePrepay";
 
 export function QuickSend() {
   useCustomerContext({ contexts: ["single"] });
   useProgServ({ autoLoad: true });
   usePriceTable({ autoLoad: true });
+  usePrepay({ autoLoad: true });
   useStoredTemplates({ autoLoad: true });
 
   const controlIds = useSelector(quickSendSelect.activeControlIds);
@@ -50,9 +52,8 @@ export function QuickSend() {
           <div className="flex-1 overflow-y-auto">
             {controlIds.length === 0 ? (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground px-4 text-center">
-                Type{" "}
-                <span className="mx-1 font-mono text-primary">@</span>
-                {" "}in the template to insert variables.
+                Type <span className="mx-1 font-mono text-primary">@</span> in
+                the template to insert variables.
               </div>
             ) : (
               controlIds.map(renderControl)

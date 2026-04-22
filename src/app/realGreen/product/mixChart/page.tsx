@@ -117,7 +117,7 @@ export default function MixChartPage() {
           <div className="rounded-lg border border-border bg-card/30 overflow-hidden h-full">
             <ScrollArea className="h-full">
               <div className="p-4">
-                <MixChartSetup config={config} onConfigChange={setConfig} />
+                <MixChartSetup config={config} onConfigChangeAction={setConfig} />
               </div>
             </ScrollArea>
           </div>

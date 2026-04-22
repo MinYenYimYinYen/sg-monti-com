@@ -12,8 +12,8 @@ import { Color } from "@tiptap/extension-color";
 import { Highlight } from "@tiptap/extension-highlight";
 import Mention from "@tiptap/extension-mention";
 import { useSelector } from "react-redux";
-import { quickSendSelect } from "./quickSendSelect";
-import type { QSVariableKey } from "./QuickSendTypes";
+import { quickSendSelect } from "../quickSendSelect";
+import type { QSVariableKey } from "../QuickSendTypes";
 
 type Props = {
   previewHtml: string;

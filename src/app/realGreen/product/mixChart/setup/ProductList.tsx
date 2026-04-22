@@ -7,11 +7,15 @@ import { X } from "lucide-react";
 
 type ProductListProps = {
   products: MixChartProductRow[];
-  onRateChange: (id: string, rate: number) => void;
-  onRemove: (id: string) => void;
+  onRateChangeAction: (id: string, rate: number) => void;
+  onRemoveAction: (id: string) => void;
 };
 
-export function ProductList({ products, onRateChange, onRemove }: ProductListProps) {
+export function ProductList({
+  products,
+  onRateChangeAction: onRateChange,
+  onRemoveAction: onRemove,
+}: ProductListProps) {
   if (products.length === 0) {
     return (
       <p className="text-sm text-muted-foreground italic">

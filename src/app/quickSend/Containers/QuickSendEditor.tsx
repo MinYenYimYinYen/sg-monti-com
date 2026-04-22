@@ -2,8 +2,8 @@
 
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { quickSendSelect } from "./quickSendSelect";
-import { quickSendActions } from "./quickSendSlice";
+import { quickSendSelect } from "../quickSendSelect";
+import { quickSendActions } from "../quickSendSlice";
 import { TemplateEditor } from "./TemplateEditor";
 import { PreviewEditor } from "./PreviewEditor";
 import { ScrollArea } from "@/style/components/scroll-area";

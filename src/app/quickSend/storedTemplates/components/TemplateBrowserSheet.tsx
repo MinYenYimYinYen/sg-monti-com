@@ -14,16 +14,16 @@ import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 import { Badge } from "@/style/components/badge";
 import { authSelect } from "@/app/auth/authSlice";
-import { quickSendActions } from "./quickSendSlice";
-import { storedTemplatesSelect } from "./storedTemplates/storedTemplatesSelect";
-import { StoredTemplateDoc } from "./storedTemplates/StoredTemplateTypes";
+import { quickSendActions } from "../../quickSendSlice";
+import { storedTemplatesSelect } from "../storedTemplatesSelect";
+import { StoredTemplateDoc } from "../StoredTemplateTypes";
 
 type Props = {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChangeAction: (open: boolean) => void;
 };
 
-export function TemplateBrowserSheet({ open, onOpenChange }: Props) {
+export function TemplateBrowserSheet({ open, onOpenChangeAction: onOpenChange }: Props) {
   const dispatch = useAppDispatch();
   const currentUser = useSelector(authSelect.user);
   const templates = useSelector(storedTemplatesSelect.templates);

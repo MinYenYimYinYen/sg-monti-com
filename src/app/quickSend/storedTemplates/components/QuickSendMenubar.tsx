@@ -31,11 +31,11 @@ import {
   TooltipTrigger,
 } from "@/style/components/tooltip";
 import { authSelect } from "@/app/auth/authSlice";
-import { quickSendActions } from "./quickSendSlice";
-import { quickSendSelect } from "./quickSendSelect";
-import { storedTemplatesSelect } from "./storedTemplates/storedTemplatesSelect";
-import { useStoredTemplates } from "./storedTemplates/useStoredTemplates";
-import { StoredTemplateDoc, TemplateGroupDoc } from "./storedTemplates/StoredTemplateTypes";
+import { quickSendActions } from "../../quickSendSlice";
+import { quickSendSelect } from "../../quickSendSelect";
+import { storedTemplatesSelect } from "../storedTemplatesSelect";
+import { useStoredTemplates } from "../useStoredTemplates";
+import { StoredTemplateDoc, TemplateGroupDoc } from "../StoredTemplateTypes";
 import { TemplateBrowserSheet } from "./TemplateBrowserSheet";
 
 // ---------------------------------------------------------------------------
@@ -554,7 +554,7 @@ export function QuickSendMenubar() {
 
       {/* ── Portaled dialogs / sheets (outside menubar to avoid dismissal conflicts) ── */}
 
-      <TemplateBrowserSheet open={browserOpen} onOpenChange={setBrowserOpen} />
+      <TemplateBrowserSheet open={browserOpen} onOpenChangeAction={setBrowserOpen} />
 
       {/* Save As */}
       <Dialog open={saveAsOpen} onOpenChange={setSaveAsOpen}>

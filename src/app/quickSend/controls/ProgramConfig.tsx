@@ -2,9 +2,9 @@
 
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { quickSendActions } from "./quickSendSlice";
+import { quickSendActions } from "../quickSendSlice";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
-import type { QSProgramConfig } from "./QuickSendTypes";
+import type { QSProgramConfig } from "../QuickSendTypes";
 
 type Props = {
   config: QSProgramConfig;

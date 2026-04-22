@@ -112,7 +112,7 @@ export function buildMentionSuggestion({
             });
           }
           // If the base alias is already in programConfigs, also offer the next available _N alias
-          const existingAliases = getExistingAliases(); // eslint-disable-line react-hooks/refs
+          const existingAliases = getExistingAliases();
           if (existingAliases.has(p.progCodeId)) {
             let n = 2;
             while (existingAliases.has(`${p.progCodeId}_${n}`)) n++;

@@ -25,11 +25,11 @@ import { nanoid } from "@reduxjs/toolkit";
 
 type AddProductSheetProps = {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAdd: (rows: MixChartProductRow[]) => void;
+  onOpenChangeAction: (open: boolean) => void;
+  onAddAction: (rows: MixChartProductRow[]) => void;
 };
 
-export function AddProductSheet({ open, onOpenChange, onAdd }: AddProductSheetProps) {
+export function AddProductSheet({ open, onOpenChangeAction:onOpenChange, onAddAction:onAdd }: AddProductSheetProps) {
   const masters = useSelector(productSelect.productMasters);
   const subs = useSelector(productSelect.productSubs);
   const singles = useSelector(productSelect.productSingles);

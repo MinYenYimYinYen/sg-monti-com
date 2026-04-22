@@ -14,7 +14,10 @@ import { Checkbox } from "@/style/components/checkbox";
 import { Button } from "@/style/components/button";
 import { Separator } from "@/style/components/separator";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
-import { MixChartConfig, MixChartProductRow } from "@/app/realGreen/product/mixChart/_lib/MixChartTypes";
+import {
+  MixChartConfig,
+  MixChartProductRow,
+} from "@/app/realGreen/product/mixChart/_lib/MixChartTypes";
 import { ProductList } from "./ProductList";
 import { AddProductSheet } from "./AddProductSheet";
 import { AppMethodOverrideSection } from "./AppMethodOverrideSection";
@@ -25,10 +28,13 @@ import { AppDispatch } from "@/store";
 
 type MixChartSetupProps = {
   config: MixChartConfig;
-  onConfigChange: (config: MixChartConfig) => void;
+  onConfigChangeAction: (config: MixChartConfig) => void;
 };
 
-export function MixChartSetup({ config, onConfigChange }: MixChartSetupProps) {
+export function MixChartSetup({
+  config,
+  onConfigChangeAction: onConfigChange,
+}: MixChartSetupProps) {
   const dispatch = useDispatch<AppDispatch>();
   const allEquipment = useSelector(equipmentSelect.equipments);
   const solution = useSelector(solverSelect.solution);
@@ -37,11 +43,17 @@ export function MixChartSetup({ config, onConfigChange }: MixChartSetupProps) {
   const [addProductOpen, setAddProductOpen] = useState(false);
 
   const handleEquipmentChange = (equipmentId: string) => {
-    const equipment = allEquipment.find((e) => e.equipmentId === equipmentId) ?? null;
+    const equipment =
+      allEquipment.find((e) => e.equipmentId === equipmentId) ?? null;
     if (equipment) {
       // Pre-populate the AppMethod editor with this equipment's default method
       loadSavedAppMethod(equipment.appMethod, dispatch);
-      dispatch(createAppMethodActions.setSolveForField({ param: "coverage", field: "volume" }));
+      dispatch(
+        createAppMethodActions.setSolveForField({
+          param: "coverage",
+          field: "volume",
+        }),
+      );
     }
     onConfigChange({
       ...config,
@@ -91,7 +103,10 @@ export function MixChartSetup({ config, onConfigChange }: MixChartSetupProps) {
           </SelectTrigger>
           <SelectContent>
             {allEquipment.map((equipment) => (
-              <SelectItem key={equipment.equipmentId} value={equipment.equipmentId}>
+              <SelectItem
+                key={equipment.equipmentId}
+                value={equipment.equipmentId}
+              >
                 {equipment.description}
               </SelectItem>
             ))}
@@ -122,7 +137,7 @@ export function MixChartSetup({ config, onConfigChange }: MixChartSetupProps) {
             {appMethodExpanded && (
               <AppMethodOverrideSection
                 equipment={config.equipment}
-                onSolutionChange={() => {
+                onSolutionChangeAction={() => {
                   // The parent reads solverSelect.solution directly via effectiveAppMethod
                 }}
               />
@@ -171,15 +186,15 @@ export function MixChartSetup({ config, onConfigChange }: MixChartSetupProps) {
 
         <ProductList
           products={config.products}
-          onRateChange={handleRateChange}
-          onRemove={handleRemoveProduct}
+          onRateChangeAction={handleRateChange}
+          onRemoveAction={handleRemoveProduct}
         />
       </div>
 
       <AddProductSheet
         open={addProductOpen}
-        onOpenChange={setAddProductOpen}
-        onAdd={handleAddProducts}
+        onOpenChangeAction={setAddProductOpen}
+        onAddAction={handleAddProducts}
       />
     </div>
   );

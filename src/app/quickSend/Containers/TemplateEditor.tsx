@@ -13,10 +13,10 @@ import { Highlight } from "@tiptap/extension-highlight";
 import Mention from "@tiptap/extension-mention";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { quickSendActions } from "./quickSendSlice";
-import { buildMentionSuggestion, safelyRemoveSuffix } from "./mentionSuggestion";
+import { quickSendActions } from "../quickSendSlice";
+import { buildMentionSuggestion, safelyRemoveSuffix } from "../mentions/mentionSuggestion";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
-import { quickSendSelect } from "./quickSendSelect";
+import { quickSendSelect } from "../quickSendSelect";
 
 type Props = {
   sectionId: string;

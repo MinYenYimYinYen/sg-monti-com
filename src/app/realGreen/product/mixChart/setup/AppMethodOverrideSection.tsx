@@ -19,12 +19,14 @@ import { createAppMethodActions } from "@/app/appMethod/appMethodCreate/createAp
 
 type AppMethodOverrideSectionProps = {
   equipment: Equipment;
-  onSolutionChange: (solution: ReturnType<typeof solverSelect.solution> | null) => void;
+  onSolutionChangeAction: (
+    solution: ReturnType<typeof solverSelect.solution> | null,
+  ) => void;
 };
 
 export function AppMethodOverrideSection({
   equipment,
-  onSolutionChange,
+  onSolutionChangeAction: onSolutionChange,
 }: AppMethodOverrideSectionProps) {
   const dispatch = useDispatch<AppDispatch>();
   const solution = useSelector(solverSelect.solution);
@@ -36,7 +38,12 @@ export function AppMethodOverrideSection({
 
   const handleReset = () => {
     loadSavedAppMethod(equipment.appMethod, dispatch);
-    dispatch(createAppMethodActions.setSolveForField({ param: "coverage", field: "volume" }));
+    dispatch(
+      createAppMethodActions.setSolveForField({
+        param: "coverage",
+        field: "volume",
+      }),
+    );
     onSolutionChange(null);
   };
 
@@ -55,7 +62,12 @@ export function AppMethodOverrideSection({
               {coverageDisplay}
             </Badge>
           )}
-          <Button variant="outline" intensity="ghost" size="sm" onClick={handleReset}>
+          <Button
+            variant="outline"
+            intensity="ghost"
+            size="sm"
+            onClick={handleReset}
+          >
             Reset
           </Button>
         </div>
@@ -73,7 +85,9 @@ export function AppMethodOverrideSection({
           checked={overlap === 2}
           onCheckedChange={(checked) => setOverlap(checked ? 2 : 1)}
         />
-        <Label htmlFor="mix-chart-overlap" className="text-sm">Double Overlap</Label>
+        <Label htmlFor="mix-chart-overlap" className="text-sm">
+          Double Overlap
+        </Label>
       </div>
     </div>
   );

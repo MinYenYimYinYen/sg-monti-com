@@ -2,8 +2,8 @@
 
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { quickSendActions } from "./quickSendSlice";
-import { quickSendSelect } from "./quickSendSelect";
+import { quickSendActions } from "../quickSendSlice";
+import { quickSendSelect } from "../quickSendSelect";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 
