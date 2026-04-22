@@ -27,10 +27,9 @@ import createAppMethodReducer from "@/app/appMethod/appMethodCreate/createAppMet
 import { loadoutStartReducer } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
 import { loadoutFinishReducer } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSlice";
 import { loadoutReducer } from "@/app/loadout/loadoutSlice";
-// import { templateReducer } from "@/app/quickSend_bad/templates/templateSlice";
-// import { templateBuilderReducer } from "@/app/quickSend_bad/templateBuilder/templateBuilderSlice";
 import assignmentReducer from "@/app/assignment/assignmentSlice";
 import quickSendReducer from "@/app/quickSend/quickSendSlice";
+import { storedTemplatesReducer } from "@/app/quickSend/storedTemplates/storedTemplatesSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -61,8 +60,7 @@ const rootReducer = combineReducers({
   customer: customerReducer,
   centralDocProps: centralDocPropsReducer,
   quickSend: quickSendReducer,
-  // template: templateReducer,
-  // templateBuilder: templateBuilderReducer,
+  storedTemplates: storedTemplatesReducer,
 });
 
 export default rootReducer;
