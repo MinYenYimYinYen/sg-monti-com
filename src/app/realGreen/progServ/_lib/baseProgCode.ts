@@ -3,6 +3,8 @@ import {
   ProgCode,
   ProgCodeDocProps,
 } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import { ProgCodeUtils } from "@/app/realGreen/progServ/_lib/classes/ProgCodeUtils";
+import { buildProgCode } from "@/app/realGreen/progServ/_lib/buildProgCode";
 
 export const baseProgCodeDocProps: ProgCodeDocProps = {
   progCodeId: baseStrId,
@@ -14,7 +16,7 @@ export const baseProgCodeDocProps: ProgCodeDocProps = {
   minForPreferred: null,
 };
 
-export const baseProgCode: ProgCode = {
+const baseProgCodeNoX: Omit<ProgCode, "x"> = {
   available: true,
   description: "",
   programType: "",
@@ -25,4 +27,9 @@ export const baseProgCode: ProgCode = {
   priceTable: null,
   econPriceTable: null,
   ...baseProgCodeDocProps,
+};
+
+export const baseProgCode: ProgCode = {
+  ...baseProgCodeNoX,
+  x: new ProgCodeUtils(baseProgCodeNoX, buildProgCode),
 };

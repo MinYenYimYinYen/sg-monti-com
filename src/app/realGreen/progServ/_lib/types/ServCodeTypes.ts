@@ -17,14 +17,13 @@
 
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
-import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
-import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import {
   ProductRule,
   ProductRuleDoc,
 } from "@/app/realGreen/progServ/_lib/types/ProductRule";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { ServCodeUtils } from "@/app/realGreen/progServ/_lib/classes/ServCodeUtils";
 
 export type ServCodeRaw = {
   // autopostMobile: boolean;
@@ -121,25 +120,7 @@ export type ServCodeProps = {
   services: Service[];
   isSpecial: boolean;
   productRules: ProductRule[];
+  x: ServCodeUtils;
 };
 
 export type ServCode = ServCodeDoc & ServCodeProps;
-
-export const baseServCode: ServCode = {
-  servCodeId: baseStrId,
-  progCodeId: baseStrId,
-  isServiceCall: false,
-  available: true,
-  longName: "",
-  invoiceMessage: "",
-  alwaysAsap: false,
-  dateRange: { min: "", max: "" },
-  progCode: baseProgCode,
-  services: [],
-  createdAt: "",
-  updatedAt: "",
-  productRuleDocs: [],
-  productRules: [],
-  isSpecial: false,
-  callAheadTag: null,
-};

@@ -6,6 +6,7 @@ import { ServCode } from "../types/ServCodeTypes";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { hydrateProductRules } from "./hydrateProductRules";
 import { priceTableSelect } from "@/app/realGreen/priceTable/priceTableSelect";
+import { buildProgCode } from "@/app/realGreen/progServ/_lib/buildProgCode";
 
 const selectProgCodeDocs = (state: AppState) => state.progServ.progCodeDocs;
 const selectServCodeDocs = (state: AppState) => state.progServ.servCodeDocs;
@@ -37,11 +38,6 @@ const selectProgCodes = createSelector(
     productMasterMap,
     priceTableMap,
   ) => {
-    // Builder type for type-safe construction before the circle closes
-    type ProgCodeBuilder = Omit<ProgCode, "servCodes"> & {
-      servCodes: ServCode[];
-    };
-
     const progCodes: ProgCode[] = progCodeDocs.map((progDoc) => {
       const progServLinks = progServMap.get(progDoc.progDefId) || [];
 
@@ -59,44 +55,38 @@ const selectProgCodes = createSelector(
           ? priceTableMap.get(progDoc.econPriceTableId)
           : null) ?? null;
 
-      // Phase 1: Build progCode with empty servCodes
-      const progCodeBuilder: ProgCodeBuilder = {
-        ...progDoc,
-        isSpecial,
-        servCodes: [],
-        priceTable,
-        econPriceTable,
-      };
-
-      // Phase 2: Build servCodes referencing the progCode builder
-      const servCodes: ServCode[] = progServLinks
+      // Resolve all external data before calling buildProgCode
+      const servCodeDatas: Omit<ServCode, "progCode" | "x">[] = progServLinks
         .map((link) => {
           if (!link.servCodeId) return null;
 
           const servDoc = servCodeDocMap.get(link.servCodeId);
           if (!servDoc) return null;
 
-          const servCode: ServCode = {
+          const servData: Omit<ServCode, "progCode" | "x"> = {
             ...servDoc,
-            progCode: progCodeBuilder as ProgCode,
-            progCodeId: progCodeBuilder.progCodeId,
+            progCodeId: progDoc.progCodeId,
             services: [],
-            isSpecial: progCodeBuilder.progCodeId === link.servCodeId,
+            isSpecial: progDoc.progCodeId === link.servCodeId,
             productRules: hydrateProductRules(
               servDoc.productRuleDocs,
               productMasterMap,
             ),
           };
 
-          return servCode;
+          return servData;
         })
-        .filter((s): s is ServCode => s !== null)
+        .filter((s): s is Omit<ServCode, "progCode" | "x"> => s !== null)
         .sort((a, b) => a.servCodeId.localeCompare(b.servCodeId));
 
-      // Mutate servCodes in place to close the circle — servCode.progCode.servCodes is now populated
-      progCodeBuilder.servCodes = servCodes;
+      const progCodeData: Omit<ProgCode, "servCodes" | "x"> = {
+        ...progDoc,
+        isSpecial,
+        priceTable,
+        econPriceTable,
+      };
 
-      return progCodeBuilder as ProgCode;
+      return buildProgCode(progCodeData, servCodeDatas);
     });
 
     // Filter out nested programs (programs that appear as services in other programs)

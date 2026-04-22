@@ -6,7 +6,6 @@ import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTyp
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
-import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { basicTaxCodeSelect } from "@/app/realGreen/taxCode/taxCodeBaseSelectors";
 import { baseTaxCode } from "@/app/realGreen/taxCode/_lib/baseTaxCode";
 import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
@@ -25,6 +24,7 @@ import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUti
 import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
 import { parsePromiseString } from "@/app/schedPromise/parsePromise";
 import { hydratePlannedLoadout } from "@/app/realGreen/customer/selectors/hydratePlannedLoadout";
+import { baseServCode } from "../../progServ/_lib/baseServCode";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;

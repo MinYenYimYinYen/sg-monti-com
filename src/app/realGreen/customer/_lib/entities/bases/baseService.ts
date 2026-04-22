@@ -6,7 +6,6 @@ import {
 } from "../types/ServiceTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseProgram } from "./baseProgram";
-import { baseServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { baseEmployee } from "@/app/realGreen/employee/_lib/baseEmployee";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 import { baseLoadout } from "@/app/loadout/LoadoutTypes";
@@ -15,6 +14,7 @@ import {
   AssignmentDoc,
   AssignmentProps,
 } from "@/app/assignment/AssignmentTypes";
+import { baseServCode } from "@/app/realGreen/progServ/_lib/baseServCode";
 
 export const baseServiceCore: ServiceCore = {
   servId: baseNumId,

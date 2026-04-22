@@ -1,6 +1,7 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { ServCode } from "./ServCodeTypes";
 import { PriceTable } from "@/app/realGreen/priceTable/_types/PriceTableTypes";
+import { ProgCodeUtils } from "@/app/realGreen/progServ/_lib/classes/ProgCodeUtils";
 
 export type ProgCodeRaw = {
   // anyBranch: boolean;
@@ -90,6 +91,7 @@ export type ProgCodeProps = {
   isSpecial: boolean;
   priceTable: PriceTable | null;
   econPriceTable: PriceTable | null;
+  x: ProgCodeUtils;
 };
 
 export type ProgCode = ProgCodeDoc & ProgCodeProps;

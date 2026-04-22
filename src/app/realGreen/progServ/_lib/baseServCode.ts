@@ -4,9 +4,9 @@ import {
   ServCodeCore,
   ServCodeDoc,
   ServCodeDocProps,
-  ServCodeProps,
 } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
+import { ServCodeUtils } from "@/app/realGreen/progServ/_lib/classes/ServCodeUtils";
 
 export const baseServCodeCore: ServCodeCore = {
   servCodeId: baseStrId,
@@ -14,7 +14,7 @@ export const baseServCodeCore: ServCodeCore = {
   available: true,
   longName: "",
   invoiceMessage: "",
-}
+};
 
 export const baseServCodeDocProps: ServCodeDocProps = {
   servCodeId: baseStrId,
@@ -24,27 +24,23 @@ export const baseServCodeDocProps: ServCodeDocProps = {
   callAheadTag: null,
   createdAt: "",
   updatedAt: "",
-}
+};
 
 export const baseServCodeDoc: ServCodeDoc = {
   ...baseServCodeCore,
-  ...baseServCodeDocProps
-}
+  ...baseServCodeDocProps,
+};
 
-export const baseServCodeProps: ServCodeProps = {
+const baseServCodeNoX: Omit<ServCode, "x"> = {
+  ...baseServCodeDoc,
   progCode: baseProgCode,
   progCodeId: baseStrId,
   services: [],
   isSpecial: false,
   productRules: [],
-}
+};
 
 export const baseServCode: ServCode = {
-  ...baseServCodeDoc,
-  ...baseServCodeProps
-}
-
-
-
-
-
+  ...baseServCodeNoX,
+  x: new ServCodeUtils(baseServCodeNoX),
+};
