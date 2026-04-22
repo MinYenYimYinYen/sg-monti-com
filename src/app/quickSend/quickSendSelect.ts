@@ -2,7 +2,7 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
-import type { QSVariableKey, QSProgramConfig } from "./QuickSendTypes";
+import type { QSVariableKey, QSProgramConfig, TemplateControlId } from "./QuickSendTypes";
 
 const selectSlice = (state: AppState) => state.quickSend;
 
@@ -61,12 +61,10 @@ const selectActivePrograms = createSelector(
   [selectTemplateHtml, selectProgramConfigs],
   (html, configs): QSProgramConfig[] => {
     const activeProgCodeIds = new Set<string>();
-    const matches = html.matchAll(/data-id="([^"]+\.[^"]+)"/g);
+    // Match mention IDs of the form "program.{progCodeId}.{prop}"
+    const matches = html.matchAll(/data-id="program\.([^."]+)\.[^"]+"/g);
     for (const match of matches) {
-      const dotIndex = match[1].indexOf(".");
-      if (dotIndex !== -1) {
-        activeProgCodeIds.add(match[1].slice(0, dotIndex));
-      }
+      activeProgCodeIds.add(match[1]);
     }
     return configs.filter((c) => activeProgCodeIds.has(c.progCodeId));
   },
@@ -197,15 +195,17 @@ const selectPreviewHtml = createSelector(
     // --- Dot-notation program vars ---
     const progVarMap = new Map(programVars.map((v) => [v.progCodeId, v]));
 
-    // Replace each dot-notation mention span with its resolved value
+    // Replace each dot-notation mention span with its resolved value.
+    // ID format: "program.{progCodeId}.{prop}"
     preview = preview.replace(
-      /<span[^>]*data-type="mention"[^>]*data-id="([^"]+\.[^"]+)"[^>]*>[^<]*<\/span>/g,
+      /<span[^>]*data-type="mention"[^>]*data-id="(program\.[^"]+)"[^>]*>[^<]*<\/span>/g,
       (fullMatch, mentionId: string) => {
-        const dotIndex = mentionId.indexOf(".");
-        if (dotIndex === -1) return fullMatch;
+        // mentionId = "program.MLC.price"
+        const parts = mentionId.split(".");
+        if (parts.length !== 3 || parts[0] !== "program") return fullMatch;
 
-        const progCodeId = mentionId.slice(0, dotIndex);
-        const prop = mentionId.slice(dotIndex + 1) as keyof QSProgramVariables;
+        const progCodeId = parts[1];
+        const prop = parts[2] as keyof QSProgramVariables;
         const vars = progVarMap.get(progCodeId);
 
         if (!vars) {
@@ -235,6 +235,45 @@ const selectPreviewHtml = createSelector(
   },
 );
 
+/**
+ * Returns a deduped, ordered array of control IDs that the left panel should render.
+ *
+ * Ordering: customerLookup → nameOverride → sizeOverride → programConfig:X (in template order)
+ *
+ * Dependencies:
+ * - @name          → customerLookup, nameOverride
+ * - @size          → customerLookup, sizeOverride
+ * - @program.X.*  → customerLookup, sizeOverride, programConfig:X
+ */
+const selectActiveControlIds = createSelector(
+  [selectActiveVars, selectActivePrograms],
+  (activeVars, activePrograms): TemplateControlId[] => {
+    const ids: TemplateControlId[] = [];
+    const seen = new Set<string>();
+
+    const add = (id: TemplateControlId) => {
+      if (!seen.has(id)) {
+        seen.add(id);
+        ids.push(id);
+      }
+    };
+
+    const needsCustomerLookup =
+      activeVars.has("name") ||
+      activeVars.has("size") ||
+      activePrograms.length > 0;
+
+    if (needsCustomerLookup) add("customerLookup");
+    if (activeVars.has("name")) add("nameOverride");
+    if (activeVars.has("size") || activePrograms.length > 0) add("sizeOverride");
+    for (const config of activePrograms) {
+      add(`programConfig:${config.progCodeId}`);
+    }
+
+    return ids;
+  },
+);
+
 export const quickSendSelect = {
   templateHtml: selectTemplateHtml,
   customerState: selectCustomerState,
@@ -242,6 +281,7 @@ export const quickSendSelect = {
   programConfigMap: selectProgramConfigMap,
   activeVars: selectActiveVars,
   activePrograms: selectActivePrograms,
+  activeControlIds: selectActiveControlIds,
   resolvedVariables: selectResolvedVariables,
   unfulfilledVars: selectUnfulfilledVars,
   programVariables: selectProgramVariables,

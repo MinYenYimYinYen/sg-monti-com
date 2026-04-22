@@ -17,7 +17,6 @@ export function CustomerLookup() {
   const { lookup } = useSingleCustomer();
 
   const customerState = useSelector(quickSendSelect.customerState);
-  const activeVars = useSelector(quickSendSelect.activeVars);
   const loadedCustomer = useSelector(singleCustSelect.customer);
 
   const [inputValue, setInputValue] = useState<string>(
@@ -49,82 +48,49 @@ export function CustomerLookup() {
     dispatch(quickSendActions.clearCustomer());
   };
 
-  const showSize = activeVars.has("size");
-
   return (
-    <div className="flex flex-col gap-3 px-4 py-3">
-      {/* Customer ID lookup */}
-      <div className="flex flex-col gap-1">
-        <Label className="text-xs text-muted-foreground">Customer ID</Label>
-        <div className="flex gap-1.5">
-          <Input
-            className="h-8 text-sm"
-            placeholder="Enter ID…"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSearch();
-            }}
-          />
-          <Button
-            size="sm"
-            variant="primary"
-            intensity="soft"
-            className="h-8 px-2 shrink-0"
-            onClick={handleSearch}
-            disabled={!inputValue}
-          >
-            <Search className="h-3.5 w-3.5" />
-          </Button>
-          {customerState.custId !== null && (
-            <Button
-              size="sm"
-              variant="destructive"
-              intensity="ghost"
-              className="h-8 px-2 shrink-0"
-              onClick={handleClear}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        {customerState.customer && (
-          <p className="text-xs text-muted-foreground">
-            Loaded:{" "}
-            <span className="font-medium text-foreground">
-              {customerState.customer.displayName}
-            </span>
-          </p>
-        )}
-      </div>
-
-      {/* Name override */}
-      <div className="flex flex-col gap-1">
-        <Label className="text-xs text-muted-foreground">Name override</Label>
+    <div className="flex flex-col gap-1 px-4 py-3 border-b border-border">
+      <Label className="text-xs text-muted-foreground">Customer ID</Label>
+      <div className="flex gap-1.5">
         <Input
           className="h-8 text-sm"
-          placeholder="Customer name…"
-          value={customerState.nameOverride}
-          onChange={(e) =>
-            dispatch(quickSendActions.setNameOverride(e.target.value))
-          }
+          placeholder="Enter ID…"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSearch();
+          }}
         />
+        <Button
+          size="sm"
+          variant="primary"
+          intensity="soft"
+          className="h-8 px-2 shrink-0"
+          onClick={handleSearch}
+          disabled={!inputValue}
+        >
+          <Search className="h-3.5 w-3.5" />
+        </Button>
+        {customerState.custId !== null && (
+          <Button
+            size="sm"
+            variant="destructive"
+            intensity="ghost"
+            className="h-8 px-2 shrink-0"
+            onClick={handleClear}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </div>
-
-      {/* Size override — only shown when @size is active in the template */}
-      {showSize && (
-        <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Size override</Label>
-          <Input
-            className="h-8 text-sm"
-            placeholder="Lawn size…"
-            value={customerState.sizeOverride}
-            onChange={(e) =>
-              dispatch(quickSendActions.setSizeOverride(e.target.value))
-            }
-          />
-        </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      {customerState.customer && (
+        <p className="text-xs text-muted-foreground">
+          Loaded:{" "}
+          <span className="font-medium text-foreground">
+            {customerState.customer.displayName}
+          </span>
+        </p>
       )}
     </div>
   );

@@ -15,3 +15,18 @@ export type QSProgramConfig = {
   progCodeId: string;
   includedServCodeIds: string[];
 };
+
+/**
+ * IDs for left-panel controls. Each mention type declares which controls it requires.
+ * `QuickSend.tsx` maps these IDs to the actual components to render.
+ *
+ * Dependencies:
+ * - @name          → customerLookup, nameOverride
+ * - @size          → customerLookup, sizeOverride
+ * - @program.X.*  → customerLookup, sizeOverride, programConfig:X
+ */
+export type TemplateControlId =
+  | "customerLookup"
+  | "nameOverride"
+  | "sizeOverride"
+  | `programConfig:${string}`;

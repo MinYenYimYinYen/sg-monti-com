@@ -5,22 +5,36 @@ import { quickSendSelect } from "./quickSendSelect";
 import { TemplateEditor } from "./TemplateEditor";
 import { PreviewEditor } from "./PreviewEditor";
 import { CustomerLookup } from "./CustomerLookup";
+import { NameOverride } from "./NameOverride";
+import { SizeOverride } from "./SizeOverride";
 import { ProgramConfig } from "./ProgramConfig";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
+import type { TemplateControlId } from "./QuickSendTypes";
 
 export function QuickSend() {
   useCustomerContext({ contexts: ["single"] });
   useProgServ({ autoLoad: true });
   usePriceTable({ autoLoad: true });
 
-  const activeVars = useSelector(quickSendSelect.activeVars);
-  const activePrograms = useSelector(quickSendSelect.activePrograms);
+  const controlIds = useSelector(quickSendSelect.activeControlIds);
+  const programConfigs = useSelector(quickSendSelect.programConfigs);
 
-  const showCustomerPanel = activeVars.has("name") || activeVars.has("size");
-  const showProgramPanels = activePrograms.length > 0;
-  const showEmptyState = !showCustomerPanel && !showProgramPanels;
+  const programConfigMap = new Map(programConfigs.map((c) => [c.progCodeId, c]));
+
+  const renderControl = (id: TemplateControlId) => {
+    if (id === "customerLookup") return <CustomerLookup key="customerLookup" />;
+    if (id === "nameOverride") return <NameOverride key="nameOverride" />;
+    if (id === "sizeOverride") return <SizeOverride key="sizeOverride" />;
+    if (id.startsWith("programConfig:")) {
+      const progCodeId = id.slice("programConfig:".length);
+      const config = programConfigMap.get(progCodeId);
+      if (!config) return null;
+      return <ProgramConfig key={id} config={config} />;
+    }
+    return null;
+  };
 
   return (
     <div className="flex h-full w-full overflow-hidden">
@@ -30,19 +44,14 @@ export function QuickSend() {
           <h2 className="text-sm font-semibold">Controls</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {showEmptyState ? (
+          {controlIds.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground px-4 text-center">
               Type{" "}
               <span className="mx-1 font-mono text-primary">@</span>
               {" "}in the template to insert variables.
             </div>
           ) : (
-            <>
-              {showCustomerPanel && <CustomerLookup />}
-              {activePrograms.map((config) => (
-                <ProgramConfig key={config.progCodeId} config={config} />
-              ))}
-            </>
+            controlIds.map(renderControl)
           )}
         </div>
       </div>
