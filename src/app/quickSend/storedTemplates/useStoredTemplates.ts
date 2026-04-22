@@ -2,6 +2,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { useEffect } from "react";
 import { storedTemplatesActions } from "./storedTemplatesSlice";
 import { StoredTemplateDoc } from "./StoredTemplateTypes";
+import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
 export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
@@ -11,13 +12,19 @@ export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
       dispatch(
         storedTemplatesActions.getTemplates({
           params: {},
-          config: { loadingMsg: "Loading templates..." },
+          config: {
+            loadingMsg: "Loading templates...",
+            staleTime: realGreenConst.paramTypesCacheTime,
+          },
         }),
       );
       dispatch(
         storedTemplatesActions.getGroups({
           params: {},
-          config: { loadingMsg: "Loading groups..." },
+          config: {
+            loadingMsg: "Loading groups...",
+            staleTime: realGreenConst.paramTypesCacheTime,
+          },
         }),
       );
     }

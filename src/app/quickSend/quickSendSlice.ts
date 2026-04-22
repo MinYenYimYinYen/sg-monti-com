@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { QSCustomerState, QSProgramConfig, QSSection } from "./QuickSendTypes";
+import { StoredTemplateDoc } from "./storedTemplates/StoredTemplateTypes";
 
 /** Creates a blank section with a stable ID. */
 function makeSection(sectionId: string): QSSection {
@@ -15,6 +16,14 @@ type QuickSendState = {
   activeSectionId: string;
   programConfigs: QSProgramConfig[];
   customer: QSCustomerState;
+
+  // Loaded template metadata (null = unsaved / new)
+  loadedTemplateId: string | null;
+  loadedTemplateOwner: string | null;
+  loadedTemplateName: string | null;
+  loadedTemplateGroupId: string | null;
+  /** True after loadTemplate; Save is disabled until the user explicitly unlocks. */
+  isLocked: boolean;
 };
 
 const initialState: QuickSendState = {
@@ -27,6 +36,11 @@ const initialState: QuickSendState = {
     nameOverride: "",
     sizeOverride: "",
   },
+  loadedTemplateId: null,
+  loadedTemplateOwner: null,
+  loadedTemplateName: null,
+  loadedTemplateGroupId: null,
+  isLocked: false,
 };
 
 const quickSendSlice = createSlice({
@@ -135,6 +149,50 @@ const quickSendSlice = createSlice({
       if (config) {
         config.includedServCodeIds = action.payload.servCodeIds;
       }
+    },
+
+    // --- Loaded template state ---
+
+    /**
+     * Loads a stored template into the editor.
+     * Replaces sections + programConfigs and sets the lock so Save is disabled
+     * until the user explicitly unlocks (or saves as a new template).
+     */
+    loadTemplate(state, action: PayloadAction<StoredTemplateDoc>) {
+      const template = action.payload;
+      state.sections = template.sections.length > 0
+        ? template.sections
+        : [makeSection(INITIAL_SECTION_ID)];
+      state.activeSectionId = state.sections[0].sectionId;
+      state.programConfigs = template.programConfigs;
+      state.loadedTemplateId = template.templateId;
+      state.loadedTemplateOwner = template.userName;
+      state.loadedTemplateName = template.name;
+      state.loadedTemplateGroupId = template.groupId;
+      state.isLocked = true;
+    },
+
+    /**
+     * Session-only unlock — allows Save to overwrite the loaded template.
+     * Does not persist; reloading the template re-locks it.
+     */
+    unlock(state) {
+      state.isLocked = false;
+    },
+
+    /**
+     * Resets the editor to a blank state (new template).
+     * Clears all sections, programConfigs, and loaded template metadata.
+     */
+    clearTemplate(state) {
+      state.sections = [makeSection(INITIAL_SECTION_ID)];
+      state.activeSectionId = INITIAL_SECTION_ID;
+      state.programConfigs = [];
+      state.loadedTemplateId = null;
+      state.loadedTemplateOwner = null;
+      state.loadedTemplateName = null;
+      state.loadedTemplateGroupId = null;
+      state.isLocked = false;
     },
   },
 });

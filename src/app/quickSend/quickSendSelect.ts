@@ -11,6 +11,12 @@ import type {
 
 const selectSlice = (state: AppState) => state.quickSend;
 
+const selectLoadedTemplateId = (state: AppState) => state.quickSend.loadedTemplateId;
+const selectLoadedTemplateOwner = (state: AppState) => state.quickSend.loadedTemplateOwner;
+const selectLoadedTemplateName = (state: AppState) => state.quickSend.loadedTemplateName;
+const selectLoadedTemplateGroupId = (state: AppState) => state.quickSend.loadedTemplateGroupId;
+const selectIsLocked = (state: AppState) => state.quickSend.isLocked;
+
 const selectSections = createSelector([selectSlice], (slice) => slice.sections);
 
 const selectActiveSectionId = createSelector(
@@ -359,4 +365,9 @@ export const quickSendSelect = {
   programVariables: selectProgramVariables,
   previewHtml: selectPreviewHtml,
   allPreviewHtmls: selectAllPreviewHtmls,
+  loadedTemplateId: selectLoadedTemplateId,
+  loadedTemplateOwner: selectLoadedTemplateOwner,
+  loadedTemplateName: selectLoadedTemplateName,
+  loadedTemplateGroupId: selectLoadedTemplateGroupId,
+  isLocked: selectIsLocked,
 };
