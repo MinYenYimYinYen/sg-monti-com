@@ -3,8 +3,11 @@ import {
   ParseConfig,
   ParseResult,
   ColumnValidation,
-  TransformResult,
 } from "./ParserTypes";
+
+type RowSuccess<T> = { data: T; warnings: string[] };
+type RowError = { error: string };
+type RowResult<T> = RowSuccess<T> | RowError;
 
 /**
  * Validates that all required columns are present in CSV headers
@@ -26,12 +29,13 @@ function validateColumns<T extends object>(
 }
 
 /**
- * Transforms a CSV row into target format and validates with Zod schema
+ * Transforms a CSV row into target format, validates with Zod schema,
+ * and runs optional advisory checks that produce warnings instead of errors.
  */
 function transformRow<T extends object>(
   row: Record<string, string>,
   config: ParseConfig<T>,
-): TransformResult<T> {
+): RowResult<T> {
   try {
     const result: Partial<T> = {};
 
@@ -64,7 +68,12 @@ function transformRow<T extends object>(
       return { error: `Validation failed: ${errorMessages}` };
     }
 
-    return validation.data;
+    // Run advisory checks — these produce warnings, not errors
+    const warnings = config.advisoryChecks
+      ? config.advisoryChecks(validation.data)
+      : [];
+
+    return { data: validation.data, warnings };
   } catch (error) {
     return {
       error: `Transformation error: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -106,6 +115,7 @@ export function createCSVParser<T extends object>(
         transformHeader: (header) => header.trim(),
         complete: (results) => {
           const errors: string[] = [];
+          const warnings: string[] = [];
 
           // Validate columns
           const headers = results.meta.fields || [];
@@ -127,7 +137,10 @@ export function createCSVParser<T extends object>(
             if ("error" in transformed) {
               errors.push(`Row ${index + 2}: ${transformed.error}`);
             } else {
-              data.push(transformed);
+              data.push(transformed.data);
+              transformed.warnings.forEach((warning) => {
+                warnings.push(`Row ${index + 2}: ${warning}`);
+              });
             }
           });
 
@@ -145,7 +158,11 @@ export function createCSVParser<T extends object>(
               partialData: data.length > 0 ? data : undefined,
             });
           } else {
-            resolve({ success: true, data });
+            resolve({
+              success: true,
+              data,
+              warnings: warnings.length > 0 ? warnings : undefined,
+            });
           }
         },
         error: (error) => {

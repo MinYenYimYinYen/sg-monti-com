@@ -19,6 +19,12 @@ export type ParseConfig<T> = {
 
   /** Zod schema to validate transformed objects */
   schema: z.ZodSchema<T>;
+
+  /**
+   * Optional post-validation checks that produce warnings instead of errors.
+   * Rows still pass; warnings are surfaced to the user non-blocking.
+   */
+  advisoryChecks?: (data: T) => string[];
 };
 
 /**
@@ -26,7 +32,7 @@ export type ParseConfig<T> = {
  * @template T - The target output type
  */
 export type ParseResult<T> =
-  | { success: true; data: T[] }
+  | { success: true; data: T[]; warnings?: string[] }
   | { success: false; errors: string[]; partialData?: T[] };
 
 /**
@@ -40,4 +46,6 @@ export type ColumnValidation =
  * Internal result for row transformation
  * @template T - The target output type
  */
-export type TransformResult<T> = T | { error: string };
+export type TransformResult<T> =
+  | { data: T; warnings: string[] }
+  | { error: string };

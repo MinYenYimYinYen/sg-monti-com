@@ -2,14 +2,14 @@ import { z } from "zod";
 import { dateParser } from "@/lib/primatives/dates/dateParse";
 import { ParseConfig } from "./ParserTypes";
 import { createCSVParser } from "@/app/csv/_lib/parserFactory";
-import {AssignmentDoc} from "@/app/assignment/AssignmentTypes";
+import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 
 const ServiceUnservicedSchema = z.object({
   servId: z.number().positive("Service ID must be a positive number"),
   employeeId: z.string().min(1, "Employee ID cannot be empty"),
   schedDate: z.string().min(1, "Scheduled date cannot be empty"),
   status: z.string().min(1, "Status cannot be empty"),
-  sequence: z.number().positive("Sequence must be a positive number"),
+  sequence: z.number().nonnegative("Sequence must be a non-negative number"),
 });
 
 const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {
@@ -25,7 +25,7 @@ const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {
     "AssignedToEmployeeId",
     "ScheduledDateAsDate",
     "ServiceStatus",
-    "Sequence"
+    "Sequence",
   ],
   optionalColumns: [],
   transformations: {
@@ -41,6 +41,14 @@ const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {
     Sequence: (val) => parseInt(val, 10) / 10,
   },
   schema: ServiceUnservicedSchema,
+  // Sequence of 0 is technically valid after normalization (RealGreen sends 0 for unsequenced rows).
+  // Warn the user so they can verify the source data, but still load the row.
+  advisoryChecks: (row) =>
+    row.sequence === 0
+      ? [
+          `Service ${row.employeeId}-${row.schedDate}-${row.servId}: Sequence is 0 — row will be included but verify source data`,
+        ]
+      : [],
 };
 
 /**
@@ -48,9 +56,8 @@ const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {
  * @param file - CSV file to parse
  * @returns Promise with ParseResult containing validated data or errors
  */
-export const parseAssignmentFromUnservicedReport = createCSVParser<AssignmentDoc>(
-  UNSERVICED_PARSE_CONFIG,
-);
+export const parseAssignmentFromUnservicedReport =
+  createCSVParser<AssignmentDoc>(UNSERVICED_PARSE_CONFIG);
 
 // Re-export ParseResult type for consumers
 export type { ParseResult } from "./ParserTypes";
