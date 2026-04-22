@@ -84,13 +84,16 @@ export async function fetchRGPriceTableDocs() {
 
   const tableIds = priceTableCores.map((p) => p.priceTableId);
 
+  // Step 2: fetch /Detailed for each table to get its ranges.
+  // The /Detailed endpoint returns a full PriceTableRaw with a ranges array —
+  // spread the ranges out so remapPriceRanges receives individual PriceRangeRaw items.
   const priceRangesRaw: PriceRangeRaw[] = [];
   for (const tableId of tableIds) {
-    const priceRange = await rgApi<PriceRangeRaw>({
+    const detailed = await rgApi<PriceTableRaw>({
       path: `/PriceTable/${tableId}/Detailed`,
       method: "GET",
     });
-    priceRangesRaw.push(priceRange);
+    priceRangesRaw.push(...(detailed.ranges ?? []));
   }
   const priceRangeCores = remapPriceRanges(priceRangesRaw);
   const priceRangeDocs = await extendPriceRanges(priceRangeCores);
@@ -126,7 +129,7 @@ export async function fetchMongoPriceTableDocs(ageDays: number) {
       },
     });
   if (!isFresh) return null;
-  return PriceTableDocModel.find({});
+  return PriceTableDocModel.find({}).lean();
 }
 
 export async function cachePriceTableDocs(priceTableDocs: PriceTableDoc[]) {

@@ -1,5 +1,5 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import { PriceRange } from "@/app/realGreen/priceTable/_types/PriceRangeType";
+import { PriceRange, PriceRangeRaw } from "@/app/realGreen/priceTable/_types/PriceRangeType";
 
 export type PriceTableRaw = {
   available: boolean;
@@ -11,7 +11,7 @@ export type PriceTableRaw = {
   maxManHour: number;
   maxRate: number;
   maxSize: number;
-  ranges: Range[];
+  ranges: PriceRangeRaw[];
   roundAmount: string | null;
   roundCalculatedPrices: string | null;
 };
