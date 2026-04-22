@@ -61,7 +61,12 @@ export function QuickSendEditor({ onVariablesChange, variables }: Props) {
         renderLabel({ node }) {
           return `@${node.attrs.label ?? node.attrs.id}`;
         },
-        suggestion: buildMentionSuggestion(),
+        suggestion: buildMentionSuggestion({
+          getProgCodes: () => [],
+          onProgramMentionInserted: () => {
+            // QuickSendEditor is a legacy component — program mentions not supported here
+          },
+        }),
       }),
     ],
     content: "",

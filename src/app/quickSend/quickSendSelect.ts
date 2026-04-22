@@ -1,6 +1,8 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
-import type { QSVariableKey } from "./QuickSendTypes";
+import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import type { QSVariableKey, QSProgramConfig } from "./QuickSendTypes";
 
 const selectSlice = (state: AppState) => state.quickSend;
 
@@ -24,15 +26,24 @@ const selectSizeOverride = createSelector(
   (customer) => customer.sizeOverride,
 );
 
+const selectProgramConfigs = createSelector(
+  [selectSlice],
+  (slice) => slice.programConfigs,
+);
+
+const selectProgramConfigMap = createSelector(
+  [selectProgramConfigs],
+  (configs) => new Grouper(configs).toUniqueMap((c) => c.progCodeId),
+);
+
 /**
  * Parses the template HTML for data-id attributes on mention spans
- * and returns the set of active variable keys.
+ * and returns the set of active flat variable keys.
  */
 const selectActiveVars = createSelector(
   [selectTemplateHtml],
   (html): Set<QSVariableKey> => {
     const vars = new Set<QSVariableKey>();
-    // Match data-id="name" or data-id="size" in mention spans
     const matches = html.matchAll(/data-id="(name|size)"/g);
     for (const match of matches) {
       vars.add(match[1] as QSVariableKey);
@@ -42,8 +53,27 @@ const selectActiveVars = createSelector(
 );
 
 /**
+ * Parses the template HTML for dot-notation mention data-id attributes
+ * (e.g. "MLC.price") and returns the unique progCodeId prefixes that are
+ * both present in the template AND have a programConfig in state.
+ */
+const selectActivePrograms = createSelector(
+  [selectTemplateHtml, selectProgramConfigs],
+  (html, configs): QSProgramConfig[] => {
+    const activeProgCodeIds = new Set<string>();
+    const matches = html.matchAll(/data-id="([^"]+\.[^"]+)"/g);
+    for (const match of matches) {
+      const dotIndex = match[1].indexOf(".");
+      if (dotIndex !== -1) {
+        activeProgCodeIds.add(match[1].slice(0, dotIndex));
+      }
+    }
+    return configs.filter((c) => activeProgCodeIds.has(c.progCodeId));
+  },
+);
+
+/**
  * Resolved variable values — what the mention nodes display in the preview.
- * Falls back to the variable key name when no override is set.
  */
 const selectResolvedVariables = createSelector(
   [selectNameOverride, selectSizeOverride],
@@ -64,39 +94,94 @@ const selectUnfulfilledVars = createSelector(
   },
 );
 
+type QSProgramVariables = {
+  progCodeId: string;
+  description: string;
+  servCount: number;
+  prefPrice: number | null;
+  econPrice: number | null;
+  price: number | null;
+  totalPrice: number | null;
+};
+
+/**
+ * For each active program config, computes all resolved property values
+ * using ProgCodeUtils scoped to the included ServCodes and the customer size.
+ */
+const selectProgramVariables = createSelector(
+  [selectActivePrograms, progServSelect.progCodeMap, selectSizeOverride],
+  (activePrograms, progCodeMap, sizeOverride): QSProgramVariables[] => {
+    const size = parseFloat(sizeOverride);
+    const hasSize = !isNaN(size) && size > 0;
+
+    return activePrograms.map((config) => {
+      const progCode = progCodeMap.get(config.progCodeId);
+      console.log(
+        "[QS] progCode for",
+        config.progCodeId,
+        "→",
+        progCode ? "found" : "NOT FOUND",
+      );
+      if (!progCode) {
+        return {
+          progCodeId: config.progCodeId,
+          description: config.progCodeId,
+          servCount: config.includedServCodeIds.length,
+          prefPrice: null,
+          econPrice: null,
+          price: null,
+          totalPrice: null,
+        };
+      }
+
+      const scoped = progCode.x.getByServCodeIds(config.includedServCodeIds);
+      const prefPrice = hasSize ? scoped.getPrefPrice(size) : null;
+      const price = hasSize ? scoped.getPrice(size) : null;
+
+      return {
+        progCodeId: config.progCodeId,
+        description: progCode.description,
+        servCount: config.includedServCodeIds.length,
+        prefPrice,
+        econPrice: hasSize ? scoped.getEconPrice(size) : null,
+        price,
+        totalPrice: hasSize ? scoped.getTotalPrice(size) : null,
+      };
+    });
+  },
+);
+
+const UNFULFILLED_MARK = `<mark style="background-color: rgba(220,38,38,0.3); border-radius: 3px; padding: 0 2px;">`;
+
 /**
  * Produces the preview HTML by replacing mention span labels with resolved values.
- * The mention nodes themselves are preserved (same data-id, data-type attributes)
- * so the preview Tiptap editor can still parse them as mention nodes.
- * Only the visible text content inside the span is replaced.
+ * Handles both flat vars (name, size) and dot-notation program vars (MLC.price, etc.).
  */
 const selectPreviewHtml = createSelector(
-  [selectTemplateHtml, selectNameOverride, selectSizeOverride],
-  (html, name, size): string => {
+  [
+    selectTemplateHtml,
+    selectNameOverride,
+    selectSizeOverride,
+    selectProgramVariables,
+  ],
+  (html, name, size, programVars): string => {
     if (!html) return "";
 
-    // Replace the inner text of mention spans for each variable.
-    // Tiptap renders mentions as: <span data-type="mention" data-id="name" ...>@name</span>
-    // We replace the text content while keeping the span and its attributes intact.
     let preview = html;
 
-    // For each variable: if resolved, replace label + inner text with the value.
-    // If unfulfilled, replace with {{varName}} and mark with data-unfulfilled="true"
-    // so the preview editor can apply warning styling.
+    // --- Flat vars: name, size ---
     if (name) {
       preview = preview.replace(
         /(<span[^>]*data-type="mention"[^>]*data-id="name"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
         `$1data-label="${name}"$3${name}$4`,
       );
     } else {
-      // Replace the entire mention span with a styled <mark> tag.
-      // The Highlight extension (multicolor: true) preserves inline styles on <mark>
-      // through setContent, unlike Mention node attributes which get stripped.
       preview = preview.replace(
         /<span[^>]*data-type="mention"[^>]*data-id="name"[^>]*>[^<]*<\/span>/g,
-        `<mark style="background-color: rgba(220,38,38,0.3); border-radius: 3px; padding: 0 2px;">{{name}}</mark>`,
+        `${UNFULFILLED_MARK}{{name}}</mark>`,
       );
     }
+
     if (size) {
       preview = preview.replace(
         /(<span[^>]*data-type="mention"[^>]*data-id="size"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
@@ -105,9 +190,46 @@ const selectPreviewHtml = createSelector(
     } else {
       preview = preview.replace(
         /<span[^>]*data-type="mention"[^>]*data-id="size"[^>]*>[^<]*<\/span>/g,
-        `<mark style="background-color: rgba(220,38,38,0.3); border-radius: 3px; padding: 0 2px;">{{size}}</mark>`,
+        `${UNFULFILLED_MARK}{{size}}</mark>`,
       );
     }
+
+    // --- Dot-notation program vars ---
+    const progVarMap = new Map(programVars.map((v) => [v.progCodeId, v]));
+
+    // Replace each dot-notation mention span with its resolved value
+    preview = preview.replace(
+      /<span[^>]*data-type="mention"[^>]*data-id="([^"]+\.[^"]+)"[^>]*>[^<]*<\/span>/g,
+      (fullMatch, mentionId: string) => {
+        const dotIndex = mentionId.indexOf(".");
+        if (dotIndex === -1) return fullMatch;
+
+        const progCodeId = mentionId.slice(0, dotIndex);
+        const prop = mentionId.slice(dotIndex + 1) as keyof QSProgramVariables;
+        const vars = progVarMap.get(progCodeId);
+
+        if (!vars) {
+          return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+        }
+
+        const value = vars[prop];
+        if (value === null || value === undefined) {
+          return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+        }
+
+        const displayValue =
+          typeof value === "number"
+            ? prop.toLowerCase().includes("price")
+              ? `$${value.toFixed(2)}`
+              : String(value)
+            : String(value);
+
+        // Replace the span's label and inner text with the resolved value
+        return fullMatch
+          .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
+          .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
+      },
+    );
 
     return preview;
   },
@@ -116,8 +238,12 @@ const selectPreviewHtml = createSelector(
 export const quickSendSelect = {
   templateHtml: selectTemplateHtml,
   customerState: selectCustomerState,
+  programConfigs: selectProgramConfigs,
+  programConfigMap: selectProgramConfigMap,
   activeVars: selectActiveVars,
+  activePrograms: selectActivePrograms,
   resolvedVariables: selectResolvedVariables,
   unfulfilledVars: selectUnfulfilledVars,
+  programVariables: selectProgramVariables,
   previewHtml: selectPreviewHtml,
 };

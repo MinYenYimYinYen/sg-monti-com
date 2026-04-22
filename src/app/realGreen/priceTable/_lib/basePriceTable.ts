@@ -8,6 +8,7 @@ import {
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export const basePriceTableCore: PriceTableCore = {
+  available: true,
   priceTableId: baseNumId,
   desc: baseStrId,
   maxPrice: baseNumId,

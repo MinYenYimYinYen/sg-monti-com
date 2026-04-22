@@ -18,6 +18,7 @@ import { getBulkOpsResult } from "@/lib/mongoose/getBulkOpsResult";
 
 function remapPriceTable(raw: PriceTableRaw): Omit<PriceTableCore, "ranges"> {
   return {
+    available: raw.available,
     priceTableId: raw.id,
     desc: raw.description,
     maxPrice: raw.maxRate,

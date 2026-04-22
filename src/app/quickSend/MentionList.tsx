@@ -1,8 +1,7 @@
 "use client";
 
 import React, { forwardRef, useImperativeHandle, useState } from "react";
-
-type MentionItem = { id: string; label: string };
+import type { MentionItem } from "./mentionSuggestion";
 
 type Props = {
   items: MentionItem[];
@@ -44,14 +43,17 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
         {items.map((item, index) => (
           <button
             key={item.id}
-            className={`flex w-full items-center px-3 py-1.5 text-sm transition-colors ${
+            className={`flex w-full items-center justify-between px-3 py-1.5 text-sm transition-colors ${
               index === selectedIndex
                 ? "bg-primary/10 text-primary"
                 : "text-foreground hover:bg-accent/10"
             }`}
             onClick={() => command(item)}
           >
-            @{item.label}
+            <span>@{item.label}</span>
+            {item.isNamespace && (
+              <span className="ml-2 text-xs text-muted-foreground">→</span>
+            )}
           </button>
         ))}
       </div>

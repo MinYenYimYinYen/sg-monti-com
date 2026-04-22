@@ -1,5 +1,5 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
-import {PriceRange} from "@/app/realGreen/priceTable/_types/PriceRangeType";
+import { PriceRange } from "@/app/realGreen/priceTable/_types/PriceRangeType";
 
 export type PriceTableRaw = {
   available: boolean;
@@ -17,6 +17,7 @@ export type PriceTableRaw = {
 };
 
 export type PriceTableCore = {
+  available: boolean;
   priceTableId: number;
   desc: string;
   // maxPrice is the price per ksf after maxSize.  Use ceil on decimal numbers.
@@ -27,13 +28,11 @@ export type PriceTableCore = {
 
 export type PriceTableDocProps = CreatedUpdated & {
   priceTableId: number;
-  ranges: PriceRange[]
+  ranges: PriceRange[];
 };
 
 export type PriceTableDoc = PriceTableCore & PriceTableDocProps;
 
 export type PriceTableProps = {};
-
-
 
 export type PriceTable = PriceTableDoc & PriceTableProps;
