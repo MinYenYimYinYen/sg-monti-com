@@ -78,7 +78,7 @@ Files:
 
 ---
 
-#### Step 2.5 — `ProgCodeUtils` and `ServCodeUtils` (NEXT — prerequisite for Step 3)
+#### Step 2.5 — `ProgCodeUtils` and `ServCodeUtils` ✅ DONE
 **Goal:** Add utility classes to the `progServ` feature that expose derived computations on `ProgCode` and `ServCode`. These are general-purpose RealGreen resources — not QuickSend-specific.
 
 **`ProgCodeUtils`** (`src/app/realGreen/progServ/_lib/classes/ProgCodeUtils.ts`):
@@ -117,134 +117,195 @@ export class ProgCodeUtils {
 - `ServCodeProps` gains `x: ServCodeUtils`
 - `progServSelectors.ts` attaches `x` after building each entity (same pattern as `centralSelectors.ts` for `Service`/`Program`/`Customer`)
 
-**QuickSend usage (in `quickSendSelect.ts`):**
-```ts
-const scoped = progCode.x.getByServCodeIds(config.includedServCodes.map(s => s.servCodeId));
-const prefPrice = scoped.getPrefPrice(size);
-const totalPrice = scoped.getTotalPrice(size);
-```
-
 **Circularity strategy — `buildProgCode` helper:**
 
-`ProgCode.servCodes` and `ServCode.progCode` form a two-level circular reference. The same pattern used in `centralSelectors.ts` applies here, but because `ProgCode`/`ServCode` have no external dependency maps at construction time (price tables and product rules are resolved before this point), the construction logic can be extracted into a standalone helper:
-
-```ts
-// src/app/realGreen/progServ/_lib/buildProgCode.ts
-export function buildProgCode(
-  progCodeData: Omit<ProgCode, "servCodes" | "x">,
-  servCodeDatas: Omit<ServCode, "progCode" | "x">[],
-): ProgCode {
-  // Phase 1: build progCode with empty servCodes
-  const progCodeBuilder = { ...progCodeData, servCodes: [] } as Omit<ProgCode, "x">;
-
-  // Phase 2: build each ServCode pointing at the progCode builder, attach x
-  const servCodes = servCodeDatas.map((servData) => {
-    const servBuilder = { ...servData, progCode: progCodeBuilder as ProgCode } as Omit<ServCode, "x">;
-    (servBuilder as ServCode).x = new ServCodeUtils(servBuilder as ServCode);
-    return servBuilder as ServCode;
-  });
-
-  // Close the circle, attach x
-  progCodeBuilder.servCodes = servCodes;
-  (progCodeBuilder as ProgCode).x = new ProgCodeUtils(progCodeBuilder as ProgCode);
-
-  return progCodeBuilder as ProgCode;
-}
-```
-
-- **`progServSelectors.ts`** is refactored to call `buildProgCode(...)` instead of doing the two-phase construction inline.
-- **`ProgCodeUtils.getByServCodeIds`** also calls `buildProgCode(...)` so the scoped instance is fully circularized — each filtered `ServCode.progCode` points at the new scoped `ProgCode`, and `x` is properly attached to both.
-- **Return type of `getByServCodeIds`** is `ProgCodeUtils` (the `x` of the new scoped `ProgCode`), not the `ProgCode` itself.
-
-This differs from `centralSelectors.ts` which keeps construction inline because its three-level circle (Customer → Program → Service) has too many external dependency maps to encapsulate cleanly. `buildProgCode` works as a helper precisely because all external lookups are resolved before it is called.
-
-**Key files to read when resuming for Step 2.5:**
-- `src/app/realGreen/progServ/_lib/types/ProgCodeTypes.ts` — add `x: ProgCodeUtils` to `ProgCodeProps`
-- `src/app/realGreen/progServ/_lib/types/ServCodeTypes.ts` — add `x: ServCodeUtils` to `ServCodeProps`
-- `src/app/realGreen/progServ/_lib/selectors/progServSelectors.ts` — refactor to use `buildProgCode`
-- `src/app/realGreen/priceTable/_lib/pricingFuncs.ts` — `getPriceChartPrice`, `isEcon` (used by `ProgCodeUtils`)
-- `src/app/realGreen/customer/_lib/classes/ServiceUtils.ts` — reference implementation for the `x` pattern
-- `src/app/realGreen/customer/selectors/centralSelectors.ts` — reference for the two-phase builder + mutate pattern
+`ProgCode.servCodes` and `ServCode.progCode` form a two-level circular reference. The construction logic is extracted into a standalone helper `buildProgCode(progCodeData, servCodeDatas)` in `src/app/realGreen/progServ/_lib/buildProgCode.ts`. `progServSelectors.ts` calls this helper instead of doing the two-phase construction inline. `ProgCodeUtils.getByServCodeIds` also calls `buildProgCode` so the scoped instance is fully circularized.
 
 ---
 
-#### Step 3 — Dot-notation program variables
+#### Step 3 — Dot-notation program variables ✅ DONE
 **Goal:** Support `@MLC.description`, `@MLC.servCount`, `@MLC.prefPrice`, etc. — dynamically generated from ProgCodes in Redux state.
 
-**Design:**
+**Variable naming:** `program.{alias}.{property}` where `alias` is the mention ID segment (e.g. `"MLC"`) and `property` is one of: `description`, `servCount`, `prefPrice`, `econPrice`, `price`, `totalPrice`.
 
-**Variable naming:** `{programCode}.{property}` where `programCode` is the RealGreen program code string (e.g. `"MLC"`) and `property` is one of:
-- `description` — `ProgCode.description`
-- `servCount` — number of included ServCodes
-- `prefPrice` — per-visit price from preferred price table + customer size
-- `econPrice` — per-visit price from economy price table + customer size
-- `price` — auto-selects pref or econ based on `isEcon({ minForPreferred, activeServiceCount })`
-- `totalPrice` — `price * servCount`
+**Three-level suggestion drill-down in `buildMentionSuggestion`:**
+- Level 0 (no dot): flat vars (`name`, `size`) + `"program →"` namespace item
+- Level 1 (`program.*`): progCode namespace items (`MLC →`, `TLC →`, ...)
+- Level 2 (`program.MLC.*`): leaf property items (`description`, `price`, ...)
+- Namespace items replace typed text with `@{prefix}.` and keep suggestion open (IDE-style)
 
-**State additions to `quickSendSlice.ts`:**
-```ts
-type QSProgramConfig = {
-  includedServCodes: ServCode[]; // full objects; default = all non-service-call codes
-};
+**State:** `programConfigs: QSProgramConfig[]` in the slice. Each config has `alias`, `progCodeId`, `includedServCodeIds`. Auto-added when a leaf mention is inserted.
 
-// Added to QuickSendState:
-programConfigs: Record<string, QSProgramConfig>; // keyed by programCode e.g. "MLC"
-```
+**Controls panel:** `selectActivePrograms` parses the active section's `templateHtml` for dot-notation mention IDs and returns the matching configs. Left panel renders one `ProgramConfig` section per active alias with ServCode checkboxes.
 
-**Auto-add behavior (Option A):** When the user selects a `@MLC.*` mention from the suggestion dropdown, if `"MLC"` is not yet in `programConfigs`, dispatch `addProgramConfig({ progCode })` which initializes it with all non-service-call ServCodes included. This makes persistence straightforward — `programConfigs` is always the explicit source of truth.
-
-**Persistence note:** When saving to Mongo, serialize `includedServCodes` down to `includedServCodeIds: string[]`. When loading, re-hydrate from Redux `progServSelectors` (ProgCode/ServCode data is always in Redux from `useProgServ({ autoLoad: true })`).
-
-**Dynamic suggestion items — IDE-style autocomplete:** `buildMentionSuggestion()` accepts a `getProgCodes` callback so `TemplateEditor` can pass in live Redux data. The suggestion system uses Tiptap's `query` string (everything typed after `@`) to implement two-level drill-down:
-
-- **Before the dot** (`query = "MLC"`): show flat vars (`name`, `size`) + namespace items (`MLC →`, `TLC →`) filtered by query. Namespace items have `isNamespace: true`.
-- **After the dot** (`query = "MLC.serv"`): split on `.`, find the matching ProgCode, filter its properties by the suffix. Show only leaf items.
-- **Namespace `command`**: instead of inserting a mention node, replaces the typed text with `@{namespace}.` and keeps the suggestion open — exactly like IDE autocomplete.
-- **Leaf `command`**: inserts a mention node with `id: "MLC.servCount"` (no trailing space).
-
-The `MentionList` component renders namespace items with a `→` indicator to signal drill-down behavior.
-
-**Controls panel:** `selectActivePrograms` parses `templateHtml` for mention `data-id` attributes with dot notation, extracts unique program code prefixes, and returns the matching `QSProgramConfig[]`. The left panel renders one collapsible section per active program with ServCode checkboxes.
-
-**Selector additions to `quickSendSelect.ts`:**
-- `selectActivePrograms` — parses templateHtml for `{code}.*` mention IDs, returns `QSProgramConfig[]`
-- `selectProgramVariables` — for each active program, computes all resolved property values using `getPriceChartPrice` from `src/app/realGreen/priceTable/_lib/pricingFuncs.ts`
-- `selectPreviewHtml` extended — handles dot-notation mention spans in addition to `name`/`size`
-
-**Key files to read when resuming for Step 3:**
-- `src/app/realGreen/progServ/_lib/types/ProgCodeTypes.ts` — `ProgCode`, `ProgCodeDoc`, `ProgCodeProps`
-- `src/app/realGreen/progServ/_lib/types/ServCodeTypes.ts` — `ServCode`, `ServCodeDoc`
-- `src/app/realGreen/progServ/_lib/selectors/progServSelectors.ts` — how to select ProgCodes from Redux
-- `src/app/realGreen/priceTable/_lib/pricingFuncs.ts` — `getPriceChartPrice`, `isEcon`
-- `src/app/realGreen/priceTable/_types/PriceTableTypes.ts` — `PriceTable` shape
-- `src/app/realGreen/progServ/_lib/hooks/useProgServ.ts` — already written, add to QuickSend.tsx
-- `src/app/realGreen/priceTable/usePriceTable.ts` — already written, add to QuickSend.tsx
-- `src/app/quickSend/quickSendSlice.ts` — extend with `programConfigs`
-- `src/app/quickSend/quickSendSelect.ts` — extend with program variable selectors
-- `src/app/quickSend/mentionSuggestion.ts` — make dynamic (accept `getProgCodes` callback)
-- `src/app/quickSend/TemplateEditor.tsx` — pass progCodes into suggestion config
-- `src/app/quickSend/CustomerLookup.tsx` — add program config sections below customer controls
+**Key files:**
+- `src/app/quickSend/mentionSuggestion.ts` — `buildMentionSuggestion`, three-level drill-down
+- `src/app/quickSend/MentionList.tsx` — renders namespace items with `→` indicator
+- `src/app/quickSend/ProgramConfig.tsx` — ServCode checkbox UI
+- `src/app/quickSend/quickSendSlice.ts` — `addProgramConfig`, `removeProgramConfig`, `setIncludedServCodeIds`
+- `src/app/quickSend/quickSendSelect.ts` — `selectActivePrograms`, `selectProgramVariables`, `selectPreviewHtml` (extended)
 
 ---
 
-#### Step 4 — Persistence (future)
-**Goal:** User can name and save a template.
+#### Step 3.1 — Multiple instances of the same ProgCode (alias system) ✅ DONE
+**Goal:** Allow the same RealGreen program (e.g. `MLC`) to appear multiple times in a template with independent servCode selections. Each instance gets a unique alias (`MLC`, `MLC_2`, `MLC_3`, ...).
 
-**Storage model** (flat Mongo document):
+**How it works:**
+- The mention ID for a program variable is `program.{alias}.{prop}` where `alias` is the deduplication key, not the raw `progCodeId`.
+- `QSProgramConfig.alias` is the primary key in the slice. Multiple configs can share the same `progCodeId` but must have distinct aliases.
+- When the user drills into Level 1 of the suggestion (`program.*`), if a progCode's base alias is already in `programConfigs`, the suggestion list also offers the next available `_N` variant (e.g. `MLC_2 →`).
+- `getExistingAliases()` callback in `buildMentionSuggestion` reads the current `programConfigs` to determine which aliases are taken.
+
+**`safelyRemoveSuffix(alias, progCodes)`** (exported from `mentionSuggestion.ts`):
+- Recovers the base `progCodeId` from an alias that may have a `_N` suffix.
+- Strategy: exact match first (handles progCodeIds that already contain underscores/digits, e.g. `"MLC_3"`), then last-underscore strip if the trailing segment is all digits.
+- Used in Level 2 suggestion logic and in `TemplateEditor.tsx`'s `onProgramMentionInserted` callback.
+
+**Key files:**
+- `src/app/quickSend/mentionSuggestion.ts` — `safelyRemoveSuffix`, Level 1 alias variant logic
+- `src/app/quickSend/TemplateEditor.tsx` — `onProgramMentionInserted` uses `safelyRemoveSuffix`
+- `src/app/quickSend/QuickSendTypes.ts` — `QSProgramConfig.alias` as primary key
+
+---
+
+#### Step 3.2 — Multi-section template support ✅ DONE
+**Goal:** Allow a template to have multiple independently-editable sections (e.g. two paragraphs of an email), each with its own Tiptap editor and preview. Program configs are shared globally across all sections.
+
+**State shape:**
 ```ts
-type SavedQuickSendTemplate = {
-  templateId: string;       // natural key (user-defined name slug)
-  name: string;
-  templateHtml: string;     // Tiptap HTML with mention spans intact
-  programConfigs: {
-    programCode: string;
-    includedServCodeIds: string[]; // serialize down from full ServCode objects
-  }[];
-  // Note: customer state (custId, overrides) is NOT persisted — it's per-send, not per-template
+type QSSection = {
+  sectionId: string;
+  templateHtml: string;
+  // No programConfigs — those are global
+};
+
+type QuickSendState = {
+  sections: QSSection[];
+  activeSectionId: string;   // which section the left panel controls react to
+  programConfigs: QSProgramConfig[];  // global — shared across all sections
+  customer: QSCustomerState;
 };
 ```
 
-**Loading:** Restore `templateHtml` + hydrate `programConfigs` by looking up each `programCode` in Redux `progServSelectors`. The controls panel renders immediately from the restored state.
+**New slice actions:** `addSection`, `removeSection`, `setActiveSection`. `setTemplateHtml` now takes `{ sectionId, html }`.
+
+**Selector changes:**
+- `selectActiveSection` — returns the active `QSSection`
+- All active-section selectors (`selectTemplateHtml`, `selectActiveVars`, `selectActivePrograms`, etc.) operate on the active section's HTML
+- `selectAllPreviewHtmls` — computes preview HTML for every section using the global `programConfigs` and customer state; returns `{ sectionId, previewHtml }[]`
+- `resolveHtml(html, name, size, progVarMap)` — extracted as a shared helper to avoid duplicating the replacement logic between `selectPreviewHtml` and `selectAllPreviewHtmls`
+
+**UI (`QuickSendEditor.tsx`):**
+- Template pane: `ScrollArea` containing all sections stacked, each with its own `TemplateEditor`. Active section highlighted with `border-l-2 border-primary`. Section label + hover-visible trash icon when multiple sections exist. `+Add Section` button in the template header.
+- Preview pane: `ScrollArea` containing all sections stacked, each with its own `PreviewEditor`. Section label row includes a per-section **Copy** button (disabled if that section has unfulfilled vars). Global **Copy All** button in the preview header copies all sections combined (disabled if any section has unfulfilled vars).
+- `TemplateEditor` dispatches `setActiveSection` on focus so the left panel always reflects the section being edited.
+- `PreviewEditor` simplified to accept `previewHtml` as a prop (no longer reads from Redux directly).
+
+**Line spacing fix:** Both editor prose containers use `prose-p:my-1 prose-p:leading-snug` to reduce the large inter-paragraph gaps in the UI (copied HTML is unaffected).
+
+**Key files:**
+- `src/app/quickSend/QuickSendTypes.ts` — `QSSection`, `QSProgramConfig`
+- `src/app/quickSend/quickSendSlice.ts` — sections + activeSectionId, global programConfigs
+- `src/app/quickSend/quickSendSelect.ts` — `selectActiveSection`, `selectAllPreviewHtmls`, `resolveHtml`
+- `src/app/quickSend/QuickSendEditor.tsx` — stacked sections UI, per-section copy buttons
+- `src/app/quickSend/TemplateEditor.tsx` — accepts `sectionId` prop
+- `src/app/quickSend/PreviewEditor.tsx` — accepts `previewHtml` prop
+
+---
+
+#### Step 4.1 — `storedTemplates` data module (backend + Redux)
+**Goal:** Implement the full Data Module Pattern for template and group persistence. No UI yet — just the contract, API route, slice, selectors, and hook.
+
+**Data model:**
+```ts
+type StoredTemplateDoc = {
+  templateId: string;          // natural key — unique per (name + userName) pair
+  name: string;
+  groupId: string;
+  userName: string;            // owner
+  sections: { sectionId: string; templateHtml: string; }[];
+  programConfigs: { alias: string; progCodeId: string; includedServCodeIds: string[]; }[];
+};
+
+type TemplateGroupDoc = {
+  groupId: string;             // natural key (name slug)
+  name: string;
+};
+```
+
+**Uniqueness:** `name + userName` must be unique. Two users can both have a template named "Initial Response" — they are distinct records.
+
+**Files:**
+- `src/app/quickSend/storedTemplates/storedTemplatesContract.ts`
+- `src/app/quickSend/storedTemplates/api/route.ts`
+- `src/app/quickSend/storedTemplates/storedTemplatesSlice.ts`
+- `src/app/quickSend/storedTemplates/storedTemplatesSelect.ts`
+- `src/app/quickSend/storedTemplates/useStoredTemplates.ts`
+
+**Operations exposed by the contract:**
+- `getTemplates` — fetch all templates (used by the browser sheet and Groups menu)
+- `getGroups` — fetch all groups
+- `saveTemplate` — create or overwrite (enforces ownership on overwrite)
+- `deleteTemplate` — owner or admin only
+- `createGroup` — any user
+- `renameGroup` — admin only
+- `deleteGroup` — admin only (does not delete templates; caller must resolve each template first)
+- `moveTemplate` — move a template to a different group
+
+---
+
+#### Step 4.2 — `quickSendSlice` load/lock state + Menubar "Template" menu
+**Goal:** Wire the loaded template state into `quickSendSlice` and build the "Template" menubar trigger with New, Save, Save As, Rename, Delete, and the lock indicator.
+
+**`quickSendSlice` additions:**
+- `loadedTemplateId: string | null` — which template is currently loaded (null = unsaved)
+- `loadedTemplateOwner: string | null` — userName of the template owner
+- `isLocked: boolean` — whether Save is disabled for this session
+- `loadTemplate(template: StoredTemplateDoc)` — populates sections + programConfigs, sets `isLocked = true`
+- `unlock()` — session-only, sets `isLocked = false`
+- `clearTemplate()` — resets to blank state, `isLocked = false`
+
+**Menubar "Template" trigger:**
+- **New** — dispatches `clearTemplate()`
+- **Open** — opens the Template Browser Sheet (Step 4.3)
+- **Save** — dispatches `saveTemplate` thunk; disabled if `isLocked`; shows "Owned by [name]" tooltip
+- **Save As** — always available; opens a Popover with a name input + confirm; creates a new template owned by current user
+- **Rename** — Popover with name input; only available if current user is owner
+- **Delete** — Popover confirmation; only available if current user is owner
+- Lock indicator: small lock icon + "Owned by [name]"; clicking it dispatches `unlock()`
+
+**Popover pattern:** `MenubarItem` with `onSelect` that opens a controlled `Popover` containing a text input + confirm/cancel. Used for Save As, Rename, Delete confirmation.
+
+---
+
+#### Step 4.3 — Template Browser Sheet ("Open")
+**Goal:** A Sheet component that lets users browse, filter, and load any saved template. Opened from the "Template → Open" menu item.
+
+**Layout (file-explorer style):**
+- **Left pane:** Search input + filters (by user, group, template name)
+- **Main body:** List of all templates matching filters. Each row shows: template name, `userName` in small subtext, group badge. Clicking a row dispatches `loadTemplate` and closes the sheet.
+
+**Key files:**
+- `src/app/quickSend/TemplateBrowserSheet.tsx`
+
+---
+
+#### Step 4.4 — Menubar "Groups" menu + group management
+**Goal:** Build the "Groups" menubar trigger with full group CRUD and the template-resolution flow for group deletion.
+
+**"Groups" menu:**
+- **Create New Group** — Popover with name input (any user)
+- **Rename Group** — sub-menu listing all groups → Popover to rename (admin only)
+- **Delete Group** — sub-menu listing all groups (admin only); opens a resolution Popover that lists each template in the group with three options per template:
+  1. Move to → dropdown of other groups
+  2. Delete (only if current user owns that template)
+  3. Create New Group (inline — creates a group and moves the template there)
+  All templates must be resolved before the group can be deleted.
+- `---`
+- `.map(group)` → `MenubarSubTrigger` with group name + `→` → sub-menu listing templates in that group (name + userName subtext) → clicking loads the template
+
+**Key files:**
+- `src/app/quickSend/QuickSendMenubar.tsx` — contains both "Template" and "Groups" triggers
 
 ---
 

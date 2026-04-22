@@ -18,11 +18,24 @@ export type QSVariableKey = "name" | "size";
  * (`programConfig:{alias}`). Multiple configs can share the same `progCodeId`
  * (same RealGreen program) but have different aliases and independent servCode
  * selections.
+ *
+ * Program configs are global (not per-section) — the same alias and its servCode
+ * selection applies across all sections of the template.
  */
 export type QSProgramConfig = {
   alias: string;
   progCodeId: string;
   includedServCodeIds: string[];
+};
+
+/**
+ * A single independently-editable section of a QuickSend template.
+ * Each section has its own Tiptap HTML. Program configs are shared globally
+ * across all sections (see `QuickSendState.programConfigs`).
+ */
+export type QSSection = {
+  sectionId: string;
+  templateHtml: string;
 };
 
 /**

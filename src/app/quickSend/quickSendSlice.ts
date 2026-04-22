@@ -1,42 +1,82 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
-import { QSCustomerState, QSProgramConfig } from "./QuickSendTypes";
+import { QSCustomerState, QSProgramConfig, QSSection } from "./QuickSendTypes";
+
+/** Creates a blank section with a stable ID. */
+function makeSection(sectionId: string): QSSection {
+  return { sectionId, templateHtml: "" };
+}
+
+const INITIAL_SECTION_ID = "section-1";
 
 type QuickSendState = {
-  templateHtml: string;
-  customer: QSCustomerState;
+  sections: QSSection[];
+  activeSectionId: string;
   programConfigs: QSProgramConfig[];
+  customer: QSCustomerState;
 };
 
 const initialState: QuickSendState = {
-  templateHtml: "",
+  sections: [makeSection(INITIAL_SECTION_ID)],
+  activeSectionId: INITIAL_SECTION_ID,
+  programConfigs: [],
   customer: {
     custId: null,
     customer: null,
     nameOverride: "",
     sizeOverride: "",
   },
-  programConfigs: [],
 };
 
 const quickSendSlice = createSlice({
   name: "quickSend",
   initialState,
   reducers: {
-    setTemplateHtml(state, action: PayloadAction<string>) {
-      state.templateHtml = action.payload;
+    // --- Section management ---
+
+    /** Appends a new blank section and makes it active. */
+    addSection(state) {
+      const id = `section-${Date.now()}`;
+      state.sections.push(makeSection(id));
+      state.activeSectionId = id;
     },
+
+    /** Removes a section by ID. If it was active, activates the previous section. */
+    removeSection(state, action: PayloadAction<string>) {
+      const idx = state.sections.findIndex((s) => s.sectionId === action.payload);
+      if (idx === -1 || state.sections.length === 1) return;
+      state.sections.splice(idx, 1);
+      if (state.activeSectionId === action.payload) {
+        state.activeSectionId = state.sections[Math.max(0, idx - 1)].sectionId;
+      }
+    },
+
+    /** Sets the active section. */
+    setActiveSection(state, action: PayloadAction<string>) {
+      state.activeSectionId = action.payload;
+    },
+
+    // --- Template HTML ---
+
+    setTemplateHtml(
+      state,
+      action: PayloadAction<{ sectionId: string; html: string }>,
+    ) {
+      const section = state.sections.find((s) => s.sectionId === action.payload.sectionId);
+      if (section) section.templateHtml = action.payload.html;
+    },
+
+    // --- Customer ---
+
     setCustId(state, action: PayloadAction<number | null>) {
       state.customer.custId = action.payload;
-      // Clear loaded customer when ID changes
       state.customer.customer = null;
       state.customer.nameOverride = "";
       state.customer.sizeOverride = "";
     },
     setCustomer(state, action: PayloadAction<Customer>) {
       state.customer.customer = action.payload;
-      // Pre-fill overrides only if they are currently empty
       if (!state.customer.nameOverride) {
         state.customer.nameOverride = action.payload.displayName;
       }
@@ -54,12 +94,11 @@ const quickSendSlice = createSlice({
       state.customer = initialState.customer;
     },
 
+    // --- Program configs (global — shared across all sections) ---
+
     /**
      * Adds a program config for the given alias + progCode.
      * No-op if a config with that alias already exists.
-     *
-     * The alias is the mention ID segment (e.g. "MLC", "MLC_2"). Multiple
-     * configs can share the same progCodeId but must have distinct aliases.
      */
     addProgramConfig(
       state,

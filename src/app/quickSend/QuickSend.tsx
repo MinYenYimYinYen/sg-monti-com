@@ -2,8 +2,7 @@
 
 import { useSelector } from "react-redux";
 import { quickSendSelect } from "./quickSendSelect";
-import { TemplateEditor } from "./TemplateEditor";
-import { PreviewEditor } from "./PreviewEditor";
+import { QuickSendEditor } from "./QuickSendEditor";
 import { CustomerLookup } from "./CustomerLookup";
 import { NameOverride } from "./NameOverride";
 import { SizeOverride } from "./SizeOverride";
@@ -56,14 +55,9 @@ export function QuickSend() {
         </div>
       </div>
 
-      {/* Right panel — two stacked editors */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-hidden border-b border-border">
-          <TemplateEditor />
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <PreviewEditor />
-        </div>
+      {/* Right panel — stacked editors */}
+      <div className="flex-1 overflow-hidden">
+        <QuickSendEditor />
       </div>
     </div>
   );

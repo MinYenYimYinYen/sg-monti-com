@@ -18,22 +18,21 @@ import { buildMentionSuggestion, safelyRemoveSuffix } from "./mentionSuggestion"
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { quickSendSelect } from "./quickSendSelect";
 
-export function TemplateEditor() {
+type Props = {
+  sectionId: string;
+};
+
+export function TemplateEditor({ sectionId }: Props) {
   const dispatch = useAppDispatch();
   const progCodes = useSelector(progServSelect.progCodes);
-  const programConfigMap = useSelector(quickSendSelect.programConfigMap);
+  const programConfigs = useSelector(quickSendSelect.programConfigs);
 
   // Refs so the suggestion callbacks always read the latest values even though
   // useEditor only runs once (the closures would otherwise capture stale state).
   const progCodesRef = useRef(progCodes);
   // eslint-disable-next-line react-hooks/refs
   progCodesRef.current = progCodes;
-  const programConfigMapRef = useRef(programConfigMap);
 
-  // eslint-disable-next-line react-hooks/refs
-  programConfigMapRef.current = programConfigMap;
-
-  const programConfigs = useSelector(quickSendSelect.programConfigs);
   const programConfigsRef = useRef(programConfigs);
   // eslint-disable-next-line react-hooks/refs
   programConfigsRef.current = programConfigs;
@@ -62,15 +61,16 @@ export function TemplateEditor() {
           getExistingAliases: () =>
             new Set(programConfigsRef.current.map((c) => c.alias)),
           onProgramMentionInserted: (alias: string) => {
-            if (!programConfigMapRef.current.has(alias)) {
+            const alreadyExists = programConfigsRef.current.some(
+              (c) => c.alias === alias,
+            );
+            if (!alreadyExists) {
               const baseProgCodeId = safelyRemoveSuffix(alias, progCodesRef.current);
               const progCode = progCodesRef.current.find(
                 (p) => p.progCodeId === baseProgCodeId,
               );
               if (progCode) {
-                dispatch(
-                  quickSendActions.addProgramConfig({ alias, progCode }),
-                );
+                dispatch(quickSendActions.addProgramConfig({ alias, progCode }));
               }
             }
           },
@@ -80,24 +80,21 @@ export function TemplateEditor() {
     content: "",
     editorProps: {
       attributes: {
-        class: "prose prose-sm max-w-none focus:outline-none min-h-full p-4",
+        class:
+          "prose prose-sm max-w-none focus:outline-none p-4 prose-p:my-1 prose-p:leading-snug",
       },
     },
     onUpdate({ editor: ed }) {
-      dispatch(quickSendActions.setTemplateHtml(ed.getHTML()));
+      dispatch(quickSendActions.setTemplateHtml({ sectionId, html: ed.getHTML() }));
+    },
+    onFocus() {
+      dispatch(quickSendActions.setActiveSection(sectionId));
     },
   });
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-border bg-muted/30 px-4 py-1.5">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Template — type @ to insert variables
-        </span>
-      </div>
-      <div className="flex-1 overflow-y-auto bg-card">
-        <EditorContent editor={editor} className="h-full" />
-      </div>
+    <div className="bg-card">
+      <EditorContent editor={editor} />
     </div>
   );
 }

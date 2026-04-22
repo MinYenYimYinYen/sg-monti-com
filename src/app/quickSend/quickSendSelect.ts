@@ -2,13 +2,26 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
-import type { QSVariableKey, QSProgramConfig, TemplateControlId } from "./QuickSendTypes";
+import type {
+  QSVariableKey,
+  QSProgramConfig,
+  QSSection,
+  TemplateControlId,
+} from "./QuickSendTypes";
 
 const selectSlice = (state: AppState) => state.quickSend;
 
-const selectTemplateHtml = createSelector(
+const selectSections = createSelector([selectSlice], (slice) => slice.sections);
+
+const selectActiveSectionId = createSelector(
   [selectSlice],
-  (slice) => slice.templateHtml,
+  (slice) => slice.activeSectionId,
+);
+
+const selectActiveSection = createSelector(
+  [selectSections, selectActiveSectionId],
+  (sections, activeSectionId): QSSection =>
+    sections.find((s) => s.sectionId === activeSectionId) ?? sections[0],
 );
 
 const selectCustomerState = createSelector(
@@ -26,6 +39,10 @@ const selectSizeOverride = createSelector(
   (customer) => customer.sizeOverride,
 );
 
+// ---------------------------------------------------------------------------
+// Program configs — global (shared across all sections)
+// ---------------------------------------------------------------------------
+
 const selectProgramConfigs = createSelector(
   [selectSlice],
   (slice) => slice.programConfigs,
@@ -36,8 +53,17 @@ const selectProgramConfigMap = createSelector(
   (configs) => new Grouper(configs).toUniqueMap((c) => c.alias),
 );
 
+// ---------------------------------------------------------------------------
+// Active-section scoped selectors
+// ---------------------------------------------------------------------------
+
+const selectTemplateHtml = createSelector(
+  [selectActiveSection],
+  (section) => section.templateHtml,
+);
+
 /**
- * Parses the template HTML for data-id attributes on mention spans
+ * Parses the active section's template HTML for data-id attributes on mention spans
  * and returns the set of active flat variable keys.
  */
 const selectActiveVars = createSelector(
@@ -53,15 +79,13 @@ const selectActiveVars = createSelector(
 );
 
 /**
- * Parses the template HTML for dot-notation mention data-id attributes
+ * Parses the active section's template HTML for dot-notation mention data-id attributes
  * and returns the QSProgramConfigs whose alias is present in the template.
- * Keyed by alias (e.g. "MLC", "MLC_2"), not progCodeId.
  */
 const selectActivePrograms = createSelector(
   [selectTemplateHtml, selectProgramConfigs],
   (html, configs): QSProgramConfig[] => {
     const activeAliases = new Set<string>();
-    // Match mention IDs of the form "program.{alias}.{prop}"
     const matches = html.matchAll(/data-id="program\.([^."]+)\.[^"]+"/g);
     for (const match of matches) {
       activeAliases.add(match[1]);
@@ -81,7 +105,7 @@ const selectResolvedVariables = createSelector(
   }),
 );
 
-/** Variables that are present in the template but have no resolved value yet. */
+/** Variables that are present in the active section but have no resolved value yet. */
 const selectUnfulfilledVars = createSelector(
   [selectActiveVars, selectNameOverride, selectSizeOverride],
   (activeVars, name, size): Set<QSVariableKey> => {
@@ -104,8 +128,9 @@ type QSProgramVariables = {
 };
 
 /**
- * For each active program config, computes all resolved property values
- * using ProgCodeUtils scoped to the included ServCodes and the customer size.
+ * For each active program config in the active section, computes all resolved
+ * property values using ProgCodeUtils scoped to the included ServCodes and the
+ * customer size.
  */
 const selectProgramVariables = createSelector(
   [selectActivePrograms, progServSelect.progCodeMap, selectSizeOverride],
@@ -148,9 +173,77 @@ const selectProgramVariables = createSelector(
 
 const UNFULFILLED_MARK = `<mark style="background-color: rgba(220,38,38,0.3); border-radius: 3px; padding: 0 2px;">`;
 
+function resolveHtml(
+  html: string,
+  name: string,
+  size: string,
+  progVarMap: Map<string, QSProgramVariables>,
+): string {
+  let preview = html;
+
+  if (name) {
+    preview = preview.replace(
+      /(<span[^>]*data-type="mention"[^>]*data-id="name"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
+      `$1data-label="${name}"$3${name}$4`,
+    );
+  } else {
+    preview = preview.replace(
+      /<span[^>]*data-type="mention"[^>]*data-id="name"[^>]*>[^<]*<\/span>/g,
+      `${UNFULFILLED_MARK}{{name}}</mark>`,
+    );
+  }
+
+  if (size) {
+    preview = preview.replace(
+      /(<span[^>]*data-type="mention"[^>]*data-id="size"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
+      `$1data-label="${size}"$3${size}$4`,
+    );
+  } else {
+    preview = preview.replace(
+      /<span[^>]*data-type="mention"[^>]*data-id="size"[^>]*>[^<]*<\/span>/g,
+      `${UNFULFILLED_MARK}{{size}}</mark>`,
+    );
+  }
+
+  preview = preview.replace(
+    /<span[^>]*data-type="mention"[^>]*data-id="(program\.[^"]+)"[^>]*>[^<]*<\/span>/g,
+    (fullMatch, mentionId: string) => {
+      const parts = mentionId.split(".");
+      if (parts.length !== 3 || parts[0] !== "program") return fullMatch;
+
+      const alias = parts[1];
+      const prop = parts[2] as Exclude<
+        keyof QSProgramVariables,
+        "alias" | "progCodeId" | "description" | "servCount"
+      >;
+      const vars = progVarMap.get(alias);
+
+      if (!vars) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+
+      const value = vars[prop];
+      if (value === null || value === undefined) {
+        return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+      }
+
+      const displayValue =
+        typeof value === "number"
+          ? prop.toLowerCase().includes("price")
+            ? `$${value.toFixed(2)}`
+            : String(value)
+          : String(value);
+
+      return fullMatch
+        .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
+        .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
+    },
+  );
+
+  return preview;
+}
+
 /**
- * Produces the preview HTML by replacing mention span labels with resolved values.
- * Handles both flat vars (name, size) and dot-notation program vars (MLC.price, etc.).
+ * Produces the preview HTML for the active section by replacing mention span
+ * labels with resolved values.
  */
 const selectPreviewHtml = createSelector(
   [
@@ -161,88 +254,14 @@ const selectPreviewHtml = createSelector(
   ],
   (html, name, size, programVars): string => {
     if (!html) return "";
-
-    let preview = html;
-
-    // --- Flat vars: name, size ---
-    if (name) {
-      preview = preview.replace(
-        /(<span[^>]*data-type="mention"[^>]*data-id="name"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
-        `$1data-label="${name}"$3${name}$4`,
-      );
-    } else {
-      preview = preview.replace(
-        /<span[^>]*data-type="mention"[^>]*data-id="name"[^>]*>[^<]*<\/span>/g,
-        `${UNFULFILLED_MARK}{{name}}</mark>`,
-      );
-    }
-
-    if (size) {
-      preview = preview.replace(
-        /(<span[^>]*data-type="mention"[^>]*data-id="size"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
-        `$1data-label="${size}"$3${size}$4`,
-      );
-    } else {
-      preview = preview.replace(
-        /<span[^>]*data-type="mention"[^>]*data-id="size"[^>]*>[^<]*<\/span>/g,
-        `${UNFULFILLED_MARK}{{size}}</mark>`,
-      );
-    }
-
-    // --- Dot-notation program vars ---
-    // Map by alias (e.g. "MLC", "MLC_2") so multiple configs for the same progCode resolve independently.
     const progVarMap = new Map(programVars.map((v) => [v.alias, v]));
-
-    // Replace each dot-notation mention span with its resolved value.
-    // ID format: "program.{alias}.{prop}"
-    preview = preview.replace(
-      /<span[^>]*data-type="mention"[^>]*data-id="(program\.[^"]+)"[^>]*>[^<]*<\/span>/g,
-      (fullMatch, mentionId: string) => {
-        // mentionId = "program.MLC.price" or "program.MLC_2.price"
-        const parts = mentionId.split(".");
-        if (parts.length !== 3 || parts[0] !== "program") return fullMatch;
-
-        const alias = parts[1];
-        // Exclude non-data fields from the prop lookup
-        const prop = parts[2] as Exclude<keyof QSProgramVariables, "alias" | "progCodeId" | "description" | "servCount">;
-        const vars = progVarMap.get(alias);
-
-        if (!vars) {
-          return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
-        }
-
-        const value = vars[prop];
-        if (value === null || value === undefined) {
-          return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
-        }
-
-        const displayValue =
-          typeof value === "number"
-            ? prop.toLowerCase().includes("price")
-              ? `$${value.toFixed(2)}`
-              : String(value)
-            : String(value);
-
-        // Replace the span's label and inner text with the resolved value
-        return fullMatch
-          .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
-          .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
-      },
-    );
-
-    return preview;
+    return resolveHtml(html, name, size, progVarMap);
   },
 );
 
 /**
- * Returns a deduped, ordered array of control IDs that the left panel should render.
- *
- * Ordering: customerLookup → nameOverride → sizeOverride → programConfig:X (in template order)
- *
- * Dependencies:
- * - @name          → customerLookup, nameOverride
- * - @size          → customerLookup, sizeOverride
- * - @program.X.*  → customerLookup, sizeOverride, programConfig:X
+ * Returns a deduped, ordered array of control IDs that the left panel should render,
+ * based on the active section's template content.
  */
 const selectActiveControlIds = createSelector(
   [selectActiveVars, selectActivePrograms],
@@ -273,8 +292,62 @@ const selectActiveControlIds = createSelector(
   },
 );
 
+// ---------------------------------------------------------------------------
+// All-sections preview (used by QuickSendEditor stacked preview pane)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns preview HTML for every section. Uses the global programConfigs.
+ */
+const selectAllPreviewHtmls = createSelector(
+  [selectSections, selectNameOverride, selectSizeOverride, selectProgramConfigs, progServSelect.progCodeMap],
+  (sections, name, size, programConfigs, progCodeMap): { sectionId: string; previewHtml: string }[] => {
+    const sizeNum = parseFloat(size);
+    const hasSize = !isNaN(sizeNum) && sizeNum > 0;
+
+    // Build a single progVarMap from all global programConfigs
+    const progVarMap = new Map<string, QSProgramVariables>();
+    for (const config of programConfigs) {
+      const progCode = progCodeMap.get(config.progCodeId);
+      if (!progCode) {
+        progVarMap.set(config.alias, {
+          alias: config.alias,
+          progCodeId: config.progCodeId,
+          description: config.progCodeId,
+          servCount: config.includedServCodeIds.length,
+          prefPrice: null,
+          econPrice: null,
+          price: null,
+          totalPrice: null,
+        });
+        continue;
+      }
+      const scoped = progCode.x.getByServCodeIds(config.includedServCodeIds);
+      progVarMap.set(config.alias, {
+        alias: config.alias,
+        progCodeId: config.progCodeId,
+        description: progCode.description,
+        servCount: config.includedServCodeIds.length,
+        prefPrice: hasSize ? scoped.getPrefPrice(sizeNum) : null,
+        econPrice: hasSize ? scoped.getEconPrice(sizeNum) : null,
+        price: hasSize ? scoped.getPrice(sizeNum) : null,
+        totalPrice: hasSize ? scoped.getTotalPrice(sizeNum) : null,
+      });
+    }
+
+    return sections.map((section) => ({
+      sectionId: section.sectionId,
+      previewHtml: section.templateHtml
+        ? resolveHtml(section.templateHtml, name, size, progVarMap)
+        : "",
+    }));
+  },
+);
+
 export const quickSendSelect = {
-  templateHtml: selectTemplateHtml,
+  sections: selectSections,
+  activeSectionId: selectActiveSectionId,
+  activeSection: selectActiveSection,
   customerState: selectCustomerState,
   programConfigs: selectProgramConfigs,
   programConfigMap: selectProgramConfigMap,
@@ -285,4 +358,5 @@ export const quickSendSelect = {
   unfulfilledVars: selectUnfulfilledVars,
   programVariables: selectProgramVariables,
   previewHtml: selectPreviewHtml,
+  allPreviewHtmls: selectAllPreviewHtmls,
 };
