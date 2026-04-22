@@ -33,7 +33,7 @@ const selectProgramConfigs = createSelector(
 
 const selectProgramConfigMap = createSelector(
   [selectProgramConfigs],
-  (configs) => new Grouper(configs).toUniqueMap((c) => c.progCodeId),
+  (configs) => new Grouper(configs).toUniqueMap((c) => c.alias),
 );
 
 /**
@@ -54,19 +54,19 @@ const selectActiveVars = createSelector(
 
 /**
  * Parses the template HTML for dot-notation mention data-id attributes
- * (e.g. "MLC.price") and returns the unique progCodeId prefixes that are
- * both present in the template AND have a programConfig in state.
+ * and returns the QSProgramConfigs whose alias is present in the template.
+ * Keyed by alias (e.g. "MLC", "MLC_2"), not progCodeId.
  */
 const selectActivePrograms = createSelector(
   [selectTemplateHtml, selectProgramConfigs],
   (html, configs): QSProgramConfig[] => {
-    const activeProgCodeIds = new Set<string>();
-    // Match mention IDs of the form "program.{progCodeId}.{prop}"
+    const activeAliases = new Set<string>();
+    // Match mention IDs of the form "program.{alias}.{prop}"
     const matches = html.matchAll(/data-id="program\.([^."]+)\.[^"]+"/g);
     for (const match of matches) {
-      activeProgCodeIds.add(match[1]);
+      activeAliases.add(match[1]);
     }
-    return configs.filter((c) => activeProgCodeIds.has(c.progCodeId));
+    return configs.filter((c) => activeAliases.has(c.alias));
   },
 );
 
@@ -93,6 +93,7 @@ const selectUnfulfilledVars = createSelector(
 );
 
 type QSProgramVariables = {
+  alias: string;
   progCodeId: string;
   description: string;
   servCount: number;
@@ -114,14 +115,9 @@ const selectProgramVariables = createSelector(
 
     return activePrograms.map((config) => {
       const progCode = progCodeMap.get(config.progCodeId);
-      console.log(
-        "[QS] progCode for",
-        config.progCodeId,
-        "→",
-        progCode ? "found" : "NOT FOUND",
-      );
       if (!progCode) {
         return {
+          alias: config.alias,
           progCodeId: config.progCodeId,
           description: config.progCodeId,
           servCount: config.includedServCodeIds.length,
@@ -137,6 +133,7 @@ const selectProgramVariables = createSelector(
       const price = hasSize ? scoped.getPrice(size) : null;
 
       return {
+        alias: config.alias,
         progCodeId: config.progCodeId,
         description: progCode.description,
         servCount: config.includedServCodeIds.length,
@@ -193,20 +190,22 @@ const selectPreviewHtml = createSelector(
     }
 
     // --- Dot-notation program vars ---
-    const progVarMap = new Map(programVars.map((v) => [v.progCodeId, v]));
+    // Map by alias (e.g. "MLC", "MLC_2") so multiple configs for the same progCode resolve independently.
+    const progVarMap = new Map(programVars.map((v) => [v.alias, v]));
 
     // Replace each dot-notation mention span with its resolved value.
-    // ID format: "program.{progCodeId}.{prop}"
+    // ID format: "program.{alias}.{prop}"
     preview = preview.replace(
       /<span[^>]*data-type="mention"[^>]*data-id="(program\.[^"]+)"[^>]*>[^<]*<\/span>/g,
       (fullMatch, mentionId: string) => {
-        // mentionId = "program.MLC.price"
+        // mentionId = "program.MLC.price" or "program.MLC_2.price"
         const parts = mentionId.split(".");
         if (parts.length !== 3 || parts[0] !== "program") return fullMatch;
 
-        const progCodeId = parts[1];
-        const prop = parts[2] as keyof QSProgramVariables;
-        const vars = progVarMap.get(progCodeId);
+        const alias = parts[1];
+        // Exclude non-data fields from the prop lookup
+        const prop = parts[2] as Exclude<keyof QSProgramVariables, "alias" | "progCodeId" | "description" | "servCount">;
+        const vars = progVarMap.get(alias);
 
         if (!vars) {
           return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
@@ -267,7 +266,7 @@ const selectActiveControlIds = createSelector(
     if (activeVars.has("name")) add("nameOverride");
     if (activeVars.has("size") || activePrograms.length > 0) add("sizeOverride");
     for (const config of activePrograms) {
-      add(`programConfig:${config.progCodeId}`);
+      add(`programConfig:${config.alias}`);
     }
 
     return ids;

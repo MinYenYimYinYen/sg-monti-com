@@ -21,15 +21,15 @@ export function QuickSend() {
   const controlIds = useSelector(quickSendSelect.activeControlIds);
   const programConfigs = useSelector(quickSendSelect.programConfigs);
 
-  const programConfigMap = new Map(programConfigs.map((c) => [c.progCodeId, c]));
+  const programConfigMap = new Map(programConfigs.map((c) => [c.alias, c]));
 
   const renderControl = (id: TemplateControlId) => {
     if (id === "customerLookup") return <CustomerLookup key="customerLookup" />;
     if (id === "nameOverride") return <NameOverride key="nameOverride" />;
     if (id === "sizeOverride") return <SizeOverride key="sizeOverride" />;
     if (id.startsWith("programConfig:")) {
-      const progCodeId = id.slice("programConfig:".length);
-      const config = programConfigMap.get(progCodeId);
+      const alias = id.slice("programConfig:".length);
+      const config = programConfigMap.get(alias);
       if (!config) return null;
       return <ProgramConfig key={id} config={config} />;
     }

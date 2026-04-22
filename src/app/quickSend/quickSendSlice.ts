@@ -54,36 +54,44 @@ const quickSendSlice = createSlice({
       state.customer = initialState.customer;
     },
 
-    /** Adds a program config initialized with all non-service-call ServCode IDs. No-op if already present. */
-    addProgramConfig(state, action: PayloadAction<ProgCode>) {
-      const progCode = action.payload;
-      const alreadyExists = state.programConfigs.some(
-        (c) => c.progCodeId === progCode.progCodeId,
-      );
+    /**
+     * Adds a program config for the given alias + progCode.
+     * No-op if a config with that alias already exists.
+     *
+     * The alias is the mention ID segment (e.g. "MLC", "MLC_2"). Multiple
+     * configs can share the same progCodeId but must have distinct aliases.
+     */
+    addProgramConfig(
+      state,
+      action: PayloadAction<{ alias: string; progCode: ProgCode }>,
+    ) {
+      const { alias, progCode } = action.payload;
+      const alreadyExists = state.programConfigs.some((c) => c.alias === alias);
       if (alreadyExists) return;
       const includedServCodeIds = progCode.servCodes
         .filter((s) => !s.isServiceCall)
         .map((s) => s.servCodeId);
       state.programConfigs.push({
+        alias,
         progCodeId: progCode.progCodeId,
         includedServCodeIds,
-      });
+      } satisfies QSProgramConfig);
     },
 
-    /** Removes a program config by progCodeId. */
+    /** Removes a program config by alias. */
     removeProgramConfig(state, action: PayloadAction<string>) {
       state.programConfigs = state.programConfigs.filter(
-        (c) => c.progCodeId !== action.payload,
+        (c) => c.alias !== action.payload,
       );
     },
 
-    /** Replaces the included ServCode IDs for a given program config. */
+    /** Replaces the included ServCode IDs for a given program config (by alias). */
     setIncludedServCodeIds(
       state,
-      action: PayloadAction<{ progCodeId: string; servCodeIds: string[] }>,
+      action: PayloadAction<{ alias: string; servCodeIds: string[] }>,
     ) {
       const config = state.programConfigs.find(
-        (c) => c.progCodeId === action.payload.progCodeId,
+        (c) => c.alias === action.payload.alias,
       );
       if (config) {
         config.includedServCodeIds = action.payload.servCodeIds;

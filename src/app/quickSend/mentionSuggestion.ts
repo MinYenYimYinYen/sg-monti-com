@@ -26,6 +26,31 @@ const FLAT_ITEMS: MentionItem[] = [
   { id: "size", label: "size" },
 ];
 
+/**
+ * Given an alias (e.g. "MLC_2", "MLC_3_2") and the known progCodes, returns
+ * the progCodeId that the alias was derived from.
+ *
+ * Strategy:
+ * 1. Exact match — the alias IS a real progCodeId (handles progCodeIds that
+ *    already contain underscores/digits, e.g. "MLC_3").
+ * 2. Last-underscore strip — if the trailing segment after the last "_" is
+ *    all digits, strip it. This recovers "MLC" from "MLC_2" and "MLC_3" from
+ *    "MLC_3_2" without needing to know the full progCode list.
+ * 3. Fallback — return the alias unchanged.
+ */
+export function safelyRemoveSuffix(alias: string, progCodes: ProgCode[]): string {
+  const exact = progCodes.find(
+    (p) => p.progCodeId.toLowerCase() === alias.toLowerCase(),
+  );
+  if (exact) return exact.progCodeId;
+
+  const lastUnderscore = alias.lastIndexOf("_");
+  if (lastUnderscore !== -1 && /^\d+$/.test(alias.slice(lastUnderscore + 1))) {
+    return alias.slice(0, lastUnderscore);
+  }
+  return alias;
+}
+
 /** The top-level "program" namespace item. */
 const PROGRAM_NS_ITEM: MentionItem = {
   id: "__ns__program",
@@ -35,7 +60,9 @@ const PROGRAM_NS_ITEM: MentionItem = {
 
 type BuildMentionSuggestionParams = {
   getProgCodes: () => ProgCode[];
-  onProgramMentionInserted: (progCodeId: string) => void;
+  /** Returns the set of aliases currently in programConfigs (e.g. {"MLC", "MLC_2"}). */
+  getExistingAliases: () => Set<string>;
+  onProgramMentionInserted: (alias: string) => void;
 };
 
 /**
@@ -52,6 +79,7 @@ type BuildMentionSuggestionParams = {
  */
 export function buildMentionSuggestion({
   getProgCodes,
+  getExistingAliases,
   onProgramMentionInserted,
 }: BuildMentionSuggestionParams): Partial<SuggestionOptions> {
   return {
@@ -68,35 +96,55 @@ export function buildMentionSuggestion({
         return [...flatMatches, ...programNsMatch];
       }
 
-      // Level 1: "program.{partial}" — show progCode namespace items
+      // Level 1: "program.{partial}" — show progCode namespace items.
+      // For each progCode, show the base alias (e.g. "MLC") plus any "_N" variants
+      // that are needed when the base alias is already in use.
       if (parts.length === 2 && parts[0].toLowerCase() === "program") {
         const suffix = parts[1].toLowerCase();
-        return getProgCodes()
-          .filter((p) => p.progCodeId.toLowerCase().startsWith(suffix))
-          .map((p) => ({
-            id: `__ns__program.${p.progCodeId}`,
-            label: p.progCodeId,
-            isNamespace: true,
-          }));
+        const items: MentionItem[] = [];
+        for (const p of getProgCodes()) {
+          // Always show the base alias
+          if (p.progCodeId.toLowerCase().startsWith(suffix)) {
+            items.push({
+              id: `__ns__program.${p.progCodeId}`,
+              label: p.progCodeId,
+              isNamespace: true,
+            });
+          }
+          // If the base alias is already in programConfigs, also offer the next available _N alias
+          const existingAliases = getExistingAliases(); // eslint-disable-line react-hooks/refs
+          if (existingAliases.has(p.progCodeId)) {
+            let n = 2;
+            while (existingAliases.has(`${p.progCodeId}_${n}`)) n++;
+            const nextAlias = `${p.progCodeId}_${n}`;
+            if (nextAlias.toLowerCase().startsWith(suffix)) {
+              items.push({
+                id: `__ns__program.${nextAlias}`,
+                label: nextAlias,
+                isNamespace: true,
+              });
+            }
+          }
+        }
+        return items;
       }
 
-      // Level 2: "program.{progCodeId}.{partial}" — show leaf properties
-      if (
-        parts.length === 3 &&
-        parts[0].toLowerCase() === "program"
-      ) {
-        const progCodeId = parts[1];
+      // Level 2: "program.{alias}.{partial}" — show leaf properties.
+      // The alias may be "MLC" or "MLC_2"; strip the _N suffix to find the base progCodeId.
+      if (parts.length === 3 && parts[0].toLowerCase() === "program") {
+        const alias = parts[1];
         const suffix = parts[2].toLowerCase();
+        const baseProgCodeId = safelyRemoveSuffix(alias, getProgCodes());
         const progCode = getProgCodes().find(
-          (p) => p.progCodeId.toLowerCase() === progCodeId.toLowerCase(),
+          (p) => p.progCodeId.toLowerCase() === baseProgCodeId.toLowerCase(),
         );
         if (!progCode) return [];
 
         return PROG_LEAF_PROPS.filter((prop) =>
           prop.toLowerCase().startsWith(suffix),
         ).map((prop) => ({
-          id: `program.${progCode.progCodeId}.${prop}`,
-          label: `${progCode.progCodeId}.${prop}`,
+          id: `program.${alias}.${prop}`,
+          label: `${alias}.${prop}`,
         }));
       }
 

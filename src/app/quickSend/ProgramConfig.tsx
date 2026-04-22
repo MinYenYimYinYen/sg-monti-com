@@ -26,7 +26,7 @@ export function ProgramConfig({ config }: Props) {
       : [...config.includedServCodeIds, servCodeId];
     dispatch(
       quickSendActions.setIncludedServCodeIds({
-        progCodeId: config.progCodeId,
+        alias: config.alias,
         servCodeIds: updated,
       }),
     );
@@ -38,7 +38,7 @@ export function ProgramConfig({ config }: Props) {
     <div className="flex flex-col gap-2 px-4 py-3 border-b border-border">
       <div className="flex flex-col gap-0.5">
         <span className="text-xs font-semibold text-foreground">
-          {config.progCodeId}
+          {config.alias}
         </span>
         <span className="text-xs text-muted-foreground">{progCode.description}</span>
       </div>

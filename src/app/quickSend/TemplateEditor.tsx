@@ -14,7 +14,7 @@ import Mention from "@tiptap/extension-mention";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { quickSendActions } from "./quickSendSlice";
-import { buildMentionSuggestion } from "./mentionSuggestion";
+import { buildMentionSuggestion, safelyRemoveSuffix } from "./mentionSuggestion";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { quickSendSelect } from "./quickSendSelect";
 
@@ -32,6 +32,11 @@ export function TemplateEditor() {
 
   // eslint-disable-next-line react-hooks/refs
   programConfigMapRef.current = programConfigMap;
+
+  const programConfigs = useSelector(quickSendSelect.programConfigs);
+  const programConfigsRef = useRef(programConfigs);
+  // eslint-disable-next-line react-hooks/refs
+  programConfigsRef.current = programConfigs;
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -54,13 +59,18 @@ export function TemplateEditor() {
         },
         suggestion: buildMentionSuggestion({
           getProgCodes: () => progCodesRef.current,
-          onProgramMentionInserted: (progCodeId) => {
-            if (!programConfigMapRef.current.has(progCodeId)) {
+          getExistingAliases: () =>
+            new Set(programConfigsRef.current.map((c) => c.alias)),
+          onProgramMentionInserted: (alias: string) => {
+            if (!programConfigMapRef.current.has(alias)) {
+              const baseProgCodeId = safelyRemoveSuffix(alias, progCodesRef.current);
               const progCode = progCodesRef.current.find(
-                (p) => p.progCodeId === progCodeId,
+                (p) => p.progCodeId === baseProgCodeId,
               );
               if (progCode) {
-                dispatch(quickSendActions.addProgramConfig(progCode));
+                dispatch(
+                  quickSendActions.addProgramConfig({ alias, progCode }),
+                );
               }
             }
           },
