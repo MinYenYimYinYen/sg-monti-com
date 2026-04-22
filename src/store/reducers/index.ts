@@ -30,6 +30,7 @@ import { loadoutReducer } from "@/app/loadout/loadoutSlice";
 import assignmentReducer from "@/app/assignment/assignmentSlice";
 import quickSendReducer from "@/app/quickSend/quickSendSlice";
 import { storedTemplatesReducer } from "@/app/quickSend/storedTemplates/storedTemplatesSlice";
+import prepayReducer from "@/app/realGreen/prepay/prepaySlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -51,6 +52,7 @@ const rootReducer = combineReducers({
   priceTable: priceTableReducer,
   product: productReducer,
   unitConfig: unitConfigReducer,
+  prepay: prepayReducer,
   progServ: progServReducer,
   serviceCondition: serviceConditionReducer,
   taxCode: taxCodeReducer,

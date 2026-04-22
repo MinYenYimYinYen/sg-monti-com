@@ -40,6 +40,7 @@ export type RgApiPath =
   | { path: `/Employee/${string}`; method: "GET"; body?: undefined }
   | { path: "/Employee/Active/true"; method: "GET"; body?: undefined }
   | { path: "/Flag"; method: "GET"; body?: undefined }
+  | { path: "/PrepayCodes/Available/true"; method: "GET"; body?: undefined }
   | { path: "/PriceTable"; method: "GET"; body?: undefined }
   | { path: `/PriceTable/${string}/Detailed`; method: "GET"; body?: undefined }
   | { path: "/Products"; method: "GET"; body?: undefined }
