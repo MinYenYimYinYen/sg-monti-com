@@ -15,6 +15,7 @@ const ProgramConfigSchema = new mongoose.Schema(
     alias: { type: String, required: true },
     progCodeId: { type: String, required: true },
     includedServCodeIds: { type: [String], required: true, default: [] },
+    prepayId: { type: String, default: null },
   },
   { _id: false },
 );

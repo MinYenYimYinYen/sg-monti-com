@@ -3,6 +3,7 @@ import tippy, { type Instance as TippyInstance } from "tippy.js";
 import type { SuggestionOptions } from "@tiptap/suggestion";
 import { MentionList } from "./MentionList";
 import type { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import type { PrepayDoc } from "@/app/realGreen/prepay/PrepayTypes";
 
 export type MentionItem = {
   id: string;
@@ -19,6 +20,9 @@ const PROG_LEAF_PROPS = [
   "price",
   "totalPrice",
 ] as const;
+
+/** Leaf properties available on a prepay namespace (nested under program). */
+const PREPAY_LEAF_PROPS = ["percent"] as const;
 
 /** The flat (non-namespaced) @variable items. */
 const FLAT_ITEMS: MentionItem[] = [
@@ -58,8 +62,12 @@ const PROGRAM_NS_ITEM: MentionItem = {
   isNamespace: true,
 };
 
+/** The "prepay" namespace item shown at Level 2 (inside a program alias). */
+const PREPAY_NS_ITEM_SUFFIX = "prepay";
+
 type BuildMentionSuggestionParams = {
   getProgCodes: () => ProgCode[];
+  getPrepayCodes: () => PrepayDoc[];
   /** Returns the set of aliases currently in programConfigs (e.g. {"MLC", "MLC_2"}). */
   getExistingAliases: () => Set<string>;
   onProgramMentionInserted: (alias: string) => void;
@@ -68,17 +76,22 @@ type BuildMentionSuggestionParams = {
 /**
  * Builds the Tiptap suggestion config for @variable mentions.
  *
- * Three-level drill-down:
+ * Four-level drill-down:
  * - Level 0 (no dot): flat vars (name, size) + "program →"
  * - Level 1 (query = "program.*"): progCode namespace items (MLC →, TLC →, ...)
- * - Level 2 (query = "program.MLC.*"): leaf properties (description, price, ...)
+ * - Level 2 (query = "program.MLC.*"): leaf properties (description, price, ...) + "prepay →"
+ * - Level 3 (query = "program.MLC.prepay.*"): prepay leaf properties (percent)
  *
  * Namespace items replace the typed text with "@{prefix}." and keep the
- * suggestion open (IDE-style autocomplete). Leaf items insert a mention node
- * with id "program.{progCodeId}.{prop}".
+ * suggestion open (IDE-style autocomplete). Leaf items insert a mention node.
+ *
+ * Mention ID formats:
+ * - `program.{alias}.{prop}` — program leaf (3 parts)
+ * - `program.{alias}.prepay.{prop}` — prepay leaf nested under program (4 parts)
  */
 export function buildMentionSuggestion({
   getProgCodes,
+  getPrepayCodes,
   getExistingAliases,
   onProgramMentionInserted,
 }: BuildMentionSuggestionParams): Partial<SuggestionOptions> {
@@ -129,7 +142,7 @@ export function buildMentionSuggestion({
         return items;
       }
 
-      // Level 2: "program.{alias}.{partial}" — show leaf properties.
+      // Level 2: "program.{alias}.{partial}" — show leaf properties + "prepay →".
       // The alias may be "MLC" or "MLC_2"; strip the _N suffix to find the base progCodeId.
       if (parts.length === 3 && parts[0].toLowerCase() === "program") {
         const alias = parts[1];
@@ -140,11 +153,42 @@ export function buildMentionSuggestion({
         );
         if (!progCode) return [];
 
-        return PROG_LEAF_PROPS.filter((prop) =>
+        const leafItems: MentionItem[] = PROG_LEAF_PROPS.filter((prop) =>
           prop.toLowerCase().startsWith(suffix),
         ).map((prop) => ({
           id: `program.${alias}.${prop}`,
           label: `${alias}.${prop}`,
+        }));
+
+        // Add "prepay →" namespace if it matches the partial
+        const prepayNsItems: MentionItem[] =
+          PREPAY_NS_ITEM_SUFFIX.startsWith(suffix)
+            ? [
+                {
+                  id: `__ns__program.${alias}.prepay`,
+                  label: `${alias}.prepay`,
+                  isNamespace: true,
+                },
+              ]
+            : [];
+
+        return [...leafItems, ...prepayNsItems];
+      }
+
+      // Level 3: "program.{alias}.prepay.{partial}" — show prepay leaf properties.
+      if (
+        parts.length === 4 &&
+        parts[0].toLowerCase() === "program" &&
+        parts[2].toLowerCase() === "prepay"
+      ) {
+        const alias = parts[1];
+        const suffix = parts[3].toLowerCase();
+
+        return PREPAY_LEAF_PROPS.filter((prop) =>
+          prop.toLowerCase().startsWith(suffix),
+        ).map((prop) => ({
+          id: `program.${alias}.prepay.${prop}`,
+          label: `${alias}.prepay.${prop}`,
         }));
       }
 
@@ -154,8 +198,8 @@ export function buildMentionSuggestion({
     command({ editor, range, props }) {
       if (props.isNamespace) {
         // Namespace item: replace typed text with "@{prefix}." and keep suggestion open
-        const nsId: string = props.id; // e.g. "__ns__program" or "__ns__program.MLC"
-        const prefix = nsId.replace(/^__ns__/, ""); // "program" or "program.MLC"
+        const nsId: string = props.id; // e.g. "__ns__program" or "__ns__program.MLC" or "__ns__program.MLC.prepay"
+        const prefix = nsId.replace(/^__ns__/, ""); // "program" or "program.MLC" or "program.MLC.prepay"
         editor
           .chain()
           .focus()
@@ -166,7 +210,6 @@ export function buildMentionSuggestion({
       }
 
       // Leaf item: insert mention node without trailing space
-      // id format: "program.{progCodeId}.{prop}"
       editor
         .chain()
         .focus()
@@ -178,10 +221,11 @@ export function buildMentionSuggestion({
         ])
         .run();
 
-      // Notify so the slice can auto-add a programConfig
-      // id = "program.MLC.price" → progCodeId = "MLC"
+      // Notify so the slice can auto-add a programConfig when a program leaf is inserted.
+      // id = "program.MLC.price" → alias = "MLC"
+      // id = "program.MLC.prepay.percent" → alias = "MLC" (also triggers programConfig)
       const parts = props.id.split(".");
-      if (parts.length === 3 && parts[0] === "program") {
+      if (parts.length >= 3 && parts[0] === "program") {
         onProgramMentionInserted(parts[1]);
       }
     },

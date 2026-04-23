@@ -2,6 +2,7 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
 import type {
   QSVariableKey,
   QSProgramConfig,
@@ -131,6 +132,8 @@ type QSProgramVariables = {
   econPrice: number | null;
   price: number | null;
   totalPrice: number | null;
+  /** Prepay discount percentage, or null if no prepay is selected. */
+  prepayPercent: number | null;
 };
 
 /**
@@ -139,13 +142,16 @@ type QSProgramVariables = {
  * customer size.
  */
 const selectProgramVariables = createSelector(
-  [selectActivePrograms, progServSelect.progCodeMap, selectSizeOverride],
-  (activePrograms, progCodeMap, sizeOverride): QSProgramVariables[] => {
+  [selectActivePrograms, progServSelect.progCodeMap, selectSizeOverride, prepaySelect.prepayDocMap],
+  (activePrograms, progCodeMap, sizeOverride, prepayDocMap): QSProgramVariables[] => {
     const size = parseFloat(sizeOverride);
     const hasSize = !isNaN(size) && size > 0;
 
     return activePrograms.map((config) => {
       const progCode = progCodeMap.get(config.progCodeId);
+      const prepayDoc = config.prepayId != null ? prepayDocMap.get(config.prepayId) : undefined;
+      const prepayPercent = prepayDoc?.percent ?? null;
+
       if (!progCode) {
         return {
           alias: config.alias,
@@ -156,6 +162,7 @@ const selectProgramVariables = createSelector(
           econPrice: null,
           price: null,
           totalPrice: null,
+          prepayPercent,
         };
       }
 
@@ -172,6 +179,7 @@ const selectProgramVariables = createSelector(
         econPrice: hasSize ? scoped.getEconPrice(size) : null,
         price,
         totalPrice: hasSize ? scoped.getTotalPrice(size) : null,
+        prepayPercent,
       };
     });
   },
@@ -215,32 +223,56 @@ function resolveHtml(
     /<span[^>]*data-type="mention"[^>]*data-id="(program\.[^"]+)"[^>]*>[^<]*<\/span>/g,
     (fullMatch, mentionId: string) => {
       const parts = mentionId.split(".");
-      if (parts.length !== 3 || parts[0] !== "program") return fullMatch;
 
-      const alias = parts[1];
-      const prop = parts[2] as Exclude<
-        keyof QSProgramVariables,
-        "alias" | "progCodeId" | "description" | "servCount"
-      >;
-      const vars = progVarMap.get(alias);
+      // 3-part: program.{alias}.{prop}
+      if (parts.length === 3 && parts[0] === "program") {
+        const alias = parts[1];
+        const prop = parts[2] as Exclude<
+          keyof QSProgramVariables,
+          "alias" | "progCodeId" | "description" | "servCount" | "prepayPercent"
+        >;
+        const vars = progVarMap.get(alias);
 
-      if (!vars) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+        if (!vars) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
 
-      const value = vars[prop];
-      if (value === null || value === undefined) {
-        return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+        const value = vars[prop];
+        if (value === null || value === undefined) {
+          return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+        }
+
+        const displayValue =
+          typeof value === "number"
+            ? prop.toLowerCase().includes("price")
+              ? `$${value.toFixed(2)}`
+              : String(value)
+            : String(value);
+
+        return fullMatch
+          .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
+          .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
       }
 
-      const displayValue =
-        typeof value === "number"
-          ? prop.toLowerCase().includes("price")
-            ? `$${value.toFixed(2)}`
-            : String(value)
-          : String(value);
+      // 4-part: program.{alias}.prepay.{prop}
+      if (parts.length === 4 && parts[0] === "program" && parts[2] === "prepay") {
+        const alias = parts[1];
+        const prop = parts[3];
+        const vars = progVarMap.get(alias);
 
-      return fullMatch
-        .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
-        .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
+        if (!vars) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+
+        if (prop === "percent") {
+          const value = vars.prepayPercent;
+          if (value === null || value === undefined) {
+            return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+          }
+          const displayValue = `${value}%`;
+          return fullMatch
+            .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
+            .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
+        }
+      }
+
+      return fullMatch;
     },
   );
 
@@ -306,8 +338,8 @@ const selectActiveControlIds = createSelector(
  * Returns preview HTML for every section. Uses the global programConfigs.
  */
 const selectAllPreviewHtmls = createSelector(
-  [selectSections, selectNameOverride, selectSizeOverride, selectProgramConfigs, progServSelect.progCodeMap],
-  (sections, name, size, programConfigs, progCodeMap): { sectionId: string; previewHtml: string }[] => {
+  [selectSections, selectNameOverride, selectSizeOverride, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap],
+  (sections, name, size, programConfigs, progCodeMap, prepayDocMap): { sectionId: string; previewHtml: string }[] => {
     const sizeNum = parseFloat(size);
     const hasSize = !isNaN(sizeNum) && sizeNum > 0;
 
@@ -315,6 +347,9 @@ const selectAllPreviewHtmls = createSelector(
     const progVarMap = new Map<string, QSProgramVariables>();
     for (const config of programConfigs) {
       const progCode = progCodeMap.get(config.progCodeId);
+      const prepayDoc = config.prepayId != null ? prepayDocMap.get(config.prepayId) : undefined;
+      const prepayPercent = prepayDoc?.percent ?? null;
+
       if (!progCode) {
         progVarMap.set(config.alias, {
           alias: config.alias,
@@ -325,6 +360,7 @@ const selectAllPreviewHtmls = createSelector(
           econPrice: null,
           price: null,
           totalPrice: null,
+          prepayPercent,
         });
         continue;
       }
@@ -338,6 +374,7 @@ const selectAllPreviewHtmls = createSelector(
         econPrice: hasSize ? scoped.getEconPrice(sizeNum) : null,
         price: hasSize ? scoped.getPrice(sizeNum) : null,
         totalPrice: hasSize ? scoped.getTotalPrice(sizeNum) : null,
+        prepayPercent,
       });
     }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import StarterKit from "@tiptap/starter-kit";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
@@ -16,6 +16,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { quickSendActions } from "../quickSendSlice";
 import { buildMentionSuggestion, safelyRemoveSuffix } from "../mentions/mentionSuggestion";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
 import { quickSendSelect } from "../quickSendSelect";
 
 type Props = {
@@ -25,13 +26,20 @@ type Props = {
 export function TemplateEditor({ sectionId }: Props) {
   const dispatch = useAppDispatch();
   const progCodes = useSelector(progServSelect.progCodes);
+  const prepayCodes = useSelector(prepaySelect.prepayDocs);
   const programConfigs = useSelector(quickSendSelect.programConfigs);
+  const sections = useSelector(quickSendSelect.sections);
+  const templateHtml = sections.find((s) => s.sectionId === sectionId)?.templateHtml ?? "";
 
   // Refs so the suggestion callbacks always read the latest values even though
   // useEditor only runs once (the closures would otherwise capture stale state).
   const progCodesRef = useRef(progCodes);
   // eslint-disable-next-line react-hooks/refs
   progCodesRef.current = progCodes;
+
+  const prepayCodesRef = useRef(prepayCodes);
+  // eslint-disable-next-line react-hooks/refs
+  prepayCodesRef.current = prepayCodes;
 
   const programConfigsRef = useRef(programConfigs);
   // eslint-disable-next-line react-hooks/refs
@@ -58,6 +66,7 @@ export function TemplateEditor({ sectionId }: Props) {
         },
         suggestion: buildMentionSuggestion({
           getProgCodes: () => progCodesRef.current,
+          getPrepayCodes: () => prepayCodesRef.current,
           getExistingAliases: () =>
             new Set(programConfigsRef.current.map((c) => c.alias)),
           onProgramMentionInserted: (alias: string) => {
@@ -91,6 +100,15 @@ export function TemplateEditor({ sectionId }: Props) {
       dispatch(quickSendActions.setActiveSection(sectionId));
     },
   });
+
+  // Sync editor content when Redux state changes externally (e.g. loadTemplate).
+  // Guard against the editor's own onUpdate triggering a loop by comparing HTML first.
+  useEffect(() => {
+    if (!editor) return;
+    if (editor.getHTML() !== templateHtml) {
+      editor.commands.setContent(templateHtml, false);
+    }
+  }, [editor, templateHtml]);
 
   return (
     <div className="bg-card">

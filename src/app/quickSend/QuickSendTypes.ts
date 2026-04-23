@@ -21,11 +21,15 @@ export type QSVariableKey = "name" | "size";
  *
  * Program configs are global (not per-section) — the same alias and its servCode
  * selection applies across all sections of the template.
+ *
+ * `prepayId` — the prepay code applied to this program for discount display.
+ * `null` means no prepay is selected.
  */
 export type QSProgramConfig = {
   alias: string;
   progCodeId: string;
   includedServCodeIds: string[];
+  prepayId: string | null;
 };
 
 /**

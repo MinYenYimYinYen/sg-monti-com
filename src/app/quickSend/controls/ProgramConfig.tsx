@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { quickSendActions } from "../quickSendSlice";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
 import type { QSProgramConfig } from "../QuickSendTypes";
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
 export function ProgramConfig({ config }: Props) {
   const dispatch = useAppDispatch();
   const progCodeMap = useSelector(progServSelect.progCodeMap);
+  const prepayDocs = useSelector(prepaySelect.prepayDocs);
   const progCode = progCodeMap.get(config.progCodeId);
 
   if (!progCode) return null;
@@ -28,6 +30,16 @@ export function ProgramConfig({ config }: Props) {
       quickSendActions.setIncludedServCodeIds({
         alias: config.alias,
         servCodeIds: updated,
+      }),
+    );
+  };
+
+  const handlePrepayChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value;
+    dispatch(
+      quickSendActions.setPrepayId({
+        alias: config.alias,
+        prepayId: value === "" ? null : value,
       }),
     );
   };
@@ -65,6 +77,22 @@ export function ProgramConfig({ config }: Props) {
             </label>
           );
         })}
+      </div>
+      {/* Prepay selector */}
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs text-muted-foreground">Prepay</span>
+        <select
+          value={config.prepayId ?? ""}
+          onChange={handlePrepayChange}
+          className="text-xs rounded border border-border bg-card text-foreground px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">None</option>
+          {prepayDocs.map((prepay) => (
+            <option key={prepay.prepayId} value={prepay.prepayId}>
+              {prepay.prepayId} — {prepay.percent}%
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );

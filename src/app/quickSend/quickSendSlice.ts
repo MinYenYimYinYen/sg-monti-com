@@ -128,6 +128,7 @@ const quickSendSlice = createSlice({
         alias,
         progCodeId: progCode.progCodeId,
         includedServCodeIds,
+        prepayId: null,
       } satisfies QSProgramConfig);
     },
 
@@ -148,6 +149,19 @@ const quickSendSlice = createSlice({
       );
       if (config) {
         config.includedServCodeIds = action.payload.servCodeIds;
+      }
+    },
+
+    /** Sets (or clears) the prepay code for a given program config (by alias). */
+    setPrepayId(
+      state,
+      action: PayloadAction<{ alias: string; prepayId: string | null }>,
+    ) {
+      const config = state.programConfigs.find(
+        (c) => c.alias === action.payload.alias,
+      );
+      if (config) {
+        config.prepayId = action.payload.prepayId;
       }
     },
 
