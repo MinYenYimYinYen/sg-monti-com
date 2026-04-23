@@ -66,7 +66,7 @@ export function TemplateEditor({ sectionId }: Props) {
         },
         suggestion: buildMentionSuggestion({
           getProgCodes: () => progCodesRef.current,
-          getPrepayCodes: () => prepayCodesRef.current,
+          // getPrepayCodes: () => prepayCodesRef.current,
           getExistingAliases: () =>
             new Set(programConfigsRef.current.map((c) => c.alias)),
           onProgramMentionInserted: (alias: string) => {

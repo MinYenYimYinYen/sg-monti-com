@@ -87,7 +87,7 @@ const PREPAY_LEAF_ID_SUFFIX = "prepay";
 
 type BuildMentionSuggestionParams = {
   getProgCodes: () => ProgCode[];
-  getPrepayCodes: () => PrepayDoc[];
+  // getPrepayCodes: () => PrepayDoc[];
   /** Returns the set of aliases currently in programConfigs (e.g. {"MLC", "MLC_2"}). */
   getExistingAliases: () => Set<string>;
   onProgramMentionInserted: (alias: string) => void;
@@ -109,7 +109,6 @@ type BuildMentionSuggestionParams = {
  */
 export function buildMentionSuggestion({
   getProgCodes,
-  getPrepayCodes,
   getExistingAliases,
   onProgramMentionInserted,
 }: BuildMentionSuggestionParams): Partial<SuggestionOptions> {
