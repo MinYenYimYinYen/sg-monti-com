@@ -175,6 +175,7 @@ export type CustomerProps = {
   x: CustomerUtils;
   programs: Program[];
   taxCodes: TaxCode[];
+  taxRate: number;
   callAhead: CallAhead | null;
   discount: DiscountDoc | null;
   flags: Flag[];

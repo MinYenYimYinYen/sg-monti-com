@@ -25,7 +25,10 @@ export const baseZipCodeDoc: ZipCodeDoc = {
   ...baseZipCodeDocProps,
 };
 
-export const baseZipCodeProps: ZipCodeProps = {};
+export const baseZipCodeProps: ZipCodeProps = {
+  taxCodes: [],
+  taxRate: 0,
+};
 
 export const baseZipCode: ZipCode = {
   ...baseZipCodeDoc,

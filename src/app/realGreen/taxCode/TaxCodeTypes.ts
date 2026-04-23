@@ -23,8 +23,6 @@ export type TaxCodeDocProps = CreatedUpdated & {
 
 export type TaxCodeDoc = TaxCodeCore & TaxCodeDocProps;
 
-export type TaxCodeProps = {
-  customers: Customer[]
-};
+export type TaxCodeProps = {};
 
 export type TaxCode = TaxCodeDoc & TaxCodeProps;

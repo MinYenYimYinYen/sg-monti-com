@@ -6,8 +6,6 @@ import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTyp
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
-import { basicTaxCodeSelect } from "@/app/realGreen/taxCode/taxCodeBaseSelectors";
-import { baseTaxCode } from "@/app/realGreen/taxCode/_lib/baseTaxCode";
 import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
 import { discountSelect } from "../../discount/selectors/discountSelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
@@ -25,6 +23,8 @@ import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/se
 import { parsePromiseString } from "@/app/schedPromise/parsePromise";
 import { hydratePlannedLoadout } from "@/app/realGreen/customer/selectors/hydratePlannedLoadout";
 import { baseServCode } from "../../progServ/_lib/baseServCode";
+import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
+import { taxCodeSelect } from "../../taxCode/taxCodeSelectors";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -79,7 +79,7 @@ export const selectCustomers = createSelector(
     selectServiceDocMap,
     selectProgCodeMapByDefId,
     selectServCodeMap,
-    basicTaxCodeSelect.basicTaxCodeMap,
+    taxCodeSelect.taxCodeMap,
     callAheadSelect.callAheadMap,
     discountSelect.discountDocMap,
     productSelect.allProductsMap,
@@ -113,10 +113,15 @@ export const selectCustomers = createSelector(
     type ServiceBuilder = Omit<Service, "x">;
 
     const customers: Customer[] = customerDocs.map((custDoc) => {
-      const taxCodes = custDoc.taxIds
-        .map((taxId) => basicTaxCodeMap.get(taxId) || baseTaxCode)
-        .filter((tc) => tc.taxCodeId !== baseTaxCode.taxCodeId);
+      const taxCodesMaybe = custDoc.taxIds.map((taxId) =>
+        basicTaxCodeMap.get(taxId),
+      );
 
+      const taxCodes = typeGuard.definedArray(taxCodesMaybe);
+      const taxRate = taxCodes.reduce(
+        (acc, taxCode) => acc + taxCode.taxRate,
+        0,
+      );
       // Parse customer promise inline
       const custPromiseResult = parsePromiseString({
         techNote: custDoc.techNote,
@@ -129,6 +134,7 @@ export const selectCustomers = createSelector(
         ...custDoc,
         programs: [],
         taxCodes,
+        taxRate,
         callAhead: callAheadDocMap.get(custDoc.callAheadId) ?? null,
         discount: discountDocMap.get(custDoc.discountId) ?? null,
         flags: hydrateFlags(custDoc.custId, custIdFlagIds, flagDocMap),
@@ -183,7 +189,10 @@ export const selectCustomers = createSelector(
           const serviceBuilder: ServiceBuilder = {
             ...servDoc,
             // Merge optimistic ETA override from centralDocProps state
-            eta: pendingEtas[servDoc.servId] !== undefined ? pendingEtas[servDoc.servId] : servDoc.eta,
+            eta:
+              pendingEtas[servDoc.servId] !== undefined
+                ? pendingEtas[servDoc.servId]
+                : servDoc.eta,
             program: programBuilder as Program,
             servCode,
             callAhead: callAheadDocMap.get(servDoc.callAheadId) ?? null,
@@ -193,9 +202,9 @@ export const selectCustomers = createSelector(
               allProductsMap,
               employeeMap,
               serviceDoc: servDoc,
-              serviceConditions: serviceConditionsByServId.get(servDoc.servId) ?? [],
-              }
-            ),
+              serviceConditions:
+                serviceConditionsByServId.get(servDoc.servId) ?? [],
+            }),
             lastAssigned,
             promise: servPromiseResult.promise,
             promiseIssues: servPromiseResult.issues,
@@ -240,8 +249,6 @@ const selectServices = createSelector([selectPrograms], (programs) => {
 const selectCustomerMap = createSelector([selectCustomers], (customers) => {
   return new Grouper(customers).toUniqueMap((c) => c.custId);
 });
-
-
 
 export const centralSelect = {
   context: selectActiveContexts,

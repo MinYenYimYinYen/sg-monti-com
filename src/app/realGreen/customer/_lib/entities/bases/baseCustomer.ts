@@ -31,6 +31,7 @@ export const baseCustomerNoX: Omit<Customer, "x"> = {
   subdivisionId: baseNumId,
   taxIds: [],
   taxCodes: [],
+  taxRate: 0,
   techNote: "",
   useBilling: false,
   createdAt: "",

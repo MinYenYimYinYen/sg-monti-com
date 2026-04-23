@@ -106,7 +106,7 @@ export function TemplateEditor({ sectionId }: Props) {
   useEffect(() => {
     if (!editor) return;
     if (editor.getHTML() !== templateHtml) {
-      editor.commands.setContent(templateHtml, false);
+      editor.commands.setContent(templateHtml, {emitUpdate: false});
     }
   }, [editor, templateHtml]);
 
