@@ -10,6 +10,8 @@ import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 export const baseZipCodeCore: ZipCodeCore = {
   zip: baseStrId,
   city: baseStrId,
+  taxIds: [],
+  altCities: [],
 };
 
 export const baseZipCodeDocProps: ZipCodeDocProps = {

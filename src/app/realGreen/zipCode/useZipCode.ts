@@ -2,8 +2,10 @@ import { zipCodeActions } from "@/app/realGreen/zipCode/zipCodeSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
+import { useTaxCode } from "@/app/realGreen/taxCode/useTaxCode";
 
 export function useZipCode({ autoLoad }: { autoLoad: boolean }) {
+  useTaxCode({ autoLoad });
   const dispatch = useAppDispatch();
 
   useEffect(() => {
