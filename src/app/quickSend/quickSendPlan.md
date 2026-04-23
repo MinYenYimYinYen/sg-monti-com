@@ -104,7 +104,7 @@ export class ProgCodeUtils {
    */
   getPrice(size: number): number | null { ... }
 
-  /** Total program price: getPrice(size) × servCodes.length */
+  /** Total program price: getServPrice(size) × servCodes.length */
   getTotalPrice(size: number): number | null { ... }
 }
 ```

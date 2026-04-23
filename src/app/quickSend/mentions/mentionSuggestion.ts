@@ -28,6 +28,7 @@ const PREPAY_LEAF_PROPS = ["percent"] as const;
 const FLAT_ITEMS: MentionItem[] = [
   { id: "name", label: "name" },
   { id: "size", label: "size" },
+  { id: "taxRate", label: "taxRate" },
 ];
 
 /**

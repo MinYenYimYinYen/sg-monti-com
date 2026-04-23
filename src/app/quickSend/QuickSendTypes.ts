@@ -5,10 +5,12 @@ export type QSCustomerState = {
   customer: Customer | null;
   nameOverride: string;
   sizeOverride: string;
+  /** Zip code selected as a tax rate override. `null` = use the customer's own taxRate. */
+  taxRateZipOverride: string | null;
 };
 
 /** The set of flat @variable keys the editor can contain. */
-export type QSVariableKey = "name" | "size";
+export type QSVariableKey = "name" | "size" | "taxRate";
 
 /**
  * Per-program configuration stored in QuickSend state. Serializable — IDs only.
@@ -55,4 +57,5 @@ export type TemplateControlId =
   | "customerLookup"
   | "nameOverride"
   | "sizeOverride"
+  | "taxRateOverride"
   | `programConfig:${string}`;

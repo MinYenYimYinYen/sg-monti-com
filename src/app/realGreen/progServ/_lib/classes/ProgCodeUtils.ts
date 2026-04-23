@@ -47,7 +47,7 @@ export class ProgCodeUtils {
    * Auto-selects preferred or economy price based on isEcon logic.
    * Uses servCodes.length on this instance as the active service count.
    */
-  getPrice(size: number): number | null {
+  getServPrice(size: number): number | null {
     const useEcon = isEcon({
       minForPreferred: this.progCode.minForPreferred,
       activeServiceCount: this.progCode.servCodes.length,
@@ -58,9 +58,9 @@ export class ProgCodeUtils {
     return this.getPrefPrice(size);
   }
 
-  /** Total program price: getPrice(size) × servCodes.length */
-  getTotalPrice(size: number): number | null {
-    const price = this.getPrice(size);
+  /** Total program price: getServPrice(size) × servCodes.length */
+  getSubTotal(size: number): number | null {
+    const price = this.getServPrice(size);
     if (price === null) return null;
     return price * this.progCode.servCodes.length;
   }

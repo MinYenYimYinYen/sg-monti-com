@@ -35,6 +35,7 @@ const initialState: QuickSendState = {
     customer: null,
     nameOverride: "",
     sizeOverride: "",
+    taxRateZipOverride: null,
   },
   loadedTemplateId: null,
   loadedTemplateOwner: null,
@@ -88,6 +89,7 @@ const quickSendSlice = createSlice({
       state.customer.customer = null;
       state.customer.nameOverride = "";
       state.customer.sizeOverride = "";
+      state.customer.taxRateZipOverride = null;
     },
     setCustomer(state, action: PayloadAction<Customer>) {
       state.customer.customer = action.payload;
@@ -103,6 +105,9 @@ const quickSendSlice = createSlice({
     },
     setSizeOverride(state, action: PayloadAction<string>) {
       state.customer.sizeOverride = action.payload;
+    },
+    setTaxRateZipOverride(state, action: PayloadAction<string | null>) {
+      state.customer.taxRateZipOverride = action.payload;
     },
     clearCustomer(state) {
       state.customer = initialState.customer;

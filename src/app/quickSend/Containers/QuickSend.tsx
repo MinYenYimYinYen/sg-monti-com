@@ -7,6 +7,7 @@ import { QuickSendMenubar } from "../storedTemplates/components/QuickSendMenubar
 import { CustomerLookup } from "../controls/CustomerLookup";
 import { NameOverride } from "../controls/NameOverride";
 import { SizeOverride } from "../controls/SizeOverride";
+import { TaxRateOverride } from "../controls/TaxRateOverride";
 import { ProgramConfig } from "../controls/ProgramConfig";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
@@ -14,12 +15,14 @@ import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
 import { useStoredTemplates } from "../storedTemplates/useStoredTemplates";
 import type { TemplateControlId } from "../QuickSendTypes";
 import { usePrepay } from "@/app/realGreen/prepay/usePrepay";
+import { useZipCode } from "@/app/realGreen/zipCode/useZipCode";
 
 export function QuickSend() {
   useCustomerContext({ contexts: ["single"] });
   useProgServ({ autoLoad: true });
   usePriceTable({ autoLoad: true });
   usePrepay({ autoLoad: true });
+  useZipCode({ autoLoad: true });
   useStoredTemplates({ autoLoad: true });
 
   const controlIds = useSelector(quickSendSelect.activeControlIds);
@@ -31,6 +34,7 @@ export function QuickSend() {
     if (id === "customerLookup") return <CustomerLookup key="customerLookup" />;
     if (id === "nameOverride") return <NameOverride key="nameOverride" />;
     if (id === "sizeOverride") return <SizeOverride key="sizeOverride" />;
+    if (id === "taxRateOverride") return <TaxRateOverride key="taxRateOverride" />;
     if (id.startsWith("programConfig:")) {
       const alias = id.slice("programConfig:".length);
       const config = programConfigMap.get(alias);

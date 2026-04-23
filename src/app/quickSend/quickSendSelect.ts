@@ -3,6 +3,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
+import { zipCodeSelect } from "@/app/realGreen/zipCode/zipCodeSelectors";
 import type {
   QSVariableKey,
   QSProgramConfig,
@@ -46,6 +47,27 @@ const selectSizeOverride = createSelector(
   (customer) => customer.sizeOverride,
 );
 
+const selectTaxRateZipOverride = createSelector(
+  [selectCustomerState],
+  (customer) => customer.taxRateZipOverride,
+);
+
+/**
+ * The effective tax rate to use for the @taxRate mention.
+ * If a zip override is selected, uses that zip's taxRate.
+ * Otherwise falls back to the loaded customer's taxRate.
+ * Returns null when neither is available.
+ */
+const selectEffectiveTaxRate = createSelector(
+  [selectCustomerState, zipCodeSelect.zipCodeMap],
+  (customerState, zipCodeMap): number | null => {
+    if (customerState.taxRateZipOverride != null) {
+      return zipCodeMap.get(customerState.taxRateZipOverride)?.taxRate ?? null;
+    }
+    return customerState.customer?.taxRate ?? null;
+  },
+);
+
 // ---------------------------------------------------------------------------
 // Program configs — global (shared across all sections)
 // ---------------------------------------------------------------------------
@@ -77,7 +99,7 @@ const selectActiveVars = createSelector(
   [selectTemplateHtml],
   (html): Set<QSVariableKey> => {
     const vars = new Set<QSVariableKey>();
-    const matches = html.matchAll(/data-id="(name|size)"/g);
+    const matches = html.matchAll(/data-id="(name|size|taxRate)"/g);
     for (const match of matches) {
       vars.add(match[1] as QSVariableKey);
     }
@@ -105,20 +127,22 @@ const selectActivePrograms = createSelector(
  * Resolved variable values — what the mention nodes display in the preview.
  */
 const selectResolvedVariables = createSelector(
-  [selectNameOverride, selectSizeOverride],
-  (name, size): Partial<Record<QSVariableKey, string>> => ({
+  [selectNameOverride, selectSizeOverride, selectEffectiveTaxRate],
+  (name, size, taxRate): Partial<Record<QSVariableKey, string>> => ({
     name: name || undefined,
     size: size || undefined,
+    taxRate: taxRate != null ? `${taxRate.toFixed(3)}%` : undefined,
   }),
 );
 
 /** Variables that are present in the active section but have no resolved value yet. */
 const selectUnfulfilledVars = createSelector(
-  [selectActiveVars, selectNameOverride, selectSizeOverride],
-  (activeVars, name, size): Set<QSVariableKey> => {
+  [selectActiveVars, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate],
+  (activeVars, name, size, taxRate): Set<QSVariableKey> => {
     const unfulfilled = new Set<QSVariableKey>();
     if (activeVars.has("name") && !name) unfulfilled.add("name");
     if (activeVars.has("size") && !size) unfulfilled.add("size");
+    if (activeVars.has("taxRate") && taxRate == null) unfulfilled.add("taxRate");
     return unfulfilled;
   },
 );
@@ -168,9 +192,9 @@ const selectProgramVariables = createSelector(
 
       const scoped = progCode.x.getByServCodeIds(config.includedServCodeIds);
       const prefPrice = hasSize ? scoped.getPrefPrice(size) : null;
-      const price = hasSize ? scoped.getPrice(size) : null;
+      const price = hasSize ? scoped.getServPrice(size) : null;
 
-      return {
+      const qsProgramVariables: QSProgramVariables = {
         alias: config.alias,
         progCodeId: config.progCodeId,
         description: progCode.description,
@@ -178,9 +202,10 @@ const selectProgramVariables = createSelector(
         prefPrice,
         econPrice: hasSize ? scoped.getEconPrice(size) : null,
         price,
-        totalPrice: hasSize ? scoped.getTotalPrice(size) : null,
+        totalPrice: hasSize ? scoped.getSubTotal(size) : null,
         prepayPercent,
       };
+      return qsProgramVariables;
     });
   },
 );
@@ -191,6 +216,7 @@ function resolveHtml(
   html: string,
   name: string,
   size: string,
+  taxRate: string | null,
   progVarMap: Map<string, QSProgramVariables>,
 ): string {
   let preview = html;
@@ -219,6 +245,18 @@ function resolveHtml(
     );
   }
 
+  if (taxRate) {
+    preview = preview.replace(
+      /(<span[^>]*data-type="mention"[^>]*data-id="taxRate"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
+      `$1data-label="${taxRate}"$3${taxRate}$4`,
+    );
+  } else {
+    preview = preview.replace(
+      /<span[^>]*data-type="mention"[^>]*data-id="taxRate"[^>]*>[^<]*<\/span>/g,
+      `${UNFULFILLED_MARK}{{taxRate}}</mark>`,
+    );
+  }
+
   preview = preview.replace(
     /<span[^>]*data-type="mention"[^>]*data-id="(program\.[^"]+)"[^>]*>[^<]*<\/span>/g,
     (fullMatch, mentionId: string) => {
@@ -241,10 +279,8 @@ function resolveHtml(
         }
 
         const displayValue =
-          typeof value === "number"
-            ? prop.toLowerCase().includes("price")
-              ? `$${value.toFixed(2)}`
-              : String(value)
+          prop.toLowerCase().includes("price")
+            ? `$${value.toFixed(2)}`
             : String(value);
 
         return fullMatch
@@ -288,14 +324,32 @@ const selectPreviewHtml = createSelector(
     selectTemplateHtml,
     selectNameOverride,
     selectSizeOverride,
+    selectEffectiveTaxRate,
     selectProgramVariables,
   ],
-  (html, name, size, programVars): string => {
+  (html, name, size, effectiveTaxRate, programVars): string => {
     if (!html) return "";
+    const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
     const progVarMap = new Map(programVars.map((v) => [v.alias, v]));
-    return resolveHtml(html, name, size, progVarMap);
+    return resolveHtml(html, name, size, taxRateStr, progVarMap);
   },
 );
+
+/**
+ * Declarative map of which controls each trigger activates.
+ * - QSVariableKey triggers fire when that variable is present in the template.
+ * - "program" fires when any program mention is present.
+ *
+ * Controls are added in the order they appear here, deduped automatically.
+ * This is the authoritative source for control dependencies — prefer editing
+ * this table over adding imperative logic to selectActiveControlIds.
+ */
+const CONTROL_DEPS: { trigger: QSVariableKey | "program"; controls: TemplateControlId[] }[] = [
+  { trigger: "name",    controls: ["customerLookup", "nameOverride"] },
+  { trigger: "size",    controls: ["customerLookup", "sizeOverride"] },
+  { trigger: "taxRate", controls: ["customerLookup", "taxRateOverride"] },
+  { trigger: "program", controls: ["customerLookup", "sizeOverride", "taxRateOverride"] },
+];
 
 /**
  * Returns a deduped, ordered array of control IDs that the left panel should render,
@@ -305,7 +359,7 @@ const selectActiveControlIds = createSelector(
   [selectActiveVars, selectActivePrograms],
   (activeVars, activePrograms): TemplateControlId[] => {
     const ids: TemplateControlId[] = [];
-    const seen = new Set<string>();
+    const seen = new Set<TemplateControlId>();
 
     const add = (id: TemplateControlId) => {
       if (!seen.has(id)) {
@@ -314,14 +368,17 @@ const selectActiveControlIds = createSelector(
       }
     };
 
-    const needsCustomerLookup =
-      activeVars.has("name") ||
-      activeVars.has("size") ||
-      activePrograms.length > 0;
+    for (const { trigger, controls } of CONTROL_DEPS) {
+      const isActive =
+        trigger === "program" ? activePrograms.length > 0 : activeVars.has(trigger);
+      if (isActive) {
+        for (const control of controls) {
+          add(control);
+        }
+      }
+    }
 
-    if (needsCustomerLookup) add("customerLookup");
-    if (activeVars.has("name")) add("nameOverride");
-    if (activeVars.has("size") || activePrograms.length > 0) add("sizeOverride");
+    // Per-program configs are dynamic — one entry per alias
     for (const config of activePrograms) {
       add(`programConfig:${config.alias}`);
     }
@@ -338,10 +395,11 @@ const selectActiveControlIds = createSelector(
  * Returns preview HTML for every section. Uses the global programConfigs.
  */
 const selectAllPreviewHtmls = createSelector(
-  [selectSections, selectNameOverride, selectSizeOverride, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap],
-  (sections, name, size, programConfigs, progCodeMap, prepayDocMap): { sectionId: string; previewHtml: string }[] => {
+  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap],
+  (sections, name, size, effectiveTaxRate, programConfigs, progCodeMap, prepayDocMap): { sectionId: string; previewHtml: string }[] => {
     const sizeNum = parseFloat(size);
     const hasSize = !isNaN(sizeNum) && sizeNum > 0;
+    const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
 
     // Build a single progVarMap from all global programConfigs
     const progVarMap = new Map<string, QSProgramVariables>();
@@ -372,8 +430,8 @@ const selectAllPreviewHtmls = createSelector(
         servCount: config.includedServCodeIds.length,
         prefPrice: hasSize ? scoped.getPrefPrice(sizeNum) : null,
         econPrice: hasSize ? scoped.getEconPrice(sizeNum) : null,
-        price: hasSize ? scoped.getPrice(sizeNum) : null,
-        totalPrice: hasSize ? scoped.getTotalPrice(sizeNum) : null,
+        price: hasSize ? scoped.getServPrice(sizeNum) : null,
+        totalPrice: hasSize ? scoped.getSubTotal(sizeNum) : null,
         prepayPercent,
       });
     }
@@ -381,7 +439,7 @@ const selectAllPreviewHtmls = createSelector(
     return sections.map((section) => ({
       sectionId: section.sectionId,
       previewHtml: section.templateHtml
-        ? resolveHtml(section.templateHtml, name, size, progVarMap)
+        ? resolveHtml(section.templateHtml, name, size, taxRateStr, progVarMap)
         : "",
     }));
   },
@@ -402,6 +460,8 @@ export const quickSendSelect = {
   programVariables: selectProgramVariables,
   previewHtml: selectPreviewHtml,
   allPreviewHtmls: selectAllPreviewHtmls,
+  taxRateZipOverride: selectTaxRateZipOverride,
+  effectiveTaxRate: selectEffectiveTaxRate,
   loadedTemplateId: selectLoadedTemplateId,
   loadedTemplateOwner: selectLoadedTemplateOwner,
   loadedTemplateName: selectLoadedTemplateName,
