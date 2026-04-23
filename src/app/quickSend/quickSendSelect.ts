@@ -9,6 +9,8 @@ import type {
   QSProgramConfig,
   QSSection,
   TemplateControlId,
+  QSProgramVariables,
+  QSProgLeafKey,
 } from "./QuickSendTypes";
 
 const selectSlice = (state: AppState) => state.quickSend;
@@ -147,27 +149,14 @@ const selectUnfulfilledVars = createSelector(
   },
 );
 
-type QSProgramVariables = {
-  alias: string;
-  progCodeId: string;
-  description: string;
-  servCount: number;
-  prefPrice: number | null;
-  econPrice: number | null;
-  price: number | null;
-  totalPrice: number | null;
-  /** Prepay discount percentage, or null if no prepay is selected. */
-  prepayPercent: number | null;
-};
-
 /**
  * For each active program config in the active section, computes all resolved
  * property values using ProgCodeUtils scoped to the included ServCodes and the
  * customer size.
  */
 const selectProgramVariables = createSelector(
-  [selectActivePrograms, progServSelect.progCodeMap, selectSizeOverride, prepaySelect.prepayDocMap],
-  (activePrograms, progCodeMap, sizeOverride, prepayDocMap): QSProgramVariables[] => {
+  [selectActivePrograms, progServSelect.progCodeMap, selectSizeOverride, prepaySelect.prepayDocMap, selectEffectiveTaxRate],
+  (activePrograms, progCodeMap, sizeOverride, prepayDocMap, effectiveTaxRate): QSProgramVariables[] => {
     const size = parseFloat(sizeOverride);
     const hasSize = !isNaN(size) && size > 0;
 
@@ -175,37 +164,43 @@ const selectProgramVariables = createSelector(
       const progCode = progCodeMap.get(config.progCodeId);
       const prepayDoc = config.prepayId != null ? prepayDocMap.get(config.prepayId) : undefined;
       const prepayPercent = prepayDoc?.percent ?? null;
+      const servCount = config.includedServCodeIds.length;
 
       if (!progCode) {
         return {
           alias: config.alias,
           progCodeId: config.progCodeId,
           description: config.progCodeId,
-          servCount: config.includedServCodeIds.length,
+          servCount,
           prefPrice: null,
           econPrice: null,
-          price: null,
-          totalPrice: null,
+          servPrice: null,
+          subTotal: null,
           prepayPercent,
+          prepayDiscAmt: null,
+          taxAmt: null,
+          total: null,
         };
       }
 
       const scoped = progCode.x.getByServCodeIds(config.includedServCodeIds);
-      const prefPrice = hasSize ? scoped.getPrefPrice(size) : null;
-      const price = hasSize ? scoped.getServPrice(size) : null;
+      const pp = prepayPercent ?? 0;
+      const tr = effectiveTaxRate ?? 0;
 
-      const qsProgramVariables: QSProgramVariables = {
+      return {
         alias: config.alias,
         progCodeId: config.progCodeId,
         description: progCode.description,
-        servCount: config.includedServCodeIds.length,
-        prefPrice,
+        servCount,
+        prefPrice: hasSize ? scoped.getPrefPrice(size) : null,
         econPrice: hasSize ? scoped.getEconPrice(size) : null,
-        price,
-        totalPrice: hasSize ? scoped.getSubTotal(size) : null,
+        servPrice: hasSize ? scoped.getServPrice(size) : null,
+        subTotal: hasSize ? scoped.getSubTotal(size) : null,
         prepayPercent,
+        prepayDiscAmt: hasSize ? scoped.getPrepayDiscAmt(size, pp) : null,
+        taxAmt: hasSize && effectiveTaxRate !== null ? scoped.getTaxAmt(size, pp, tr) : null,
+        total: hasSize && effectiveTaxRate !== null ? scoped.getTotal(size, pp, tr) : null,
       };
-      return qsProgramVariables;
     });
   },
 );
@@ -265,38 +260,13 @@ function resolveHtml(
       // 3-part: program.{alias}.{prop}
       if (parts.length === 3 && parts[0] === "program") {
         const alias = parts[1];
-        const prop = parts[2] as Exclude<
-          keyof QSProgramVariables,
-          "alias" | "progCodeId" | "description" | "servCount" | "prepayPercent"
-        >;
+        const prop = parts[2];
         const vars = progVarMap.get(alias);
 
         if (!vars) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
 
-        const value = vars[prop];
-        if (value === null || value === undefined) {
-          return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
-        }
-
-        const displayValue =
-          prop.toLowerCase().includes("price")
-            ? `$${value.toFixed(2)}`
-            : String(value);
-
-        return fullMatch
-          .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
-          .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
-      }
-
-      // 4-part: program.{alias}.prepay.{prop}
-      if (parts.length === 4 && parts[0] === "program" && parts[2] === "prepay") {
-        const alias = parts[1];
-        const prop = parts[3];
-        const vars = progVarMap.get(alias);
-
-        if (!vars) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
-
-        if (prop === "percent") {
+        // "prepay" is a special leaf — resolves to the prepay discount percentage
+        if (prop === "prepay") {
           const value = vars.prepayPercent;
           if (value === null || value === undefined) {
             return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
@@ -306,6 +276,24 @@ function resolveHtml(
             .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
             .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
         }
+
+        const typedProp = prop as QSProgLeafKey;
+        const value = vars[typedProp];
+        if (value === null || value === undefined) {
+          return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+        }
+
+        const isDollarAmount =
+          (typedProp.toLowerCase().includes("price") ||
+            typedProp.toLowerCase().includes("amt") ||
+            typedProp === "subTotal" ||
+            typedProp === "total") &&
+          typeof value === "number";
+        const displayValue = isDollarAmount ? `$${value.toFixed(2)}` : String(value);
+
+        return fullMatch
+          .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
+          .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
       }
 
       return fullMatch;
@@ -407,18 +395,24 @@ const selectAllPreviewHtmls = createSelector(
       const progCode = progCodeMap.get(config.progCodeId);
       const prepayDoc = config.prepayId != null ? prepayDocMap.get(config.prepayId) : undefined;
       const prepayPercent = prepayDoc?.percent ?? null;
+      const servCount = config.includedServCodeIds.length;
+      const pp = prepayPercent ?? 0;
+      const tr = effectiveTaxRate ?? 0;
 
       if (!progCode) {
         progVarMap.set(config.alias, {
           alias: config.alias,
           progCodeId: config.progCodeId,
           description: config.progCodeId,
-          servCount: config.includedServCodeIds.length,
+          servCount,
           prefPrice: null,
           econPrice: null,
-          price: null,
-          totalPrice: null,
+          servPrice: null,
+          subTotal: null,
           prepayPercent,
+          prepayDiscAmt: null,
+          taxAmt: null,
+          total: null,
         });
         continue;
       }
@@ -427,12 +421,15 @@ const selectAllPreviewHtmls = createSelector(
         alias: config.alias,
         progCodeId: config.progCodeId,
         description: progCode.description,
-        servCount: config.includedServCodeIds.length,
+        servCount,
         prefPrice: hasSize ? scoped.getPrefPrice(sizeNum) : null,
         econPrice: hasSize ? scoped.getEconPrice(sizeNum) : null,
-        price: hasSize ? scoped.getServPrice(sizeNum) : null,
-        totalPrice: hasSize ? scoped.getSubTotal(sizeNum) : null,
+        servPrice: hasSize ? scoped.getServPrice(sizeNum) : null,
+        subTotal: hasSize ? scoped.getSubTotal(sizeNum) : null,
         prepayPercent,
+        prepayDiscAmt: hasSize ? scoped.getPrepayDiscAmt(sizeNum, pp) : null,
+        taxAmt: hasSize && effectiveTaxRate !== null ? scoped.getTaxAmt(sizeNum, pp, tr) : null,
+        total: hasSize && effectiveTaxRate !== null ? scoped.getTotal(sizeNum, pp, tr) : null,
       });
     }
 

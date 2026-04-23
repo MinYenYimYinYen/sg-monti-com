@@ -3,6 +3,9 @@ import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import {
   getPriceChartPrice,
   isEcon,
+  calculatePrepayDiscAmt,
+  calculateTaxAmt,
+  calculateServTotal,
 } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 
 type ProgCodeFactory = (
@@ -63,5 +66,41 @@ export class ProgCodeUtils {
     const price = this.getServPrice(size);
     if (price === null) return null;
     return price * this.progCode.servCodes.length;
+  }
+
+  /**
+   * Total prepay discount amount across all services.
+   * Rounds per-service then multiplies — matches SA5 behavior.
+   */
+  getPrepayDiscAmt(size: number, prepayPercent: number): number | null {
+    const servPrice = this.getServPrice(size);
+    if (servPrice === null) return null;
+    const perServ = calculatePrepayDiscAmt({ servPrice, prepayPercent });
+    return perServ * this.progCode.servCodes.length;
+  }
+
+  /**
+   * Total tax amount across all services, applied to the post-prepay price.
+   * Rounds per-service then multiplies — matches SA5 behavior.
+   */
+  getTaxAmt(size: number, prepayPercent: number, taxRate: number): number | null {
+    const servPrice = this.getServPrice(size);
+    if (servPrice === null) return null;
+    const prepayDiscAmtPerServ = calculatePrepayDiscAmt({ servPrice, prepayPercent });
+    const taxAmtPerServ = calculateTaxAmt({ servPrice, prepayDiscAmt: prepayDiscAmtPerServ, taxRate });
+    return taxAmtPerServ * this.progCode.servCodes.length;
+  }
+
+  /**
+   * Total net amount due across all services: (subTotal - prepayDiscAmt) + taxAmt.
+   * All intermediate values are rounded per-service before summing.
+   */
+  getTotal(size: number, prepayPercent: number, taxRate: number): number | null {
+    const servPrice = this.getServPrice(size);
+    if (servPrice === null) return null;
+    const prepayDiscAmtPerServ = calculatePrepayDiscAmt({ servPrice, prepayPercent });
+    const taxAmtPerServ = calculateTaxAmt({ servPrice, prepayDiscAmt: prepayDiscAmtPerServ, taxRate });
+    const totalPerServ = calculateServTotal({ servPrice, prepayDiscAmt: prepayDiscAmtPerServ, taxAmt: taxAmtPerServ });
+    return totalPerServ * this.progCode.servCodes.length;
   }
 }

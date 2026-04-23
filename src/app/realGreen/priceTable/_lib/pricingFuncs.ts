@@ -1,6 +1,5 @@
 import { PriceTable } from "@/app/realGreen/priceTable/_types/PriceTableTypes";
 import { Discount, DiscountType } from "@/app/realGreen/discount/DiscountTypes";
-import { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 
 // ---------------------------------------------------------------------------
 // Price chart lookup
@@ -157,12 +156,78 @@ export function applyDiscounts({ price, discounts }: ApplyDiscountsParams): numb
 }
 
 // ---------------------------------------------------------------------------
+// Prepay discount (per service)
+// ---------------------------------------------------------------------------
+
+type CalculatePrepayDiscAmtParams = {
+  servPrice: number;
+  /** Prepay discount percentage (e.g. `5` for 5%). */
+  prepayPercent: number;
+};
+
+/**
+ * Calculates the prepay discount amount for a single service price.
+ *
+ * Rounded per-service to match SA5 behavior — callers multiply by servCount
+ * to get the program total.
+ */
+export function calculatePrepayDiscAmt({ servPrice, prepayPercent }: CalculatePrepayDiscAmtParams): number {
+  return Math.round(servPrice * (prepayPercent / 100) * 100) / 100;
+}
+
+// ---------------------------------------------------------------------------
+// Tax amount (per service, post-prepay)
+// ---------------------------------------------------------------------------
+
+type CalculateTaxAmtParams = {
+  servPrice: number;
+  /** Per-service prepay discount already calculated via `calculatePrepayDiscAmt`. */
+  prepayDiscAmt: number;
+  /** Effective tax rate as a percentage (e.g. `8.25` for 8.25%). */
+  taxRate: number;
+};
+
+/**
+ * Calculates the tax amount for a single service after the prepay discount.
+ *
+ * Tax is applied to the post-prepay price (`servPrice - prepayDiscAmt`).
+ * `hasDiscount` is `false` here because this function models theoretical
+ * price-chart pricing where no service/program discounts exist yet.
+ *
+ * Rounded per-service — callers multiply by servCount for the program total.
+ */
+export function calculateTaxAmt({ servPrice, prepayDiscAmt, taxRate }: CalculateTaxAmtParams): number {
+  const postPrepayPrice = servPrice - prepayDiscAmt;
+  return calculateTax({ price: postPrepayPrice, taxRate, hasDiscount: false });
+}
+
+// ---------------------------------------------------------------------------
+// Per-service net total
+// ---------------------------------------------------------------------------
+
+type CalculateServTotalParams = {
+  servPrice: number;
+  prepayDiscAmt: number;
+  taxAmt: number;
+};
+
+/**
+ * Calculates the net amount due for a single service.
+ *
+ * `(servPrice - prepayDiscAmt) + taxAmt`
+ */
+export function calculateServTotal({ servPrice, prepayDiscAmt, taxAmt }: CalculateServTotalParams): number {
+  return (servPrice - prepayDiscAmt) + taxAmt;
+}
+
+// ---------------------------------------------------------------------------
 // Tax calculation
 // ---------------------------------------------------------------------------
 
 type CalculateTaxParams = {
   price: number;
-  taxCodes: TaxCode[];
+  /** Effective tax rate as a percentage (e.g. `8.25` for 8.25%). */
+  taxRate: number;
   hasDiscount: boolean;
 };
 
@@ -175,14 +240,12 @@ type CalculateTaxParams = {
  * - If a discount was applied: ceil(rawTax × 100) / 100
  * - If no discount was applied: round(rawTax × 100) / 100
  *
- * `taxCodes` should be the customer's matched tax codes (up to 3).
- * Returns 0 if taxCodes is empty.
+ * Returns 0 if `taxRate` is 0.
  */
-export function calculateTax({ price, taxCodes, hasDiscount }: CalculateTaxParams): number {
-  if (taxCodes.length === 0) return 0;
+export function calculateTax({ price, taxRate, hasDiscount }: CalculateTaxParams): number {
+  if (taxRate === 0) return 0;
 
-  const effectiveRate = taxCodes.reduce((sum, tc) => sum + tc.taxRate, 0) / 100;
-  const rawTax = price * effectiveRate;
+  const rawTax = price * (taxRate / 100);
 
   if (hasDiscount) {
     return Math.ceil(rawTax * 100) / 100;

@@ -4,6 +4,7 @@ import type { SuggestionOptions } from "@tiptap/suggestion";
 import { MentionList } from "./MentionList";
 import type { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import type { PrepayDoc } from "@/app/realGreen/prepay/PrepayTypes";
+import type { QSProgLeafKey } from "../QuickSendTypes";
 
 export type MentionItem = {
   id: string;
@@ -11,18 +12,36 @@ export type MentionItem = {
   isNamespace?: boolean;
 };
 
-/** Leaf properties available on a program namespace. */
-const PROG_LEAF_PROPS = [
+/**
+ * Exhaustiveness helper — ensures `PROG_LEAF_PROPS` covers every `QSProgLeafKey`.
+ * If a key is added to or renamed on `QSProgramVariables` (and therefore `QSProgLeafKey`),
+ * TypeScript will error here until the array is updated to match.
+ */
+type AssertExhaustiveLeafProps<T extends readonly QSProgLeafKey[]> =
+  T[number] extends QSProgLeafKey
+    ? QSProgLeafKey extends T[number]
+      ? T
+      : never
+    : never;
+
+function exhaustiveProgLeafProps<T extends readonly QSProgLeafKey[]>(
+  arr: AssertExhaustiveLeafProps<T>,
+): T {
+  return arr;
+}
+
+/** Leaf properties available on a program namespace. Must stay in sync with `QSProgLeafKey`. */
+const PROG_LEAF_PROPS = exhaustiveProgLeafProps([
   "description",
   "servCount",
   "prefPrice",
   "econPrice",
-  "price",
-  "totalPrice",
-] as const;
-
-/** Leaf properties available on a prepay namespace (nested under program). */
-const PREPAY_LEAF_PROPS = ["percent"] as const;
+  "servPrice",
+  "subTotal",
+  "prepayDiscAmt",
+  "taxAmt",
+  "total",
+] as const);
 
 /** The flat (non-namespaced) @variable items. */
 const FLAT_ITEMS: MentionItem[] = [
@@ -63,8 +82,8 @@ const PROGRAM_NS_ITEM: MentionItem = {
   isNamespace: true,
 };
 
-/** The "prepay" namespace item shown at Level 2 (inside a program alias). */
-const PREPAY_NS_ITEM_SUFFIX = "prepay";
+/** The "prepay" leaf shown at Level 2 (inside a program alias). */
+const PREPAY_LEAF_ID_SUFFIX = "prepay";
 
 type BuildMentionSuggestionParams = {
   getProgCodes: () => ProgCode[];
@@ -77,18 +96,16 @@ type BuildMentionSuggestionParams = {
 /**
  * Builds the Tiptap suggestion config for @variable mentions.
  *
- * Four-level drill-down:
- * - Level 0 (no dot): flat vars (name, size) + "program →"
+ * Three-level drill-down:
+ * - Level 0 (no dot): flat vars (name, size, taxRate) + "program →"
  * - Level 1 (query = "program.*"): progCode namespace items (MLC →, TLC →, ...)
- * - Level 2 (query = "program.MLC.*"): leaf properties (description, price, ...) + "prepay →"
- * - Level 3 (query = "program.MLC.prepay.*"): prepay leaf properties (percent)
+ * - Level 2 (query = "program.MLC.*"): leaf properties (description, price, ...) + "prepay" leaf
  *
  * Namespace items replace the typed text with "@{prefix}." and keep the
  * suggestion open (IDE-style autocomplete). Leaf items insert a mention node.
  *
  * Mention ID formats:
- * - `program.{alias}.{prop}` — program leaf (3 parts)
- * - `program.{alias}.prepay.{prop}` — prepay leaf nested under program (4 parts)
+ * - `program.{alias}.{prop}` — program leaf (3 parts, includes "prepay")
  */
 export function buildMentionSuggestion({
   getProgCodes,
@@ -161,36 +178,13 @@ export function buildMentionSuggestion({
           label: `${alias}.${prop}`,
         }));
 
-        // Add "prepay →" namespace if it matches the partial
-        const prepayNsItems: MentionItem[] =
-          PREPAY_NS_ITEM_SUFFIX.startsWith(suffix)
-            ? [
-                {
-                  id: `__ns__program.${alias}.prepay`,
-                  label: `${alias}.prepay`,
-                  isNamespace: true,
-                },
-              ]
+        // Add "prepay" leaf item if it matches the partial
+        const prepayLeafItems: MentionItem[] =
+          PREPAY_LEAF_ID_SUFFIX.startsWith(suffix)
+            ? [{ id: `program.${alias}.prepay`, label: `${alias}.prepay` }]
             : [];
 
-        return [...leafItems, ...prepayNsItems];
-      }
-
-      // Level 3: "program.{alias}.prepay.{partial}" — show prepay leaf properties.
-      if (
-        parts.length === 4 &&
-        parts[0].toLowerCase() === "program" &&
-        parts[2].toLowerCase() === "prepay"
-      ) {
-        const alias = parts[1];
-        const suffix = parts[3].toLowerCase();
-
-        return PREPAY_LEAF_PROPS.filter((prop) =>
-          prop.toLowerCase().startsWith(suffix),
-        ).map((prop) => ({
-          id: `program.${alias}.prepay.${prop}`,
-          label: `${alias}.prepay.${prop}`,
-        }));
+        return [...leafItems, ...prepayLeafItems];
       }
 
       return [];
@@ -224,7 +218,7 @@ export function buildMentionSuggestion({
 
       // Notify so the slice can auto-add a programConfig when a program leaf is inserted.
       // id = "program.MLC.price" → alias = "MLC"
-      // id = "program.MLC.prepay.percent" → alias = "MLC" (also triggers programConfig)
+      // id = "program.MLC.prepay" → alias = "MLC" (also triggers programConfig)
       const parts = props.id.split(".");
       if (parts.length >= 3 && parts[0] === "program") {
         onProgramMentionInserted(parts[1]);
