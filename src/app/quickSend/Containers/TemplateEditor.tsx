@@ -62,8 +62,11 @@ export function TemplateEditor({ sectionId }: Props) {
           class:
             "inline-block rounded bg-primary/10 px-1 py-0.5 text-primary text-sm font-medium",
         },
-        renderLabel({ node }) {
+        renderText({ node }) {
           return `@${node.attrs.label ?? node.attrs.id}`;
+        },
+        renderHTML({ node, options }) {
+          return ["span", options.HTMLAttributes, `@${node.attrs.label ?? node.attrs.id}`];
         },
         suggestion: buildMentionSuggestion({
           getProgCodes: () => progCodesRef.current,

@@ -14,7 +14,7 @@ import { Search, X } from "lucide-react";
 
 export function CustomerLookup() {
   const dispatch = useAppDispatch();
-  const { lookup } = useSingleCustomer();
+  const { lookup, clearCustomer } = useSingleCustomer();
 
   const customerState = useSelector(quickSendSelect.customerState);
   const loadedCustomer = useSelector(singleCustSelect.customer);
@@ -43,6 +43,9 @@ export function CustomerLookup() {
   };
 
   const handleClear = () => {
+    if (customerState.custId !== null) {
+      clearCustomer(customerState.custId);
+    }
     setInputValue("");
     setError(null);
     dispatch(quickSendActions.clearCustomer());

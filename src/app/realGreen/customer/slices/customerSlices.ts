@@ -25,6 +25,15 @@ export const createCustomerSlice = (sliceName: string) =>
           state.serviceDocs.push(...data.serviceDocs);
         }
       },
+      removeCustomer(state, action: PayloadAction<number>) {
+        const custId = action.payload;
+        const removedProgIds = new Set(
+          state.programDocs.filter((p) => p.custId === custId).map((p) => p.progId),
+        );
+        state.customerDocs = state.customerDocs.filter((d) => d.custId !== custId);
+        state.programDocs = state.programDocs.filter((p) => p.custId !== custId);
+        state.serviceDocs = state.serviceDocs.filter((s) => !removedProgIds.has(s.progId));
+      },
     },
     extraReducers: (builder) => {
       builder.addCase(`${sliceName}/getCustDocs/pending`, (state) => {

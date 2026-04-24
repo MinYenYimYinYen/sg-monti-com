@@ -23,5 +23,9 @@ export function useSingleCustomer() {
     );
   };
 
-  return { lookup };
+  const clearCustomer = (custId: number) => {
+    dispatch(singleCustomerActions.removeCustomer(custId));
+  };
+
+  return { lookup, clearCustomer };
 }

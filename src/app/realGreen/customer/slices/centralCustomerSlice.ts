@@ -178,6 +178,21 @@ export const centralCustomerSlice = createSlice({
         state.ServDocMap.clear();
       }
     });
+
+    // When a customer is removed from the source slice, mirror the removal in the central Maps.
+    builder.addCase(singleCustomerActions.removeCustomer, (state, action) => {
+      if (!state.activeContexts.includes("single")) return;
+      const custId = action.payload;
+      const removedProgIds: number[] = [];
+      state.ProgDocMap.forEach((prog, progId) => {
+        if (prog.custId === custId) removedProgIds.push(progId);
+      });
+      state.ServDocMap.forEach((serv, servId) => {
+        if (removedProgIds.includes(serv.progId)) state.ServDocMap.delete(servId);
+      });
+      removedProgIds.forEach((progId) => state.ProgDocMap.delete(progId));
+      state.CustDocMap.delete(custId);
+    });
   },
 });
 
