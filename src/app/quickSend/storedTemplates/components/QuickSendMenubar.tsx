@@ -15,221 +15,21 @@ import {
   MenubarTrigger,
 } from "@/style/components/menubar";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/style/components/dialog";
-import { Input } from "@/style/components/input";
-import { Button } from "@/style/components/button";
-import { Label } from "@/style/components/label";
-import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/style/components/tooltip";
 import { authSelect } from "@/app/auth/authSlice";
 import { quickSendActions } from "../../quickSendSlice";
 import { quickSendSelect } from "../../quickSendSelect";
 import { storedTemplatesSelect } from "../storedTemplatesSelect";
 import { useStoredTemplates } from "../useStoredTemplates";
-import { StoredTemplateDoc, TemplateGroupDoc } from "../StoredTemplateTypes";
+import { StoredTemplateDoc } from "../StoredTemplateTypes";
 import { TemplateBrowserSheet } from "./TemplateBrowserSheet";
-
-// ---------------------------------------------------------------------------
-// Delete Group resolution dialog
-// ---------------------------------------------------------------------------
-
-type TemplateResolution =
-  | { type: "move"; groupId: string }
-  | { type: "delete" }
-  | { type: "newGroup"; name: string }
-  | null;
-
-type DeleteGroupDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  group: TemplateGroupDoc;
-  templatesInGroup: StoredTemplateDoc[];
-  otherGroups: TemplateGroupDoc[];
-  currentUserName: string | null;
-  onConfirm: (groupId: string, resolutions: Map<string, TemplateResolution>) => void;
-};
-
-function DeleteGroupDialog({
-  open,
-  onOpenChange,
-  group,
-  templatesInGroup,
-  otherGroups,
-  currentUserName,
-  onConfirm,
-}: DeleteGroupDialogProps) {
-  const [resolutions, setResolutions] = useState<Map<string, TemplateResolution>>(new Map());
-  const [newGroupNames, setNewGroupNames] = useState<Map<string, string>>(new Map());
-
-  const setResolution = (templateId: string, resolution: TemplateResolution) => {
-    setResolutions((prev) => {
-      const next = new Map(prev);
-      next.set(templateId, resolution);
-      return next;
-    });
-  };
-
-  const setNewGroupName = (templateId: string, name: string) => {
-    setNewGroupNames((prev) => {
-      const next = new Map(prev);
-      next.set(templateId, name);
-      return next;
-    });
-    setResolution(templateId, { type: "newGroup", name });
-  };
-
-  const allResolved =
-    templatesInGroup.length === 0 ||
-    templatesInGroup.every((t) => {
-      const r = resolutions.get(t.templateId);
-      if (!r) return false;
-      if (r.type === "newGroup") return !!r.name.trim();
-      return true;
-    });
-
-  const handleConfirm = () => {
-    onConfirm(group.groupId, resolutions);
-    onOpenChange(false);
-    setResolutions(new Map());
-    setNewGroupNames(new Map());
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Delete Group: {group.name}</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-3">
-          {templatesInGroup.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              This group is empty. It will be deleted immediately.
-            </p>
-          ) : (
-            <>
-              <p className="text-xs text-muted-foreground">
-                Resolve each template before deleting the group:
-              </p>
-              <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
-                {templatesInGroup.map((template) => {
-                  const isOwn = template.userName === currentUserName;
-                  const resolution = resolutions.get(template.templateId) ?? null;
-                  const newGroupName = newGroupNames.get(template.templateId) ?? "";
-
-                  return (
-                    <div key={template.templateId} className="flex flex-col gap-1 border border-border rounded p-2">
-                      <p className="text-xs font-medium truncate">{template.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{template.userName}</p>
-                      <div className="flex flex-col gap-1 mt-1">
-                        {otherGroups.length > 0 && (
-                          <label className="flex items-center gap-2 text-xs cursor-pointer">
-                            <input
-                              type="radio"
-                              name={`res-${template.templateId}`}
-                              checked={resolution?.type === "move"}
-                              onChange={() =>
-                                setResolution(template.templateId, {
-                                  type: "move",
-                                  groupId: otherGroups[0].groupId,
-                                })
-                              }
-                            />
-                            Move to:
-                            <select
-                              className="flex-1 h-6 rounded border border-input bg-card px-1 text-xs"
-                              value={resolution?.type === "move" ? resolution.groupId : otherGroups[0].groupId}
-                              onChange={(e) =>
-                                setResolution(template.templateId, {
-                                  type: "move",
-                                  groupId: e.target.value,
-                                })
-                              }
-                              onClick={() => {
-                                if (resolution?.type !== "move") {
-                                  setResolution(template.templateId, {
-                                    type: "move",
-                                    groupId: otherGroups[0].groupId,
-                                  });
-                                }
-                              }}
-                            >
-                              {otherGroups.map((g) => (
-                                <option key={g.groupId} value={g.groupId}>{g.name}</option>
-                              ))}
-                            </select>
-                          </label>
-                        )}
-                        {isOwn && (
-                          <label className="flex items-center gap-2 text-xs cursor-pointer text-destructive">
-                            <input
-                              type="radio"
-                              name={`res-${template.templateId}`}
-                              checked={resolution?.type === "delete"}
-                              onChange={() => setResolution(template.templateId, { type: "delete" })}
-                            />
-                            Delete this template
-                          </label>
-                        )}
-                        <label className="flex items-center gap-2 text-xs cursor-pointer">
-                          <input
-                            type="radio"
-                            name={`res-${template.templateId}`}
-                            checked={resolution?.type === "newGroup"}
-                            onChange={() =>
-                              setResolution(template.templateId, { type: "newGroup", name: newGroupName })
-                            }
-                          />
-                          New group:
-                          <Input
-                            value={newGroupName}
-                            onChange={(e) => setNewGroupName(template.templateId, e.target.value)}
-                            placeholder="Group name…"
-                            className="flex-1 h-6 text-xs px-1"
-                            onClick={() => {
-                              if (resolution?.type !== "newGroup") {
-                                setResolution(template.templateId, { type: "newGroup", name: newGroupName });
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button size="sm" variant="accent" intensity="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              intensity="solid"
-              onClick={handleConfirm}
-              disabled={!allResolved}
-            >
-              Delete Group
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main menubar
-// ---------------------------------------------------------------------------
+import { SaveAsDialog } from "./SaveAsDialog";
+import { RenameTemplateDialog } from "./RenameTemplateDialog";
+import { DeleteTemplateDialog } from "./DeleteTemplateDialog";
+import { CreateGroupDialog } from "./CreateGroupDialog";
+import { RenameGroupDialog } from "./RenameGroupDialog";
+import { DeleteGroupDialog, TemplateResolution } from "./DeleteGroupDialog";
 
 export function QuickSendMenubar() {
   const dispatch = useAppDispatch();
@@ -240,34 +40,26 @@ export function QuickSendMenubar() {
   const sections = useSelector(quickSendSelect.sections);
   const programConfigs = useSelector(quickSendSelect.programConfigs);
   const loadedTemplateId = useSelector(quickSendSelect.loadedTemplateId);
-  const loadedTemplateOwner = useSelector(quickSendSelect.loadedTemplateOwner);
+  const loadedTemplateSaId = useSelector(quickSendSelect.loadedTemplateSaId);
   const loadedTemplateName = useSelector(quickSendSelect.loadedTemplateName);
   const loadedTemplateGroupId = useSelector(quickSendSelect.loadedTemplateGroupId);
   const groups = useSelector(storedTemplatesSelect.groups);
   const templatesByGroup = useSelector(storedTemplatesSelect.templatesByGroup);
 
-  const currentUserName = currentUser?.userName ?? null;
+  const currentUserSaId = currentUser?.saId ?? null;
   const isAdmin = role === "admin";
-  const isOwner = !!currentUserName && currentUserName === loadedTemplateOwner;
+  const isOwner = !!currentUserSaId && currentUserSaId === loadedTemplateSaId;
 
   // ── Dialog / Sheet open states ───────────────────────────────────────────
   const [browserOpen, setBrowserOpen] = useState(false);
-
-  // Template dialogs
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-
-  // Group dialogs
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [renameGroupOpen, setRenameGroupOpen] = useState(false);
   const [deleteGroupOpen, setDeleteGroupOpen] = useState(false);
 
-  // ── Form state ───────────────────────────────────────────────────────────
-  const [saveAsName, setSaveAsName] = useState("");
-  const [saveAsGroupId, setSaveAsGroupId] = useState(groups[0]?.groupId ?? "");
-  const [renameName, setRenameName] = useState("");
-  const [createGroupName, setCreateGroupName] = useState("");
+  // ── Group selection state for rename/delete ──────────────────────────────
   const [renameGroupId, setRenameGroupId] = useState<string | null>(null);
   const [renameGroupName, setRenameGroupName] = useState("");
   const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
@@ -277,25 +69,24 @@ export function QuickSendMenubar() {
   const handleNew = () => dispatch(quickSendActions.clearTemplate());
 
   const handleSave = () => {
-    if (!loadedTemplateId || !loadedTemplateName || !loadedTemplateGroupId || !currentUserName) return;
+    if (!loadedTemplateId || !loadedTemplateName || !loadedTemplateGroupId || !currentUserSaId) return;
     storedTemplates.saveTemplate({
       templateId: loadedTemplateId,
       name: loadedTemplateName,
       groupId: loadedTemplateGroupId,
-      userName: currentUserName,
+      saId: currentUserSaId,
       sections,
       programConfigs,
     });
   };
 
-  const handleSaveAs = () => {
-    if (!saveAsName.trim() || !currentUserName) return;
-    const groupId = saveAsGroupId || groups[0]?.groupId || "ungrouped";
+  const handleSaveAs = (name: string, groupId: string) => {
+    if (!currentUserSaId) return;
     storedTemplates.saveTemplate({
       templateId: "",
-      name: saveAsName.trim(),
+      name,
       groupId,
-      userName: currentUserName,
+      saId: currentUserSaId,
       sections,
       programConfigs,
     }).then((result) => {
@@ -303,17 +94,15 @@ export function QuickSendMenubar() {
         dispatch(quickSendActions.loadTemplate(result.payload as StoredTemplateDoc));
       }
     });
-    setSaveAsName("");
-    setSaveAsOpen(false);
   };
 
-  const handleRename = () => {
-    if (!renameName.trim() || !loadedTemplateId || !loadedTemplateGroupId || !currentUserName) return;
+  const handleRename = (newName: string) => {
+    if (!loadedTemplateId || !loadedTemplateGroupId || !currentUserSaId) return;
     storedTemplates.saveTemplate({
       templateId: loadedTemplateId,
-      name: renameName.trim(),
+      name: newName,
       groupId: loadedTemplateGroupId,
-      userName: currentUserName,
+      saId: currentUserSaId,
       sections,
       programConfigs,
     }).then((result) => {
@@ -321,29 +110,23 @@ export function QuickSendMenubar() {
         dispatch(quickSendActions.loadTemplate(result.payload as StoredTemplateDoc));
       }
     });
-    setRenameOpen(false);
   };
 
   const handleDelete = () => {
     if (!loadedTemplateId) return;
     storedTemplates.deleteTemplate(loadedTemplateId);
     dispatch(quickSendActions.clearTemplate());
-    setDeleteOpen(false);
   };
 
   // ── Handlers — Groups ────────────────────────────────────────────────────
 
-  const handleCreateGroup = () => {
-    if (!createGroupName.trim()) return;
-    storedTemplates.createGroup(createGroupName.trim());
-    setCreateGroupName("");
-    setCreateGroupOpen(false);
+  const handleCreateGroup = (name: string) => {
+    storedTemplates.createGroup(name);
   };
 
-  const handleRenameGroup = () => {
-    if (!renameGroupId || !renameGroupName.trim()) return;
-    storedTemplates.renameGroup(renameGroupId, renameGroupName.trim());
-    setRenameGroupOpen(false);
+  const handleRenameGroup = (newName: string) => {
+    if (!renameGroupId) return;
+    storedTemplates.renameGroup(renameGroupId, newName);
     setRenameGroupId(null);
     setRenameGroupName("");
   };
@@ -407,7 +190,7 @@ export function QuickSendMenubar() {
                 Save
               </MenubarItem>
 
-              <MenubarItem onSelect={(e) => { e.preventDefault(); setSaveAsGroupId(groups[0]?.groupId ?? ""); setSaveAsOpen(true); }}>
+              <MenubarItem onSelect={(e) => { e.preventDefault(); setSaveAsOpen(true); }}>
                 Save As…
               </MenubarItem>
 
@@ -415,7 +198,7 @@ export function QuickSendMenubar() {
 
               <MenubarItem
                 disabled={!isOwner}
-                onSelect={(e) => { e.preventDefault(); setRenameName(loadedTemplateName ?? ""); setRenameOpen(true); }}
+                onSelect={(e) => { e.preventDefault(); setRenameOpen(true); }}
               >
                 Rename…
               </MenubarItem>
@@ -434,7 +217,7 @@ export function QuickSendMenubar() {
           <MenubarMenu>
             <MenubarTrigger className="text-sm">Groups</MenubarTrigger>
             <MenubarContent>
-              <MenubarItem onSelect={(e) => { e.preventDefault(); setCreateGroupName(""); setCreateGroupOpen(true); }}>
+              <MenubarItem onSelect={(e) => { e.preventDefault(); setCreateGroupOpen(true); }}>
                 Create New Group…
               </MenubarItem>
 
@@ -499,7 +282,7 @@ export function QuickSendMenubar() {
                             <div className="flex flex-col">
                               <span>{template.name}</span>
                               <span className="text-[10px] text-muted-foreground">
-                                {template.userName === currentUserName ? "You" : template.userName}
+                                {template.saId === currentUserSaId ? "You" : template.saId}
                               </span>
                             </div>
                           </MenubarItem>
@@ -524,131 +307,40 @@ export function QuickSendMenubar() {
 
       <TemplateBrowserSheet open={browserOpen} onOpenChangeAction={setBrowserOpen} />
 
-      {/* Save As */}
-      <Dialog open={saveAsOpen} onOpenChange={setSaveAsOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Save As New Template</DialogTitle></DialogHeader>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <Label className="text-xs">Name</Label>
-              <Input
-                value={saveAsName}
-                onChange={(e) => setSaveAsName(e.target.value)}
-                placeholder="Template name…"
-                className="h-8 text-sm"
-                onKeyDown={(e) => { if (e.key === "Enter") handleSaveAs(); }}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label className="text-xs">Group</Label>
-              <select
-                value={saveAsGroupId}
-                onChange={(e) => setSaveAsGroupId(e.target.value)}
-                className="h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-              >
-                {groups.length === 0 ? (
-                  <option value="" disabled>No groups yet</option>
-                ) : (
-                  groups.map((g) => (
-                    <option key={g.groupId} value={g.groupId}>{g.name}</option>
-                  ))
-                )}
-              </select>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button size="sm" variant="accent" intensity="ghost" onClick={() => setSaveAsOpen(false)}>Cancel</Button>
-              <Button size="sm" variant="primary" intensity="solid" onClick={handleSaveAs} disabled={!saveAsName.trim()}>Save</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <SaveAsDialog
+        open={saveAsOpen}
+        onOpenChange={setSaveAsOpen}
+        groups={groups}
+        onSave={handleSaveAs}
+      />
 
-      {/* Rename Template */}
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Rename Template</DialogTitle></DialogHeader>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <Label className="text-xs">New Name</Label>
-              <Input
-                value={renameName}
-                onChange={(e) => setRenameName(e.target.value)}
-                placeholder="New name…"
-                className="h-8 text-sm"
-                onKeyDown={(e) => { if (e.key === "Enter") handleRename(); }}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button size="sm" variant="accent" intensity="ghost" onClick={() => setRenameOpen(false)}>Cancel</Button>
-              <Button size="sm" variant="primary" intensity="solid" onClick={handleRename} disabled={!renameName.trim()}>Rename</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <RenameTemplateDialog
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        initialName={loadedTemplateName ?? ""}
+        onRename={handleRename}
+      />
 
-      {/* Delete Template */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Delete Template</DialogTitle></DialogHeader>
-          <div className="flex flex-col gap-3">
-            <p className="text-sm text-muted-foreground">
-              Delete <span className="font-medium text-foreground">{loadedTemplateName}</span>? This cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button size="sm" variant="accent" intensity="ghost" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-              <Button size="sm" variant="destructive" intensity="solid" onClick={handleDelete}>Delete</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DeleteTemplateDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        templateName={loadedTemplateName}
+        onDelete={handleDelete}
+      />
 
-      {/* Create Group */}
-      <Dialog open={createGroupOpen} onOpenChange={setCreateGroupOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Create New Group</DialogTitle></DialogHeader>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <Label className="text-xs">Group Name</Label>
-              <Input
-                value={createGroupName}
-                onChange={(e) => setCreateGroupName(e.target.value)}
-                placeholder="Group name…"
-                className="h-8 text-sm"
-                onKeyDown={(e) => { if (e.key === "Enter") handleCreateGroup(); }}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button size="sm" variant="accent" intensity="ghost" onClick={() => setCreateGroupOpen(false)}>Cancel</Button>
-              <Button size="sm" variant="primary" intensity="solid" onClick={handleCreateGroup} disabled={!createGroupName.trim()}>Create</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CreateGroupDialog
+        open={createGroupOpen}
+        onOpenChange={setCreateGroupOpen}
+        onCreate={handleCreateGroup}
+      />
 
-      {/* Rename Group */}
-      <Dialog open={renameGroupOpen} onOpenChange={setRenameGroupOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Rename Group</DialogTitle></DialogHeader>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <Label className="text-xs">New Name</Label>
-              <Input
-                value={renameGroupName}
-                onChange={(e) => setRenameGroupName(e.target.value)}
-                placeholder="New name…"
-                className="h-8 text-sm"
-                onKeyDown={(e) => { if (e.key === "Enter") handleRenameGroup(); }}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button size="sm" variant="accent" intensity="ghost" onClick={() => setRenameGroupOpen(false)}>Cancel</Button>
-              <Button size="sm" variant="primary" intensity="solid" onClick={handleRenameGroup} disabled={!renameGroupName.trim()}>Rename</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <RenameGroupDialog
+        open={renameGroupOpen}
+        onOpenChange={setRenameGroupOpen}
+        initialName={renameGroupName}
+        onRename={handleRenameGroup}
+      />
 
-      {/* Delete Group */}
       {deleteGroup && (
         <DeleteGroupDialog
           open={deleteGroupOpen}
@@ -656,7 +348,7 @@ export function QuickSendMenubar() {
           group={deleteGroup}
           templatesInGroup={deleteGroupTemplates}
           otherGroups={otherGroups}
-          currentUserName={currentUserName}
+          currentUserSaId={currentUserSaId}
           onConfirm={handleDeleteGroupConfirm}
         />
       )}

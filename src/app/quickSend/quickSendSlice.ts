@@ -19,7 +19,8 @@ type QuickSendState = {
 
   // Loaded template metadata (null = unsaved / new)
   loadedTemplateId: string | null;
-  loadedTemplateOwner: string | null;
+  /** The saId of the user who authored the loaded template. */
+  loadedTemplateSaId: string | null;
   loadedTemplateName: string | null;
   loadedTemplateGroupId: string | null;
 };
@@ -36,7 +37,7 @@ const initialState: QuickSendState = {
     taxRateZipOverride: null,
   },
   loadedTemplateId: null,
-  loadedTemplateOwner: null,
+  loadedTemplateSaId: null,
   loadedTemplateName: null,
   loadedTemplateGroupId: null,
 };
@@ -186,7 +187,7 @@ const quickSendSlice = createSlice({
       state.activeSectionId = state.sections[0].sectionId;
       state.programConfigs = template.programConfigs;
       state.loadedTemplateId = template.templateId;
-      state.loadedTemplateOwner = template.userName;
+      state.loadedTemplateSaId = template.saId;
       state.loadedTemplateName = template.name;
       state.loadedTemplateGroupId = template.groupId;
     },
@@ -200,7 +201,7 @@ const quickSendSlice = createSlice({
       state.activeSectionId = INITIAL_SECTION_ID;
       state.programConfigs = [];
       state.loadedTemplateId = null;
-      state.loadedTemplateOwner = null;
+      state.loadedTemplateSaId = null;
       state.loadedTemplateName = null;
       state.loadedTemplateGroupId = null;
     },

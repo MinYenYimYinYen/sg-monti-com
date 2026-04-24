@@ -3,15 +3,16 @@ import { QSProgramConfig, QSSection } from "@/app/quickSend/QuickSendTypes";
 /**
  * A stored QuickSend template as persisted in MongoDB.
  *
- * Natural key: `name + userName` (unique compound index).
- * `templateId` is a slug derived from `name + userName` at creation time and
+ * Natural key: `name + saId` (unique compound index).
+ * `templateId` is a slug derived from `name + saId` at creation time and
  * never changes — it is the stable reference used in URLs and Redux state.
  */
 export type StoredTemplateDoc = {
   templateId: string;
   name: string;
   groupId: string;
-  userName: string;
+  /** The author's `saId` (from the JWT token), not their display `userName`. */
+  saId: string;
   sections: QSSection[];
   programConfigs: QSProgramConfig[];
 };

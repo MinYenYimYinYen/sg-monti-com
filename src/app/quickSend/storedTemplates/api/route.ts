@@ -10,28 +10,28 @@ import { assertRole } from "@/app/auth/_lib/assertRole";
 import { AppError } from "@/lib/errors/AppError";
 import { headers } from "next/headers";
 
-/** Reads the current user's userName from the proxy-injected header. */
-async function getCurrentUserName(): Promise<string> {
+/** Reads the current user's saId from the proxy-injected header. */
+async function getCurrentUserSaId(): Promise<string> {
   const headerStore = await headers();
-  const userId = headerStore.get("x-user-id");
-  if (!userId) {
+  const saId = headerStore.get("x-user-id");
+  if (!saId) {
     throw new AppError({
       message: "Authentication required",
       type: "AUTH_ERROR",
       statusCode: 401,
     });
   }
-  return userId;
+  return saId;
 }
 
-/** Derives a stable templateId slug from name + userName. */
-function makeTemplateId(name: string, userName: string): string {
+/** Derives a stable templateId slug from name + saId. */
+function makeTemplateId(name: string, saId: string): string {
   const slug = (s: string) =>
     s
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "");
-  return `${slug(userName)}__${slug(name)}`;
+  return `${slug(saId)}__${slug(name)}`;
 }
 
 /** Derives a stable groupId slug from a group name. */
@@ -67,20 +67,20 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
     roles: ["admin", "office", "tech"],
     handler: async ({ template }) => {
       await connectToMongoDB();
-      const userName = await getCurrentUserName();
+      const saId = await getCurrentUserSaId();
 
-      const templateId = makeTemplateId(template.name, userName);
+      const templateId = makeTemplateId(template.name, saId);
       const docToSave: StoredTemplateDoc = {
         ...template,
         templateId,
-        userName,
+        saId,
       };
 
       // On overwrite, enforce ownership (admin may overwrite any template)
       const existing = await StoredTemplateModel.findOne({ templateId }).lean();
       if (existing) {
         const isAdmin = await isCurrentUserAdmin();
-        if (!isAdmin && existing.userName !== userName) {
+        if (!isAdmin && existing.saId !== saId) {
           throw new AppError({
             message: "You do not own this template",
             type: "AUTH_ERROR",
@@ -103,7 +103,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
     roles: ["admin", "office", "tech"],
     handler: async ({ templateId }) => {
       await connectToMongoDB();
-      const userName = await getCurrentUserName();
+      const saId = await getCurrentUserSaId();
 
       const existing = await StoredTemplateModel.findOne({ templateId }).lean();
       if (!existing) {
@@ -115,7 +115,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
       }
 
       const isAdmin = await isCurrentUserAdmin();
-      if (!isAdmin && existing.userName !== userName) {
+      if (!isAdmin && existing.saId !== saId) {
         throw new AppError({
           message: "You do not own this template",
           type: "AUTH_ERROR",
@@ -206,7 +206,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
     roles: ["admin", "office", "tech"],
     handler: async ({ templateId, groupId }) => {
       await connectToMongoDB();
-      const userName = await getCurrentUserName();
+      const saId = await getCurrentUserSaId();
 
       const existing = await StoredTemplateModel.findOne({ templateId }).lean();
       if (!existing) {
@@ -218,7 +218,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
       }
 
       const isAdmin = await isCurrentUserAdmin();
-      if (!isAdmin && existing.userName !== userName) {
+      if (!isAdmin && existing.saId !== saId) {
         throw new AppError({
           message: "You do not own this template",
           type: "AUTH_ERROR",

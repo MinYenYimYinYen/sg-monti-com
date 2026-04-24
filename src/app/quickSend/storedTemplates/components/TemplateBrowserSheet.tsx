@@ -30,7 +30,7 @@ export function TemplateBrowserSheet({ open, onOpenChangeAction: onOpenChange }:
   const groups = useSelector(storedTemplatesSelect.groups);
   const groupMap = useSelector(storedTemplatesSelect.groupMap);
 
-  const currentUserName = currentUser?.userName ?? null;
+  const currentUserSaId = currentUser?.saId ?? null;
 
   // ── Filter state (local — resets on close via key) ───────────────────────
   const [search, setSearch] = useState("");
@@ -65,11 +65,11 @@ export function TemplateBrowserSheet({ open, onOpenChangeAction: onOpenChange }:
   // ── Filtering ─────────────────────────────────────────────────────────────
 
   const filtered = templates.filter((t) => {
-    if (mineOnly && t.userName !== currentUserName) return false;
+    if (mineOnly && t.saId !== currentUserSaId) return false;
     if (selectedGroupIds.size > 0 && !selectedGroupIds.has(t.groupId)) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      if (!t.name.toLowerCase().includes(q) && !t.userName.toLowerCase().includes(q)) {
+      if (!t.name.toLowerCase().includes(q) && !t.saId.toLowerCase().includes(q)) {
         return false;
       }
     }
@@ -78,8 +78,8 @@ export function TemplateBrowserSheet({ open, onOpenChangeAction: onOpenChange }:
 
   // Own templates first, then alphabetically by name
   const sorted = [...filtered].sort((a, b) => {
-    const aOwn = a.userName === currentUserName ? 0 : 1;
-    const bOwn = b.userName === currentUserName ? 0 : 1;
+    const aOwn = a.saId === currentUserSaId ? 0 : 1;
+    const bOwn = b.saId === currentUserSaId ? 0 : 1;
     if (aOwn !== bOwn) return aOwn - bOwn;
     return a.name.localeCompare(b.name);
   });
@@ -163,7 +163,7 @@ export function TemplateBrowserSheet({ open, onOpenChangeAction: onOpenChange }:
               <ul className="divide-y divide-border">
                 {sorted.map((template) => {
                   const group = groupMap.get(template.groupId);
-                  const isOwn = template.userName === currentUserName;
+                  const isOwn = template.saId === currentUserSaId;
                   return (
                     <li key={template.templateId}>
                       <button
@@ -175,7 +175,7 @@ export function TemplateBrowserSheet({ open, onOpenChangeAction: onOpenChange }:
                             {template.name}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {isOwn ? "You" : template.userName}
+                            {isOwn ? "You" : template.saId}
                             {group ? ` · ${group.name}` : ""}
                           </span>
                         </div>

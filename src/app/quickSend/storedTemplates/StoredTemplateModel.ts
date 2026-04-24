@@ -25,7 +25,7 @@ const StoredTemplateSchema = new mongoose.Schema<StoredTemplateDoc>(
     templateId: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
     groupId: { type: String, required: true, index: true },
-    userName: { type: String, required: true, index: true },
+    saId: { type: String, required: true, index: true },
     sections: { type: [SectionSchema], required: true, default: [] },
     programConfigs: { type: [ProgramConfigSchema], required: true, default: [] },
   },
@@ -33,6 +33,6 @@ const StoredTemplateSchema = new mongoose.Schema<StoredTemplateDoc>(
 );
 
 // Enforce uniqueness of name per user
-StoredTemplateSchema.index({ name: 1, userName: 1 }, { unique: true });
+StoredTemplateSchema.index({ name: 1, saId: 1 }, { unique: true });
 
 export const StoredTemplateModel = createModel("StoredTemplate", StoredTemplateSchema);

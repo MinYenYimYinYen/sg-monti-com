@@ -17,7 +17,7 @@ import type {
 const selectSlice = (state: AppState) => state.quickSend;
 
 const selectLoadedTemplateId = (state: AppState) => state.quickSend.loadedTemplateId;
-const selectLoadedTemplateOwner = (state: AppState) => state.quickSend.loadedTemplateOwner;
+const selectLoadedTemplateSaId = (state: AppState) => state.quickSend.loadedTemplateSaId;
 const selectLoadedTemplateName = (state: AppState) => state.quickSend.loadedTemplateName;
 const selectLoadedTemplateGroupId = (state: AppState) => state.quickSend.loadedTemplateGroupId;
 
@@ -517,7 +517,7 @@ export const quickSendSelect = {
   taxRateZipOverride: selectTaxRateZipOverride,
   effectiveTaxRate: selectEffectiveTaxRate,
   loadedTemplateId: selectLoadedTemplateId,
-  loadedTemplateOwner: selectLoadedTemplateOwner,
+  loadedTemplateSaId: selectLoadedTemplateSaId,
   loadedTemplateName: selectLoadedTemplateName,
   loadedTemplateGroupId: selectLoadedTemplateGroupId,
 };
