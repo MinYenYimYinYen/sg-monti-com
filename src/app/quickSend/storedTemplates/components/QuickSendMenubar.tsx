@@ -186,7 +186,7 @@ export function QuickSendMenubar() {
               </MenubarItem>
               <MenubarSeparator />
 
-              <MenubarItem disabled={!loadedTemplateId || !isOwner} onSelect={handleSave}>
+              <MenubarItem disabled={!loadedTemplateId || !currentUserSaId} onSelect={handleSave}>
                 Save
               </MenubarItem>
 
@@ -298,7 +298,7 @@ export function QuickSendMenubar() {
 
         {loadedTemplateId && (
           <span className="ml-auto text-xs text-muted-foreground truncate max-w-48">
-            {loadedTemplateName}
+            {loadedTemplateName}-{loadedTemplateSaId}
           </span>
         )}
       </div>

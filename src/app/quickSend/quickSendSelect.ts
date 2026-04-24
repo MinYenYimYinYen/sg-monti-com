@@ -95,11 +95,21 @@ const selectTemplateHtml = createSelector(
 );
 
 /**
- * Parses the active section's template HTML for data-id attributes on mention spans
- * and returns the set of active flat variable keys.
+ * Combined HTML of all sections — used for scanning which variables and programs
+ * are present across the entire template (not just the active section).
+ * Controls and program configs must be visible regardless of which section is active.
+ */
+const selectAllSectionsHtml = createSelector(
+  [selectSections],
+  (sections) => sections.map((s) => s.templateHtml).join(" "),
+);
+
+/**
+ * Parses ALL sections' template HTML for data-id attributes on mention spans
+ * and returns the set of active flat variable keys across the whole template.
  */
 const selectActiveVars = createSelector(
-  [selectTemplateHtml],
+  [selectAllSectionsHtml],
   (html): Set<QSVariableKey> => {
     const vars = new Set<QSVariableKey>();
     const matches = html.matchAll(/data-id="(name|size|taxRate|season|sgBillpayInfo)"/g);
@@ -111,11 +121,12 @@ const selectActiveVars = createSelector(
 );
 
 /**
- * Parses the active section's template HTML for dot-notation mention data-id attributes
- * and returns the QSProgramConfigs whose alias is present in the template.
+ * Parses ALL sections' template HTML for dot-notation mention data-id attributes
+ * and returns the QSProgramConfigs whose alias appears in any section.
+ * This ensures programs defined in one section are visible and configurable from any section.
  */
 const selectActivePrograms = createSelector(
-  [selectTemplateHtml, selectProgramConfigs],
+  [selectAllSectionsHtml, selectProgramConfigs],
   (html, configs): QSProgramConfig[] => {
     const activeAliases = new Set<string>();
     const matches = html.matchAll(/data-id="program\.([^."]+)\.[^"]+"/g);
