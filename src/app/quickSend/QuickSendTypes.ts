@@ -10,7 +10,7 @@ export type QSCustomerState = {
 };
 
 /** The set of flat @variable keys the editor can contain. */
-export type QSVariableKey = "name" | "size" | "taxRate";
+export type QSVariableKey = "name" | "size" | "taxRate" | "season";
 
 /**
  * Per-program configuration stored in QuickSend state. Serializable — IDs only.
@@ -85,6 +85,8 @@ export type QSProgramVariables = {
   taxAmt: number | null;
   /** Final amount due: `(subTotal - prepayDiscAmt) + taxAmt`. Null if `subTotal` is null. */
   total: number | null;
+  /** Per-service rows for the service breakdown table: description + individual price. */
+  servTable: { description: string; price: number | null }[];
 };
 
 /**
@@ -97,4 +99,4 @@ export type QSProgramVariables = {
  * `PROG_LEAF_PROPS` in `mentionSuggestion.ts` is exhaustiveness-checked against
  * this type so that renaming a key here causes a compile error there too.
  */
-export type QSProgLeafKey = Exclude<keyof QSProgramVariables, "alias" | "progCodeId" | "prepayPercent">;
+export type QSProgLeafKey = Exclude<keyof QSProgramVariables, "alias" | "progCodeId" | "prepayPercent" | "servTable">;

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { Lock, Unlock } from "lucide-react";
 import {
   Menubar,
   MenubarContent,
@@ -244,7 +243,6 @@ export function QuickSendMenubar() {
   const loadedTemplateOwner = useSelector(quickSendSelect.loadedTemplateOwner);
   const loadedTemplateName = useSelector(quickSendSelect.loadedTemplateName);
   const loadedTemplateGroupId = useSelector(quickSendSelect.loadedTemplateGroupId);
-  const isLocked = useSelector(quickSendSelect.isLocked);
   const groups = useSelector(storedTemplatesSelect.groups);
   const templatesByGroup = useSelector(storedTemplatesSelect.templatesByGroup);
 
@@ -333,8 +331,6 @@ export function QuickSendMenubar() {
     setDeleteOpen(false);
   };
 
-  const handleUnlock = () => dispatch(quickSendActions.unlock());
-
   // ── Handlers — Groups ────────────────────────────────────────────────────
 
   const handleCreateGroup = () => {
@@ -407,18 +403,9 @@ export function QuickSendMenubar() {
               </MenubarItem>
               <MenubarSeparator />
 
-              {isLocked ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <MenubarItem disabled>Save</MenubarItem>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Owned by {loadedTemplateOwner}</TooltipContent>
-                </Tooltip>
-              ) : (
-                <MenubarItem disabled={!loadedTemplateId} onSelect={handleSave}>
-                  Save
-                </MenubarItem>
-              )}
+              <MenubarItem disabled={!loadedTemplateId || !isOwner} onSelect={handleSave}>
+                Save
+              </MenubarItem>
 
               <MenubarItem onSelect={(e) => { e.preventDefault(); setSaveAsGroupId(groups[0]?.groupId ?? ""); setSaveAsOpen(true); }}>
                 Save As…
@@ -526,29 +513,10 @@ export function QuickSendMenubar() {
           </MenubarMenu>
         </Menubar>
 
-        {/* Lock indicator */}
         {loadedTemplateId && (
-          <div className="ml-auto flex items-center gap-1.5">
-            {isLocked ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleUnlock}
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Lock className="h-3 w-3" />
-                    <span>Owned by {loadedTemplateOwner}</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Click to unlock and allow saving</TooltipContent>
-              </Tooltip>
-            ) : (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Unlock className="h-3 w-3" />
-                <span>{loadedTemplateName}</span>
-              </span>
-            )}
-          </div>
+          <span className="ml-auto text-xs text-muted-foreground truncate max-w-48">
+            {loadedTemplateName}
+          </span>
         )}
       </div>
 

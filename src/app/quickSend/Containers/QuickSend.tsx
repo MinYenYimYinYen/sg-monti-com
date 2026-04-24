@@ -16,6 +16,7 @@ import { useStoredTemplates } from "../storedTemplates/useStoredTemplates";
 import type { TemplateControlId } from "../QuickSendTypes";
 import { usePrepay } from "@/app/realGreen/prepay/usePrepay";
 import { useZipCode } from "@/app/realGreen/zipCode/useZipCode";
+import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 
 export function QuickSend() {
   useCustomerContext({ contexts: ["single"] });
@@ -24,6 +25,7 @@ export function QuickSend() {
   usePrepay({ autoLoad: true });
   useZipCode({ autoLoad: true });
   useStoredTemplates({ autoLoad: true });
+  useGlobalSettings({ autoLoad: true });
 
   const controlIds = useSelector(quickSendSelect.activeControlIds);
   const programConfigs = useSelector(quickSendSelect.programConfigs);
@@ -34,7 +36,8 @@ export function QuickSend() {
     if (id === "customerLookup") return <CustomerLookup key="customerLookup" />;
     if (id === "nameOverride") return <NameOverride key="nameOverride" />;
     if (id === "sizeOverride") return <SizeOverride key="sizeOverride" />;
-    if (id === "taxRateOverride") return <TaxRateOverride key="taxRateOverride" />;
+    if (id === "taxRateOverride")
+      return <TaxRateOverride key="taxRateOverride" />;
     if (id.startsWith("programConfig:")) {
       const alias = id.slice("programConfig:".length);
       const config = programConfigMap.get(alias);

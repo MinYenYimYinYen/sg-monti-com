@@ -22,8 +22,6 @@ type QuickSendState = {
   loadedTemplateOwner: string | null;
   loadedTemplateName: string | null;
   loadedTemplateGroupId: string | null;
-  /** True after loadTemplate; Save is disabled until the user explicitly unlocks. */
-  isLocked: boolean;
 };
 
 const initialState: QuickSendState = {
@@ -41,7 +39,6 @@ const initialState: QuickSendState = {
   loadedTemplateOwner: null,
   loadedTemplateName: null,
   loadedTemplateGroupId: null,
-  isLocked: false,
 };
 
 const quickSendSlice = createSlice({
@@ -55,6 +52,14 @@ const quickSendSlice = createSlice({
       const id = `section-${Date.now()}`;
       state.sections.push(makeSection(id));
       state.activeSectionId = id;
+    },
+
+    /** Moves a section from one index to another. */
+    reorderSections(state, action: PayloadAction<{ fromIndex: number; toIndex: number }>) {
+      const { fromIndex, toIndex } = action.payload;
+      if (fromIndex === toIndex) return;
+      const [moved] = state.sections.splice(fromIndex, 1);
+      state.sections.splice(toIndex, 0, moved);
     },
 
     /** Removes a section by ID. If it was active, activates the previous section. */
@@ -172,11 +177,7 @@ const quickSendSlice = createSlice({
 
     // --- Loaded template state ---
 
-    /**
-     * Loads a stored template into the editor.
-     * Replaces sections + programConfigs and sets the lock so Save is disabled
-     * until the user explicitly unlocks (or saves as a new template).
-     */
+    /** Loads a stored template into the editor. Replaces sections + programConfigs. */
     loadTemplate(state, action: PayloadAction<StoredTemplateDoc>) {
       const template = action.payload;
       state.sections = template.sections.length > 0
@@ -188,15 +189,6 @@ const quickSendSlice = createSlice({
       state.loadedTemplateOwner = template.userName;
       state.loadedTemplateName = template.name;
       state.loadedTemplateGroupId = template.groupId;
-      state.isLocked = true;
-    },
-
-    /**
-     * Session-only unlock — allows Save to overwrite the loaded template.
-     * Does not persist; reloading the template re-locks it.
-     */
-    unlock(state) {
-      state.isLocked = false;
     },
 
     /**
@@ -211,7 +203,6 @@ const quickSendSlice = createSlice({
       state.loadedTemplateOwner = null;
       state.loadedTemplateName = null;
       state.loadedTemplateGroupId = null;
-      state.isLocked = false;
     },
   },
 });

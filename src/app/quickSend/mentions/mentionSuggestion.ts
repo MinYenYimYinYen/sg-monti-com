@@ -48,6 +48,7 @@ const FLAT_ITEMS: MentionItem[] = [
   { id: "name", label: "name" },
   { id: "size", label: "size" },
   { id: "taxRate", label: "taxRate" },
+  { id: "season", label: "season" },
 ];
 
 /**
@@ -183,7 +184,13 @@ export function buildMentionSuggestion({
             ? [{ id: `program.${alias}.prepay`, label: `${alias}.prepay` }]
             : [];
 
-        return [...leafItems, ...prepayLeafItems];
+        // Add "servTable" block mention if it matches the partial
+        const servTableLeafItems: MentionItem[] =
+          "servTable".startsWith(suffix)
+            ? [{ id: `program.${alias}.servTable`, label: `${alias}.servTable` }]
+            : [];
+
+        return [...leafItems, ...prepayLeafItems, ...servTableLeafItems];
       }
 
       return [];

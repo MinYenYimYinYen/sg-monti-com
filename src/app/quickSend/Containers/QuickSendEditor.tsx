@@ -8,7 +8,7 @@ import { TemplateEditor } from "./TemplateEditor";
 import { PreviewEditor } from "./PreviewEditor";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { Button } from "@/style/components/button";
-import { Plus, Trash2, Check, Copy } from "lucide-react";
+import { Plus, Trash2, Check, Copy, GripVertical } from "lucide-react";
 import { useState } from "react";
 
 export function QuickSendEditor() {
@@ -25,6 +25,32 @@ export function QuickSendEditor() {
   const [copiedSectionId, setCopiedSectionId] = useState<string | null>(null);
 
   const anyUnfulfilled = allPreviewHtmls.some((p) => p.previewHtml.includes("{{"));
+
+  // Drag-and-drop reorder state
+  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (idx: number) => {
+    setDragFromIndex(idx);
+  };
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setDragOverIndex(idx);
+  };
+
+  const handleDrop = (toIndex: number) => {
+    if (dragFromIndex !== null && dragFromIndex !== toIndex) {
+      dispatch(quickSendActions.reorderSections({ fromIndex: dragFromIndex, toIndex }));
+    }
+    setDragFromIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragFromIndex(null);
+    setDragOverIndex(null);
+  };
 
   const handleAddSection = () => {
     dispatch(quickSendActions.addSection());
@@ -98,17 +124,34 @@ export function QuickSendEditor() {
             {sections.map((section, idx) => (
               <div
                 key={section.sectionId}
-                className={`relative group ${
+                draggable={sections.length > 1}
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDrop={() => handleDrop(idx)}
+                onDragEnd={handleDragEnd}
+                className={[
+                  "relative group",
                   section.sectionId === activeSectionId
                     ? "border-l-2 border-primary"
-                    : "border-l-2 border-transparent"
-                }`}
+                    : "border-l-2 border-transparent",
+                  dragOverIndex === idx && dragFromIndex !== idx
+                    ? "ring-2 ring-primary/40 ring-inset"
+                    : "",
+                ].join(" ")}
               >
                 {sections.length > 1 && (
                   <div className="flex items-center justify-between px-3 pt-2 pb-0">
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                      Section {idx + 1}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                        aria-label="Drag to reorder"
+                      >
+                        <GripVertical className="h-3 w-3" />
+                      </span>
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                        Section {idx + 1}
+                      </span>
+                    </div>
                     <button
                       onClick={() => handleRemoveSection(section.sectionId)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"

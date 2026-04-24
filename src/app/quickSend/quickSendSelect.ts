@@ -4,6 +4,7 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
 import { zipCodeSelect } from "@/app/realGreen/zipCode/zipCodeSelectors";
+import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import type {
   QSVariableKey,
   QSProgramConfig,
@@ -19,7 +20,6 @@ const selectLoadedTemplateId = (state: AppState) => state.quickSend.loadedTempla
 const selectLoadedTemplateOwner = (state: AppState) => state.quickSend.loadedTemplateOwner;
 const selectLoadedTemplateName = (state: AppState) => state.quickSend.loadedTemplateName;
 const selectLoadedTemplateGroupId = (state: AppState) => state.quickSend.loadedTemplateGroupId;
-const selectIsLocked = (state: AppState) => state.quickSend.isLocked;
 
 const selectSections = createSelector([selectSlice], (slice) => slice.sections);
 
@@ -101,7 +101,7 @@ const selectActiveVars = createSelector(
   [selectTemplateHtml],
   (html): Set<QSVariableKey> => {
     const vars = new Set<QSVariableKey>();
-    const matches = html.matchAll(/data-id="(name|size|taxRate)"/g);
+    const matches = html.matchAll(/data-id="(name|size|taxRate|season)"/g);
     for (const match of matches) {
       vars.add(match[1] as QSVariableKey);
     }
@@ -129,22 +129,24 @@ const selectActivePrograms = createSelector(
  * Resolved variable values — what the mention nodes display in the preview.
  */
 const selectResolvedVariables = createSelector(
-  [selectNameOverride, selectSizeOverride, selectEffectiveTaxRate],
-  (name, size, taxRate): Partial<Record<QSVariableKey, string>> => ({
+  [selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season],
+  (name, size, taxRate, season): Partial<Record<QSVariableKey, string>> => ({
     name: name || undefined,
     size: size || undefined,
     taxRate: taxRate != null ? `${taxRate.toFixed(3)}%` : undefined,
+    season: season != null ? String(season) : undefined,
   }),
 );
 
 /** Variables that are present in the active section but have no resolved value yet. */
 const selectUnfulfilledVars = createSelector(
-  [selectActiveVars, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate],
-  (activeVars, name, size, taxRate): Set<QSVariableKey> => {
+  [selectActiveVars, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season],
+  (activeVars, name, size, taxRate, season): Set<QSVariableKey> => {
     const unfulfilled = new Set<QSVariableKey>();
     if (activeVars.has("name") && !name) unfulfilled.add("name");
     if (activeVars.has("size") && !size) unfulfilled.add("size");
     if (activeVars.has("taxRate") && taxRate == null) unfulfilled.add("taxRate");
+    if (activeVars.has("season") && season == null) unfulfilled.add("season");
     return unfulfilled;
   },
 );
@@ -180,12 +182,24 @@ const selectProgramVariables = createSelector(
           prepayDiscAmt: null,
           taxAmt: null,
           total: null,
+          servTable: [],
         };
       }
 
       const scoped = progCode.x.getByServCodeIds(config.includedServCodeIds);
       const pp = prepayPercent ?? 0;
       const tr = effectiveTaxRate ?? 0;
+
+      const includedServCodes = progCode.servCodes.filter((s) =>
+        config.includedServCodeIds.includes(s.servCodeId),
+      );
+      const servTable = includedServCodes.map((servCode) => {
+        const singleScoped = progCode.x.getByServCodeIds([servCode.servCodeId]);
+        return {
+          description: servCode.longName,
+          price: hasSize ? singleScoped.getServPrice(size) : null,
+        };
+      });
 
       return {
         alias: config.alias,
@@ -200,6 +214,7 @@ const selectProgramVariables = createSelector(
         prepayDiscAmt: hasSize ? scoped.getPrepayDiscAmt(size, pp) : null,
         taxAmt: hasSize && effectiveTaxRate !== null ? scoped.getTaxAmt(size, pp, tr) : null,
         total: hasSize && effectiveTaxRate !== null ? scoped.getTotal(size, pp, tr) : null,
+        servTable,
       };
     });
   },
@@ -212,6 +227,7 @@ function resolveHtml(
   name: string,
   size: string,
   taxRate: string | null,
+  season: string | null,
   progVarMap: Map<string, QSProgramVariables>,
 ): string {
   let preview = html;
@@ -252,6 +268,18 @@ function resolveHtml(
     );
   }
 
+  if (season) {
+    preview = preview.replace(
+      /(<span[^>]*data-type="mention"[^>]*data-id="season"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
+      `$1data-label="${season}"$3${season}$4`,
+    );
+  } else {
+    preview = preview.replace(
+      /<span[^>]*data-type="mention"[^>]*data-id="season"[^>]*>[^<]*<\/span>/g,
+      `${UNFULFILLED_MARK}{{season}}</mark>`,
+    );
+  }
+
   preview = preview.replace(
     /<span[^>]*data-type="mention"[^>]*data-id="(program\.[^"]+)"[^>]*>[^<]*<\/span>/g,
     (fullMatch, mentionId: string) => {
@@ -275,6 +303,21 @@ function resolveHtml(
           return fullMatch
             .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
             .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
+        }
+
+        // "servTable" is a block mention — replaces the span with an HTML table
+        if (prop === "servTable") {
+          if (vars.servTable.length === 0) {
+            return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+          }
+          const rows = vars.servTable
+            .map((row) => {
+              const priceCell =
+                row.price !== null ? `$${row.price.toFixed(2)}` : "—";
+              return `<tr><td>${row.description}</td><td>${priceCell}</td></tr>`;
+            })
+            .join("");
+          return `<table><tbody>${rows}</tbody></table>`;
         }
 
         const typedProp = prop as QSProgLeafKey;
@@ -313,13 +356,14 @@ const selectPreviewHtml = createSelector(
     selectNameOverride,
     selectSizeOverride,
     selectEffectiveTaxRate,
+    globalSettingsSelect.season,
     selectProgramVariables,
   ],
-  (html, name, size, effectiveTaxRate, programVars): string => {
+  (html, name, size, effectiveTaxRate, season, programVars): string => {
     if (!html) return "";
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
     const progVarMap = new Map(programVars.map((v) => [v.alias, v]));
-    return resolveHtml(html, name, size, taxRateStr, progVarMap);
+    return resolveHtml(html, name, size, taxRateStr, season != null ? String(season) : null, progVarMap);
   },
 );
 
@@ -383,11 +427,12 @@ const selectActiveControlIds = createSelector(
  * Returns preview HTML for every section. Uses the global programConfigs.
  */
 const selectAllPreviewHtmls = createSelector(
-  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap],
-  (sections, name, size, effectiveTaxRate, programConfigs, progCodeMap, prepayDocMap): { sectionId: string; previewHtml: string }[] => {
+  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap],
+  (sections, name, size, effectiveTaxRate, season, programConfigs, progCodeMap, prepayDocMap): { sectionId: string; previewHtml: string }[] => {
     const sizeNum = parseFloat(size);
     const hasSize = !isNaN(sizeNum) && sizeNum > 0;
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
+    const seasonStr = season != null ? String(season) : null;
 
     // Build a single progVarMap from all global programConfigs
     const progVarMap = new Map<string, QSProgramVariables>();
@@ -413,10 +458,21 @@ const selectAllPreviewHtmls = createSelector(
           prepayDiscAmt: null,
           taxAmt: null,
           total: null,
+          servTable: [],
         });
         continue;
       }
       const scoped = progCode.x.getByServCodeIds(config.includedServCodeIds);
+      const includedServCodes = progCode.servCodes.filter((s) =>
+        config.includedServCodeIds.includes(s.servCodeId),
+      );
+      const servTable = includedServCodes.map((servCode) => {
+        const singleScoped = progCode.x.getByServCodeIds([servCode.servCodeId]);
+        return {
+          description: servCode.longName,
+          price: hasSize ? singleScoped.getServPrice(sizeNum) : null,
+        };
+      });
       progVarMap.set(config.alias, {
         alias: config.alias,
         progCodeId: config.progCodeId,
@@ -430,13 +486,14 @@ const selectAllPreviewHtmls = createSelector(
         prepayDiscAmt: hasSize ? scoped.getPrepayDiscAmt(sizeNum, pp) : null,
         taxAmt: hasSize && effectiveTaxRate !== null ? scoped.getTaxAmt(sizeNum, pp, tr) : null,
         total: hasSize && effectiveTaxRate !== null ? scoped.getTotal(sizeNum, pp, tr) : null,
+        servTable,
       });
     }
 
     return sections.map((section) => ({
       sectionId: section.sectionId,
       previewHtml: section.templateHtml
-        ? resolveHtml(section.templateHtml, name, size, taxRateStr, progVarMap)
+        ? resolveHtml(section.templateHtml, name, size, taxRateStr, seasonStr, progVarMap)
         : "",
     }));
   },
@@ -463,5 +520,4 @@ export const quickSendSelect = {
   loadedTemplateOwner: selectLoadedTemplateOwner,
   loadedTemplateName: selectLoadedTemplateName,
   loadedTemplateGroupId: selectLoadedTemplateGroupId,
-  isLocked: selectIsLocked,
 };
