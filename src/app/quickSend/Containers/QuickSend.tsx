@@ -29,6 +29,7 @@ export function QuickSend() {
 
   const controlIds = useSelector(quickSendSelect.activeControlIds);
   const programConfigs = useSelector(quickSendSelect.programConfigs);
+  const loadedTemplateId = useSelector(quickSendSelect.loadedTemplateId);
 
   const programConfigMap = new Map(programConfigs.map((c) => [c.alias, c]));
 
@@ -68,9 +69,13 @@ export function QuickSend() {
           </div>
         </div>
 
-        {/* Right panel — stacked editors */}
+        {/* Right panel — stacked editors.
+            key resets collapsible open states when the loaded template changes. */}
         <div className="flex-1 overflow-hidden">
-          <QuickSendEditor />
+          <QuickSendEditor
+            key={loadedTemplateId ?? "new"}
+            hasLoadedTemplate={loadedTemplateId !== null}
+          />
         </div>
       </div>
     </div>

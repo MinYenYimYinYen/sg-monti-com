@@ -75,7 +75,7 @@ export type CustomerRaw = {
   // isCanceled: boolean;
   isMasterAccount: boolean;
   // lastFourNumber: string;
-  // lastName: string;
+  lastName: string;
   // lastPaymentAmount: number | null;
   // lastPaymentDate: string | null;
   // /**
@@ -153,6 +153,7 @@ export type CustomerCore = {
   email: string;
   importDate: string;
   isMasterAcct: boolean;
+  lastName: string;
   masterAcctId: number;
   netBalance: number;
   // phones: PhoneRaw[];

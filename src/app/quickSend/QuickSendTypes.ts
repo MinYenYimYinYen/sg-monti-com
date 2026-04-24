@@ -10,7 +10,7 @@ export type QSCustomerState = {
 };
 
 /** The set of flat @variable keys the editor can contain. */
-export type QSVariableKey = "name" | "size" | "taxRate" | "season";
+export type QSVariableKey = "name" | "size" | "taxRate" | "season" | "sgBillpayInfo";
 
 /**
  * Per-program configuration stored in QuickSend state. Serializable — IDs only.

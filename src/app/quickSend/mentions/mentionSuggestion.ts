@@ -49,6 +49,7 @@ const FLAT_ITEMS: MentionItem[] = [
   { id: "size", label: "size" },
   { id: "taxRate", label: "taxRate" },
   { id: "season", label: "season" },
+  { id: "sgBillpayInfo", label: "sgBillpayInfo" },
 ];
 
 /**

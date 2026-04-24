@@ -22,6 +22,7 @@ export const baseCustomerNoX: Omit<Customer, "x"> = {
   email: "",
   importDate: "",
   isMasterAcct: false,
+  lastName: "",
   masterAcctId: baseNumId,
   netBalance: 0,
   // phones: [],

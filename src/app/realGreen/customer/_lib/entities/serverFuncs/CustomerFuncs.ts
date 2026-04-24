@@ -44,6 +44,7 @@ function remapCustomer(raw: CustomerRaw): CustomerCore {
     email: raw.email,
     importDate: raw.importDate || "",
     isMasterAcct: raw.isMasterAccount,
+    lastName: raw.lastName,
     masterAcctId: raw.masterAccountID || baseNumId,
     netBalance: raw.netBalance,
     // phones: raw.phones,

@@ -5,6 +5,7 @@ import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServ
 import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
 import { zipCodeSelect } from "@/app/realGreen/zipCode/zipCodeSelectors";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
+import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import type {
   QSVariableKey,
   QSProgramConfig,
@@ -101,7 +102,7 @@ const selectActiveVars = createSelector(
   [selectTemplateHtml],
   (html): Set<QSVariableKey> => {
     const vars = new Set<QSVariableKey>();
-    const matches = html.matchAll(/data-id="(name|size|taxRate|season)"/g);
+    const matches = html.matchAll(/data-id="(name|size|taxRate|season|sgBillpayInfo)"/g);
     for (const match of matches) {
       vars.add(match[1] as QSVariableKey);
     }
@@ -140,13 +141,14 @@ const selectResolvedVariables = createSelector(
 
 /** Variables that are present in the active section but have no resolved value yet. */
 const selectUnfulfilledVars = createSelector(
-  [selectActiveVars, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season],
-  (activeVars, name, size, taxRate, season): Set<QSVariableKey> => {
+  [selectActiveVars, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season, selectCustomerState],
+  (activeVars, name, size, taxRate, season, customerState): Set<QSVariableKey> => {
     const unfulfilled = new Set<QSVariableKey>();
     if (activeVars.has("name") && !name) unfulfilled.add("name");
     if (activeVars.has("size") && !size) unfulfilled.add("size");
     if (activeVars.has("taxRate") && taxRate == null) unfulfilled.add("taxRate");
     if (activeVars.has("season") && season == null) unfulfilled.add("season");
+    if (activeVars.has("sgBillpayInfo") && customerState.customer == null) unfulfilled.add("sgBillpayInfo");
     return unfulfilled;
   },
 );
@@ -229,6 +231,7 @@ function resolveHtml(
   taxRate: string | null,
   season: string | null,
   progVarMap: Map<string, QSProgramVariables>,
+  customer: Customer | null = null,
 ): string {
   let preview = html;
 
@@ -279,6 +282,22 @@ function resolveHtml(
       `${UNFULFILLED_MARK}{{season}}</mark>`,
     );
   }
+
+  // "sgBillpayInfo" is a block mention — replaces the span with an HTML table of
+  // Spring-Green online account registration fields (Account Number, Last Name, Zip Code).
+  // Data comes exclusively from CRM; no overrides are provided.
+  preview = preview.replace(
+    /<span[^>]*data-type="mention"[^>]*data-id="sgBillpayInfo"[^>]*>[^<]*<\/span>/g,
+    () => {
+      if (!customer) return `${UNFULFILLED_MARK}{{sgBillpayInfo}}</mark>`;
+      const rows = [
+        `<tr><td>Account Number</td><td>${customer.custId}</td></tr>`,
+        `<tr><td>Last Name</td><td>${customer.lastName}</td></tr>`,
+        `<tr><td>Zip Code</td><td>${customer.address.zip ?? ""}</td></tr>`,
+      ].join("");
+      return `<table><tbody>${rows}</tbody></table>`;
+    },
+  );
 
   preview = preview.replace(
     /<span[^>]*data-type="mention"[^>]*data-id="(program\.[^"]+)"[^>]*>[^<]*<\/span>/g,
@@ -358,12 +377,13 @@ const selectPreviewHtml = createSelector(
     selectEffectiveTaxRate,
     globalSettingsSelect.season,
     selectProgramVariables,
+    selectCustomerState,
   ],
-  (html, name, size, effectiveTaxRate, season, programVars): string => {
+  (html, name, size, effectiveTaxRate, season, programVars, customerState): string => {
     if (!html) return "";
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
     const progVarMap = new Map(programVars.map((v) => [v.alias, v]));
-    return resolveHtml(html, name, size, taxRateStr, season != null ? String(season) : null, progVarMap);
+    return resolveHtml(html, name, size, taxRateStr, season != null ? String(season) : null, progVarMap, customerState.customer);
   },
 );
 
@@ -377,10 +397,11 @@ const selectPreviewHtml = createSelector(
  * this table over adding imperative logic to selectActiveControlIds.
  */
 const CONTROL_DEPS: { trigger: QSVariableKey | "program"; controls: TemplateControlId[] }[] = [
-  { trigger: "name",    controls: ["customerLookup", "nameOverride"] },
-  { trigger: "size",    controls: ["customerLookup", "sizeOverride"] },
-  { trigger: "taxRate", controls: ["customerLookup", "taxRateOverride"] },
-  { trigger: "program", controls: ["customerLookup", "sizeOverride", "taxRateOverride"] },
+  { trigger: "name",           controls: ["customerLookup", "nameOverride"] },
+  { trigger: "size",           controls: ["customerLookup", "sizeOverride"] },
+  { trigger: "taxRate",        controls: ["customerLookup", "taxRateOverride"] },
+  { trigger: "sgBillpayInfo",  controls: ["customerLookup"] },
+  { trigger: "program",        controls: ["customerLookup", "sizeOverride", "taxRateOverride"] },
 ];
 
 /**
@@ -427,8 +448,8 @@ const selectActiveControlIds = createSelector(
  * Returns preview HTML for every section. Uses the global programConfigs.
  */
 const selectAllPreviewHtmls = createSelector(
-  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap],
-  (sections, name, size, effectiveTaxRate, season, programConfigs, progCodeMap, prepayDocMap): { sectionId: string; previewHtml: string }[] => {
+  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap, selectCustomerState],
+  (sections, name, size, effectiveTaxRate, season, programConfigs, progCodeMap, prepayDocMap, customerState): { sectionId: string; previewHtml: string }[] => {
     const sizeNum = parseFloat(size);
     const hasSize = !isNaN(sizeNum) && sizeNum > 0;
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
@@ -493,7 +514,7 @@ const selectAllPreviewHtmls = createSelector(
     return sections.map((section) => ({
       sectionId: section.sectionId,
       previewHtml: section.templateHtml
-        ? resolveHtml(section.templateHtml, name, size, taxRateStr, seasonStr, progVarMap)
+        ? resolveHtml(section.templateHtml, name, size, taxRateStr, seasonStr, progVarMap, customerState.customer)
         : "",
     }));
   },
