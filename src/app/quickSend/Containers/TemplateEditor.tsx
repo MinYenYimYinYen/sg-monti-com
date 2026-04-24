@@ -18,6 +18,7 @@ import { buildMentionSuggestion, safelyRemoveSuffix } from "../mentions/mentionS
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
 import { quickSendSelect } from "../quickSendSelect";
+import { EditorToolbar } from "./EditorToolbar";
 
 type Props = {
   sectionId: string;
@@ -112,6 +113,7 @@ export function TemplateEditor({ sectionId }: Props) {
 
   return (
     <div className="bg-card">
+      <EditorToolbar editor={editor} />
       <EditorContent editor={editor} />
     </div>
   );

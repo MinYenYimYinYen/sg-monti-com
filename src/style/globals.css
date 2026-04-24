@@ -5,6 +5,27 @@
     border: 1px solid red;
 }
 
+/* Tiptap editor — show table cell borders while editing so the grid is visible.
+   These styles are scoped to .ProseMirror and do not affect the preview pane. */
+.ProseMirror table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+    border: 1px solid var(--border);
+    padding: 4px 8px;
+    min-width: 2rem;
+    vertical-align: top;
+}
+
+/* Highlight the selected cell(s) */
+.ProseMirror table .selectedCell {
+    background-color: var(--accent);
+    opacity: 0.3;
+}
+
 /**, *::before, *::after {*/
 /*  box-sizing: border-box;*/
 /*}*/
