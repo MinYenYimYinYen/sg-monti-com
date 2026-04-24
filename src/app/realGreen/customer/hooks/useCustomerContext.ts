@@ -3,9 +3,9 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import {
   centralCustomerActions,
-  CustomerContextMode,
 } from "@/app/realGreen/customer/slices/centralCustomerSlice";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { CustomerContextMode } from "@/app/realGreen/customer/slices/customerSlices";
 
 export function useCustomerContext({
   contexts,
