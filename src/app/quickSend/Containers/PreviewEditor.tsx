@@ -38,8 +38,11 @@ export function PreviewEditor({ previewHtml }: Props) {
       Highlight.configure({ multicolor: true }),
       Mention.configure({
         HTMLAttributes: {},
-        renderLabel({ node }) {
+        renderText({ node }) {
           return node.attrs.label ?? node.attrs.id;
+        },
+        renderHTML({ node, options }) {
+          return ["span", options.HTMLAttributes, node.attrs.label ?? node.attrs.id];
         },
       }),
     ],

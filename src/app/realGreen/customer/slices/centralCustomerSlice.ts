@@ -7,26 +7,11 @@ import {
 import { StreamChunk } from "@/app/realGreen/customer/api/CustomerContract";
 import { AppState, AppThunk } from "@/store";
 import {
-  activeCustomersActions,
-  activeCustomersGetDocs,
-  byAssignmentActions,
-  byAssignmentGetDocs,
-  lastSeasonProductionActions,
-  lastSeasonProductionGetDocs,
-  printedCustomersActions,
-  printedCustomersGetDocs,
-  recentProductionActions,
-  recentProductionGetDocs,
-  singleCustomerActions,
+  CustomerContextMode,
+  customerSliceRegistry,
 } from "@/app/realGreen/customer/slices/customerSlices";
 
-export type CustomerContextMode =
-  | "active"
-  | "byAssignment"
-  | "printed"
-  | "lastSeasonProduction"
-  | "recentProduction"
-  | "single";
+
 
 interface CentralCustomerState extends CentralCustomerStateData {
   activeContexts: CustomerContextMode[];
@@ -59,206 +44,90 @@ export const centralCustomerSlice = createSlice({
   name: "centralCustomer",
   initialState,
   reducers: {
-    // Sets the active context list
     setContexts(state, action: PayloadAction<CustomerContextMode[]>) {
       state.activeContexts = action.payload;
     },
-    // Clears all Maps
     clearAllMaps(state) {
       state.CustDocMap.clear();
       state.ProgDocMap.clear();
       state.ServDocMap.clear();
     },
-    // Internal action for thunk to merge data (uses mergeChunk helper)
     mergeData(state, action: PayloadAction<StreamChunk>) {
       mergeChunk(state, action.payload);
     },
   },
   extraReducers: (builder) => {
-    // ============================================================================
-    // STREAMING UPDATES
-    // Listen for receiveChunk actions from source slices
-    // If that source is active, merge data immediately
-    // ============================================================================
-
-    // Active Customers - Streaming
-    builder.addCase(activeCustomersActions.receiveChunk, (state, action) => {
-      if (state.activeContexts.includes("active")) {
-        mergeChunk(state, action.payload);
-      }
-    });
-
-    // Printed Customers - Streaming
-    builder.addCase(printedCustomersActions.receiveChunk, (state, action) => {
-      if (state.activeContexts.includes("printed")) {
-        mergeChunk(state, action.payload);
-      }
-    });
-
-    // By Assignment - Streaming
-    builder.addCase(byAssignmentActions.receiveChunk, (state, action) => {
-      if (state.activeContexts.includes("byAssignment")) {
-        mergeChunk(state, action.payload);
-      }
-    });
-
-    // Last Season Production - Streaming
-    builder.addCase(
-      lastSeasonProductionActions.receiveChunk,
-      (state, action) => {
-        if (state.activeContexts.includes("lastSeasonProduction")) {
+    // Loop over the registry so adding a new slice requires only one line in customerSlices.ts.
+    for (const entry of customerSliceRegistry) {
+      // Streaming: merge incoming chunk data when the context is active.
+      builder.addCase(entry.actions.receiveChunk, (state, action) => {
+        if (state.activeContexts.includes(entry.context)) {
           mergeChunk(state, action.payload);
         }
-      },
-    );
-
-    // Recent Production - Streaming
-    builder.addCase(recentProductionActions.receiveChunk, (state, action) => {
-      if (state.activeContexts.includes("recentProduction")) {
-        mergeChunk(state, action.payload);
-      }
-    });
-
-    // Single Customer - Streaming
-    builder.addCase(singleCustomerActions.receiveChunk, (state, action) => {
-      if (state.activeContexts.includes("single")) {
-        mergeChunk(state, action.payload);
-      }
-    });
-
-    // ============================================================================
-    // FETCH START - Clear Maps
-    // When a fetch starts for an active context, clear all Maps
-    // ============================================================================
-
-    builder.addCase(activeCustomersGetDocs.pending, (state) => {
-      if (state.activeContexts.includes("active")) {
-        state.CustDocMap.clear();
-        state.ProgDocMap.clear();
-        state.ServDocMap.clear();
-      }
-    });
-
-    builder.addCase(byAssignmentGetDocs.pending, (state) => {
-      if (state.activeContexts.includes("byAssignment")) {
-        state.CustDocMap.clear();
-        state.ProgDocMap.clear();
-        state.ServDocMap.clear();
-      }
-    });
-
-    builder.addCase(printedCustomersGetDocs.pending, (state) => {
-      if (state.activeContexts.includes("printed")) {
-        state.CustDocMap.clear();
-        state.ProgDocMap.clear();
-        state.ServDocMap.clear();
-      }
-    });
-
-    builder.addCase(lastSeasonProductionGetDocs.pending, (state) => {
-      if (state.activeContexts.includes("lastSeasonProduction")) {
-        state.CustDocMap.clear();
-        state.ProgDocMap.clear();
-        state.ServDocMap.clear();
-      }
-    });
-
-    builder.addCase(recentProductionGetDocs.pending, (state) => {
-      if (state.activeContexts.includes("recentProduction")) {
-        state.CustDocMap.clear();
-        state.ProgDocMap.clear();
-        state.ServDocMap.clear();
-      }
-    });
-
-    builder.addCase(singleCustomerActions.getDocs.pending, (state) => {
-      if (state.activeContexts.includes("single")) {
-        state.CustDocMap.clear();
-        state.ProgDocMap.clear();
-        state.ServDocMap.clear();
-      }
-    });
-
-    // When a customer is removed from the source slice, mirror the removal in the central Maps.
-    builder.addCase(singleCustomerActions.removeCustomer, (state, action) => {
-      if (!state.activeContexts.includes("single")) return;
-      const custId = action.payload;
-      const removedProgIds: number[] = [];
-      state.ProgDocMap.forEach((prog, progId) => {
-        if (prog.custId === custId) removedProgIds.push(progId);
       });
-      state.ServDocMap.forEach((serv, servId) => {
-        if (removedProgIds.includes(serv.progId)) state.ServDocMap.delete(servId);
+
+      // Fetch start: clear all Maps when an active context begins fetching.
+      builder.addCase(entry.getDocs.pending, (state) => {
+        if (state.activeContexts.includes(entry.context)) {
+          state.CustDocMap.clear();
+          state.ProgDocMap.clear();
+          state.ServDocMap.clear();
+        }
       });
-      removedProgIds.forEach((progId) => state.ProgDocMap.delete(progId));
-      state.CustDocMap.delete(custId);
-    });
+
+      // Remove customer: mirror the source-slice removal in the central Maps.
+      builder.addCase(entry.actions.removeCustomer, (state, action) => {
+        if (!state.activeContexts.includes(entry.context)) return;
+        const custId = action.payload;
+        const removedProgIds: number[] = [];
+        state.ProgDocMap.forEach((prog, progId) => {
+          if (prog.custId === custId) removedProgIds.push(progId);
+        });
+        state.ServDocMap.forEach((serv, servId) => {
+          if (removedProgIds.includes(serv.progId)) state.ServDocMap.delete(servId);
+        });
+        removedProgIds.forEach((progId) => state.ProgDocMap.delete(progId));
+        state.CustDocMap.delete(custId);
+      });
+    }
   },
 });
 
-// Thunk to switch contexts and sync data
+// Thunk to switch contexts and sync data from source slices into the central Maps.
 export const switchContexts =
   (contexts: CustomerContextMode[]): AppThunk =>
   (dispatch, getState) => {
     const state = getState() as AppState;
 
-    // 1. Update active contexts
     dispatch(centralCustomerSlice.actions.setContexts(contexts));
-
-    // 2. Clear all Maps
     dispatch(centralCustomerSlice.actions.clearAllMaps());
 
-    // 3. Merge data from all active source slices
-    contexts.forEach((context) => {
-      let sourceState: BaseCustomerState;
+    for (const entry of customerSliceRegistry) {
+      if (!contexts.includes(entry.context)) continue;
 
-      if (context === "active") {
-        sourceState = state.customer.active;
-      } else if (context === "printed") {
-        sourceState = state.customer.printed;
-      } else if (context === "lastSeasonProduction") {
-        sourceState = state.customer.lastSeasonProduction;
-      } else if (context === "recentProduction") {
-        sourceState = state.customer.recentProduction;
-      } else if (context === "single") {
-        sourceState = state.customer.single;
-      } else if (context === "byAssignment") {
-        sourceState = state.customer.byAssignment;
-      } else {
-        return;
-      }
+      const sourceKey = entry.context as keyof typeof state.customer;
+      const sourceState = state.customer[sourceKey] as BaseCustomerState | undefined;
+      if (!sourceState) continue;
 
-      // Merge customerDocs (source has arrays, central uses Maps)
       if (sourceState.customerDocs.length > 0) {
-        dispatch(
-          centralCustomerSlice.actions.mergeData({
-            stepName: "customers",
-            data: { customerDocs: sourceState.customerDocs },
-          }),
-        );
-      } else {
+        dispatch(centralCustomerSlice.actions.mergeData({
+          stepName: "customers",
+          data: { customerDocs: sourceState.customerDocs },
+        }));
       }
-
-      // Merge programDocs
       if (sourceState.programDocs.length > 0) {
-        dispatch(
-          centralCustomerSlice.actions.mergeData({
-            stepName: "programs",
-            data: { programDocs: sourceState.programDocs },
-          }),
-        );
+        dispatch(centralCustomerSlice.actions.mergeData({
+          stepName: "programs",
+          data: { programDocs: sourceState.programDocs },
+        }));
       }
-
-      // Merge serviceDocs
       if (sourceState.serviceDocs.length > 0) {
-        dispatch(
-          centralCustomerSlice.actions.mergeData({
-            stepName: "services",
-            data: { serviceDocs: sourceState.serviceDocs },
-          }),
-        );
+        dispatch(centralCustomerSlice.actions.mergeData({
+          stepName: "services",
+          data: { serviceDocs: sourceState.serviceDocs },
+        }));
       }
-    });
+    }
   };
 
 export default centralCustomerSlice.reducer;

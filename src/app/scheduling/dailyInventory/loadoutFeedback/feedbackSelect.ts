@@ -3,10 +3,10 @@ import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelecto
 import { AppState } from "@/store";
 
 // This is for the hook to use to dispatch the service search
-const selectAssignedServIds = (state: AppState) => {
-  const assignments = state.assignment.byEmployeeIdAndSchedDate;
-  return assignments.map((a) => a.servId);
-};
+const selectAssignedServIds = createSelector(
+  [(state: AppState) => state.assignment.byEmployeeIdAndSchedDate],
+  (assignments) => assignments.map((a) => a.servId),
+);
 
 /**
  * Returns all completed services (status "S") where the given employee appears
