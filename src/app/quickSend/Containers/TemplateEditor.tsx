@@ -19,6 +19,8 @@ import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServ
 import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
 import { quickSendSelect } from "../quickSendSelect";
 import { EditorToolbar } from "./EditorToolbar";
+import { LineHeight } from "./lineHeightExtension";
+import { ParagraphSpacing } from "./paragraphSpacingExtension";
 
 type Props = {
   sectionId: string;
@@ -56,6 +58,8 @@ export function TemplateEditor({ sectionId }: Props) {
       TableCell,
       TextStyle,
       Color,
+      LineHeight,
+      ParagraphSpacing,
       Highlight.configure({ multicolor: true }),
       Mention.configure({
         HTMLAttributes: {
@@ -95,6 +99,10 @@ export function TemplateEditor({ sectionId }: Props) {
       attributes: {
         class:
           "prose prose-sm max-w-none focus:outline-none p-4 prose-p:my-1 prose-p:leading-snug",
+      },
+      transformPastedHTML(html) {
+        // Strip inline color styles so pasted text always renders black
+        return html.replace(/color\s*:[^;"]*/gi, "");
       },
     },
     onUpdate({ editor: ed }) {

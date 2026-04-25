@@ -11,6 +11,8 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import { Highlight } from "@tiptap/extension-highlight";
 import Mention from "@tiptap/extension-mention";
+import { LineHeight } from "./lineHeightExtension";
+import { ParagraphSpacing } from "./paragraphSpacingExtension";
 import { useSelector } from "react-redux";
 import { quickSendSelect } from "../quickSendSelect";
 import type { QSVariableKey } from "../QuickSendTypes";
@@ -35,6 +37,8 @@ export function PreviewEditor({ previewHtml }: Props) {
       TableCell,
       TextStyle,
       Color,
+      LineHeight,
+      ParagraphSpacing,
       Highlight.configure({ multicolor: true }),
       Mention.configure({
         HTMLAttributes: {},

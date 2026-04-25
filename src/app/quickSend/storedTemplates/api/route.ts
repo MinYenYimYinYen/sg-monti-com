@@ -47,6 +47,19 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
     roles: ["admin", "office", "tech"],
     handler: async () => {
       await connectToMongoDB();
+
+      /**
+       * One-time drop old index
+       * */
+      try {
+        await StoredTemplateModel.collection.dropIndex("name_1_userName_1");
+      } catch {
+        // Index already dropped or never existed — safe to ignore
+      }
+      /**
+       * One-time end
+       * */
+
       const docs = await StoredTemplateModel.find().lean();
       const templates = cleanMongoArray(docs) as StoredTemplateDoc[];
       return { success: true, payload: templates };
@@ -75,19 +88,6 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
         templateId,
         saId,
       };
-
-      // On overwrite, enforce ownership (admin may overwrite any template)
-      const existing = await StoredTemplateModel.findOne({ templateId }).lean();
-      if (existing) {
-        const isAdmin = await isCurrentUserAdmin();
-        if (!isAdmin && existing.saId !== saId) {
-          throw new AppError({
-            message: "You do not own this template",
-            type: "AUTH_ERROR",
-            statusCode: 403,
-          });
-        }
-      }
 
       const result = await StoredTemplateModel.findOneAndUpdate(
         { templateId },

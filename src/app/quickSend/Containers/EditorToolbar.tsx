@@ -22,6 +22,14 @@ import {
   BetweenVerticalStart,
 } from "lucide-react";
 import { Button } from "@/style/components/button";
+import {
+  LINE_HEIGHT_OPTIONS,
+  LINE_HEIGHT_DEFAULT,
+} from "./lineHeightExtension";
+import {
+  PARAGRAPH_SPACING_OPTIONS,
+  PARAGRAPH_SPACING_DEFAULT,
+} from "./paragraphSpacingExtension";
 
 type Props = {
   editor: Editor | null;
@@ -35,7 +43,13 @@ type ToolbarButtonProps = {
   children: React.ReactNode;
 };
 
-function ToolbarButton({ onClick, active, disabled, title, children }: ToolbarButtonProps) {
+function ToolbarButton({
+  onClick,
+  active,
+  disabled,
+  title,
+  children,
+}: ToolbarButtonProps) {
   return (
     <Button
       size="sm"
@@ -74,8 +88,13 @@ export function EditorToolbar({ editor }: Props) {
           isOrdered: false,
           isBlockquote: false,
           inTable: false,
+          lineHeight: LINE_HEIGHT_DEFAULT,
+          paragraphSpacing: PARAGRAPH_SPACING_DEFAULT,
         };
       }
+      const attrs = ctx.editor.getAttributes("paragraph");
+      const headingAttrs = ctx.editor.getAttributes("heading");
+      const activeAttrs = ctx.editor.isActive("heading") ? headingAttrs : attrs;
       return {
         isBold: ctx.editor.isActive("bold"),
         isItalic: ctx.editor.isActive("italic"),
@@ -88,22 +107,47 @@ export function EditorToolbar({ editor }: Props) {
         isBlockquote: ctx.editor.isActive("blockquote"),
         // isActive("table") only fires when the table node itself is selected;
         // tableCell/tableHeader fires whenever the cursor is inside a cell.
-        inTable: ctx.editor.isActive("tableCell") || ctx.editor.isActive("tableHeader"),
+        inTable:
+          ctx.editor.isActive("tableCell") ||
+          ctx.editor.isActive("tableHeader"),
+        lineHeight: (activeAttrs.lineHeight as string) ?? LINE_HEIGHT_DEFAULT,
+        paragraphSpacing:
+          (activeAttrs.paragraphSpacing as string) ?? PARAGRAPH_SPACING_DEFAULT,
       };
     },
   });
 
   const disabled = !editor;
-  const { isBold, isItalic, isStrike, isH1, isH2, isH3, isBullet, isOrdered, isBlockquote, inTable } = editorState ?? {
-    isBold: false, isItalic: false, isStrike: false,
-    isH1: false, isH2: false, isH3: false,
-    isBullet: false, isOrdered: false, isBlockquote: false,
+  const {
+    isBold,
+    isItalic,
+    isStrike,
+    isH1,
+    isH2,
+    isH3,
+    isBullet,
+    isOrdered,
+    isBlockquote,
+    inTable,
+    lineHeight,
+    paragraphSpacing,
+  } = editorState ?? {
+    isBold: false,
+    isItalic: false,
+    isStrike: false,
+    isH1: false,
+    isH2: false,
+    isH3: false,
+    isBullet: false,
+    isOrdered: false,
+    isBlockquote: false,
     inTable: false,
+    lineHeight: LINE_HEIGHT_DEFAULT,
+    paragraphSpacing: PARAGRAPH_SPACING_DEFAULT,
   };
 
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/20 px-2 py-1">
-
       {/* ── Text formatting ── */}
       <ToolbarButton
         onClick={() => editor?.chain().focus().toggleBold().run()}
@@ -136,7 +180,9 @@ export function EditorToolbar({ editor }: Props) {
 
       {/* ── Headings ── */}
       <ToolbarButton
-        onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
+        onClick={() =>
+          editor?.chain().focus().toggleHeading({ level: 1 }).run()
+        }
         active={isH1}
         disabled={disabled}
         title="Heading 1"
@@ -145,7 +191,9 @@ export function EditorToolbar({ editor }: Props) {
       </ToolbarButton>
 
       <ToolbarButton
-        onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+        onClick={() =>
+          editor?.chain().focus().toggleHeading({ level: 2 }).run()
+        }
         active={isH2}
         disabled={disabled}
         title="Heading 2"
@@ -154,7 +202,9 @@ export function EditorToolbar({ editor }: Props) {
       </ToolbarButton>
 
       <ToolbarButton
-        onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
+        onClick={() =>
+          editor?.chain().focus().toggleHeading({ level: 3 }).run()
+        }
         active={isH3}
         disabled={disabled}
         title="Heading 3"
@@ -194,10 +244,60 @@ export function EditorToolbar({ editor }: Props) {
 
       <Divider />
 
+      {/* ── Line spacing ── */}
+      <label className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+        <span>Line</span>
+        <select
+          className="h-6 rounded border border-border bg-card px-1 text-xs text-foreground focus:outline-none disabled:opacity-50"
+          value={lineHeight}
+          disabled={disabled}
+          title="Line spacing"
+          onChange={(e) => {
+            if (!editor) return;
+            (editor.chain().focus() as any).setLineHeight(e.target.value).run();
+          }}
+        >
+          {LINE_HEIGHT_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {/* ── Paragraph spacing ── */}
+      <label className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+        <span>¶</span>
+        <select
+          className="h-6 rounded border border-border bg-card px-1 text-xs text-foreground focus:outline-none disabled:opacity-50"
+          value={paragraphSpacing}
+          disabled={disabled}
+          title="Paragraph spacing"
+          onChange={(e) => {
+            if (!editor) return;
+            (editor.chain().focus() as any)
+              .setParagraphSpacing(e.target.value)
+              .run();
+          }}
+        >
+          {PARAGRAPH_SPACING_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <Divider />
+
       {/* ── Table — insert ── */}
       <ToolbarButton
         onClick={() =>
-          editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: false }).run()
+          editor
+            ?.chain()
+            .focus()
+            .insertTable({ rows: 3, cols: 3, withHeaderRow: false })
+            .run()
         }
         active={inTable}
         disabled={disabled}
