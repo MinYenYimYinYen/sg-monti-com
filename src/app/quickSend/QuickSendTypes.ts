@@ -52,13 +52,16 @@ export type QSSection = {
  * - @name          → customerLookup, nameOverride
  * - @size          → customerLookup, sizeOverride
  * - @program.X.*  → customerLookup, sizeOverride, programConfig:X
+ * - @aux           → auxConfig:aux
+ * - @aux_2         → auxConfig:aux_2
  */
 export type TemplateControlId =
   | "customerLookup"
   | "nameOverride"
   | "sizeOverride"
   | "taxRateOverride"
-  | `programConfig:${string}`;
+  | `programConfig:${string}`
+  | `auxConfig:${string}`;
 
 /**
  * Resolved variable values for a single program alias. These are the values

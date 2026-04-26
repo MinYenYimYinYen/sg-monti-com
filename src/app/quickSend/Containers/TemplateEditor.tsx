@@ -48,6 +48,11 @@ export function TemplateEditor({ sectionId }: Props) {
   // eslint-disable-next-line react-hooks/refs
   programConfigsRef.current = programConfigs;
 
+  const activeAuxIds = useSelector(quickSendSelect.activeAuxIds);
+  const activeAuxIdsRef = useRef(activeAuxIds);
+  // eslint-disable-next-line react-hooks/refs
+  activeAuxIdsRef.current = activeAuxIds;
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -91,6 +96,7 @@ export function TemplateEditor({ sectionId }: Props) {
               }
             }
           },
+          getExistingAuxIds: () => new Set(activeAuxIdsRef.current),
         }),
       }),
     ],

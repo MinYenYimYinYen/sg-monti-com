@@ -17,6 +17,8 @@ import type {
 
 const selectSlice = (state: AppState) => state.quickSend;
 
+const selectAuxValues = (state: AppState) => state.quickSend.auxValues;
+
 const selectLoadedTemplateId = (state: AppState) => state.quickSend.loadedTemplateId;
 const selectLoadedTemplateSaId = (state: AppState) => state.quickSend.loadedTemplateSaId;
 const selectLoadedTemplateName = (state: AppState) => state.quickSend.loadedTemplateName;
@@ -138,6 +140,26 @@ const selectActivePrograms = createSelector(
 );
 
 /**
+ * Parses ALL sections' HTML for aux mention IDs (`aux`, `aux_2`, …) and returns
+ * them sorted in ascending order. Used to drive the auxConfig controls.
+ */
+const selectActiveAuxIds = createSelector(
+  [selectAllSectionsHtml],
+  (html): string[] => {
+    const ids = new Set<string>();
+    const matches = html.matchAll(/data-id="(aux(?:_\d+)?)"/g);
+    for (const match of matches) {
+      ids.add(match[1]);
+    }
+    return [...ids].sort((a, b) => {
+      const numA = a === "aux" ? 1 : parseInt(a.slice(4), 10);
+      const numB = b === "aux" ? 1 : parseInt(b.slice(4), 10);
+      return numA - numB;
+    });
+  },
+);
+
+/**
  * Resolved variable values — what the mention nodes display in the preview.
  */
 const selectResolvedVariables = createSelector(
@@ -243,6 +265,7 @@ function resolveHtml(
   season: string | null,
   progVarMap: Map<string, QSProgramVariables>,
   customer: Customer | null = null,
+  auxValues: Record<string, string> = {},
 ): string {
   let preview = html;
 
@@ -307,6 +330,18 @@ function resolveHtml(
         `<tr><td>Zip Code</td><td>${customer.address.zip ?? ""}</td></tr>`,
       ].join("");
       return `<table><tbody>${rows}</tbody></table>`;
+    },
+  );
+
+  // Aux mentions — resolve each `@aux`, `@aux_2`, … to its user-typed value.
+  preview = preview.replace(
+    /<span[^>]*data-type="mention"[^>]*data-id="(aux(?:_\d+)?)"[^>]*>[^<]*<\/span>/g,
+    (fullMatch, auxId: string) => {
+      const value = auxValues[auxId];
+      if (!value) return `${UNFULFILLED_MARK}{{${auxId}}}</mark>`;
+      return fullMatch
+        .replace(/data-label="[^"]*"/, `data-label="${value}"`)
+        .replace(/>([^<]*)<\/span>$/, `>${value}</span>`);
     },
   );
 
@@ -389,12 +424,13 @@ const selectPreviewHtml = createSelector(
     globalSettingsSelect.season,
     selectProgramVariables,
     selectCustomerState,
+    selectAuxValues,
   ],
-  (html, name, size, effectiveTaxRate, season, programVars, customerState): string => {
+  (html, name, size, effectiveTaxRate, season, programVars, customerState, auxValues): string => {
     if (!html) return "";
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
     const progVarMap = new Map(programVars.map((v) => [v.alias, v]));
-    return resolveHtml(html, name, size, taxRateStr, season != null ? String(season) : null, progVarMap, customerState.customer);
+    return resolveHtml(html, name, size, taxRateStr, season != null ? String(season) : null, progVarMap, customerState.customer, auxValues);
   },
 );
 
@@ -420,8 +456,8 @@ const CONTROL_DEPS: { trigger: QSVariableKey | "program"; controls: TemplateCont
  * based on the active section's template content.
  */
 const selectActiveControlIds = createSelector(
-  [selectActiveVars, selectActivePrograms],
-  (activeVars, activePrograms): TemplateControlId[] => {
+  [selectActiveVars, selectActivePrograms, selectActiveAuxIds],
+  (activeVars, activePrograms, activeAuxIds): TemplateControlId[] => {
     const ids: TemplateControlId[] = [];
     const seen = new Set<TemplateControlId>();
 
@@ -447,6 +483,11 @@ const selectActiveControlIds = createSelector(
       add(`programConfig:${config.alias}`);
     }
 
+    // Per-aux controls are dynamic — one entry per aux ID
+    for (const auxId of activeAuxIds) {
+      add(`auxConfig:${auxId}`);
+    }
+
     return ids;
   },
 );
@@ -459,8 +500,8 @@ const selectActiveControlIds = createSelector(
  * Returns preview HTML for every section. Uses the global programConfigs.
  */
 const selectAllPreviewHtmls = createSelector(
-  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap, selectCustomerState],
-  (sections, name, size, effectiveTaxRate, season, programConfigs, progCodeMap, prepayDocMap, customerState): { sectionId: string; previewHtml: string }[] => {
+  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap, selectCustomerState, selectAuxValues],
+  (sections, name, size, effectiveTaxRate, season, programConfigs, progCodeMap, prepayDocMap, customerState, auxValues): { sectionId: string; previewHtml: string }[] => {
     const sizeNum = parseFloat(size);
     const hasSize = !isNaN(sizeNum) && sizeNum > 0;
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
@@ -525,7 +566,7 @@ const selectAllPreviewHtmls = createSelector(
     return sections.map((section) => ({
       sectionId: section.sectionId,
       previewHtml: section.templateHtml
-        ? resolveHtml(section.templateHtml, name, size, taxRateStr, seasonStr, progVarMap, customerState.customer)
+        ? resolveHtml(section.templateHtml, name, size, taxRateStr, seasonStr, progVarMap, customerState.customer, auxValues)
         : "",
     }));
   },
@@ -540,10 +581,12 @@ export const quickSendSelect = {
   programConfigMap: selectProgramConfigMap,
   activeVars: selectActiveVars,
   activePrograms: selectActivePrograms,
+  activeAuxIds: selectActiveAuxIds,
   activeControlIds: selectActiveControlIds,
   resolvedVariables: selectResolvedVariables,
   unfulfilledVars: selectUnfulfilledVars,
   programVariables: selectProgramVariables,
+  auxValues: selectAuxValues,
   previewHtml: selectPreviewHtml,
   allPreviewHtmls: selectAllPreviewHtmls,
   taxRateZipOverride: selectTaxRateZipOverride,

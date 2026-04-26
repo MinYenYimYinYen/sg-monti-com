@@ -9,6 +9,7 @@ import { NameOverride } from "../controls/NameOverride";
 import { SizeOverride } from "../controls/SizeOverride";
 import { TaxRateOverride } from "../controls/TaxRateOverride";
 import { ProgramConfig } from "../controls/ProgramConfig";
+import { AuxConfig } from "../controls/AuxConfig";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
@@ -44,6 +45,10 @@ export function QuickSend() {
       const config = programConfigMap.get(alias);
       if (!config) return null;
       return <ProgramConfig key={id} config={config} />;
+    }
+    if (id.startsWith("auxConfig:")) {
+      const auxId = id.slice("auxConfig:".length);
+      return <AuxConfig key={id} auxId={auxId} />;
     }
     return null;
   };

@@ -15,6 +15,12 @@ type QuickSendState = {
   sections: QSSection[];
   activeSectionId: string;
   programConfigs: QSProgramConfig[];
+  /**
+   * Runtime values for aux mentions (`@aux`, `@aux_2`, …).
+   * Keys are aux IDs (e.g. `"aux"`, `"aux_2"`); values are the user-typed strings.
+   * Not persisted — cleared when a template is loaded or the editor is reset.
+   */
+  auxValues: Record<string, string>;
   customer: QSCustomerState;
 
   // Loaded template metadata (null = unsaved / new)
@@ -29,6 +35,7 @@ const initialState: QuickSendState = {
   sections: [makeSection(INITIAL_SECTION_ID)],
   activeSectionId: INITIAL_SECTION_ID,
   programConfigs: [],
+  auxValues: {},
   customer: {
     custId: null,
     customer: null,
@@ -119,6 +126,13 @@ const quickSendSlice = createSlice({
       state.customer = initialState.customer;
     },
 
+    // --- Aux mention values (runtime only — not persisted) ---
+
+    /** Sets the user-typed value for a single aux mention slot. */
+    setAuxValue(state, action: PayloadAction<{ id: string; value: string }>) {
+      state.auxValues[action.payload.id] = action.payload.value;
+    },
+
     // --- Program configs (global — shared across all sections) ---
 
     /**
@@ -186,6 +200,7 @@ const quickSendSlice = createSlice({
         : [makeSection(INITIAL_SECTION_ID)];
       state.activeSectionId = state.sections[0].sectionId;
       state.programConfigs = template.programConfigs;
+      state.auxValues = {};
       state.loadedTemplateId = template.templateId;
       state.loadedTemplateSaId = template.saId;
       state.loadedTemplateName = template.name;
@@ -200,6 +215,7 @@ const quickSendSlice = createSlice({
       state.sections = [makeSection(INITIAL_SECTION_ID)];
       state.activeSectionId = INITIAL_SECTION_ID;
       state.programConfigs = [];
+      state.auxValues = {};
       state.loadedTemplateId = null;
       state.loadedTemplateSaId = null;
       state.loadedTemplateName = null;

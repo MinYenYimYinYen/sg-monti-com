@@ -93,39 +93,55 @@ type BuildMentionSuggestionParams = {
   /** Returns the set of aliases currently in programConfigs (e.g. {"MLC", "MLC_2"}). */
   getExistingAliases: () => Set<string>;
   onProgramMentionInserted: (alias: string) => void;
+  /** Returns the set of aux IDs currently present in the template HTML (e.g. {"aux", "aux_2"}). */
+  getExistingAuxIds: () => Set<string>;
 };
 
 /**
  * Builds the Tiptap suggestion config for @variable mentions.
  *
- * Three-level drill-down:
- * - Level 0 (no dot): flat vars (name, size, taxRate) + "program →"
- * - Level 1 (query = "program.*"): progCode namespace items (MLC →, TLC →, ...)
- * - Level 2 (query = "program.MLC.*"): leaf properties (description, price, ...) + "prepay" leaf
+ * Mention ID formats:
+ * - Flat vars: `name`, `size`, `taxRate`, `season`, `sgBillpayInfo`
+ * - Aux slots: `aux`, `aux_2`, `aux_3`, … (direct leaf items at Level 0)
+ * - Program leaves: `program.{alias}.{prop}` (3-level drill-down via namespace items)
  *
  * Namespace items replace the typed text with "@{prefix}." and keep the
  * suggestion open (IDE-style autocomplete). Leaf items insert a mention node.
- *
- * Mention ID formats:
- * - `program.{alias}.{prop}` — program leaf (3 parts, includes "prepay")
  */
 export function buildMentionSuggestion({
   getProgCodes,
   getExistingAliases,
   onProgramMentionInserted,
+  getExistingAuxIds,
 }: BuildMentionSuggestionParams): Partial<SuggestionOptions> {
   return {
     items({ query }): MentionItem[] {
       const parts = query.split(".");
 
-      // Level 0: no dot yet — show flat vars + "program →"
+      // Level 0: no dot yet — show flat vars + aux leaf items + "program →"
       if (parts.length === 1) {
         const q = query.toLowerCase();
+
         const flatMatches = FLAT_ITEMS.filter((item) =>
           item.label.toLowerCase().startsWith(q),
         );
+
+        // Aux items are direct leaves. Always show "aux"; show "aux_2" if "aux" is
+        // already in the template, "aux_3" if both are used, etc.
+        const existingAuxIds = getExistingAuxIds();
+        const auxCandidates: string[] = ["aux"];
+        let n = 2;
+        while (existingAuxIds.has(auxCandidates[auxCandidates.length - 1])) {
+          auxCandidates.push(`aux_${n}`);
+          n++;
+        }
+        const auxMatches: MentionItem[] = auxCandidates
+          .filter((id) => id.toLowerCase().startsWith(q))
+          .map((id) => ({ id, label: id }));
+
         const programNsMatch = "program".startsWith(q) ? [PROGRAM_NS_ITEM] : [];
-        return [...flatMatches, ...programNsMatch];
+
+        return [...flatMatches, ...auxMatches, ...programNsMatch];
       }
 
       // Level 1: "program.{partial}" — show progCode namespace items.
@@ -146,9 +162,9 @@ export function buildMentionSuggestion({
           // If the base alias is already in programConfigs, also offer the next available _N alias
           const existingAliases = getExistingAliases();
           if (existingAliases.has(p.progCodeId)) {
-            let n = 2;
-            while (existingAliases.has(`${p.progCodeId}_${n}`)) n++;
-            const nextAlias = `${p.progCodeId}_${n}`;
+            let m = 2;
+            while (existingAliases.has(`${p.progCodeId}_${m}`)) m++;
+            const nextAlias = `${p.progCodeId}_${m}`;
             if (nextAlias.toLowerCase().startsWith(suffix)) {
               items.push({
                 id: `__ns__program.${nextAlias}`,
@@ -161,7 +177,7 @@ export function buildMentionSuggestion({
         return items;
       }
 
-      // Level 2: "program.{alias}.{partial}" — show leaf properties + "prepay →".
+      // Level 2: "program.{alias}.{partial}" — show leaf properties + "prepay" + "servTable".
       // The alias may be "MLC" or "MLC_2"; strip the _N suffix to find the base progCodeId.
       if (parts.length === 3 && parts[0].toLowerCase() === "program") {
         const alias = parts[1];
@@ -200,8 +216,8 @@ export function buildMentionSuggestion({
     command({ editor, range, props }) {
       if (props.isNamespace) {
         // Namespace item: replace typed text with "@{prefix}." and keep suggestion open
-        const nsId: string = props.id; // e.g. "__ns__program" or "__ns__program.MLC" or "__ns__program.MLC.prepay"
-        const prefix = nsId.replace(/^__ns__/, ""); // "program" or "program.MLC" or "program.MLC.prepay"
+        const nsId: string = props.id; // e.g. "__ns__program" or "__ns__program.MLC"
+        const prefix = nsId.replace(/^__ns__/, ""); // "program" or "program.MLC"
         editor
           .chain()
           .focus()
