@@ -17,8 +17,10 @@ export const ParagraphSpacing = Extension.create({
             default: null,
             parseHTML: (element: HTMLElement) => element.style.marginBottom || null,
             renderHTML: (attributes: Record<string, unknown>) => {
-              if (!attributes.paragraphSpacing) return {};
-              return { style: `margin-bottom: ${attributes.paragraphSpacing}` };
+              // Always emit an inline margin-bottom so email clients (which strip
+              // browser default <p> margins) still render paragraph spacing correctly.
+              const spacing = (attributes.paragraphSpacing as string | null) ?? PARAGRAPH_SPACING_DEFAULT;
+              return { style: `margin-bottom: ${spacing}` };
             },
           },
         },

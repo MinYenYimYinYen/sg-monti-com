@@ -339,9 +339,9 @@ function resolveHtml(
     () => {
       if (!customer) return `${UNFULFILLED_MARK}{{sgBillpayInfo}}</mark>`;
       const rows = [
-        `<tr><td>Account Number</td><td>${customer.custId}</td></tr>`,
-        `<tr><td>Last Name</td><td>${customer.lastName}</td></tr>`,
-        `<tr><td>Zip Code</td><td>${customer.address.zip ?? ""}</td></tr>`,
+        `<tr><td>Account Number:</td><td>${customer.custId}</td></tr>`,
+        `<tr><td>Last Name:</td><td>${customer.lastName}</td></tr>`,
+        `<tr><td>Zip Code:</td><td>${customer.address.zip ?? ""}</td></tr>`,
       ].join("");
       return `<table><tbody>${rows}</tbody></table>`;
     },

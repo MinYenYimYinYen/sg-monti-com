@@ -16,6 +16,25 @@ import {
 import { Plus, Trash2, Check, Copy, GripVertical, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
+/** Converts HTML to plain text while preserving paragraph/line-break structure.
+ *  Tables are rendered as tab-separated rows so columns survive a plain-text paste. */
+function htmlToPlainText(html: string): string {
+  const withBreaks = html
+    .replace(/<\/td>/gi, "\t")
+    .replace(/<\/th>/gi, "\t")
+    .replace(/<\/tr>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<\/h[1-6]>/gi, "\n");
+  const div = document.createElement("div");
+  div.innerHTML = withBreaks;
+  return (div.textContent ?? "")
+    .replace(/\t\n/g, "\n")    // strip trailing tab before each row-end newline
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 type Props = {
   /** True when a saved template is loaded — editor starts collapsed. */
   hasLoadedTemplate: boolean;
@@ -80,11 +99,7 @@ export function QuickSendEditor({ hasLoadedTemplate }: Props) {
       .filter(Boolean)
       .join("<br><br>");
     const combinedText = allPreviewHtmls
-      .map((p) => {
-        const div = document.createElement("div");
-        div.innerHTML = p.previewHtml;
-        return div.textContent ?? "";
-      })
+      .map((p) => htmlToPlainText(p.previewHtml))
       .filter(Boolean)
       .join("\n\n");
 
@@ -100,9 +115,7 @@ export function QuickSendEditor({ hasLoadedTemplate }: Props) {
 
   const handleCopySection = async (sectionId: string) => {
     const html = previewMap.get(sectionId) ?? "";
-    const div = document.createElement("div");
-    div.innerHTML = html;
-    const text = div.textContent ?? "";
+    const text = htmlToPlainText(html);
 
     await navigator.clipboard.write([
       new ClipboardItem({
