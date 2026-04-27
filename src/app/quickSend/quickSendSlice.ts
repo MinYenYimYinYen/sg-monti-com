@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
-import { QSCustomerState, QSProgramConfig, QSSection } from "./QuickSendTypes";
+import { QSCustomerState, QSProgramConfig, QSSection, ProgChooser, INITIAL_PROG_CHOOSER } from "./QuickSendTypes";
 import { StoredTemplateDoc } from "./storedTemplates/StoredTemplateTypes";
 
 /** Creates a blank section with a stable ID. */
@@ -22,6 +22,8 @@ type QuickSendState = {
    */
   auxValues: Record<string, string>;
   customer: QSCustomerState;
+  /** Runtime-only progChooser state. Not persisted in StoredTemplateDoc. */
+  progChooser: ProgChooser;
 
   // Loaded template metadata (null = unsaved / new)
   loadedTemplateId: string | null;
@@ -43,6 +45,7 @@ const initialState: QuickSendState = {
     sizeOverride: "",
     taxRateZipOverride: null,
   },
+  progChooser: INITIAL_PROG_CHOOSER,
   loadedTemplateId: null,
   loadedTemplateSaId: null,
   loadedTemplateName: null,
@@ -133,6 +136,24 @@ const quickSendSlice = createSlice({
       state.auxValues[action.payload.id] = action.payload.value;
     },
 
+    // --- ProgChooser (runtime only — not persisted) ---
+
+    /** Adds or removes a progCodeId from the selected list. */
+    toggleProgChooserProgCode(state, action: PayloadAction<string>) {
+      const ids = state.progChooser.selectedProgCodeIds;
+      const idx = ids.indexOf(action.payload);
+      if (idx === -1) {
+        ids.push(action.payload);
+      } else {
+        ids.splice(idx, 1);
+      }
+    },
+
+    /** Resets all progChooser runtime state to its initial empty values. */
+    clearProgChooserSelections(state) {
+      state.progChooser = INITIAL_PROG_CHOOSER;
+    },
+
     // --- Program configs (global — shared across all sections) ---
 
     /**
@@ -201,6 +222,7 @@ const quickSendSlice = createSlice({
       state.activeSectionId = state.sections[0].sectionId;
       state.programConfigs = template.programConfigs;
       state.auxValues = {};
+      state.progChooser = INITIAL_PROG_CHOOSER;
       state.loadedTemplateId = template.templateId;
       state.loadedTemplateSaId = template.saId;
       state.loadedTemplateName = template.name;
@@ -216,6 +238,7 @@ const quickSendSlice = createSlice({
       state.activeSectionId = INITIAL_SECTION_ID;
       state.programConfigs = [];
       state.auxValues = {};
+      state.progChooser = INITIAL_PROG_CHOOSER;
       state.loadedTemplateId = null;
       state.loadedTemplateSaId = null;
       state.loadedTemplateName = null;

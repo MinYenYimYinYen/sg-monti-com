@@ -50,6 +50,7 @@ const FLAT_ITEMS: MentionItem[] = [
   { id: "taxRate", label: "taxRate" },
   { id: "season", label: "season" },
   { id: "sgBillpayInfo", label: "sgBillpayInfo" },
+  { id: "progChooser", label: "progChooser" },
 ];
 
 /**
@@ -81,6 +82,13 @@ export function safelyRemoveSuffix(alias: string, progCodes: ProgCode[]): string
 const PROGRAM_NS_ITEM: MentionItem = {
   id: "__ns__program",
   label: "program",
+  isNamespace: true,
+};
+
+/** The top-level "p" namespace item (loop variable for progChooser). */
+const P_NS_ITEM: MentionItem = {
+  id: "__ns__p",
+  label: "p",
   isNamespace: true,
 };
 
@@ -139,9 +147,10 @@ export function buildMentionSuggestion({
           .filter((id) => id.toLowerCase().startsWith(q))
           .map((id) => ({ id, label: id }));
 
-        const programNsMatch = "program".startsWith(q) ? [PROGRAM_NS_ITEM] : [];
+      const programNsMatch = "program".startsWith(q) ? [PROGRAM_NS_ITEM] : [];
+        const pNsMatch = "p".startsWith(q) ? [P_NS_ITEM] : [];
 
-        return [...flatMatches, ...auxMatches, ...programNsMatch];
+        return [...flatMatches, ...auxMatches, ...programNsMatch, ...pNsMatch];
       }
 
       // Level 1: "program.{partial}" — show progCode namespace items.
@@ -175,6 +184,30 @@ export function buildMentionSuggestion({
           }
         }
         return items;
+      }
+
+      // Level 1: "p.{partial}" — show loop-variable leaf properties (same set as program leaves).
+      if (parts.length === 2 && parts[0].toLowerCase() === "p") {
+        const suffix = parts[1].toLowerCase();
+
+        const leafItems: MentionItem[] = PROG_LEAF_PROPS.filter((prop) =>
+          prop.toLowerCase().startsWith(suffix),
+        ).map((prop) => ({
+          id: `p.${prop}`,
+          label: `p.${prop}`,
+        }));
+
+        const prepayLeafItems: MentionItem[] =
+          "prepay".startsWith(suffix)
+            ? [{ id: "p.prepay", label: "p.prepay" }]
+            : [];
+
+        const servTableLeafItems: MentionItem[] =
+          "servTable".startsWith(suffix)
+            ? [{ id: "p.servTable", label: "p.servTable" }]
+            : [];
+
+        return [...leafItems, ...prepayLeafItems, ...servTableLeafItems];
       }
 
       // Level 2: "program.{alias}.{partial}" — show leaf properties + "prepay" + "servTable".

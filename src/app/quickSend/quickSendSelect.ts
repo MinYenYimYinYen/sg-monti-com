@@ -13,11 +13,14 @@ import type {
   TemplateControlId,
   QSProgramVariables,
   QSProgLeafKey,
+  ProgChooser,
 } from "./QuickSendTypes";
 
 const selectSlice = (state: AppState) => state.quickSend;
 
 const selectAuxValues = (state: AppState) => state.quickSend.auxValues;
+
+const selectProgChooser = (state: AppState): ProgChooser => state.quickSend.progChooser;
 
 const selectLoadedTemplateId = (state: AppState) => state.quickSend.loadedTemplateId;
 const selectLoadedTemplateSaId = (state: AppState) => state.quickSend.loadedTemplateSaId;
@@ -114,7 +117,7 @@ const selectActiveVars = createSelector(
   [selectAllSectionsHtml],
   (html): Set<QSVariableKey> => {
     const vars = new Set<QSVariableKey>();
-    const matches = html.matchAll(/data-id="(name|size|taxRate|season|sgBillpayInfo)"/g);
+    const matches = html.matchAll(/data-id="(name|size|taxRate|season|sgBillpayInfo|progChooser)"/g);
     for (const match of matches) {
       vars.add(match[1] as QSVariableKey);
     }
@@ -265,6 +268,223 @@ const UNFULFILLED_MARK = `<mark style="background-color: rgba(220,38,38,0.3); bo
  */
 function escapeReplacement(str: string): string {
   return str.replace(/\$/g, "$$$$");
+}
+
+/**
+ * Computes QSProgramVariables for a single progCode given a size and optional overrides.
+ * Used by both the existing program.{alias}.* system and the progChooser loop resolver.
+ */
+function computeProgVars({
+  progCodeId,
+  alias,
+  includedServCodeIds,
+  size,
+  effectiveTaxRate,
+  prepayPercent,
+  progCodeMap,
+}: {
+  progCodeId: string;
+  alias: string;
+  includedServCodeIds: string[];
+  size: number;
+  effectiveTaxRate: number | null;
+  prepayPercent: number | null;
+  progCodeMap: Map<string, import("@/app/realGreen/progServ/_lib/types/ProgCodeTypes").ProgCode>;
+}): QSProgramVariables {
+  const hasSize = !isNaN(size) && size > 0;
+  const progCode = progCodeMap.get(progCodeId);
+  const servCount = includedServCodeIds.length;
+  const pp = prepayPercent ?? 0;
+  const tr = effectiveTaxRate ?? 0;
+
+  if (!progCode) {
+    return {
+      alias,
+      progCodeId,
+      description: progCodeId,
+      servCount,
+      prefPrice: null,
+      econPrice: null,
+      servPrice: null,
+      subTotal: null,
+      prepayPercent,
+      prepayDiscAmt: null,
+      taxAmt: null,
+      total: null,
+      servTable: [],
+    };
+  }
+
+  const scoped = progCode.x.getByServCodeIds(includedServCodeIds);
+  const includedServCodes = progCode.servCodes.filter((s) =>
+    includedServCodeIds.includes(s.servCodeId),
+  );
+  const servTable = includedServCodes.map((servCode) => {
+    const singleScoped = progCode.x.getByServCodeIds([servCode.servCodeId]);
+    return {
+      description: servCode.longName,
+      price: hasSize ? singleScoped.getServPrice(size) : null,
+    };
+  });
+
+  return {
+    alias,
+    progCodeId,
+    description: progCode.description,
+    servCount,
+    prefPrice: hasSize ? scoped.getPrefPrice(size) : null,
+    econPrice: hasSize ? scoped.getEconPrice(size) : null,
+    servPrice: hasSize ? scoped.getServPrice(size) : null,
+    subTotal: hasSize ? scoped.getSubTotal(size) : null,
+    prepayPercent,
+    prepayDiscAmt: hasSize ? scoped.getPrepayDiscAmt(size, pp) : null,
+    taxAmt: hasSize && effectiveTaxRate !== null ? scoped.getTaxAmt(size, pp, tr) : null,
+    total: hasSize && effectiveTaxRate !== null ? scoped.getTotal(size, pp, tr) : null,
+    servTable,
+  };
+}
+
+/**
+ * Resolves a single `@p.{prop}` mention span to its display value for a given
+ * set of program variables. Returns the full replacement string (either the
+ * updated span or an unfulfilled mark).
+ */
+function resolveProgLoopMention(
+  fullMatch: string,
+  prop: string,
+  vars: QSProgramVariables,
+): string {
+  const mentionId = `p.${prop}`;
+
+  if (prop === "prepay") {
+    const value = vars.prepayPercent;
+    if (value === null || value === undefined) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+    const displayValue = escapeReplacement(`${value}%`);
+    return fullMatch
+      .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
+      .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
+  }
+
+  if (prop === "servTable") {
+    if (vars.servTable.length === 0) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+    const rows = vars.servTable
+      .map((row) => {
+        const priceCell = row.price !== null ? `$${row.price.toFixed(2)}` : "—";
+        return `<tr><td>${row.description}</td><td>${priceCell}</td></tr>`;
+      })
+      .join("");
+    return `<table><tbody>${rows}</tbody></table>`;
+  }
+
+  const typedProp = prop as QSProgLeafKey;
+  const value = vars[typedProp];
+  if (value === null || value === undefined) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+
+  const isDollarAmount =
+    (typedProp.toLowerCase().includes("price") ||
+      typedProp.toLowerCase().includes("amt") ||
+      typedProp === "subTotal" ||
+      typedProp === "total") &&
+    typeof value === "number";
+  const displayValue = escapeReplacement(isDollarAmount ? `$${(value as number).toFixed(2)}` : String(value));
+
+  return fullMatch
+    .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
+    .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
+}
+
+const P_LOOP_MENTION_RE = /data-id="p\.[^"]*"/;
+
+/**
+ * Resolves the progChooser loop in the given HTML.
+ *
+ * Strategy:
+ * - The `@progChooser` trigger span is replaced with an empty string.
+ * - When no programs are selected, any `<p>` or `<tr>` containing `@p.*` mentions
+ *   is replaced with an unfulfilled placeholder.
+ * - When programs are selected, the HTML is split into table and non-table segments.
+ *   `<tr>` loop units are expanded inside table segments; `<p>` loop units are
+ *   expanded in non-table segments. This prevents the paragraph regex from
+ *   re-processing rows that were already expanded by the table regex.
+ */
+function resolveProgChooserLoop(
+  html: string,
+  progChooser: ProgChooser,
+  progCodeMap: Map<string, import("@/app/realGreen/progServ/_lib/types/ProgCodeTypes").ProgCode>,
+  sizeNum: number,
+  effectiveTaxRate: number | null,
+): string {
+  // Remove the @progChooser trigger span entirely.
+  let result = html.replace(
+    /<span[^>]*data-type="mention"[^>]*data-id="progChooser"[^>]*>[^<]*<\/span>/g,
+    "",
+  );
+
+  const TR_LOOP_RE = /(<tr(?:\s[^>]*)?>)((?:(?!<\/tr>)[\s\S])*?data-id="p\.[^"]*"(?:(?!<\/tr>)[\s\S])*?)(<\/tr>)/g;
+  const P_LOOP_RE = /(<p(?:\s[^>]*)?>)((?:(?!<\/p>)[\s\S])*?data-id="p\.[^"]*"(?:(?!<\/p>)[\s\S])*?)(<\/p>)/g;
+
+  // When no programs are selected, replace loop units with an unfulfilled placeholder.
+  if (progChooser.selectedProgCodeIds.length === 0) {
+    result = result.replace(TR_LOOP_RE, () =>
+      `<tr><td>${UNFULFILLED_MARK}{{no programs chosen}}</mark></td></tr>`,
+    );
+    result = result.replace(P_LOOP_RE, () =>
+      `<p>${UNFULFILLED_MARK}{{no programs chosen}}</mark></p>`,
+    );
+    return result;
+  }
+
+  // Build vars for each selected program (Phase 1: all non-service-call servCodes, no overrides).
+  const allProgVars: QSProgramVariables[] = progChooser.selectedProgCodeIds.map((progCodeId) => {
+    const progCode = progCodeMap.get(progCodeId);
+    const includedServCodeIds = progCode
+      ? progCode.servCodes.filter((s) => !s.isServiceCall).map((s) => s.servCodeId)
+      : [];
+    return computeProgVars({
+      progCodeId,
+      alias: progCodeId,
+      includedServCodeIds,
+      size: sizeNum,
+      effectiveTaxRate,
+      prepayPercent: null,
+      progCodeMap,
+    });
+  });
+
+  const expandLoopUnit = (open: string, inner: string, close: string): string =>
+    allProgVars
+      .map((vars) => {
+        const resolvedInner = inner.replace(
+          /<span[^>]*data-type="mention"[^>]*data-id="p\.([^"]+)"[^>]*>[^<]*<\/span>/g,
+          (fullMatch, prop: string) => resolveProgLoopMention(fullMatch, prop, vars),
+        );
+        return `${open}${resolvedInner}${close}`;
+      })
+      .join("");
+
+  // Split the HTML into table and non-table segments so that <tr> expansion inside
+  // tables does not get re-processed by the <p> regex on the second pass.
+  const TABLE_SPLIT_RE = /(<table[\s\S]*?<\/table>)/g;
+  result = result
+    .split(TABLE_SPLIT_RE)
+    .map((segment) => {
+      if (segment.startsWith("<table")) {
+        // Inside a table: expand <tr> loop units only.
+        return segment.replace(TR_LOOP_RE, (_, open, inner, close) =>
+          expandLoopUnit(open, inner, close),
+        );
+      }
+      // Outside a table: expand <p> loop units only.
+      if (P_LOOP_MENTION_RE.test(segment)) {
+        return segment.replace(P_LOOP_RE, (_, open, inner, close) =>
+          expandLoopUnit(open, inner, close),
+        );
+      }
+      return segment;
+    })
+    .join("");
+
+  return result;
 }
 
 function resolveHtml(
@@ -442,12 +662,16 @@ const selectPreviewHtml = createSelector(
     selectProgramVariables,
     selectCustomerState,
     selectAuxValues,
+    selectProgChooser,
+    progServSelect.progCodeMap,
   ],
-  (html, name, size, effectiveTaxRate, season, programVars, customerState, auxValues): string => {
+  (html, name, size, effectiveTaxRate, season, programVars, customerState, auxValues, progChooser, progCodeMap): string => {
     if (!html) return "";
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
     const progVarMap = new Map(programVars.map((v) => [v.alias, v]));
-    return resolveHtml(html, name, size, taxRateStr, season != null ? String(season) : null, progVarMap, customerState.customer, auxValues);
+    const sizeNum = parseFloat(size);
+    const resolved = resolveHtml(html, name, size, taxRateStr, season != null ? String(season) : null, progVarMap, customerState.customer, auxValues);
+    return resolveProgChooserLoop(resolved, progChooser, progCodeMap, sizeNum, effectiveTaxRate);
   },
 );
 
@@ -465,6 +689,7 @@ const CONTROL_DEPS: { trigger: QSVariableKey | "program"; controls: TemplateCont
   { trigger: "size",           controls: ["customerLookup", "sizeOverride"] },
   { trigger: "taxRate",        controls: ["customerLookup", "taxRateOverride"] },
   { trigger: "sgBillpayInfo",  controls: ["customerLookup"] },
+  { trigger: "progChooser",    controls: ["customerLookup", "sizeOverride", "taxRateOverride", "progChooser"] },
   { trigger: "program",        controls: ["customerLookup", "sizeOverride", "taxRateOverride"] },
 ];
 
@@ -517,8 +742,8 @@ const selectActiveControlIds = createSelector(
  * Returns preview HTML for every section. Uses the global programConfigs.
  */
 const selectAllPreviewHtmls = createSelector(
-  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap, selectCustomerState, selectAuxValues],
-  (sections, name, size, effectiveTaxRate, season, programConfigs, progCodeMap, prepayDocMap, customerState, auxValues): { sectionId: string; previewHtml: string }[] => {
+  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap, selectCustomerState, selectAuxValues, selectProgChooser],
+  (sections, name, size, effectiveTaxRate, season, programConfigs, progCodeMap, prepayDocMap, customerState, auxValues, progChooser): { sectionId: string; previewHtml: string }[] => {
     const sizeNum = parseFloat(size);
     const hasSize = !isNaN(sizeNum) && sizeNum > 0;
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
@@ -580,12 +805,14 @@ const selectAllPreviewHtmls = createSelector(
       });
     }
 
-    return sections.map((section) => ({
-      sectionId: section.sectionId,
-      previewHtml: section.templateHtml
-        ? resolveHtml(section.templateHtml, name, size, taxRateStr, seasonStr, progVarMap, customerState.customer, auxValues)
-        : "",
-    }));
+    return sections.map((section) => {
+      if (!section.templateHtml) return { sectionId: section.sectionId, previewHtml: "" };
+      const resolved = resolveHtml(section.templateHtml, name, size, taxRateStr, seasonStr, progVarMap, customerState.customer, auxValues);
+      return {
+        sectionId: section.sectionId,
+        previewHtml: resolveProgChooserLoop(resolved, progChooser, progCodeMap, sizeNum, effectiveTaxRate),
+      };
+    });
   },
 );
 
@@ -604,6 +831,7 @@ export const quickSendSelect = {
   unfulfilledVars: selectUnfulfilledVars,
   programVariables: selectProgramVariables,
   auxValues: selectAuxValues,
+  progChooser: selectProgChooser,
   previewHtml: selectPreviewHtml,
   allPreviewHtmls: selectAllPreviewHtmls,
   taxRateZipOverride: selectTaxRateZipOverride,

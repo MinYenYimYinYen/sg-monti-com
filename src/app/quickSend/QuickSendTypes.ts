@@ -10,7 +10,7 @@ export type QSCustomerState = {
 };
 
 /** The set of flat @variable keys the editor can contain. */
-export type QSVariableKey = "name" | "size" | "taxRate" | "season" | "sgBillpayInfo";
+export type QSVariableKey = "name" | "size" | "taxRate" | "season" | "sgBillpayInfo" | "progChooser";
 
 /**
  * Per-program configuration stored in QuickSend state. Serializable — IDs only.
@@ -60,6 +60,7 @@ export type TemplateControlId =
   | "nameOverride"
   | "sizeOverride"
   | "taxRateOverride"
+  | "progChooser"
   | `programConfig:${string}`
   | `auxConfig:${string}`;
 
@@ -103,3 +104,24 @@ export type QSProgramVariables = {
  * this type so that renaming a key here causes a compile error there too.
  */
 export type QSProgLeafKey = Exclude<keyof QSProgramVariables, "alias" | "progCodeId" | "prepayPercent" | "servTable">;
+
+/**
+ * Runtime-only state for the progChooser feature. Not persisted in StoredTemplateDoc.
+ * All fields are initialized to empty defaults in Phase 1 so the full type is valid
+ * from the start; later phases activate the additional fields.
+ */
+export type ProgChooser = {
+  selectedProgCodeIds: string[];
+  servCodeOverrides: Record<string, string[]>;   // Phase 2: progCodeId → included servCodeIds
+  priceOverrides: Record<string, number>;         // Phase 3: progCodeId → override servPrice
+  servPriceOverrides: Record<string, Record<string, number>>; // Phase 4: progCodeId → servCodeId → price
+  prepayId: string | null;                        // Phase 5: global prepay code
+};
+
+export const INITIAL_PROG_CHOOSER: ProgChooser = {
+  selectedProgCodeIds: [],
+  servCodeOverrides: {},
+  priceOverrides: {},
+  servPriceOverrides: {},
+  prepayId: null,
+};

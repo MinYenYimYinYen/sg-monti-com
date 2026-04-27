@@ -10,6 +10,7 @@ import { SizeOverride } from "../controls/SizeOverride";
 import { TaxRateOverride } from "../controls/TaxRateOverride";
 import { ProgramConfig } from "../controls/ProgramConfig";
 import { AuxConfig } from "../controls/AuxConfig";
+import { ProgChooserControl } from "../controls/ProgChooserControl";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
@@ -50,6 +51,7 @@ export function QuickSend() {
       const auxId = id.slice("auxConfig:".length);
       return <AuxConfig key={id} auxId={auxId} />;
     }
+    if (id === "progChooser") return <ProgChooserControl key="progChooser" />;
     return null;
   };
 
