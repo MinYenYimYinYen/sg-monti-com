@@ -1,1 +1,0 @@
-3. OWP has no price chart.  So, we need a manual servPrice override.

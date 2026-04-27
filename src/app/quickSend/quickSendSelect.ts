@@ -257,6 +257,16 @@ const selectProgramVariables = createSelector(
 
 const UNFULFILLED_MARK = `<mark style="background-color: rgba(220,38,38,0.3); border-radius: 3px; padding: 0 2px;">`;
 
+/**
+ * Escapes `$` in a string so it is treated as a literal dollar sign when used
+ * as the replacement argument of `String.prototype.replace`. Without this,
+ * patterns like `$1` in a dollar amount (e.g. "$144.95") are interpreted as
+ * backreferences to capture groups, corrupting the output.
+ */
+function escapeReplacement(str: string): string {
+  return str.replace(/\$/g, "$$$$");
+}
+
 function resolveHtml(
   html: string,
   name: string,
@@ -270,9 +280,10 @@ function resolveHtml(
   let preview = html;
 
   if (name) {
+    const safeName = escapeReplacement(name);
     preview = preview.replace(
       /(<span[^>]*data-type="mention"[^>]*data-id="name"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
-      `$1data-label="${name}"$3${name}$4`,
+      `$1data-label="${safeName}"$3${safeName}$4`,
     );
   } else {
     preview = preview.replace(
@@ -282,9 +293,10 @@ function resolveHtml(
   }
 
   if (size) {
+    const safeSize = escapeReplacement(size);
     preview = preview.replace(
       /(<span[^>]*data-type="mention"[^>]*data-id="size"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
-      `$1data-label="${size}"$3${size}$4`,
+      `$1data-label="${safeSize}"$3${safeSize}$4`,
     );
   } else {
     preview = preview.replace(
@@ -294,9 +306,10 @@ function resolveHtml(
   }
 
   if (taxRate) {
+    const safeTaxRate = escapeReplacement(taxRate);
     preview = preview.replace(
       /(<span[^>]*data-type="mention"[^>]*data-id="taxRate"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
-      `$1data-label="${taxRate}"$3${taxRate}$4`,
+      `$1data-label="${safeTaxRate}"$3${safeTaxRate}$4`,
     );
   } else {
     preview = preview.replace(
@@ -306,9 +319,10 @@ function resolveHtml(
   }
 
   if (season) {
+    const safeSeason = escapeReplacement(season);
     preview = preview.replace(
       /(<span[^>]*data-type="mention"[^>]*data-id="season"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
-      `$1data-label="${season}"$3${season}$4`,
+      `$1data-label="${safeSeason}"$3${safeSeason}$4`,
     );
   } else {
     preview = preview.replace(
@@ -339,9 +353,10 @@ function resolveHtml(
     (fullMatch, auxId: string) => {
       const value = auxValues[auxId];
       if (!value) return `${UNFULFILLED_MARK}{{${auxId}}}</mark>`;
+      const safeValue = escapeReplacement(value);
       return fullMatch
-        .replace(/data-label="[^"]*"/, `data-label="${value}"`)
-        .replace(/>([^<]*)<\/span>$/, `>${value}</span>`);
+        .replace(/data-label="[^"]*"/, `data-label="${safeValue}"`)
+        .replace(/>([^<]*)<\/span>$/, `>${safeValue}</span>`);
     },
   );
 
@@ -365,9 +380,10 @@ function resolveHtml(
             return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
           }
           const displayValue = `${value}%`;
+          const safeDisplayValue = escapeReplacement(displayValue);
           return fullMatch
-            .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
-            .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
+            .replace(/data-label="[^"]*"/, `data-label="${safeDisplayValue}"`)
+            .replace(/>([^<]*)<\/span>$/, `>${safeDisplayValue}</span>`);
         }
 
         // "servTable" is a block mention — replaces the span with an HTML table
@@ -398,10 +414,11 @@ function resolveHtml(
             typedProp === "total") &&
           typeof value === "number";
         const displayValue = isDollarAmount ? `$${value.toFixed(2)}` : String(value);
+        const safeDisplayValue = escapeReplacement(displayValue);
 
         return fullMatch
-          .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
-          .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
+          .replace(/data-label="[^"]*"/, `data-label="${safeDisplayValue}"`)
+          .replace(/>([^<]*)<\/span>$/, `>${safeDisplayValue}</span>`);
       }
 
       return fullMatch;
