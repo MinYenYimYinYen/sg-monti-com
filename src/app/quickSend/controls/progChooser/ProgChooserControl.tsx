@@ -2,8 +2,8 @@
 
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { quickSendActions } from "../quickSendSlice";
-import { quickSendSelect } from "../quickSendSelect";
+import { quickSendActions } from "../../quickSendSlice";
+import { quickSendSelect } from "../../quickSendSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 
 export function ProgChooserControl() {
