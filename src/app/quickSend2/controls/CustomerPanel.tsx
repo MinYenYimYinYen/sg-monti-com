@@ -13,6 +13,7 @@ import { Label } from "@/style/components/label";
 import { Button } from "@/style/components/button";
 import { Number } from "@/components/Number";
 import { Search, X, ChevronDown, ChevronRight } from "lucide-react";
+import { PrepaySelector } from "./PrepaySelector";
 
 /**
  * Left-panel section for customer lookup and all customer-derived overrides:
@@ -28,6 +29,7 @@ export function CustomerPanel() {
   const customerState = useSelector(qs2Select.customerState);
   const loadedCustomer = useSelector(singleCustSelect.customer);
   const effectiveTaxRate = useSelector(qs2Select.effectiveTaxRate);
+  const effectiveGlobalPrepayId = useSelector(qs2Select.effectiveGlobalPrepayId);
   const auxIds = useSelector(qs2Select.activeAuxIds);
   const auxValues = useSelector(qs2Select.auxValues);
   const zipCodes = useSelector(zipCodeSelect.zipCodes);
@@ -73,7 +75,7 @@ export function CustomerPanel() {
     <div className="border-b border-border">
       {/* Header */}
       <button
-        className="flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-accent/5 transition-colors"
+        className="flex w-full items-center justify-between px-4 py-1.5 text-left bg-primary/30 hover:bg-primary/40 transition-colors"
         onClick={() => setIsOpen((v) => !v)}
       >
         <span className="text-xs font-semibold uppercase tracking-wide text-foreground">
@@ -89,7 +91,7 @@ export function CustomerPanel() {
       {isOpen && (
         <div className="flex flex-col gap-0">
           {/* Customer ID lookup */}
-          <div className="flex flex-col gap-1 px-4 py-2">
+          <div className="flex flex-col gap-0.5 px-4 py-1">
             <Label className="text-xs text-muted-foreground">Customer ID</Label>
             <div className="flex gap-1.5">
               <Input
@@ -135,10 +137,10 @@ export function CustomerPanel() {
           </div>
 
           {/* Name override */}
-          <div className="flex flex-col gap-1 px-4 py-2">
+          <div className="flex flex-col gap-0.5 px-4 py-1">
             <Label className="text-xs text-muted-foreground">Name</Label>
             <Input
-              className="h-8 text-sm"
+              className="h-7 text-sm"
               placeholder="Customer name…"
               value={customerState.nameOverride}
               onChange={(e) => dispatch(quickSend2Actions.setNameOverride(e.target.value))}
@@ -146,18 +148,27 @@ export function CustomerPanel() {
           </div>
 
           {/* Size override */}
-          <div className="flex flex-col gap-1 px-4 py-2">
+          <div className="flex flex-col gap-0.5 px-4 py-1">
             <Label className="text-xs text-muted-foreground">Size</Label>
             <Input
-              className="h-8 text-sm"
+              className="h-7 text-sm"
               placeholder="Lawn size…"
               value={customerState.sizeOverride}
               onChange={(e) => dispatch(quickSend2Actions.setSizeOverride(e.target.value))}
             />
           </div>
 
+          {/* Prepay */}
+          <div className="flex flex-col gap-0.5 px-4 py-1">
+            <PrepaySelector
+              value={effectiveGlobalPrepayId}
+              onChange={(prepayId) => dispatch(quickSend2Actions.setGlobalPrepayId(prepayId))}
+              label="Prepay"
+            />
+          </div>
+
           {/* Tax rate override */}
-          <div className="flex flex-col gap-1 px-4 py-2">
+          <div className="flex flex-col gap-0.5 px-4 py-1">
             <Label className="text-xs text-muted-foreground">Tax rate</Label>
             {customerTaxRate != null && (
               <p className="text-xs text-muted-foreground">
@@ -200,7 +211,7 @@ export function CustomerPanel() {
           {auxIds.map((auxId) => {
             const label = auxId === "aux" ? "Aux" : `Aux ${auxId.slice(4).replace("_", "")}`;
             return (
-              <div key={auxId} className="flex flex-col gap-1 px-4 py-2">
+              <div key={auxId} className="flex flex-col gap-0.5 px-4 py-1">
                 <Label className="text-xs text-muted-foreground">{label}</Label>
                 <Input
                   className="h-8 text-sm"

@@ -104,7 +104,7 @@ const selectProgCodes = createSelector(
       }
     }
 
-    return progCodes.filter((p) => !programCodesToFilterOut.has(p.progCodeId));
+    return progCodes.filter((p) => !programCodesToFilterOut.has(p.progCodeId)).filter((p) => p.servCodes.length > 0)
   },
 );
 

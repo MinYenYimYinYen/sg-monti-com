@@ -10,7 +10,7 @@ import type {
 } from "./QuickSendTypes";
 
 function makeSection(sectionId: string): Section {
-  return { sectionId, templateHtml: "" };
+  return { sectionId, name: "New Section", templateHtml: "" };
 }
 
 const INITIAL_SECTION_ID = "section-1";
@@ -70,6 +70,13 @@ const quickSendSlice = createSlice({
 
     setActiveSection(state, action: PayloadAction<string>) {
       state.activeSectionId = action.payload;
+    },
+
+    // --- Section name ---
+
+    setSectionName(state, action: PayloadAction<{ sectionId: string; name: string }>) {
+      const section = state.sections.find((s) => s.sectionId === action.payload.sectionId);
+      if (section) section.name = action.payload.name;
     },
 
     // --- Template HTML ---

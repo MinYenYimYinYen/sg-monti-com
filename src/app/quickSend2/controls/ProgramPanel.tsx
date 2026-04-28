@@ -6,7 +6,6 @@ import { qs2Select } from "../quickSendSelect";
 import { quickSend2Actions } from "../quickSendSlice";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { ProgramRow } from "./ProgramRow";
-import { PrepaySelector } from "./PrepaySelector";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -23,7 +22,6 @@ export function ProgramPanel() {
   const dispatch = useAppDispatch();
   const programConfigs = useSelector(qs2Select.programConfigs);
   const effectiveProgramConfigs = useSelector(qs2Select.effectiveProgramConfigs);
-  const effectiveGlobalPrepayId = useSelector(qs2Select.effectiveGlobalPrepayId);
   const pinnedProgCodeIds = useSelector(qs2Select.pinnedProgCodeIds);
   const progCodes = useSelector(progServSelect.progCodes);
   const progCodeMap = useSelector(progServSelect.progCodeMap);
@@ -33,10 +31,6 @@ export function ProgramPanel() {
 
   const configuredIds = new Set(programConfigs.map((c) => c.progCodeId));
   const availableToAdd = progCodes.filter((p) => !configuredIds.has(p.progCodeId));
-
-  const handleGlobalPrepayChange = (prepayId: string | null) => {
-    dispatch(quickSend2Actions.setGlobalPrepayId(prepayId));
-  };
 
   const handleAddProgram = (progCodeId: string) => {
     const progCode = progCodeMap.get(progCodeId);
@@ -50,7 +44,7 @@ export function ProgramPanel() {
     <div className="border-b border-border">
       {/* Header */}
       <button
-        className="flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-accent/5 transition-colors"
+        className="flex w-full items-center justify-between px-4 py-1.5 text-left bg-primary/30 hover:bg-primary/40 transition-colors"
         onClick={() => setIsOpen((v) => !v)}
       >
         <span className="text-xs font-semibold uppercase tracking-wide text-foreground">
@@ -65,15 +59,6 @@ export function ProgramPanel() {
 
       {isOpen && (
         <div className="flex flex-col gap-0">
-          {/* Global prepay */}
-          <div className="px-4 pb-2">
-            <PrepaySelector
-              value={effectiveGlobalPrepayId}
-              onChange={handleGlobalPrepayChange}
-              label="Global Prepay"
-            />
-          </div>
-
           {/* Program rows */}
           {effectiveProgramConfigs.map((config) => {
             const progCode = progCodeMap.get(config.progCodeId);
@@ -101,14 +86,13 @@ export function ProgramPanel() {
                   availableToAdd.map((p) => (
                     <button
                       key={p.progCodeId}
-                      className="flex flex-col items-start px-3 py-1.5 text-left hover:bg-accent/10 transition-colors"
+                      className="flex items-center px-3 py-2 text-left hover:bg-accent/10 transition-colors overflow-hidden"
                       onClick={() => handleAddProgram(p.progCodeId)}
                     >
-                      <span className="text-xs font-medium text-foreground">
-                        {p.progCodeId}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {p.description}
+                      <span className="truncate text-xs text-foreground min-w-0">
+                        <span className="font-bold">{p.progCodeId}</span>
+                        {" "}
+                        <span className="text-[10px] text-muted-foreground">{p.description}</span>
                       </span>
                     </button>
                   ))

@@ -10,7 +10,7 @@ export type CustomerState = {
 };
 
 /** The set of flat @variable keys the editor can contain. */
-export type VariableKey = "name" | "size" | "taxRate" | "season" | "sgBillpayInfo" | "aux";
+export type VariableKey = "name" | "size" | "taxRate" | "season" | "sgBillpayInfo" | "aux" | "prepayPercent";
 
 /**
  * Per-program configuration. Serializable — IDs only.
@@ -34,6 +34,7 @@ export type ProgramConfig = {
  */
 export type Section = {
   sectionId: string;
+  name: string;
   templateHtml: string;
 };
 
@@ -73,7 +74,9 @@ export type QuickSendState = {
  * that mention nodes display in the preview.
  *
  * `progCodeId` is metadata — not exposed as a mention leaf prop.
- * `prepayPercent` is exposed as `{progCodeId}.prepayPercent` (not nested).
+ * `prepayPercent` is internal to pricing computation only — it is NOT exposed
+ * as a per-program mention. The global prepay percentage is exposed as the
+ * flat `@prepayPercent` mention instead.
  */
 export type ProgramVariables = {
   progCodeId: string;
@@ -83,6 +86,7 @@ export type ProgramVariables = {
   econPrice: number | null;
   servPrice: number | null;
   subTotal: number | null;
+  /** Internal only — used for pricing computation. Not exposed as a mention leaf. */
   prepayPercent: number | null;
   prepayDiscAmt: number | null;
   taxAmt: number | null;
@@ -94,11 +98,10 @@ export type ProgramVariables = {
  * The subset of `ProgramVariables` keys that are exposed as direct mention
  * leaf props (i.e. `{progCodeId}.{key}` and `loop.{key}`).
  *
- * `progCodeId` (metadata) and `servTable` (only available on direct program
- * mentions, not on `@loop`) are excluded from the shared leaf key type.
- * `servTable` is added separately to the program-specific suggestion level.
+ * `progCodeId` (metadata), `servTable` (only on direct program mentions),
+ * and `prepayPercent` (exposed as flat `@prepayPercent` instead) are excluded.
  */
-export type ProgLeafKey = Exclude<keyof ProgramVariables, "progCodeId" | "servTable">;
+export type ProgLeafKey = Exclude<keyof ProgramVariables, "progCodeId" | "servTable" | "prepayPercent">;
 
 /** Aggregate totals across all selected programs. */
 export type ProgramAggregates = {

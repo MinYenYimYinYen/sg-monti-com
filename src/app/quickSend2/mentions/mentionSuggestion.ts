@@ -38,7 +38,6 @@ const PROG_LEAF_PROPS = exhaustiveProgLeafProps([
   "econPrice",
   "servPrice",
   "subTotal",
-  "prepayPercent",
   "prepayDiscAmt",
   "taxAmt",
   "total",
@@ -51,6 +50,7 @@ const FLAT_ITEMS: MentionItem[] = [
   { id: "taxRate", label: "taxRate" },
   { id: "season", label: "season" },
   { id: "sgBillpayInfo", label: "sgBillpayInfo" },
+  { id: "prepayPercent", label: "prepayPercent" },
 ];
 
 /** Reserved namespace names that cannot be used as progCode IDs. */

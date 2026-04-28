@@ -88,6 +88,15 @@ const selectEffectiveGlobalPrepayId = createSelector(
   },
 );
 
+/** The effective global prepay percentage (0–100), or null if no prepay is selected. */
+const selectEffectivePrepayPercent = createSelector(
+  [selectEffectiveGlobalPrepayId, prepaySelect.prepayDocMap],
+  (prepayId, prepayDocMap): number | null => {
+    if (prepayId == null) return null;
+    return prepayDocMap.get(prepayId)?.percent ?? null;
+  },
+);
+
 // ---------------------------------------------------------------------------
 // Phase 2 — pricing selectors
 // ---------------------------------------------------------------------------
@@ -240,15 +249,6 @@ function resolveProgMention(
 ): string {
   const mentionId = `${mentionPrefix}.${prop}`;
 
-  if (prop === "prepayPercent") {
-    const value = vars.prepayPercent;
-    if (value === null || value === undefined) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
-    const displayValue = escapeReplacement(`${value}%`);
-    return fullMatch
-      .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
-      .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
-  }
-
   if (prop === "servTable") {
     if (vars.servTable.length === 0) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
     const rows = vars.servTable
@@ -354,7 +354,7 @@ function resolveTotalsMentions(html: string, aggregates: ProgramAggregates): str
  * Full mention-to-value replacement pipeline for a single section's HTML.
  *
  * Resolution order:
- * 1. Flat vars (@name, @size, @taxRate, @season, @sgBillpayInfo, @aux.*)
+ * 1. Flat vars (@name, @size, @taxRate, @season, @sgBillpayInfo, @prepayPercent, @aux.*)
  * 2. Program-specific mentions (@{progCodeId}.{prop})
  * 3. Loop expansion (@loop.*)
  * 4. Aggregate mentions (@totals.{prop})
@@ -365,6 +365,7 @@ function resolveHtml(
   size: string,
   taxRate: string | null,
   season: string | null,
+  prepayPercent: number | null,
   progVarMap: Map<string, ProgramVariables>,
   customer: Customer | null,
   auxValues: Record<string, string>,
@@ -440,6 +441,19 @@ function resolveHtml(
     },
   );
 
+  if (prepayPercent !== null) {
+    const safePrepay = escapeReplacement(`${prepayPercent}%`);
+    preview = preview.replace(
+      /(<span[^>]*data-type="mention"[^>]*data-id="prepayPercent"[^>]*)(data-label="[^"]*")([^>]*>)[^<]*(<\/span>)/g,
+      `$1data-label="${safePrepay}"$3${safePrepay}$4`,
+    );
+  } else {
+    preview = preview.replace(
+      /<span[^>]*data-type="mention"[^>]*data-id="prepayPercent"[^>]*>[^<]*<\/span>/g,
+      `${UNFULFILLED_MARK}{{prepayPercent}}</mark>`,
+    );
+  }
+
   preview = preview.replace(
     /<span[^>]*data-type="mention"[^>]*data-id="(aux(?:_\d+)?)"[^>]*>[^<]*<\/span>/g,
     (fullMatch, auxId: string) => {
@@ -484,13 +498,14 @@ const selectPreviewHtml = createSelector(
     selectSizeOverride,
     selectEffectiveTaxRate,
     globalSettingsSelect.season,
+    selectEffectivePrepayPercent,
     selectProgramVariables,
     selectProgramVariableMap,
     selectCustomerState,
     selectAuxValues,
     selectAggregates,
   ],
-  (html, name, size, effectiveTaxRate, season, progVars, progVarMap, customerState, auxValues, aggregates): string => {
+  (html, name, size, effectiveTaxRate, season, prepayPercent, progVars, progVarMap, customerState, auxValues, aggregates): string => {
     if (!html) return "";
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
     const seasonStr = season != null ? String(season) : null;
@@ -500,6 +515,7 @@ const selectPreviewHtml = createSelector(
       size,
       taxRateStr,
       seasonStr,
+      prepayPercent,
       progVarMap,
       customerState.customer,
       auxValues,
@@ -516,13 +532,14 @@ const selectAllPreviewHtmls = createSelector(
     selectSizeOverride,
     selectEffectiveTaxRate,
     globalSettingsSelect.season,
+    selectEffectivePrepayPercent,
     selectProgramVariables,
     selectProgramVariableMap,
     selectCustomerState,
     selectAuxValues,
     selectAggregates,
   ],
-  (sections, name, size, effectiveTaxRate, season, progVars, progVarMap, customerState, auxValues, aggregates): { sectionId: string; previewHtml: string }[] => {
+  (sections, name, size, effectiveTaxRate, season, prepayPercent, progVars, progVarMap, customerState, auxValues, aggregates): { sectionId: string; previewHtml: string }[] => {
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
     const seasonStr = season != null ? String(season) : null;
     return sections.map((section) => {
@@ -535,6 +552,7 @@ const selectAllPreviewHtmls = createSelector(
           size,
           taxRateStr,
           seasonStr,
+          prepayPercent,
           progVarMap,
           customerState.customer,
           auxValues,
