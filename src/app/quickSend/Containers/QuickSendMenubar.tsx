@@ -16,9 +16,9 @@ import {
 } from "@/style/components/menubar";
 import { TooltipProvider } from "@/style/components/tooltip";
 import { authSelect } from "@/app/auth/authSlice";
-import { quickSend2Actions } from "../quickSendSlice";
-import { qs2Select } from "../quickSendSelect";
-import { storedTemplates2Select } from "../storedTemplates/storedTemplatesSelect";
+import { quickSendActions } from "../quickSendSlice";
+import { qsSelect } from "../quickSendSelect";
+import { storedTemplatesSelect } from "../storedTemplates/storedTemplatesSelect";
 import { useStoredTemplates } from "../storedTemplates/useStoredTemplates";
 import type { StoredTemplateDoc } from "../storedTemplates/StoredTemplateTypes";
 
@@ -211,16 +211,16 @@ export function QuickSendMenubar() {
 
   const currentUser = useSelector(authSelect.user);
   const role = useSelector(authSelect.role);
-  const sections = useSelector(qs2Select.sections);
-  const programConfigs = useSelector(qs2Select.programConfigs);
-  const globalPrepayId = useSelector(qs2Select.effectiveGlobalPrepayId);
-  const loadedTemplateId = useSelector(qs2Select.loadedTemplateId);
-  const loadedTemplateSaId = useSelector(qs2Select.loadedTemplateSaId);
-  const loadedTemplateName = useSelector(qs2Select.loadedTemplateName);
-  const loadedTemplateGroupId = useSelector(qs2Select.loadedTemplateGroupId);
-  const groups = useSelector(storedTemplates2Select.groups);
-  const templatesByGroup = useSelector(storedTemplates2Select.templatesByGroup);
-  const ungroupedTemplates = useSelector(storedTemplates2Select.templates).filter(
+  const sections = useSelector(qsSelect.sections);
+  const programConfigs = useSelector(qsSelect.programConfigs);
+  const globalPrepayId = useSelector(qsSelect.effectiveGlobalPrepayId);
+  const loadedTemplateId = useSelector(qsSelect.loadedTemplateId);
+  const loadedTemplateSaId = useSelector(qsSelect.loadedTemplateSaId);
+  const loadedTemplateName = useSelector(qsSelect.loadedTemplateName);
+  const loadedTemplateGroupId = useSelector(qsSelect.loadedTemplateGroupId);
+  const groups = useSelector(storedTemplatesSelect.groups);
+  const templatesByGroup = useSelector(storedTemplatesSelect.templatesByGroup);
+  const ungroupedTemplates = useSelector(storedTemplatesSelect.templates).filter(
     (t) => t.groupId === null,
   );
 
@@ -244,7 +244,7 @@ export function QuickSendMenubar() {
 
   // ── Handlers — Template ───────────────────────────────────────────────────
 
-  const handleNew = () => dispatch(quickSend2Actions.clearTemplate());
+  const handleNew = () => dispatch(quickSendActions.clearTemplate());
 
   const executeSave = () => {
     if (!loadedTemplateName || !currentUserSaId) return;
@@ -283,7 +283,7 @@ export function QuickSendMenubar() {
     }).then((result) => {
       if (result.meta.requestStatus === "fulfilled") {
         const saved = result.payload as StoredTemplateDoc;
-        dispatch(quickSend2Actions.loadTemplate(saved));
+        dispatch(quickSendActions.loadTemplate(saved));
       }
     });
   };
@@ -291,7 +291,7 @@ export function QuickSendMenubar() {
   const handleDelete = () => {
     if (!loadedTemplateId) return;
     storedTemplates.deleteTemplate(loadedTemplateId);
-    dispatch(quickSend2Actions.clearTemplate());
+    dispatch(quickSendActions.clearTemplate());
   };
 
   const handleMoveToGroup = (groupId: string | null) => {
@@ -300,7 +300,7 @@ export function QuickSendMenubar() {
   };
 
   const handleLoadTemplate = (template: StoredTemplateDoc) => {
-    dispatch(quickSend2Actions.loadTemplate(template));
+    dispatch(quickSendActions.loadTemplate(template));
   };
 
   // ── Handlers — Groups ─────────────────────────────────────────────────────

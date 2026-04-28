@@ -1,6 +1,6 @@
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { useEffect } from "react";
-import { storedTemplates2Actions } from "./storedTemplatesSlice";
+import { storedTemplatesActions } from "./storedTemplatesSlice";
 import type { StoredTemplateDoc } from "./StoredTemplateTypes";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
@@ -10,7 +10,7 @@ export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
   useEffect(() => {
     if (autoLoad) {
       dispatch(
-        storedTemplates2Actions.getTemplates({
+        storedTemplatesActions.getTemplates({
           params: {},
           config: {
             loadingMsg: "Loading templates...",
@@ -19,7 +19,7 @@ export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
         }),
       );
       dispatch(
-        storedTemplates2Actions.getGroups({
+        storedTemplatesActions.getGroups({
           params: {},
           config: {
             loadingMsg: "Loading groups...",
@@ -32,7 +32,7 @@ export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
 
   const saveTemplate = (template: StoredTemplateDoc) =>
     dispatch(
-      storedTemplates2Actions.saveTemplate({
+      storedTemplatesActions.saveTemplate({
         params: { template },
         config: { loadingMsg: "Saving template...", force: true },
       }),
@@ -40,7 +40,7 @@ export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
 
   const deleteTemplate = (templateId: string) =>
     dispatch(
-      storedTemplates2Actions.deleteTemplate({
+      storedTemplatesActions.deleteTemplate({
         params: { templateId },
         config: { loadingMsg: "Deleting template...", force: true },
       }),
@@ -48,7 +48,7 @@ export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
 
   const createGroup = (name: string) =>
     dispatch(
-      storedTemplates2Actions.createGroup({
+      storedTemplatesActions.createGroup({
         params: { name },
         config: { loadingMsg: "Creating group...", force: true },
       }),
@@ -56,7 +56,7 @@ export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
 
   const renameGroup = (groupId: string, newName: string) =>
     dispatch(
-      storedTemplates2Actions.renameGroup({
+      storedTemplatesActions.renameGroup({
         params: { groupId, newName },
         config: { loadingMsg: "Renaming group...", force: true },
       }),
@@ -64,7 +64,7 @@ export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
 
   const deleteGroup = (groupId: string) =>
     dispatch(
-      storedTemplates2Actions.deleteGroup({
+      storedTemplatesActions.deleteGroup({
         params: { groupId },
         config: { loadingMsg: "Deleting group...", force: true },
       }),
@@ -72,7 +72,7 @@ export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
 
   const moveTemplate = (templateId: string, groupId: string | null) =>
     dispatch(
-      storedTemplates2Actions.moveTemplate({
+      storedTemplatesActions.moveTemplate({
         params: { templateId, groupId },
         config: { loadingMsg: "Moving template...", force: true },
       }),

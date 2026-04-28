@@ -1,72 +1,72 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
-import type { StoredTemplates2Contract } from "./storedTemplatesContract";
+import type { StoredTemplatesContract } from "./storedTemplatesContract";
 import type { StoredTemplateDoc, TemplateGroupDoc } from "./StoredTemplateTypes";
 
-type StoredTemplates2State = {
+type StoredTemplatesState = {
   templates: StoredTemplateDoc[];
   groups: TemplateGroupDoc[];
 };
 
-const initialState: StoredTemplates2State = {
+const initialState: StoredTemplatesState = {
   templates: [],
   groups: [],
 };
 
 // ─── Thunks ──────────────────────────────────────────────────────────────────
 
-const getTemplates = createStandardThunk<StoredTemplates2Contract, "getTemplates">({
-  typePrefix: "storedTemplates2/getTemplates",
-  apiPath: "/quickSend2/storedTemplates/api",
+const getTemplates = createStandardThunk<StoredTemplatesContract, "getTemplates">({
+  typePrefix: "storedTemplates/getTemplates",
+  apiPath: "/quickSend/storedTemplates/api",
   opName: "getTemplates",
 });
 
-const getGroups = createStandardThunk<StoredTemplates2Contract, "getGroups">({
-  typePrefix: "storedTemplates2/getGroups",
-  apiPath: "/quickSend2/storedTemplates/api",
+const getGroups = createStandardThunk<StoredTemplatesContract, "getGroups">({
+  typePrefix: "storedTemplates/getGroups",
+  apiPath: "/quickSend/storedTemplates/api",
   opName: "getGroups",
 });
 
-const saveTemplate = createStandardThunk<StoredTemplates2Contract, "saveTemplate">({
-  typePrefix: "storedTemplates2/saveTemplate",
-  apiPath: "/quickSend2/storedTemplates/api",
+const saveTemplate = createStandardThunk<StoredTemplatesContract, "saveTemplate">({
+  typePrefix: "storedTemplates/saveTemplate",
+  apiPath: "/quickSend/storedTemplates/api",
   opName: "saveTemplate",
 });
 
-const deleteTemplate = createStandardThunk<StoredTemplates2Contract, "deleteTemplate">({
-  typePrefix: "storedTemplates2/deleteTemplate",
-  apiPath: "/quickSend2/storedTemplates/api",
+const deleteTemplate = createStandardThunk<StoredTemplatesContract, "deleteTemplate">({
+  typePrefix: "storedTemplates/deleteTemplate",
+  apiPath: "/quickSend/storedTemplates/api",
   opName: "deleteTemplate",
 });
 
-const createGroup = createStandardThunk<StoredTemplates2Contract, "createGroup">({
-  typePrefix: "storedTemplates2/createGroup",
-  apiPath: "/quickSend2/storedTemplates/api",
+const createGroup = createStandardThunk<StoredTemplatesContract, "createGroup">({
+  typePrefix: "storedTemplates/createGroup",
+  apiPath: "/quickSend/storedTemplates/api",
   opName: "createGroup",
 });
 
-const renameGroup = createStandardThunk<StoredTemplates2Contract, "renameGroup">({
-  typePrefix: "storedTemplates2/renameGroup",
-  apiPath: "/quickSend2/storedTemplates/api",
+const renameGroup = createStandardThunk<StoredTemplatesContract, "renameGroup">({
+  typePrefix: "storedTemplates/renameGroup",
+  apiPath: "/quickSend/storedTemplates/api",
   opName: "renameGroup",
 });
 
-const deleteGroup = createStandardThunk<StoredTemplates2Contract, "deleteGroup">({
-  typePrefix: "storedTemplates2/deleteGroup",
-  apiPath: "/quickSend2/storedTemplates/api",
+const deleteGroup = createStandardThunk<StoredTemplatesContract, "deleteGroup">({
+  typePrefix: "storedTemplates/deleteGroup",
+  apiPath: "/quickSend/storedTemplates/api",
   opName: "deleteGroup",
 });
 
-const moveTemplate = createStandardThunk<StoredTemplates2Contract, "moveTemplate">({
-  typePrefix: "storedTemplates2/moveTemplate",
-  apiPath: "/quickSend2/storedTemplates/api",
+const moveTemplate = createStandardThunk<StoredTemplatesContract, "moveTemplate">({
+  typePrefix: "storedTemplates/moveTemplate",
+  apiPath: "/quickSend/storedTemplates/api",
   opName: "moveTemplate",
 });
 
 // ─── Slice ────────────────────────────────────────────────────────────────────
 
-const storedTemplates2Slice = createSlice({
-  name: "storedTemplates2",
+const storedTemplatesSlice = createSlice({
+  name: "storedTemplates",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
@@ -120,9 +120,9 @@ const storedTemplates2Slice = createSlice({
   },
 });
 
-export const storedTemplates2Reducer = storedTemplates2Slice.reducer;
-export const storedTemplates2Actions = {
-  ...storedTemplates2Slice.actions,
+export const storedTemplatesReducer = storedTemplatesSlice.reducer;
+export const storedTemplatesActions = {
+  ...storedTemplatesSlice.actions,
   getTemplates,
   getGroups,
   saveTemplate,

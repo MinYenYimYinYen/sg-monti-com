@@ -21,7 +21,7 @@ const ProgramConfigSchema = new mongoose.Schema(
   { _id: false },
 );
 
-const StoredTemplate2Schema = new mongoose.Schema<StoredTemplateDoc>(
+const StoredTemplateSchema = new mongoose.Schema<StoredTemplateDoc>(
   {
     templateId: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
@@ -35,6 +35,6 @@ const StoredTemplate2Schema = new mongoose.Schema<StoredTemplateDoc>(
 );
 
 // Enforce uniqueness of name per user
-StoredTemplate2Schema.index({ name: 1, saId: 1 }, { unique: true });
+StoredTemplateSchema.index({ name: 1, saId: 1 }, { unique: true });
 
-export const StoredTemplate2Model = createModel("StoredTemplate2", StoredTemplate2Schema);
+export const StoredTemplateModel = createModel("StoredTemplate", StoredTemplateSchema);

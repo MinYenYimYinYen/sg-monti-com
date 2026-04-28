@@ -41,7 +41,7 @@ const initialState: QuickSendState = {
 };
 
 const quickSendSlice = createSlice({
-  name: "quickSend2",
+  name: "quickSend",
   initialState,
   reducers: {
     // --- Section management ---
@@ -250,5 +250,5 @@ const quickSendSlice = createSlice({
   },
 });
 
-export const quickSend2Actions = quickSendSlice.actions;
+export const quickSendActions = quickSendSlice.actions;
 export default quickSendSlice.reducer;

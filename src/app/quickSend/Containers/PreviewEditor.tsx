@@ -14,14 +14,14 @@ import Mention from "@tiptap/extension-mention";
 import { LineHeight } from "./lineHeightExtension";
 import { ParagraphSpacing } from "./paragraphSpacingExtension";
 import { useSelector } from "react-redux";
-import { qs2Select } from "../quickSendSelect";
+import { qsSelect } from "../quickSendSelect";
 
 type Props = {
   previewHtml: string;
 };
 
 export function PreviewEditor({ previewHtml }: Props) {
-  const resolvedVariables = useSelector(qs2Select.resolvedVariables);
+  const resolvedVariables = useSelector(qsSelect.resolvedVariables);
 
   const lastPreviewRef = useRef<string>("");
 

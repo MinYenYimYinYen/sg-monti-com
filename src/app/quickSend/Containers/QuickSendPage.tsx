@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
 import type { DragEvent } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { qs2Select } from "../quickSendSelect";
-import { quickSend2Actions } from "../quickSendSlice";
+import { qsSelect } from "../quickSendSelect";
+import { quickSendActions } from "../quickSendSlice";
 import { CustomerPanel } from "../controls/CustomerPanel";
 import { ProgramPanel } from "../controls/ProgramPanel";
 import { TemplateEditor } from "./TemplateEditor";
@@ -63,7 +63,7 @@ function htmlToPlainText(html: string): string {
  * Section tabs sit above the editor column.
  * The editor column can be collapsed to a narrow strip (auto-collapses on template load).
  */
-export function QuickSendPage() {
+export function QuickSend() {
   const dispatch = useAppDispatch();
   useStoredTemplates({ autoLoad: true });
   useCustomerContext({ contexts: ["single"] });
@@ -73,10 +73,10 @@ export function QuickSendPage() {
   useZipCode({ autoLoad: true });
   useGlobalSettings({ autoLoad: true });
 
-  const sections = useSelector(qs2Select.sections);
-  const activeSectionId = useSelector(qs2Select.activeSectionId);
-  const allPreviewHtmls = useSelector(qs2Select.allPreviewHtmls);
-  const loadedTemplateId = useSelector(qs2Select.loadedTemplateId);
+  const sections = useSelector(qsSelect.sections);
+  const activeSectionId = useSelector(qsSelect.activeSectionId);
+  const allPreviewHtmls = useSelector(qsSelect.allPreviewHtmls);
+  const loadedTemplateId = useSelector(qsSelect.loadedTemplateId);
 
   const activePreviewHtml =
     allPreviewHtmls.find((p) => p.sectionId === activeSectionId)?.previewHtml ?? "";
@@ -117,7 +117,7 @@ export function QuickSendPage() {
   const editInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddSection = () => {
-    dispatch(quickSend2Actions.addSection());
+    dispatch(quickSendActions.addSection());
     const newId = `section-${Date.now()}`;
     setTimeout(() => {
       setEditingName("New Section");
@@ -126,10 +126,10 @@ export function QuickSendPage() {
   };
 
   const handleRemoveSection = (sectionId: string) =>
-    dispatch(quickSend2Actions.removeSection(sectionId));
+    dispatch(quickSendActions.removeSection(sectionId));
 
   const handleSelectSection = (sectionId: string) =>
-    dispatch(quickSend2Actions.setActiveSection(sectionId));
+    dispatch(quickSendActions.setActiveSection(sectionId));
 
   const handleStartEditing = (sectionId: string, currentName: string) => {
     setEditingName(currentName);
@@ -139,7 +139,7 @@ export function QuickSendPage() {
 
   const handleCommitName = (sectionId: string) => {
     const trimmed = editingName.trim();
-    dispatch(quickSend2Actions.setSectionName({
+    dispatch(quickSendActions.setSectionName({
       sectionId,
       name: trimmed || "New Section",
     }));
@@ -249,7 +249,7 @@ export function QuickSendPage() {
                         onDrop={() => {
                           const from = draggingIdxRef.current;
                           if (from !== null && from !== idx) {
-                            dispatch(quickSend2Actions.reorderSections({ fromIndex: from, toIndex: idx }));
+                            dispatch(quickSendActions.reorderSections({ fromIndex: from, toIndex: idx }));
                           }
                           draggingIdxRef.current = null;
                           setDraggingIdx(null);

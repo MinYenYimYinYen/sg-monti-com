@@ -1,10 +1,16 @@
 import type { HandlerMap } from "@/lib/api/types/rpcUtils";
-import type { StoredTemplates2Contract } from "../storedTemplatesContract";
-import { StoredTemplate2Model } from "../StoredTemplateModel";
+import type { StoredTemplatesContract } from "../storedTemplatesContract";
+import { StoredTemplateModel } from "../StoredTemplateModel";
 import { TemplateGroupModel } from "../TemplateGroupModel";
-import type { StoredTemplateDoc, TemplateGroupDoc } from "../StoredTemplateTypes";
+import type {
+  StoredTemplateDoc,
+  TemplateGroupDoc,
+} from "../StoredTemplateTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
+import {
+  cleanMongoArray,
+  cleanMongoObject,
+} from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { AppError } from "@/lib/errors/AppError";
@@ -52,15 +58,13 @@ async function isCurrentUserAdmin(): Promise<boolean> {
   }
 }
 
-const handlers: HandlerMap<StoredTemplates2Contract> = {
+const handlers: HandlerMap<StoredTemplatesContract> = {
   getTemplates: {
     roles: ["admin", "office", "tech"],
     handler: async () => {
       await connectToMongoDB();
 
-      // await migrateV1Templates();
-
-      const docs = await StoredTemplate2Model.find().lean();
+      const docs = await StoredTemplateModel.find().lean();
       const templates = cleanMongoArray(docs) as StoredTemplateDoc[];
       return { success: true, payload: templates };
     },
@@ -89,13 +93,16 @@ const handlers: HandlerMap<StoredTemplates2Contract> = {
         saId,
       };
 
-      const result = await StoredTemplate2Model.findOneAndUpdate(
+      const result = await StoredTemplateModel.findOneAndUpdate(
         { templateId },
         docToSave,
         { upsert: true, new: true },
       ).lean();
 
-      return { success: true, payload: cleanMongoObject(result!) as StoredTemplateDoc };
+      return {
+        success: true,
+        payload: cleanMongoObject(result!) as StoredTemplateDoc,
+      };
     },
   },
 
@@ -105,7 +112,7 @@ const handlers: HandlerMap<StoredTemplates2Contract> = {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
 
-      const existing = await StoredTemplate2Model.findOne({ templateId }).lean();
+      const existing = await StoredTemplateModel.findOne({ templateId }).lean();
       if (!existing) {
         throw new AppError({
           message: "Template not found",
@@ -123,7 +130,7 @@ const handlers: HandlerMap<StoredTemplates2Contract> = {
         });
       }
 
-      await StoredTemplate2Model.deleteOne({ templateId });
+      await StoredTemplateModel.deleteOne({ templateId });
       return { success: true, payload: null };
     },
   },
@@ -169,7 +176,10 @@ const handlers: HandlerMap<StoredTemplates2Contract> = {
         { new: true },
       ).lean();
 
-      return { success: true, payload: cleanMongoObject(result!) as TemplateGroupDoc };
+      return {
+        success: true,
+        payload: cleanMongoObject(result!) as TemplateGroupDoc,
+      };
     },
   },
 
@@ -188,7 +198,9 @@ const handlers: HandlerMap<StoredTemplates2Contract> = {
       }
 
       // Refuse if any templates still belong to this group
-      const templateCount = await StoredTemplate2Model.countDocuments({ groupId });
+      const templateCount = await StoredTemplateModel.countDocuments({
+        groupId,
+      });
       if (templateCount > 0) {
         throw new AppError({
           message: `Cannot delete group: ${templateCount} template(s) still belong to it. Move or delete them first.`,
@@ -208,7 +220,7 @@ const handlers: HandlerMap<StoredTemplates2Contract> = {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
 
-      const existing = await StoredTemplate2Model.findOne({ templateId }).lean();
+      const existing = await StoredTemplateModel.findOne({ templateId }).lean();
       if (!existing) {
         throw new AppError({
           message: "Template not found",
@@ -237,15 +249,18 @@ const handlers: HandlerMap<StoredTemplates2Contract> = {
         }
       }
 
-      const result = await StoredTemplate2Model.findOneAndUpdate(
+      const result = await StoredTemplateModel.findOneAndUpdate(
         { templateId },
         { groupId },
         { new: true },
       ).lean();
 
-      return { success: true, payload: cleanMongoObject(result!) as StoredTemplateDoc };
+      return {
+        success: true,
+        payload: cleanMongoObject(result!) as StoredTemplateDoc,
+      };
     },
   },
 };
 
-export const POST = createRpcHandler<StoredTemplates2Contract>(handlers);
+export const POST = createRpcHandler<StoredTemplatesContract>(handlers);

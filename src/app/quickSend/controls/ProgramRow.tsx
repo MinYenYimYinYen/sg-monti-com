@@ -2,8 +2,8 @@
 
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { qs2Select } from "../quickSendSelect";
-import { quickSend2Actions } from "../quickSendSlice";
+import { qsSelect } from "../quickSendSelect";
+import { quickSendActions } from "../quickSendSlice";
 import { ServCodeCheckboxList } from "./ServCodeCheckboxList";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -28,18 +28,18 @@ type Props = {
  */
 export function ProgramRow({ config, progCode, isPinned }: Props) {
   const dispatch = useAppDispatch();
-  const programVariableMap = useSelector(qs2Select.programVariableMap);
+  const programVariableMap = useSelector(qsSelect.programVariableMap);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const vars = programVariableMap.get(config.progCodeId);
   const nonServiceCallCodes = progCode.servCodes.filter((s) => !s.isServiceCall);
 
   const handleServCodesChange = (servCodeIds: string[]) => {
-    dispatch(quickSend2Actions.setIncludedServCodeIds({ progCodeId: config.progCodeId, servCodeIds }));
+    dispatch(quickSendActions.setIncludedServCodeIds({ progCodeId: config.progCodeId, servCodeIds }));
   };
 
   const handleRemove = () => {
-    dispatch(quickSend2Actions.removeProgramConfig(config.progCodeId));
+    dispatch(quickSendActions.removeProgramConfig(config.progCodeId));
   };
 
   return (
@@ -105,11 +105,11 @@ export function ProgramRow({ config, progCode, isPinned }: Props) {
               onChange={(e) => {
                 const raw = e.target.value;
                 if (raw === "") {
-                  dispatch(quickSend2Actions.clearPriceOverride(config.progCodeId));
+                  dispatch(quickSendActions.clearPriceOverride(config.progCodeId));
                 } else {
                   const parsed = parseFloat(raw);
                   if (!isNaN(parsed) && parsed >= 0) {
-                    dispatch(quickSend2Actions.setPriceOverride({ progCodeId: config.progCodeId, price: parsed }));
+                    dispatch(quickSendActions.setPriceOverride({ progCodeId: config.progCodeId, price: parsed }));
                   }
                 }
               }}

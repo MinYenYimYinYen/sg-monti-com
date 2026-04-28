@@ -13,10 +13,10 @@ import { Highlight } from "@tiptap/extension-highlight";
 import Mention from "@tiptap/extension-mention";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { quickSend2Actions } from "../quickSendSlice";
+import { quickSendActions } from "../quickSendSlice";
 import { buildMentionSuggestion } from "../mentions/mentionSuggestion";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
-import { qs2Select } from "../quickSendSelect";
+import { qsSelect } from "../quickSendSelect";
 import { EditorToolbar } from "./EditorToolbar";
 import { LineHeight } from "./lineHeightExtension";
 import { ParagraphSpacing } from "./paragraphSpacingExtension";
@@ -28,9 +28,9 @@ type Props = {
 export function TemplateEditor({ sectionId }: Props) {
   const dispatch = useAppDispatch();
   const progCodes = useSelector(progServSelect.progCodes);
-  const effectiveProgramConfigs = useSelector(qs2Select.effectiveProgramConfigs);
-  const sections = useSelector(qs2Select.sections);
-  const activeAuxIds = useSelector(qs2Select.activeAuxIds);
+  const effectiveProgramConfigs = useSelector(qsSelect.effectiveProgramConfigs);
+  const sections = useSelector(qsSelect.sections);
+  const activeAuxIds = useSelector(qsSelect.activeAuxIds);
   const templateHtml = sections.find((s) => s.sectionId === sectionId)?.templateHtml ?? "";
 
   // Refs so suggestion callbacks always read the latest values even though
@@ -94,10 +94,10 @@ export function TemplateEditor({ sectionId }: Props) {
       },
     },
     onUpdate({ editor: ed }) {
-      dispatch(quickSend2Actions.setTemplateHtml({ sectionId, html: ed.getHTML() }));
+      dispatch(quickSendActions.setTemplateHtml({ sectionId, html: ed.getHTML() }));
     },
     onFocus() {
-      dispatch(quickSend2Actions.setActiveSection(sectionId));
+      dispatch(quickSendActions.setActiveSection(sectionId));
     },
   });
 

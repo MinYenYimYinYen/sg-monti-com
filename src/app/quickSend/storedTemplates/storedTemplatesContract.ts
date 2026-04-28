@@ -2,7 +2,7 @@ import type { ApiContract } from "@/lib/api/types/ApiContract";
 import type { DataResponse } from "@/lib/api/types/responses";
 import type { StoredTemplateDoc, TemplateGroupDoc } from "./StoredTemplateTypes";
 
-export interface StoredTemplates2Contract extends ApiContract {
+export interface StoredTemplatesContract extends ApiContract {
   /** Fetch all templates visible to the current user. */
   getTemplates: {
     params: Record<string, never>;

@@ -2,8 +2,8 @@
 
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { qs2Select } from "../quickSendSelect";
-import { quickSend2Actions } from "../quickSendSlice";
+import { qsSelect } from "../quickSendSelect";
+import { quickSendActions } from "../quickSendSlice";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
 import { ProgramRow } from "./ProgramRow";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
@@ -20,9 +20,9 @@ import { useState } from "react";
  */
 export function ProgramPanel() {
   const dispatch = useAppDispatch();
-  const programConfigs = useSelector(qs2Select.programConfigs);
-  const effectiveProgramConfigs = useSelector(qs2Select.effectiveProgramConfigs);
-  const pinnedProgCodeIds = useSelector(qs2Select.pinnedProgCodeIds);
+  const programConfigs = useSelector(qsSelect.programConfigs);
+  const effectiveProgramConfigs = useSelector(qsSelect.effectiveProgramConfigs);
+  const pinnedProgCodeIds = useSelector(qsSelect.pinnedProgCodeIds);
   const progCodes = useSelector(progServSelect.progCodes);
   const progCodeMap = useSelector(progServSelect.progCodeMap);
 
@@ -35,7 +35,7 @@ export function ProgramPanel() {
   const handleAddProgram = (progCodeId: string) => {
     const progCode = progCodeMap.get(progCodeId);
     if (progCode) {
-      dispatch(quickSend2Actions.addProgramConfig(progCode));
+      dispatch(quickSendActions.addProgramConfig(progCode));
     }
     setIsAdding(false);
   };

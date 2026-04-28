@@ -6,8 +6,8 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { useSingleCustomer } from "@/app/realGreen/customer/hooks/useSingleCustomer";
 import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
 import { zipCodeSelect } from "@/app/realGreen/zipCode/zipCodeSelectors";
-import { qs2Select } from "../quickSendSelect";
-import { quickSend2Actions } from "../quickSendSlice";
+import { qsSelect } from "../quickSendSelect";
+import { quickSendActions } from "../quickSendSlice";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 import { Button } from "@/style/components/button";
@@ -26,12 +26,12 @@ export function CustomerPanel() {
   const dispatch = useAppDispatch();
   const { lookup, clearCustomer } = useSingleCustomer();
 
-  const customerState = useSelector(qs2Select.customerState);
+  const customerState = useSelector(qsSelect.customerState);
   const loadedCustomer = useSelector(singleCustSelect.customer);
-  const effectiveTaxRate = useSelector(qs2Select.effectiveTaxRate);
-  const effectiveGlobalPrepayId = useSelector(qs2Select.effectiveGlobalPrepayId);
-  const auxIds = useSelector(qs2Select.activeAuxIds);
-  const auxValues = useSelector(qs2Select.auxValues);
+  const effectiveTaxRate = useSelector(qsSelect.effectiveTaxRate);
+  const effectiveGlobalPrepayId = useSelector(qsSelect.effectiveGlobalPrepayId);
+  const auxIds = useSelector(qsSelect.activeAuxIds);
+  const auxValues = useSelector(qsSelect.auxValues);
   const zipCodes = useSelector(zipCodeSelect.zipCodes);
 
   const [inputValue, setInputValue] = useState<string>(
@@ -43,7 +43,7 @@ export function CustomerPanel() {
   // When Redux delivers the customer from the single-customer slice, push it into quickSend2 state.
   useEffect(() => {
     if (loadedCustomer && loadedCustomer !== customerState.customer) {
-      dispatch(quickSend2Actions.setCustomer(loadedCustomer));
+      dispatch(quickSendActions.setCustomer(loadedCustomer));
     }
   }, [dispatch, loadedCustomer, customerState.customer]);
 
@@ -54,7 +54,7 @@ export function CustomerPanel() {
       return;
     }
     setError(null);
-    dispatch(quickSend2Actions.setCustId(parsed));
+    dispatch(quickSendActions.setCustId(parsed));
     lookup(parsed);
   };
 
@@ -64,7 +64,7 @@ export function CustomerPanel() {
     }
     setInputValue("");
     setError(null);
-    dispatch(quickSend2Actions.clearCustomer());
+    dispatch(quickSendActions.clearCustomer());
   };
 
   const sortedZipCodes = [...zipCodes].sort((a, b) => a.zip.localeCompare(b.zip));
@@ -143,7 +143,7 @@ export function CustomerPanel() {
               className="h-7 text-sm"
               placeholder="Customer name…"
               value={customerState.nameOverride}
-              onChange={(e) => dispatch(quickSend2Actions.setNameOverride(e.target.value))}
+              onChange={(e) => dispatch(quickSendActions.setNameOverride(e.target.value))}
             />
           </div>
 
@@ -154,7 +154,7 @@ export function CustomerPanel() {
               className="h-7 text-sm"
               placeholder="Lawn size…"
               value={customerState.sizeOverride}
-              onChange={(e) => dispatch(quickSend2Actions.setSizeOverride(e.target.value))}
+              onChange={(e) => dispatch(quickSendActions.setSizeOverride(e.target.value))}
             />
           </div>
 
@@ -162,7 +162,7 @@ export function CustomerPanel() {
           <div className="flex flex-col gap-0.5 px-4 py-1">
             <PrepaySelector
               value={effectiveGlobalPrepayId}
-              onChange={(prepayId) => dispatch(quickSend2Actions.setGlobalPrepayId(prepayId))}
+              onChange={(prepayId) => dispatch(quickSendActions.setGlobalPrepayId(prepayId))}
               label="Prepay"
             />
           </div>
@@ -182,7 +182,7 @@ export function CustomerPanel() {
               value={zipOverride ?? ""}
               onChange={(e) => {
                 const value = e.target.value;
-                dispatch(quickSend2Actions.setTaxRateZipOverride(value === "" ? null : value));
+                dispatch(quickSendActions.setTaxRateZipOverride(value === "" ? null : value));
               }}
               className="text-xs rounded border border-border bg-card text-foreground px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
             >
@@ -218,7 +218,7 @@ export function CustomerPanel() {
                   placeholder="Value…"
                   value={auxValues[auxId] ?? ""}
                   onChange={(e) =>
-                    dispatch(quickSend2Actions.setAuxValue({ id: auxId, value: e.target.value }))
+                    dispatch(quickSendActions.setAuxValue({ id: auxId, value: e.target.value }))
                   }
                 />
               </div>

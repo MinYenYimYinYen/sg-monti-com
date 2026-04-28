@@ -19,7 +19,7 @@ import { computeProgramPricing } from "./lib/programPricing";
 // Slice root
 // ---------------------------------------------------------------------------
 
-const selectSlice = (state: AppState) => state.quickSend2;
+const selectSlice = (state: AppState) => state.quickSend;
 
 // ---------------------------------------------------------------------------
 // Phase 1 — basic slice selectors
@@ -148,8 +148,6 @@ const selectProgramVariables = createSelector(
         priceOverride: config.priceOverride,
         isInstallment: progCode.isInstallment,
       });
-      // TODO: remove after confirming isInstallment values
-      console.log(`[QS2] ${result.progCodeId}:`, { isInstallment: result.isInstallment, description: result.description });
       return result;
     });
   },
@@ -577,8 +575,9 @@ function resolveHtml(
     },
   );
 
-  // --- Loop expansion (@loop.*) ---
-  preview = resolveLoopMentions(preview, progVars);
+  // --- Loop expansion (@loop.*) — non-installment programs only ---
+  const nonInstallmentVars = progVars.filter((v) => !v.isInstallment);
+  preview = resolveLoopMentions(preview, nonInstallmentVars);
 
   // --- Installment loop expansion (@installment.*) ---
   preview = resolveInstallmentMentions(preview, installmentVars);
@@ -644,7 +643,7 @@ const selectAllPreviewHtmls = createSelector(
   (sections, name, size, effectiveTaxRate, season, prepayPercent, progVars, progVarMap, customerState, auxValues, aggregates): { sectionId: string; previewHtml: string }[] => {
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
     const seasonStr = season != null ? String(season) : null;
-    return sections.map((section) => {
+    return sections.map((section: Section) => {
       if (!section.templateHtml) return { sectionId: section.sectionId, previewHtml: "" };
       return {
         sectionId: section.sectionId,
@@ -687,7 +686,7 @@ const selectResolvedVariables = createSelector(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Selector<T> = (state: any) => T;
 
-export const qs2Select: {
+export const qsSelect: {
   sections: Selector<ReturnType<typeof selectSections>>;
   activeSectionId: Selector<string>;
   activeSection: Selector<Section>;
