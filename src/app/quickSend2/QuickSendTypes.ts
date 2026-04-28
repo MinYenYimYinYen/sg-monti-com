@@ -19,13 +19,11 @@ export type VariableKey = "name" | "size" | "taxRate" | "season" | "sgBillpayInf
  * each progCode can appear at most once in the program list.
  *
  * `priceOverride` — call-time per-visit price override. `null` = use chart price.
- * `prepayId` — per-program prepay code. `null` = fall back to global prepay.
  */
 export type ProgramConfig = {
   progCodeId: string;
   includedServCodeIds: string[];
   priceOverride: number | null;
-  prepayId: string | null;
 };
 
 /**

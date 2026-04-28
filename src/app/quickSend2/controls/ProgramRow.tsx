@@ -5,7 +5,6 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { qs2Select } from "../quickSendSelect";
 import { quickSend2Actions } from "../quickSendSlice";
 import { ServCodeCheckboxList } from "./ServCodeCheckboxList";
-import { PrepaySelector } from "./PrepaySelector";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { ProgramConfig } from "../QuickSendTypes";
@@ -22,7 +21,7 @@ type Props = {
  * A single row in the ProgramPanel for one configured program.
  *
  * Collapsed: shows progCodeId + description + remove button (disabled if pinned).
- * Expanded: shows servCode checkboxes + per-program prepay override.
+ * Expanded: shows servCode checkboxes + price override.
  *
  * All mutations go through runtime overrides so they don't dirty the persisted
  * template until the user explicitly saves.
@@ -37,10 +36,6 @@ export function ProgramRow({ config, progCode, isPinned }: Props) {
 
   const handleServCodesChange = (servCodeIds: string[]) => {
     dispatch(quickSend2Actions.setIncludedServCodeIds({ progCodeId: config.progCodeId, servCodeIds }));
-  };
-
-  const handlePrepayChange = (prepayId: string | null) => {
-    dispatch(quickSend2Actions.setProgramPrepayId({ progCodeId: config.progCodeId, prepayId }));
   };
 
   const handleRemove = () => {
@@ -121,11 +116,6 @@ export function ProgramRow({ config, progCode, isPinned }: Props) {
               className="w-24 rounded border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          <PrepaySelector
-            value={config.prepayId}
-            onChange={handlePrepayChange}
-            label="Per-Program Prepay"
-          />
         </div>
       )}
     </div>

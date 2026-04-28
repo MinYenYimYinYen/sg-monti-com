@@ -9,7 +9,6 @@ import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { assertRole } from "@/app/auth/_lib/assertRole";
 import { AppError } from "@/lib/errors/AppError";
 import { headers } from "next/headers";
-import { migrateV1Templates } from "@/app/quickSend2/storedTemplates/migrateV1Templates";
 
 /** Reads the current user's saId from the proxy-injected header. */
 async function getCurrentUserSaId(): Promise<string> {

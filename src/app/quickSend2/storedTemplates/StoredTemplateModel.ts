@@ -5,6 +5,7 @@ import type { StoredTemplateDoc } from "./StoredTemplateTypes";
 const SectionSchema = new mongoose.Schema(
   {
     sectionId: { type: String, required: true },
+    name: { type: String, required: true, default: "New Section" },
     templateHtml: { type: String, required: true, default: "" },
   },
   { _id: false },

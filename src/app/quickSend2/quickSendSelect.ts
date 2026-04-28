@@ -75,7 +75,6 @@ const selectEffectiveProgramConfigs = createSelector(
         progCodeId: config.progCodeId,
         includedServCodeIds: override.includedServCodeIds ?? config.includedServCodeIds,
         priceOverride: "priceOverride" in override ? (override.priceOverride ?? null) : config.priceOverride,
-        prepayId: "prepayId" in override ? (override.prepayId ?? null) : config.prepayId,
       };
     }),
 );
@@ -116,9 +115,8 @@ const selectProgramVariables = createSelector(
     return configs.map((config) => {
       const progCode = progCodeMap.get(config.progCodeId);
 
-      // Resolve prepay: per-program prepayId takes priority over global.
-      const effectivePrepayId = config.prepayId ?? globalPrepayId;
-      const prepayDoc = effectivePrepayId != null ? prepayDocMap.get(effectivePrepayId) : undefined;
+      // Resolve prepay from global prepay only.
+      const prepayDoc = globalPrepayId != null ? prepayDocMap.get(globalPrepayId) : undefined;
       const prepayPercent = prepayDoc?.percent ?? null;
 
       if (!progCode) {
@@ -156,22 +154,28 @@ const selectProgramVariableMap = createSelector(
 );
 
 const selectAggregates = createSelector(
-  [selectProgramVariables],
-  (vars): ProgramAggregates => {
+  [selectProgramVariables, selectEffectivePrepayPercent],
+  (vars, effectivePrepayPercent): ProgramAggregates => {
     if (vars.length === 0) {
       return { subTotal: null, prepayDiscAmt: null, taxAmt: null, total: null };
     }
 
     let subTotal: number | null = null;
-    let prepayDiscAmt: number | null = null;
     let taxAmt: number | null = null;
     let total: number | null = null;
 
     for (const v of vars) {
       if (v.subTotal !== null) subTotal = (subTotal ?? 0) + v.subTotal;
-      if (v.prepayDiscAmt !== null) prepayDiscAmt = (prepayDiscAmt ?? 0) + v.prepayDiscAmt;
       if (v.taxAmt !== null) taxAmt = (taxAmt ?? 0) + v.taxAmt;
       if (v.total !== null) total = (total ?? 0) + v.total;
+    }
+
+    // prepayDiscAmt is null when no prepay is selected — renders as unfulfilled in preview.
+    let prepayDiscAmt: number | null = null;
+    if (effectivePrepayPercent !== null) {
+      for (const v of vars) {
+        if (v.prepayDiscAmt !== null) prepayDiscAmt = (prepayDiscAmt ?? 0) + v.prepayDiscAmt;
+      }
     }
 
     return { subTotal, prepayDiscAmt, taxAmt, total };
@@ -302,16 +306,20 @@ function resolveLoopMentions(html: string, allProgVars: ProgramVariables[]): str
     return result;
   }
 
-  const expandLoopUnit = (open: string, inner: string, close: string): string =>
-    allProgVars
-      .map((vars) => {
-        const resolvedInner = inner.replace(
-          /<span[^>]*data-type="mention"[^>]*data-id="loop\.([^"]+)"[^>]*>[^<]*<\/span>/g,
-          (fullMatch, prop: string) => resolveProgMention(fullMatch, prop, vars, "loop"),
-        );
-        return `${open}${resolvedInner}${close}`;
-      })
-      .join("");
+  const expandLoopUnit = (open: string, inner: string, close: string, isTableRow: boolean): string => {
+    const resolvedInners = allProgVars.map((vars) =>
+      inner.replace(
+        /<span[^>]*data-type="mention"[^>]*data-id="loop\.([^"]+)"[^>]*>[^<]*<\/span>/g,
+        (fullMatch, prop: string) => resolveProgMention(fullMatch, prop, vars, "loop"),
+      ),
+    );
+    if (isTableRow) {
+      // Table rows must remain separate <tr> elements.
+      return resolvedInners.map((resolvedInner) => `${open}${resolvedInner}${close}`).join("");
+    }
+    // Paragraph loop: collapse all iterations into a single <p> joined by <br>.
+    return `${open}${resolvedInners.join("<br>")}${close}`;
+  };
 
   const TABLE_SPLIT_RE = /(<table[\s\S]*?<\/table>)/g;
   return html
@@ -319,12 +327,12 @@ function resolveLoopMentions(html: string, allProgVars: ProgramVariables[]): str
     .map((segment) => {
       if (segment.startsWith("<table")) {
         return segment.replace(TR_LOOP_RE, (_, open, inner, close) =>
-          expandLoopUnit(open, inner, close),
+          expandLoopUnit(open, inner, close, true),
         );
       }
       if (LOOP_MENTION_RE.test(segment)) {
         return segment.replace(P_LOOP_RE, (_, open, inner, close) =>
-          expandLoopUnit(open, inner, close),
+          expandLoopUnit(open, inner, close, false),
         );
       }
       return segment;

@@ -262,6 +262,7 @@ const extractProgCodeDocProps = (doc: ProgCodeDoc): ProgCodeDocProps => ({
   prefPriceTableId: doc.prefPriceTableId,
   econPriceTableId: doc.econPriceTableId,
   minForPreferred: doc.minForPreferred,
+  isInstallment: doc.isInstallment,
 });
 
 const handleUpdateProgCode = (

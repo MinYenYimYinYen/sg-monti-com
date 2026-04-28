@@ -8,7 +8,6 @@ export type ProgCodeRaw = {
   // autoRenew: boolean;
   available: boolean;
   // availableCompanies: number[] | null;
-  // billingType: string | null;
   // branchIDs: number[] | null;
   // budgetId: number | null;
   // canBeServiceCall: boolean;
@@ -80,8 +79,9 @@ export type ProgCodeDocProps = CreatedUpdated & {
   progCodeId: string;
   precludedIds: string[];
   prefPriceTableId: number | null;
-  econPriceTableId: number | null
+  econPriceTableId: number | null;
   minForPreferred: number | null;
+  isInstallment: boolean;
 };
 
 export type ProgCodeDoc = ProgCodeRemapped & ProgCodeDocProps;

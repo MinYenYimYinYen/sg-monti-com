@@ -147,7 +147,6 @@ const quickSendSlice = createSlice({
         progCodeId: progCode.progCodeId,
         includedServCodeIds,
         priceOverride: null,
-        prepayId: null,
       } satisfies ProgramConfig);
     },
 
@@ -193,15 +192,6 @@ const quickSendSlice = createSlice({
       if (override) {
         delete override.priceOverride;
       }
-    },
-
-    /** Sets (or clears) the per-program prepay override at call time. */
-    setProgramPrepayId(state, action: PayloadAction<{ progCodeId: string; prepayId: string | null }>) {
-      const { progCodeId, prepayId } = action.payload;
-      if (!state.runtimeOverrides.programConfigs[progCodeId]) {
-        state.runtimeOverrides.programConfigs[progCodeId] = {};
-      }
-      state.runtimeOverrides.programConfigs[progCodeId]!.prepayId = prepayId;
     },
 
     /** Sets (or clears) the global prepay override at call time. */

@@ -65,8 +65,14 @@ export function computeProgramPricing({
   let total: number | null = null;
 
   if (hasSize && effectiveServPrice !== null) {
-    const discPerServ = calculatePrepayDiscAmt({ servPrice: effectiveServPrice, prepayPercent: pp });
-    prepayDiscAmt = discPerServ * includedServCodes.length;
+    // Only compute prepay amounts when a prepay rate is actually selected.
+    // null prepayPercent means "no prepay chosen" — render as unfulfilled in preview.
+    const discPerServ = prepayPercent !== null
+      ? calculatePrepayDiscAmt({ servPrice: effectiveServPrice, prepayPercent: pp })
+      : 0;
+    prepayDiscAmt = prepayPercent !== null
+      ? discPerServ * includedServCodes.length
+      : null;
 
     if (effectiveTaxRate !== null) {
       const taxPerServ = calculateTaxAmt({ servPrice: effectiveServPrice, prepayDiscAmt: discPerServ, taxRate: tr });

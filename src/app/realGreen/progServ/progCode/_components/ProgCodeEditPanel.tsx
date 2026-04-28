@@ -22,6 +22,7 @@ import {
 } from "@/style/components/select";
 import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
+import { Switch } from "@/style/components/switch";
 import { PriceTable } from "@/app/realGreen/priceTable/_types/PriceTableTypes";
 import { AppState } from "@/store";
 
@@ -145,7 +146,9 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
           <div className="space-y-1.5">
             <Label
               className={
-                econEnabled ? "text-sm font-medium" : "text-sm font-medium text-muted-foreground"
+                econEnabled
+                  ? "text-sm font-medium"
+                  : "text-sm font-medium text-muted-foreground"
               }
             >
               Economy Price Table
@@ -201,6 +204,23 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
               disabled={!minForPrefEnabled}
               placeholder="None"
               className="w-full"
+            />
+          </div>
+          {/* Monthly Installment Billing */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <Label className="text-sm font-medium">
+                Monthly Installment Billing
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                This program is billed by monthly installment in the CRM.
+              </p>
+            </div>
+            <Switch
+              checked={progCode.isInstallment}
+              onCheckedChange={(checked: boolean) =>
+                updateProgCode({ progCodeId, isInstallment: checked })
+              }
             />
           </div>
         </div>

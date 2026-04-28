@@ -14,6 +14,7 @@ export const baseProgCodeDocProps: ProgCodeDocProps = {
   prefPriceTableId: null,
   econPriceTableId: null,
   minForPreferred: null,
+  isInstallment: false,
 };
 
 const baseProgCodeNoX: Omit<ProgCode, "x"> = {
