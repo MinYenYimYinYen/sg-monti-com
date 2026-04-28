@@ -63,7 +63,7 @@ configures them (servCodes, price overrides, prepay). Those selections are persi
 the template's default. At call time, the user can override selections, servCodes, and
 prices. The template is always "ready to use" out of the box.
 
-The ProgChooser UI is always present — it is not gated behind a mention. The left panel
+The program panel is always present — it is not gated behind a mention. The left panel
 always shows: customer lookup, size, tax rate, global prepay, and the program list.
 
 ### Mention System
@@ -91,22 +91,29 @@ looped-row is not a useful layout.
 
 `StoredTemplateDoc` stores the full program configuration:
 ```ts
-type QS2ProgramConfig = {
+type ProgramConfig = {
   progCodeId: string;
   includedServCodeIds: string[];
   priceOverride: number | null;
   prepayId: string | null;
 };
 
-type QS2StoredTemplate = {
+type StoredTemplateDoc = {
   // ... sections, name, groupId, etc.
-  programConfigs: QS2ProgramConfig[];  // persisted default selections
-  globalPrepayId: string | null;       // persisted global prepay default
+  programConfigs: ProgramConfig[];  // persisted default selections
+  globalPrepayId: string | null;    // persisted global prepay default
 };
 ```
 
 At call time, the user can modify any of these — those modifications are runtime-only
 and are not saved back unless the user explicitly saves.
+
+### Type Naming
+
+Types in `quickSend2/` use the same names as their v1 counterparts (e.g. `ProgramConfig`,
+`StoredTemplateDoc`, `Section`). The import path (`@/app/quickSend2/...`) is the
+distinguishing factor. No `QS2` prefix is used — v1 will be deleted once the new
+implementation is working.
 
 ---
 
@@ -118,21 +125,21 @@ and are not saved back unless the user explicitly saves.
 
 **Goal:** Define the complete type system and Redux slice for QuickSend2. No UI yet.
 
-#### Types (`QS2Types.ts`)
+#### Types (`QuickSendTypes.ts`)
 ```ts
-type QS2ProgramConfig = {
+type ProgramConfig = {
   progCodeId: string;
   includedServCodeIds: string[];
   priceOverride: number | null;
   prepayId: string | null;
 };
 
-type QS2Section = {
+type Section = {
   sectionId: string;
   templateHtml: string;
 };
 
-type QS2CustomerState = {
+type CustomerState = {
   custId: number | null;
   customer: Customer | null;
   nameOverride: string;
@@ -140,17 +147,21 @@ type QS2CustomerState = {
   taxRateZipOverride: string | null;
 };
 
-type QS2State = {
-  sections: QS2Section[];
+type RuntimeOverrides = {
+  /** Per-program call-time overrides. Key is progCodeId. */
+  programConfigs: Partial<Record<string, Partial<ProgramConfig>>>;
+  /** undefined = use persisted default; null = explicitly cleared */
+  globalPrepayId: string | null | undefined;
+};
+
+type QuickSendState = {
+  sections: Section[];
   activeSectionId: string;
-  programConfigs: QS2ProgramConfig[];   // persisted defaults (loaded from template)
-  runtimeOverrides: {                   // call-time modifications (not persisted)
-    programConfigs: Partial<Record<string, Partial<QS2ProgramConfig>>>;
-    globalPrepayId: string | null | undefined; // undefined = use persisted default
-  };
-  globalPrepayId: string | null;        // persisted default
+  programConfigs: ProgramConfig[];   // persisted defaults (loaded from template)
+  runtimeOverrides: RuntimeOverrides;
+  globalPrepayId: string | null;     // persisted default
   auxValues: Record<string, string>;
-  customer: QS2CustomerState;
+  customer: CustomerState;
   loadedTemplateId: string | null;
   loadedTemplateName: string | null;
   loadedTemplateGroupId: string | null;
@@ -166,16 +177,17 @@ type QS2State = {
 - `setActiveSection(sectionId)`
 - `setCustId(custId)` / `setCustomer(customer)` / `setNameOverride` / `setSizeOverride` / `setTaxRateZipOverride` / `clearCustomer`
 - `setAuxValue({ id, value })`
-- `addProgramConfig(progCodeId)` — adds with all non-service-call servCodes included
-- `removeProgramConfig(progCodeId)`
+- `addProgramConfig(progCodeId)` — adds with all non-service-call servCodes included; no-op if already present
+- `removeProgramConfig(progCodeId)` — only callable when progCode is not pinned by a direct mention
 - `setIncludedServCodeIds({ progCodeId, servCodeIds })` — writes to runtime override
 - `setPriceOverride({ progCodeId, price })` / `clearPriceOverride(progCodeId)` — runtime override
 - `setProgramPrepayId({ progCodeId, prepayId })` — runtime override
 - `setGlobalPrepayId(prepayId)` — runtime override
 - `reorderProgramConfigs({ fromIndex, toIndex })`
 
-#### Selectors (`qs2Select.ts`)
-- `selectEffectiveProgramConfigs` — merges persisted `programConfigs` with `runtimeOverrides.programConfigs` to produce the effective config for each program
+#### Selectors (`quickSendSelect.ts`)
+- `selectEffectiveProgramConfigs` — merges persisted `programConfigs` with
+  `runtimeOverrides.programConfigs` to produce the effective config for each program
 - `selectEffectiveGlobalPrepayId` — `runtimeOverrides.globalPrepayId ?? state.globalPrepayId`
 - `selectEffectiveTaxRate` — same logic as v1
 - `selectSizeNum` — `parseFloat(sizeOverride)`, returns `null` if invalid
@@ -184,18 +196,18 @@ type QS2State = {
 
 ### Phase 2 — Pricing Selectors
 
-**Goal:** Compute resolved `QS2ProgramVariables` for all selected programs. This is the
+**Goal:** Compute resolved `ProgramVariables` for all selected programs. This is the
 authoritative pricing layer — all preview resolution and UI display consume from here.
 
-#### Selectors (`qs2Select.ts`, continued)
+#### Selectors (`quickSendSelect.ts`, continued)
 - `selectProgramVariables` — for each effective program config, computes:
   - `progCodeId`, `description`, `servCount`
   - `prefPrice`, `econPrice`, `servPrice` (effective: override ?? chart)
   - `subTotal`, `prepayDiscAmt`, `taxAmt`, `total`
   - `prepayPercent` (from per-program prepayId, falling back to global prepayId)
   - `servTable: { description, price }[]`
-  - Uses `computeProgChooserPricing` from v1 (or a copy of it in `qs2/lib/`)
-- `selectProgramVariableMap` — `Map<progCodeId, QS2ProgramVariables>` for O(1) lookup
+  - Uses `computeProgramPricing` (copied from v1's `computeProgChooserPricing`)
+- `selectProgramVariableMap` — `Map<progCodeId, ProgramVariables>` for O(1) lookup
 - `selectAggregates` — sums `subTotal`, `prepayDiscAmt`, `taxAmt`, `total` across all programs
 
 ---
@@ -220,16 +232,18 @@ authoritative pricing layer — all preview resolution and UI display consume fr
 - **Level 1 off `totals`:** aggregate props
 - **Level 1 off `{progCodeId}`:** program-specific props (including `servTable`)
 
-#### Key difference from v1
-No `@program` namespace. No alias system. ProgCode IDs are used directly as namespace
-prefixes. The suggestion list for program namespaces is filtered to currently-selected
-programs only.
+#### Key differences from v1
+- No `@program` namespace. No alias system.
+- ProgCode IDs are used directly as namespace prefixes.
+- The suggestion list for program namespaces is filtered to currently-selected programs only.
+- `loop` and `totals` are reserved namespace names and cannot be used as progCode IDs
+  (enforce at the suggestion layer; document as a constraint).
 
 ---
 
 ### Phase 4 — Preview Resolver
 
-**Goal:** Implement `resolveHtml2` — the full mention-to-value replacement pipeline.
+**Goal:** Implement `resolveHtml` — the full mention-to-value replacement pipeline.
 
 #### Resolution order
 1. Flat vars (`@name`, `@size`, `@taxRate`, `@season`, `@sgBillpayInfo`, `@aux.*`)
@@ -237,7 +251,7 @@ programs only.
 3. Loop expansion (`@loop.*`) — same paragraph/row cloning logic as v1
 4. Aggregate mentions (`@totals.{prop}`) — resolved from `selectAggregates`
 
-#### Selectors (`qs2Select.ts`, continued)
+#### Selectors (`quickSendSelect.ts`, continued)
 - `selectPreviewHtml` — active section preview
 - `selectAllPreviewHtmls` — all sections preview (for stacked preview pane)
 
@@ -250,26 +264,26 @@ as inputs.
 
 **Goal:** Persist and load QuickSend2 templates. New Mongoose model and API route.
 
-#### `QS2StoredTemplateDoc`
+#### `StoredTemplateDoc`
 ```ts
-type QS2StoredTemplateDoc = {
+type StoredTemplateDoc = {
   templateId: string;
   saId: string;
   name: string;
   groupId: string | null;
-  sections: QS2Section[];
-  programConfigs: QS2ProgramConfig[];
+  sections: Section[];
+  programConfigs: ProgramConfig[];
   globalPrepayId: string | null;
 };
 ```
 
 #### Files
-- `QS2StoredTemplateTypes.ts`
-- `QS2StoredTemplateModel.ts`
-- `qs2StoredTemplateSlice.ts`
-- `qs2StoredTemplateSelect.ts`
-- `useQS2StoredTemplates.ts`
-- `api/route.ts` — `getQS2Templates`, `saveQS2Template`, `deleteQS2Template`
+- `StoredTemplateTypes.ts`
+- `StoredTemplateModel.ts`
+- `storedTemplateSlice.ts`
+- `storedTemplateSelect.ts`
+- `useStoredTemplates.ts`
+- `api/route.ts` — `getTemplates`, `saveTemplate`, `deleteTemplate`
 
 ---
 
@@ -277,15 +291,31 @@ type QS2StoredTemplateDoc = {
 
 **Goal:** Build the left-panel program management UI. This is the core UX of QuickSend2.
 
+#### Pinned Programs (Option A — prevent invalid state)
+
+A selector `selectPinnedProgCodeIds` scans `selectAllSectionsHtml` for
+`data-id="{progCodeId}.*"` mention patterns and returns the set of progCodeIds that are
+directly referenced by name in the template. The program panel uses this set to:
+- Disable the remove button on pinned program rows
+- Show a lock indicator so the author understands why removal is blocked
+
+Programs only referenced via `@loop.*` are freely removable — removing them simply
+renders fewer loop rows.
+
 #### Components
 - `ProgramPanel` — top-level left panel. Always visible. Contains:
   - `GlobalPrepaySelector` — sets `globalPrepayId`
   - `ProgramList` — list of selected programs with add/remove/reorder
-  - `ProgramRow` — one row per selected program, expandable accordion
+  - `ProgramRow` — one row per selected program, expandable accordion; remove button
+    disabled when program is pinned
   - `ProgramRowConfig` — expanded view: servCode checkboxes, price override input,
     per-program prepay override
-- `ServCodeCheckboxList` — reused from v1 (or copied)
-- `PrepaySelector` — reused from v1 (or copied)
+- `ServCodeCheckboxList` — copied from v1
+- `PrepaySelector` — copied from v1
+
+#### Selectors (`quickSendSelect.ts`, continued)
+- `selectPinnedProgCodeIds` — set of progCodeIds referenced by direct `@{progCodeId}.*`
+  mentions anywhere in the template HTML
 
 ---
 
@@ -294,10 +324,10 @@ type QS2StoredTemplateDoc = {
 **Goal:** Wire up the Tiptap editor, preview pane, and top-level page.
 
 #### Components
-- `QS2Editor` — Tiptap editor with the new mention suggestion config
-- `QS2Preview` — renders `selectPreviewHtml` as sanitized HTML
-- `QS2Page` — top-level layout: left panel (customer + program panel) + editor + preview
-- `QS2CustomerPanel` — customer lookup, name/size/taxRate overrides (same as v1)
+- `QuickSendEditor` — Tiptap editor with the new mention suggestion config
+- `QuickSendPreview` — renders `selectPreviewHtml` as sanitized HTML
+- `QuickSendPage` — top-level layout: left panel (customer + program panel) + editor + preview
+- `CustomerPanel` — customer lookup, name/size/taxRate overrides (same as v1)
 
 ---
 
@@ -306,10 +336,121 @@ type QS2StoredTemplateDoc = {
 **Goal:** Template save/load/delete UI. Mirrors v1's stored template UI.
 
 #### Components
-- `QS2TemplateManager` — list of saved templates, load/delete actions
-- `QS2SaveDialog` — name + group input, save button
+- `TemplateManager` — list of saved templates, load/delete actions
+- `SaveDialog` — name + group input, save button
 
 ---
+
+### Testing
+
+#### Template Authoring
+
+- [ ] **Flat mentions** — type `@` and verify the suggestion list shows `name`, `size`,
+  `taxRate`, `season`, `sgBillpayInfo`, `aux`. Insert each and confirm the chip renders.
+- [ ] **Aux slots** — insert `@aux`. Type `@` again and confirm `aux_2` now appears (the
+  next available slot). Insert `@aux_2`. Confirm both chips are present.
+- [ ] **Loop namespace drill-down** — type `@loop.` and confirm the suggestion list shows
+  all loop props (`description`, `servCount`, `servPrice`, `subTotal`, `prepayDiscAmt`,
+  `taxAmt`, `total`, `prefPrice`, `econPrice`, `prepayPercent`). Insert `@loop.description`
+  and `@loop.servPrice` on the same paragraph.
+- [ ] **Loop in a table row** — insert a table, place `@loop.description` and
+  `@loop.total` in the same `<tr>`. Confirm the preview clones the row once per selected
+  program.
+- [ ] **`servTable` only on direct program mention** — type `@{progCodeId}.` and confirm
+  `servTable` appears in the suggestion list. Type `@loop.` and confirm `servTable` does
+  NOT appear.
+- [ ] **Program-specific namespace** — add a program in the left panel, then type
+  `@{progCodeId}.` and confirm the suggestion list appears. Remove the program and confirm
+  the namespace no longer appears in suggestions.
+- [ ] **Totals namespace** — type `@totals.` and confirm `subTotal`, `prepayDiscAmt`,
+  `taxAmt`, `total` appear. Insert `@totals.total` outside the loop paragraph and confirm
+  it resolves to the sum across all selected programs.
+- [ ] **Pinned program** — insert `@{progCodeId}.servPrice` for a specific program.
+  Confirm the remove button on that program row is disabled. Delete the mention from the
+  template and confirm the remove button re-enables.
+- [ ] **Multiple sections** — add a second section tab. Confirm each section has its own
+  independent editor. Confirm the preview shows the active section's resolved HTML.
+- [ ] **Toolbar formatting** — apply bold, italic, heading, bullet list, ordered list,
+  blockquote. Confirm they render in both editor and preview.
+- [ ] **Table toolbar** — insert a table, add/remove rows and columns, delete the table.
+  Confirm all toolbar buttons work.
+- [ ] **Line height and paragraph spacing** — change line height and paragraph spacing
+  dropdowns. Confirm the editor content reflects the change.
+
+#### Pricing and Preview
+
+- [ ] **No programs selected** — with no programs in the panel, confirm `@loop.*`
+  paragraphs render as `{{no programs selected}}` (red highlight) in the preview.
+- [ ] **Single program, no overrides** — add one program, select all servCodes. Confirm
+  `@loop.servPrice` resolves to the chart price and `@totals.total` matches.
+- [ ] **ServCode deselection** — uncheck one or more servCodes in the expanded program
+  row. Confirm `@loop.servPrice` and `@loop.subTotal` update in the preview.
+- [ ] **Price override** — enter a price override for a program. Confirm `@loop.servPrice`
+  reflects the override and `@loop.subTotal` / `@loop.total` recompute accordingly.
+- [ ] **Per-program prepay** — set a per-program prepay on one program. Confirm
+  `@loop.prepayDiscAmt` and `@loop.total` update for that program only.
+- [ ] **Global prepay** — set a global prepay. Confirm all programs without a per-program
+  override pick up the global rate.
+- [ ] **Per-program prepay overrides global** — set both a global prepay and a different
+  per-program prepay on one program. Confirm the per-program rate wins for that program.
+- [ ] **Tax rate from customer** — look up a customer. Confirm `@taxRate` resolves to the
+  customer's tax rate and `@loop.taxAmt` / `@loop.total` reflect it.
+- [ ] **Tax rate zip override** — select a different zip code in the tax rate dropdown.
+  Confirm `@taxRate` and all tax-dependent fields update.
+- [ ] **`@totals.*` aggregates** — select 3 programs. Confirm `@totals.total` equals the
+  sum of the three `@loop.total` values.
+- [ ] **Unfulfilled mentions** — leave `@name` empty. Confirm it renders as
+  `{{name}}` with a red highlight in the preview.
+- [ ] **`@sgBillpayInfo`** — look up a customer. Confirm `@sgBillpayInfo` renders as an
+  HTML table with account number, last name, and zip code.
+- [ ] **`@{progCodeId}.servTable`** — insert a `servTable` mention for a specific program.
+  Confirm it renders as an HTML table of servCodes and prices.
+
+#### Template CRUD
+
+- [ ] **Save As (new template)** — author a template, click Template → Save As…, enter a
+  name, click Save. Confirm the template appears in the Open menu.
+- [ ] **Save (overwrite)** — modify the loaded template, click Template → Save. Confirm
+  the changes persist after reloading the page.
+- [ ] **Save — other user's template warning** — open a coworker's template, click Save.
+  Confirm the confirmation dialog appears explaining the save will create your own copy.
+  Confirm clicking Save creates the template under your saId.
+- [ ] **Open** — open the Open menu and confirm templates are listed flat (ungrouped) and
+  under their groups. Click a template and confirm it loads into the editor.
+- [ ] **Delete template** — load a template you own, click Template → Delete…, confirm.
+  Confirm the template no longer appears in the Open menu and the editor resets to blank.
+- [ ] **Delete disabled for non-owner** — open another user's template. Confirm the
+  Delete… menu item is disabled (unless you are admin).
+- [ ] **New** — click Template → New. Confirm the editor resets to blank and the loaded
+  template indicator clears.
+- [ ] **Move to Group** — load a template you own, click Template → Move to Group →
+  select a group. Confirm the template now appears under that group in the Open menu.
+- [ ] **Move to No Group** — move a grouped template to "No group". Confirm it appears
+  ungrouped in the Open menu.
+
+#### Group CRUD
+
+- [ ] **Create group** — click Groups → Create New Group…, enter a name. Confirm the
+  group appears in the Open menu and in the Move to Group submenu.
+- [ ] **Rename group** (admin) — click Groups → Rename Group → select a group, enter a
+  new name. Confirm the group name updates everywhere.
+- [ ] **Delete group — empty** (admin) — create a group with no templates, delete it.
+  Confirm it disappears from all menus.
+- [ ] **Delete group — non-empty** (admin) — attempt to delete a group that contains
+  templates. Confirm the API returns an error and the group is not deleted.
+
+#### Edge Cases
+
+- [ ] **Reload page** — confirm templates auto-load on page mount and the Open menu is
+  populated without a manual action.
+- [ ] **Runtime overrides not persisted** — make servCode and price overrides at call
+  time, then reload the page. Confirm the overrides are gone and the template defaults
+  are restored.
+- [ ] **Section removal** — add two sections, remove one. Confirm the remaining section
+  is still active and its content is intact.
+- [ ] **Reorder programs** — (if drag-to-reorder is implemented) reorder programs in the
+  panel. Confirm the loop expansion order in the preview matches the panel order.
+
 
 ### Phase 9 — Cutover
 
