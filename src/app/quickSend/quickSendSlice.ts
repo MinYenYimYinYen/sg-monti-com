@@ -138,15 +138,42 @@ const quickSendSlice = createSlice({
 
     // --- ProgChooser (runtime only — not persisted) ---
 
-    /** Adds or removes a progCodeId from the selected list. */
-    toggleProgChooserProgCode(state, action: PayloadAction<string>) {
+    /**
+     * Adds or removes a progCodeId from the selected list.
+     * On add: eagerly writes all non-service-call servCodeIds to servCodeOverrides.
+     * On remove: cleans up the servCodeOverrides entry for that program.
+     */
+    toggleProgChooserProgCode(state, action: PayloadAction<{ progCodeId: string; defaultServCodeIds: string[] }>) {
+      const { progCodeId, defaultServCodeIds } = action.payload;
       const ids = state.progChooser.selectedProgCodeIds;
-      const idx = ids.indexOf(action.payload);
+      const idx = ids.indexOf(progCodeId);
       if (idx === -1) {
-        ids.push(action.payload);
+        ids.push(progCodeId);
+        state.progChooser.servCodeOverrides[progCodeId] = defaultServCodeIds;
       } else {
         ids.splice(idx, 1);
+        delete state.progChooser.servCodeOverrides[progCodeId];
       }
+    },
+
+    /** Writes the included servCodeIds for a selected program. */
+    setProgChooserServCodeOverride(state, action: PayloadAction<{ progCodeId: string; servCodeIds: string[] }>) {
+      state.progChooser.servCodeOverrides[action.payload.progCodeId] = action.payload.servCodeIds;
+    },
+
+    /** Sets a program-level price override for a selected program. */
+    setProgChooserPriceOverride(state, action: PayloadAction<{ progCodeId: string; price: number }>) {
+      state.progChooser.priceOverrides[action.payload.progCodeId] = action.payload.price;
+    },
+
+    /** Removes the program-level price override, reverting to the price-chart price. */
+    clearProgChooserPriceOverride(state, action: PayloadAction<string>) {
+      delete state.progChooser.priceOverrides[action.payload];
+    },
+
+    /** Sets (or clears) the global prepay code for the progChooser loop. */
+    setProgChooserPrepayId(state, action: PayloadAction<string | null>) {
+      state.progChooser.prepayId = action.payload;
     },
 
     /** Resets all progChooser runtime state to its initial empty values. */

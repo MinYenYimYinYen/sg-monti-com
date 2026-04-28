@@ -3,7 +3,7 @@ import tippy, { type Instance as TippyInstance } from "tippy.js";
 import type { SuggestionOptions } from "@tiptap/suggestion";
 import { MentionList } from "./MentionList";
 import type { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
-import type { PrepayDoc } from "@/app/realGreen/prepay/PrepayTypes";
+import type { Prepay } from "@/app/realGreen/prepay/PrepayTypes";
 import type { QSProgLeafKey } from "../QuickSendTypes";
 
 export type MentionItem = {
@@ -184,6 +184,18 @@ export function buildMentionSuggestion({
           }
         }
         return items;
+      }
+
+      // Level 1: "progChooser.{partial}" — show aggregate leaf items.
+      if (parts.length === 2 && parts[0].toLowerCase() === "progchooser") {
+        const suffix = parts[1].toLowerCase();
+        const aggregateProps = ["subTotal", "prepayDiscAmt", "taxAmt", "total"] as const;
+        return aggregateProps
+          .filter((prop) => prop.toLowerCase().startsWith(suffix))
+          .map((prop) => ({
+            id: `progChooser.${prop}`,
+            label: `progChooser.${prop}`,
+          }));
       }
 
       // Level 1: "p.{partial}" — show loop-variable leaf properties (same set as program leaves).

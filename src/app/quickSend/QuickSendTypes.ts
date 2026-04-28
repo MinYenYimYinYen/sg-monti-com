@@ -112,16 +112,14 @@ export type QSProgLeafKey = Exclude<keyof QSProgramVariables, "alias" | "progCod
  */
 export type ProgChooser = {
   selectedProgCodeIds: string[];
-  servCodeOverrides: Record<string, string[]>;   // Phase 2: progCodeId → included servCodeIds
-  priceOverrides: Record<string, number>;         // Phase 3: progCodeId → override servPrice
-  servPriceOverrides: Record<string, Record<string, number>>; // Phase 4: progCodeId → servCodeId → price
-  prepayId: string | null;                        // Phase 5: global prepay code
+  servCodeOverrides: Record<string, string[]>; // Phase 2: progCodeId → included servCodeIds
+  priceOverrides: Record<string, number>;      // Phase 3: progCodeId → override servPrice
+  prepayId: string | null;                     // Phase 4: global prepay code
 };
 
 export const INITIAL_PROG_CHOOSER: ProgChooser = {
   selectedProgCodeIds: [],
   servCodeOverrides: {},
   priceOverrides: {},
-  servPriceOverrides: {},
   prepayId: null,
 };

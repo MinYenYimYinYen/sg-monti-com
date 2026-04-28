@@ -13,14 +13,14 @@ import type {
   TemplateControlId,
   QSProgramVariables,
   QSProgLeafKey,
-  ProgChooser,
 } from "./QuickSendTypes";
+import { progChooserSelect } from "./controls/progChooser/progChooserSelect";
 
 const selectSlice = (state: AppState) => state.quickSend;
 
 const selectAuxValues = (state: AppState) => state.quickSend.auxValues;
 
-const selectProgChooser = (state: AppState): ProgChooser => state.quickSend.progChooser;
+const selectProgChooser = (state: AppState) => state.quickSend.progChooser;
 
 const selectLoadedTemplateId = (state: AppState) => state.quickSend.loadedTemplateId;
 const selectLoadedTemplateSaId = (state: AppState) => state.quickSend.loadedTemplateSaId;
@@ -272,7 +272,8 @@ function escapeReplacement(str: string): string {
 
 /**
  * Computes QSProgramVariables for a single progCode given a size and optional overrides.
- * Used by both the existing program.{alias}.* system and the progChooser loop resolver.
+ * Used by the existing program.{alias}.* system only. The progChooser loop uses
+ * computeProgChooserPricing from progChooserPricing.ts via progChooserSelect.progVars.
  */
 function computeProgVars({
   progCodeId,
@@ -396,7 +397,7 @@ function resolveProgLoopMention(
 const P_LOOP_MENTION_RE = /data-id="p\.[^"]*"/;
 
 /**
- * Resolves the progChooser loop in the given HTML.
+ * Resolves the progChooser loop in the given HTML using pre-computed program variables.
  *
  * Strategy:
  * - The `@progChooser` trigger span is replaced with an empty string.
@@ -409,10 +410,7 @@ const P_LOOP_MENTION_RE = /data-id="p\.[^"]*"/;
  */
 function resolveProgChooserLoop(
   html: string,
-  progChooser: ProgChooser,
-  progCodeMap: Map<string, import("@/app/realGreen/progServ/_lib/types/ProgCodeTypes").ProgCode>,
-  sizeNum: number,
-  effectiveTaxRate: number | null,
+  allProgVars: QSProgramVariables[],
 ): string {
   // Remove the @progChooser trigger span entirely.
   let result = html.replace(
@@ -424,7 +422,7 @@ function resolveProgChooserLoop(
   const P_LOOP_RE = /(<p(?:\s[^>]*)?>)((?:(?!<\/p>)[\s\S])*?data-id="p\.[^"]*"(?:(?!<\/p>)[\s\S])*?)(<\/p>)/g;
 
   // When no programs are selected, replace loop units with an unfulfilled placeholder.
-  if (progChooser.selectedProgCodeIds.length === 0) {
+  if (allProgVars.length === 0) {
     result = result.replace(TR_LOOP_RE, () =>
       `<tr><td>${UNFULFILLED_MARK}{{no programs chosen}}</mark></td></tr>`,
     );
@@ -433,23 +431,6 @@ function resolveProgChooserLoop(
     );
     return result;
   }
-
-  // Build vars for each selected program (Phase 1: all non-service-call servCodes, no overrides).
-  const allProgVars: QSProgramVariables[] = progChooser.selectedProgCodeIds.map((progCodeId) => {
-    const progCode = progCodeMap.get(progCodeId);
-    const includedServCodeIds = progCode
-      ? progCode.servCodes.filter((s) => !s.isServiceCall).map((s) => s.servCodeId)
-      : [];
-    return computeProgVars({
-      progCodeId,
-      alias: progCodeId,
-      includedServCodeIds,
-      size: sizeNum,
-      effectiveTaxRate,
-      prepayPercent: null,
-      progCodeMap,
-    });
-  });
 
   const expandLoopUnit = (open: string, inner: string, close: string): string =>
     allProgVars
@@ -649,6 +630,28 @@ function resolveHtml(
 }
 
 /**
+ * Resolves `@progChooser.{aggregate}` mention spans to their summed dollar values.
+ * Called after resolveProgChooserLoop so the loop has already been expanded.
+ */
+function resolveProgChooserAggregates(
+  html: string,
+  aggregates: { subTotal: number | null; prepayDiscAmt: number | null; taxAmt: number | null; total: number | null },
+): string {
+  return html.replace(
+    /<span[^>]*data-type="mention"[^>]*data-id="progChooser\.(subTotal|prepayDiscAmt|taxAmt|total)"[^>]*>[^<]*<\/span>/g,
+    (fullMatch, prop: string) => {
+      const mentionId = `progChooser.${prop}`;
+      const value = aggregates[prop as keyof typeof aggregates];
+      if (value === null) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+      const displayValue = escapeReplacement(`$${value.toFixed(2)}`);
+      return fullMatch
+        .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
+        .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
+    },
+  );
+}
+
+/**
  * Produces the preview HTML for the active section by replacing mention span
  * labels with resolved values.
  */
@@ -662,16 +665,16 @@ const selectPreviewHtml = createSelector(
     selectProgramVariables,
     selectCustomerState,
     selectAuxValues,
-    selectProgChooser,
-    progServSelect.progCodeMap,
+    progChooserSelect.progVars,
+    progChooserSelect.aggregates,
   ],
-  (html, name, size, effectiveTaxRate, season, programVars, customerState, auxValues, progChooser, progCodeMap): string => {
+  (html, name, size, effectiveTaxRate, season, programVars, customerState, auxValues, progVars, aggregates): string => {
     if (!html) return "";
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
     const progVarMap = new Map(programVars.map((v) => [v.alias, v]));
-    const sizeNum = parseFloat(size);
     const resolved = resolveHtml(html, name, size, taxRateStr, season != null ? String(season) : null, progVarMap, customerState.customer, auxValues);
-    return resolveProgChooserLoop(resolved, progChooser, progCodeMap, sizeNum, effectiveTaxRate);
+    const looped = resolveProgChooserLoop(resolved, progVars);
+    return resolveProgChooserAggregates(looped, aggregates);
   },
 );
 
@@ -742,8 +745,8 @@ const selectActiveControlIds = createSelector(
  * Returns preview HTML for every section. Uses the global programConfigs.
  */
 const selectAllPreviewHtmls = createSelector(
-  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap, selectCustomerState, selectAuxValues, selectProgChooser],
-  (sections, name, size, effectiveTaxRate, season, programConfigs, progCodeMap, prepayDocMap, customerState, auxValues, progChooser): { sectionId: string; previewHtml: string }[] => {
+  [selectSections, selectNameOverride, selectSizeOverride, selectEffectiveTaxRate, globalSettingsSelect.season, selectProgramConfigs, progServSelect.progCodeMap, prepaySelect.prepayDocMap, selectCustomerState, selectAuxValues, progChooserSelect.progVars, progChooserSelect.aggregates],
+  (sections, name, size, effectiveTaxRate, season, programConfigs, progCodeMap, prepayDocMap, customerState, auxValues, progVars, aggregates): { sectionId: string; previewHtml: string }[] => {
     const sizeNum = parseFloat(size);
     const hasSize = !isNaN(sizeNum) && sizeNum > 0;
     const taxRateStr = effectiveTaxRate != null ? `${effectiveTaxRate.toFixed(3)}%` : null;
@@ -808,15 +811,44 @@ const selectAllPreviewHtmls = createSelector(
     return sections.map((section) => {
       if (!section.templateHtml) return { sectionId: section.sectionId, previewHtml: "" };
       const resolved = resolveHtml(section.templateHtml, name, size, taxRateStr, seasonStr, progVarMap, customerState.customer, auxValues);
+      const looped = resolveProgChooserLoop(resolved, progVars);
       return {
         sectionId: section.sectionId,
-        previewHtml: resolveProgChooserLoop(resolved, progChooser, progCodeMap, sizeNum, effectiveTaxRate),
+        previewHtml: resolveProgChooserAggregates(looped, aggregates),
       };
     });
   },
 );
 
-export const quickSendSelect = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Selector<T> = (state: any) => T;
+
+export const quickSendSelect: {
+  sections: Selector<ReturnType<typeof selectSections>>;
+  activeSectionId: Selector<string>;
+  activeSection: Selector<ReturnType<typeof selectActiveSection>>;
+  customerState: Selector<ReturnType<typeof selectCustomerState>>;
+  programConfigs: Selector<ReturnType<typeof selectProgramConfigs>>;
+  programConfigMap: Selector<ReturnType<typeof selectProgramConfigMap>>;
+  activeVars: Selector<Set<QSVariableKey>>;
+  activePrograms: Selector<QSProgramConfig[]>;
+  activeAuxIds: Selector<string[]>;
+  activeControlIds: Selector<TemplateControlId[]>;
+  resolvedVariables: Selector<Partial<Record<QSVariableKey, string>>>;
+  unfulfilledVars: Selector<Set<QSVariableKey>>;
+  programVariables: Selector<QSProgramVariables[]>;
+  auxValues: Selector<Record<string, string>>;
+  progChooser: Selector<ReturnType<typeof selectProgChooser>>;
+  previewHtml: Selector<string>;
+  allPreviewHtmls: Selector<{ sectionId: string; previewHtml: string }[]>;
+  taxRateZipOverride: Selector<string | null>;
+  effectiveTaxRate: Selector<number | null>;
+  sizeOverride: Selector<string>;
+  loadedTemplateId: Selector<string | null>;
+  loadedTemplateSaId: Selector<string | null>;
+  loadedTemplateName: Selector<string | null>;
+  loadedTemplateGroupId: Selector<string | null>;
+} = {
   sections: selectSections,
   activeSectionId: selectActiveSectionId,
   activeSection: selectActiveSection,
@@ -836,6 +868,7 @@ export const quickSendSelect = {
   allPreviewHtmls: selectAllPreviewHtmls,
   taxRateZipOverride: selectTaxRateZipOverride,
   effectiveTaxRate: selectEffectiveTaxRate,
+  sizeOverride: selectSizeOverride,
   loadedTemplateId: selectLoadedTemplateId,
   loadedTemplateSaId: selectLoadedTemplateSaId,
   loadedTemplateName: selectLoadedTemplateName,

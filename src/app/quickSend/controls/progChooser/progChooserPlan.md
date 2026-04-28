@@ -54,12 +54,44 @@ loaded or the editor is reset. It is **not** stored in `StoredTemplateDoc`.
 ```ts
 type ProgChooser = {
   selectedProgCodeIds: string[];
-  servCodeOverrides: Record<string, string[]>; //Phase 2
-  priceOverrides: Record<string, number>; //Phase 3
-  servPriceOverrides: Record<string, Record<string, number>>; // Phase 4
-  prepayId: string | null; // Phase 5
+  servCodeOverrides: Record<string, string[]>; // Phase 2: progCodeId → included servCodeIds (eager-written on selection)
+  priceOverrides: Record<string, number>;      // Phase 3: progCodeId → override servPrice
+  prepayId: string | null;                     // Phase 4: global prepay code
 }
 ```
+
+---
+
+## Pricing Model
+
+progChooser operates in **hypothetical/sales space** — it proposes services that do not yet
+exist in RealGreen. It does not instantiate `Service` objects. Pricing is computed by a
+dedicated pure function `computeProgChooserPricing` in `progChooserPricing.ts`.
+
+### Price resolution cascade (Phase 3)
+
+The effective per-visit price for a program is resolved as:
+
+```
+effectiveServPrice =
+  priceOverrides[progCodeId]       // Phase 3: program-level override
+  ?? progCode.x.getServPrice(size) // price chart (pref or econ)
+```
+
+`subTotal = effectiveServPrice × includedServCodes.length`
+
+`servPrice` in `QSProgramVariables` always reflects the price-chart price (unchanged). It
+remains meaningful for the common case (no overrides). Authors should use `@p.subTotal`
+when a price override is in play.
+
+Per-servCode price overrides were considered and deliberately excluded — a nested servCode
+loop inside the progCode loop would be too complex to author and train. The `@p.servTable`
+block mention already provides per-service detail using the uniform effective price.
+
+### `progChooserPricing.ts`
+
+Introduced in Phase 2 as a clean foundation. Phase 2 does not exercise the override path
+but the function signature accepts `progPriceOverride` so Phase 3 requires no structural changes.
 
 ---
 
@@ -76,7 +108,7 @@ type ProgChooser = {
 
 ---
 
-## Phase 1 — Core Loop (Minimal Viable Feature)
+## Phase 1 — Core Loop (Minimal Viable Feature) ✅
 
 **Goal:** End-to-end loop works. Author writes `@progChooser` + `@p.*` mentions. User selects
 programs at call time. Preview loops paragraphs/rows.
@@ -130,6 +162,32 @@ User selects 3 programs. Preview shows 3 lines, one per program.
 **Goal:** User can expand each selected program and deselect individual servCodes, affecting
 per-program pricing.
 
+### Architecture decisions
+
+**Eager write:** When a program is checked in the Select Programs zone, `servCodeOverrides[progCodeId]`
+is immediately written with all non-service-call servCodeIds for that program. When unchecked,
+the entry is removed. `servCodeOverrides[progCodeId]` is always the authoritative source of
+truth for selected programs — no fallback logic is needed in the resolver.
+
+**Two-zone layout:** The control is split into two collapsible accordion zones:
+- **`SelectPrograms.tsx`**: flat checkbox list of all available progCodes. Starts expanded.
+- **`ConfigurePrograms.tsx`**: one accordion row per selected program, default closed.
+  Expanding a row reveals the servCode checkbox list for that program.
+
+**`useProgChooser` hook:** All Redux dispatches are encapsulated in a `useProgChooser` hook
+that returns plain functions. Components destructure from this hook; they do not call
+`useAppDispatch` directly.
+
+**`ServCodeCheckboxList` shared primitive:** Extracted to `controls/ServCodeCheckboxList.tsx`
+and used by both `ProgramConfig` and `ProgChooserProgRow`. Props: `servCodes`, `selected`,
+`onChange`.
+
+**`progChooserPricing.ts`:** Introduced as a pure pricing function. Phase 2 does not exercise
+override paths but the function signature accepts them for future phases.
+
+**`ProgChooserTypes.ts`:** Types specific to the progChooser feature live here, not in
+`QuickSendTypes.ts`.
+
 ### State used
 `progChooser.servCodeOverrides: Record<string, string[]>` — already declared in the
 `ProgChooser` type; initialized to `{}` in Phase 1.
@@ -137,16 +195,38 @@ per-program pricing.
 ### Actions added
 - `setProgChooserServCodeOverride({ progCodeId, servCodeIds })` — writes to
   `state.progChooser.servCodeOverrides[progCodeId]`.
+- Cleanup on deselect is handled inside `toggleProgChooserProgCode`: removing a progCodeId
+  also deletes its `servCodeOverrides` entry.
 
-### `ProgChooserControl` changes
-- Each selected program row becomes expandable (accordion).
-- Expanded view shows servCode checkboxes (same pattern as existing `ProgramConfig` control).
-- Toggling a servCode updates `progChooser.servCodeOverrides[progCodeId]`.
+### New files
+```
+controls/
+  ServCodeCheckboxList.tsx          ← shared servCode checkbox primitive
+progChooser/
+  ProgChooserTypes.ts               ← types specific to this feature
+  progChooserPricing.ts             ← pure pricing function (price cascade foundation)
+  useProgChooser.ts                 ← hook: all dispatch actions
+  SelectPrograms.tsx                ← "Select Programs" collapsible zone
+  ConfigurePrograms.tsx             ← "Configure Selected" collapsible zone
+  ProgChooserProgRow.tsx            ← per-program accordion row in ConfigurePrograms
+```
+
+### Updated files
+```
+controls/ProgramConfig.tsx          ← refactored to use ServCodeCheckboxList
+progChooser/ProgChooserControl.tsx  ← refactored to two-zone layout
+progChooser/progChooserSelect.ts    ← export servCodeOverrides selector
+quickSendSlice.ts                   ← add setProgChooserServCodeOverride; update toggle cleanup
+quickSendSelect.ts                  ← resolveProgChooserLoop now accepts pre-computed QSProgramVariables[]
+                                       from progChooserSelect.progVars; no longer computes vars inline
+```
 
 ### Preview resolver changes
-- When computing `QSProgramVariables` for a loop iteration, use
-  `progChooser.servCodeOverrides[progCodeId]` if present, otherwise default to all
-  non-service-call servCodes.
+- `progChooserSelect.progVars` is the authoritative pricing selector for the loop.
+  `quickSendSelect.ts` consumes it as a pre-computed input — no pricing logic in the resolver.
+- `resolveProgChooserLoop` signature simplified to `(html, allProgVars)`.
+- `quickSendSelect.ts` exports `sizeOverride` to allow `progChooserSelect` to read it
+  directly from `AppState` without creating a circular import.
 
 ---
 
@@ -171,37 +251,14 @@ type; initialized to `{}` in Phase 1.
 - Clearing the field removes the override.
 
 ### Preview resolver changes
-- If `progChooser.priceOverrides[progCodeId]` is set, use it as `servPrice` and recompute
-  `subTotal` and `total` accordingly. `prefPrice` and `econPrice` are unaffected.
+- `progChooserPricing.ts` applies `priceOverrides[progCodeId]` as the per-visit price for
+  all servCodes in that program (second level of the cascade).
+- `servPrice` in `QSProgramVariables` is unaffected (still reflects price-chart price).
+- `subTotal` and `total` reflect the override.
 
 ---
 
-## Phase 4 — Per-ServCode Price Overrides
-
-**Goal:** User can override the price of individual servCodes within a selected program,
-enabling fine-grained pricing adjustments.
-
-### State used
-`progChooser.servPriceOverrides: Record<string, Record<string, number>>` — already declared
-in the `ProgChooser` type; initialized to `{}` in Phase 1.
-
-### Actions added
-- `setProgChooserServPriceOverride({ progCodeId, servCodeId, price })` — writes to
-  `state.progChooser.servPriceOverrides[progCodeId][servCodeId]`.
-- `clearProgChooserServPriceOverride({ progCodeId, servCodeId })` — deletes the entry.
-
-### `ProgChooserControl` changes
-- Each servCode row (in the expanded program view) gets a price override input.
-- Entering a value sets `progChooser.servPriceOverrides[progCodeId][servCodeId]`.
-
-### Preview resolver changes
-- When computing `QSProgramVariables` for a loop iteration, apply per-servCode price
-  overrides before summing to `servPrice` and `subTotal`.
-- `@p.servTable` rows also reflect the per-servCode overrides.
-
----
-
-## Phase 5 — Prepay Support (Global)
+## Phase 4 — Prepay Support (Global)
 
 **Goal:** A single prepay code applies to all selected programs. Prepay discount, tax, and
 total are computed per program using the shared rate.
@@ -219,13 +276,13 @@ initialized to `null` in Phase 1.
 - Selecting a prepay code sets `progChooser.prepayId`.
 
 ### Preview resolver changes
-- When computing `QSProgramVariables` for each loop iteration, use `progChooser.prepayId`
-  to look up the prepay percent and apply it to `prepayDiscAmt`, `taxAmt`, and `total`.
+- `progChooserPricing.ts` accepts `prepayPercent` and applies it to `prepayDiscAmt`,
+  `taxAmt`, and `total` for each loop iteration.
 - `@p.prepay` resolves to the prepay percent (same as existing `program.{alias}.prepay`).
 
 ---
 
-## Phase 6 — Aggregate Totals
+## Phase 5 — Aggregate Totals
 
 **Goal:** `@progChooser.{aggregate}` mentions resolve to the sum of that field across all
 selected programs. These are non-loop mentions — they can be placed anywhere in the template.
