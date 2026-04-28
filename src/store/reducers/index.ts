@@ -28,8 +28,6 @@ import { loadoutStartReducer } from "@/app/scheduling/dailyInventory/loadoutStar
 import { loadoutFinishReducer } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSlice";
 import { loadoutReducer } from "@/app/loadout/loadoutSlice";
 import assignmentReducer from "@/app/assignment/assignmentSlice";
-import quickSendReducer from "@/app/quickSend/quickSendSlice";
-import { storedTemplatesReducer } from "@/app/quickSend/storedTemplates/storedTemplatesSlice";
 import quickSend2Reducer from "@/app/quickSend2/quickSendSlice";
 import { storedTemplates2Reducer } from "@/app/quickSend2/storedTemplates/storedTemplatesSlice";
 import prepayReducer from "@/app/realGreen/prepay/prepaySlice";
@@ -63,8 +61,6 @@ const rootReducer = combineReducers({
   equipmentPackage: equipmentPackageReducer,
   customer: customerReducer,
   centralDocProps: centralDocPropsReducer,
-  quickSend: quickSendReducer,
-  storedTemplates: storedTemplatesReducer,
   quickSend2: quickSend2Reducer,
   storedTemplates2: storedTemplates2Reducer,
 });

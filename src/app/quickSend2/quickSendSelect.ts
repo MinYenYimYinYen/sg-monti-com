@@ -148,6 +148,8 @@ const selectProgramVariables = createSelector(
         priceOverride: config.priceOverride,
         isInstallment: progCode.isInstallment,
       });
+      // TODO: remove after confirming isInstallment values
+      console.log(`[QS2] ${result.progCodeId}:`, { isInstallment: result.isInstallment, description: result.description });
       return result;
     });
   },
@@ -161,10 +163,7 @@ const selectProgramVariableMap = createSelector(
 const selectAggregates = createSelector(
   [selectProgramVariables, selectEffectivePrepayPercent],
   (vars, effectivePrepayPercent): ProgramAggregates => {
-    // Installment programs are excluded from totals — they have their own @installment.* loop.
-    const nonInstallmentVars = vars.filter((v) => !v.isInstallment);
-
-    if (nonInstallmentVars.length === 0) {
+    if (vars.length === 0) {
       return { subTotal: null, prepayDiscAmt: null, taxAmt: null, total: null };
     }
 
@@ -172,7 +171,7 @@ const selectAggregates = createSelector(
     let taxAmt: number | null = null;
     let total: number | null = null;
 
-    for (const v of nonInstallmentVars) {
+    for (const v of vars) {
       if (v.subTotal !== null) subTotal = (subTotal ?? 0) + v.subTotal;
       if (v.taxAmt !== null) taxAmt = (taxAmt ?? 0) + v.taxAmt;
       if (v.total !== null) total = (total ?? 0) + v.total;
@@ -181,7 +180,7 @@ const selectAggregates = createSelector(
     // prepayDiscAmt is null when no prepay is selected — renders as unfulfilled in preview.
     let prepayDiscAmt: number | null = null;
     if (effectivePrepayPercent !== null) {
-      for (const v of nonInstallmentVars) {
+      for (const v of vars) {
         if (v.prepayDiscAmt !== null) prepayDiscAmt = (prepayDiscAmt ?? 0) + v.prepayDiscAmt;
       }
     }
@@ -470,12 +469,9 @@ function resolveHtml(
   progVars: ProgramVariables[],
   aggregates: ProgramAggregates,
 ): string {
-  // Installment programs are excluded from @loop.* and @totals.* — they have their own namespace.
-  const nonInstallmentVars = progVars.filter((v) => !v.isInstallment);
-  const installmentVars = progVars.filter((v) => v.isInstallment);
-
   // Pre-pass: drop entire block elements whose optional mentions have no data.
-  let preview = dropNullOptionalBlocks(html, nonInstallmentVars, installmentVars, aggregates);
+  const installmentVars = progVars.filter((v) => v.isInstallment);
+  let preview = dropNullOptionalBlocks(html, progVars, installmentVars, aggregates);
 
   // --- Flat vars ---
 
@@ -581,8 +577,8 @@ function resolveHtml(
     },
   );
 
-  // --- Loop expansion (@loop.*) — non-installment programs only ---
-  preview = resolveLoopMentions(preview, nonInstallmentVars);
+  // --- Loop expansion (@loop.*) ---
+  preview = resolveLoopMentions(preview, progVars);
 
   // --- Installment loop expansion (@installment.*) ---
   preview = resolveInstallmentMentions(preview, installmentVars);
