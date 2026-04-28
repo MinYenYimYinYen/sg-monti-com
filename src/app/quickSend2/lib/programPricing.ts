@@ -13,6 +13,7 @@ type ProgramPricingInput = {
   effectiveTaxRate: number | null;
   prepayPercent: number | null;
   priceOverride: number | null;
+  isInstallment: boolean;
 };
 
 /**
@@ -83,8 +84,14 @@ export function computeProgramPricing({
     }
   }
 
+  const monthPrice =
+    effectiveServPrice !== null && includedServCodes.length > 0
+      ? Math.round((effectiveServPrice * includedServCodes.length / 12) * 100) / 100
+      : null;
+
   return {
     progCodeId: progCode.progCodeId,
+    isInstallment: progCode.isInstallment,
     description: progCode.description,
     servCount: includedServCodeIds.length,
     prefPrice: hasSize ? scoped.getPrefPrice(size) : null,
@@ -95,6 +102,7 @@ export function computeProgramPricing({
     prepayDiscAmt,
     taxAmt,
     total,
+    monthPrice,
     servTable,
   };
 }

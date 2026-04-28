@@ -3,7 +3,7 @@ import tippy, { type Instance as TippyInstance } from "tippy.js";
 import type { SuggestionOptions } from "@tiptap/suggestion";
 import { MentionList } from "./MentionList";
 import type { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
-import type { ProgLeafKey } from "../QuickSendTypes";
+import type { LoopLeafKey, ProgLeafKey } from "../QuickSendTypes";
 
 export type MentionItem = {
   id: string;
@@ -14,24 +14,27 @@ export type MentionItem = {
 /**
  * Exhaustiveness helper — ensures `PROG_LEAF_PROPS` covers every `ProgLeafKey`.
  */
-type AssertExhaustiveLeafProps<T extends readonly ProgLeafKey[]> =
-  T[number] extends ProgLeafKey
-    ? ProgLeafKey extends T[number]
+type AssertExhaustiveLoopLeafProps<T extends readonly LoopLeafKey[]> =
+  T[number] extends LoopLeafKey
+    ? LoopLeafKey extends T[number]
       ? T
       : never
     : never;
 
-function exhaustiveProgLeafProps<T extends readonly ProgLeafKey[]>(
-  arr: AssertExhaustiveLeafProps<T>,
+function exhaustiveLoopLeafProps<T extends readonly LoopLeafKey[]>(
+  arr: AssertExhaustiveLoopLeafProps<T>,
 ): T {
   return arr;
 }
 
 /**
- * Leaf properties available on both `@loop.*` and `@{progCodeId}.*` namespaces.
- * Must stay in sync with `ProgLeafKey`.
+ * Leaf properties available on `@loop.*` (all programs) and `@installment.*`
+ * (installment programs only). Must stay in sync with `LoopLeafKey`.
+ *
+ * `monthPrice` is excluded from `@loop.*` but included on `@installment.*`
+ * and `@{progCodeId}.*`.
  */
-const PROG_LEAF_PROPS = exhaustiveProgLeafProps([
+const LOOP_LEAF_PROPS = exhaustiveLoopLeafProps([
   "description",
   "servCount",
   "prefPrice",
@@ -42,6 +45,12 @@ const PROG_LEAF_PROPS = exhaustiveProgLeafProps([
   "taxAmt",
   "total",
 ] as const);
+
+/** Additional props available on `@installment.*` and `@{progCodeId}.*` but not `@loop.*`. */
+const INSTALLMENT_EXTRA_PROPS: readonly ProgLeafKey[] = ["monthPrice"] as const;
+
+/** All leaf props for `@installment.*` and `@{progCodeId}.*`. */
+const PROG_LEAF_PROPS: readonly ProgLeafKey[] = [...LOOP_LEAF_PROPS, ...INSTALLMENT_EXTRA_PROPS];
 
 /** The flat (non-namespaced) @variable items. */
 const FLAT_ITEMS: MentionItem[] = [
@@ -54,7 +63,7 @@ const FLAT_ITEMS: MentionItem[] = [
 ];
 
 /** Reserved namespace names that cannot be used as progCode IDs. */
-const RESERVED_NAMESPACES = new Set(["loop", "totals"]);
+const RESERVED_NAMESPACES = new Set(["loop", "installment", "totals"]);
 
 type BuildMentionSuggestionParams = {
   /** Returns the currently selected programs (for dynamic namespace items). */
@@ -111,6 +120,9 @@ export function buildMentionSuggestion({
         const loopNs: MentionItem[] = "loop".startsWith(q)
           ? [{ id: "__ns__loop", label: "loop", isNamespace: true }]
           : [];
+        const installmentNs: MentionItem[] = "installment".startsWith(q)
+          ? [{ id: "__ns__installment", label: "installment", isNamespace: true }]
+          : [];
         const totalsNs: MentionItem[] = "totals".startsWith(q)
           ? [{ id: "__ns__totals", label: "totals", isNamespace: true }]
           : [];
@@ -124,17 +136,28 @@ export function buildMentionSuggestion({
             isNamespace: true,
           }));
 
-        return [...flatMatches, ...auxMatches, ...loopNs, ...totalsNs, ...progNsItems];
+        return [...flatMatches, ...auxMatches, ...loopNs, ...installmentNs, ...totalsNs, ...progNsItems];
       }
 
-      // Level 1 off `loop`: loop props (no servTable — not meaningful in a loop row)
+      // Level 1 off `loop`: loop props only (no servTable, no monthPrice)
       if (parts.length === 2 && parts[0].toLowerCase() === "loop") {
         const suffix = parts[1].toLowerCase();
-        return PROG_LEAF_PROPS.filter((prop) =>
+        return LOOP_LEAF_PROPS.filter((prop) =>
           prop.toLowerCase().startsWith(suffix),
         ).map((prop) => ({
           id: `loop.${prop}`,
           label: `loop.${prop}`,
+        }));
+      }
+
+      // Level 1 off `installment`: loop props + monthPrice (no servTable)
+      if (parts.length === 2 && parts[0].toLowerCase() === "installment") {
+        const suffix = parts[1].toLowerCase();
+        return PROG_LEAF_PROPS.filter((prop) =>
+          prop.toLowerCase().startsWith(suffix),
+        ).map((prop) => ({
+          id: `installment.${prop}`,
+          label: `installment.${prop}`,
         }));
       }
 

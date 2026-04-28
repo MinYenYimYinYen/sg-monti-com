@@ -10,6 +10,7 @@ import type {
   ProgramVariables,
   ProgramAggregates,
   ProgLeafKey,
+  LoopLeafKey,
   Section,
 } from "./QuickSendTypes";
 import { computeProgramPricing } from "./lib/programPricing";
@@ -122,6 +123,7 @@ const selectProgramVariables = createSelector(
       if (!progCode) {
         return {
           progCodeId: config.progCodeId,
+          isInstallment: false,
           description: config.progCodeId,
           servCount: config.includedServCodeIds.length,
           prefPrice: null,
@@ -132,18 +134,21 @@ const selectProgramVariables = createSelector(
           prepayDiscAmt: null,
           taxAmt: null,
           total: null,
+          monthPrice: null,
           servTable: [],
         };
       }
 
-      return computeProgramPricing({
+      const result = computeProgramPricing({
         progCode,
         includedServCodeIds: config.includedServCodeIds,
         size,
         effectiveTaxRate,
         prepayPercent,
         priceOverride: config.priceOverride,
+        isInstallment: progCode.isInstallment,
       });
+      return result;
     });
   },
 );
@@ -156,7 +161,10 @@ const selectProgramVariableMap = createSelector(
 const selectAggregates = createSelector(
   [selectProgramVariables, selectEffectivePrepayPercent],
   (vars, effectivePrepayPercent): ProgramAggregates => {
-    if (vars.length === 0) {
+    // Installment programs are excluded from totals — they have their own @installment.* loop.
+    const nonInstallmentVars = vars.filter((v) => !v.isInstallment);
+
+    if (nonInstallmentVars.length === 0) {
       return { subTotal: null, prepayDiscAmt: null, taxAmt: null, total: null };
     }
 
@@ -164,7 +172,7 @@ const selectAggregates = createSelector(
     let taxAmt: number | null = null;
     let total: number | null = null;
 
-    for (const v of vars) {
+    for (const v of nonInstallmentVars) {
       if (v.subTotal !== null) subTotal = (subTotal ?? 0) + v.subTotal;
       if (v.taxAmt !== null) taxAmt = (taxAmt ?? 0) + v.taxAmt;
       if (v.total !== null) total = (total ?? 0) + v.total;
@@ -173,7 +181,7 @@ const selectAggregates = createSelector(
     // prepayDiscAmt is null when no prepay is selected — renders as unfulfilled in preview.
     let prepayDiscAmt: number | null = null;
     if (effectivePrepayPercent !== null) {
-      for (const v of vars) {
+      for (const v of nonInstallmentVars) {
         if (v.prepayDiscAmt !== null) prepayDiscAmt = (prepayDiscAmt ?? 0) + v.prepayDiscAmt;
       }
     }
@@ -198,16 +206,22 @@ const selectAllSectionsHtml = createSelector(
  *
  * Programs only referenced via `@loop.*` are not pinned.
  */
+/** Installment-only program variables — used by `@installment.*` loop expansion. */
+const selectInstallmentProgramVariables = createSelector(
+  [selectProgramVariables],
+  (vars): ProgramVariables[] => vars.filter((v) => v.isInstallment),
+);
+
 const selectPinnedProgCodeIds = createSelector(
   [selectAllSectionsHtml, selectProgramConfigs],
   (html, configs): Set<string> => {
     const pinned = new Set<string>();
-    // Match data-id="{something}.{prop}" where {something} is not "loop" or "totals"
+    // Match data-id="{something}.{prop}" where {something} is not "loop", "installment", or "totals"
     const matches = html.matchAll(/data-id="([^"]+)\.[^"]+"/g);
     const configIds = new Set(configs.map((c) => c.progCodeId));
     for (const match of matches) {
       const prefix = match[1];
-      if (prefix !== "loop" && prefix !== "totals" && configIds.has(prefix)) {
+      if (prefix !== "loop" && prefix !== "installment" && prefix !== "totals" && configIds.has(prefix)) {
         pinned.add(prefix);
       }
     }
@@ -264,8 +278,8 @@ function resolveProgMention(
     return `<table><tbody>${rows}</tbody></table>`;
   }
 
-  const typedProp = prop as ProgLeafKey;
-  const value = vars[typedProp];
+  const typedProp = prop as ProgLeafKey | LoopLeafKey;
+  const value = (vars as Record<string, unknown>)[typedProp];
   if (value === null || value === undefined) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
 
   const isDollarAmount =
@@ -283,41 +297,106 @@ function resolveProgMention(
     .replace(/>([^<]*)<\/span>$/, `>${displayValue}</span>`);
 }
 
-const LOOP_MENTION_RE = /data-id="loop\.[^"]*"/;
+// ---------------------------------------------------------------------------
+// Pre-pass: drop entire outermost block elements that contain optional-namespace
+// mentions whose data is null. This prevents orphaned static text like
+// "Prepay Amount: saves" when the mention values are unavailable.
+//
+// "Optional" namespaces: loop.*, installment.*, totals.*
+// "Outermost block" = top-level <p>, <table>, <ul>, <ol>, <blockquote>, <h1>–<h6>
+// ---------------------------------------------------------------------------
+
+const OPTIONAL_MENTION_RE = /data-id="(loop|installment|totals)\.[^"]*"/;
 
 /**
- * Resolves the `@loop.*` loop in the given HTML using pre-computed program variables.
- *
- * Any `<p>` or `<tr>` containing a `@loop.*` mention is cloned once per selected
- * program. The same table/non-table split strategy as v1 is used to prevent the
- * paragraph regex from re-processing rows already expanded by the table regex.
+ * Returns `true` if the segment should be dropped (contains an optional-namespace
+ * mention whose data is null).
  */
-function resolveLoopMentions(html: string, allProgVars: ProgramVariables[]): string {
-  const TR_LOOP_RE = /(<tr(?:\s[^>]*)?>)((?:(?!<\/tr>)[\s\S])*?data-id="loop\.[^"]*"(?:(?!<\/tr>)[\s\S])*?)(<\/tr>)/g;
-  const P_LOOP_RE = /(<p(?:\s[^>]*)?>)((?:(?!<\/p>)[\s\S])*?data-id="loop\.[^"]*"(?:(?!<\/p>)[\s\S])*?)(<\/p>)/g;
-
-  if (allProgVars.length === 0) {
-    let result = html.replace(TR_LOOP_RE, () =>
-      `<tr><td>${UNFULFILLED_MARK}{{no programs selected}}</mark></td></tr>`,
-    );
-    result = result.replace(P_LOOP_RE, () =>
-      `<p>${UNFULFILLED_MARK}{{no programs selected}}</mark></p>`,
-    );
-    return result;
+function shouldDropSegment(
+  segment: string,
+  allProgVars: ProgramVariables[],
+  installmentVars: ProgramVariables[],
+  aggregates: ProgramAggregates,
+): boolean {
+  if (!OPTIONAL_MENTION_RE.test(segment)) return false;
+  if (/data-id="loop\.[^"]*"/.test(segment) && allProgVars.length === 0) return true;
+  if (/data-id="installment\.[^"]*"/.test(segment) && installmentVars.length === 0) return true;
+  const totalsMatches = [...segment.matchAll(/data-id="totals\.(subTotal|prepayDiscAmt|taxAmt|total)"/g)];
+  for (const m of totalsMatches) {
+    const field = m[1] as keyof ProgramAggregates;
+    if (aggregates[field] === null) return true;
   }
+  return false;
+}
 
-  const expandLoopUnit = (open: string, inner: string, close: string, isTableRow: boolean): string => {
-    const resolvedInners = allProgVars.map((vars) =>
-      inner.replace(
-        /<span[^>]*data-type="mention"[^>]*data-id="loop\.([^"]+)"[^>]*>[^<]*<\/span>/g,
-        (fullMatch, prop: string) => resolveProgMention(fullMatch, prop, vars, "loop"),
+/**
+ * Drops entire outermost block elements that contain optional-namespace mentions
+ * whose data is null. Uses the same table/non-table split strategy as `resolveLoopLike`
+ * to correctly handle `<table>` blocks that contain nested `<p>` or other tags.
+ *
+ * - `loop.*` → drop when `allProgVars` is empty
+ * - `installment.*` → drop when `installmentVars` is empty
+ * - `totals.*` → drop when any referenced aggregate field is null
+ */
+function dropNullOptionalBlocks(
+  html: string,
+  allProgVars: ProgramVariables[],
+  installmentVars: ProgramVariables[],
+  aggregates: ProgramAggregates,
+): string {
+  const TABLE_SPLIT_RE = /(<table[\s\S]*?<\/table>)/g;
+  const P_BLOCK_RE = /(<(?:p|ul|ol|blockquote|h[1-6])(?:\s[^>]*)?>[\s\S]*?<\/(?:p|ul|ol|blockquote|h[1-6])>)/g;
+
+  return html
+    .split(TABLE_SPLIT_RE)
+    .map((segment) => {
+      if (segment.startsWith("<table")) {
+        // Whole table: drop if any optional mention inside has null data.
+        return shouldDropSegment(segment, allProgVars, installmentVars, aggregates) ? "" : segment;
+      }
+      // Non-table segment: check each paragraph-level block individually.
+      return segment.replace(P_BLOCK_RE, (block) =>
+        shouldDropSegment(block, allProgVars, installmentVars, aggregates) ? "" : block,
+      );
+    })
+    .join("");
+}
+
+/**
+ * Generic loop expander used by both `@loop.*` and `@installment.*`.
+ *
+ * By the time this runs, `dropNullOptionalBlocks` has already removed any
+ * block where `filteredVars` would be empty, so this function can assume
+ * `filteredVars.length > 0`.
+ */
+function resolveLoopLike(
+  html: string,
+  filteredVars: ProgramVariables[],
+  namespace: string,
+): string {
+  const trRe = new RegExp(
+    `(<tr(?:\\s[^>]*)?>)((?:(?!<\\/tr>)[\\s\\S])*?data-id="${namespace}\\.[^"]*"(?:(?!<\\/tr>)[\\s\\S])*?)(<\\/tr>)`,
+    "g",
+  );
+  const pRe = new RegExp(
+    `(<p(?:\\s[^>]*)?>)((?:(?!<\\/p>)[\\s\\S])*?data-id="${namespace}\\.[^"]*"(?:(?!<\\/p>)[\\s\\S])*?)(<\\/p>)`,
+    "g",
+  );
+  const mentionRe = new RegExp(
+    `<span[^>]*data-type="mention"[^>]*data-id="${namespace}\\.([^"]+)"[^>]*>[^<]*<\\/span>`,
+    "g",
+  );
+  const hasMentionRe = new RegExp(`data-id="${namespace}\\.[^"]*"`);
+
+  const expandUnit = (open: string, inner: string, close: string, isTableRow: boolean): string => {
+    const resolvedInners = filteredVars.map((vars) =>
+      inner.replace(mentionRe, (fullMatch, prop: string) =>
+        resolveProgMention(fullMatch, prop, vars, namespace),
       ),
     );
     if (isTableRow) {
-      // Table rows must remain separate <tr> elements.
       return resolvedInners.map((resolvedInner) => `${open}${resolvedInner}${close}`).join("");
     }
-    // Paragraph loop: collapse all iterations into a single <p> joined by <br>.
     return `${open}${resolvedInners.join("<br>")}${close}`;
   };
 
@@ -326,13 +405,13 @@ function resolveLoopMentions(html: string, allProgVars: ProgramVariables[]): str
     .split(TABLE_SPLIT_RE)
     .map((segment) => {
       if (segment.startsWith("<table")) {
-        return segment.replace(TR_LOOP_RE, (_, open, inner, close) =>
-          expandLoopUnit(open, inner, close, true),
+        return segment.replace(trRe, (_, open, inner, close) =>
+          expandUnit(open, inner, close, true),
         );
       }
-      if (LOOP_MENTION_RE.test(segment)) {
-        return segment.replace(P_LOOP_RE, (_, open, inner, close) =>
-          expandLoopUnit(open, inner, close, false),
+      if (hasMentionRe.test(segment)) {
+        return segment.replace(pRe, (_, open, inner, close) =>
+          expandUnit(open, inner, close, false),
         );
       }
       return segment;
@@ -340,16 +419,27 @@ function resolveLoopMentions(html: string, allProgVars: ProgramVariables[]): str
     .join("");
 }
 
+/** Resolves `@loop.*` mentions — iterates all selected programs. */
+function resolveLoopMentions(html: string, allProgVars: ProgramVariables[]): string {
+  return resolveLoopLike(html, allProgVars, "loop");
+}
+
+/** Resolves `@installment.*` mentions — iterates installment programs only. */
+function resolveInstallmentMentions(html: string, installmentVars: ProgramVariables[]): string {
+  return resolveLoopLike(html, installmentVars, "installment");
+}
+
 /**
  * Resolves `@totals.{prop}` mention spans to their summed dollar values.
+ * By the time this runs, `dropNullOptionalBlocks` has already removed any
+ * block where a totals value is null, so all values here are non-null.
  */
 function resolveTotalsMentions(html: string, aggregates: ProgramAggregates): string {
   return html.replace(
     /<span[^>]*data-type="mention"[^>]*data-id="totals\.(subTotal|prepayDiscAmt|taxAmt|total)"[^>]*>[^<]*<\/span>/g,
     (fullMatch, prop: string) => {
-      const mentionId = `totals.${prop}`;
       const value = aggregates[prop as keyof ProgramAggregates];
-      if (value === null) return `${UNFULFILLED_MARK}{{${mentionId}}}</mark>`;
+      if (value === null) return fullMatch; // should not happen after pre-pass
       const displayValue = escapeReplacement(`$${value.toFixed(2)}`);
       return fullMatch
         .replace(/data-label="[^"]*"/, `data-label="${displayValue}"`)
@@ -380,7 +470,12 @@ function resolveHtml(
   progVars: ProgramVariables[],
   aggregates: ProgramAggregates,
 ): string {
-  let preview = html;
+  // Installment programs are excluded from @loop.* and @totals.* — they have their own namespace.
+  const nonInstallmentVars = progVars.filter((v) => !v.isInstallment);
+  const installmentVars = progVars.filter((v) => v.isInstallment);
+
+  // Pre-pass: drop entire block elements whose optional mentions have no data.
+  let preview = dropNullOptionalBlocks(html, nonInstallmentVars, installmentVars, aggregates);
 
   // --- Flat vars ---
 
@@ -475,19 +570,22 @@ function resolveHtml(
   );
 
   // --- Program-specific mentions: @{progCodeId}.{prop} ---
-  // Match any data-id that contains a dot and is not loop.* or totals.*
+  // Match any data-id that contains a dot and is not loop.*, installment.*, or totals.*
   preview = preview.replace(
     /<span[^>]*data-type="mention"[^>]*data-id="([^"]+)\.([^"]+)"[^>]*>[^<]*<\/span>/g,
     (fullMatch, prefix: string, prop: string) => {
-      if (prefix === "loop" || prefix === "totals") return fullMatch;
+      if (prefix === "loop" || prefix === "installment" || prefix === "totals") return fullMatch;
       const vars = progVarMap.get(prefix);
       if (!vars) return `${UNFULFILLED_MARK}{{${prefix}.${prop}}}</mark>`;
       return resolveProgMention(fullMatch, prop, vars, prefix);
     },
   );
 
-  // --- Loop expansion ---
-  preview = resolveLoopMentions(preview, progVars);
+  // --- Loop expansion (@loop.*) — non-installment programs only ---
+  preview = resolveLoopMentions(preview, nonInstallmentVars);
+
+  // --- Installment loop expansion (@installment.*) ---
+  preview = resolveInstallmentMentions(preview, installmentVars);
 
   // --- Aggregate totals ---
   preview = resolveTotalsMentions(preview, aggregates);

@@ -78,6 +78,8 @@ export type QuickSendState = {
  */
 export type ProgramVariables = {
   progCodeId: string;
+  /** Whether this program is billed by monthly installment in the CRM. */
+  isInstallment: boolean;
   description: string;
   servCount: number;
   prefPrice: number | null;
@@ -89,17 +91,27 @@ export type ProgramVariables = {
   prepayDiscAmt: number | null;
   taxAmt: number | null;
   total: number | null;
+  /** Monthly installment price: `servCount * servPrice / 12`. Null if servPrice is null. */
+  monthPrice: number | null;
   servTable: { description: string; price: number | null }[];
 };
 
 /**
  * The subset of `ProgramVariables` keys that are exposed as direct mention
- * leaf props (i.e. `{progCodeId}.{key}` and `loop.{key}`).
+ * leaf props (i.e. `{progCodeId}.{key}`, `loop.{key}`, and `installment.{key}`).
  *
- * `progCodeId` (metadata), `servTable` (only on direct program mentions),
- * and `prepayPercent` (exposed as flat `@prepayPercent` instead) are excluded.
+ * `progCodeId` (metadata), `isInstallment` (metadata), `servTable` (only on direct
+ * program mentions), and `prepayPercent` (exposed as flat `@prepayPercent` instead)
+ * are excluded.
+ *
+ * `monthPrice` is available on both `@installment.*` and `@{progCodeId}.*` but NOT
+ * on `@loop.*` (loop iterates all programs; installment pricing only makes sense for
+ * installment programs).
  */
-export type ProgLeafKey = Exclude<keyof ProgramVariables, "progCodeId" | "servTable" | "prepayPercent">;
+export type ProgLeafKey = Exclude<keyof ProgramVariables, "progCodeId" | "isInstallment" | "servTable" | "prepayPercent">;
+
+/** Leaf keys available on `@loop.*` — excludes `monthPrice` (installment-only). */
+export type LoopLeafKey = Exclude<ProgLeafKey, "monthPrice">;
 
 /** Aggregate totals across all selected programs. */
 export type ProgramAggregates = {
