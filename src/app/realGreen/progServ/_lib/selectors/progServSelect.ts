@@ -5,8 +5,11 @@ import { ProgCode } from "../types/ProgCodeTypes";
 import { ServCode } from "../types/ServCodeTypes";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { hydrateProductRules } from "./hydrateProductRules";
+import { hydrateAssignedTo } from "./hydrateAssignedTo";
 import { priceTableSelect } from "@/app/realGreen/priceTable/priceTableSelect";
 import { buildProgCode } from "@/app/realGreen/progServ/_lib/buildProgCode";
+import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
+import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 
 const selectProgCodeDocs = (state: AppState) => state.progServ.progCodeDocs;
 const selectServCodeDocs = (state: AppState) => state.progServ.servCodeDocs;
@@ -30,6 +33,8 @@ const selectProgCodes = createSelector(
     selectServCodeDocMap,
     productSelect.productMastersMap,
     priceTableSelect.priceTableMap,
+    assignmentPlanSelect.assignmentsByServCodeId,
+    employeeSelect.employeeMap,
   ],
   (
     progCodeDocs,
@@ -37,6 +42,8 @@ const selectProgCodes = createSelector(
     servCodeDocMap,
     productMasterMap,
     priceTableMap,
+    assignmentsByServCodeId,
+    employeeMap,
   ) => {
     const progCodes: ProgCode[] = progCodeDocs.map((progDoc) => {
       const progServLinks = progServMap.get(progDoc.progDefId) || [];
@@ -63,6 +70,11 @@ const selectProgCodes = createSelector(
           const servDoc = servCodeDocMap.get(link.servCodeId);
           if (!servDoc) return null;
 
+          const plan = assignmentsByServCodeId.get(link.servCodeId);
+          const assignedTo = plan
+            ? hydrateAssignedTo(plan.employeeIds, employeeMap)
+            : [];
+
           const servData: Omit<ServCode, "progCode" | "x"> = {
             ...servDoc,
             progCodeId: progDoc.progCodeId,
@@ -71,6 +83,7 @@ const selectProgCodes = createSelector(
               servDoc.productRuleDocs,
               productMasterMap,
             ),
+            assignedTo,
           };
 
           return servData;

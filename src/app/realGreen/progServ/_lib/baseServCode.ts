@@ -37,6 +37,7 @@ const baseServCodeNoX: Omit<ServCode, "x"> = {
   progCodeId: baseStrId,
   isSpecial: false,
   productRules: [],
+  assignedTo: [],
 };
 
 export const baseServCode: ServCode = {

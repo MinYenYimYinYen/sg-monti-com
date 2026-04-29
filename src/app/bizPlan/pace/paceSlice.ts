@@ -1,8 +1,10 @@
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 type PaceState = {
   selectedDateRange: TRange<string>;
+  minProductiveServices: number;
 };
 
 const initialState: PaceState = {
@@ -13,6 +15,7 @@ const initialState: PaceState = {
     },
     14,
   ),
+  minProductiveServices: 3,
 };
 
 const paceSlice = createSlice({
@@ -21,6 +24,9 @@ const paceSlice = createSlice({
   reducers: {
     setSelectedDateRange: (state, action: PayloadAction<TRange<string>>) => {
       state.selectedDateRange = action.payload;
+    },
+    setMinProductiveServices: (state, action: PayloadAction<number>) => {
+      state.minProductiveServices = action.payload;
     },
   },
 });

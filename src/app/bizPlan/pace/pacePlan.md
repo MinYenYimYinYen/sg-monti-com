@@ -6,16 +6,15 @@ A business planning tool that shows, by service code, whether the team is on pac
 
 ---
 
-## Current State (Completed)
+## Phase 1 — Data Foundation ✅ Complete
 
-### Data Foundation
-- **`deepSelect.ts`** — `selectServCodesDeep` / `selectServCodeDeepMap`: cross-domain selector that joins `progServSelect.servCodes` with `centralSelect.services`, producing `ServCodeDeep[]` (each `ServCode` with its hydrated `Service[]`).
-- **`ServCodeUtils`** — `weekDays: string[]` (all Mon–Fri dates in `dateRange`), `daysRemaining: number` (weekdays from today to `dateRange.max`; if past max returns 1 to avoid divide-by-zero; if before min returns full weekday count).
-- **`dateStrings`** — `isWeekDay`, `nextMonday`, `addDays`, `isInRange`, etc.
-- **`CountSizePrice` / `CountSizePriceOps`** — `{ count, size, price, rev }` value type with `fromService`, `sum`, `sumAll`, `divideBy` static ops.
-- **`paceSelect.ts`** — `selectServCodePaceMap: Map<string, ServCodePace>` and `selectServCodePaceRows: ServCodePace[]`.
+- **`ServCodeUtils`**: `weekDays: string[]` (all Mon–Fri in `dateRange`), `daysRemaining: number` (weekdays from today to `dateRange.max`; clamps to 1 if past max, full count if before min)
+- **`CountSizePrice` / `CountSizePriceOps`**: `{ count, size, price, rev }` value type with `fromService`, `sum`, `sumAll(items[])`, `divideBy`
+- **`deepSelect`**: `selectServCodesDeep`, `selectServCodeDeepMap` — joins `ServCode[]` with `Service[]`
+- **`paceSelect`**: `selectServCodePaceMap: Map<string, ServCodePace>`, `selectServCodePaceRows: ServCodePace[]`
+- **`paceSlice`**: `selectedDateRange: TRange<string>` (lookback window for capacity calculation)
 
-### `ServCodePace` type (current)
+### `ServCodePace` type (Phase 1)
 ```typescript
 type ServCodePace = {
   servCode: ServCodeDeep;
@@ -29,108 +28,77 @@ type ServCodePace = {
 
 ---
 
-## Next Phase: Employee-Level Pace
+## Phase 2 — Assignment Plan Data Module ✅ Complete
 
-### 1. `pacePlan` Data Module
-
-Persists employee-to-servCode assignments and fictional employees in MongoDB.
-
-**Types** (`bizPlan/pace/pacePlanTypes.ts`):
-```typescript
-type PacePlanDoc = {
-  servCodeId: string;
-  assignedEmployeeIds: string[];  // real employeeIds + FNG IDs ("FNG-1", "FNG-2", ...)
-}
-
-type FictionalEmployee = {
-  fngId: string;   // "FNG-1", "FNG-2", etc.
-  name: string;    // e.g., "New Hire 1"
-}
-```
-
-**Redux state** (`bizPlan/pace/pacePlanSlice.ts`):
-```typescript
-{
-  pacePlanDocs: PacePlanDoc[];
-  fictionalEmployees: FictionalEmployee[];
-}
-```
-
-**API**: Full CRUD where Create + Update are handled by upsert (keyed on `servCodeId`).
-
-**`pacePlanSelect.ts`** exposes:
-- `assignedEmployeeIdsByServCode: Map<string, string[]>` — raw FK map
-- `fictionalEmployeeMap: Map<string, Employee>` — FNG IDs hydrated via `{ ...baseEmployee, employeeId: fng.fngId, name: fng.name }`
-
-**`usePacePlan`** hook: `autoLoad: true` in `usePaceDeps`. Used elsewhere without `autoLoad` to expose CRUD actions.
+- **`AssignmentPlanTypes`**: `AssignmentPlan { servCodeId: string; employeeIds: string[] }` — serializable, complete, no hydration needed on its own shape
+- **`AssignmentPlanModel`**: Mongoose schema for `AssignmentPlan`
+- **`AssignmentPlanContract`**: Read + Upsert only. No explicit delete — upsert with empty `employeeIds` serves as a clear
+- **`route.ts`**: `getAssignmentPlans` + `upsertAssignmentPlan` handlers with `cleanMongoObject`
+- **`assignmentPlanSlice`**: Redux state (`assignmentPlans: AssignmentPlan[]`) + thunks
+- **`assignmentPlanSelect`**: `assignmentsByServCodeId: Map<string, AssignmentPlan>`
+- **`ServCodeProps.assignedTo: Employee[]`**: hydrated at `selectProgCodes` level in `progServSelect`
+- **`hydrateAssignedTo.ts`**: resolves `employeeIds → Employee[]`; synthesizes dummy employee (`{ ...baseEmployee, employeeId: id, name: id, active: true }`) for unknown IDs (fictional employees)
+- **`baseServCode`**: `assignedTo: []` default
 
 ---
 
-### 2. `ServCodeProps` amendment
+## Phase 3 — Employee Capacity Selectors 🔲 Next
 
-Add `assignedTo: Employee[]` to `ServCodeProps` (and therefore `ServCode`, `ServCodeDeep`).
-
-**Hydration in `progServSelect`**: `selectProgCodes` gains two new inputs:
-- `pacePlanSelect.assignedEmployeeIdsByServCode`
-- `employeeSelect.employeeMap` (merged with `pacePlanSelect.fictionalEmployeeMap`)
-
-When building each `ServCode`, look up `assignedTo` from the assignment map and resolve `Employee[]` from the merged employee map. Defaults to `[]` if no assignment exists.
-
-> Rationale: `ServCode.assignedTo` will be `[]` for any component that doesn't load `pacePlan` data — it is inert and ignored. This keeps the type consistent without requiring a separate hydration layer.
-
----
-
-### 3. `paceSelect` amendments
-
-#### `ServCodePace` additions
+### `paceSlice` additions
 ```typescript
-finishedByEmployee: Map<string, CountSizePrice>  // employeeId → CSP (from DoneBy data)
-employeePaces: EmployeePace[]
+minProductiveServices: number;  // threshold to qualify a day as "productive" (default: 3)
+```
+Action: `setMinProductiveServices`
+
+### `paceSelect` amendments
+
+Add to `selectServCodePaceMap` inputs:
+- `paceSlice.selectedDateRange` (lookback window)
+- `paceSlice.minProductiveServices`
+
+Add to `ServCodePace`:
+```typescript
+employeePaces: EmployeePace[];
 ```
 
-#### `EmployeePace` type
+### `EmployeePace` type
 ```typescript
 type EmployeePace = {
   employee: Employee;
   finishedCSP: CountSizePrice;       // what they've actually done on this servCode
-  capacityRate: CountSizePrice;      // their per-day capacity (see algorithm below)
+  capacityRate: CountSizePrice;      // their per-day capacity
   requiredRate: CountSizePrice;      // their share of unfinishedCSP / daysRemaining
   delta: CountSizePrice;             // capacityRate - requiredRate (positive = ahead of pace)
 }
 ```
 
-#### Employee capacity rate algorithm
+### Employee capacity rate algorithm
 
-1. Collect all services completed by the employee within the **lookback window** (controlled by `DateRangePicker` in UI, stored in `paceSlice` state).
-2. Group by `doneDate` → `CountSizePrice` per day.
-3. Filter out days where `count < minProductiveServices` (stored in `paceSlice` state, user-configurable, default `3`). This removes rain days, sick days, and partial days without needing to know the cause.
-4. Average the remaining days → **capacity rate**.
-5. Employees with no qualifying days (new hires, FNG employees) → use the **average capacity rate of employees who do have data** as a proxy. If no employees have data, falls back to even distribution.
+1. Collect all services completed by the employee within `selectedDateRange`
+2. Group by `doneDate` → `CountSizePrice` per day
+3. Filter out days where `count < minProductiveServices` (removes rain days, sick days, partial days)
+4. Average the remaining days → **capacity rate**
+5. Employees with no qualifying days → use **average capacity rate of employees who do have data** as proxy
+6. If no employees have data → fall back to even distribution of `unfinishedCSP / assignedTo.length`
 
-This model degrades gracefully: all-new team → even distribution. Mixed team → real data where available, proxy for the rest.
-
----
-
-### 4. `paceSlice` state (UI settings)
-
-```typescript
-{
-  lookbackRange: TRange<string>;      // DateRangePicker window for capacity calculation
-  minProductiveServices: number;      // threshold to qualify a day as "productive" (default: 3)
-}
-```
-
-Actions: `setLookbackRange`, `setMinProductiveServices`.
+This degrades gracefully: all-new team → even distribution. Mixed team → real data where available, proxy for the rest.
 
 ---
 
-### 5. UI Plan
+## Phase 4 — `useAssignmentPlan` Hook 🔲
+
+- Auto-fetch hook: dispatches `getAssignmentPlans` on mount
+- Added to `usePaceDeps` so the Pace page loads assignment data automatically
+- Also usable standalone (without `autoLoad`) to expose `upsertAssignmentPlan` for CRUD
+
+---
+
+## Phase 5 — UI 🔲
 
 **`Pace.tsx`** (top level):
-- `usePaceDeps()` (includes `usePacePlan`)
-- Radio control: display mode (even distribution vs. capacity-weighted) — auto-defaults to weighted when sufficient history exists
-- `DateRangePicker` bound to `paceSlice.lookbackRange`
-- `minProductiveServices` number input
+- `usePaceDeps()` (includes `useAssignmentPlan`)
+- `DateRangePicker` bound to `paceSlice.selectedDateRange`
+- `minProductiveServices` number input bound to `paceSlice.minProductiveServices`
 
 **`PaceTable.tsx`**:
 - One row per `ServCodePace`, sorted by `servCodeId`
@@ -141,10 +109,9 @@ Actions: `setLookbackRange`, `setMinProductiveServices`.
 - Employee name | Finished CSP | Capacity Rate | Required Rate | Delta
 - Color: green = ahead, amber = slightly behind, red = significantly behind
 
-**Fictional employee management**:
-- "Add Fictional Employee" button → adds FNG-N to `pacePlan` state
-- Modeled with proxy capacity rate (same as new hire)
-- Shows "what-if" impact on overall pace
+**Assignment management** (inline in `PaceTable`):
+- Add/remove real employees per servCode via `upsertAssignmentPlan`
+- "Add Fictional Employee" → adds `FNG-N` ID to `employeeIds`; synthesized as dummy employee at hydration time
 
 ---
 
@@ -153,18 +120,22 @@ Actions: `setLookbackRange`, `setMinProductiveServices`.
 | File | Status | Purpose |
 |---|---|---|
 | `bizPlan/pace/pacePlan.md` | ✅ This file | Plan documentation |
-| `bizPlan/pace/paceSelect.ts` | ✅ Partial | ServCodePace selectors — needs employee amendments |
-| `bizPlan/pace/paceSlice.ts` | 🔲 Stub exists | UI settings state (lookbackRange, minProductiveServices) |
-| `bizPlan/pace/pacePlanTypes.ts` | 🔲 To create | PacePlanDoc, FictionalEmployee types |
-| `bizPlan/pace/pacePlanSlice.ts` | 🔲 To create | Redux slice + thunks for pacePlan CRUD |
-| `bizPlan/pace/pacePlanSelect.ts` | 🔲 To create | assignedEmployeeIdsByServCode, fictionalEmployeeMap |
-| `bizPlan/pace/usePacePlan.ts` | 🔲 To create | Auto-fetch hook + CRUD action exposure |
-| `bizPlan/pace/usePaceDeps.ts` | ✅ Exists | Add usePacePlan |
-| `bizPlan/pace/Pace.tsx` | 🔲 Stub | Top-level component |
-| `bizPlan/pace/PaceTable.tsx` | 🔲 To create | ServCode-level pace table |
-| `bizPlan/pace/EmployeePaceRow.tsx` | 🔲 To create | Per-employee expandable row |
-| `realGreen/progServ/_lib/types/ServCodeTypes.ts` | 🔲 Amend | Add assignedTo: Employee[] to ServCodeProps |
-| `realGreen/progServ/_lib/selectors/progServSelect.ts` | 🔲 Amend | Add pacePlan + employee inputs to selectProgCodes |
-| `realGreen/deepSelect.ts` | ✅ Exists | No changes needed |
-| `realGreen/progServ/_lib/classes/ServCodeUtils.ts` | ✅ Complete | weekDays, daysRemaining |
-| `realGreen/employee/_lib/baseEmployee.ts` | ✅ Exists | Used for FNG hydration |
+| `bizPlan/pace/paceSelect.ts` | ✅ Phase 1 complete | Needs Phase 3 employee amendments |
+| `bizPlan/pace/paceSlice.ts` | ✅ Partial | Needs `minProductiveServices` (Phase 3) |
+| `bizPlan/pace/usePaceDeps.ts` | ✅ Exists | Needs `useAssignmentPlan` added (Phase 4) |
+| `bizPlan/pace/Pace.tsx` | 🔲 Phase 5 | Top-level component |
+| `bizPlan/pace/PaceTable.tsx` | 🔲 Phase 5 | ServCode-level pace table |
+| `bizPlan/pace/EmployeePaceRow.tsx` | 🔲 Phase 5 | Per-employee expandable row |
+| `bizPlan/assignmentPlan/AssignmentPlanTypes.ts` | ✅ Complete | `AssignmentPlan` type |
+| `bizPlan/assignmentPlan/assignmentPlanSlice.ts` | ✅ Complete | Redux slice + thunks |
+| `bizPlan/assignmentPlan/assignmentPlanSelect.ts` | ✅ Complete | `assignmentsByServCodeId` |
+| `bizPlan/assignmentPlan/useAssignmentPlan.ts` | 🔲 Phase 4 | Auto-fetch hook + CRUD actions |
+| `bizPlan/assignmentPlan/api/AssignmentPlanContract.ts` | ✅ Complete | API contract |
+| `bizPlan/assignmentPlan/api/AssignmentPlanModel.ts` | ✅ Complete | Mongoose model |
+| `bizPlan/assignmentPlan/api/route.ts` | ✅ Complete | API route handler |
+| `realGreen/progServ/_lib/types/ServCodeTypes.ts` | ✅ Complete | `assignedTo: Employee[]` in `ServCodeProps` |
+| `realGreen/progServ/_lib/baseServCode.ts` | ✅ Complete | `assignedTo: []` default |
+| `realGreen/progServ/_lib/selectors/hydrateAssignedTo.ts` | ✅ Complete | Dummy employee fallback |
+| `realGreen/progServ/_lib/selectors/progServSelect.ts` | ✅ Complete | Hydrates `assignedTo` at `selectProgCodes` |
+| `realGreen/deepSelect.ts` | ✅ Complete | No changes needed |
+| `realGreen/progServ/_lib/classes/ServCodeUtils.ts` | ✅ Complete | `weekDays`, `daysRemaining` |

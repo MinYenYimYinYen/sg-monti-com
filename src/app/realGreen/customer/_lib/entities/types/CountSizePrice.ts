@@ -12,7 +12,7 @@ export const baseCountSizePrice = {
   size: 0,
   price: 0,
   rev: 0,
-}
+};
 
 export abstract class CountSizePriceOps {
   static fromService(service: Service): CountSizePrice {
@@ -33,8 +33,11 @@ export abstract class CountSizePriceOps {
     };
   }
 
-  static sumAll(a: CountSizePrice, ...rest: CountSizePrice[]): CountSizePrice {
-    return rest.reduce((acc, curr) => CountSizePriceOps.sum(acc, curr), a);
+  static sumAll(csps: CountSizePrice[]): CountSizePrice {
+    // return rest.reduce((acc, curr) => CountSizePriceOps.sum(acc, curr), a);
+    return csps.reduce((acc, curr) => CountSizePriceOps.sum(acc, curr), {
+      ...baseCountSizePrice,
+    });
   }
 
   static divideBy(a: CountSizePrice, n: number): CountSizePrice {

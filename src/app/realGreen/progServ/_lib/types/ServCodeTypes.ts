@@ -24,6 +24,7 @@ import {
 } from "@/app/realGreen/progServ/_lib/types/ProductRule";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { ServCodeUtils } from "@/app/realGreen/progServ/_lib/classes/ServCodeUtils";
+import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 
 export type ServCodeRaw = {
   // autopostMobile: boolean;
@@ -119,6 +120,7 @@ export type ServCodeProps = {
   progCodeId: string;
   isSpecial: boolean;
   productRules: ProductRule[];
+  assignedTo: Employee[];
   x: ServCodeUtils;
 };
 
