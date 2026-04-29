@@ -89,7 +89,7 @@ export function ProgramRow({ config, progCode, isPinned }: Props) {
           <ServCodeCheckboxList
             servCodes={nonServiceCallCodes}
             selected={config.includedServCodeIds}
-            onChange={handleServCodesChange}
+            onChangeAction={handleServCodesChange}
           />
           {/* Per-visit price override */}
           <div className="flex items-center gap-2">

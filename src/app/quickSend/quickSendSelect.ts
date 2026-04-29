@@ -1,6 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
 import { zipCodeSelect } from "@/app/realGreen/zipCode/zipCodeSelectors";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";

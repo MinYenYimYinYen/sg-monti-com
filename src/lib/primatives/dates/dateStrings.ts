@@ -16,6 +16,7 @@ import {
   endOfYear,
   parseISO,
   isWithinInterval,
+  isWeekend
 } from "date-fns";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 
@@ -108,6 +109,20 @@ function isInRange(date: string, dateRange: TRange<string>): boolean {
   return isWithinInterval(parsedDate, { start: parsedMin, end: parsedMax });
 }
 
+function isWeekDay(date: string): boolean {
+  const parsedDate = parseISO(date);
+  return !isWeekend(parsedDate);
+}
+
+function nextMonday(date: string): string {
+  const parsed = parseISO(date);
+  // getDay(): 0=Sun, 1=Mon, ..., 6=Sat
+  const day = parsed.getDay();
+  // Days until next Monday: Sun→1, Mon→7, Tue→6, Wed→5, Thu→4, Fri→3, Sat→2
+  const daysUntilMonday = day === 0 ? 1 : 8 - day;
+  return format(fnsAddDays(parsed, daysUntilMonday), "yyyy-MM-dd");
+}
+
 export const dateStrings = {
   today,
   daysAgo,
@@ -128,4 +143,6 @@ export const dateStrings = {
   addDays,
   subDays,
   isInRange,
+  isWeekDay,
+  nextMonday,
 };

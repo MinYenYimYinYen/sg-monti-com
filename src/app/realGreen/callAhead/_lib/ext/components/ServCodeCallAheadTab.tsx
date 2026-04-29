@@ -1,7 +1,7 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { ServCodeCallAheadRow } from "./ServCodeCallAheadRow";
 

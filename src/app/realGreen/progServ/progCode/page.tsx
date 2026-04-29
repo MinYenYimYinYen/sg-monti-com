@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import { Container } from "@/components/Containers";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { ProgCodeListPanel } from "./_components/ProgCodeListPanel";
 import { ProgCodeEditPanel } from "./_components/ProgCodeEditPanel";
 

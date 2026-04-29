@@ -5,7 +5,7 @@ import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
 
 type Props = {
   value: string | null;
-  onChange: (prepayId: string | null) => void;
+  onChangeAction: (prepayId: string | null) => void;
   label?: string;
 };
 
@@ -14,7 +14,7 @@ type Props = {
  * Reads prepayDocs from the store internally.
  * Calls onChange with null when "None" is selected.
  */
-export function PrepaySelector({ value, onChange, label = "Prepay" }: Props) {
+export function PrepaySelector({ value, onChangeAction: onChange, label = "Prepay" }: Props) {
   const prepayDocs = useSelector(prepaySelect.prepayDocs);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

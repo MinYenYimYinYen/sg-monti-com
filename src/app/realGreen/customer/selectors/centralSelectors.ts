@@ -4,7 +4,7 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
 import { discountSelect } from "../../discount/selectors/discountSelect";

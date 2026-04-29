@@ -1,7 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/baseServCode";
 import { loadoutBaseToAppProductCore } from "@/app/realGreen/customer/selectors/loadoutBaseToAppProductCore";

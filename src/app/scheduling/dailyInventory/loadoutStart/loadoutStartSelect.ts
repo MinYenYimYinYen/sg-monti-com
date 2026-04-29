@@ -10,7 +10,7 @@ import { createValidationSelectors } from "@/lib/validation/createValidationSele
 import { LoadoutValidator } from "@/app/loadout/LoadoutValidator";
 import { hydratePlannedLoadout, getProductMasters } from "@/app/realGreen/customer/selectors/hydratePlannedLoadout";
 import { aggregateLoadoutInventory } from "@/app/scheduling/dailyInventory/loadoutStart/aggregateLoadoutInventory";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 
 const selectTech = (state: AppState) => state.loadoutStart.tech;
 const selectRouteDate = (state: AppState) => state.loadoutStart.routeDate;

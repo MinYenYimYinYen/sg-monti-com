@@ -5,10 +5,14 @@ import type { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes
 type Props = {
   servCodes: ServCode[];
   selected: string[];
-  onChange: (servCodeIds: string[]) => void;
+  onChangeAction: (servCodeIds: string[]) => void;
 };
 
-export function ServCodeCheckboxList({ servCodes, selected, onChange }: Props) {
+export function ServCodeCheckboxList({
+  servCodes,
+  selected,
+  onChangeAction: onChange,
+}: Props) {
   const selectedSet = new Set(selected);
 
   const handleToggle = (servCodeId: string) => {
@@ -33,7 +37,9 @@ export function ServCodeCheckboxList({ servCodes, selected, onChange }: Props) {
               onChange={() => handleToggle(servCode.servCodeId)}
               className="h-3.5 w-3.5 rounded border-border accent-primary"
             />
-            <span className="text-xs text-foreground">{servCode.servCodeId}</span>
+            <span className="text-xs text-foreground">
+              {servCode.servCodeId}
+            </span>
             {servCode.longName && (
               <span className="text-xs text-muted-foreground truncate">
                 {servCode.longName}

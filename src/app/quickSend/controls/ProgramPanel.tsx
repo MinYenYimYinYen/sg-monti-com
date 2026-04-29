@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { qsSelect } from "../quickSendSelect";
 import { quickSendActions } from "../quickSendSlice";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { ProgramRow } from "./ProgramRow";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { useState } from "react";

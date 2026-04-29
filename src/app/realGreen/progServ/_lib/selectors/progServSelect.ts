@@ -66,7 +66,6 @@ const selectProgCodes = createSelector(
           const servData: Omit<ServCode, "progCode" | "x"> = {
             ...servDoc,
             progCodeId: progDoc.progCodeId,
-            services: [],
             isSpecial: progDoc.progCodeId === link.servCodeId,
             productRules: hydrateProductRules(
               servDoc.productRuleDocs,

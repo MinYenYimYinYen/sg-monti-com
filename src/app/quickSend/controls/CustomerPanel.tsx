@@ -162,7 +162,7 @@ export function CustomerPanel() {
           <div className="flex flex-col gap-0.5 px-4 py-1">
             <PrepaySelector
               value={effectiveGlobalPrepayId}
-              onChange={(prepayId) => dispatch(quickSendActions.setGlobalPrepayId(prepayId))}
+              onChangeAction={(prepayId) => dispatch(quickSendActions.setGlobalPrepayId(prepayId))}
               label="Prepay"
             />
           </div>

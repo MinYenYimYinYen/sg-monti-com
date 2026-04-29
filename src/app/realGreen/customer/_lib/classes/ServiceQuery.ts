@@ -45,7 +45,9 @@ export class ServiceQuery extends BaseQuery<Service> {
   }
 
   isPromised(bool: boolean) {
-    return new ServiceQuery(this.items.filter((s) => s.x.isPromisedOrHasPromise === bool));
+    return new ServiceQuery(
+      this.items.filter((s) => s.x.isPromisedOrHasPromise === bool),
+    );
   }
 
   protected createInstance(items: Service[]): this {

@@ -15,7 +15,7 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { quickSendActions } from "../quickSendSlice";
 import { buildMentionSuggestion } from "../mentions/mentionSuggestion";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { qsSelect } from "../quickSendSelect";
 import { EditorToolbar } from "./EditorToolbar";
 import { LineHeight } from "./lineHeightExtension";

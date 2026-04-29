@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { servCodeLookup } from "@/app/realGreen/progServ/_lib/selectors/servCodeLookups";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { ServCodeListPanel } from "./ServCodeListPanel";

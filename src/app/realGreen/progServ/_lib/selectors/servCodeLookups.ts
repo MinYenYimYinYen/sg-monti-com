@@ -1,5 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { AppState } from "@/store";
 
 const selectUnsavedChanges = (state: AppState) => state.progServ.unsavedServCodeChanges;

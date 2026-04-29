@@ -35,7 +35,6 @@ const baseServCodeNoX: Omit<ServCode, "x"> = {
   ...baseServCodeDoc,
   progCode: baseProgCode,
   progCodeId: baseStrId,
-  services: [],
   isSpecial: false,
   productRules: [],
 };

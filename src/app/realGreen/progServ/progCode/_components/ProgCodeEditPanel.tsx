@@ -3,7 +3,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelectors";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { priceTableSelect } from "@/app/realGreen/priceTable/priceTableSelect";
 import {
   Card,

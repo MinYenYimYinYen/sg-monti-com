@@ -117,10 +117,13 @@ export type ServCodeDoc = ServCodeCore & ServCodeDocProps;
 export type ServCodeProps = {
   progCode: ProgCode;
   progCodeId: string;
-  services: Service[];
   isSpecial: boolean;
   productRules: ProductRule[];
   x: ServCodeUtils;
 };
 
 export type ServCode = ServCodeDoc & ServCodeProps;
+
+export type ServCodeDeep = ServCode & {
+  services: Service[]
+}
