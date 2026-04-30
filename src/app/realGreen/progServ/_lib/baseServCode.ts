@@ -7,6 +7,7 @@ import {
 } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { ServCodeUtils } from "@/app/realGreen/progServ/_lib/classes/ServCodeUtils";
+import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 export const baseServCodeCore: ServCodeCore = {
   servCodeId: baseStrId,
@@ -18,7 +19,7 @@ export const baseServCodeCore: ServCodeCore = {
 
 export const baseServCodeDocProps: ServCodeDocProps = {
   servCodeId: baseStrId,
-  dateRange: { min: "", max: "" },
+  dateRange: { min: dateStrings.today(), max: dateStrings.today() },
   alwaysAsap: false,
   productRuleDocs: [],
   callAheadTag: null,

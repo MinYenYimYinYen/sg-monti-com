@@ -127,5 +127,5 @@ export type ServCodeProps = {
 export type ServCode = ServCodeDoc & ServCodeProps;
 
 export type ServCodeDeep = ServCode & {
-  services: Service[]
-}
+  services: Service[];
+};

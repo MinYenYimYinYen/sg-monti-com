@@ -6,8 +6,8 @@ import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPla
 
 export function usePaceDeps() {
   useCustomerContext({ contexts: ["active"] });
-  useProgServ({ autoLoad: true });
   useActiveCustomers({ autoLoad: true });
+  // useProgServ({ autoLoad: true });
   useEmployee({ autoLoad: true });
   useAssignmentPlan({ autoLoad: true });
 }
