@@ -70,11 +70,11 @@ const selectProgCodes = createSelector(
           const servDoc = servCodeDocMap.get(link.servCodeId);
           if (!servDoc) return null;
 
-          const plan = assignmentsByServCodeId.get(link.servCodeId);
-          const assignedTo =
-            plan && plan.employeeIds.length > 0
-              ? hydrateAssignedTo(plan.employeeIds, employeeMap)
-              : [];
+          const assignedTo = hydrateAssignedTo({
+            servCodeId: servDoc.servCodeId,
+            assignmentsByServCodeId,
+            employeeMap,
+          });
 
           const servData: Omit<ServCode, "progCode" | "x"> = {
             ...servDoc,
@@ -117,7 +117,9 @@ const selectProgCodes = createSelector(
       }
     }
 
-    return progCodes.filter((p) => !programCodesToFilterOut.has(p.progCodeId)).filter((p) => p.servCodes.length > 0);
+    return progCodes
+      .filter((p) => !programCodesToFilterOut.has(p.progCodeId))
+      .filter((p) => p.servCodes.length > 0);
   },
 );
 

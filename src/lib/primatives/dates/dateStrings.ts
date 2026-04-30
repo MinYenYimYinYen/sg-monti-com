@@ -16,7 +16,8 @@ import {
   endOfYear,
   parseISO,
   isWithinInterval,
-  isWeekend
+  isWeekend,
+  eachDayOfInterval,
 } from "date-fns";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 
@@ -123,6 +124,48 @@ function nextMonday(date: string): string {
   return format(fnsAddDays(parsed, daysUntilMonday), "yyyy-MM-dd");
 }
 
+//If I call this on Saturday, it will return the next Monday
+function todayToWeekday() {
+  const date = today();
+  if (isWeekDay(date)) return date;
+  return nextMonday(date);
+}
+
+function isValidDateRange(dateRange: TRange<string>): boolean {
+  const start = parseISO(dateRange.min);
+  const end = parseISO(dateRange.max);
+  return !isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end;
+}
+
+function dateRangeFromDate(
+  dateRange: TRange<string>,
+  date: string,
+): TRange<string> | null {
+  if (!isValidDateRange(dateRange)) return null;
+
+  if (dateRange.max < date) return null; // entirely past
+  if (dateRange.min > date) return dateRange; // entirely future
+  return { min: date, max: dateRange.max }; // today is within range
+}
+
+function dateRangeToDate(
+  dateRange: TRange<string>,
+  date: string,
+): TRange<string> | null {
+  if (!isValidDateRange(dateRange)) return null;
+  if (dateRange.min > date) return null; // entirely future
+  if (dateRange.max <= date) return dateRange; // entirely past (all elapsed)
+  return { min: dateRange.min, max: date }; // date is within range
+}
+
+function countWeekdays(dateRange: TRange<string>): number {
+  if (!isValidDateRange(dateRange)) return 0;
+  const start = parseISO(dateRange.min);
+  const end = parseISO(dateRange.max);
+  const days = eachDayOfInterval({ start, end });
+  return days.filter((day) => !isWeekend(day)).length;
+}
+
 export const dateStrings = {
   today,
   daysAgo,
@@ -139,10 +182,18 @@ export const dateStrings = {
   monthEnd,
   yearStart,
   yearEnd,
-  padDateRange,
   addDays,
   subDays,
   isInRange,
   isWeekDay,
   nextMonday,
+  todayToWeekday,
+};
+
+export const dateRanges = {
+  isValidDateRange,
+  padDateRange,
+  dateRangeFromDate,
+  dateRangeToDate,
+  countWeekdays,
 };

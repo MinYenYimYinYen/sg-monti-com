@@ -1,35 +1,41 @@
-import { TRange } from "@/lib/primatives/tRange/TRange";
-import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
+
+type PaceSortMode = "byId" | "byDateRange";
 
 type PaceState = {
-  selectedDateRange: TRange<string>;
-  minProductiveServices: number;
+  sortMode: PaceSortMode;
+  activeFilters: PaceCategory[];
+  unfinishedOnly: boolean;
+  selectedServCodeId: string | null;
 };
 
 const initialState: PaceState = {
-  selectedDateRange: dateStrings.padDateRange(
-    {
-      min: dateStrings.today(),
-      max: dateStrings.today(),
-    },
-    14,
-  ),
-  minProductiveServices: 3,
+  sortMode: "byDateRange",
+  activeFilters: ["asap", "overdue", "inProgress"],
+  unfinishedOnly: true,
+  selectedServCodeId: null,
 };
 
 const paceSlice = createSlice({
   name: "pace",
   initialState,
   reducers: {
-    setSelectedDateRange: (state, action: PayloadAction<TRange<string>>) => {
-      state.selectedDateRange = action.payload;
+    setSortMode: (state, action: PayloadAction<PaceSortMode>) => {
+      state.sortMode = action.payload;
     },
-    setMinProductiveServices: (state, action: PayloadAction<number>) => {
-      state.minProductiveServices = action.payload;
+    setActiveFilters: (state, action: PayloadAction<PaceCategory[]>) => {
+      state.activeFilters = action.payload;
+    },
+    setUnfinishedOnly: (state, action: PayloadAction<boolean>) => {
+      state.unfinishedOnly = action.payload;
+    },
+    setSelectedServCodeId: (state, action: PayloadAction<string | null>) => {
+      state.selectedServCodeId = action.payload;
     },
   },
 });
 
+export type { PaceSortMode };
 export const paceActions = { ...paceSlice.actions };
 export const paceReducer = paceSlice.reducer;

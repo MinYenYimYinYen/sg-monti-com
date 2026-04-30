@@ -1,41 +1,33 @@
 import { ServCode } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 export class ServCodeUtils {
   constructor(private readonly servCode: Omit<ServCode, "x">) {}
 
-  // public get progCodeId(): string {
-  //   return this.servCode.progCodeId;
-  // }
-
-  public get weekDays(): string[] {
-    const range = this.servCode.dateRange;
-    // Guard against uninitialized dateRange (e.g. baseServCode)
-    if (!range.min || !range.max) return [];
-    let current = range.min;
-    const days: string[] = [];
-    while (current <= range.max) {
-      if (dateStrings.isWeekDay(current)) {
-        days.push(current);
-      }
-      current = dateStrings.addDays(current, 1);
-    }
-    return days;
+  public get daysPlanned(): number {
+    if (!dateRanges.isValidDateRange(this.servCode.dateRange)) return 1;
+    return dateRanges.countWeekdays(this.servCode.dateRange);
   }
 
   public get daysRemaining(): number {
-    const range = this.servCode.dateRange;
-    // Guard against uninitialized dateRange — return 1 to avoid divide-by-zero
-    if (!range.min || !range.max) return 1;
+    if (!dateRanges.isValidDateRange(this.servCode.dateRange)) return 1;
+    const today = dateStrings.todayToWeekday();
+    const rangeFromToday = dateRanges.dateRangeFromDate(
+      this.servCode.dateRange,
+      today,
+    );
+    if (rangeFromToday === null) return 1; // We're past the end of the range
+    return dateRanges.countWeekdays(rangeFromToday);
+  }
 
-    const couldBeSaturday = dateStrings.today();
-    const today = !dateStrings.isWeekDay(couldBeSaturday)
-      ? dateStrings.nextMonday(couldBeSaturday)
-      : couldBeSaturday;
-
-    if (today > range.max) return 1;
-    if (today < range.min) return Math.max(1, this.weekDays.length);
-    // today is within the range (inclusive)
-    return Math.max(1, this.weekDays.filter((weekDay) => weekDay >= today).length);
+  public get daysElapsed(): number {
+    if (!dateRanges.isValidDateRange(this.servCode.dateRange)) return 1;
+    const today = dateStrings.todayToWeekday();
+    const rangeToToday = dateRanges.dateRangeToDate(
+      this.servCode.dateRange,
+      today,
+    );
+    if (rangeToToday === null) return 1; // Before range start — clamp to 1 to avoid divide-by-zero
+    return dateRanges.countWeekdays(rangeToToday);
   }
 }

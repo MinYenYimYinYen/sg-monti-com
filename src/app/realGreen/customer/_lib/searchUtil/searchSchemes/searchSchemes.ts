@@ -9,7 +9,7 @@ import { CustomerDoc } from "../../entities/types/CustomerTypes";
 import { ProgramDoc } from "../../entities/types/ProgramTypes";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { ServiceSearchCriteria } from "../searchCriteria/types/ServSearch";
-import { dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { isTRangeOfString, TRange } from "@/lib/primatives/tRange/TRange";
 
 type SearchSchemeParams = {
@@ -154,7 +154,7 @@ const recentProduction = ({ season, schemeParams }: SearchSchemeParams): SearchS
   if (dateRangeMaybe && isTRangeOfString(dateRangeMaybe)) {
     dateRange = dateRangeMaybe;
   } else {
-    dateRange = dateStrings.padDateRange({ min: today, max: today }, 7);
+    dateRange = dateRanges.padDateRange({ min: today, max: today }, 7);
   }
 
 
