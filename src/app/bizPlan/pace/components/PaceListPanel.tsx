@@ -5,7 +5,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { paceActions, PaceSortMode } from "@/app/bizPlan/pace/paceSlice";
 import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
-import { PaceListItem } from "@/app/bizPlan/pace/PaceListItem";
+import { PaceListItem } from "@/app/bizPlan/pace/components/PaceListItem";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/style/components/toggle-group";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";

@@ -1,8 +1,8 @@
 "use client";
 
 import { usePaceDeps } from "@/app/bizPlan/pace/usePaceDeps";
-import { PaceListPanel } from "@/app/bizPlan/pace/PaceListPanel";
-import { PaceDetailPanel } from "@/app/bizPlan/pace/PaceDetailPanel";
+import { PaceListPanel } from "@/app/bizPlan/pace/components/PaceListPanel";
+import { PaceDetailPanel } from "@/app/bizPlan/pace/components/PaceDetailPanel";
 
 export function Pace() {
   usePaceDeps();
