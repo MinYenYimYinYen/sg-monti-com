@@ -60,9 +60,9 @@ export function ProgCodePaceItem({
         </div>
       )}
 
-      {/* Line 3: aggregate count */}
+      {/* Line 3: % complete */}
       <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
-        {finishedCSP.count}/{total}
+        {total > 0 ? Math.round((finishedCSP.count / total) * 100) : 0}%
       </div>
     </button>
   );

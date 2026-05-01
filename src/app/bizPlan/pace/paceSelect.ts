@@ -75,15 +75,14 @@ const selectServCodePaces = createSelector(
       );
 
       const employeeShares: EmployeeShare[] = servCode.assignedTo.map(
-        (employee) => {
-          return {
-            employee,
-            shareCSP: CountSizePriceOps.divideBy(
-              unfinishedCSP,
-              servCode.assignedTo.length,
-            ),
-          };
-        },
+        (employee) => ({
+          employee,
+          // Share of the required daily pace, not total remaining work
+          shareCSP: CountSizePriceOps.divideBy(
+            unfinishedRate,
+            servCode.assignedTo.length,
+          ),
+        }),
       );
 
       const pace: ServCodePace = {
@@ -180,11 +179,16 @@ const selectFilteredSortedProgCodePaces = createSelector(
   },
 );
 
-const selectInProgressServCodeIds = createSelector(
+// "Active" = inProgress + asap + overdue — all categories that need attention now
+const selectActiveServCodeIds = createSelector(
   [selectServCodePaces],
   (paces) =>
     paces
-      .filter((p) => p.category === "inProgress")
+      .filter((p) =>
+        p.category === "inProgress" ||
+        p.category === "asap" ||
+        p.category === "overdue",
+      )
       .map((p) => p.servCode.servCodeId),
 );
 
@@ -201,7 +205,7 @@ export const paceSelect = {
   servCodePaceMap: selectServCodePaceMap,
   progCodePaces: selectProgCodePaces,
   filteredSortedProgCodePaces: selectFilteredSortedProgCodePaces,
-  inProgressServCodeIds: selectInProgressServCodeIds,
+  activeServCodeIds: selectActiveServCodeIds,
   selectedPaces: selectSelectedPaces,
   selectedServCodeIds: selectSelectedServCodeIds,
   selectionSource: selectSelectionSource,

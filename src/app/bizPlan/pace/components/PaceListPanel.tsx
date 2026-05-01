@@ -5,7 +5,6 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import {
   paceActions,
-  PaceSelectionSource,
   PaceSortMode,
 } from "@/app/bizPlan/pace/paceSlice";
 import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
@@ -56,7 +55,7 @@ export function PaceListPanel() {
   const selectionSource = useSelector(paceSelect.selectionSource);
   const selectedProgCodeId = useSelector(paceSelect.selectedProgCodeId);
   const progCodePaces = useSelector(paceSelect.filteredSortedProgCodePaces);
-  const inProgressServCodeIds = useSelector(paceSelect.inProgressServCodeIds);
+  const activeServCodeIds = useSelector(paceSelect.activeServCodeIds);
 
   const selectProgCode = useSelectProgCode();
   const selectAllInProgress = useSelectAllInProgress();
@@ -120,9 +119,9 @@ export function PaceListPanel() {
       {/* List */}
       <ScrollArea className="rounded-md border bg-popover flex-1 min-h-0">
         <div className="p-1 space-y-0.5">
-          {/* "All In Progress" pseudo-item */}
+          {/* "All Active" pseudo-item — includes asap, overdue, and inProgress */}
           <button
-            onClick={() => selectAllInProgress(inProgressServCodeIds)}
+            onClick={() => selectAllInProgress(activeServCodeIds)}
             className={cn(
               "w-full text-left px-2.5 py-2 rounded-md transition-colors border",
               allInProgressSelected
@@ -132,12 +131,12 @@ export function PaceListPanel() {
           >
             <div className="flex items-baseline gap-2 min-w-0">
               <span className="font-mono text-xs shrink-0 text-foreground">
-                All In Progress
+                All Active
               </span>
             </div>
             <div className="text-[10px] text-muted-foreground mt-0.5">
-              {inProgressServCodeIds.length} service code
-              {inProgressServCodeIds.length !== 1 ? "s" : ""}
+              {activeServCodeIds.length} service code
+              {activeServCodeIds.length !== 1 ? "s" : ""}
             </div>
           </button>
 
