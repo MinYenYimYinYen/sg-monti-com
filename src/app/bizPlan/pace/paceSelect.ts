@@ -4,10 +4,17 @@ import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus"
 import { CountSizePriceOps } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { PaceCategory, ServCodePace } from "@/app/bizPlan/pace/PaceType";
+import {
+  EmployeeShare,
+  PaceCategory,
+  ProgCodePace,
+  ServCodePace,
+} from "@/app/bizPlan/pace/PaceType";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { AppState } from "@/store";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
+import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 
 function getCategory(servCode: ServCodeDeep): PaceCategory {
   if (servCode.alwaysAsap) return "asap";
@@ -23,11 +30,29 @@ function getCSPTotal(services: Service[]) {
   return CountSizePriceOps.sumAll(csps);
 }
 
+const CATEGORY_URGENCY: Record<PaceCategory, number> = {
+  asap: 0,
+  overdue: 1,
+  inProgress: 2,
+  notStarted: 3,
+  notSet: 4,
+};
+
+function mostUrgentCategory(categories: PaceCategory[]): PaceCategory {
+  return categories.reduce((best, c) =>
+    CATEGORY_URGENCY[c] < CATEGORY_URGENCY[best] ? c : best,
+  );
+}
+
+//Slice Selectors
 const selectSortMode = (state: AppState) => state.pace.sortMode;
 const selectActiveFilters = (state: AppState) => state.pace.activeFilters;
 const selectUnfinishedOnly = (state: AppState) => state.pace.unfinishedOnly;
-const selectSelectedServCodeId = (state: AppState) =>
-  state.pace.selectedServCodeId;
+const selectSelectedServCodeIds = (state: AppState) =>
+  state.pace.selectedServCodeIds;
+const selectSelectedProgCodeId = (state: AppState) =>
+  state.pace.selectedProgCodeId;
+const selectSelectionSource = (state: AppState) => state.pace.selectionSource;
 
 const selectServCodePaces = createSelector(
   [deepSelect.servCodes],
@@ -49,6 +74,18 @@ const selectServCodePaces = createSelector(
         servCode.x.daysRemaining,
       );
 
+      const employeeShares: EmployeeShare[] = servCode.assignedTo.map(
+        (employee) => {
+          return {
+            employee,
+            shareCSP: CountSizePriceOps.divideBy(
+              unfinishedCSP,
+              servCode.assignedTo.length,
+            ),
+          };
+        },
+      );
+
       const pace: ServCodePace = {
         servCode,
         daysRemaining: servCode.x.daysRemaining,
@@ -57,6 +94,7 @@ const selectServCodePaces = createSelector(
         unfinishedRate,
         finishedCSP,
         finishedRate,
+        employeeShares,
       };
       return pace;
     }),
@@ -66,52 +104,109 @@ const selectServCodePaceMap = createSelector([selectServCodePaces], (paces) =>
   new Grouper(paces).toUniqueMap((p) => p.servCode.servCodeId),
 );
 
-const selectFilteredSortedPaces = createSelector(
-  [selectServCodePaces, selectSortMode, selectActiveFilters, selectUnfinishedOnly],
-  (paces, sortMode, activeFilters, unfinishedOnly) => {
-    const filtered = paces.filter((p) => {
-      if (!activeFilters.includes(p.category)) return false;
+const selectProgCodePaces = createSelector(
+  [progServSelect.progCodes, selectServCodePaceMap],
+  (progCodes, paceMap) => {
+    const progCodePaces: ProgCodePace[] = progCodes.map((progCode) => {
+      const servCodePacesMaybe = progCode.servCodes.map((sc) =>
+        paceMap.get(sc.servCodeId),
+      );
+      const servCodePaces = typeGuard.definedArray(servCodePacesMaybe);
+
+      const category: PaceCategory =
+        servCodePaces.length > 0
+          ? mostUrgentCategory(servCodePaces.map((p) => p.category))
+          : "notSet";
+
+      const unfinishedCSP = CountSizePriceOps.sumAll(
+        servCodePaces.map((p) => p.unfinishedCSP),
+      );
+      const finishedCSP = CountSizePriceOps.sumAll(
+        servCodePaces.map((p) => p.finishedCSP),
+      );
+      return {
+        progCode,
+        servCodePaces,
+        category,
+        unfinishedCSP,
+        finishedCSP,
+      };
+    });
+    return progCodePaces;
+  },
+);
+
+const selectFilteredSortedProgCodePaces = createSelector(
+  [
+    selectProgCodePaces,
+    selectSortMode,
+    selectActiveFilters,
+    selectUnfinishedOnly,
+  ],
+  (progCodePaces, sortMode, activeFilters, unfinishedOnly): ProgCodePace[] => {
+    const filtered = progCodePaces.filter((p) => {
+      const hasMatchingCategory = p.servCodePaces.some((sp) =>
+        activeFilters.includes(sp.category),
+      );
+      if (!hasMatchingCategory) return false;
       if (unfinishedOnly && p.unfinishedCSP.count === 0) return false;
       return true;
     });
 
     return [...filtered].sort((a, b) => {
       if (sortMode === "byId") {
-        return a.servCode.servCodeId.localeCompare(b.servCode.servCodeId);
+        return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
       }
 
-      // byDateRange: asap first, notSet last, then by dateRange.min, secondary by id
-      const categoryOrder = (p: ServCodePace): number => {
-        if (p.category === "asap") return 0;
-        if (p.category === "notSet") return 3;
-        return 1;
-      };
+      // byDateRange: most urgent first, then earliest dateRange.min, then alphabetical
+      const urgencyA = CATEGORY_URGENCY[a.category];
+      const urgencyB = CATEGORY_URGENCY[b.category];
+      if (urgencyA !== urgencyB) return urgencyA - urgencyB;
 
-      const orderA = categoryOrder(a);
-      const orderB = categoryOrder(b);
-      if (orderA !== orderB) return orderA - orderB;
-
-      const minA = a.servCode.dateRange.min ?? "";
-      const minB = b.servCode.dateRange.min ?? "";
+      const minA =
+        a.servCodePaces
+          .map((p) => p.servCode.dateRange.min ?? "")
+          .filter(Boolean)
+          .sort()[0] ?? "";
+      const minB =
+        b.servCodePaces
+          .map((p) => p.servCode.dateRange.min ?? "")
+          .filter(Boolean)
+          .sort()[0] ?? "";
       if (minA !== minB) return minA.localeCompare(minB);
 
-      return a.servCode.servCodeId.localeCompare(b.servCode.servCodeId);
+      return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
     });
   },
 );
 
-const selectSelectedPace = createSelector(
-  [selectServCodePaceMap, selectSelectedServCodeId],
-  (paceMap, selectedId) => (selectedId ? (paceMap.get(selectedId) ?? null) : null),
+const selectInProgressServCodeIds = createSelector(
+  [selectServCodePaces],
+  (paces) =>
+    paces
+      .filter((p) => p.category === "inProgress")
+      .map((p) => p.servCode.servCodeId),
+);
+
+const selectSelectedPaces = createSelector(
+  [selectServCodePaceMap, selectSelectedServCodeIds],
+  (paceMap, ids) => {
+    const selectedPacesMaybe = ids.map((id) => paceMap.get(id));
+    return typeGuard.definedArray(selectedPacesMaybe);
+  },
 );
 
 export const paceSelect = {
   servCodePaces: selectServCodePaces,
   servCodePaceMap: selectServCodePaceMap,
-  filteredSortedPaces: selectFilteredSortedPaces,
-  selectedPace: selectSelectedPace,
+  progCodePaces: selectProgCodePaces,
+  filteredSortedProgCodePaces: selectFilteredSortedProgCodePaces,
+  inProgressServCodeIds: selectInProgressServCodeIds,
+  selectedPaces: selectSelectedPaces,
+  selectedServCodeIds: selectSelectedServCodeIds,
+  selectionSource: selectSelectionSource,
+  selectedProgCodeId: selectSelectedProgCodeId,
   sortMode: selectSortMode,
   activeFilters: selectActiveFilters,
   unfinishedOnly: selectUnfinishedOnly,
-  selectedServCodeId: selectSelectedServCodeId,
 };

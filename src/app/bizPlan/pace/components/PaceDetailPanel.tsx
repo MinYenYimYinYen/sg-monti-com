@@ -2,31 +2,42 @@
 
 import { useSelector } from "react-redux";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { ServCodePaceCard } from "@/app/bizPlan/pace/components/ServCodePaceCard";
 
 export function PaceDetailPanel() {
-  const pace = useSelector(paceSelect.selectedPace);
+  const selectedPaces = useSelector(paceSelect.selectedPaces);
+  const unfinishedOnly = useSelector(paceSelect.unfinishedOnly);
+  const selectionSource = useSelector(paceSelect.selectionSource);
 
-  if (!pace) {
+  if (selectionSource === "none") {
     return (
       <div className="flex items-center justify-center h-full border-2 border-dashed border-muted rounded-lg">
         <p className="text-muted-foreground text-sm">
-          Select a service code to view pace details
+          Select a program to view pace details
+        </p>
+      </div>
+    );
+  }
+
+  const visiblePaces = unfinishedOnly
+    ? selectedPaces.filter((p) => p.unfinishedCSP.count > 0)
+    : selectedPaces;
+
+  if (visiblePaces.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full border-2 border-dashed border-muted rounded-lg">
+        <p className="text-muted-foreground text-sm">
+          All service codes are complete
         </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 border rounded-lg h-full">
-      <div>
-        <h2 className="text-sm font-semibold font-mono">
-          {pace.servCode.servCodeId}
-        </h2>
-        <p className="text-sm text-muted-foreground">{pace.servCode.longName}</p>
-      </div>
-      <p className="text-xs text-muted-foreground italic">
-        Detail view coming soon.
-      </p>
+    <div className="flex flex-col gap-4 h-full overflow-y-auto pr-1">
+      {visiblePaces.map((pace) => (
+        <ServCodePaceCard key={pace.servCode.servCodeId} pace={pace} />
+      ))}
     </div>
   );
 }

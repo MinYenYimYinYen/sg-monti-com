@@ -92,7 +92,7 @@ Finished services: `status === "S"`. Unfinished services: statuses `["printed", 
 
 ---
 
-## Phase 4 — UI 🔲 Next
+## Phase 4 — UI ✅ Complete (see `pace_01_progCodeGroupingPlan.md` and `pace_01_progCodeGroupingImplementation.md`)
 
 ### Overview
 
@@ -105,13 +105,16 @@ service codes across all programs.
 
 ### New Type: `ProgCodePace` (in `PaceType.ts`)
 
+> **Deviation**: Plan used `totalUnfinishedCSP` / `totalFinishedCSP`. Implemented as `unfinishedCSP` / `finishedCSP`
+> (no `total` prefix) — semantically unnecessary given the type name already implies aggregation.
+
 ```typescript
 type ProgCodePace = {
   progCode: ProgCode;
-  servCodePaces: ServCodePace[];       // all servCodes in this progCode, in natural order
-  category: PaceCategory;             // most urgent category among servCodePaces
-  totalUnfinishedCSP: CountSizePrice; // sum across all servCodePaces
-  totalFinishedCSP: CountSizePrice;   // sum across all servCodePaces
+  servCodePaces: ServCodePace[];  // all servCodes in this progCode, in natural order
+  category: PaceCategory;        // most urgent category among servCodePaces
+  unfinishedCSP: CountSizePrice; // sum across all servCodePaces
+  finishedCSP: CountSizePrice;   // sum across all servCodePaces
 };
 ```
 
@@ -226,22 +229,22 @@ Deferred. Will add per-employee pace breakdown once the core ServCode-level UI i
 | File | Status | Purpose |
 |---|---|---|
 | `bizPlan/pace/pacePlan.md` | ✅ This file | Plan documentation |
-| `bizPlan/pace/PaceType.ts` | 🔲 Update | Add `ProgCodePace` type |
-| `bizPlan/pace/paceStyles.ts` | 🔲 New | `CATEGORY_BADGE_STYLES` const |
-| `bizPlan/pace/paceSelect.ts` | 🔲 Update | Add `selectProgCodePaces`, `selectFilteredSortedProgCodePaces`, `selectInProgressServCodeIds`, `selectSelectedPaces` |
-| `bizPlan/pace/paceSlice.ts` | 🔲 Update | Replace `selectedServCodeId` → `selectedServCodeIds`, add `selectionSource`, `selectedProgCodeId` |
+| `bizPlan/pace/PaceType.ts` | ✅ Complete | Add `ProgCodePace`, `EmployeeShare`; extend `ServCodePace` |
+| `bizPlan/pace/paceStyles.ts` | ✅ Complete | `CATEGORY_BADGE_STYLES` const |
+| `bizPlan/pace/paceSelect.ts` | ✅ Complete | Added 4 new selectors; updated `selectServCodePaces` |
+| `bizPlan/pace/paceSlice.ts` | ✅ Complete | Replaced `selectedServCodeId` → `selectedServCodeIds`, added `selectionSource`, `selectedProgCodeId` |
 | `bizPlan/pace/usePaceDeps.ts` | ✅ Complete | Loads all deps incl. assignment plans |
 | `bizPlan/pace/components/Pace.tsx` | ✅ Complete | Top-level layout (no changes needed) |
-| `bizPlan/pace/components/PaceListPanel.tsx` | 🔲 Rewrite | Progcode grouping + "All In Progress" item |
-| `bizPlan/pace/components/PaceListItem.tsx` | 🔲 Remove | Replaced by `ProgCodePaceItem` |
-| `bizPlan/pace/components/ProgCodePaceItem.tsx` | 🔲 New | ProgCode list row with badges |
-| `bizPlan/pace/components/PaceDetailPanel.tsx` | 🔲 Rewrite | Renders `ServCodePaceCard[]` filtered by `unfinishedOnly` |
-| `bizPlan/pace/components/ServCodePaceCard.tsx` | 🔲 New | Card wrapper for a single `ServCodePace` |
-| `bizPlan/pace/components/ServCodeHeader.tsx` | 🔲 New | Identity display (see `paceDetailPlan.md`) |
-| `bizPlan/pace/components/DateRangeEditor.tsx` | 🔲 New | Date range display + edit + save |
-| `bizPlan/pace/components/PaceRateDisplay.tsx` | 🔲 New | Required daily pace display |
-| `bizPlan/pace/components/AssignmentEditor.tsx` | 🔲 New | Employee assignment list + add/remove |
-| `bizPlan/pace/components/EmployeePaceRow.tsx` | 🔲 New | Single employee row with share CSP |
+| `bizPlan/pace/components/PaceListPanel.tsx` | ✅ Complete | ProgCode grouping + "All In Progress" item |
+| `bizPlan/pace/components/PaceListItem.tsx` | ✅ Removed | Replaced by `ProgCodePaceItem` |
+| `bizPlan/pace/components/ProgCodePaceItem.tsx` | ✅ Complete | ProgCode list row with badges |
+| `bizPlan/pace/components/PaceDetailPanel.tsx` | ✅ Complete | Renders `ServCodePaceCard[]` filtered by `unfinishedOnly` |
+| `bizPlan/pace/components/ServCodePaceCard.tsx` | ✅ Complete | Card wrapper for a single `ServCodePace` |
+| `bizPlan/pace/components/ServCodeHeader.tsx` | ✅ Complete | Identity display |
+| `bizPlan/pace/components/DateRangeEditor.tsx` | ✅ Complete | Date range display + edit + save |
+| `bizPlan/pace/components/PaceRateDisplay.tsx` | ✅ Complete | Required daily pace display |
+| `bizPlan/pace/components/AssignmentEditor.tsx` | ✅ Complete | Employee assignment list + add/remove |
+| `bizPlan/pace/components/EmployeePaceRow.tsx` | ✅ Complete | Single employee row with share CSP |
 | `bizPlan/assignmentPlan/AssignmentPlanTypes.ts` | ✅ Complete | `AssignmentPlan` type |
 | `bizPlan/assignmentPlan/assignmentPlanSlice.ts` | ✅ Complete | Redux slice + thunks |
 | `bizPlan/assignmentPlan/assignmentPlanSelect.ts` | ✅ Complete | `assignmentsByServCodeId` |

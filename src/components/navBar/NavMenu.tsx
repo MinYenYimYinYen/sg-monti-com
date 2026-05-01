@@ -95,6 +95,11 @@ const bizPlanSection: NavSection = {
   title: "Biz Plan",
   navItems: [
     { title: "Products", href: "/bizPlan/products", roles: ["admin"] },
+    {
+      title: "Pace",
+      href: "/bizPlan/pace",
+      roles: ["admin", "office", "tech"],
+    },
   ],
 };
 
