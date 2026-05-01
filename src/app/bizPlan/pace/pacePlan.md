@@ -94,45 +94,124 @@ Finished services: `status === "S"`. Unfinished services: statuses `["printed", 
 
 ## Phase 4 — UI 🔲 Next
 
-### `paceSlice` additions
+### Overview
+
+The list panel groups service codes by **`ProgCode`** rather than displaying them as a flat list. Each `ProgCodePace`
+item in the list represents a program; selecting it populates the detail pane with one `ServCodePaceCard` per service
+code in that program. A special **"All In Progress"** item at the top of the list selects all currently `inProgress`
+service codes across all programs.
+
+---
+
+### New Type: `ProgCodePace` (in `PaceType.ts`)
 
 ```typescript
-type PaceSortMode = "byId" | "byDateRange";
-
-// Add to PaceState:
-sortMode: PaceSortMode;        // default: "byDateRange"
-activeFilters: PaceCategory[]; // default: ["asap", "overdue", "inProgress"]
+type ProgCodePace = {
+  progCode: ProgCode;
+  servCodePaces: ServCodePace[];       // all servCodes in this progCode, in natural order
+  category: PaceCategory;             // most urgent category among servCodePaces
+  totalUnfinishedCSP: CountSizePrice; // sum across all servCodePaces
+  totalFinishedCSP: CountSizePrice;   // sum across all servCodePaces
+};
 ```
 
-Actions: `setSortMode`, `setActiveFilters`
+**Category urgency order** (most urgent wins): `asap` > `overdue` > `inProgress` > `notStarted` > `notSet`
 
-### Sort logic
+---
 
-- **`byId`**: alphabetical by `servCodeId`
-- **`byDateRange`**: `asap` always first → sort by `dateRange.min` ascending → `notSet` last →
-  secondary sort alphabetical by `servCodeId`
+### `paceSlice` — Updated State Shape
+
+```typescript
+type PaceSelectionSource = "progCode" | "allInProgress" | "none";
+
+type PaceState = {
+  sortMode: PaceSortMode;
+  activeFilters: PaceCategory[];
+  unfinishedOnly: boolean;
+  selectedServCodeIds: string[];        // the actual set used by the detail pane
+  selectionSource: PaceSelectionSource; // tracks which list item is highlighted
+  selectedProgCodeId: string | null;    // which progCode is highlighted (when source === "progCode")
+};
+```
+
+**Actions**:
+- `setSortMode(PaceSortMode)`
+- `setActiveFilters(PaceCategory[])`
+- `setUnfinishedOnly(boolean)`
+- `setSelectedServCodeIds(string[])` — replaces `setSelectedServCodeId`
+- `setSelectionSource(PaceSelectionSource)`
+- `setSelectedProgCodeId(string | null)`
+
+In practice, the list panel dispatches all three selection fields together when the user clicks an item.
+
+---
+
+### `paceSelect` — New Selectors
+
+- **`selectProgCodePaces: ProgCodePace[]`** — groups `ServCodePace[]` by `progCodeId` using `progServSelect.progCodes`
+  as the source of truth for ordering and membership
+- **`selectFilteredSortedProgCodePaces: ProgCodePace[]`** — filters and sorts at the progCode level:
+  - **Filter**: a `ProgCodePace` passes if at least one of its `servCodePaces` has a `category` in `activeFilters`
+  - **`unfinishedOnly`**: a `ProgCodePace` passes if at least one `servCodePace` has `unfinishedCSP.count > 0`
+  - **Sort `byId`**: alphabetical by `progCodeId`
+  - **Sort `byDateRange`**: `asap` first → sort by earliest `dateRange.min` among servCodes → `notSet` last →
+    secondary alphabetical by `progCodeId`
+- **`selectInProgressServCodeIds: string[]`** — all `servCodePaces` with `category === "inProgress"`, mapped to ids;
+  used by the "All In Progress" button to populate `selectedServCodeIds`
+- **`selectSelectedPaces: ServCodePace[]`** — looks up each id in `servCodePaceMap`; used by the detail pane
+
+---
+
+### Category Color Map (shared const)
+
+Defined in `bizPlan/pace/paceStyles.ts` (new file):
+
+```typescript
+export const CATEGORY_BADGE_STYLES: Record<PaceCategory, string> = {
+  asap:       "bg-destructive/30 text-destructive",
+  overdue:    "bg-secondary/30 text-secondary",
+  inProgress: "bg-primary/20 text-primary",
+  notStarted: "bg-accent/20 text-accent-foreground",
+  notSet:     "bg-muted/30 text-muted-foreground",
+};
+```
+
+---
 
 ### Components
 
 **`Pace.tsx`** (top level, rewrite):
 - `usePaceDeps()`
-- Renders `PaceListPanel` (left) + `PaceDetailPanel` (right, stub)
-- Selects `sortMode`, `activeFilters` from `paceSlice`; dispatches actions
+- Renders `PaceListPanel` (left) + `PaceDetailPanel` (right)
 
-**`PaceListPanel.tsx`**:
-- Receives `ServCodePace[]` (pre-sorted, pre-filtered)
-- `ToggleGroup` (multi-select) for filter: `ASAP | Overdue | In Progress | Not Started | Not Set`
-- `RadioGroup` (`variant="button-group"`) for sort: `By ID | By Date`
-- Scrollable list of `PaceListItem` buttons
+**`PaceListPanel.tsx`** (rewrite):
+- Controls: `ToggleGroup` for category filter, `Switch` for unfinished-only, `RadioGroup` for sort
+- Top of list: **"All In Progress"** pseudo-item (`ProgCodePaceItem` shape)
+  - On click: dispatches `setSelectedServCodeIds(inProgressIds)`, `setSelectionSource("allInProgress")`,
+    `setSelectedProgCodeId(null)`
+  - Highlighted when `selectionSource === "allInProgress"`
+- Remaining list: `ProgCodePaceItem` per `ProgCodePace` from `selectFilteredSortedProgCodePaces`
+  - On click: dispatches `setSelectedServCodeIds(progCodePace.servCodePaces.map(p => p.servCode.servCodeId))`,
+    `setSelectionSource("progCode")`, `setSelectedProgCodeId(progCodeId)`
+  - Highlighted when `selectionSource === "progCode" && selectedProgCodeId === progCode.progCodeId`
 
-**`PaceListItem.tsx`**:
-- Line 1: `{servCodeId}` — `{longName}` (monospace id, truncated name)
-- Line 2 (subtle): date range badge · ASAP badge (if `asap`) · `{finishedCSP.count}/{finishedCSP.count + unfinishedCSP.count}` count (e.g. `62/100`)
+**`ProgCodePaceItem.tsx`** (new, replaces `PaceListItem`):
+- Line 1: `{progCodeId}` (monospace) — `{description}` (truncated)
+- Line 2: small badges for each `servCodeId`, color-coded by that servCode's `category` via `CATEGORY_BADGE_STYLES`
+- Line 3 (subtle): aggregate `totalFinishedCSP.count / (totalFinishedCSP.count + totalUnfinishedCSP.count)`
 - Selected state: `bg-primary/15 border-primary/30`
 
-**`PaceDetailPanel.tsx`** (stub):
-- Empty state placeholder when nothing selected
-- Stub content when a `ServCodePace` is selected (to be fleshed out in a future phase)
+**`PaceDetailPanel.tsx`** (rewrite):
+- Selects `paceSelect.selectedPaces: ServCodePace[]`
+- Applies `unfinishedOnly` filter: if `unfinishedOnly`, only renders cards where `unfinishedCSP.count > 0`
+- Renders one `ServCodePaceCard` per passing `ServCodePace`, in order
+- Empty state (nothing selected): dashed border placeholder
+- Empty state (all filtered out): "All service codes are complete" message
+
+**`ServCodePaceCard.tsx`** (new):
+- Receives a single `ServCodePace`
+- Card wrapper containing: `ServCodeHeader`, `DateRangeEditor`, `PaceRateDisplay`, `AssignmentEditor`
+- See `paceDetailPlan.md` for sub-component specs
 
 ---
 
@@ -144,28 +223,36 @@ Deferred. Will add per-employee pace breakdown once the core ServCode-level UI i
 
 ## File Map
 
-| File                                                     | Status             | Purpose                                     |
-|----------------------------------------------------------|--------------------|---------------------------------------------|
-| `bizPlan/pace/pacePlan.md`                               | ✅ This file        | Plan documentation                          |
-| `bizPlan/pace/PaceType.ts`                               | ✅ Complete         | `PaceCategory`, `ServCodePace` types        |
-| `bizPlan/pace/paceSelect.ts`                             | ✅ Complete         | `servCodePaces`, `servCodePaceMap`          |
-| `bizPlan/pace/paceSlice.ts`                              | 🔲 Phase 4         | Add `sortMode`, `activeFilters`             |
-| `bizPlan/pace/usePaceDeps.ts`                            | ✅ Complete         | Loads all deps incl. assignment plans       |
-| `bizPlan/pace/Pace.tsx`                                  | 🔲 Phase 4         | Top-level layout: list panel + detail panel |
-| `bizPlan/pace/PaceListPanel.tsx`                         | 🔲 Phase 4         | Filter/sort controls + list of items        |
-| `bizPlan/pace/PaceListItem.tsx`                          | 🔲 Phase 4         | Single row: id, name, date range, count     |
-| `bizPlan/pace/PaceDetailPanel.tsx`                       | 🔲 Phase 4         | Stub detail panel                           |
-| `bizPlan/assignmentPlan/AssignmentPlanTypes.ts`          | ✅ Complete         | `AssignmentPlan` type                       |
-| `bizPlan/assignmentPlan/assignmentPlanSlice.ts`          | ✅ Complete         | Redux slice + thunks                        |
-| `bizPlan/assignmentPlan/assignmentPlanSelect.ts`         | ✅ Complete         | `assignmentsByServCodeId`                   |
-| `bizPlan/assignmentPlan/useAssignmentPlan.ts`            | ✅ Complete         | Auto-fetch hook                             |
-| `bizPlan/assignmentPlan/api/AssignmentPlanContract.ts`   | ✅ Complete         | API contract                                |
-| `bizPlan/assignmentPlan/api/AssignmentPlanModel.ts`      | ✅ Complete         | Mongoose model                              |
-| `bizPlan/assignmentPlan/api/route.ts`                    | ✅ Complete         | API route handler                           |
-| `realGreen/progServ/_lib/types/ServCodeTypes.ts`         | ✅ Complete         | `assignedTo: Employee[]` in `ServCodeProps` |
-| `realGreen/progServ/_lib/baseServCode.ts`                | ✅ Complete         | `assignedTo: []` default                    |
-| `realGreen/progServ/_lib/selectors/hydrateAssignedTo.ts` | ✅ Complete         | Dummy employee fallback                     |
-| `realGreen/progServ/_lib/selectors/progServSelect.ts`    | ✅ Complete         | Hydrates `assignedTo` at `selectProgCodes`  |
-| `realGreen/deepSelect.ts`                                | ✅ Complete         | No changes needed                           |
-| `realGreen/progServ/_lib/classes/ServCodeUtils.ts`       | ✅ Complete         | `daysPlanned`, `daysRemaining`, `daysElapsed` |
-| `lib/primatives/dates/dateStrings.ts`                    | ✅ Complete         | `dateRangeToDate` added to `dateRanges`     |
+| File | Status | Purpose |
+|---|---|---|
+| `bizPlan/pace/pacePlan.md` | ✅ This file | Plan documentation |
+| `bizPlan/pace/PaceType.ts` | 🔲 Update | Add `ProgCodePace` type |
+| `bizPlan/pace/paceStyles.ts` | 🔲 New | `CATEGORY_BADGE_STYLES` const |
+| `bizPlan/pace/paceSelect.ts` | 🔲 Update | Add `selectProgCodePaces`, `selectFilteredSortedProgCodePaces`, `selectInProgressServCodeIds`, `selectSelectedPaces` |
+| `bizPlan/pace/paceSlice.ts` | 🔲 Update | Replace `selectedServCodeId` → `selectedServCodeIds`, add `selectionSource`, `selectedProgCodeId` |
+| `bizPlan/pace/usePaceDeps.ts` | ✅ Complete | Loads all deps incl. assignment plans |
+| `bizPlan/pace/components/Pace.tsx` | ✅ Complete | Top-level layout (no changes needed) |
+| `bizPlan/pace/components/PaceListPanel.tsx` | 🔲 Rewrite | Progcode grouping + "All In Progress" item |
+| `bizPlan/pace/components/PaceListItem.tsx` | 🔲 Remove | Replaced by `ProgCodePaceItem` |
+| `bizPlan/pace/components/ProgCodePaceItem.tsx` | 🔲 New | ProgCode list row with badges |
+| `bizPlan/pace/components/PaceDetailPanel.tsx` | 🔲 Rewrite | Renders `ServCodePaceCard[]` filtered by `unfinishedOnly` |
+| `bizPlan/pace/components/ServCodePaceCard.tsx` | 🔲 New | Card wrapper for a single `ServCodePace` |
+| `bizPlan/pace/components/ServCodeHeader.tsx` | 🔲 New | Identity display (see `paceDetailPlan.md`) |
+| `bizPlan/pace/components/DateRangeEditor.tsx` | 🔲 New | Date range display + edit + save |
+| `bizPlan/pace/components/PaceRateDisplay.tsx` | 🔲 New | Required daily pace display |
+| `bizPlan/pace/components/AssignmentEditor.tsx` | 🔲 New | Employee assignment list + add/remove |
+| `bizPlan/pace/components/EmployeePaceRow.tsx` | 🔲 New | Single employee row with share CSP |
+| `bizPlan/assignmentPlan/AssignmentPlanTypes.ts` | ✅ Complete | `AssignmentPlan` type |
+| `bizPlan/assignmentPlan/assignmentPlanSlice.ts` | ✅ Complete | Redux slice + thunks |
+| `bizPlan/assignmentPlan/assignmentPlanSelect.ts` | ✅ Complete | `assignmentsByServCodeId` |
+| `bizPlan/assignmentPlan/useAssignmentPlan.ts` | ✅ Complete | Auto-fetch hook |
+| `bizPlan/assignmentPlan/api/AssignmentPlanContract.ts` | ✅ Complete | API contract |
+| `bizPlan/assignmentPlan/api/AssignmentPlanModel.ts` | ✅ Complete | Mongoose model |
+| `bizPlan/assignmentPlan/api/route.ts` | ✅ Complete | API route handler |
+| `realGreen/progServ/_lib/types/ServCodeTypes.ts` | ✅ Complete | `assignedTo: Employee[]` in `ServCodeProps` |
+| `realGreen/progServ/_lib/baseServCode.ts` | ✅ Complete | `assignedTo: []` default |
+| `realGreen/progServ/_lib/selectors/hydrateAssignedTo.ts` | ✅ Complete | Dummy employee fallback |
+| `realGreen/progServ/_lib/selectors/progServSelect.ts` | ✅ Complete | Hydrates `assignedTo` at `selectProgCodes` |
+| `realGreen/deepSelect.ts` | ✅ Complete | No changes needed |
+| `realGreen/progServ/_lib/classes/ServCodeUtils.ts` | ✅ Complete | `daysPlanned`, `daysRemaining`, `daysElapsed` |
+| `lib/primatives/dates/dateStrings.ts` | ✅ Complete | `dateRangeToDate` added to `dateRanges` |
