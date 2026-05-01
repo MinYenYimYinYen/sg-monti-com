@@ -21,7 +21,7 @@ import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSel
 import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
 import { tw } from "@/lib/pdf/tw";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
-import { HashPDFIcon } from "@/lib/pdf/pdfIcons";
+import { HashPDFIcon, SproutPDFIcon } from "@/lib/pdf/pdfIcons";
 import { truncate } from "@/lib/primatives/string/truncate";
 import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
 import { PDFNumber } from "@/components/Number";
@@ -30,6 +30,10 @@ import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { ScrollArea } from "@/style/components/scroll-area";
+import {
+  servCodeHasSeed,
+  textHasSeedOrPreEm,
+} from "@/app/scheduling/coverSheets/[routeDate]/seedConditions";
 
 export type RouteDatePageProps = {
   params: Promise<{
@@ -288,6 +292,10 @@ function CoverSheetsPDF({
               const servNote = service.techNote;
               const progNote = service.program.techNote;
               const custNote = service.x.customer.techNote;
+              const servNoteHasSeed = textHasSeedOrPreEm(servNote);
+              const progNoteHasSeed = textHasSeedOrPreEm(progNote);
+              const custNoteHasSeed = textHasSeedOrPreEm(custNote);
+
               const directions = service.x.customer.directions;
               const hasNotesArray = [
                 servNote.length ? 1 : 0,
@@ -317,12 +325,14 @@ function CoverSheetsPDF({
                 const currentAssignedTo = isPrinted
                   ? service.lastAssigned.employee.employeeId
                   : "";
+                
 
                 return {
                   servCodeId: service.servCodeId,
                   isPrinted,
                   currentAssignedDate,
                   currentAssignedTo,
+                  hasSeed: servCodeHasSeed(service.servCode),
                 };
               });
 
@@ -354,6 +364,7 @@ function CoverSheetsPDF({
                       .join("/"),
                     conditions: service.x.conditions,
                     productsUsed: mastersAndOrSingles,
+                    hasSeed: servCodeHasSeed(service.servCode),
                   };
                 })
                 .sort((a, b) => a.doneDate.localeCompare(b.doneDate));
@@ -516,19 +527,28 @@ function CoverSheetsPDF({
                   <View id={"NOTES"} style={tw("flex flex-row gap-1 text-xs")}>
                     {custNote && (
                       <View style={tw("flex flex-col flex-1")}>
-                        <Text style={tw("font-bold")}>Customer Note:</Text>
+                        <View style={tw("flex flex-row items-center gap-1")}>
+                          <Text style={tw("font-bold")}>Customer Note:</Text>
+                          {custNoteHasSeed && <SproutPDFIcon size={12} />}
+                        </View>
                         <Text style={tw("p-1")}>{custNote}</Text>
                       </View>
                     )}
                     {progNote && (
                       <View style={tw("flex flex-col flex-1")}>
-                        <Text style={tw("font-bold")}>Program Note:</Text>
+                        <View style={tw("flex flex-row items-center gap-1")}>
+                          <Text style={tw("font-bold")}>Program Note:</Text>
+                          {progNoteHasSeed && <SproutPDFIcon size={12} />}
+                        </View>
                         <Text style={tw("p-1")}>{progNote}</Text>
                       </View>
                     )}
                     {servNote && (
                       <View style={tw("flex flex-col flex-1")}>
-                        <Text style={tw("font-bold")}>Service Note:</Text>
+                        <View style={tw("flex flex-row items-center gap-1")}>
+                          <Text style={tw("font-bold")}>Service Note:</Text>
+                          {servNoteHasSeed && <SproutPDFIcon size={12} />}
+                        </View>
                         <Text style={tw("p-1")}>{servNote}</Text>
                       </View>
                     )}
@@ -555,7 +575,10 @@ function CoverSheetsPDF({
                           )}
                         >
                           <View style={tw("flex flex-col text-left")}>
-                            <Text>{hist.servCodeId}</Text>
+                            <View style={tw("flex flex-row items-center gap-1")}>
+                              <Text>{hist.servCodeId}</Text>
+                              {hist.hasSeed && <SproutPDFIcon size={12} />}
+                            </View>
                             <Text>
                               {hist.doneDate
                                 ? prettyDate(hist.doneDate, "M/d/yy")
@@ -723,7 +746,10 @@ function CoverSheetsPDF({
                             "flex flex-row border border-gray-200 rounded-full p-1 items-center justify-center gap-2",
                           )}
                         >
-                          <Text>{serv.servCodeId}</Text>
+                          <View style={tw("flex flex-row items-center gap-1")}>
+                            <Text>{serv.servCodeId}</Text>
+                            {serv.hasSeed && <SproutPDFIcon size={12} />}
+                          </View>
                           {serv.isPrinted &&
                             serv.servCodeId !== service.servCodeId && (
                               <Text>

@@ -16,6 +16,7 @@ export function remapServCode(raw: ServCodeRaw): ServCodeCore {
     available: raw.available,
     longName: raw.longName,
     invoiceMessage: raw.invoiceMessage,
+    name: raw.name || "",
   };
 }
 

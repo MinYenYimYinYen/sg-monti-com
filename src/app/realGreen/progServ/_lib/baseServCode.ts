@@ -14,6 +14,7 @@ export const baseServCodeCore: ServCodeCore = {
   isServiceCall: false,
   available: true,
   longName: "",
+  name: "",
   invoiceMessage: "",
 };
 

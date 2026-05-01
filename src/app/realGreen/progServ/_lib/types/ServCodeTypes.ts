@@ -73,7 +73,7 @@ export type ServCodeRaw = {
   // maximumWind: number | null;
   // minimumDays: number | null;
   // minimumTemperature: number | null;
-  // name: string | null;
+  name: string | null;
   // noScheduleDate?: boolean;
   // preNotify: boolean;
   // prepayAccountComId: string | null;
@@ -102,6 +102,7 @@ export type ServCodeCore = {
   isServiceCall: boolean;
   available: boolean;
   longName: string;
+  name: string;
   invoiceMessage: string | null;
 };
 
