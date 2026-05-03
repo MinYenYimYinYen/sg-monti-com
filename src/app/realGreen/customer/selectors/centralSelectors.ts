@@ -250,14 +250,39 @@ const selectCustomerMap = createSelector([selectCustomers], (customers) => {
   return new Grouper(customers).toUniqueMap((c) => c.custId);
 });
 
+// Global flag filter — applies selectedFlagIds from custFlagSlice to centralSelect.customers.
+// For a per-feature independent filter (e.g., two flag-filtered views on screen simultaneously),
+// use makeCustFlagFilterSelectors() from custFlagFilterSelect.ts.
+// See src/app/realGreen/custFlag/docs/custFlagFilterPlan.md for architecture notes.
+const selectFilteredCustomers = createSelector(
+  [selectCustomers, custFlagSelect.selectedFlagIds],
+  (customers, flagIds) => {
+    if (flagIds.length === 0) return customers;
+    return customers.filter((customer) => {
+      //If cust has any of the flagIds, TRUE
+      return customer.flags.some((flag) => flagIds.includes(flag.flagId));
+    });
+  },
+);
+
+const selectFilteredPrograms = createSelector(
+  [selectFilteredCustomers],
+  (customers) => customers.flatMap((c) => c.programs),
+);
+
+const selectFilteredServices = createSelector(
+  [selectFilteredPrograms],
+  (programs) => programs.flatMap((p) => p.services),
+);
+
 export const centralSelect = {
   context: selectActiveContexts,
   customerDocs: selectCustomerDocs,
   programDocs: selectProgramDocs,
   serviceDocs: selectServiceDocs,
-  customers: selectCustomers,
-  programs: selectPrograms,
-  services: selectServices,
+  customers: selectFilteredCustomers,
+  programs: selectFilteredPrograms,
+  services: selectFilteredServices,
   customerMap: selectCustomerMap,
   // custIds: selectCustIds,
 };

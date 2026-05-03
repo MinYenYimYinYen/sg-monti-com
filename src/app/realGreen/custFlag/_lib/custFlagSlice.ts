@@ -5,16 +5,22 @@ import { CustFlagContract } from "@/app/realGreen/custFlag/api/CustFlagContract"
 
 type CustFlagState = {
   flagIdCustIds: Map<number, FlagIdCustIds>;
+  selectedFlagIds: number[];
 };
 
 const initialState: CustFlagState = {
   flagIdCustIds: new Map(),
+  selectedFlagIds: [],
 };
 
 const custFlagSlice = createSlice({
   name: "custFlag",
   initialState,
-  reducers: {},
+  reducers: {
+    setSelectedFlagIds: (state, action) => {
+      state.selectedFlagIds = action.payload;
+    },
+  },
   extraReducers: (builder) => {
     builder.addCase(loadFlagIdCustIds.fulfilled, (state, action) => {
       for (const newData of action.payload) {
@@ -33,5 +39,5 @@ const loadFlagIdCustIds = createStandardThunk<
   opName: "loadFlagIdCustIds",
 });
 
-export const custFlagActions = {...custFlagSlice.actions, loadFlagIdCustIds};
+export const custFlagActions = { ...custFlagSlice.actions, loadFlagIdCustIds };
 export default custFlagSlice.reducer;

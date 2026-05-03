@@ -1,9 +1,10 @@
 "use client";
 
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
+import { PaceCategory, ServCodePace } from "@/app/bizPlan/pace/PaceType";
 import { CATEGORY_BADGE_STYLES } from "@/app/bizPlan/pace/paceStyles";
 import { cn } from "@/style/utils";
+import { DateRangeEditor } from "@/app/bizPlan/pace/components/DateRangeEditor";
 
 const CATEGORY_LABELS: Record<PaceCategory, string> = {
   asap: "ASAP",
@@ -14,26 +15,30 @@ const CATEGORY_LABELS: Record<PaceCategory, string> = {
 };
 
 type ServCodeHeaderProps = {
-  servCode: ServCodeDeep;
-  category: PaceCategory;
+  // servCode: ServCodeDeep;
+  // category: PaceCategory;
+  pace: ServCodePace;
 };
 
-export function ServCodeHeader({ servCode, category }: ServCodeHeaderProps) {
+export function ServCodeHeader({ pace }: ServCodeHeaderProps) {
+  const { servCode, category } = pace;
   return (
-    <div className="flex items-start justify-between gap-2">
+    <div className="flex items-center justify-between gap-2">
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="font-mono text-sm font-semibold text-foreground">
+          <span className="font-mono text-md font-semibold text-foreground">
             {servCode.servCodeId}
           </span>
-          <span className="text-xs text-muted-foreground truncate">
+          <span className="text-sm text-muted-foreground truncate">
             {servCode.longName}
           </span>
         </div>
-        <div className="text-[10px] text-muted-foreground mt-0.5 font-mono">
-          {servCode.progCodeId}
-        </div>
       </div>
+
+      <DateRangeEditor
+        servCodeId={pace.servCode.servCodeId}
+        dateRange={pace.servCode.dateRange}
+      />
       <span
         className={cn(
           "shrink-0 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium",

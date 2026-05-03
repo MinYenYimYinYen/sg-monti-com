@@ -12,12 +12,8 @@ type ServCodePaceCardProps = {
 
 export function ServCodePaceCard({ pace }: ServCodePaceCardProps) {
   return (
-    <div className="border rounded-lg p-4 flex flex-col gap-4 bg-card">
-      <ServCodeHeader servCode={pace.servCode} category={pace.category} />
-      <DateRangeEditor
-        servCodeId={pace.servCode.servCodeId}
-        dateRange={pace.servCode.dateRange}
-      />
+    <div className="border rounded-lg p-4 flex flex-col gap-2 bg-card w-3xl">
+      <ServCodeHeader pace={pace} />
       <PaceRateDisplay unfinishedRate={pace.unfinishedRate} />
       <AssignmentEditor
         servCode={pace.servCode}

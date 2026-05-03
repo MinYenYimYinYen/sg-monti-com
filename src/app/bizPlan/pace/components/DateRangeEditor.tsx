@@ -11,10 +11,13 @@ type DateRangeEditorProps = {
   dateRange: TRange<string>;
 };
 
-export function DateRangeEditor({ servCodeId, dateRange }: DateRangeEditorProps) {
+export function DateRangeEditor({
+  servCodeId,
+  dateRange,
+}: DateRangeEditorProps) {
   const [localRange, setLocalRange] = useState<TRange<string>>(dateRange);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const { updateServCode, saveServCodeChanges } = useProgServ({});
+  const { updateServCode } = useProgServ({});
 
   const isDirty =
     localRange.min !== dateRange.min || localRange.max !== dateRange.max;
@@ -24,17 +27,8 @@ export function DateRangeEditor({ servCodeId, dateRange }: DateRangeEditorProps)
     updateServCode({ servCodeId, dateRange: range });
   }
 
-  async function handleSave() {
-    setSaveStatus("saving");
-    await saveServCodeChanges();
-    setSaveStatus("success");
-  }
-
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-        Date range
-      </p>
       <div className="flex items-center gap-2">
         <DateRangePicker value={localRange} onChange={handleChange} />
         {isDirty && (

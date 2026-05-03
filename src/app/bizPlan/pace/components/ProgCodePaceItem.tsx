@@ -23,23 +23,23 @@ export function ProgCodePaceItem({
     onSelectAction(progCode.progCodeId, servCodeIds);
   }
 
+  const percentComplete =
+    total > 0 ? Math.round((finishedCSP.count / total) * 100) : 0;
+
   return (
     <button
       onClick={handleClick}
       className={cn(
-        "w-full text-left px-2.5 py-2 rounded-md transition-colors border",
+        "w-full text-left px-2.5 py-0.5 rounded-md transition-colors border",
         isSelected
           ? "bg-primary/15 border-primary/30"
-          : "hover:bg-accent/10 border-transparent",
+          : "hover:bg-accent/10 border-transparent border-t-black/5",
       )}
     >
       {/* Line 1: progCodeId — description */}
-      <div className="flex items-baseline gap-2 min-w-0">
-        <span className="font-mono text-xs shrink-0 text-foreground">
-          {progCode.progCodeId}
-        </span>
-        <span className="text-xs text-muted-foreground truncate">
-          — {progCode.description}
+      <div className="flex items-baseline min-w-0 text-sm">
+        <span className="truncate">
+          {progCode.progCodeId} - {progCode.description} {percentComplete}%
         </span>
       </div>
 
@@ -60,10 +60,7 @@ export function ProgCodePaceItem({
         </div>
       )}
 
-      {/* Line 3: % complete */}
-      <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
-        {total > 0 ? Math.round((finishedCSP.count / total) * 100) : 0}%
-      </div>
+
     </button>
   );
 }

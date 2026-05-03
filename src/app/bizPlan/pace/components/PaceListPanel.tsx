@@ -3,31 +3,11 @@
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
-import {
-  paceActions,
-  PaceSortMode,
-} from "@/app/bizPlan/pace/paceSlice";
-import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
+import { paceActions } from "@/app/bizPlan/pace/paceSlice";
 import { ProgCodePaceItem } from "@/app/bizPlan/pace/components/ProgCodePaceItem";
+import { PaceDisplayConfig } from "@/app/bizPlan/pace/components/PaceDisplayConfig";
 import { ScrollArea } from "@/style/components/scroll-area";
-import { ToggleGroup, ToggleGroupItem } from "@/style/components/toggle-group";
-import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
-import { Switch } from "@/style/components/switch";
-import { Label } from "@/style/components/label";
 import { cn } from "@/style/utils";
-
-const FILTER_OPTIONS: { value: PaceCategory; label: string }[] = [
-  { value: "asap", label: "ASAP" },
-  { value: "overdue", label: "Overdue" },
-  { value: "inProgress", label: "In Progress" },
-  { value: "notStarted", label: "Not Started" },
-  { value: "notSet", label: "Not Set" },
-];
-
-const SORT_OPTIONS: { value: PaceSortMode; label: string }[] = [
-  { value: "byDateRange", label: "By Date" },
-  { value: "byId", label: "By ID" },
-];
 
 function useSelectProgCode() {
   const dispatch = useAppDispatch();
@@ -48,10 +28,6 @@ function useSelectAllInProgress() {
 }
 
 export function PaceListPanel() {
-  const dispatch = useAppDispatch();
-  const activeFilters = useSelector(paceSelect.activeFilters);
-  const sortMode = useSelector(paceSelect.sortMode);
-  const unfinishedOnly = useSelector(paceSelect.unfinishedOnly);
   const selectionSource = useSelector(paceSelect.selectionSource);
   const selectedProgCodeId = useSelector(paceSelect.selectedProgCodeId);
   const progCodePaces = useSelector(paceSelect.filteredSortedProgCodePaces);
@@ -60,61 +36,11 @@ export function PaceListPanel() {
   const selectProgCode = useSelectProgCode();
   const selectAllInProgress = useSelectAllInProgress();
 
-  function handleFilterChange(values: string[]) {
-    dispatch(paceActions.setActiveFilters(values as PaceCategory[]));
-  }
-
-  function handleSortChange(value: string) {
-    dispatch(paceActions.setSortMode(value as PaceSortMode));
-  }
-
   const allInProgressSelected = selectionSource === "allInProgress";
 
   return (
-    <div className="w-72 shrink-0 flex flex-col gap-2 h-full">
-      {/* Filter */}
-      <ToggleGroup
-        type="multiple"
-        value={activeFilters}
-        onValueChange={handleFilterChange}
-        className="flex-wrap justify-start gap-1"
-        size="sm"
-        variant="outline"
-      >
-        {FILTER_OPTIONS.map((opt) => (
-          <ToggleGroupItem key={opt.value} value={opt.value}>
-            {opt.label}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-
-      {/* Unfinished only toggle */}
-      <div className="flex items-center gap-2">
-        <Switch
-          id="unfinished-only"
-          checked={unfinishedOnly}
-          onCheckedChange={(checked) =>
-            dispatch(paceActions.setUnfinishedOnly(checked))
-          }
-        />
-        <Label htmlFor="unfinished-only" className="text-xs cursor-pointer">
-          Unfinished only
-        </Label>
-      </div>
-
-      {/* Sort */}
-      <RadioGroup
-        variant="button-group"
-        value={sortMode}
-        onValueChange={handleSortChange}
-        className="self-start"
-      >
-        {SORT_OPTIONS.map((opt) => (
-          <RadioGroupItem key={opt.value} value={opt.value}>
-            {opt.label}
-          </RadioGroupItem>
-        ))}
-      </RadioGroup>
+    <div className="w-100 shrink-0 flex flex-col gap-2 h-full">
+      <PaceDisplayConfig />
 
       {/* List */}
       <ScrollArea className="rounded-md border bg-popover flex-1 min-h-0">
@@ -134,7 +60,7 @@ export function PaceListPanel() {
                 All Active
               </span>
             </div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">
+            <div className="text-[12px] text-muted-foreground mt-0.5">
               {activeServCodeIds.length} service code
               {activeServCodeIds.length !== 1 ? "s" : ""}
             </div>

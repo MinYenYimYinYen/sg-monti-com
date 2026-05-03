@@ -135,6 +135,9 @@ const selectServCodeMap = createSelector([selectServCodes], (servCodes) => {
   return new Grouper(servCodes).toUniqueMap((s) => s.servCodeId);
 });
 
+const selectUnsavedServCodeChanges = (state: AppState) =>
+  state.progServ.unsavedServCodeChanges;
+
 export const progServSelect = {
   progCodeDocs: selectProgCodeDocs,
   servCodeDocs: selectServCodeDocs,
@@ -144,4 +147,5 @@ export const progServSelect = {
   progCodeMap: selectProgCodeMap,
   servCodes: selectServCodes,
   servCodeMap: selectServCodeMap,
+  unsavedServCodeChanges: selectUnsavedServCodeChanges,
 };

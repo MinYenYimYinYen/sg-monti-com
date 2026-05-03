@@ -3,6 +3,8 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
+import { useFlag } from "@/app/realGreen/flag/useFlag";
+import { useSelectedCustFlags } from "@/app/realGreen/custFlag/_lib/useSelectedCustFlags";
 import { CustomerContextMode } from "@/app/realGreen/customer/slices/customerSlices";
 
 // Module-level constant ensures referential stability across renders,
@@ -15,4 +17,6 @@ export function usePaceDeps() {
   useProgServ({ autoLoad: true });
   useEmployee({ autoLoad: true });
   useAssignmentPlan({ autoLoad: true });
+  useFlag({ autoLoad: true });
+  useSelectedCustFlags();
 }

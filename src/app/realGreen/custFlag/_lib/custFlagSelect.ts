@@ -17,12 +17,19 @@ const selectCustIdFlagIds = createSelector(
   },
 );
 
-const selectFlagIdsInState = createSelector([selectFlagIdCustIds], (flagIdCustIds) => {
-   const flagIds = [...flagIdCustIds.keys()];
-   return flagIds;
-})
+const selectFlagIdsInState = createSelector(
+  [selectFlagIdCustIds],
+  (flagIdCustIds) => {
+    const flagIds = [...flagIdCustIds.keys()];
+    return flagIds;
+  },
+);
+
+const selectSelectedFlagIds = (state: AppState) =>
+  state.custFlag.selectedFlagIds;
 
 export const custFlagSelect = {
   flagIdsInState: selectFlagIdsInState,
   custIdFlagIds: selectCustIdFlagIds,
+  selectedFlagIds: selectSelectedFlagIds,
 };
