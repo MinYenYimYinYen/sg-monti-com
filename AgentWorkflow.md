@@ -51,6 +51,32 @@ as the data layer is ready. Stubs bridge the gap.
 
 ---
 
+### Implementation Doc Content Standard
+
+The implementation doc is a **task brief**, not a transcript of the code. The source files are the
+source of truth. Keep entries focused on what isn't obvious from the file path and task name alone.
+
+**For UI components (A-tasks), capture:**
+- Component name, file path, and what it replaces or wraps
+- Redux reads (selectors) and dispatches (actions) — the data contract
+- Non-obvious component-level logic (e.g., "filter `unsavedChanges` to only dateRange diffs before
+  passing to save")
+- Layout intent in plain language or a brief structural sketch — not JSX
+- Styling decisions only where deliberate (e.g., "use `bg-popover` base + `bg-accent/20` tint to
+  prevent transparency bleed-through") — not exhaustive className lists
+
+**For backend/data tasks (Y-tasks), capture:**
+- What the type / selector / action / route needs to do
+- Snippets for non-obvious logic — the tricky part, not the boilerplate
+- Enough for the human to implement correctly without guessing intent
+
+**What to omit:**
+- Full component JSX
+- Exhaustive import lists
+- Boilerplate that follows obvious project patterns
+
+---
+
 ## Phase 3 — Polish
 
 **Goal**: Leave no messes. Would Robert C. Martin approve?

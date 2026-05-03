@@ -128,9 +128,33 @@ not yet in state.
 ## Open Questions / Decisions
 
 - **Flag checklist sort order**: Sort flags by `flagId` (numeric) or `desc` (alphabetical)?
-  Alphabetical by `desc` is more user-friendly.
+  → **Resolved**: Alphabetical by `desc`.
 - **"Clear flags" affordance**: Should there be a "Clear" button or link inside the popover to
-  reset `selectedFlagIds` to `[]`? Probably yes — worth adding for UX.
+  reset `selectedFlagIds` to `[]`?
+  → **Resolved**: Yes — a "Clear" link appears in the Flags section header when `selectedFlagIds.length > 0`.
+
+---
+
+## Deviations from Plan (recorded during Phase 3)
+
+### `PaceDisplayConfig.tsx`
+- **Close button added**: Popover uses controlled `open` state (`useState`) with an `X` icon
+  button in the header row. Not in the original plan.
+- **Background layering**: `PopoverContent` has no background class; a `bg-popover` wrapper div
+  provides an opaque base, and a `bg-accent/20` inner div adds the tint. This prevents
+  transparency bleed-through from the page behind the popover.
+- **Flags scroll fix**: The `ScrollArea` component uses `h-full` internally, so `max-h-48` on the
+  `ScrollArea` itself never activates. Fixed by wrapping in a `div` with `h-48` (fixed height) and
+  letting `ScrollArea` fill it with `h-full`.
+
+### `PaceDetailPanel.tsx` *(follow-on fixes, not in original scope)*
+- **`activeFilters` applied to `visiblePaces`**: The detail panel now filters `selectedPaces` by
+  category (matching the list panel's filter) in addition to `unfinishedOnly`. Previously only
+  `unfinishedOnly` was applied.
+- **Save button bug fixed**: `saveServCodeChanges()` was called with no arguments, sending an
+  empty array to the API (nothing saved). Fixed to pass only `dateRangeChanges` — a filtered
+  subset of `unsavedServCodeChanges` where `dateRange` actually differs from the original. The
+  `disabled` check was also updated to respond only to dateRange changes, not all staged changes.
 
 ---
 

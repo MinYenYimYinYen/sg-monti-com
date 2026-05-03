@@ -238,13 +238,14 @@ export const selectCustomers = createSelector(
   },
 );
 
-const selectPrograms = createSelector([selectCustomers], (customers) => {
-  return customers.flatMap((c) => c.programs);
-});
-
-const selectServices = createSelector([selectPrograms], (programs) => {
-  return programs.flatMap((p) => p.services);
-});
+// PRE custFlagFilter Implementation selectors
+// const selectPrograms = createSelector([selectCustomers], (customers) => {
+//   return customers.flatMap((c) => c.programs);
+// });
+//
+// const selectServices = createSelector([selectPrograms], (programs) => {
+//   return programs.flatMap((p) => p.services);
+// });
 
 const selectCustomerMap = createSelector([selectCustomers], (customers) => {
   return new Grouper(customers).toUniqueMap((c) => c.custId);
@@ -284,5 +285,4 @@ export const centralSelect = {
   programs: selectFilteredPrograms,
   services: selectFilteredServices,
   customerMap: selectCustomerMap,
-  // custIds: selectCustIds,
 };

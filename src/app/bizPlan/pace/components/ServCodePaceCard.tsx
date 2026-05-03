@@ -3,7 +3,6 @@
 import { ServCodePace } from "@/app/bizPlan/pace/PaceType";
 import { ServCodeHeader } from "@/app/bizPlan/pace/components/ServCodeHeader";
 import { PaceRateDisplay } from "@/app/bizPlan/pace/components/PaceRateDisplay";
-import { DateRangeEditor } from "@/app/bizPlan/pace/components/DateRangeEditor";
 import { AssignmentEditor } from "@/app/bizPlan/pace/components/AssignmentEditor";
 
 type ServCodePaceCardProps = {

@@ -39,8 +39,8 @@ export function PaceDetailPanel() {
 
   const visiblePaces = selectedPaces.filter((p) => {
     if (!activeFilters.includes(p.category)) return false;
-    if (unfinishedOnly && p.unfinishedCSP.count === 0) return false;
-    return true;
+    return !(unfinishedOnly && p.unfinishedCSP.count === 0);
+
   });
 
   if (visiblePaces.length === 0) {

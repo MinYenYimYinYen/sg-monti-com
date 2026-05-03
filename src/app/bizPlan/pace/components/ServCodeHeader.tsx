@@ -1,6 +1,5 @@
 "use client";
 
-import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { PaceCategory, ServCodePace } from "@/app/bizPlan/pace/PaceType";
 import { CATEGORY_BADGE_STYLES } from "@/app/bizPlan/pace/paceStyles";
 import { cn } from "@/style/utils";
@@ -15,8 +14,6 @@ const CATEGORY_LABELS: Record<PaceCategory, string> = {
 };
 
 type ServCodeHeaderProps = {
-  // servCode: ServCodeDeep;
-  // category: PaceCategory;
   pace: ServCodePace;
 };
 
