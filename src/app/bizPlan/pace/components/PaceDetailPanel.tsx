@@ -11,6 +11,7 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 export function PaceDetailPanel() {
   const selectedPaces = useSelector(paceSelect.selectedPaces);
   const unfinishedOnly = useSelector(paceSelect.unfinishedOnly);
+  const activeFilters = useSelector(paceSelect.activeFilters);
   const selectionSource = useSelector(paceSelect.selectionSource);
   const unsavedServCodeChanges = useSelector(
     progServSelect.unsavedServCodeChanges,
@@ -36,9 +37,11 @@ export function PaceDetailPanel() {
     );
   }
 
-  const visiblePaces = unfinishedOnly
-    ? selectedPaces.filter((p) => p.unfinishedCSP.count > 0)
-    : selectedPaces;
+  const visiblePaces = selectedPaces.filter((p) => {
+    if (!activeFilters.includes(p.category)) return false;
+    if (unfinishedOnly && p.unfinishedCSP.count === 0) return false;
+    return true;
+  });
 
   if (visiblePaces.length === 0) {
     return (
