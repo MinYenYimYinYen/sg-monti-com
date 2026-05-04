@@ -3,8 +3,7 @@
 ## Extension Index: `pace_03`
 
 This document records the Phase 1 interview for the employee pace feature. Questions are asked
-in dependency order — answers to earlier questions constrain later ones. Unanswered questions are
-marked **OPEN**.
+in dependency order — answers to earlier questions constrain later ones.
 
 ---
 
@@ -57,9 +56,14 @@ equivalent).
 
 **Q:** Should the lookback be scoped to a specific `servCode`, or cross-servCode?
 
-**A:** **Per-servCode only.** If no historical data exists for an employee on a given servCode
-within the lookback window, the result is `null`. The feature must handle `null` gracefully
-(display as "no data", exclude from averages, etc.).
+**A:** **Per `programType`** (not per servCode, not cross-all). The lookback groups finished
+services by `servCode.progCode.programType`. This handles:
+- Seamless transitions between servCodes of the same type (e.g., LR1 → LR2)
+- Cross-progCode groupings (e.g., P01, PIV, PCI are all pest control and share a programType)
+
+If no historical data exists for an employee on a given `programType` within the lookback window,
+the result is `null`. The feature must handle `null` gracefully (display as "no data", exclude
+from averages, etc.).
 
 ---
 
@@ -75,9 +79,12 @@ customers/services for season-end evaluation or next-season planning.
 
 `dateRanges.countWeekdays` already exists and can count weekdays in a range.
 
+**Possible `dateStrings.ts` additions needed:**
+- `weekdaysAgo(n)` — go back N weekdays from today (for configurable lookback window)
+
 ---
 
-## Q5 — Completion rate definition
+## Q5 — Completion rate and "missed day" exclusion
 
 **Q:** What does "completion rate" mean? How do we use `AssignmentDoc[]`?
 
@@ -85,65 +92,116 @@ customers/services for season-end evaluation or next-season planning.
 in the array, the employee did not complete the service on that scheduled date — it was
 rescheduled. The last `AssignmentDoc` represents the final assignment.
 
-From this we can build a selector: **per employee, per servCode, per scheduled date** — how much
-work was assigned vs. how much was completed.
+From this we can build a selector: **per employee, per `programType`, per scheduled date** —
+how much work was assigned vs. how much was completed.
 
 **Handling "rain-out" / absence days:**
-- If an employee completed **0 jobs** on a given day, that day should be **excluded** from the
+- If an employee completed **0 jobs** on a given date, that date should be **excluded** from the
   lookback accumulation — it is not a representation of capacity.
 - A **user-configurable threshold** should also be supported: if the employee completed less than
-  X% of their assigned work on a day, exclude that day from the lookback. This covers partial
+  X% of their assigned work on a date, exclude that date from the lookback. This covers partial
   rain-outs.
+- Invalidation is **per date only** — not per employee and not per servCode. If a date is
+  invalidated, all assignments on that date are excluded.
 - We do not have a way to determine *why* a day was missed (absence, weather, PTO, holiday). This
   is an accepted data gap for now.
 
+**Isolation note:** Because the completion-rate / missed-day logic is ambiguous and likely to be
+refactored, it should be isolated in its own file(s) to minimize maintenance surface.
+
+**Future extension — `SkipReason` (documented, not built now):**
+A future improvement would add `skipReason: SkipReason | null` to `AssignmentDoc`:
+
+```typescript
+type SkipReason = {
+  reason: string;
+  invalidatesAssignment: boolean;
+};
+```
+
+`SkipReason` values could be hard-coded or user-defined. If user-defined, a data module would be
+needed. This would allow explicit tracking of holidays, sick days, weather delays, etc., and make
+the invalidation logic deterministic rather than inferred.
+
 ---
 
-## Q6 — Employee view (inversion of current servCode view) — **OPEN**
+## Q6 — Employee view
 
 **Q:** Should the employee view be a new top-level panel/page, or a drill-down from the existing
-pace list (e.g., click an employee → see all their servCodes)?
+pace list?
 
-**A:** *(Not yet answered)*
+**A:** **Drill-down for now** — clicking an employee name opens a popover showing detail for that
+employee (their servCode assignments, capacity allocation, pace metrics).
 
----
-
-## Q7 — Priority when an employee has multiple servCodes on a given date — **OPEN**
-
-**Q:** Is priority manually set by the production manager, or derived automatically (e.g., most
-urgent category first, then earliest deadline)? Or is this purely a display/sort concern?
-
-**A:** *(Not yet answered)*
+A shared component should be designed so it can also be used on a future standalone employee page.
+That page would require a different selector flow (different filters/sorts) and should not be
+mixed into this build — document as future overhead.
 
 ---
 
-## Q8 — Timeline view — **OPEN**
+## Q7 — Capacity allocation across multiple servCodes
 
-**Q:** What does the timeline represent — a calendar of scheduled dates with workload per day, a
-projection of completion at current pace, or both? What is the time axis (days/weeks)? What is
-the primary entity on the y-axis (employees, servCodes, or both)?
+**Q:** How do we calculate an employee's capacity split when assigned to multiple servCodes?
 
-**A:** *(Not yet answered)*
+**A:** The model:
+
+1. For each `programType` an employee is assigned to, look back at their historical production
+   for that `programType` across all servCodes of that type.
+2. Compute **max daily production** (single highest day) and **average daily production**
+   (excluding invalidated days per Q5). Both are useful:
+   - Max = "what can this person do on a good day" → capacity planning
+   - Average = "what do they typically do" → realistic projection
+3. For each servCode assigned to the employee, calculate the fraction of their `programType` max
+   consumed by the remaining work in that servCode:
+   `fractionConsumed = remainingWork / maxDailyCapacity`
+4. Sum `fractionConsumed` across all assigned servCodes. If > 1.0, the employee is overloaded.
+5. `freeCapacityFraction = max(0, 1 - totalFractionConsumed)`
+
+**Output per employee (replaces current even-split `shareCSP`):**
+- `maxDailyCSP` — lookback-derived max for this `programType`
+- `avgDailyCSP` — lookback-derived average for this `programType`
+- `shareCSP` — expected contribution based on max and remaining work (replaces even split)
+
+**At the `ServCodePace` level:**
+- Sum employee `shareCSP` values → compare to `unfinishedRate`
+- Surface **delta** and **delta%** — tells the production manager whether the assigned team can
+  hit the required pace
+
+**Overloaded employee:** Surface visually (warning indicator) when `totalFractionConsumed > 1.0`.
 
 ---
 
-## Q9 — Scope: one extension or split? — **OPEN**
+## Q8 — Timeline view — *Deferred*
 
-**Q:** Should this be one `pace_03` extension covering all 7 concerns, or split into
-`pace_03_employeeLookback` (data/metrics) and `pace_04_employeeView` (UI)?
+**Q:** What does the timeline represent?
 
-**A:** *(Not yet answered)*
+**A:** Deferred to a future extension. Documented intent:
+
+Timeline groups `ServCode.assignedTo[][]` by individual date. Vertical layout:
+```
+{date}
+  Begin
+    {servCode[]}: {employee[]}
+```
+
+Not needed for this build.
 
 ---
 
-## Notes on `dateStrings.ts`
+## Q9 — Scope
 
-Current weekday utilities available:
-- `dateStrings.isWeekDay(date)` — boolean
-- `dateStrings.nextMonday(date)` — string
-- `dateStrings.todayToWeekday()` — string
-- `dateRanges.countWeekdays(dateRange)` — number
+**Q:** One extension or split into data layer + UI?
 
-May need to add:
-- `weekdaysAgo(n)` — go back N weekdays from today (for configurable lookback window)
-- `countWeekdaysBetween(start, end)` — alias or variant of `countWeekdays` for clarity
+**A:** **One extension (`pace_03`)**. Data layer without UI isn't a feature — we want to see the
+result when it's done.
+
+---
+
+## Notes on `programType`
+
+`ProgCode.programType` is `string | null` (from RealGreen API). Treat `null` as its own bucket
+for grouping purposes — don't silently drop services with no programType.
+
+`ServCode` → `ServCode.progCode.programType` is the path to the grouping key from a service.
+`ServCodeDeep` (used in `paceSelect`) already has `progCode` hydrated, so this is accessible
+without additional data fetching.
