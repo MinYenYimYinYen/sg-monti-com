@@ -29,6 +29,8 @@ import {
   computeLookbackStats,
   getValidProductionDates,
 } from "@/app/bizPlan/pace/_lib/employeeLookbackUtils";
+import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
+import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 
 function getCategory(servCode: ServCodeDeep): PaceCategory {
   if (servCode.alwaysAsap) return "asap";
@@ -122,11 +124,52 @@ const selectEmployeeLookbackMap = createSelector(
     );
     const rawAccumulation = accumulateDailyProduction(windowServices, validDates);
 
+    // Re-derive total daily CSP per employee directly from windowServices
+    // (avoids needing to re-key the already-flattened arrays by date)
+    const totalAccumulator = new Map<string, Map<string, CountSizePrice>>();
+    for (const service of windowServices) {
+      if (service.status !== "S" || !service.production?.doneDate) continue;
+      if (!validDates.has(service.production.doneDate)) continue;
+      const serviceCSP = CountSizePriceOps.fromService(service);
+      const date = service.production.doneDate;
+      for (const doneBy of service.production.doneBys) {
+        const employeeId = doneBy.employeeId;
+        const contribution = CountSizePriceOps.multiply(serviceCSP, doneBy.percent);
+        if (!totalAccumulator.has(employeeId)) {
+          totalAccumulator.set(employeeId, new Map());
+        }
+        const byDate = totalAccumulator.get(employeeId)!;
+        const existing = byDate.get(date) ?? { ...baseCountSizePrice };
+        byDate.set(date, CountSizePriceOps.sum(existing, contribution));
+      }
+    }
+
+    // Compute totalMaxDailyCSP per employee (max single day across all programTypes)
+    const totalMaxByEmployee = new Map<string, CountSizePrice>();
+    for (const [employeeId, byDate] of totalAccumulator) {
+      const dailyTotals = Array.from(byDate.values());
+      const totalMax = dailyTotals.reduce(
+        (max, day) => ({
+          count: Math.max(max.count, day.count),
+          size: Math.max(max.size, day.size),
+          price: Math.max(max.price, day.price),
+          rev: Math.max(max.rev, day.rev),
+        }),
+        { ...baseCountSizePrice },
+      );
+      totalMaxByEmployee.set(employeeId, totalMax);
+    }
+
     const result: EmployeeLookbackMap = new Map();
     for (const [employeeId, byProgramType] of rawAccumulation) {
+      const totalMaxDailyCSP =
+        totalMaxByEmployee.get(employeeId) ?? { ...baseCountSizePrice };
       const statsMap = new Map<string, LookbackStats | null>();
       for (const [programTypeKey, dailyProductions] of byProgramType) {
-        statsMap.set(programTypeKey, computeLookbackStats(dailyProductions));
+        statsMap.set(
+          programTypeKey,
+          computeLookbackStats(dailyProductions, totalMaxDailyCSP),
+        );
       }
       result.set(employeeId, statsMap);
     }
@@ -139,19 +182,11 @@ const selectEmployeeLookbackMap = createSelector(
 type CapacityTracker = Map<string, CountSizePrice>;
 
 const selectServCodePaces = createSelector(
-  [deepSelect.servCodes, selectEmployeeLookbackMap],
-  (servCodes, lookbackMap) => {
-    // Track remaining capacity per employee across all servCodes (cascade model)
-    const remainingCapacity: CapacityTracker = new Map();
-
-    return servCodes.map((servCode) => {
-      const finished = servCode.services.filter((s) => s.status === "S");
-      const finishedCSP = getCSPTotal(finished);
-      const finishedRate = CountSizePriceOps.divideBy(
-        finishedCSP,
-        servCode.x.daysElapsed,
-      );
-
+  [deepSelect.servCodes, selectEmployeeLookbackMap, employeeSelect.employeeMap],
+  (servCodes, lookbackMap, employeeMap) => {
+    // Build a map of servCodeId → unfinishedRate for cascade allocation
+    const unfinishedRateMap = new Map<string, CountSizePrice>();
+    for (const servCode of servCodes) {
       const unfinished = servCode.services.filter((s) =>
         getServiceStatuses(["printed", "active", "asap"]).includes(s.status),
       );
@@ -160,71 +195,125 @@ const selectServCodePaces = createSelector(
         unfinishedCSP,
         servCode.x.daysRemaining,
       );
+      unfinishedRateMap.set(servCode.servCodeId, unfinishedRate);
+    }
 
-      const programTypeKey =
-        servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+    // Run the cascade per employee in their priority order (employee.servCodeIds[])
+    // This ensures capacity is allocated to higher-priority servCodes first.
+    const remainingCapacity: CapacityTracker = new Map();
+    // employeeId → servCodeId → EmployeeShare (built during cascade)
+    const sharesByEmployeeAndServCode = new Map<string, Map<string, EmployeeShare>>();
 
-      const employeeShares: EmployeeShare[] = servCode.assignedTo.map(
-        (employee) => {
-          const employeeStats = lookbackMap
-            .get(employee.employeeId)
-            ?.get(programTypeKey);
+    for (const employee of employeeMap.values()) {
+      const employeeLookback = lookbackMap.get(employee.employeeId);
 
-          if (!employeeStats) {
-            // No lookback data — even-split fallback
-            const evenSplit = CountSizePriceOps.divideBy(
-              unfinishedRate,
-              servCode.assignedTo.length || 1,
-            );
-            return {
-              employee,
-              expectedCSP: evenSplit,
-              maxDailyCSP: null,
-              avgDailyCSP: null,
-              fractionConsumed: null,
-              isEstimated: true,
-            };
-          }
+      for (const servCodeId of employee.servCodeIds) {
+        const servCode = servCodes.find((sc) => sc.servCodeId === servCodeId);
+        if (!servCode) continue;
 
-          const { maxDailyCSP, avgDailyCSP } = employeeStats;
+        const unfinishedRate = unfinishedRateMap.get(servCodeId) ?? { ...baseCountSizePrice };
 
-          // Initialize remaining capacity for this employee if not yet tracked
-          if (!remainingCapacity.has(employee.employeeId)) {
-            remainingCapacity.set(employee.employeeId, { ...maxDailyCSP });
-          }
-          const remaining = remainingCapacity.get(employee.employeeId)!;
+        // Look up stats using this servCode's specific program type
+        const programTypeKey = servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+        const employeeStats = employeeLookback?.get(programTypeKey) ?? null;
 
-          // Allocate: min(remaining, what this servCode needs)
-          const expectedCSP = minCSP(remaining, unfinishedRate);
-
-          // Deduct from remaining capacity
-          remainingCapacity.set(
-            employee.employeeId,
-            CountSizePriceOps.subtract(remaining, expectedCSP),
-          );
-
-          const fractionConsumed = safeDivideCSP(expectedCSP, maxDailyCSP);
-
-          return {
+        if (!employeeStats) {
+          // No lookback data for this program type — even-split fallback
+          const assignedCount = servCode.assignedTo.length || 1;
+          const evenSplit = CountSizePriceOps.divideBy(unfinishedRate, assignedCount);
+          const share: EmployeeShare = {
             employee,
-            expectedCSP,
-            maxDailyCSP,
-            avgDailyCSP,
-            fractionConsumed,
-            isEstimated: false,
+            expectedCSP: evenSplit,
+            maxDailyCSP: null,
+            avgDailyCSP: null,
+            fractionConsumed: null,
+            isEstimated: true,
           };
-        },
+          if (!sharesByEmployeeAndServCode.has(employee.employeeId)) {
+            sharesByEmployeeAndServCode.set(employee.employeeId, new Map());
+          }
+          sharesByEmployeeAndServCode.get(employee.employeeId)!.set(servCodeId, share);
+          continue;
+        }
+
+        const { maxDailyCSP, avgDailyCSP, totalMaxDailyCSP } = employeeStats;
+
+        // Initialize remaining capacity from totalMaxDailyCSP (cross-programType ceiling).
+        // This is set once per employee and shared across all servCodes.
+        if (!remainingCapacity.has(employee.employeeId)) {
+          remainingCapacity.set(employee.employeeId, { ...totalMaxDailyCSP });
+        }
+        const remaining = remainingCapacity.get(employee.employeeId)!;
+
+        // Divide demand equally among all assigned employees before capping by capacity
+        const assignedCount = servCode.assignedTo.length || 1;
+        const perEmployeeRate = CountSizePriceOps.divideBy(unfinishedRate, assignedCount);
+
+        // Allocate: min(remaining, this employee's share of the servCode demand)
+        const expectedCSP = minCSP(remaining, perEmployeeRate);
+
+        // Deduct from remaining capacity
+        remainingCapacity.set(
+          employee.employeeId,
+          CountSizePriceOps.subtract(remaining, expectedCSP),
+        );
+
+        const fractionConsumed = safeDivideCSP(expectedCSP, totalMaxDailyCSP);
+
+        const share: EmployeeShare = {
+          employee,
+          expectedCSP,
+          maxDailyCSP,
+          avgDailyCSP,
+          fractionConsumed,
+          isEstimated: false,
+        };
+
+        if (!sharesByEmployeeAndServCode.has(employee.employeeId)) {
+          sharesByEmployeeAndServCode.set(employee.employeeId, new Map());
+        }
+        sharesByEmployeeAndServCode.get(employee.employeeId)!.set(servCodeId, share);
+      }
+    }
+
+    // Now build ServCodePace[] using the pre-computed shares
+    return servCodes.map((servCode) => {
+      const finished = servCode.services.filter((s) => s.status === "S");
+      const finishedCSP = getCSPTotal(finished);
+      const finishedRate = CountSizePriceOps.divideBy(
+        finishedCSP,
+        servCode.x.daysElapsed,
       );
 
-      const teamExpectedCSP = CountSizePriceOps.sumAll(
-        employeeShares.map(
-          (s) => s.expectedCSP ?? { ...baseCountSizePrice },
+      const unfinishedRate = unfinishedRateMap.get(servCode.servCodeId) ?? { ...baseCountSizePrice };
+      const unfinishedCSP = getCSPTotal(
+        servCode.services.filter((s) =>
+          getServiceStatuses(["printed", "active", "asap"]).includes(s.status),
         ),
       );
-      const paceDelta = CountSizePriceOps.subtract(
-        teamExpectedCSP,
-        unfinishedRate,
+
+      const employeeShares: EmployeeShare[] = servCode.assignedTo.map((employee) => {
+        const share = sharesByEmployeeAndServCode
+          .get(employee.employeeId)
+          ?.get(servCode.servCodeId);
+
+        if (share) return share;
+
+        // Fallback: employee assigned but not in their priority list yet (shouldn't happen)
+        return {
+          employee,
+          expectedCSP: { ...baseCountSizePrice },
+          maxDailyCSP: null,
+          avgDailyCSP: null,
+          fractionConsumed: null,
+          isEstimated: true,
+        };
+      });
+
+      const teamExpectedCSP = CountSizePriceOps.sumAll(
+        employeeShares.map((s) => s.expectedCSP ?? { ...baseCountSizePrice }),
       );
+      const paceDelta = CountSizePriceOps.subtract(teamExpectedCSP, unfinishedRate);
       const paceDeltaPct = safeDivideCSP(paceDelta, unfinishedRate);
 
       const pace: ServCodePace = {
@@ -349,8 +438,8 @@ const selectSelectedPaces = createSelector(
 
 // Cross-servCode capacity summary per employee
 const selectEmployeePaceSummaries = createSelector(
-  [selectServCodePaces, selectEmployeeLookbackMap],
-  (servCodePaces, lookbackMap): EmployeePaceSummary[] => {
+  [selectServCodePaces, selectEmployeeLookbackMap, assignmentPlanSelect.assignmentsByEmployeeId],
+  (servCodePaces, lookbackMap, assignmentsByEmployeeId): EmployeePaceSummary[] => {
     // Group all EmployeeShare entries by employeeId
     const byEmployee = new Map<
       string,
@@ -373,57 +462,73 @@ const selectEmployeePaceSummaries = createSelector(
 
     for (const [employeeId, { shares, servCodePaces: employeePaces }] of byEmployee) {
       const employee = shares[0].employee;
+      const employeeLookback = lookbackMap.get(employeeId);
+      const priorityOrder = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+      const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
-      // Use the programType from the first servCode (employees typically work one programType)
-      const programType =
-        employeePaces[0]?.servCode.progCode.programType ?? null;
-      const programTypeKey = programType ?? NULL_PROGRAM_TYPE_KEY;
+      // Group shares by programType — one summary per (employee, programType)
+      const byProgramType = new Map<string, { shares: EmployeeShare[]; paces: ServCodePace[] }>();
+      for (let i = 0; i < shares.length; i++) {
+        const key = employeePaces[i].servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+        if (!byProgramType.has(key)) byProgramType.set(key, { shares: [], paces: [] });
+        const group = byProgramType.get(key)!;
+        group.shares.push(shares[i]);
+        group.paces.push(employeePaces[i]);
+      }
 
-      const stats =
-        lookbackMap.get(employeeId)?.get(programTypeKey) ?? null;
+      for (const [programTypeKey, group] of byProgramType) {
+        const programType = programTypeKey === NULL_PROGRAM_TYPE_KEY ? null : programTypeKey;
+        const stats = employeeLookback?.get(programTypeKey) ?? null;
 
-      const allocations: EmployeeAllocation[] = shares.map((share, i) => ({
-        servCode: employeePaces[i].servCode,
-        fractionConsumed: share.fractionConsumed,
-        expectedCSP: share.expectedCSP ?? { ...baseCountSizePrice },
-      }));
+        const unsortedAllocations: EmployeeAllocation[] = group.shares.map((share, i) => ({
+          servCode: group.paces[i].servCode,
+          fractionConsumed: share.fractionConsumed,
+          expectedCSP: share.expectedCSP ?? { ...baseCountSizePrice },
+        }));
 
-      // Sum fractionConsumed across all allocations
-      const fractionConsumedValues = allocations
-        .map((a) => a.fractionConsumed)
-        .filter((f): f is CountSizePrice => f !== null);
+        // Sort allocations by the manager's priority order
+        const allocations = [...unsortedAllocations].sort((a, b) => {
+          const ia = priorityIndex.get(a.servCode.servCodeId) ?? Infinity;
+          const ib = priorityIndex.get(b.servCode.servCodeId) ?? Infinity;
+          return ia - ib;
+        });
 
-      const totalFractionConsumed =
-        fractionConsumedValues.length > 0
-          ? CountSizePriceOps.sumAll(fractionConsumedValues)
+        const fractionConsumedValues = allocations
+          .map((a) => a.fractionConsumed)
+          .filter((f): f is CountSizePrice => f !== null);
+
+        const totalFractionConsumed =
+          fractionConsumedValues.length > 0
+            ? CountSizePriceOps.sumAll(fractionConsumedValues)
+            : null;
+
+        const freeCapacityFraction = totalFractionConsumed
+          ? {
+              count: Math.max(0, 1 - totalFractionConsumed.count),
+              size: Math.max(0, 1 - totalFractionConsumed.size),
+              price: Math.max(0, 1 - totalFractionConsumed.price),
+              rev: Math.max(0, 1 - totalFractionConsumed.rev),
+            }
           : null;
 
-      const freeCapacityFraction = totalFractionConsumed
-        ? {
-            count: Math.max(0, 1 - totalFractionConsumed.count),
-            size: Math.max(0, 1 - totalFractionConsumed.size),
-            price: Math.max(0, 1 - totalFractionConsumed.price),
-            rev: Math.max(0, 1 - totalFractionConsumed.rev),
-          }
-        : null;
+        const isOverloaded = totalFractionConsumed
+          ? totalFractionConsumed.count > 1 ||
+            totalFractionConsumed.size > 1 ||
+            totalFractionConsumed.price > 1 ||
+            totalFractionConsumed.rev > 1
+          : false;
 
-      const isOverloaded = totalFractionConsumed
-        ? totalFractionConsumed.count > 1 ||
-          totalFractionConsumed.size > 1 ||
-          totalFractionConsumed.price > 1 ||
-          totalFractionConsumed.rev > 1
-        : false;
-
-      summaries.push({
-        employee,
-        programType,
-        maxDailyCSP: stats?.maxDailyCSP ?? null,
-        avgDailyCSP: stats?.avgDailyCSP ?? null,
-        allocations,
-        totalFractionConsumed,
-        freeCapacityFraction,
-        isOverloaded,
-      });
+        summaries.push({
+          employee,
+          programType,
+          maxDailyCSP: stats?.maxDailyCSP ?? null,
+          avgDailyCSP: stats?.avgDailyCSP ?? null,
+          allocations,
+          totalFractionConsumed,
+          freeCapacityFraction,
+          isOverloaded,
+        });
+      }
     }
 
     return summaries;

@@ -4,13 +4,15 @@ import { EmployeeShare } from "@/app/bizPlan/pace/PaceType";
 import { EmployeeDetailPopover } from "@/app/bizPlan/pace/components/EmployeeDetailPopover";
 import { Number } from "@/components/Number";
 import { cn } from "@/style/utils";
+import { LandPlot } from "lucide-react";
 
 type EmployeePaceRowProps = {
   share: EmployeeShare;
+  programType: string | null;
   onRemoveAction: (employeeId: string) => void;
 };
 
-export function EmployeePaceRow({ share, onRemoveAction }: EmployeePaceRowProps) {
+export function EmployeePaceRow({ share, programType, onRemoveAction }: EmployeePaceRowProps) {
   const { employee, expectedCSP, isEstimated, fractionConsumed } = share;
   const isOverloaded =
     fractionConsumed !== null &&
@@ -20,7 +22,7 @@ export function EmployeePaceRow({ share, onRemoveAction }: EmployeePaceRowProps)
 
   return (
     <div className="flex items-center justify-between gap-2 py-1.5">
-      <EmployeeDetailPopover employeeId={employee.employeeId}>
+      <EmployeeDetailPopover employeeId={employee.employeeId} programType={programType}>
         <button
           className={cn(
             "text-sm text-left truncate transition-colors hover:text-primary",
@@ -37,16 +39,19 @@ export function EmployeePaceRow({ share, onRemoveAction }: EmployeePaceRowProps)
         </button>
       </EmployeeDetailPopover>
       <div className="flex items-center gap-3 shrink-0">
-        <div className="flex gap-3 text-xs font-mono text-muted-foreground">
+        <div className="flex items-center gap-2.5 text-sm font-mono text-muted-foreground">
           {expectedCSP != null ? (
             <>
-              <span>
+              <span className="flex items-center gap-0.5">
+                <span className="text-xs font-bold">#</span>
                 <Number decimals={0}>{expectedCSP.count}</Number>
               </span>
-              <span>
+              <span className="flex items-center gap-0.5">
+                <LandPlot className="w-3.5 h-3.5" />
                 <Number decimals={0}>{expectedCSP.size}</Number>
               </span>
-              <span>
+              <span className="flex items-center gap-0.5">
+                <span className="text-xs">$</span>
                 <Number isMoney decimals={0}>{expectedCSP.price}</Number>
               </span>
             </>

@@ -11,6 +11,9 @@ export const NULL_PROGRAM_TYPE_KEY = "__null__";
 export type LookbackStats = {
   maxDailyCSP: CountSizePrice;
   avgDailyCSP: CountSizePrice;
+  // Total capacity across all programTypes on the employee's best day.
+  // Used as the capacity denominator for fractionConsumed — not the per-type max.
+  totalMaxDailyCSP: CountSizePrice;
 };
 
 /**
@@ -126,9 +129,14 @@ export function accumulateDailyProduction(
  *
  * Max is computed per-dimension independently.
  * Avg is the mean across all days.
+ *
+ * totalMaxDailyCSP must be provided by the caller — it is the employee's total
+ * production across all programTypes on their best day, used as the capacity
+ * denominator for fractionConsumed.
  */
 export function computeLookbackStats(
   dailyProductions: CountSizePrice[],
+  totalMaxDailyCSP: CountSizePrice,
 ): LookbackStats | null {
   if (dailyProductions.length === 0) return null;
 
@@ -145,5 +153,5 @@ export function computeLookbackStats(
   const sum = CountSizePriceOps.sumAll(dailyProductions);
   const avgDailyCSP = CountSizePriceOps.divideBy(sum, dailyProductions.length);
 
-  return { maxDailyCSP, avgDailyCSP };
+  return { maxDailyCSP, avgDailyCSP, totalMaxDailyCSP };
 }

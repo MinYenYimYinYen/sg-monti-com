@@ -56,7 +56,7 @@ export type LookbackConfig = {
 export type EmployeeAllocation = {
   servCode: ServCodeDeep;
   fractionConsumed: CountSizePrice | null;
-  expectedCSP: CountSizePrice | null;
+  expectedCSP: CountSizePrice;
 }
 
 export type EmployeePaceSummary = {

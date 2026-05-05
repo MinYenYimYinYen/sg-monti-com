@@ -11,15 +11,19 @@ import {
 
 type EmployeeDetailPopoverProps = {
   employeeId: string;
+  programType: string | null;
   children: React.ReactNode;
 };
 
 export function EmployeeDetailPopover({
   employeeId,
+  programType,
   children,
 }: EmployeeDetailPopoverProps) {
   const summaries = useSelector(paceSelect.employeePaceSummaries);
-  const summary = summaries.find((s) => s.employee.employeeId === employeeId);
+  const summary = summaries.find(
+    (s) => s.employee.employeeId === employeeId && s.programType === programType,
+  );
 
   if (!summary) return <>{children}</>;
 

@@ -6,6 +6,7 @@ import { PaceRateDisplay } from "@/app/bizPlan/pace/components/PaceRateDisplay";
 import { AssignmentEditor } from "@/app/bizPlan/pace/components/AssignmentEditor";
 import { Number } from "@/components/Number";
 import { cn } from "@/style/utils";
+import { LandPlot } from "lucide-react";
 
 type ServCodePaceCardProps = {
   pace: ServCodePace;
@@ -37,12 +38,12 @@ export function ServCodePaceCard({ pace }: ServCodePaceCardProps) {
           </p>
           <div className="flex items-center gap-3 text-xs font-mono shrink-0">
             <DeltaCell
-              label="Count"
+              icon={<span className="text-xs font-bold">#</span>}
               delta={paceDelta.count}
               pct={paceDeltaPct?.count ?? null}
             />
             <DeltaCell
-              label="Size"
+              icon={<LandPlot className="w-3.5 h-3.5" />}
               delta={paceDelta.size}
               pct={paceDeltaPct?.size ?? null}
             />
@@ -59,18 +60,18 @@ export function ServCodePaceCard({ pace }: ServCodePaceCardProps) {
 }
 
 function DeltaCell({
-  label,
+  icon,
   delta,
   pct,
 }: {
-  label: string;
+  icon: React.ReactNode;
   delta: number;
   pct: number | null;
 }) {
   const isNegative = delta < 0;
   return (
     <div className="flex flex-col items-center min-w-[3rem]">
-      <span className="text-[10px] text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground flex items-center">{icon}</span>
       <span
         className={cn(
           "font-medium",

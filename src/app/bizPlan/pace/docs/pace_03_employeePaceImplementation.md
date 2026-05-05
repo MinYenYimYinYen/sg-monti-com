@@ -324,3 +324,24 @@ matching `EmployeePaceSummary` from `paceSelect.employeePaceSummaries`, renders 
 - **DoneByCore.percent normalization** — discovered during testing that RealGreen stores
   `percent` as an integer (0–100), not a fraction. Fixed in `remapDoneBy` by dividing by 100.
   The old `|| 1` fallback (which accidentally meant "100%") is now `(raw.percent ?? 100) / 100`.
+- **Cascade: divide by assignedCount before minCSP** — the original plan applied
+  `min(remaining, unfinishedRate)` directly. Fixed post-build: `unfinishedRate` is first divided
+  by `servCode.assignedTo.length` so each employee is only allocated their proportional share of
+  the demand before the capacity cap is applied.
+- **Cascade: per-servCode programType lookup** — the original plan looked up `employeeStats`
+  once per employee using the first servCode's programType. Fixed post-build: `employeeStats` is
+  now looked up per servCode using `servCode.progCode.programType`, so employees who work
+  multiple program types (e.g., lawn care + insect control) get the correct lookback stats for
+  each servCode.
+- **`selectEmployeePaceSummaries`: one summary per (employee, programType)** — the original plan
+  produced one summary per employee. Fixed post-build: summaries are now grouped by
+  `(employeeId, programType)` so the `EmployeeDetailPopover` can show the correct capacity stats
+  for the program type of the servCode it was opened from.
+- **`EmployeeDetailPopover`: `programType` prop added** — the popover now receives
+  `programType: string | null` and matches on both `employeeId` and `programType` when finding
+  the summary. `EmployeePaceRow` and `AssignmentEditor` updated to pass
+  `servCode.progCode.programType ?? null` through.
+- **Reorder controls removed from `EmployeePaceDetail`** — the popover is per-program-type and
+  no longer shows the full cross-type priority list, making reorder controls there meaningless.
+  Dead code (ChevronUp/ChevronDown, handleMove, dispatch, assignmentPlanActions import) left in
+  place pending Phase 3 cleanup. Reorder will be implemented in the employee view (pace_04).

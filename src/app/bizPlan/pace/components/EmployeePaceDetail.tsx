@@ -1,8 +1,14 @@
 "use client";
 
+import { useSelector } from "react-redux";
 import { EmployeePaceSummary } from "@/app/bizPlan/pace/PaceType";
 import { Number } from "@/components/Number";
 import { cn } from "@/style/utils";
+import { LandPlot, ChevronUp, ChevronDown } from "lucide-react";
+import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
+import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
+import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
+import { useAppDispatch } from "@/lib/hooks/redux";
 
 type EmployeePaceDetailProps = {
   summary: EmployeePaceSummary;
@@ -20,6 +26,24 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
     isOverloaded,
   } = summary;
 
+  const dispatch = useAppDispatch();
+  const { upsert } = useAssignmentPlan({ autoLoad: false });
+  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
+
+  function handleMove(servCodeId: string, direction: "up" | "down") {
+    const currentOrder = assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds ?? [];
+    const idx = currentOrder.indexOf(servCodeId);
+    if (idx === -1) return;
+    const newOrder = [...currentOrder];
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= newOrder.length) return;
+    [newOrder[idx], newOrder[swapIdx]] = [newOrder[swapIdx], newOrder[idx]];
+    // Optimistic update — instant UI reaction
+    dispatch(assignmentPlanActions.reorderServCodes({ employeeId: employee.employeeId, servCodeIds: newOrder }));
+    // Persist to server
+    upsert({ employeeId: employee.employeeId, servCodeIds: newOrder });
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -36,11 +60,11 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Daily capacity (lookback)
           </p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-            <StatRow label="Max count" value={maxDailyCSP.count} />
-            <StatRow label="Avg count" value={avgDailyCSP?.count ?? null} />
-            <StatRow label="Max size" value={maxDailyCSP.size} />
-            <StatRow label="Avg size" value={avgDailyCSP?.size ?? null} />
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <IconStatRow icon="#" label="Max" value={maxDailyCSP.count} />
+            <IconStatRow icon="#" label="Avg" value={avgDailyCSP?.count ?? null} />
+            <IconStatRow icon={<LandPlot className="inline w-3.5 h-3.5" />} label="Max" value={maxDailyCSP.size} />
+            <IconStatRow icon={<LandPlot className="inline w-3.5 h-3.5" />} label="Avg" value={avgDailyCSP?.size ?? null} />
           </div>
         </div>
       ) : (
@@ -55,29 +79,53 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Allocations
           </p>
-          <div className="space-y-1.5">
-            {allocations.map((allocation) => {
+          <div className="space-y-1">
+            {allocations.map((allocation, idx) => {
+              const isZero =
+                allocation.expectedCSP.count === 0 &&
+                allocation.expectedCSP.size === 0;
               const pct = allocation.fractionConsumed?.count ?? null;
+              const isFirst = idx === 0;
+              const isLast = idx === allocations.length - 1;
               return (
                 <div
                   key={allocation.servCode.servCodeId}
-                  className="flex items-center gap-2"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-foreground truncate">
-                      {allocation.servCode.longName}
-                    </p>
-                    {allocation.expectedCSP && (
-                      <p className="text-[10px] text-muted-foreground font-mono">
-                        <Number decimals={0}>{allocation.expectedCSP.count}</Number>
-                        {" / "}
-                        <Number decimals={0}>{allocation.expectedCSP.size}</Number>
-                      </p>
-                    )}
-                  </div>
-                  {pct !== null && (
-                    <CapacityBar fraction={pct} />
+                  className={cn(
+                    "flex items-center gap-2",
+                    isZero && "opacity-40",
                   )}
+                >
+                  {/* Reorder controls */}
+                  <div className="flex flex-col shrink-0">
+                    <button
+                      onClick={() => handleMove(allocation.servCode.servCodeId, "up")}
+                      disabled={isFirst}
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed leading-none"
+                      aria-label="Move up"
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => handleMove(allocation.servCode.servCodeId, "down")}
+                      disabled={isLast}
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed leading-none"
+                      aria-label="Move down"
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-mono text-foreground truncate">
+                      {allocation.servCode.servCodeId}
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono flex items-center gap-1.5">
+                      <span># <Number decimals={0}>{allocation.expectedCSP.count}</Number></span>
+                      <LandPlot className="inline w-3 h-3" />
+                      <Number decimals={0}>{allocation.expectedCSP.size}</Number>
+                    </p>
+                  </div>
+                  {pct !== null && !isZero && <CapacityBar fraction={pct} />}
                 </div>
               );
             })}
@@ -89,7 +137,7 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
       {totalFractionConsumed && (
         <div
           className={cn(
-            "rounded-md px-3 py-2 text-xs space-y-1",
+            "rounded-md px-3 py-2 text-sm space-y-1",
             isOverloaded ? "bg-destructive/15" : "bg-accent/10",
           )}
         >
@@ -116,7 +164,7 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
             </div>
           )}
           {isOverloaded && (
-            <p className="text-destructive text-[10px] font-medium">
+            <p className="text-destructive text-xs font-medium">
               ⚠ Overloaded — capacity exceeds 100%
             </p>
           )}
@@ -126,22 +174,23 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
   );
 }
 
-function StatRow({
+function IconStatRow({
+  icon,
   label,
   value,
 }: {
+  icon: React.ReactNode;
   label: string;
   value: number | null;
 }) {
   return (
     <>
-      <span className="text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground flex items-center gap-1">
+        <span className="shrink-0">{icon}</span>
+        {label}
+      </span>
       <span className="font-mono text-foreground text-right">
-        {value !== null ? (
-          <Number decimals={0}>{value}</Number>
-        ) : (
-          "—"
-        )}
+        {value !== null ? <Number decimals={0}>{value}</Number> : "—"}
       </span>
     </>
   );
@@ -163,7 +212,7 @@ function CapacityBar({ fraction }: { fraction: number }) {
       </div>
       <p
         className={cn(
-          "text-[10px] font-mono text-right mt-0.5",
+          "text-xs font-mono text-right mt-0.5",
           isOver ? "text-destructive" : "text-muted-foreground",
         )}
       >

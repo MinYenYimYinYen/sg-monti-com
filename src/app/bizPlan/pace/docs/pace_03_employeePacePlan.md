@@ -31,9 +31,12 @@ drill-down popover for employee detail.
 
 ### Employee detail popover (new)
 - Clicking an employee name in a `ServCodePaceCard` opens a popover.
-- Popover shows: all servCodes assigned to this employee, their `programType` max and average
+- Popover shows: servCodes for **this program type only**, their `programType` max and average
   daily production, fraction of capacity consumed per servCode, total capacity consumed, and
   free capacity fraction.
+- The popover receives `programType` from the servCode card and shows only the matching
+  `EmployeePaceSummary`. An employee's lawn care and IC1 allocations are shown separately,
+  each in the context of the servCode card they were opened from.
 - Component is designed to be reusable on a future standalone employee page (not built now).
 
 ### Display config
@@ -104,23 +107,34 @@ Both are `CountSizePrice | null` (null if no data in window).
 
 ## Capacity Allocation Model (Cascade)
 
-Employees are processed in priority order per `servCode.assignedTo[]` (index 0 = highest).
+The cascade is **employee-first**: for each employee, iterate their `servCodeIds[]` in priority
+order (index 0 = highest). This ensures each employee's highest-priority servCode is allocated
+first before lower-priority ones consume their remaining capacity.
 
-For each employee in priority order:
+For each employee, for each servCode in their priority list:
 
-1. Look up their `maxDailyCSP` for the servCode's `programType` from the lookback map.
-2. Compute remaining capacity after higher-priority servCode allocations:
-   `remainingCapacity = maxDailyCSP - sum(shareCSP for higher-priority servCodes)`
-3. `shareCSP = min(remainingCapacity, servCode.unfinishedRate)` — capped at what's needed.
-4. `fractionConsumed = shareCSP / maxDailyCSP` (per dimension, stored as `CountSizePrice`).
+1. Look up their `maxDailyCSP` for **that servCode's** `programType` from the lookback map.
+   (An employee who works both IC1 and lawn care gets the correct stats for each.)
+2. Initialize `remainingCapacity = totalMaxDailyCSP` on the first servCode for this employee.
+   `totalMaxDailyCSP` is the employee's best single day across all program types — the
+   cross-type capacity ceiling.
+3. Compute this employee's proportional share of demand:
+   `perEmployeeRate = servCode.unfinishedRate / servCode.assignedTo.length`
+4. `shareCSP = min(remainingCapacity, perEmployeeRate)` — capped at both capacity and demand.
+5. Deduct from remaining: `remainingCapacity -= shareCSP`.
+6. `fractionConsumed = shareCSP / totalMaxDailyCSP` (per dimension, stored as `CountSizePrice`).
 
-If `maxDailyCSP` is null (no lookback data), fall back to the current even-split behavior and
-flag the share as estimated.
+If `maxDailyCSP` is null for this programType (no lookback data), fall back to the even-split
+(`unfinishedRate / assignedCount`) and flag the share as estimated.
 
-**`lookBackCSP` as the lens:** `LookbackConfig.lookBackCSP` is a `CountSizePrice` where each
-field independently holds the "active lens value" for that dimension. Selectors compute
-`fractionConsumed` for all three dimensions simultaneously. The UI displays whichever dimension
-is most relevant in context.
+**Why employee-first?** If we iterated servCode-first, we'd need to know each employee's
+remaining capacity at the time we process each servCode — which requires knowing all
+higher-priority servCodes for that employee first. Employee-first makes the priority ordering
+natural: we process each employee's full priority list in one pass.
+
+**`lookBackCSP` as the lens (deferred):** The original design included a `lookBackCSP`
+`CountSizePrice` where each field independently held the "active lens value" for that dimension.
+Not implemented in this build.
 
 ---
 
@@ -150,7 +164,10 @@ paceDeltaPct: CountSizePrice | null; // paceDelta / unfinishedRate per dimension
 
 ### New: `EmployeePaceSummary` (in `PaceType.ts`)
 
-Cross-servCode view of a single employee's capacity state:
+Capacity state for a single employee **within one program type**. An employee who works multiple
+program types (e.g., IC1 and lawn care) has one `EmployeePaceSummary` per program type. The
+`EmployeeDetailPopover` uses `programType` to select the right summary for the servCode it was
+opened from.
 
 ```typescript
 type EmployeeAllocation = {

@@ -91,6 +91,7 @@ export function AssignmentEditor({ servCode, employeeShares }: AssignmentEditorP
             <EmployeePaceRow
               key={share.employee.employeeId}
               share={share}
+              programType={servCode.progCode.programType ?? null}
               onRemoveAction={handleRemove}
             />
           ))}

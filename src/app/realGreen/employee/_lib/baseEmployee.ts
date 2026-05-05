@@ -20,7 +20,9 @@ export const baseEmployeeDoc: EmployeeDoc = {
   name: "",
 };
 
-const baseEmployeeProps: EmployeeProps = {};
+const baseEmployeeProps: EmployeeProps = {
+  servCodeIds: [],
+};
 
 export const baseEmployee: Employee = {
   ...baseEmployeeDoc,

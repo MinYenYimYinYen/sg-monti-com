@@ -30,6 +30,9 @@ export type EmployeeDocProps = CreatedUpdated & {
 
 export type EmployeeDoc = EmployeeDocProps & EmployeeCore;
 
-export type EmployeeProps = {};
+export type EmployeeProps = {
+  /** Priority-ordered servCode IDs from AssignmentPlan — first = highest priority */
+  servCodeIds: string[];
+};
 
 export type Employee = EmployeeProps & EmployeeDoc;
