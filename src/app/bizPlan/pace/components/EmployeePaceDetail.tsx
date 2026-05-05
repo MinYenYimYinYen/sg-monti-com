@@ -20,6 +20,8 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
     programType,
     maxDailyCSP,
     avgDailyCSP,
+    totalMaxDailyCSP,
+    totalAvgDailyCSP,
     allocations,
     totalFractionConsumed,
     freeCapacityFraction,
@@ -60,12 +62,61 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Daily capacity (lookback)
           </p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <IconStatRow icon="#" label="Max" value={maxDailyCSP.count} />
-            <IconStatRow icon="#" label="Avg" value={avgDailyCSP?.count ?? null} />
-            <IconStatRow icon={<LandPlot className="inline w-3.5 h-3.5" />} label="Max" value={maxDailyCSP.size} />
-            <IconStatRow icon={<LandPlot className="inline w-3.5 h-3.5" />} label="Avg" value={avgDailyCSP?.size ?? null} />
+          {/* Per-programType breakdown */}
+          <div className="grid grid-cols-[auto_1fr_1fr] gap-x-3 gap-y-1 text-sm items-center">
+            <span className="text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground text-center uppercase tracking-wide">Max</span>
+            <span className="text-[10px] text-muted-foreground text-center uppercase tracking-wide">Avg</span>
+            <span className="text-muted-foreground flex items-center gap-1">
+              <span className="text-xs font-bold">#</span>
+            </span>
+            <span className="font-mono text-foreground text-center">
+              <Number decimals={0}>{maxDailyCSP.count}</Number>
+            </span>
+            <span className="font-mono text-foreground text-center">
+              {avgDailyCSP ? <Number decimals={0}>{avgDailyCSP.count}</Number> : "—"}
+            </span>
+            <span className="text-muted-foreground flex items-center gap-1">
+              <LandPlot className="inline w-3.5 h-3.5" />
+            </span>
+            <span className="font-mono text-foreground text-center">
+              <Number decimals={0}>{maxDailyCSP.size}</Number>
+            </span>
+            <span className="font-mono text-foreground text-center">
+              {avgDailyCSP ? <Number decimals={0}>{avgDailyCSP.size}</Number> : "—"}
+            </span>
           </div>
+          {/* Cross-programType totals — avg is the capacity ceiling */}
+          {(totalMaxDailyCSP || totalAvgDailyCSP) && (
+            <>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide pt-1 border-t border-accent/20">
+                Total daily capacity (all programs)
+              </p>
+              <div className="grid grid-cols-[auto_1fr_1fr] gap-x-3 gap-y-1 text-sm items-center">
+                <span className="text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground text-center uppercase tracking-wide">Max</span>
+                <span className="text-[10px] text-muted-foreground text-center uppercase tracking-wide font-semibold text-primary">Avg ✓</span>
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <span className="text-xs font-bold">#</span>
+                </span>
+                <span className="font-mono text-muted-foreground text-center">
+                  {totalMaxDailyCSP ? <Number decimals={0}>{totalMaxDailyCSP.count}</Number> : "—"}
+                </span>
+                <span className="font-mono text-foreground text-center font-medium">
+                  {totalAvgDailyCSP ? <Number decimals={0}>{totalAvgDailyCSP.count}</Number> : "—"}
+                </span>
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <LandPlot className="inline w-3.5 h-3.5" />
+                </span>
+                <span className="font-mono text-muted-foreground text-center">
+                  {totalMaxDailyCSP ? <Number decimals={0}>{totalMaxDailyCSP.size}</Number> : "—"}
+                </span>
+                <span className="font-mono text-foreground text-center font-medium">
+                  {totalAvgDailyCSP ? <Number decimals={0}>{totalAvgDailyCSP.size}</Number> : "—"}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <p className="text-xs text-muted-foreground italic">
@@ -174,27 +225,6 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
   );
 }
 
-function IconStatRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number | null;
-}) {
-  return (
-    <>
-      <span className="text-muted-foreground flex items-center gap-1">
-        <span className="shrink-0">{icon}</span>
-        {label}
-      </span>
-      <span className="font-mono text-foreground text-right">
-        {value !== null ? <Number decimals={0}>{value}</Number> : "—"}
-      </span>
-    </>
-  );
-}
 
 function CapacityBar({ fraction }: { fraction: number }) {
   const pct = Math.min(fraction * 100, 100);

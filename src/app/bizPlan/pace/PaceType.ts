@@ -62,8 +62,12 @@ export type EmployeeAllocation = {
 export type EmployeePaceSummary = {
   employee: Employee;
   programType: string | null;
+  // Per-programType lookback stats (for the detail popover breakdown)
   maxDailyCSP: CountSizePrice | null;
   avgDailyCSP: CountSizePrice | null;
+  // Cross-programType totals — both kept for display; avg drives capacity
+  totalMaxDailyCSP: CountSizePrice | null;
+  totalAvgDailyCSP: CountSizePrice | null;
   allocations: EmployeeAllocation[];
   totalFractionConsumed: CountSizePrice | null;
   freeCapacityFraction: CountSizePrice | null;

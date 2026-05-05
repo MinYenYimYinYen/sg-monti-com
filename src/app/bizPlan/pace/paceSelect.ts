@@ -144,8 +144,9 @@ const selectEmployeeLookbackMap = createSelector(
       }
     }
 
-    // Compute totalMaxDailyCSP per employee (max single day across all programTypes)
+    // Compute totalMaxDailyCSP and totalAvgDailyCSP per employee (across all programTypes)
     const totalMaxByEmployee = new Map<string, CountSizePrice>();
+    const totalAvgByEmployee = new Map<string, CountSizePrice>();
     for (const [employeeId, byDate] of totalAccumulator) {
       const dailyTotals = Array.from(byDate.values());
       const totalMax = dailyTotals.reduce(
@@ -158,17 +159,25 @@ const selectEmployeeLookbackMap = createSelector(
         { ...baseCountSizePrice },
       );
       totalMaxByEmployee.set(employeeId, totalMax);
+
+      const totalSum = CountSizePriceOps.sumAll(dailyTotals);
+      totalAvgByEmployee.set(
+        employeeId,
+        CountSizePriceOps.divideBy(totalSum, dailyTotals.length),
+      );
     }
 
     const result: EmployeeLookbackMap = new Map();
     for (const [employeeId, byProgramType] of rawAccumulation) {
       const totalMaxDailyCSP =
         totalMaxByEmployee.get(employeeId) ?? { ...baseCountSizePrice };
+      const totalAvgDailyCSP =
+        totalAvgByEmployee.get(employeeId) ?? { ...baseCountSizePrice };
       const statsMap = new Map<string, LookbackStats | null>();
       for (const [programTypeKey, dailyProductions] of byProgramType) {
         statsMap.set(
           programTypeKey,
-          computeLookbackStats(dailyProductions, totalMaxDailyCSP),
+          computeLookbackStats(dailyProductions, totalMaxDailyCSP, totalAvgDailyCSP),
         );
       }
       result.set(employeeId, statsMap);
@@ -236,12 +245,14 @@ const selectServCodePaces = createSelector(
           continue;
         }
 
-        const { maxDailyCSP, avgDailyCSP, totalMaxDailyCSP } = employeeStats;
+        const { maxDailyCSP, avgDailyCSP, totalMaxDailyCSP, totalAvgDailyCSP } = employeeStats;
 
-        // Initialize remaining capacity from totalMaxDailyCSP (cross-programType ceiling).
-        // This is set once per employee and shared across all servCodes.
+        // Initialize remaining capacity from totalAvgDailyCSP (cross-programType ceiling).
+        // Avg is used instead of max because totalMaxDailyCSP is a per-dimension phantom —
+        // each dimension independently takes its best day, so the combined value was never
+        // actually achieved. Avg reflects a realistic typical day.
         if (!remainingCapacity.has(employee.employeeId)) {
-          remainingCapacity.set(employee.employeeId, { ...totalMaxDailyCSP });
+          remainingCapacity.set(employee.employeeId, { ...totalAvgDailyCSP });
         }
         const remaining = remainingCapacity.get(employee.employeeId)!;
 
@@ -258,7 +269,8 @@ const selectServCodePaces = createSelector(
           CountSizePriceOps.subtract(remaining, expectedCSP),
         );
 
-        const fractionConsumed = safeDivideCSP(expectedCSP, totalMaxDailyCSP);
+        // fractionConsumed denominator is totalAvgDailyCSP — "fraction of a typical day"
+        const fractionConsumed = safeDivideCSP(expectedCSP, totalAvgDailyCSP);
 
         const share: EmployeeShare = {
           employee,
@@ -523,6 +535,8 @@ const selectEmployeePaceSummaries = createSelector(
           programType,
           maxDailyCSP: stats?.maxDailyCSP ?? null,
           avgDailyCSP: stats?.avgDailyCSP ?? null,
+          totalMaxDailyCSP: stats?.totalMaxDailyCSP ?? null,
+          totalAvgDailyCSP: stats?.totalAvgDailyCSP ?? null,
           allocations,
           totalFractionConsumed,
           freeCapacityFraction,

@@ -12,8 +12,12 @@ export type LookbackStats = {
   maxDailyCSP: CountSizePrice;
   avgDailyCSP: CountSizePrice;
   // Total capacity across all programTypes on the employee's best day.
-  // Used as the capacity denominator for fractionConsumed — not the per-type max.
+  // Kept for display purposes only — not used as the capacity ceiling.
   totalMaxDailyCSP: CountSizePrice;
+  // Mean total daily production across all programTypes.
+  // Used as the capacity ceiling for cascade allocation and fractionConsumed denominator.
+  // More realistic than totalMaxDailyCSP, which is a per-dimension phantom (never actually achieved).
+  totalAvgDailyCSP: CountSizePrice;
 };
 
 /**
@@ -127,16 +131,17 @@ export function accumulateDailyProduction(
  * Derives max and average daily production from an array of per-day CSP totals.
  * Returns null if the array is empty (no valid production data).
  *
- * Max is computed per-dimension independently.
- * Avg is the mean across all days.
+ * Max and avg are computed per-dimension independently.
  *
- * totalMaxDailyCSP must be provided by the caller — it is the employee's total
- * production across all programTypes on their best day, used as the capacity
- * denominator for fractionConsumed.
+ * totalMaxDailyCSP — employee's best single day across all programTypes (display only).
+ * totalAvgDailyCSP — employee's mean daily output across all programTypes; used as the
+ *   cascade capacity ceiling and fractionConsumed denominator. More realistic than max
+ *   because totalMaxDailyCSP is a per-dimension phantom that never actually occurred.
  */
 export function computeLookbackStats(
   dailyProductions: CountSizePrice[],
   totalMaxDailyCSP: CountSizePrice,
+  totalAvgDailyCSP: CountSizePrice,
 ): LookbackStats | null {
   if (dailyProductions.length === 0) return null;
 
@@ -153,5 +158,5 @@ export function computeLookbackStats(
   const sum = CountSizePriceOps.sumAll(dailyProductions);
   const avgDailyCSP = CountSizePriceOps.divideBy(sum, dailyProductions.length);
 
-  return { maxDailyCSP, avgDailyCSP, totalMaxDailyCSP };
+  return { maxDailyCSP, avgDailyCSP, totalMaxDailyCSP, totalAvgDailyCSP };
 }

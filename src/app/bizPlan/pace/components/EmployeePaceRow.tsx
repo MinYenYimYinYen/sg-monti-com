@@ -39,20 +39,34 @@ export function EmployeePaceRow({ share, programType, onRemoveAction }: Employee
         </button>
       </EmployeeDetailPopover>
       <div className="flex items-center gap-3 shrink-0">
-        <div className="flex items-center gap-2.5 text-sm font-mono text-muted-foreground">
+        <div className="flex items-center justify-between gap-8 text-sm font-mono text-muted-foreground">
           {expectedCSP != null ? (
             <>
               <span className="flex items-center gap-0.5">
                 <span className="text-xs font-bold">#</span>
                 <Number decimals={0}>{expectedCSP.count}</Number>
+                {share.avgDailyCSP != null && (
+                  <span className="text-muted-foreground/50">
+                    /<Number decimals={0}>{share.avgDailyCSP.count}</Number>
+                  </span>
+                )}
               </span>
               <span className="flex items-center gap-0.5">
                 <LandPlot className="w-3.5 h-3.5" />
                 <Number decimals={0}>{expectedCSP.size}</Number>
+                {share.avgDailyCSP != null && (
+                  <span className="text-muted-foreground/50">
+                    /<Number decimals={0}>{share.avgDailyCSP.size}</Number>
+                  </span>
+                )}
               </span>
               <span className="flex items-center gap-0.5">
-                <span className="text-xs">$</span>
                 <Number isMoney decimals={0}>{expectedCSP.price}</Number>
+                {share.avgDailyCSP != null && (
+                  <span className="text-muted-foreground/50">
+                    /<Number isMoney decimals={0}>{share.avgDailyCSP.price}</Number>
+                  </span>
+                )}
               </span>
             </>
           ) : (

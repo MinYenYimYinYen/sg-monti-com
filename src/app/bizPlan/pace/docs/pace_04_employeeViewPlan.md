@@ -16,11 +16,39 @@ The production manager uses this view to:
 
 ---
 
+## Capacity Model Change (implemented in this extension)
+
+The cascade allocation model was updated to use `totalAvgDailyCSP` instead of `totalMaxDailyCSP`
+as the capacity ceiling and `fractionConsumed` denominator.
+
+**Why:** `totalMaxDailyCSP` is a per-dimension phantom — each dimension (count, size, price)
+independently takes its best day, so the combined value was never actually achieved on a single
+day. For example, Ryan's max count (20 jobs) came from a day of small jobs, and his max size
+(454 sq ft) came from a different day of large jobs. The combined `{ count: 20, size: 454 }`
+never happened. Using it as the capacity ceiling understated how loaded employees were.
+
+`totalAvgDailyCSP` (mean total daily production across all program types) reflects a realistic
+typical day. Capacity bars now read "fraction of a normal day" rather than "fraction of a
+theoretical peak."
+
+**What changed:**
+- `LookbackStats` — added `totalAvgDailyCSP` alongside `totalMaxDailyCSP`
+- `selectEmployeeLookbackMap` — computes `totalAvgByEmployee` in parallel with `totalMaxByEmployee`
+- `selectServCodePaces` — cascade ceiling is now `totalAvgDailyCSP`; `fractionConsumed = expectedCSP / totalAvgDailyCSP`
+- `EmployeePaceSummary` — added `totalMaxDailyCSP` and `totalAvgDailyCSP` fields
+- `EmployeePaceDetail` — displays both totals side by side; Avg column is marked with ✓ to
+  indicate it drives capacity
+
+`totalMaxDailyCSP` is retained for display only — it gives the manager context on the employee's
+peak output alongside the average.
+
+---
+
 ## Desired Behaviors
 
 ### Entry point
-A button next to "Save All Date Range Changes" opens a large popover containing the employee
-view. The popover is wide enough to show a grid of employee cards.
+A button next to "Save All Date Range Changes" opens a large modal containing the employee
+view. The modal is wide enough to show a grid of employee cards.
 
 ### Employee cards
 One card per active employee who has at least one servCode in their priority list.
@@ -31,7 +59,7 @@ Each card shows:
 - **ServCode rows** (priority-ordered): one row per servCode in `employee.servCodeIds[]`
   - ServCode ID
   - Expected daily allocation (`expectedCSP`) — count and size
-  - Fraction consumed (capacity bar or percentage)
+  - Fraction consumed (capacity bar + percentage)
   - Reorder controls (↑ / ↓)
   - Remove button (×)
 - **Footer**: total capacity consumed + free capacity (summed across all servCodes)
@@ -46,23 +74,10 @@ on a single card header would be misleading.
 `assignmentPlanSlice`). The cascade re-runs immediately — the capacity bars update in real time
 as the manager reorders.
 
-### Add servCode
-The "Add servCode" picker on each employee card shows servCodes not yet in their priority list.
-
-**Open question:** Should adding a servCode here also add the employee to `servCode.assignedTo`
-(i.e., make the employee card the primary assignment surface), or should it only update the
-priority list (requiring the employee to already be assigned via the servCode card)?
-
-Options:
-- **Option A — Dual-surface**: Adding from the employee card both adds to `servCodeIds[]` AND
-  adds the employee to `servCode.assignedTo`. Removing from the employee card does the reverse.
-  The servCode card and employee card are fully in sync.
-- **Option B — Priority-only**: The employee card only manages `servCodeIds[]` order. The
-  employee must already be in `servCode.assignedTo` (assigned via the servCode card) before
-  they appear in the picker. Simpler, but requires the manager to use both views.
-
-Recommendation: **Option A**. The employee card is the natural home for "what does this person
-work on", and requiring the manager to use two views to complete one task is friction.
+### Add servCode — Option A (Dual-surface)
+Adding from the employee card both adds to `servCodeIds[]` AND adds the employee to
+`servCode.assignedTo`. Removing from the employee card does the reverse. The servCode card
+and employee card are fully in sync.
 
 ### Remove servCode
 Removes the servCode from `employee.servCodeIds[]` AND removes the employee from
@@ -91,14 +106,14 @@ All data already loaded. No new API routes needed.
 
 ```
 EmployeeViewButton (new)          ← button next to Save button
-  └── Popover
+  └── Modal
         └── EmployeeViewPanel (new)
               └── EmployeeCard[] (new, one per employee)
                     ├── header: employee name
                     ├── ServCodePriorityRow[] (new)
                     │     ├── servCode ID + name
                     │     ├── expectedCSP display
-                    │     ├── capacity fraction bar/pct
+                    │     ├── capacity fraction bar + pct
                     │     ├── ↑ / ↓ reorder buttons
                     │     └── × remove button
                     ├── footer: total consumed + free capacity
@@ -118,41 +133,33 @@ No new slice state needed. All mutations go through existing actions:
 
 ## Selector Changes
 
-No new selectors needed. The employee view consumes:
-- `paceSelect.employeePaceSummaries` — already produces one summary per `(employee, programType)`
-- `assignmentPlanSelect.assignmentsByEmployeeId` — for the priority list and reorder
-- `employeeSelect.employees` — for the full employee list
+### New selector: `selectEmployeeCardData`
+Groups `employeePaceSummaries` by `employeeId`, producing one entry per employee with all
+allocations merged across program types and totals summed. This merge is done in a selector
+for testability rather than in the component.
 
-**Note:** `employeePaceSummaries` is grouped by `(employee, programType)`. An employee who works
-both IC1 and lawn care will have two summaries. The employee card needs to merge these — show all
-servCodes from all summaries for that employee, with their respective `expectedCSP` and
-`fractionConsumed`. The footer totals should sum across all program types.
-
-This merge can be done in the component (group summaries by `employeeId`, flatten allocations)
-or in a new selector. Prefer a selector for testability.
-
-**Proposed new selector:** `selectEmployeeCardData` — groups `employeePaceSummaries` by
-`employeeId`, producing one entry per employee with all allocations merged and totals summed.
+The employee view consumes:
+- `paceSelect.employeeCardData` (new) — merged per-employee data
+- `assignmentPlanSelect.assignmentsByEmployeeId` — for reorder mutations
+- `employeeSelect.employees` — for the full employee list (add picker)
+- `paceSelect.servCodePaceMap` — for the add picker (all servCodes)
 
 ---
 
-## Open Questions
+## Open Questions (resolved)
 
-1. **Add servCode behavior (Option A vs B)** — see above. Recommendation is Option A (dual-surface).
+1. **Add servCode behavior** — **Option A** (dual-surface). Adding from the employee card
+   both adds to `servCodeIds[]` AND adds the employee to `servCode.assignedTo`.
 
-2. **ServCode row content** — confirmed: servCode ID + `expectedCSP` (count + size) + fraction
-   consumed. Still to decide: show fraction as a progress bar, a percentage, or both?
+2. **ServCode row content** — servCode ID + `expectedCSP` (count + size) + capacity bar
+   with percentage.
 
-3. **Employee card ordering** — should cards be sorted alphabetically, by total capacity consumed
-   (most loaded first), or by something else?
+3. **Employee card ordering** — alphabetical by employee name.
 
-4. **Empty state** — what to show for an active employee with no servCodes in their priority list?
-   Options: hide them entirely, or show a card with an "Add servCode" button and no rows.
+4. **Empty state** — hide employees with no servCodes in their priority list entirely.
 
-5. **Popover size** — the popover needs to be large enough to show multiple cards side by side.
-   Should it be full-screen / modal-like, or a constrained popover? Given the amount of content,
-   a full-width modal (using the existing `Modal` component) may be more appropriate than a
-   `Popover`.
+5. **Modal vs Popover** — use the existing `Modal` component (full-screen overlay with GSAP
+   animation). A constrained popover is too small for a multi-card grid.
 
 ---
 
@@ -160,7 +167,11 @@ or in a new selector. Prefer a selector for testability.
 
 | File | Change |
 |---|---|
-| `pace/components/EmployeeViewButton.tsx` | **New** — button + popover/modal wrapper |
+| `pace/_lib/employeeLookbackUtils.ts` | Added `totalAvgDailyCSP` to `LookbackStats`; updated `computeLookbackStats` signature |
+| `pace/PaceType.ts` | Added `totalMaxDailyCSP` and `totalAvgDailyCSP` to `EmployeePaceSummary` |
+| `pace/paceSelect.ts` | Cascade ceiling → `totalAvgDailyCSP`; `fractionConsumed` denominator → `totalAvgDailyCSP`; `EmployeePaceSummary` now includes both totals |
+| `pace/components/EmployeePaceDetail.tsx` | Updated capacity stats display to show per-type and total rows with Max/Avg columns |
+| `pace/components/EmployeeViewButton.tsx` | **New** — button + Modal wrapper |
 | `pace/components/EmployeeViewPanel.tsx` | **New** — grid of `EmployeeCard` components |
 | `pace/components/EmployeeCard.tsx` | **New** — single employee card with priority list |
 | `pace/components/ServCodePriorityRow.tsx` | **New** — one row in the employee card |
@@ -173,5 +184,5 @@ or in a new selector. Prefer a selector for testability.
 ## Deferred
 
 - Drag-and-drop reorder (↑/↓ buttons are sufficient for now)
-- Employee view as a standalone page (not a popover)
+- Employee view as a standalone page (not a modal)
 - Filtering/sorting within the employee view
