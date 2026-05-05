@@ -107,19 +107,13 @@ export const PreviewEditor = forwardRef<PreviewEditorHandle, Props>(
           renderHTML({ node, options }) {
             return ["span", options.HTMLAttributes, node.attrs.label ?? node.attrs.id];
           },
-          // eslint-disable-next-line react-hooks/refs
           suggestion: buildMentionSuggestion({
-            // eslint-disable-next-line react-hooks/refs
             getSelectedProgCodes: () => {
-              // eslint-disable-next-line react-hooks/refs
               const configIds = new Set(
-                // eslint-disable-next-line react-hooks/refs
                 effectiveProgramConfigsRef.current.map((c) => c.progCodeId),
               );
-              // eslint-disable-next-line react-hooks/refs
               return progCodesRef.current.filter((p) => configIds.has(p.progCodeId));
             },
-            // eslint-disable-next-line react-hooks/refs
             getExistingAuxIds: () => new Set(activeAuxIdsRef.current),
           }),
         }),

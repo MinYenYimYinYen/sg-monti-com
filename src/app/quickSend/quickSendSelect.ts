@@ -4,7 +4,6 @@ import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServ
 import { prepaySelect } from "@/app/realGreen/prepay/selectors/prepaySelect";
 import { zipCodeSelect } from "@/app/realGreen/zipCode/zipCodeSelectors";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
-import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import type {
   ProgramConfig,
   ProgramVariables,
@@ -327,7 +326,6 @@ const selectAllPreviewHtmls = createSelector(
 // Export
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Selector<T> = (state: any) => T;
 
 export const qsSelect: {

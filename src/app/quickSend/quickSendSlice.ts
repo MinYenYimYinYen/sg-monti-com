@@ -2,7 +2,6 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import type { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import type {
-  CustomerState,
   ProgramConfig,
   QuickSendState,
   RuntimeOverrides,

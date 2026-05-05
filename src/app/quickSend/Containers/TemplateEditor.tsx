@@ -100,19 +100,13 @@ export function TemplateEditor({ sectionId }: Props) {
             `@${node.attrs.label ?? node.attrs.id}`,
           ];
         },
-        // eslint-disable-next-line react-hooks/refs
         suggestion: buildMentionSuggestion({
-          // eslint-disable-next-line react-hooks/refs
           getSelectedProgCodes: () => {
-            // eslint-disable-next-line react-hooks/refs
             const configIds = new Set(
-              // eslint-disable-next-line react-hooks/refs
               effectiveProgramConfigsRef.current.map((c) => c.progCodeId),
             );
-            // eslint-disable-next-line react-hooks/refs
             return progCodesRef.current.filter((p) => configIds.has(p.progCodeId));
           },
-          // eslint-disable-next-line react-hooks/refs
           getExistingAuxIds: () => new Set(activeAuxIdsRef.current),
         }),
       }),
@@ -145,7 +139,6 @@ export function TemplateEditor({ sectionId }: Props) {
           }
         });
         if (newAuxId !== null) {
-          // eslint-disable-next-line react-hooks/refs
           knownAuxIdsRef.current.add(newAuxId);
           setPurposeInput("");
           setPurposeDialogAuxId(newAuxId);
@@ -171,7 +164,6 @@ export function TemplateEditor({ sectionId }: Props) {
           newKnown.add(node.attrs.id as string);
         }
       });
-      // eslint-disable-next-line react-hooks/refs
       knownAuxIdsRef.current = newKnown;
     }
   }, [editor, templateHtml]);

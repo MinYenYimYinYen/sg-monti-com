@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import type { DragEvent } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
@@ -90,7 +90,7 @@ export function QuickSend() {
 
   // Auto-collapse the editor when a template is loaded.
   const [editorCollapsed, setEditorCollapsed] = useState(false);
-  useEffect(() => {
+  React.useEffect(() => {
     if (loadedTemplateId != null) setEditorCollapsed(true);
   }, [loadedTemplateId]);
 
