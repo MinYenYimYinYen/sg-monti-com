@@ -32,6 +32,7 @@ export function CustomerPanel() {
   const effectiveGlobalPrepayId = useSelector(qsSelect.effectiveGlobalPrepayId);
   const auxIds = useSelector(qsSelect.activeAuxIds);
   const auxValues = useSelector(qsSelect.auxValues);
+  const auxPurposes = useSelector(qsSelect.auxPurposes);
   const zipCodes = useSelector(zipCodeSelect.zipCodes);
 
   const [inputValue, setInputValue] = useState<string>(
@@ -209,7 +210,8 @@ export function CustomerPanel() {
 
           {/* Aux mention values */}
           {auxIds.map((auxId) => {
-            const label = auxId === "aux" ? "Aux" : `Aux ${auxId.slice(4).replace("_", "")}`;
+            const fallback = auxId === "aux" ? "Aux" : `Aux ${auxId.slice(4).replace("_", "")}`;
+            const label = auxPurposes[auxId] || fallback;
             return (
               <div key={auxId} className="flex flex-col gap-0.5 px-4 py-1">
                 <Label className="text-xs text-muted-foreground">{label}</Label>

@@ -19,6 +19,8 @@ export type StoredTemplateDoc = {
   sections: Section[];
   programConfigs: ProgramConfig[];
   globalPrepayId: string | null;
+  /** Purpose labels for aux mention IDs, set by the template creator. */
+  auxPurposes?: Record<string, string>;
 };
 
 /**

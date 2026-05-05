@@ -246,6 +246,8 @@ export function QuickSendMenubar() {
 
   const handleNew = () => dispatch(quickSendActions.clearTemplate());
 
+  const auxPurposes = useSelector(qsSelect.auxPurposes);
+
   const executeSave = () => {
     if (!loadedTemplateName || !currentUserSaId) return;
     storedTemplates.saveTemplate({
@@ -256,6 +258,7 @@ export function QuickSendMenubar() {
       sections,
       programConfigs,
       globalPrepayId: globalPrepayId ?? null,
+      auxPurposes,
     });
   };
 
@@ -280,6 +283,7 @@ export function QuickSendMenubar() {
       sections,
       programConfigs,
       globalPrepayId: globalPrepayId ?? null,
+      auxPurposes,
     }).then((result) => {
       if (result.meta.requestStatus === "fulfilled") {
         const saved = result.payload as StoredTemplateDoc;

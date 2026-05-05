@@ -30,6 +30,7 @@ const StoredTemplateSchema = new mongoose.Schema<StoredTemplateDoc>(
     sections: { type: [SectionSchema], required: true, default: [] },
     programConfigs: { type: [ProgramConfigSchema], required: true, default: [] },
     globalPrepayId: { type: String, default: null },
+    auxPurposes: { type: Map, of: String, default: {} },
   },
   { timestamps: true },
 );

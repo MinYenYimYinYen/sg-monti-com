@@ -60,6 +60,12 @@ export type QuickSendState = {
   /** Persisted global prepay default. */
   globalPrepayId: string | null;
   auxValues: Record<string, string>;
+  /**
+   * Template-time purpose labels for aux mention IDs.
+   * Set by the template creator when inserting an @aux mention.
+   * Displayed as the input label in CustomerPanel and in unfulfilled error marks.
+   */
+  auxPurposes: Record<string, string>;
   customer: CustomerState;
   loadedTemplateId: string | null;
   loadedTemplateSaId: string | null;

@@ -9,7 +9,7 @@ import { quickSendActions } from "../quickSendSlice";
 import { CustomerPanel } from "../controls/CustomerPanel";
 import { ProgramPanel } from "../controls/ProgramPanel";
 import { TemplateEditor } from "./TemplateEditor";
-import { PreviewEditor } from "./PreviewEditor";
+import { PreviewEditor, type PreviewEditorHandle } from "./PreviewEditor";
 import { QuickSendMenubar } from "./QuickSendMenubar";
 import { useStoredTemplates } from "../storedTemplates/useStoredTemplates";
 import { Plus, X, Copy, Check, ChevronLeft } from "lucide-react";
@@ -81,6 +81,13 @@ export function QuickSend() {
   const activePreviewHtml =
     allPreviewHtmls.find((p) => p.sectionId === activeSectionId)?.previewHtml ?? "";
 
+  // Ref to the preview editor — used to read live content at copy time.
+  const previewEditorRef = useRef<PreviewEditorHandle>(null);
+
+  // Tracks whether the preview editor currently contains unfulfilled mentions.
+  // Driven by a callback from PreviewEditor so React re-renders when it changes.
+  const [previewHasUnfulfilled, setPreviewHasUnfulfilled] = useState(false);
+
   // Auto-collapse the editor when a template is loaded.
   const [editorCollapsed, setEditorCollapsed] = useState(false);
   useEffect(() => {
@@ -99,7 +106,7 @@ export function QuickSend() {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    const html = activePreviewHtml;
+    const html = previewEditorRef.current?.getHtml() ?? activePreviewHtml;
     const text = htmlToPlainText(html);
     await navigator.clipboard.write([
       new ClipboardItem({
@@ -339,7 +346,7 @@ export function QuickSend() {
               variant={copied ? "accent" : "primary"}
               intensity="soft"
               onClick={handleCopy}
-              disabled={activePreviewHtml.includes("{{")}
+              disabled={previewHasUnfulfilled}
               className="h-6 gap-1 px-2 text-xs shrink-0 mb-1"
             >
               {copied ? (
@@ -356,7 +363,11 @@ export function QuickSend() {
             </Button>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <PreviewEditor previewHtml={activePreviewHtml} />
+            <PreviewEditor
+              ref={previewEditorRef}
+              previewHtml={activePreviewHtml}
+              onFulfilledChange={setPreviewHasUnfulfilled}
+            />
           </div>
         </div>
       </div>

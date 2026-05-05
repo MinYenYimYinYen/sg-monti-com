@@ -6,6 +6,7 @@ import {
 } from "@/app/realGreen/customer/slices/centralCustomerSlice";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { CustomerContextMode } from "@/app/realGreen/customer/slices/customerSlices";
+import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
 
 export function useCustomerContext({
   contexts,
@@ -18,8 +19,9 @@ export function useCustomerContext({
 
   // Declarative: Set contexts on mount/change
   useEffect(() => {
+    if (deepEqual(activeContexts, contexts)) return;
     dispatch(centralCustomerActions.switchContexts(contexts));
-  }, [dispatch, contexts]);
+  }, [dispatch, contexts, activeContexts]);
 
   // Imperative: Methods for dynamic changes
   const setContexts = (modes: CustomerContextMode[]) => {

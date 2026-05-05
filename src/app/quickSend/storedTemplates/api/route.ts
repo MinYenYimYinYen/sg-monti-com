@@ -58,6 +58,20 @@ async function isCurrentUserAdmin(): Promise<boolean> {
   }
 }
 
+/**
+ * Mongoose stores `Map`-typed schema fields as `Map` instances even after `.lean()`.
+ * Convert `auxPurposes` to a plain object so it serializes correctly over JSON.
+ */
+function normalizeTemplate(doc: StoredTemplateDoc): StoredTemplateDoc {
+  return {
+    ...doc,
+    auxPurposes:
+      doc.auxPurposes instanceof Map
+        ? Object.fromEntries(doc.auxPurposes as unknown as Map<string, string>)
+        : (doc.auxPurposes ?? {}),
+  };
+}
+
 const handlers: HandlerMap<StoredTemplatesContract> = {
   getTemplates: {
     roles: ["admin", "office", "tech"],
@@ -65,7 +79,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
       await connectToMongoDB();
 
       const docs = await StoredTemplateModel.find().lean();
-      const templates = cleanMongoArray(docs) as StoredTemplateDoc[];
+      const templates = (cleanMongoArray(docs) as StoredTemplateDoc[]).map(normalizeTemplate);
       return { success: true, payload: templates };
     },
   },
@@ -101,7 +115,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
 
       return {
         success: true,
-        payload: cleanMongoObject(result!) as StoredTemplateDoc,
+        payload: normalizeTemplate(cleanMongoObject(result!) as StoredTemplateDoc),
       };
     },
   },
@@ -257,7 +271,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
 
       return {
         success: true,
-        payload: cleanMongoObject(result!) as StoredTemplateDoc,
+        payload: normalizeTemplate(cleanMongoObject(result!) as StoredTemplateDoc),
       };
     },
   },

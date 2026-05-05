@@ -23,10 +23,11 @@ const INITIAL_RUNTIME_OVERRIDES: RuntimeOverrides = {
 const initialState: QuickSendState = {
   sections: [makeSection(INITIAL_SECTION_ID)],
   activeSectionId: INITIAL_SECTION_ID,
-  programConfigs: [],
+  programConfigs: [] as ProgramConfig[],
   runtimeOverrides: INITIAL_RUNTIME_OVERRIDES,
   globalPrepayId: null,
-  auxValues: {},
+  auxValues: {} as Record<string, string>,
+  auxPurposes: {} as Record<string, string>,
   customer: {
     custId: null,
     customer: null,
@@ -128,6 +129,12 @@ const quickSendSlice = createSlice({
       state.auxValues[action.payload.id] = action.payload.value;
     },
 
+    // --- Aux purpose labels (template-time — persisted with template) ---
+
+    setAuxPurpose(state, action: PayloadAction<{ id: string; purpose: string }>) {
+      state.auxPurposes[action.payload.id] = action.payload.purpose;
+    },
+
     // --- Program configs (persisted defaults) ---
 
     /**
@@ -216,6 +223,7 @@ const quickSendSlice = createSlice({
         sections: Section[];
         programConfigs: ProgramConfig[];
         globalPrepayId: string | null;
+        auxPurposes?: Record<string, string>;
       }>,
     ) {
       const template = action.payload;
@@ -228,6 +236,7 @@ const quickSendSlice = createSlice({
       state.globalPrepayId = template.globalPrepayId;
       state.runtimeOverrides = INITIAL_RUNTIME_OVERRIDES;
       state.auxValues = {};
+      state.auxPurposes = template.auxPurposes ?? {};
       state.loadedTemplateId = template.templateId;
       state.loadedTemplateSaId = template.saId;
       state.loadedTemplateName = template.name;
@@ -242,6 +251,7 @@ const quickSendSlice = createSlice({
       state.globalPrepayId = null;
       state.runtimeOverrides = INITIAL_RUNTIME_OVERRIDES;
       state.auxValues = {};
+      state.auxPurposes = {};
       state.loadedTemplateId = null;
       state.loadedTemplateSaId = null;
       state.loadedTemplateName = null;
