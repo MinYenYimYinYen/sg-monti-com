@@ -25,6 +25,8 @@ import { hydratePlannedLoadout } from "@/app/realGreen/customer/selectors/hydrat
 import { baseServCode } from "../../progServ/_lib/baseServCode";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { taxCodeSelect } from "../../taxCode/taxCodeSelectors";
+import { serviceEtaSelect } from "@/app/scheduling/eta/serviceEtaSelect";
+import { hydrateEta } from "@/app/realGreen/customer/selectors/hydrateEta";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -87,8 +89,8 @@ export const selectCustomers = createSelector(
     flagSelect.flagDocMap,
     custFlagSelect.custIdFlagIds,
     centralDocPropsSelect.assignments,
-    centralDocPropsSelect.pendingEtas,
     serviceConditionSelect.serviceConditionsByServId,
+    serviceEtaSelect.serviceEtaMap,
   ],
   (
     customerDocs,
@@ -104,8 +106,8 @@ export const selectCustomers = createSelector(
     flagDocMap,
     custIdFlagIds,
     newAssignments,
-    pendingEtas,
     serviceConditionsByServId,
+    serviceEtaMap,
   ) => {
     // Builder types for type-safe construction without 'x'
     type CustomerBuilder = Omit<Customer, "x">;
@@ -189,10 +191,11 @@ export const selectCustomers = createSelector(
           const serviceBuilder: ServiceBuilder = {
             ...servDoc,
             // Merge optimistic ETA override from centralDocProps state
-            eta:
-              pendingEtas[servDoc.servId] !== undefined
-                ? pendingEtas[servDoc.servId]
-                : servDoc.eta,
+            eta: hydrateEta({
+              servId: servDoc.servId,
+              invoice: servDoc.invoice,
+              serviceEtaMap,
+            }),
             program: programBuilder as Program,
             servCode,
             callAhead: callAheadDocMap.get(servDoc.callAheadId) ?? null,

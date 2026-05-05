@@ -8,8 +8,4 @@ export interface CSVContract extends ApiContract {
     params: { assignments: AssignmentDoc[] };
     result: DataResponse<{ assignments: AssignmentDoc[]; errors: WriteError[] | null }>;
   };
-  saveEta: {
-    params: { servId: number; eta: string | null };
-    result: DataResponse<{ servId: number; eta: string | null }>;
-  };
 }

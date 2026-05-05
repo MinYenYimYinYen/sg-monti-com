@@ -109,7 +109,6 @@ export type ServiceCore = {
 export type ServiceDocProps = CreatedUpdated & {
   servId: number;
   assignments: AssignmentDoc[];
-  eta: string | null;
 };
 
 export type ServiceDoc = ServiceCore & ServiceDocProps;
@@ -125,6 +124,7 @@ export type ServiceProps = {
   promise: SchedPromise | null;
   promiseIssues: string[];
   loadoutInventory: LoadoutBase;
+  eta: string | null;
 };
 
 export type Service = ServiceDoc & ServiceProps;

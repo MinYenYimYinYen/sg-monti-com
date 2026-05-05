@@ -39,7 +39,6 @@ export const baseServiceCore: ServiceCore = {
 export const baseServiceDocProps: ServiceDocProps = {
   servId: baseNumId,
   assignments: [],
-  eta: null,
   createdAt: "",
   updatedAt: "",
 };
@@ -78,6 +77,7 @@ export const baseService: Service = {
     promise: null,
     promiseIssues: [],
     loadoutInventory: baseLoadout,
+    eta: null,
   }),
 
   ...baseServiceDoc,
@@ -90,4 +90,5 @@ export const baseService: Service = {
   promise: null,
   promiseIssues: [],
   loadoutInventory: baseLoadout,
+  eta: null,
 };
