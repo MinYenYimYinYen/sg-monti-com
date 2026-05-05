@@ -1,8 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
+import { LookbackConfig, PaceCategory } from "@/app/bizPlan/pace/PaceType";
+import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 type PaceSortMode = "byId" | "byDateRange";
-type PaceSelectionSource = "progCode" | "allInProgress" | "none"
+type PaceSelectionSource = "progCode" | "allInProgress" | "none";
 
 type PaceState = {
   sortMode: PaceSortMode;
@@ -11,6 +12,7 @@ type PaceState = {
   selectionSource: PaceSelectionSource;
   selectedServCodeIds: string[];
   selectedProgCodeId: string | null;
+  lookbackConfig: LookbackConfig;
 };
 
 const initialState: PaceState = {
@@ -20,6 +22,10 @@ const initialState: PaceState = {
   selectionSource: "none",
   selectedServCodeIds: [],
   selectedProgCodeId: null,
+  lookbackConfig: {
+    lookbackStart: dateStrings.yearStart(),
+    completionThreshold: 0,
+  },
 };
 
 const paceSlice = createSlice({
@@ -43,6 +49,12 @@ const paceSlice = createSlice({
     },
     setSelectedProgCodeId: (state, action: PayloadAction<string | null>) => {
       state.selectedProgCodeId = action.payload;
+    },
+    setLookbackStart: (state, action: PayloadAction<string>) => {
+      state.lookbackConfig.lookbackStart = action.payload;
+    },
+    setLookbackCompletionThreshold: (state, action: PayloadAction<number>) => {
+      state.lookbackConfig.completionThreshold = action.payload;
     },
   },
 });

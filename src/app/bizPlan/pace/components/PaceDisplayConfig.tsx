@@ -21,6 +21,8 @@ import { Switch } from "@/style/components/switch";
 import { Label } from "@/style/components/label";
 import { Checkbox } from "@/style/components/checkbox";
 import { ScrollArea } from "@/style/components/scroll-area";
+import { Slider } from "@/style/components/slider";
+import { DatePicker } from "@/components/DatePicker";
 import { ChevronDown, X } from "lucide-react";
 
 const FILTER_OPTIONS: { value: PaceCategory; label: string }[] = [
@@ -43,6 +45,7 @@ export function PaceDisplayConfig() {
   const activeFilters = useSelector(paceSelect.activeFilters);
   const unfinishedOnly = useSelector(paceSelect.unfinishedOnly);
   const sortMode = useSelector(paceSelect.sortMode);
+  const lookbackConfig = useSelector(paceSelect.lookbackConfig);
   const flagDocs = useSelector(flagSelect.flagDocs);
   const selectedFlagIds = useSelector(custFlagSelect.selectedFlagIds);
 
@@ -148,6 +151,47 @@ export function PaceDisplayConfig() {
                     </RadioGroupItem>
                   ))}
                 </RadioGroup>
+              </div>
+
+              {/* Lookback section */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Lookback
+                </p>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">
+                    Window start
+                  </Label>
+                  <DatePicker
+                    value={lookbackConfig.lookbackStart}
+                    onChange={(date) => {
+                      if (date) dispatch(paceActions.setLookbackStart(date));
+                    }}
+                    size="sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">
+                      Completion threshold
+                    </Label>
+                    <span className="text-xs font-mono text-foreground">
+                      {Math.round(lookbackConfig.completionThreshold * 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={[lookbackConfig.completionThreshold]}
+                    onValueChange={([value]) =>
+                      dispatch(paceActions.setLookbackCompletionThreshold(value))
+                    }
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Exclude days where fewer than this % of assigned jobs were completed
+                  </p>
+                </div>
               </div>
 
               {/* Flags section */}

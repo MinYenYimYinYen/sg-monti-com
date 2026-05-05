@@ -53,7 +53,20 @@ All data is already loaded via `usePaceDeps`. No new API routes needed.
 | Finished services with `doneBys` | `Service.production.doneBys[]` via `deepSelect.servCodes` |
 | Assignment history | `Service.assignments[]` (`AssignmentDoc[]`) |
 | `programType` grouping key | `ServCodeDeep.progCode.programType` |
-| Employee identity | `Employee` (already hydrated on `ServCodeDeep.assignedTo[]`) |
+| Employee identity | `Employee` (already hydrated on `ServCodeDeep.assignedTo[]`, priority-ordered) |
+| Employee priority per servCode | `ServCodeDeep.assignedTo[]` index — index 0 = highest priority |
+
+---
+
+## AssignmentPlan Flip (completed as Y0)
+
+`AssignmentPlan` was flipped from `{ servCodeId, employeeIds[] }` to
+`{ employeeId, servCodeIds[] }` (ordered by priority, index 0 = highest). This enables the
+cascade model below.
+
+`ServCode.assignedTo[]` continues to be hydrated via `progServSelect` using an inverted selector
+in `assignmentPlanSelect`. The order of `assignedTo[]` now carries meaning — index 0 is the
+highest-priority employee for that servCode.
 
 ---
 
@@ -68,8 +81,8 @@ For each date in the lookback window:
 - If the user-configured completion threshold > 0%: also invalidate dates where
   `completedCount / assignedCount < threshold`.
 
-This logic lives in an isolated file (`employeeLookbackUtils.ts` or similar) to make future
-refactoring easy when `SkipReason` is added to `AssignmentDoc`.
+This logic lives in an isolated file (`employeeLookbackUtils.ts`) to make future refactoring
+easy when `SkipReason` is added to `AssignmentDoc`.
 
 ### Step 2 — Accumulate per employee per programType
 
@@ -82,25 +95,32 @@ Result: a map of `employeeId → programType → dailyProduction[]` (one entry p
 ### Step 3 — Compute max and average
 
 From `dailyProduction[]`:
-- `maxDailyCSP` — single highest day
+- `maxDailyCSP` — single highest day (per-dimension independently)
 - `avgDailyCSP` — mean across all valid days
 
 Both are `CountSizePrice | null` (null if no data in window).
 
 ---
 
-## Capacity Allocation Model
+## Capacity Allocation Model (Cascade)
 
-For each employee assigned to a servCode:
+Employees are processed in priority order per `servCode.assignedTo[]` (index 0 = highest).
 
-1. Look up their `maxDailyCSP` for the servCode's `programType`.
-2. `fractionConsumed = servCode.unfinishedRate / maxDailyCSP` (per unit — count, size, or price).
-3. Sum `fractionConsumed` across all servCodes assigned to this employee.
-4. `freeCapacityFraction = max(0, 1 - totalFractionConsumed)`.
-5. `shareCSP = maxDailyCSP * fractionConsumed` — this replaces the even-split `shareCSP`.
+For each employee in priority order:
+
+1. Look up their `maxDailyCSP` for the servCode's `programType` from the lookback map.
+2. Compute remaining capacity after higher-priority servCode allocations:
+   `remainingCapacity = maxDailyCSP - sum(shareCSP for higher-priority servCodes)`
+3. `shareCSP = min(remainingCapacity, servCode.unfinishedRate)` — capped at what's needed.
+4. `fractionConsumed = shareCSP / maxDailyCSP` (per dimension, stored as `CountSizePrice`).
 
 If `maxDailyCSP` is null (no lookback data), fall back to the current even-split behavior and
 flag the share as estimated.
+
+**`lookBackCSP` as the lens:** `LookbackConfig.lookBackCSP` is a `CountSizePrice` where each
+field independently holds the "active lens value" for that dimension. Selectors compute
+`fractionConsumed` for all three dimensions simultaneously. The UI displays whichever dimension
+is most relevant in context.
 
 ---
 
@@ -111,11 +131,11 @@ flag the share as estimated.
 ```typescript
 type EmployeeShare = {
   employee: Employee;
-  shareCSP: CountSizePrice;         // lookback-derived (or even-split fallback)
+  expectedCSP: CountSizePrice;              // lookback-derived expected daily contribution (or even-split fallback)
   maxDailyCSP: CountSizePrice | null;
   avgDailyCSP: CountSizePrice | null;
-  fractionConsumed: number | null;  // null if no lookback data
-  isEstimated: boolean;             // true when falling back to even split
+  fractionConsumed: CountSizePrice | null;  // one fraction per dimension; null if no lookback data
+  isEstimated: boolean;                     // true when falling back to even split
 };
 ```
 
@@ -123,9 +143,9 @@ type EmployeeShare = {
 
 Add:
 ```typescript
-teamShareCSP: CountSizePrice;       // sum of employeeShares[].shareCSP
-paceDelta: CountSizePrice;          // teamShareCSP - unfinishedRate
-paceDeltaPct: number | null;        // paceDelta / unfinishedRate (null if unfinishedRate is zero)
+teamExpectedCSP: CountSizePrice;     // sum of employeeShares[].expectedCSP
+paceDelta: CountSizePrice;           // teamExpectedCSP - unfinishedRate
+paceDeltaPct: CountSizePrice | null; // paceDelta / unfinishedRate per dimension (null if denominator is 0)
 ```
 
 ### New: `EmployeePaceSummary` (in `PaceType.ts`)
@@ -133,31 +153,31 @@ paceDeltaPct: number | null;        // paceDelta / unfinishedRate (null if unfin
 Cross-servCode view of a single employee's capacity state:
 
 ```typescript
+type EmployeeAllocation = {
+  servCode: ServCodeDeep;
+  fractionConsumed: CountSizePrice | null;
+  expectedCSP: CountSizePrice;
+};
+
 type EmployeePaceSummary = {
   employee: Employee;
   programType: string | null;
   maxDailyCSP: CountSizePrice | null;
   avgDailyCSP: CountSizePrice | null;
   allocations: EmployeeAllocation[];
-  totalFractionConsumed: number | null;
-  freeCapacityFraction: number | null;
-  isOverloaded: boolean;
-};
-
-type EmployeeAllocation = {
-  servCode: ServCodeDeep;
-  fractionConsumed: number | null;
-  shareCSP: CountSizePrice;
+  totalFractionConsumed: CountSizePrice | null;
+  freeCapacityFraction: CountSizePrice | null;
+  isOverloaded: boolean;  // true if any dimension of totalFractionConsumed > 1.0
 };
 ```
 
-### New: `LookbackConfig` (in `PaceType.ts` or `paceSlice.ts`)
+### New: `LookbackConfig` (in `PaceType.ts`)
 
 ```typescript
 type LookbackConfig = {
-  windowStart: string;        // ISO date — start of lookback window
-  completionThreshold: number; // 0.0–1.0; days below this fraction are excluded
-  unit: "count" | "size" | "price";
+  lookbackStart: string;          // ISO date — start of lookback window
+  completionThreshold: number;    // 0.0–1.0; days below this fraction are excluded
+  // lookBackCSP deferred — dimension-lens concept not implemented in this build
 };
 ```
 
@@ -168,11 +188,12 @@ type LookbackConfig = {
 ### `paceSlice.ts`
 
 Add `lookbackConfig: LookbackConfig` to `PaceState` with sensible defaults:
-- `windowStart`: start of current season (or `yearStart()`)
+- `lookbackStart`: start of current season (or `yearStart()`)
 - `completionThreshold`: 0
-- `unit`: `"count"`
+- `lookBackCSP`: `{ count: 1, size: 1, price: 1, rev: 1 }` (all dimensions active)
 
-Add actions: `setLookbackConfig`, or individual setters per field.
+Add individual setters: `setLookbackStart`, `setLookbackCompletionThreshold`,
+`setLookbackCSP`.
 
 ---
 
@@ -182,11 +203,15 @@ Add actions: `setLookbackConfig`, or individual setters per field.
 
 New selectors:
 - `selectLookbackConfig` — reads `state.pace.lookbackConfig`
-- `selectEmployeeLookback` — computes the `employeeId → programType → { maxDailyCSP, avgDailyCSP }` map from finished services within the lookback window
-- `selectEmployeePaceSummaries` — cross-servCode capacity summaries per employee (uses `selectEmployeeLookback` + `selectServCodePaces`)
+- `selectEmployeeLookbackMap` — computes the
+  `employeeId → programType → { maxDailyCSP, avgDailyCSP } | null` map from finished services
+  within the lookback window
+- `selectEmployeePaceSummaries` — cross-servCode capacity summaries per employee (uses
+  `selectEmployeeLookbackMap` + `selectServCodePaces`)
 
 Modified selectors:
-- `selectServCodePaces` — uses `selectEmployeeLookback` to populate `EmployeeShare.maxDailyCSP`, `avgDailyCSP`, `fractionConsumed`, `isEstimated`, and the new `teamShareCSP`, `paceDelta`, `paceDeltaPct` fields
+- `selectServCodePaces` — uses `selectEmployeeLookbackMap` to populate `EmployeeShare` fields
+  and the new `teamExpectedCSP`, `paceDelta`, `paceDeltaPct` fields on `ServCodePace`
 
 ---
 
@@ -207,8 +232,7 @@ EmployeeDetailPopover (new)
 
 PaceDisplayConfig (existing)
   └── LookbackConfigSection (new section in popover)
-        ├── unit selector (count / size / price)
-        ├── lookback window input (date or N weekdays)
+        ├── lookback window input (date)
         └── completion threshold slider/input
 ```
 
@@ -221,9 +245,9 @@ The missed-day / completion-rate logic should live in a dedicated utility file:
 **`src/app/bizPlan/pace/_lib/employeeLookbackUtils.ts`**
 
 Exports pure functions:
-- `isValidProductionDay(date, services, threshold)` — returns boolean
-- `accumulateDailyProduction(services, doneBys, validDates)` — returns the raw accumulation map
-- `computeLookbackStats(dailyProductions)` — returns `{ maxDailyCSP, avgDailyCSP }`
+- `getValidProductionDates(services, threshold)` — returns `Set<string>`
+- `accumulateDailyProduction(services, validDates)` — returns the raw accumulation map
+- `computeLookbackStats(dailyProductions)` — returns `{ maxDailyCSP, avgDailyCSP } | null`
 
 This isolation means the `SkipReason` future extension only touches this file.
 
@@ -246,12 +270,18 @@ This isolation means the `SkipReason` future extension only touches this file.
 
 | File | Change |
 |---|---|
-| `pace/PaceType.ts` | Add `maxDailyCSP`, `avgDailyCSP`, `fractionConsumed`, `isEstimated` to `EmployeeShare`; add `teamShareCSP`, `paceDelta`, `paceDeltaPct` to `ServCodePace`; add `EmployeePaceSummary`, `EmployeeAllocation`, `LookbackConfig` types |
+| `bizPlan/assignmentPlan/AssignmentPlanTypes.ts` | **Flipped** — `{ employeeId, servCodeIds[] }` |
+| `bizPlan/assignmentPlan/api/AssignmentPlanModel.ts` | Schema updated |
+| `bizPlan/assignmentPlan/api/route.ts` | Upsert handler updated |
+| `bizPlan/assignmentPlan/assignmentPlanSlice.ts` | Deduplication keyed on `employeeId` |
+| `bizPlan/assignmentPlan/assignmentPlanSelect.ts` | New inverted selector + `assignmentsByEmployeeId` |
+| `realGreen/progServ/_lib/selectors/hydrateAssignedTo.ts` | Updated to accept `Map<string, string[]>` |
+| `bizPlan/pace/components/AssignmentEditor.tsx` | Updated to use flipped API |
+| `pace/PaceType.ts` | Add `EmployeeShare` fields; add `teamExpectedCSP`, `paceDelta`, `paceDeltaPct` to `ServCodePace`; add `EmployeePaceSummary`, `EmployeeAllocation`, `LookbackConfig` types |
 | `pace/paceSlice.ts` | Add `lookbackConfig` to state + actions |
-| `pace/paceSelect.ts` | Add `selectLookbackConfig`, `selectEmployeeLookback`, `selectEmployeePaceSummaries`; update `selectServCodePaces` |
-| `pace/_lib/employeeLookbackUtils.ts` | **New** — isolated pure functions for valid-day detection and production accumulation |
-| `pace/components/ServCodePaceCard.tsx` | Show pace delta/delta%; add overload indicator to employee rows; wire click to popover |
+| `pace/paceSelect.ts` | Add `selectLookbackConfig`, `selectEmployeeLookbackMap`, `selectEmployeePaceSummaries`; update `selectServCodePaces` |
+| `pace/_lib/employeeLookbackUtils.ts` | **New** — isolated pure functions |
+| `pace/components/ServCodePaceCard.tsx` | Show pace delta/delta%; add overload indicator; wire click to popover |
 | `pace/components/EmployeeDetailPopover.tsx` | **New** — popover wrapper |
 | `pace/components/EmployeePaceDetail.tsx` | **New** — reusable employee detail content |
 | `pace/components/PaceDisplayConfig.tsx` | Add `LookbackConfigSection` |
-| `pace/docs/pace_03_employeePacePlan.md` | **New** — this document |

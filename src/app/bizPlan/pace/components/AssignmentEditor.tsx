@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
+import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { EmployeeShare } from "@/app/bizPlan/pace/PaceType";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { EmployeePaceRow } from "@/app/bizPlan/pace/components/EmployeePaceRow";
@@ -25,6 +26,7 @@ type AssignmentEditorProps = {
 export function AssignmentEditor({ servCode, employeeShares }: AssignmentEditorProps) {
   const { upsert } = useAssignmentPlan({ autoLoad: false });
   const allEmployees = useSelector(employeeSelect.employees);
+  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
   const [open, setOpen] = useState(false);
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
@@ -36,10 +38,12 @@ export function AssignmentEditor({ servCode, employeeShares }: AssignmentEditorP
   );
 
   function handleRemove(employeeId: string) {
-    const updatedIds = servCode.assignedTo
-      .map((e) => e.employeeId)
-      .filter((id) => id !== employeeId);
-    upsert({ servCodeId: servCode.servCodeId, employeeIds: updatedIds });
+    // Remove this servCode from the employee's servCodeIds list
+    const existingPlan = assignmentsByEmployeeId.get(employeeId);
+    const updatedServCodeIds = (existingPlan?.servCodeIds ?? []).filter(
+      (id) => id !== servCode.servCodeId,
+    );
+    upsert({ employeeId, servCodeIds: updatedServCodeIds });
   }
 
   function togglePending(employee: Employee) {
@@ -55,11 +59,15 @@ export function AssignmentEditor({ servCode, employeeShares }: AssignmentEditorP
   }
 
   function handleConfirm() {
-    const updatedIds = [
-      ...servCode.assignedTo.map((e) => e.employeeId),
-      ...Array.from(pendingIds),
-    ];
-    upsert({ servCodeId: servCode.servCodeId, employeeIds: updatedIds });
+    // For each newly added employee, append this servCode to their existing plan
+    for (const employeeId of pendingIds) {
+      const existingPlan = assignmentsByEmployeeId.get(employeeId);
+      const updatedServCodeIds = [
+        ...(existingPlan?.servCodeIds ?? []),
+        servCode.servCodeId,
+      ];
+      upsert({ employeeId, servCodeIds: updatedServCodeIds });
+    }
     setPendingIds(new Set());
     setOpen(false);
   }

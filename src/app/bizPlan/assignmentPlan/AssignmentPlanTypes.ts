@@ -1,4 +1,4 @@
 export type AssignmentPlan = {
-  servCodeId: string;
-  employeeIds: string[];
-}
+  employeeId: string;
+  servCodeIds: string[]; // ordered by priority, index 0 = highest
+};

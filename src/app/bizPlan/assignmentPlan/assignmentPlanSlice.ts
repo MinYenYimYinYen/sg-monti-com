@@ -20,7 +20,7 @@ const assignmentPlanSlice = createSlice({
     builder.addCase(upsertAssignmentPlan.fulfilled, (state, action) => {
       const updatedAssignmentPlan = action.payload;
       const existingIndex = state.assignmentPlans.findIndex(
-        (doc) => doc.servCodeId === updatedAssignmentPlan.servCodeId,
+        (doc) => doc.employeeId === updatedAssignmentPlan.employeeId,
       );
       if (existingIndex !== -1) {
         state.assignmentPlans[existingIndex] = updatedAssignmentPlan;

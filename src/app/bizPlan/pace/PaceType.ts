@@ -12,7 +12,13 @@ export type PaceCategory =
 
 export type EmployeeShare = {
   employee: Employee;
-  shareCSP: CountSizePrice;
+  // may be brought back differently in the future.
+  // shareCSP: CountSizePrice;
+  expectedCSP: CountSizePrice | null;
+  maxDailyCSP: CountSizePrice | null;
+  avgDailyCSP: CountSizePrice | null;
+  fractionConsumed: CountSizePrice | null;
+  isEstimated: boolean;
 };
 
 export type ServCodePace = {
@@ -28,6 +34,10 @@ export type ServCodePace = {
   finishedRate: CountSizePrice;
 
   employeeShares: EmployeeShare[];
+
+  teamExpectedCSP: CountSizePrice;
+  paceDelta: CountSizePrice;
+  paceDeltaPct: CountSizePrice | null; // null if paceDelta is 0
 };
 
 export type ProgCodePace = {
@@ -37,3 +47,26 @@ export type ProgCodePace = {
   unfinishedCSP: CountSizePrice;
   finishedCSP: CountSizePrice;
 };
+
+export type LookbackConfig = {
+  lookbackStart: string; // ISO Date
+  completionThreshold: number; // percentage of jobs completed in a day
+}
+
+export type EmployeeAllocation = {
+  servCode: ServCodeDeep;
+  fractionConsumed: CountSizePrice | null;
+  expectedCSP: CountSizePrice | null;
+}
+
+export type EmployeePaceSummary = {
+  employee: Employee;
+  programType: string | null;
+  maxDailyCSP: CountSizePrice | null;
+  avgDailyCSP: CountSizePrice | null;
+  allocations: EmployeeAllocation[];
+  totalFractionConsumed: CountSizePrice | null;
+  freeCapacityFraction: CountSizePrice | null;
+  isOverloaded: boolean; // true if any dimension of CSP is > 1.0
+}
+

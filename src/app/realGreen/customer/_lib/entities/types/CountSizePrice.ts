@@ -48,4 +48,22 @@ export abstract class CountSizePriceOps {
       rev: a.rev / n,
     };
   }
+
+  static multiply(a: CountSizePrice, factor: number): CountSizePrice {
+    return {
+      count: a.count * factor,
+      size: a.size * factor,
+      price: a.price * factor,
+      rev: a.rev * factor,
+    };
+  }
+
+  static subtract(a: CountSizePrice, b: CountSizePrice): CountSizePrice {
+    return {
+      count: a.count - b.count,
+      size: a.size - b.size,
+      price: a.price - b.price,
+      rev: a.rev - b.rev,
+    };
+  }
 }

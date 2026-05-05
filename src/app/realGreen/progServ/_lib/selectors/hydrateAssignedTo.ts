@@ -1,21 +1,5 @@
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { baseEmployee } from "@/app/realGreen/employee/_lib/baseEmployee";
-import { AssignmentPlan } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
-
-// export function hydrateAssignedTo(
-//   employeeIds: string[],
-//   employeeMap: Map<string, Employee>,
-// ): Employee[] {
-//   return employeeIds.map(
-//     (id) =>
-//       employeeMap.get(id) ?? {
-//         ...baseEmployee,
-//         employeeId: id,
-//         name: id,
-//         active: true,
-//       },
-//   );
-// }
 
 export function hydrateAssignedTo({
   servCodeId,
@@ -23,14 +7,14 @@ export function hydrateAssignedTo({
   employeeMap,
 }: {
   servCodeId: string;
-  assignmentsByServCodeId: Map<string, AssignmentPlan>;
+  assignmentsByServCodeId: Map<string, string[]>;
   employeeMap: Map<string, Employee>;
-}) {
-  const assignmentPlan = assignmentsByServCodeId.get(servCodeId)
-  if (!assignmentPlan) {
-    return []
+}): Employee[] {
+  const employeeIds = assignmentsByServCodeId.get(servCodeId);
+  if (!employeeIds) {
+    return [];
   }
-  const employees = assignmentPlan.employeeIds.map(
+  return employeeIds.map(
     (id) =>
       employeeMap.get(id) ?? {
         ...baseEmployee,
@@ -39,5 +23,4 @@ export function hydrateAssignedTo({
         active: true,
       },
   );
-  return employees
 }
