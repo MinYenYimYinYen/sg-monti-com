@@ -33,6 +33,7 @@ import assignmentReducer from "@/app/assignment/assignmentSlice";
 import quickSendReducer from "@/app/quickSend/quickSendSlice";
 import { storedTemplatesReducer } from "@/app/quickSend/storedTemplates/storedTemplatesSlice";
 import prepayReducer from "@/app/realGreen/prepay/prepaySlice";
+import { serviceEtaReducer } from "@/app/scheduling/eta/serviceEtaSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -66,6 +67,7 @@ const rootReducer = combineReducers({
   customer: customerReducer,
   centralDocProps: centralDocPropsReducer,
   quickSend: quickSendReducer,
+  serviceEta: serviceEtaReducer,
   storedTemplates: storedTemplatesReducer,
 });
 

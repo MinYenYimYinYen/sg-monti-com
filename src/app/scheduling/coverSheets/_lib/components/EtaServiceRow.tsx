@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { centralDocPropsActions } from "@/app/csv/_lib/centralDocPropsSlice";
+import { serviceEtaActions } from "@/app/scheduling/eta/serviceEtaSlice";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 
@@ -32,9 +32,19 @@ export function EtaServiceRow({ service }: EtaServiceRowProps) {
 
   const handleSave = () => {
     setSaveStatus("saving");
+    if (!service.invoice) {
+      console.error("No invoice number found on service", {
+        custId: service.program.customer.custId,
+        servId: service.servCodeId,
+      });
+      return;
+    }
     dispatch(
-      centralDocPropsActions.saveEta({
-        params: { servId: service.servId, eta: etaValue || null },
+      serviceEtaActions.saveServiceEta({
+        params: {
+          servId: service.servId,
+          eta: { invoice: service.invoice, eta: etaValue },
+        },
         config: { showLoading: false },
       }),
     )
@@ -62,7 +72,9 @@ export function EtaServiceRow({ service }: EtaServiceRowProps) {
       <span className="text-right">{service.size}</span>
 
       {/* CallAhead description */}
-      <span className="text-muted-foreground truncate">{callAheadDesc ?? "—"}</span>
+      <span className="text-muted-foreground truncate">
+        {callAheadDesc ?? "—"}
+      </span>
 
       {/* ETA input */}
       {hasEta ? (

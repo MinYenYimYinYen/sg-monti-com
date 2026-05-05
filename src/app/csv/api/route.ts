@@ -10,19 +10,6 @@ import { baseServiceDocProps } from "@/app/realGreen/customer/_lib/entities/base
 import { WriteError } from "mongodb";
 
 const handlers: HandlerMap<CSVContract> = {
-  saveEta: {
-    roles: ["admin", "office"],
-    handler: async ({ servId, eta }) => {
-      await connectToMongoDB();
-      await ServiceDocPropsModel.findOneAndUpdate(
-        { servId },
-        { $set: { eta } },
-        { upsert: true, new: true },
-      );
-      return { success: true, payload: { servId, eta } };
-    },
-  },
-
   saveAssignments: {
     roles: ["admin", "office"],
     handler: async ({ assignments }) => {
@@ -45,7 +32,7 @@ const handlers: HandlerMap<CSVContract> = {
           (existing) => existing.servId === a.servId,
         );
 
-        // Clear eta when the schedule meaningfully changes — employee, date, or route order.
+        // Detect meaningful schedule changes to decide whether to replace or preserve the existing assignment.
         const scheduleChanged =
           !existingAssignment ||
           existingAssignment.employeeId !== a.employeeId ||
@@ -63,7 +50,6 @@ const handlers: HandlerMap<CSVContract> = {
           ...servDocProps,
           servId: a.servId,
           assignments: newAssignments,
-          eta: scheduleChanged ? null : servDocProps.eta,
         };
       });
 

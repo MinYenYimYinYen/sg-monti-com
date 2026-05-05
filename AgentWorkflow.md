@@ -41,11 +41,24 @@ as the data layer is ready. Stubs bridge the gap.
 **Handoff protocol**:
 1. AI produces a sequenced task list in `docs/{feature}Implementation.md`
 2. Tasks are numbered `Y1, Y2...` (human) and `A1, A2...` (AI)
-3. Each Y-task includes a full code snippet for human review
-4. Human completes a Y-task block and signals: "Check my work on Y1"
-5. AI reads the file, reviews, flags issues, suggests corrections if needed
-6. Once clean, AI proceeds with the unblocked A-tasks
-7. Repeat until all tasks are done
+3. Each task is written as a checkbox: `- [ ] Y1: ...` / `- [ ] A1: ...`
+4. Each Y-task includes a full code snippet for human review
+5. Human completes a Y-task block and signals: "Check my work on Y1"
+6. AI reads the file, reviews, flags issues, suggests corrections if needed
+7. Once clean, AI proceeds with the unblocked A-tasks
+8. Repeat until all tasks are done
+
+**Task list format**:
+```
+### Human Tasks
+- [ ] Y1: New types — `FooTypes.ts`
+- [ ] Y2: Mongoose model — `FooModel.ts`
+...
+
+### AI Tasks
+- [ ] A1: Build `FooPanel` component — depends on Y1, Y2
+...
+```
 
 **Status table**: Bottom of the implementation doc tracks task ownership, status, and dependencies.
 

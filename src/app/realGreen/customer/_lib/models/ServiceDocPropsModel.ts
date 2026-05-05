@@ -24,7 +24,6 @@ const serviceDocPropsSchema = new mongoose.Schema<ServiceDocPropsDoc>(
   {
     servId: { type: Number, required: true, unique: true },
     assignments: { type: [assignmentSchema], required: true, default: [] },
-    eta: { type: String, default: null },
   },
   {
     timestamps: true,
