@@ -21,10 +21,10 @@ export function PaceRateDisplay({ unfinishedRate }: PaceRateDisplayProps) {
         <RateCell icon={<LandPlot className="w-3.5 h-3.5" />}>
           <Number decimals={0}>{unfinishedRate.size}</Number>
         </RateCell>
-        <RateCell icon={<span className="text-xs">$</span>}>
+        <RateCell icon={<span className="text-xs">Price</span>}>
           <Number isMoney decimals={0}>{unfinishedRate.price}</Number>
         </RateCell>
-        <RateCell icon={<span className="text-xs">$</span>}>
+        <RateCell icon={<span className="text-xs">Rev</span>}>
           <Number isMoney decimals={0}>{unfinishedRate.rev}</Number>
         </RateCell>
       </div>

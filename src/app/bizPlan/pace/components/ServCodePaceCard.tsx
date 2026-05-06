@@ -13,20 +13,32 @@ type ServCodePaceCardProps = {
 };
 
 export function ServCodePaceCard({ pace }: ServCodePaceCardProps) {
-  const { paceDelta, paceDeltaPct, teamExpectedCSP, unfinishedRate } = pace;
+  const { teamAvgCapacity, unfinishedRate } = pace;
 
-  // Positive delta = team can exceed required pace (good)
-  // Negative delta = team is under-capacity (bad)
-  const isUnderCapacity = paceDelta.count < 0 || paceDelta.size < 0;
-  const hasDeltaData = teamExpectedCSP.count > 0 || unfinishedRate.count > 0;
+  // Show the section when either the team has capacity data or there's work remaining.
+  // When unfinishedRate is zero (done), teamAvgCapacity shows surplus capacity.
+  const hasCapacityData =
+    teamAvgCapacity.count > 0 ||
+    teamAvgCapacity.size > 0 ||
+    teamAvgCapacity.price > 0 ||
+    unfinishedRate.count > 0 ||
+    unfinishedRate.size > 0 ||
+    unfinishedRate.price > 0;
+
+  // Team is behind if any dimension of avg capacity is less than required.
+  // When unfinishedRate is zero, team is always "ahead" (surplus capacity).
+  const isUnderCapacity =
+    unfinishedRate.count > 0 && teamAvgCapacity.count < unfinishedRate.count ||
+    unfinishedRate.size > 0 && teamAvgCapacity.size < unfinishedRate.size ||
+    unfinishedRate.price > 0 && teamAvgCapacity.price < unfinishedRate.price;
 
   return (
     <div className="border rounded-lg p-4 flex flex-col gap-2 bg-card w-3xl">
       <ServCodeHeader pace={pace} />
       <PaceRateDisplay unfinishedRate={pace.unfinishedRate} />
 
-      {/* Pace delta row */}
-      {hasDeltaData && (
+      {/* Team capacity vs. required — slash form: teamAvgCapacity / unfinishedRate */}
+      {hasCapacityData && (
         <div
           className={cn(
             "rounded-md px-3 py-2 flex items-center justify-between gap-4",
@@ -35,17 +47,29 @@ export function ServCodePaceCard({ pace }: ServCodePaceCardProps) {
         >
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Team capacity vs. required
+            <span className="ml-1 normal-case font-normal text-muted-foreground/60">
+              Avg / Required
+            </span>
           </p>
-          <div className="flex items-center gap-3 text-xs font-mono shrink-0">
-            <DeltaCell
+          <div className="flex items-center gap-4 text-sm font-mono shrink-0">
+            <SlashCell
               icon={<span className="text-xs font-bold">#</span>}
-              delta={paceDelta.count}
-              pct={paceDeltaPct?.count ?? null}
+              value={teamAvgCapacity.count}
+              required={unfinishedRate.count}
+              isUnder={isUnderCapacity}
             />
-            <DeltaCell
+            <SlashCell
               icon={<LandPlot className="w-3.5 h-3.5" />}
-              delta={paceDelta.size}
-              pct={paceDeltaPct?.size ?? null}
+              value={teamAvgCapacity.size}
+              required={unfinishedRate.size}
+              isUnder={isUnderCapacity}
+            />
+            <SlashCell
+              icon={<span className="text-xs">$</span>}
+              value={teamAvgCapacity.price}
+              required={unfinishedRate.price}
+              isUnder={isUnderCapacity}
+              isMoney
             />
           </div>
         </div>
@@ -54,47 +78,40 @@ export function ServCodePaceCard({ pace }: ServCodePaceCardProps) {
       <AssignmentEditor
         servCode={pace.servCode}
         employeeShares={pace.employeeShares}
+        isUnderCapacity={isUnderCapacity}
       />
     </div>
   );
 }
 
-function DeltaCell({
+function SlashCell({
   icon,
-  delta,
-  pct,
+  value,
+  required,
+  isUnder,
+  isMoney = false,
 }: {
   icon: React.ReactNode;
-  delta: number;
-  pct: number | null;
+  value: number;
+  required: number;
+  isUnder: boolean;
+  isMoney?: boolean;
 }) {
-  const isNegative = delta < 0;
+  // When required is 0, team is ahead — show value in accent color
+  const valueColor = isUnder ? "text-destructive" : "text-accent";
+
   return (
-    <div className="flex flex-col items-center min-w-[3rem]">
+    <div className="flex flex-col items-center min-w-[3.5rem]">
       <span className="text-muted-foreground flex items-center">{icon}</span>
-      <span
-        className={cn(
-          "font-medium",
-          isNegative ? "text-destructive" : "text-accent",
-        )}
-      >
-        <Number decimals={0} signDisplay="always">
-          {delta}
-        </Number>
-      </span>
-      {pct !== null && (
-        <span
-          className={cn(
-            "text-[10px]",
-            isNegative ? "text-destructive/70" : "text-accent/70",
-          )}
-        >
-          <Number decimals={0} signDisplay="always">
-            {pct * 100}
-          </Number>
-          %
+      <span className="flex items-center gap-0.5">
+        <span className={cn("font-medium", valueColor)}>
+          <Number decimals={0} isMoney={isMoney}>{value}</Number>
         </span>
-      )}
+        <span className="text-muted-foreground/40">/</span>
+        <span className="text-muted-foreground">
+          <Number decimals={0} isMoney={isMoney}>{required}</Number>
+        </span>
+      </span>
     </div>
   );
 }

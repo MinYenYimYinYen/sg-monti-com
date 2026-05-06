@@ -207,6 +207,32 @@ const selectServCodePaces = createSelector(
       unfinishedRateMap.set(servCode.servCodeId, unfinishedRate);
     }
 
+    // Pre-compute per-servCode team avg totals for weighted demand splitting.
+    // For each servCode, sum the avgDailyCSP of all assigned employees (for this programType).
+    // Employees with no lookback data contribute an even-split weight (1 unit per dimension).
+    const teamAvgByServCode = new Map<string, CountSizePrice>();
+    for (const servCode of servCodes) {
+      const programTypeKey = servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+      let teamTotal = { ...baseCountSizePrice };
+      let estimatedCount = 0;
+      for (const employee of servCode.assignedTo) {
+        const stats = lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
+        if (stats) {
+          teamTotal = CountSizePriceOps.sum(teamTotal, stats.avgDailyCSP);
+        } else {
+          estimatedCount++;
+        }
+      }
+      // Estimated employees each contribute 1 unit per dimension as a neutral weight
+      teamTotal = {
+        count: teamTotal.count + estimatedCount,
+        size: teamTotal.size + estimatedCount,
+        price: teamTotal.price + estimatedCount,
+        rev: teamTotal.rev + estimatedCount,
+      };
+      teamAvgByServCode.set(servCode.servCodeId, teamTotal);
+    }
+
     // Run the cascade per employee in their priority order (employee.servCodeIds[])
     // This ensures capacity is allocated to higher-priority servCodes first.
     const remainingCapacity: CapacityTracker = new Map();
@@ -228,11 +254,19 @@ const selectServCodePaces = createSelector(
 
         if (!employeeStats) {
           // No lookback data for this program type — even-split fallback
-          const assignedCount = servCode.assignedTo.length || 1;
-          const evenSplit = CountSizePriceOps.divideBy(unfinishedRate, assignedCount);
+          const teamAvg = teamAvgByServCode.get(servCodeId) ?? { ...baseCountSizePrice };
+          // Weight = 1 (neutral) / teamAvg (which includes 1 per estimated employee)
+          const perEmployeeRate = safeDivideCSP(unfinishedRate, teamAvg) != null
+            ? {
+                count: teamAvg.count > 0 ? unfinishedRate.count / teamAvg.count : 0,
+                size: teamAvg.size > 0 ? unfinishedRate.size / teamAvg.size : 0,
+                price: teamAvg.price > 0 ? unfinishedRate.price / teamAvg.price : 0,
+                rev: teamAvg.rev > 0 ? unfinishedRate.rev / teamAvg.rev : 0,
+              }
+            : CountSizePriceOps.divideBy(unfinishedRate, servCode.assignedTo.length || 1);
           const share: EmployeeShare = {
             employee,
-            expectedCSP: evenSplit,
+            expectedCSP: perEmployeeRate,
             maxDailyCSP: null,
             avgDailyCSP: null,
             fractionConsumed: null,
@@ -256,11 +290,18 @@ const selectServCodePaces = createSelector(
         }
         const remaining = remainingCapacity.get(employee.employeeId)!;
 
-        // Divide demand equally among all assigned employees before capping by capacity
-        const assignedCount = servCode.assignedTo.length || 1;
-        const perEmployeeRate = CountSizePriceOps.divideBy(unfinishedRate, assignedCount);
+        // Weighted demand split: employee's share proportional to their avgDailyCSP
+        // relative to the total team avg for this servCode's programType.
+        // e.g. Brock avg 16, Adam avg 12, team avg 28 → Brock gets 57%, Adam gets 43%
+        const teamAvg = teamAvgByServCode.get(servCodeId) ?? { ...baseCountSizePrice };
+        const perEmployeeRate: CountSizePrice = {
+          count: teamAvg.count > 0 ? unfinishedRate.count * (avgDailyCSP.count / teamAvg.count) : 0,
+          size: teamAvg.size > 0 ? unfinishedRate.size * (avgDailyCSP.size / teamAvg.size) : 0,
+          price: teamAvg.price > 0 ? unfinishedRate.price * (avgDailyCSP.price / teamAvg.price) : 0,
+          rev: teamAvg.rev > 0 ? unfinishedRate.rev * (avgDailyCSP.rev / teamAvg.rev) : 0,
+        };
 
-        // Allocate: min(remaining, this employee's share of the servCode demand)
+        // Allocate: min(remaining, this employee's weighted share of the servCode demand)
         const expectedCSP = minCSP(remaining, perEmployeeRate);
 
         // Deduct from remaining capacity
@@ -325,6 +366,14 @@ const selectServCodePaces = createSelector(
       const teamExpectedCSP = CountSizePriceOps.sumAll(
         employeeShares.map((s) => s.expectedCSP ?? { ...baseCountSizePrice }),
       );
+
+      // teamAvgCapacity = sum of each employee's per-programType avgDailyCSP.
+      // This is the realistic daily output of the team for this servCode's program type,
+      // used for the slash display (teamAvgCapacity / unfinishedRate).
+      const teamAvgCapacity = CountSizePriceOps.sumAll(
+        employeeShares.map((s) => s.avgDailyCSP ?? { ...baseCountSizePrice }),
+      );
+
       const paceDelta = CountSizePriceOps.subtract(teamExpectedCSP, unfinishedRate);
       const paceDeltaPct = safeDivideCSP(paceDelta, unfinishedRate);
 
@@ -338,6 +387,7 @@ const selectServCodePaces = createSelector(
         finishedRate,
         employeeShares,
         teamExpectedCSP,
+        teamAvgCapacity,
         paceDelta,
         paceDeltaPct,
       };

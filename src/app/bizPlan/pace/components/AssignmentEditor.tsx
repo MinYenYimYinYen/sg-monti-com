@@ -21,9 +21,10 @@ import { ChevronDown } from "lucide-react";
 type AssignmentEditorProps = {
   servCode: ServCodeDeep;
   employeeShares: EmployeeShare[];
+  isUnderCapacity: boolean;
 };
 
-export function AssignmentEditor({ servCode, employeeShares }: AssignmentEditorProps) {
+export function AssignmentEditor({ servCode, employeeShares, isUnderCapacity }: AssignmentEditorProps) {
   const { upsert } = useAssignmentPlan({ autoLoad: false });
   const allEmployees = useSelector(employeeSelect.employees);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
@@ -81,6 +82,9 @@ export function AssignmentEditor({ servCode, employeeShares }: AssignmentEditorP
     <div className="flex flex-col gap-2">
       <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
         Assigned employees
+        <span className="ml-1 normal-case font-normal text-muted-foreground/60">
+          Expected / Avg
+        </span>
       </p>
 
       {employeeShares.length === 0 ? (
@@ -92,6 +96,7 @@ export function AssignmentEditor({ servCode, employeeShares }: AssignmentEditorP
               key={share.employee.employeeId}
               share={share}
               programType={servCode.progCode.programType ?? null}
+              isUnderCapacity={isUnderCapacity}
               onRemoveAction={handleRemove}
             />
           ))}

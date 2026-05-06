@@ -6,6 +6,7 @@ import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPla
 import { useFlag } from "@/app/realGreen/flag/useFlag";
 import { useSelectedCustFlags } from "@/app/realGreen/custFlag/_lib/useSelectedCustFlags";
 import { CustomerContextMode } from "@/app/realGreen/customer/slices/customerSlices";
+import { useDiscount } from "@/app/realGreen/discount/useDiscount";
 
 // Module-level constant ensures referential stability across renders,
 // preventing useCustomerContext's useEffect from firing on every re-render.
@@ -19,4 +20,5 @@ export function usePaceDeps() {
   useAssignmentPlan({ autoLoad: true });
   useFlag({ autoLoad: true });
   useSelectedCustFlags();
+  useDiscount({autoLoad: true})
 }

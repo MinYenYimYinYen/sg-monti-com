@@ -9,10 +9,11 @@ import { LandPlot } from "lucide-react";
 type EmployeePaceRowProps = {
   share: EmployeeShare;
   programType: string | null;
+  isUnderCapacity: boolean;
   onRemoveAction: (employeeId: string) => void;
 };
 
-export function EmployeePaceRow({ share, programType, onRemoveAction }: EmployeePaceRowProps) {
+export function EmployeePaceRow({ share, programType, isUnderCapacity, onRemoveAction }: EmployeePaceRowProps) {
   const { employee, expectedCSP, isEstimated, fractionConsumed } = share;
   const isOverloaded =
     fractionConsumed !== null &&
@@ -40,13 +41,13 @@ export function EmployeePaceRow({ share, programType, onRemoveAction }: Employee
       </EmployeeDetailPopover>
       <div className="flex items-center gap-3 shrink-0">
         <div className="flex items-center justify-between gap-8 text-sm font-mono text-muted-foreground">
-          {expectedCSP != null ? (
+              {expectedCSP != null ? (
             <>
               <span className="flex items-center gap-0.5">
                 <span className="text-xs font-bold">#</span>
                 <Number decimals={0}>{expectedCSP.count}</Number>
                 {share.avgDailyCSP != null && (
-                  <span className="text-muted-foreground/50">
+                  <span className={cn(isUnderCapacity ? "text-destructive/70" : "text-accent/70")}>
                     /<Number decimals={0}>{share.avgDailyCSP.count}</Number>
                   </span>
                 )}
@@ -55,7 +56,7 @@ export function EmployeePaceRow({ share, programType, onRemoveAction }: Employee
                 <LandPlot className="w-3.5 h-3.5" />
                 <Number decimals={0}>{expectedCSP.size}</Number>
                 {share.avgDailyCSP != null && (
-                  <span className="text-muted-foreground/50">
+                  <span className={cn(isUnderCapacity ? "text-destructive/70" : "text-accent/70")}>
                     /<Number decimals={0}>{share.avgDailyCSP.size}</Number>
                   </span>
                 )}
@@ -63,7 +64,7 @@ export function EmployeePaceRow({ share, programType, onRemoveAction }: Employee
               <span className="flex items-center gap-0.5">
                 <Number isMoney decimals={0}>{expectedCSP.price}</Number>
                 {share.avgDailyCSP != null && (
-                  <span className="text-muted-foreground/50">
+                  <span className={cn(isUnderCapacity ? "text-destructive/70" : "text-accent/70")}>
                     /<Number isMoney decimals={0}>{share.avgDailyCSP.price}</Number>
                   </span>
                 )}

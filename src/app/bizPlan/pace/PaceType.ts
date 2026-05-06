@@ -36,6 +36,7 @@ export type ServCodePace = {
   employeeShares: EmployeeShare[];
 
   teamExpectedCSP: CountSizePrice;
+  teamAvgCapacity: CountSizePrice; // sum of employeeShares[].avgDailyCSP — per-programType avg
   paceDelta: CountSizePrice;
   paceDeltaPct: CountSizePrice | null; // null if paceDelta is 0
 };
