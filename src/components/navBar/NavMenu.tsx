@@ -100,6 +100,11 @@ const bizPlanSection: NavSection = {
       href: "/bizPlan/pace",
       roles: ["admin", "office", "tech"],
     },
+    {
+      title: "Employee Pace",
+      href: "/bizPlan/pace/employee",
+      roles: ["admin", "office"],
+    },
   ],
 };
 

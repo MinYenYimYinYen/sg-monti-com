@@ -10,6 +10,7 @@ import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes"
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import {
   EmployeeAllocation,
+  EmployeeCardData,
   EmployeePaceSummary,
   EmployeeShare,
   LookbackConfig,
@@ -599,6 +600,69 @@ const selectEmployeePaceSummaries = createSelector(
   },
 );
 
+// Merges employeePaceSummaries across all programTypes into one entry per employee.
+// Allocations are sorted by the manager's global priority order (employee.servCodeIds[]).
+// Only includes employees with at least one allocation.
+const selectEmployeeCardData = createSelector(
+  [selectEmployeePaceSummaries, assignmentPlanSelect.assignmentsByEmployeeId],
+  (summaries, assignmentsByEmployeeId): EmployeeCardData[] => {
+    const byEmployee = new Map<string, EmployeePaceSummary[]>();
+    for (const summary of summaries) {
+      const employeeId = summary.employee.employeeId;
+      const existing = byEmployee.get(employeeId) ?? [];
+      existing.push(summary);
+      byEmployee.set(employeeId, existing);
+    }
+
+    const result: EmployeeCardData[] = [];
+
+    for (const [employeeId, employeeSummaries] of byEmployee) {
+      const employee = employeeSummaries[0].employee;
+      const priorityOrder = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+      const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
+
+      // Flatten all allocations across programTypes, then sort by global priority
+      const allAllocations = employeeSummaries.flatMap((s) => s.allocations);
+      const allocations = [...allAllocations].sort((a, b) => {
+        const ia = priorityIndex.get(a.servCode.servCodeId) ?? Infinity;
+        const ib = priorityIndex.get(b.servCode.servCodeId) ?? Infinity;
+        return ia - ib;
+      });
+
+      if (allocations.length === 0) continue;
+
+      // Sum totalFractionConsumed across all programType summaries
+      const fractionValues = employeeSummaries
+        .map((s) => s.totalFractionConsumed)
+        .filter((f): f is CountSizePrice => f !== null);
+
+      const totalFractionConsumed =
+        fractionValues.length > 0 ? CountSizePriceOps.sumAll(fractionValues) : null;
+
+      const freeCapacityFraction = totalFractionConsumed
+        ? {
+            count: Math.max(0, 1 - totalFractionConsumed.count),
+            size: Math.max(0, 1 - totalFractionConsumed.size),
+            price: Math.max(0, 1 - totalFractionConsumed.price),
+            rev: Math.max(0, 1 - totalFractionConsumed.rev),
+          }
+        : null;
+
+      const isOverloaded = totalFractionConsumed
+        ? totalFractionConsumed.count > 1 ||
+          totalFractionConsumed.size > 1 ||
+          totalFractionConsumed.price > 1 ||
+          totalFractionConsumed.rev > 1
+        : false;
+
+      result.push({ employee, allocations, totalFractionConsumed, freeCapacityFraction, isOverloaded });
+    }
+
+    // Alphabetical by employee name
+    return result.sort((a, b) => a.employee.name.localeCompare(b.employee.name));
+  },
+);
+
 export const paceSelect = {
   servCodePaces: selectServCodePaces,
   servCodePaceMap: selectServCodePaceMap,
@@ -615,4 +679,5 @@ export const paceSelect = {
   lookbackConfig: selectLookbackConfig,
   employeeLookbackMap: selectEmployeeLookbackMap,
   employeePaceSummaries: selectEmployeePaceSummaries,
+  employeeCardData: selectEmployeeCardData,
 };

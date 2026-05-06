@@ -60,6 +60,15 @@ export type EmployeeAllocation = {
   expectedCSP: CountSizePrice;
 }
 
+export type EmployeeCardData = {
+  employee: Employee;
+  /** Priority-ordered allocations merged across all programTypes */
+  allocations: EmployeeAllocation[];
+  totalFractionConsumed: CountSizePrice | null;
+  freeCapacityFraction: CountSizePrice | null;
+  isOverloaded: boolean;
+};
+
 export type EmployeePaceSummary = {
   employee: Employee;
   programType: string | null;
