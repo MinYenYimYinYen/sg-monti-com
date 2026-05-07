@@ -61,6 +61,10 @@ function mostUrgentCategory(categories: PaceCategory[]): PaceCategory {
   );
 }
 
+// Floating-point noise can push a fully-loaded employee just above 1.0.
+// Use this epsilon so 100.01% doesn't trigger the overload indicator.
+const OVERLOAD_EPSILON = 0.001;
+
 function safeDivideCSP(
   numerator: CountSizePrice,
   denominator: CountSizePrice,
@@ -547,6 +551,7 @@ const selectEmployeePaceSummaries = createSelector(
           servCode: group.paces[i].servCode,
           fractionConsumed: share.fractionConsumed,
           expectedCSP: share.expectedCSP ?? { ...baseCountSizePrice },
+          avgDailyCSP: share.avgDailyCSP,
         }));
 
         // Sort allocations by the manager's priority order
@@ -575,10 +580,10 @@ const selectEmployeePaceSummaries = createSelector(
           : null;
 
         const isOverloaded = totalFractionConsumed
-          ? totalFractionConsumed.count > 1 ||
-            totalFractionConsumed.size > 1 ||
-            totalFractionConsumed.price > 1 ||
-            totalFractionConsumed.rev > 1
+          ? totalFractionConsumed.count > 1 + OVERLOAD_EPSILON ||
+            totalFractionConsumed.size > 1 + OVERLOAD_EPSILON ||
+            totalFractionConsumed.price > 1 + OVERLOAD_EPSILON ||
+            totalFractionConsumed.rev > 1 + OVERLOAD_EPSILON
           : false;
 
         summaries.push({
@@ -621,7 +626,8 @@ const selectEmployeeCardData = createSelector(
       const priorityOrder = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
-      // Flatten all allocations across programTypes, then sort by global priority
+      // Flatten all allocations across programTypes, then sort by global priority.
+      // avgDailyCSP is per-programType so it's already on each allocation from the summary.
       const allAllocations = employeeSummaries.flatMap((s) => s.allocations);
       const allocations = [...allAllocations].sort((a, b) => {
         const ia = priorityIndex.get(a.servCode.servCodeId) ?? Infinity;
@@ -649,10 +655,10 @@ const selectEmployeeCardData = createSelector(
         : null;
 
       const isOverloaded = totalFractionConsumed
-        ? totalFractionConsumed.count > 1 ||
-          totalFractionConsumed.size > 1 ||
-          totalFractionConsumed.price > 1 ||
-          totalFractionConsumed.rev > 1
+        ? totalFractionConsumed.count > 1 + OVERLOAD_EPSILON ||
+          totalFractionConsumed.size > 1 + OVERLOAD_EPSILON ||
+          totalFractionConsumed.price > 1 + OVERLOAD_EPSILON ||
+          totalFractionConsumed.rev > 1 + OVERLOAD_EPSILON
         : false;
 
       result.push({ employee, allocations, totalFractionConsumed, freeCapacityFraction, isOverloaded });

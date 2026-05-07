@@ -58,6 +58,7 @@ export type EmployeeAllocation = {
   servCode: ServCodeDeep;
   fractionConsumed: CountSizePrice | null;
   expectedCSP: CountSizePrice;
+  avgDailyCSP: CountSizePrice | null;
 }
 
 export type EmployeeCardData = {

@@ -15,11 +15,12 @@ type EmployeePaceRowProps = {
 
 export function EmployeePaceRow({ share, programType, isUnderCapacity, onRemoveAction }: EmployeePaceRowProps) {
   const { employee, expectedCSP, isEstimated, fractionConsumed } = share;
+  const OVERLOAD_EPSILON = 0.001;
   const isOverloaded =
     fractionConsumed !== null &&
-    (fractionConsumed.count > 1 ||
-      fractionConsumed.size > 1 ||
-      fractionConsumed.price > 1);
+    (fractionConsumed.count > 1 + OVERLOAD_EPSILON ||
+      fractionConsumed.size > 1 + OVERLOAD_EPSILON ||
+      fractionConsumed.price > 1 + OVERLOAD_EPSILON);
 
   return (
     <div className="flex items-center justify-between gap-2 py-1.5">
