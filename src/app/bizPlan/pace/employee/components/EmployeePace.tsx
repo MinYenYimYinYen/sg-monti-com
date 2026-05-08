@@ -1,12 +1,18 @@
 "use client";
 
 import { useSelector } from "react-redux";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { usePaceDeps } from "@/app/bizPlan/pace/usePaceDeps";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { employeePaceSelect } from "@/app/bizPlan/pace/employee/employeePaceSelect";
+import { employeePaceActions } from "@/app/bizPlan/pace/employee/employeePaceSlice";
 import { EmployeePaceListPanel } from "@/app/bizPlan/pace/components/EmployeePaceListPanel";
 import { EmployeeCard } from "@/app/bizPlan/pace/employee/components/EmployeeCard";
 import { UrgentServCodeCard } from "@/app/bizPlan/pace/employee/components/UrgentServCodeCard";
 import { Button } from "@/style/components/button";
+import { Toggle } from "@/style/components/toggle";
+import { CalendarClock, LayoutGrid } from "lucide-react";
+import Link from "next/link";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { authSelect } from "@/app/auth/authSlice";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
@@ -14,9 +20,11 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 export function EmployeePace() {
   usePaceDeps();
 
+  const dispatch = useAppDispatch();
   const employeeCardData = useSelector(paceSelect.employeeCardData);
   const unsavedServCodeChanges = useSelector(progServSelect.unsavedServCodeChanges);
   const isAdmin = useSelector(authSelect.role) === "admin";
+  const showUpcoming = useSelector(employeePaceSelect.showUpcoming);
   const { saveServCodeChanges } = useProgServ({});
 
   const dateRangeChanges = unsavedServCodeChanges.filter(
@@ -33,13 +41,30 @@ export function EmployeePace() {
       {/* Card grid */}
       <div className="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
         {isAdmin && (
-          <div className="flex items-center justify-start shrink-0">
+          <div className="flex items-center justify-between shrink-0">
             <Button
               disabled={dateRangeChanges.length === 0}
               onClick={() => saveServCodeChanges(dateRangeChanges)}
             >
               Save All Date Range Changes
             </Button>
+            <div className="flex items-center gap-2">
+              <Toggle
+                pressed={showUpcoming}
+                onPressedChange={() => dispatch(employeePaceActions.toggleShowUpcoming())}
+                aria-label="Show upcoming servCodes"
+                size="sm"
+              >
+                <CalendarClock className="w-4 h-4" />
+                Upcoming
+              </Toggle>
+              <Button variant="secondary" intensity="soft" size="sm" asChild>
+                <Link href="/bizPlan/assignmentPlan/matrix">
+                  <LayoutGrid className="w-4 h-4" />
+                  Matrix
+                </Link>
+              </Button>
+            </div>
           </div>
         )}
         <div className="flex-1 overflow-y-auto">

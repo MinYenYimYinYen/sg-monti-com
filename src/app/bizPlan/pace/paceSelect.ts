@@ -42,8 +42,20 @@ function getCategory(servCode: ServCodeDeep): PaceCategory {
   return "inProgress";
 }
 
-function getCSPTotal(services: Service[]) {
-  const csps = services.map((s) => CountSizePriceOps.fromService(s));
+function getCSPTotal({
+  services,
+  isUnfinished,
+}: {
+  services: Service[];
+  isUnfinished: boolean;
+}) {
+  const csps = services
+    .filter((s) => {
+      if (isUnfinished) {
+        return s.program.status === "9";
+      } else return false;
+    })
+    .map((s) => CountSizePriceOps.fromService(s));
   return CountSizePriceOps.sumAll(csps);
 }
 
@@ -107,10 +119,7 @@ const selectLookbackConfig = (state: AppState): LookbackConfig =>
   state.pace.lookbackConfig;
 
 // Computes the lookback map: employeeId → programTypeKey → LookbackStats | null
-type EmployeeLookbackMap = Map<
-  string,
-  Map<string, LookbackStats | null>
->;
+type EmployeeLookbackMap = Map<string, Map<string, LookbackStats | null>>;
 
 const selectEmployeeLookbackMap = createSelector(
   [deepSelect.servCodes, selectLookbackConfig],
@@ -127,7 +136,10 @@ const selectEmployeeLookbackMap = createSelector(
       windowServices,
       lookbackConfig.completionThreshold,
     );
-    const rawAccumulation = accumulateDailyProduction(windowServices, validDates);
+    const rawAccumulation = accumulateDailyProduction(
+      windowServices,
+      validDates,
+    );
 
     // Re-derive total daily CSP per employee directly from windowServices
     // (avoids needing to re-key the already-flattened arrays by date)
@@ -139,7 +151,10 @@ const selectEmployeeLookbackMap = createSelector(
       const date = service.production.doneDate;
       for (const doneBy of service.production.doneBys) {
         const employeeId = doneBy.employeeId;
-        const contribution = CountSizePriceOps.multiply(serviceCSP, doneBy.percent);
+        const contribution = CountSizePriceOps.multiply(
+          serviceCSP,
+          doneBy.percent,
+        );
         if (!totalAccumulator.has(employeeId)) {
           totalAccumulator.set(employeeId, new Map());
         }
@@ -174,15 +189,21 @@ const selectEmployeeLookbackMap = createSelector(
 
     const result: EmployeeLookbackMap = new Map();
     for (const [employeeId, byProgramType] of rawAccumulation) {
-      const totalMaxDailyCSP =
-        totalMaxByEmployee.get(employeeId) ?? { ...baseCountSizePrice };
-      const totalAvgDailyCSP =
-        totalAvgByEmployee.get(employeeId) ?? { ...baseCountSizePrice };
+      const totalMaxDailyCSP = totalMaxByEmployee.get(employeeId) ?? {
+        ...baseCountSizePrice,
+      };
+      const totalAvgDailyCSP = totalAvgByEmployee.get(employeeId) ?? {
+        ...baseCountSizePrice,
+      };
       const statsMap = new Map<string, LookbackStats | null>();
       for (const [programTypeKey, dailyProductions] of byProgramType) {
         statsMap.set(
           programTypeKey,
-          computeLookbackStats(dailyProductions, totalMaxDailyCSP, totalAvgDailyCSP),
+          computeLookbackStats(
+            dailyProductions,
+            totalMaxDailyCSP,
+            totalAvgDailyCSP,
+          ),
         );
       }
       result.set(employeeId, statsMap);
@@ -204,7 +225,10 @@ const selectServCodePaces = createSelector(
       const unfinished = servCode.services.filter((s) =>
         getServiceStatuses(["printed", "active", "asap"]).includes(s.status),
       );
-      const unfinishedCSP = getCSPTotal(unfinished);
+      const unfinishedCSP = getCSPTotal({
+        services: unfinished,
+        isUnfinished: true,
+      });
       const unfinishedRate = CountSizePriceOps.divideBy(
         unfinishedCSP,
         servCode.x.daysRemaining,
@@ -217,11 +241,13 @@ const selectServCodePaces = createSelector(
     // Employees with no lookback data contribute an even-split weight (1 unit per dimension).
     const teamAvgByServCode = new Map<string, CountSizePrice>();
     for (const servCode of servCodes) {
-      const programTypeKey = servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+      const programTypeKey =
+        servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
       let teamTotal = { ...baseCountSizePrice };
       let estimatedCount = 0;
       for (const employee of servCode.assignedTo) {
-        const stats = lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
+        const stats =
+          lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
         if (stats) {
           teamTotal = CountSizePriceOps.sum(teamTotal, stats.avgDailyCSP);
         } else {
@@ -242,7 +268,10 @@ const selectServCodePaces = createSelector(
     // This ensures capacity is allocated to higher-priority servCodes first.
     const remainingCapacity: CapacityTracker = new Map();
     // employeeId → servCodeId → EmployeeShare (built during cascade)
-    const sharesByEmployeeAndServCode = new Map<string, Map<string, EmployeeShare>>();
+    const sharesByEmployeeAndServCode = new Map<
+      string,
+      Map<string, EmployeeShare>
+    >();
 
     for (const employee of employeeMap.values()) {
       const employeeLookback = lookbackMap.get(employee.employeeId);
@@ -251,24 +280,40 @@ const selectServCodePaces = createSelector(
         const servCode = servCodes.find((sc) => sc.servCodeId === servCodeId);
         if (!servCode) continue;
 
-        const unfinishedRate = unfinishedRateMap.get(servCodeId) ?? { ...baseCountSizePrice };
+        const unfinishedRate = unfinishedRateMap.get(servCodeId) ?? {
+          ...baseCountSizePrice,
+        };
 
         // Look up stats using this servCode's specific program type
-        const programTypeKey = servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+        const programTypeKey =
+          servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
         const employeeStats = employeeLookback?.get(programTypeKey) ?? null;
 
         if (!employeeStats) {
           // No lookback data for this program type — even-split fallback
-          const teamAvg = teamAvgByServCode.get(servCodeId) ?? { ...baseCountSizePrice };
+          const teamAvg = teamAvgByServCode.get(servCodeId) ?? {
+            ...baseCountSizePrice,
+          };
           // Weight = 1 (neutral) / teamAvg (which includes 1 per estimated employee)
-          const perEmployeeRate = safeDivideCSP(unfinishedRate, teamAvg) != null
-            ? {
-                count: teamAvg.count > 0 ? unfinishedRate.count / teamAvg.count : 0,
-                size: teamAvg.size > 0 ? unfinishedRate.size / teamAvg.size : 0,
-                price: teamAvg.price > 0 ? unfinishedRate.price / teamAvg.price : 0,
-                rev: teamAvg.rev > 0 ? unfinishedRate.rev / teamAvg.rev : 0,
-              }
-            : CountSizePriceOps.divideBy(unfinishedRate, servCode.assignedTo.length || 1);
+          const perEmployeeRate =
+            safeDivideCSP(unfinishedRate, teamAvg) != null
+              ? {
+                  count:
+                    teamAvg.count > 0
+                      ? unfinishedRate.count / teamAvg.count
+                      : 0,
+                  size:
+                    teamAvg.size > 0 ? unfinishedRate.size / teamAvg.size : 0,
+                  price:
+                    teamAvg.price > 0
+                      ? unfinishedRate.price / teamAvg.price
+                      : 0,
+                  rev: teamAvg.rev > 0 ? unfinishedRate.rev / teamAvg.rev : 0,
+                }
+              : CountSizePriceOps.divideBy(
+                  unfinishedRate,
+                  servCode.assignedTo.length || 1,
+                );
           const share: EmployeeShare = {
             employee,
             expectedCSP: perEmployeeRate,
@@ -280,11 +325,14 @@ const selectServCodePaces = createSelector(
           if (!sharesByEmployeeAndServCode.has(employee.employeeId)) {
             sharesByEmployeeAndServCode.set(employee.employeeId, new Map());
           }
-          sharesByEmployeeAndServCode.get(employee.employeeId)!.set(servCodeId, share);
+          sharesByEmployeeAndServCode
+            .get(employee.employeeId)!
+            .set(servCodeId, share);
           continue;
         }
 
-        const { maxDailyCSP, avgDailyCSP, totalMaxDailyCSP, totalAvgDailyCSP } = employeeStats;
+        const { maxDailyCSP, avgDailyCSP, totalMaxDailyCSP, totalAvgDailyCSP } =
+          employeeStats;
 
         // Initialize remaining capacity from totalAvgDailyCSP (cross-programType ceiling).
         // Avg is used instead of max because totalMaxDailyCSP is a per-dimension phantom —
@@ -298,12 +346,26 @@ const selectServCodePaces = createSelector(
         // Weighted demand split: employee's share proportional to their avgDailyCSP
         // relative to the total team avg for this servCode's programType.
         // e.g. Brock avg 16, Adam avg 12, team avg 28 → Brock gets 57%, Adam gets 43%
-        const teamAvg = teamAvgByServCode.get(servCodeId) ?? { ...baseCountSizePrice };
+        const teamAvg = teamAvgByServCode.get(servCodeId) ?? {
+          ...baseCountSizePrice,
+        };
         const perEmployeeRate: CountSizePrice = {
-          count: teamAvg.count > 0 ? unfinishedRate.count * (avgDailyCSP.count / teamAvg.count) : 0,
-          size: teamAvg.size > 0 ? unfinishedRate.size * (avgDailyCSP.size / teamAvg.size) : 0,
-          price: teamAvg.price > 0 ? unfinishedRate.price * (avgDailyCSP.price / teamAvg.price) : 0,
-          rev: teamAvg.rev > 0 ? unfinishedRate.rev * (avgDailyCSP.rev / teamAvg.rev) : 0,
+          count:
+            teamAvg.count > 0
+              ? unfinishedRate.count * (avgDailyCSP.count / teamAvg.count)
+              : 0,
+          size:
+            teamAvg.size > 0
+              ? unfinishedRate.size * (avgDailyCSP.size / teamAvg.size)
+              : 0,
+          price:
+            teamAvg.price > 0
+              ? unfinishedRate.price * (avgDailyCSP.price / teamAvg.price)
+              : 0,
+          rev:
+            teamAvg.rev > 0
+              ? unfinishedRate.rev * (avgDailyCSP.rev / teamAvg.rev)
+              : 0,
         };
 
         // Allocate: min(remaining, this employee's weighted share of the servCode demand)
@@ -330,43 +392,53 @@ const selectServCodePaces = createSelector(
         if (!sharesByEmployeeAndServCode.has(employee.employeeId)) {
           sharesByEmployeeAndServCode.set(employee.employeeId, new Map());
         }
-        sharesByEmployeeAndServCode.get(employee.employeeId)!.set(servCodeId, share);
+        sharesByEmployeeAndServCode
+          .get(employee.employeeId)!
+          .set(servCodeId, share);
       }
     }
 
     // Now build ServCodePace[] using the pre-computed shares
     return servCodes.map((servCode) => {
       const finished = servCode.services.filter((s) => s.status === "S");
-      const finishedCSP = getCSPTotal(finished);
+      const finishedCSP = getCSPTotal({
+        services: finished,
+        isUnfinished: false,
+      });
       const finishedRate = CountSizePriceOps.divideBy(
         finishedCSP,
         servCode.x.daysElapsed,
       );
 
-      const unfinishedRate = unfinishedRateMap.get(servCode.servCodeId) ?? { ...baseCountSizePrice };
-      const unfinishedCSP = getCSPTotal(
-        servCode.services.filter((s) =>
+      const unfinishedRate = unfinishedRateMap.get(servCode.servCodeId) ?? {
+        ...baseCountSizePrice,
+      };
+      const unfinishedCSP = getCSPTotal({
+        services: servCode.services.filter((s) =>
           getServiceStatuses(["printed", "active", "asap"]).includes(s.status),
         ),
-      );
-
-      const employeeShares: EmployeeShare[] = servCode.assignedTo.map((employee) => {
-        const share = sharesByEmployeeAndServCode
-          .get(employee.employeeId)
-          ?.get(servCode.servCodeId);
-
-        if (share) return share;
-
-        // Fallback: employee assigned but not in their priority list yet (shouldn't happen)
-        return {
-          employee,
-          expectedCSP: { ...baseCountSizePrice },
-          maxDailyCSP: null,
-          avgDailyCSP: null,
-          fractionConsumed: null,
-          isEstimated: true,
-        };
+        isUnfinished: true,
       });
+
+      const employeeShares: EmployeeShare[] = servCode.assignedTo.map(
+        (employee) => {
+          const share = sharesByEmployeeAndServCode
+            .get(employee.employeeId)
+            ?.get(servCode.servCodeId);
+
+          if (share) return share;
+
+          // Fallback: employee assigned but not in their priority list yet (shouldn't happen)
+          return {
+            employee,
+            expectedCSP: { ...baseCountSizePrice },
+            maxDailyCSP: null,
+            avgDailyCSP: null,
+            fractionConsumed: null,
+            isEstimated: true,
+          };
+        },
+      );
 
       const teamExpectedCSP = CountSizePriceOps.sumAll(
         employeeShares.map((s) => s.expectedCSP ?? { ...baseCountSizePrice }),
@@ -379,7 +451,10 @@ const selectServCodePaces = createSelector(
         employeeShares.map((s) => s.avgDailyCSP ?? { ...baseCountSizePrice }),
       );
 
-      const paceDelta = CountSizePriceOps.subtract(teamExpectedCSP, unfinishedRate);
+      const paceDelta = CountSizePriceOps.subtract(
+        teamExpectedCSP,
+        unfinishedRate,
+      );
       const paceDeltaPct = safeDivideCSP(paceDelta, unfinishedRate);
 
       const pace: ServCodePace = {
@@ -482,17 +557,15 @@ const selectFilteredSortedProgCodePaces = createSelector(
 );
 
 // "Active" = inProgress + asap + overdue — all categories that need attention now
-const selectActiveServCodeIds = createSelector(
-  [selectServCodePaces],
-  (paces) =>
-    paces
-      .filter(
-        (p) =>
-          p.category === "inProgress" ||
-          p.category === "asap" ||
-          p.category === "overdue",
-      )
-      .map((p) => p.servCode.servCodeId),
+const selectActiveServCodeIds = createSelector([selectServCodePaces], (paces) =>
+  paces
+    .filter(
+      (p) =>
+        p.category === "inProgress" ||
+        p.category === "asap" ||
+        p.category === "overdue",
+    )
+    .map((p) => p.servCode.servCodeId),
 );
 
 const selectSelectedPaces = createSelector(
@@ -505,8 +578,16 @@ const selectSelectedPaces = createSelector(
 
 // Cross-servCode capacity summary per employee
 const selectEmployeePaceSummaries = createSelector(
-  [selectServCodePaces, selectEmployeeLookbackMap, assignmentPlanSelect.assignmentsByEmployeeId],
-  (servCodePaces, lookbackMap, assignmentsByEmployeeId): EmployeePaceSummary[] => {
+  [
+    selectServCodePaces,
+    selectEmployeeLookbackMap,
+    assignmentPlanSelect.assignmentsByEmployeeId,
+  ],
+  (
+    servCodePaces,
+    lookbackMap,
+    assignmentsByEmployeeId,
+  ): EmployeePaceSummary[] => {
     // Group all EmployeeShare entries by employeeId
     const byEmployee = new Map<
       string,
@@ -527,32 +608,45 @@ const selectEmployeePaceSummaries = createSelector(
 
     const summaries: EmployeePaceSummary[] = [];
 
-    for (const [employeeId, { shares, servCodePaces: employeePaces }] of byEmployee) {
+    for (const [
+      employeeId,
+      { shares, servCodePaces: employeePaces },
+    ] of byEmployee) {
       const employee = shares[0].employee;
       const employeeLookback = lookbackMap.get(employeeId);
-      const priorityOrder = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+      const priorityOrder =
+        assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
       // Group shares by programType — one summary per (employee, programType)
-      const byProgramType = new Map<string, { shares: EmployeeShare[]; paces: ServCodePace[] }>();
+      const byProgramType = new Map<
+        string,
+        { shares: EmployeeShare[]; paces: ServCodePace[] }
+      >();
       for (let i = 0; i < shares.length; i++) {
-        const key = employeePaces[i].servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
-        if (!byProgramType.has(key)) byProgramType.set(key, { shares: [], paces: [] });
+        const key =
+          employeePaces[i].servCode.progCode.programType ??
+          NULL_PROGRAM_TYPE_KEY;
+        if (!byProgramType.has(key))
+          byProgramType.set(key, { shares: [], paces: [] });
         const group = byProgramType.get(key)!;
         group.shares.push(shares[i]);
         group.paces.push(employeePaces[i]);
       }
 
       for (const [programTypeKey, group] of byProgramType) {
-        const programType = programTypeKey === NULL_PROGRAM_TYPE_KEY ? null : programTypeKey;
+        const programType =
+          programTypeKey === NULL_PROGRAM_TYPE_KEY ? null : programTypeKey;
         const stats = employeeLookback?.get(programTypeKey) ?? null;
 
-        const unsortedAllocations: EmployeeAllocation[] = group.shares.map((share, i) => ({
-          servCode: group.paces[i].servCode,
-          fractionConsumed: share.fractionConsumed,
-          expectedCSP: share.expectedCSP ?? { ...baseCountSizePrice },
-          avgDailyCSP: share.avgDailyCSP,
-        }));
+        const unsortedAllocations: EmployeeAllocation[] = group.shares.map(
+          (share, i) => ({
+            servCode: group.paces[i].servCode,
+            fractionConsumed: share.fractionConsumed,
+            expectedCSP: share.expectedCSP ?? { ...baseCountSizePrice },
+            avgDailyCSP: share.avgDailyCSP,
+          }),
+        );
 
         // Sort allocations by the manager's priority order
         const allocations = [...unsortedAllocations].sort((a, b) => {
@@ -623,7 +717,8 @@ const selectEmployeeCardData = createSelector(
 
     for (const [employeeId, employeeSummaries] of byEmployee) {
       const employee = employeeSummaries[0].employee;
-      const priorityOrder = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+      const priorityOrder =
+        assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
       // Flatten all allocations across programTypes, then sort by global priority.
@@ -643,7 +738,9 @@ const selectEmployeeCardData = createSelector(
         .filter((f): f is CountSizePrice => f !== null);
 
       const totalFractionConsumed =
-        fractionValues.length > 0 ? CountSizePriceOps.sumAll(fractionValues) : null;
+        fractionValues.length > 0
+          ? CountSizePriceOps.sumAll(fractionValues)
+          : null;
 
       const freeCapacityFraction = totalFractionConsumed
         ? {
@@ -661,11 +758,19 @@ const selectEmployeeCardData = createSelector(
           totalFractionConsumed.rev > 1 + OVERLOAD_EPSILON
         : false;
 
-      result.push({ employee, allocations, totalFractionConsumed, freeCapacityFraction, isOverloaded });
+      result.push({
+        employee,
+        allocations,
+        totalFractionConsumed,
+        freeCapacityFraction,
+        isOverloaded,
+      });
     }
 
     // Alphabetical by employee name
-    return result.sort((a, b) => a.employee.name.localeCompare(b.employee.name));
+    return result.sort((a, b) =>
+      a.employee.name.localeCompare(b.employee.name),
+    );
   },
 );
 

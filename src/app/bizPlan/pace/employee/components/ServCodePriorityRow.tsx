@@ -135,11 +135,12 @@ export function ServCodePriorityRow({
         </button>
       </div>
 
-      {/* Pace bar — uses employee's avgDailyCSP and their share of remaining work */}
+      {/* Pace bar — uses employee's avgDailyCSP (or expectedCSP fallback) and their share of remaining work */}
       <div className="pl-5 pr-4">
         <ServCodePaceBar
           servCodeId={servCode.servCodeId}
           avgDailyCSP={allocation.avgDailyCSP ?? null}
+          expectedCSP={expectedCSP}
           employeeUnfinishedCSP={employeeUnfinishedCSP}
         />
       </div>

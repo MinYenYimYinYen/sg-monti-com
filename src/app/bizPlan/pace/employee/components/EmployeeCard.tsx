@@ -22,6 +22,7 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
   const dispatch = useAppDispatch();
   const { upsert } = useAssignmentPlan({ autoLoad: false });
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
+  const showUpcoming = useSelector(employeePaceSelect.showUpcoming);
 
   const employeeId = employee.employeeId;
 
@@ -32,11 +33,26 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
   const allDateAllocations = useSelector(selectAllocationsAtDate);
   const servCodePaceMap = useSelector(paceSelect.servCodePaceMap);
 
+  const selectNotStartedAllocations = employeePaceSelect.makeNotStartedAllocations({ employeeId });
+  const upcomingAllocations = useSelector(selectNotStartedAllocations);
+
   // Urgent servCodes (asap/overdue) are shown in UrgentServCodeCard — exclude them here
   const dateAllocations = allDateAllocations.filter((a) => {
     const pace = servCodePaceMap.get(a.servCode.servCodeId);
     return pace?.category !== "asap" && pace?.category !== "overdue";
   });
+
+  // When showUpcoming is true, merge upcoming allocations into the active list using
+  // the full priority order from `allocations` (cardData). This ensures up/down arrows
+  // work correctly because isFirst/isLast are computed against the merged list.
+  const upcomingIds = new Set(upcomingAllocations.map((a) => a.servCode.servCodeId));
+  const activeIds = new Set(dateAllocations.map((a) => a.servCode.servCodeId));
+
+  const visibleAllocations = showUpcoming
+    ? allocations.filter(
+        (a) => activeIds.has(a.servCode.servCodeId) || upcomingIds.has(a.servCode.servCodeId),
+      )
+    : dateAllocations;
 
   const currentServCodeIds = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
 
@@ -83,30 +99,25 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
         )}
       </div>
 
-      {/* ServCode rows — date-parameterized */}
+      {/* ServCode rows */}
       <div className="flex-1 px-3 py-1 divide-y divide-border/50">
-        {dateAllocations.length === 0 ? (
+        {visibleAllocations.length === 0 ? (
           <p className="text-xs text-muted-foreground italic py-2">
             No active servCodes on this date
           </p>
         ) : (
-          dateAllocations.map((allocation) => {
-            const fullIdx = allocations.findIndex(
-              (a) => a.servCode.servCodeId === allocation.servCode.servCodeId,
-            );
-            return (
-              <ServCodePriorityRow
-                key={allocation.servCode.servCodeId}
-                allocation={allocation}
-                employeeId={employeeId}
-                isFirst={fullIdx === 0}
-                isLast={fullIdx === allocations.length - 1}
-                onMoveUpAction={(id) => handleMove(id, "up")}
-                onMoveDownAction={(id) => handleMove(id, "down")}
-                onRemoveAction={handleRemove}
-              />
-            );
-          })
+          visibleAllocations.map((allocation, idx) => (
+            <ServCodePriorityRow
+              key={allocation.servCode.servCodeId}
+              allocation={allocation}
+              employeeId={employeeId}
+              isFirst={idx === 0}
+              isLast={idx === visibleAllocations.length - 1}
+              onMoveUpAction={(id) => handleMove(id, "up")}
+              onMoveDownAction={(id) => handleMove(id, "down")}
+              onRemoveAction={handleRemove}
+            />
+          ))
         )}
       </div>
 

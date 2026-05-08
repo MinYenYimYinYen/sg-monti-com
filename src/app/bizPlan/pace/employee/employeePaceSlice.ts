@@ -13,12 +13,16 @@ type EmployeePaceState = {
    * e.g. 0.20 = ±20% of required rate.
    */
   paceTolerance: number;
+  /** When true, upcoming (notStarted) servCodes are merged into each employee card's
+   * main list in priority order so reorder arrows work correctly across all servCodes. */
+  showUpcoming: boolean;
 };
 
 const initialState: EmployeePaceState = {
   mainDate: dateStrings.today(),
   employeeDates: {},
   paceTolerance: 0.5,
+  showUpcoming: false,
 };
 
 const employeePaceSlice = createSlice({
@@ -39,6 +43,9 @@ const employeePaceSlice = createSlice({
     },
     setPaceTolerance: (state, action: PayloadAction<number>) => {
       state.paceTolerance = action.payload;
+    },
+    toggleShowUpcoming: (state) => {
+      state.showUpcoming = !state.showUpcoming;
     },
   },
 });

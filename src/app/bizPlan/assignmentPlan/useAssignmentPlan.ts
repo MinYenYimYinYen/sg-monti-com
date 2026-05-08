@@ -23,7 +23,7 @@ export function useAssignmentPlan({ autoLoad }: { autoLoad: boolean }) {
     dispatch(
       assignmentPlanActions.upsertAssignmentPlan({
         params,
-        config: { loadingMsg: "Saving assignment plan..." },
+        config: { showLoading: false },
       }),
     );
 

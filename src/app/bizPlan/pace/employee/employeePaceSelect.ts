@@ -18,6 +18,7 @@ import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 const selectMainDate = (state: AppState) => state.employeePace.mainDate;
 const selectEmployeeDates = (state: AppState) => state.employeePace.employeeDates;
 const selectPaceTolerance = (state: AppState) => state.employeePace.paceTolerance;
+const selectShowUpcoming = (state: AppState) => state.employeePace.showUpcoming;
 
 /** Returns the effective view date for a given employee (override or global) */
 function makeSelectEffectiveDate(employeeId: string) {
@@ -392,6 +393,105 @@ const selectEmployeeShareRemainingMap = createSelector(
   },
 );
 
+// ---------------------------------------------------------------------------
+// Not-started allocations — servCodes assigned to this employee that haven't
+// started yet (category === "notStarted"), with expectedCSP anchored to today.
+// Used by EmployeeCard's "Upcoming" collapsible section.
+// ---------------------------------------------------------------------------
+
+type NotStartedAllocationsInput = {
+  employeeId: string;
+};
+
+function makeSelectNotStartedAllocations({ employeeId }: NotStartedAllocationsInput) {
+  return createSelector(
+    [
+      paceSelect.servCodePaces,
+      paceSelect.employeeLookbackMap,
+      assignmentPlanSelect.assignmentsByEmployeeId,
+    ],
+    (servCodePaces, lookbackMap, assignmentsByEmployeeId): EmployeeAllocation[] => {
+      const priorityOrder = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+      const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
+
+      // Get the employee's totalAvgDailyCSP (capacity ceiling) from any programType stats
+      const employeeLookback = lookbackMap.get(employeeId);
+      let totalAvgDailyCSP = { ...baseCountSizePrice };
+      if (employeeLookback) {
+        for (const stats of employeeLookback.values()) {
+          if (stats?.totalAvgDailyCSP) {
+            totalAvgDailyCSP = stats.totalAvgDailyCSP;
+            break;
+          }
+        }
+      }
+
+      const today = dateStrings.today();
+      const allocations: EmployeeAllocation[] = [];
+
+      for (const pace of servCodePaces) {
+        // Only notStarted servCodes — those whose window hasn't begun yet
+        if (pace.category !== "notStarted") continue;
+
+        // Check if this employee is assigned to this servCode
+        const share = pace.employeeShares.find(
+          (s) => s.employee.employeeId === employeeId,
+        );
+        if (!share) continue;
+
+        // daysRemaining is computed from today in ServCodeUtils (servCode.x.daysRemaining).
+        // For notStarted servCodes, the window hasn't started yet, so we use the full
+        // weekday span from today to the deadline as the denominator.
+        const daysLeft = weekdaysRemaining(today, pace.servCode.dateRange.max ?? today);
+        const rateAsOfToday = CountSizePriceOps.divideBy(pace.unfinishedCSP, daysLeft || 1);
+
+        // Employee's weighted share of the rate (same weighting logic as makeAllocationsAtDate)
+        let expectedCSP = { ...baseCountSizePrice };
+        if (share.avgDailyCSP) {
+          const teamAvg = CountSizePriceOps.sumAll(
+            pace.employeeShares.map((s) => s.avgDailyCSP ?? { ...baseCountSizePrice }),
+          );
+          expectedCSP = {
+            count: teamAvg.count > 0 ? rateAsOfToday.count * (share.avgDailyCSP.count / teamAvg.count) : 0,
+            size: teamAvg.size > 0 ? rateAsOfToday.size * (share.avgDailyCSP.size / teamAvg.size) : 0,
+            price: teamAvg.price > 0 ? rateAsOfToday.price * (share.avgDailyCSP.price / teamAvg.price) : 0,
+            rev: teamAvg.rev > 0 ? rateAsOfToday.rev * (share.avgDailyCSP.rev / teamAvg.rev) : 0,
+          };
+        } else {
+          // Even split fallback
+          const assignedCount = pace.employeeShares.length || 1;
+          expectedCSP = CountSizePriceOps.divideBy(rateAsOfToday, assignedCount);
+        }
+
+        // fractionConsumed = expectedCSP / totalAvgDailyCSP
+        const fractionConsumed =
+          totalAvgDailyCSP.count > 0 || totalAvgDailyCSP.size > 0
+            ? {
+                count: totalAvgDailyCSP.count > 0 ? expectedCSP.count / totalAvgDailyCSP.count : 0,
+                size: totalAvgDailyCSP.size > 0 ? expectedCSP.size / totalAvgDailyCSP.size : 0,
+                price: totalAvgDailyCSP.price > 0 ? expectedCSP.price / totalAvgDailyCSP.price : 0,
+                rev: totalAvgDailyCSP.rev > 0 ? expectedCSP.rev / totalAvgDailyCSP.rev : 0,
+              }
+            : null;
+
+        allocations.push({
+          servCode: pace.servCode,
+          expectedCSP,
+          avgDailyCSP: share.avgDailyCSP,
+          fractionConsumed,
+        });
+      }
+
+      // Sort by priority order (same as makeAllocationsAtDate)
+      return allocations.sort((a, b) => {
+        const ia = priorityIndex.get(a.servCode.servCodeId) ?? Infinity;
+        const ib = priorityIndex.get(b.servCode.servCodeId) ?? Infinity;
+        return ia - ib;
+      });
+    },
+  );
+}
+
 function makeSelectEmployeeTimelineSegments(employeeId: string) {
   return createSelector(
     [paceSelect.servCodePaces, paceSelect.employeeLookbackMap, selectDateBounds, selectPaceTolerance],
@@ -488,11 +588,13 @@ export const employeePaceSelect = {
   mainDate: selectMainDate,
   employeeDates: selectEmployeeDates,
   paceTolerance: selectPaceTolerance,
+  showUpcoming: selectShowUpcoming,
   dateBounds: selectDateBounds,
   weekdayBounds: selectWeekdayBounds,
   dateTicks: selectDateTicks,
   makeEffectiveDate: makeSelectEffectiveDate,
   makeAllocationsAtDate: makeSelectEmployeeAllocationsAtDate,
+  makeNotStartedAllocations: makeSelectNotStartedAllocations,
   makeTimelineSegments: makeSelectEmployeeTimelineSegments,
   employeeShareRemainingMap: selectEmployeeShareRemainingMap,
 };
