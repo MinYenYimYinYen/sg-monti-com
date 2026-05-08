@@ -2,6 +2,7 @@
 
 import { useSelector } from "react-redux";
 import { EmployeeCardData } from "@/app/bizPlan/pace/PaceType";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
@@ -28,7 +29,14 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
     employeeId,
     date: useSelector(employeePaceSelect.mainDate),
   });
-  const dateAllocations = useSelector(selectAllocationsAtDate);
+  const allDateAllocations = useSelector(selectAllocationsAtDate);
+  const servCodePaceMap = useSelector(paceSelect.servCodePaceMap);
+
+  // Urgent servCodes (asap/overdue) are shown in UrgentServCodeCard — exclude them here
+  const dateAllocations = allDateAllocations.filter((a) => {
+    const pace = servCodePaceMap.get(a.servCode.servCodeId);
+    return pace?.category !== "asap" && pace?.category !== "overdue";
+  });
 
   const currentServCodeIds = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
 

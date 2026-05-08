@@ -669,8 +669,19 @@ const selectEmployeeCardData = createSelector(
   },
 );
 
+const selectUrgentServCodePaces = createSelector(
+  [selectServCodePaces],
+  (paces) =>
+    paces.filter(
+      (p) =>
+        (p.category === "asap" || p.category === "overdue") &&
+        p.unfinishedCSP.count > 0,
+    ),
+);
+
 export const paceSelect = {
   servCodePaces: selectServCodePaces,
+  urgentServCodePaces: selectUrgentServCodePaces,
   servCodePaceMap: selectServCodePaceMap,
   progCodePaces: selectProgCodePaces,
   filteredSortedProgCodePaces: selectFilteredSortedProgCodePaces,

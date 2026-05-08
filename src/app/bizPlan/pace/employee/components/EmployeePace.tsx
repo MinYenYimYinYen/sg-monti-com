@@ -5,6 +5,7 @@ import { usePaceDeps } from "@/app/bizPlan/pace/usePaceDeps";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { EmployeePaceListPanel } from "@/app/bizPlan/pace/components/EmployeePaceListPanel";
 import { EmployeeCard } from "@/app/bizPlan/pace/employee/components/EmployeeCard";
+import { UrgentServCodeCard } from "@/app/bizPlan/pace/employee/components/UrgentServCodeCard";
 import { Button } from "@/style/components/button";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { authSelect } from "@/app/auth/authSlice";
@@ -50,6 +51,7 @@ export function EmployeePace() {
             </div>
           ) : (
             <div className="flex flex-row flex-wrap gap-4 content-start">
+              <UrgentServCodeCard />
               {employeeCardData.map((cardData) => (
                 <EmployeeCard
                   key={cardData.employee.employeeId}
