@@ -348,6 +348,50 @@ type TimelineSegment = {
   color: SegmentColor;
 };
 
+/**
+ * Pre-computes every employee's proportional share of remaining work for every servCode
+ * in a single pass. Keyed as Map<employeeId, Map<servCodeId, CountSizePrice>>.
+ *
+ * Share is weighted by the employee's avgDailyCSP relative to pace.teamAvgCapacity.
+ * Falls back to an even split when no lookback data is available.
+ *
+ * Components do a simple map lookup — no per-render selector creation needed.
+ */
+const selectEmployeeShareRemainingMap = createSelector(
+  [paceSelect.servCodePaces],
+  (paces): Map<string, Map<string, CountSizePrice>> => {
+    const result = new Map<string, Map<string, CountSizePrice>>();
+
+    for (const pace of paces) {
+      const teamAvg = pace.teamAvgCapacity;
+      const assignedCount = pace.employeeShares.length || 1;
+
+      for (const share of pace.employeeShares) {
+        const employeeId = share.employee.employeeId;
+        if (!result.has(employeeId)) result.set(employeeId, new Map());
+        const byServCode = result.get(employeeId)!;
+
+        let shareRemaining: CountSizePrice;
+        if (share.avgDailyCSP) {
+          shareRemaining = {
+            count: teamAvg.count > 0 ? pace.unfinishedCSP.count * (share.avgDailyCSP.count / teamAvg.count) : 0,
+            size: teamAvg.size > 0 ? pace.unfinishedCSP.size * (share.avgDailyCSP.size / teamAvg.size) : 0,
+            price: teamAvg.price > 0 ? pace.unfinishedCSP.price * (share.avgDailyCSP.price / teamAvg.price) : 0,
+            rev: teamAvg.rev > 0 ? pace.unfinishedCSP.rev * (share.avgDailyCSP.rev / teamAvg.rev) : 0,
+          };
+        } else {
+          // Even split fallback when no lookback data
+          shareRemaining = CountSizePriceOps.divideBy(pace.unfinishedCSP, assignedCount);
+        }
+
+        byServCode.set(pace.servCode.servCodeId, shareRemaining);
+      }
+    }
+
+    return result;
+  },
+);
+
 function makeSelectEmployeeTimelineSegments(employeeId: string) {
   return createSelector(
     [paceSelect.servCodePaces, paceSelect.employeeLookbackMap, selectDateBounds, selectPaceTolerance],
@@ -450,4 +494,5 @@ export const employeePaceSelect = {
   makeEffectiveDate: makeSelectEffectiveDate,
   makeAllocationsAtDate: makeSelectEmployeeAllocationsAtDate,
   makeTimelineSegments: makeSelectEmployeeTimelineSegments,
+  employeeShareRemainingMap: selectEmployeeShareRemainingMap,
 };

@@ -6,7 +6,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { employeePaceSelect, PX_PER_DAY } from "@/app/bizPlan/pace/employee/employeePaceSelect";
 import { employeePaceActions } from "@/app/bizPlan/pace/employee/employeePaceSlice";
 import { EmployeePaceConfig } from "@/app/bizPlan/pace/components/EmployeePaceConfig";
-import { MiniServCodeControls } from "@/app/bizPlan/pace/components/MiniServCodeControls";
+import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { DatePicker } from "@/components/DatePicker";
 

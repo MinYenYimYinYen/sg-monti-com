@@ -5,10 +5,12 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { paceActions } from "@/app/bizPlan/pace/paceSlice";
+import { employeePaceSelect } from "@/app/bizPlan/pace/employee/employeePaceSelect";
+import { employeePaceActions } from "@/app/bizPlan/pace/employee/employeePaceSlice";
 import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
 import { custFlagActions } from "@/app/realGreen/custFlag/_lib/custFlagSlice";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
-import { MiniServCodeControls } from "@/app/bizPlan/pace/components/MiniServCodeControls";
+import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
 import {
   Popover,
   PopoverContent,
@@ -20,13 +22,14 @@ import { Label } from "@/style/components/label";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { Slider } from "@/style/components/slider";
 import { DatePicker } from "@/components/DatePicker";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, Info, X } from "lucide-react";
 
 export function EmployeePaceConfig() {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
 
   const lookbackConfig = useSelector(paceSelect.lookbackConfig);
+  const paceTolerance = useSelector(employeePaceSelect.paceTolerance);
   const flagDocs = useSelector(flagSelect.flagDocs);
   const selectedFlagIds = useSelector(custFlagSelect.selectedFlagIds);
   const servCodePaces = useSelector(paceSelect.servCodePaces);
@@ -156,6 +159,36 @@ export function EmployeePaceConfig() {
                     </ScrollArea>
                   </div>
                 )}
+              </div>
+
+              {/* Pace Tolerance section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Pace Tolerance
+                  </p>
+                  <span className="text-xs font-mono text-foreground">
+                    ±{Math.round(paceTolerance * 100)}%
+                  </span>
+                </div>
+                <Slider
+                  min={0}
+                  max={0.5}
+                  step={0.05}
+                  value={[paceTolerance]}
+                  onValueChange={([value]) =>
+                    dispatch(employeePaceActions.setPaceTolerance(value))
+                  }
+                />
+                <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
+                  <Info className="w-3 h-3 mt-0.5 shrink-0" />
+                  <p>
+                    How far ahead or behind an employee can be before their bar changes color.
+                    At ±{Math.round(paceTolerance * 100)}%, a bar stays green if they&apos;ll
+                    finish between {Math.round((1 - paceTolerance) * 100)}–{Math.round((1 + paceTolerance) * 100)}%
+                    of their share by the deadline. Lower = stricter. Higher = more forgiving.
+                  </p>
+                </div>
               </div>
 
               {/* Not Set servCodes section */}

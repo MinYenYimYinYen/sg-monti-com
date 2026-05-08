@@ -1,13 +1,17 @@
 "use client";
 
 import { EmployeeAllocation } from "@/app/bizPlan/pace/PaceType";
-import { MiniServCodeControls } from "@/app/bizPlan/pace/components/MiniServCodeControls";
-import { ServCodePaceBar } from "@/app/bizPlan/pace/components/ServCodePaceBar";
+import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
+import { ServCodePaceBar } from "@/app/bizPlan/pace/employee/components/ServCodePaceBar";
+import { employeePaceSelect } from "@/app/bizPlan/pace/employee/employeePaceSelect";
+import { CountSizePrice, baseCountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
 import { Number } from "@/components/Number";
 import { ChevronUp, ChevronDown, LandPlot } from "lucide-react";
+import { useSelector } from "react-redux";
 
 type ServCodePriorityRowProps = {
   allocation: EmployeeAllocation;
+  employeeId: string;
   isFirst: boolean;
   isLast: boolean;
   onMoveUpAction: (servCodeId: string) => void;
@@ -17,6 +21,7 @@ type ServCodePriorityRowProps = {
 
 export function ServCodePriorityRow({
   allocation,
+  employeeId,
   isFirst,
   isLast,
   onMoveUpAction,
@@ -27,6 +32,10 @@ export function ServCodePriorityRow({
   // Show the employee's historical average (avgDailyCSP) — what they actually do.
   // expectedCSP is the cascade allocation (capped by capacity), which can be lower.
   const displayCSP = avgDailyCSP ?? expectedCSP;
+
+  const shareRemainingMap = useSelector(employeePaceSelect.employeeShareRemainingMap);
+  const employeeUnfinishedCSP: CountSizePrice =
+    shareRemainingMap.get(employeeId)?.get(servCode.servCodeId) ?? { ...baseCountSizePrice };
 
   return (
     <div className="py-1.5 space-y-1">
@@ -84,11 +93,12 @@ export function ServCodePriorityRow({
         </button>
       </div>
 
-      {/* Pace bar — uses employee's avgDailyCSP to project completion fraction */}
+      {/* Pace bar — uses employee's avgDailyCSP and their share of remaining work */}
       <div className="pl-5 pr-4">
         <ServCodePaceBar
           servCodeId={servCode.servCodeId}
           avgDailyCSP={allocation.avgDailyCSP ?? null}
+          employeeUnfinishedCSP={employeeUnfinishedCSP}
         />
       </div>
     </div>

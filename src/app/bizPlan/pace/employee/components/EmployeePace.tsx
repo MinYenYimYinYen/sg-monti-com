@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { usePaceDeps } from "@/app/bizPlan/pace/usePaceDeps";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { EmployeePaceListPanel } from "@/app/bizPlan/pace/components/EmployeePaceListPanel";
-import { EmployeeCard } from "@/app/bizPlan/pace/components/EmployeeCard";
+import { EmployeeCard } from "@/app/bizPlan/pace/employee/components/EmployeeCard";
 import { Button } from "@/style/components/button";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { authSelect } from "@/app/auth/authSlice";

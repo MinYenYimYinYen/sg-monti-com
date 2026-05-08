@@ -7,8 +7,8 @@ import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPl
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { employeePaceSelect } from "@/app/bizPlan/pace/employee/employeePaceSelect";
-import { ServCodePriorityRow } from "@/app/bizPlan/pace/components/ServCodePriorityRow";
-import { AddServCodePicker } from "@/app/bizPlan/pace/components/AddServCodePicker";
+import { ServCodePriorityRow } from "@/app/bizPlan/pace/employee/components/ServCodePriorityRow";
+import { AddServCodePicker } from "@/app/bizPlan/pace/employee/components/AddServCodePicker";
 import { cn } from "@/style/utils";
 
 type EmployeeCardProps = {
@@ -90,6 +90,7 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
               <ServCodePriorityRow
                 key={allocation.servCode.servCodeId}
                 allocation={allocation}
+                employeeId={employeeId}
                 isFirst={fullIdx === 0}
                 isLast={fullIdx === allocations.length - 1}
                 onMoveUpAction={(id) => handleMove(id, "up")}

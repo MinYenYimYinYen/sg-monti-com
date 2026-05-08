@@ -52,21 +52,23 @@ const SEGMENT_TEXT: Record<PaceColor, string> = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function countWeekdaysBetween(from: string, to: string): number {
-  if (to <= from) return 0;
-  return dateRanges.countWeekdays({ min: from, max: to }) - 1;
-}
-
 /**
- * Computes the crossover date — the projected date when unfinished CSP hits 0.
- * Uses the count dimension as the primary signal.
+ * Computes the crossover date — the projected date when the employee's share of
+ * unfinished CSP hits 0, based on their individual avgDailyCSP.
  * Walks forward weekday-by-weekday (Mon–Fri only) from today.
- * Returns null if the team has no expected output (no lookback data).
+ * Returns null if there is no usable daily rate.
  */
-function computeCrossoverDate(pace: ServCodePace): string | null {
-  const dailyRate = pace.teamExpectedCSP.count;
+function computeCrossoverDate(
+  employeeUnfinishedCSP: CountSizePrice,
+  avgDailyCSP: CountSizePrice | null,
+  pace: ServCodePace,
+): string | null {
+  // Prefer the employee's historical average; fall back to the team's required rate
+  const dailyRate = (avgDailyCSP?.count ?? 0) > 0
+    ? avgDailyCSP!.count
+    : pace.teamExpectedCSP.count;
   if (dailyRate <= 0) return null;
-  const remaining = pace.unfinishedCSP.count;
+  const remaining = employeeUnfinishedCSP.count;
   if (remaining <= 0) return dateStrings.today();
 
   const daysNeeded = Math.ceil(remaining / dailyRate);
@@ -76,8 +78,7 @@ function computeCrossoverDate(pace: ServCodePace): string | null {
   let counted = 0;
   while (counted < daysNeeded) {
     cur = dateStrings.addDays(cur, 1);
-    const day = new Date(cur).getUTCDay();
-    if (day !== 0 && day !== 6) counted++;
+    if (dateStrings.isWeekDay(cur)) counted++;
   }
   return cur;
 }
@@ -85,29 +86,32 @@ function computeCrossoverDate(pace: ServCodePace): string | null {
 /**
  * Computes the projected completion fraction at the deadline.
  *
- * completionFraction = (avgDailyCSP.count * daysRemaining) / unfinishedCSP.count
+ * completionFraction = (avgDailyCSP.count * daysRemaining) / employeeUnfinishedCSP.count
  *
- * Uses the employee's historical average pace (avgDailyCSP), not the required rate
- * (teamExpectedCSP). Using the required rate would always produce ~1.0 since it's
- * derived from unfinishedCSP / daysRemaining — circular.
+ * Uses the employee's historical average pace (avgDailyCSP) against their proportional
+ * share of remaining work (employeeUnfinishedCSP). This keeps the math self-consistent
+ * for a single employee — both numerator and denominator are Liza's data.
  *
  * A value of 1.0 means exactly on track. > 1.0 means finishing early. < 1.0 means behind.
  * Returns null if there is no lookback data (avgDailyCSP = 0 or null).
  */
 function computeCompletionFraction(
-  pace: ServCodePace,
+  employeeUnfinishedCSP: CountSizePrice,
   avgDailyCSP: CountSizePrice | null,
+  pace: ServCodePace,
 ): number | null {
   const dailyRate = avgDailyCSP?.count ?? 0;
   if (dailyRate <= 0) return null;
-  const remaining = pace.unfinishedCSP.count;
+  const remaining = employeeUnfinishedCSP.count;
   if (remaining <= 0) return Infinity; // already done
 
   const today = dateStrings.today();
   const max = pace.servCode.dateRange.max;
   if (!max) return null;
 
-  const daysRemaining = dateRanges.countWeekdays({ min: today, max });
+  // countWeekdays is inclusive of both endpoints. Subtract 1 to get future days only —
+  // today is already underway and its production is baked into avgDailyCSP.
+  const daysRemaining = Math.max(0, dateRanges.countWeekdays({ min: today, max }) - 1);
   const projectedDone = dailyRate * daysRemaining;
   return projectedDone / remaining;
 }
@@ -123,7 +127,8 @@ function getPaceColor(completionFraction: number | null, paceTolerance: number):
 // Tolerance boundary date
 //
 // Walks forward weekday-by-weekday from today, simulating daily production
-// (avgDailyCSP.count consumed each day). At each step, recomputes:
+// (avgDailyCSP.count consumed each day from employeeUnfinishedCSP). At each step,
+// recomputes:
 //
 //   completionFraction = avgDailyCSP.count × weekdaysRemaining(d, max) / remaining(d)
 //
@@ -133,8 +138,9 @@ function getPaceColor(completionFraction: number | null, paceTolerance: number):
 // ---------------------------------------------------------------------------
 
 function computeToleranceBoundaryDate(
-  pace: ServCodePace,
+  employeeUnfinishedCSP: CountSizePrice,
   avgDailyCSP: CountSizePrice | null,
+  pace: ServCodePace,
   paceTolerance: number,
 ): { date: string; color: PaceColor } | null {
   const dailyRate = avgDailyCSP?.count ?? 0;
@@ -143,14 +149,15 @@ function computeToleranceBoundaryDate(
   const max = pace.servCode.dateRange.max;
   if (!max) return null;
 
-  let remaining = pace.unfinishedCSP.count;
+  let remaining = employeeUnfinishedCSP.count;
   if (remaining <= 0) return null;
 
   const today = dateStrings.today();
 
   // Check if already out of tolerance today
-  const todayFraction = computeCompletionFraction(pace, avgDailyCSP);
+  const todayFraction = computeCompletionFraction(employeeUnfinishedCSP, avgDailyCSP, pace);
   const todayColor = getPaceColor(todayFraction, paceTolerance);
+
   if (todayColor !== "accent") {
     return { date: today, color: todayColor };
   }
@@ -159,8 +166,7 @@ function computeToleranceBoundaryDate(
   let cur = today;
   while (cur < max) {
     cur = dateStrings.addDays(cur, 1);
-    const dayOfWeek = new Date(cur).getUTCDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue; // skip weekends
+    if (!dateStrings.isWeekDay(cur)) continue; // skip weekends
 
     remaining = Math.max(0, remaining - dailyRate);
     if (remaining <= 0) return null; // work done before deadline — stays green
@@ -168,6 +174,7 @@ function computeToleranceBoundaryDate(
     const daysLeft = dateRanges.countWeekdays({ min: cur, max });
     const fraction = (dailyRate * daysLeft) / remaining;
     const color = getPaceColor(fraction, paceTolerance);
+
     if (color !== "accent") {
       return { date: cur, color };
     }
@@ -178,6 +185,9 @@ function computeToleranceBoundaryDate(
 
 // ---------------------------------------------------------------------------
 // Segment computation
+//
+// The bar represents weekdays only. All widths are expressed as a fraction of
+// total weekdays in the date range (min → max).
 //
 // The bar is split at the tolerance boundary date:
 //   [min ──── today]          elapsed — muted green (was on track when started)
@@ -195,42 +205,52 @@ type Segment = {
 };
 
 function computeSegments(
+  employeeUnfinishedCSP: CountSizePrice,
+  avgDailyCSP: CountSizePrice | null,
   pace: ServCodePace,
   paceTolerance: number,
-  avgDailyCSP: CountSizePrice | null,
 ): Segment[] {
   const { min, max } = pace.servCode.dateRange;
   if (!min || !max) return [];
 
   const today = dateStrings.today();
-  const minMs = new Date(min).getTime();
-  const maxMs = new Date(max).getTime();
-  const totalMs = maxMs - minMs;
-  if (totalMs <= 0) return [];
+  const totalWeekdays = dateRanges.countWeekdays({ min, max });
+  if (totalWeekdays <= 0) return [];
 
-  const todayMs = Math.min(Math.max(new Date(today).getTime(), minMs), maxMs);
-  const boundary = computeToleranceBoundaryDate(pace, avgDailyCSP, paceTolerance);
+  // Clamp today to [min, max] for percentage math
+  const clampedToday = dateStrings.clampDate(today, min, max);
+  const boundary = computeToleranceBoundaryDate(employeeUnfinishedCSP, avgDailyCSP, pace, paceTolerance);
 
   const segments: Segment[] = [];
 
   // Elapsed portion (min → today): muted green — historical, was on track
-  const elapsedPct = ((todayMs - minMs) / totalMs) * 100;
+  const elapsedWeekdays = dateRanges.countWeekdays({ min, max: clampedToday });
+  const elapsedPct = (elapsedWeekdays / totalWeekdays) * 100;
   if (elapsedPct > 0.5) {
     segments.push({ widthPct: elapsedPct, color: "accent", muted: true });
   }
 
   if (!boundary || boundary.date <= today) {
-    // Already out of tolerance (or no data) — entire remaining portion is the forecast color
-    const outColor = boundary?.color ?? "destructive";
-    const remainingPct = ((maxMs - todayMs) / totalMs) * 100;
+    // Two reasons boundary can be null:
+    //   1. avgDailyCSP is 0/null — no lookback data, forecast unknown → red
+    //   2. Stayed green all the way to deadline → accent
+    // boundary.color is set when already out of tolerance today.
+    const hasData = (avgDailyCSP?.count ?? 0) > 0;
+    const outColor = boundary?.color ?? (hasData ? "accent" : "destructive");
+    const remainingWeekdays = dateRanges.countWeekdays({ min: clampedToday, max });
+    // Subtract the elapsed weekday that clampedToday itself was counted in both ranges
+    const remainingPct = ((remainingWeekdays - 1) / totalWeekdays) * 100;
     if (remainingPct > 0.5) {
       segments.push({ widthPct: remainingPct, color: outColor, muted: false });
     }
   } else {
     // Split remaining at boundary date
-    const boundaryMs = Math.min(new Date(boundary.date).getTime(), maxMs);
-    const greenPct = ((boundaryMs - todayMs) / totalMs) * 100;
-    const outPct = ((maxMs - boundaryMs) / totalMs) * 100;
+    const clampedBoundary = dateStrings.clampDate(boundary.date, clampedToday, max);
+    const greenWeekdays = dateRanges.countWeekdays({ min: clampedToday, max: clampedBoundary });
+    const outWeekdays = dateRanges.countWeekdays({ min: clampedBoundary, max });
+    // Each inner range double-counts the shared endpoint; subtract 1 from each
+    const greenPct = ((greenWeekdays - 1) / totalWeekdays) * 100;
+    const outPct = ((outWeekdays - 1) / totalWeekdays) * 100;
 
     if (greenPct > 0.5) {
       segments.push({ widthPct: greenPct, color: "accent", muted: false });
@@ -243,23 +263,21 @@ function computeSegments(
   return segments;
 }
 
-// ---------------------------------------------------------------------------
-// Popover detail content
-// ---------------------------------------------------------------------------
-
 function ServCodePaceDetail({
   pace,
   paceTolerance,
   avgDailyCSP,
+  employeeUnfinishedCSP,
 }: {
   pace: ServCodePace;
   paceTolerance: number;
   avgDailyCSP: CountSizePrice | null;
+  employeeUnfinishedCSP: CountSizePrice;
 }) {
   const today = dateStrings.today();
   const { min, max } = pace.servCode.dateRange;
-  const crossover = computeCrossoverDate(pace);
-  const completionFraction = computeCompletionFraction(pace, avgDailyCSP);
+  const crossover = computeCrossoverDate(employeeUnfinishedCSP, avgDailyCSP, pace);
+  const completionFraction = computeCompletionFraction(employeeUnfinishedCSP, avgDailyCSP, pace);
   const forecastColor = getPaceColor(completionFraction, paceTolerance);
 
   const daysRemaining = max ? dateRanges.countWeekdays({ min: today, max }) : 0;
@@ -282,9 +300,12 @@ function ServCodePaceDetail({
 
   const statusTextColor = SEGMENT_TEXT[forecastColor];
 
-  // Required daily pace to finish on time
+  // Required daily pace for this employee to finish their share on time.
+  // Subtract 1 from daysRemaining (inclusive endpoint) to get future days only,
+  // matching the same convention used in computeCompletionFraction.
+  const futureDays = Math.max(1, daysRemaining - 1);
   const requiredRate = daysRemaining > 0
-    ? CountSizePriceOps.divideBy(pace.unfinishedCSP, daysRemaining)
+    ? CountSizePriceOps.divideBy(employeeUnfinishedCSP, futureDays)
     : { ...baseCountSizePrice };
 
   // avgDailyCSP drives the forecast — show it as "Current" so the user sees
@@ -295,12 +316,12 @@ function ServCodePaceDetail({
   let crossoverLabel: string | null = null;
   if (crossover && max) {
     if (crossover < max) {
-      const d = countWeekdaysBetween(crossover, max);
+      const d = dateRanges.countWeekdaysBetween({ min: crossover, max });
       crossoverLabel = `${d} day${d !== 1 ? "s" : ""} early`;
     } else if (crossover === max) {
       crossoverLabel = "Exactly on deadline";
     } else {
-      const d = countWeekdaysBetween(max, crossover);
+      const d = dateRanges.countWeekdaysBetween({ min: max, max: crossover });
       crossoverLabel = `${d} day${d !== 1 ? "s" : ""} late`;
     }
   }
@@ -365,22 +386,22 @@ function ServCodePaceDetail({
         </div>
       </div>
 
-      {/* Remaining work */}
+      {/* Remaining work — employee's share */}
       <div className="border-t pt-2 space-y-1.5">
         <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">
-          Remaining work
+          Remaining work (my share)
         </p>
         <div className="flex items-center gap-3 text-xs font-mono text-foreground">
           <span className="flex items-center gap-0.5">
             <span className="font-bold">#</span>
-            <Number decimals={0}>{pace.unfinishedCSP.count}</Number>
+            <Number decimals={0}>{employeeUnfinishedCSP.count}</Number>
           </span>
           <span className="flex items-center gap-0.5">
             <LandPlot className="w-3 h-3" />
-            <Number decimals={0}>{pace.unfinishedCSP.size}</Number>
+            <Number decimals={0}>{employeeUnfinishedCSP.size}</Number>
           </span>
           <span className="flex items-center gap-0.5">
-            <Number isMoney decimals={0}>{pace.unfinishedCSP.price}</Number>
+            <Number isMoney decimals={0}>{employeeUnfinishedCSP.price}</Number>
           </span>
         </div>
       </div>
@@ -396,9 +417,11 @@ type ServCodePaceBarProps = {
   servCodeId: string;
   /** Employee's historical average daily CSP for this servCode — drives the forecast color. */
   avgDailyCSP: CountSizePrice | null;
+  /** Employee's proportional share of the servCode's remaining work — computed by selector. */
+  employeeUnfinishedCSP: CountSizePrice;
 };
 
-export function ServCodePaceBar({ servCodeId, avgDailyCSP }: ServCodePaceBarProps) {
+export function ServCodePaceBar({ servCodeId, avgDailyCSP, employeeUnfinishedCSP }: ServCodePaceBarProps) {
   const [open, setOpen] = useState(false);
   const servCodePaceMap = useSelector(paceSelect.servCodePaceMap);
   const paceTolerance = useSelector(employeePaceSelect.paceTolerance);
@@ -410,20 +433,17 @@ export function ServCodePaceBar({ servCodeId, avgDailyCSP }: ServCodePaceBarProp
   if (!min || !max) return null;
 
   const today = dateStrings.today();
-  const segments = computeSegments(pace, paceTolerance, avgDailyCSP);
-  const crossover = computeCrossoverDate(pace);
+  const segments = computeSegments(employeeUnfinishedCSP, avgDailyCSP, pace, paceTolerance);
+  const crossover = computeCrossoverDate(employeeUnfinishedCSP, avgDailyCSP, pace);
 
-  const minMs = new Date(min).getTime();
-  const maxMs = new Date(max).getTime();
-  const totalMs = maxMs - minMs;
-  const todayMs = new Date(today).getTime();
+  const totalWeekdays = dateRanges.countWeekdays({ min, max });
 
-  const todayPct = totalMs > 0
-    ? Math.min(100, Math.max(0, ((todayMs - minMs) / totalMs) * 100))
+  const todayPct = totalWeekdays > 0
+    ? Math.min(100, Math.max(0, (dateRanges.countWeekdays({ min, max: dateStrings.clampDate(today, min, max) }) / totalWeekdays) * 100))
     : 0;
 
-  const crossoverPct = crossover && totalMs > 0
-    ? Math.min(100, Math.max(0, ((new Date(crossover).getTime() - minMs) / totalMs) * 100))
+  const crossoverPct = crossover && totalWeekdays > 0
+    ? Math.min(100, Math.max(0, (dateRanges.countWeekdays({ min, max: crossover }) / totalWeekdays) * 100))
     : null;
 
   const overallColor: PaceColor = segments[0]?.color ?? "accent";
@@ -486,7 +506,12 @@ export function ServCodePaceBar({ servCodeId, avgDailyCSP }: ServCodePaceBarProp
               {servCodeId}
             </div>
             <div className="px-3 py-3">
-              <ServCodePaceDetail pace={pace} paceTolerance={paceTolerance} avgDailyCSP={avgDailyCSP} />
+              <ServCodePaceDetail
+                pace={pace}
+                paceTolerance={paceTolerance}
+                avgDailyCSP={avgDailyCSP}
+                employeeUnfinishedCSP={employeeUnfinishedCSP}
+              />
             </div>
           </div>
         </div>

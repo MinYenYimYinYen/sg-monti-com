@@ -17,7 +17,7 @@ import {
   parseISO,
   isWithinInterval,
   isWeekend,
-  eachDayOfInterval,
+  differenceInCalendarDays,
 } from "date-fns";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 
@@ -89,17 +89,17 @@ function yearEnd(): string {
 
 function padDateRange(dateRange: TRange<string>, days: number) {
   return {
-    min: format(fnsAddDays(new Date(dateRange.min), -days), "yyyy-MM-dd"),
-    max: format(fnsAddDays(new Date(dateRange.max), days), "yyyy-MM-dd"),
+    min: format(fnsAddDays(parseISO(dateRange.min), -days), "yyyy-MM-dd"),
+    max: format(fnsAddDays(parseISO(dateRange.max), days), "yyyy-MM-dd"),
   };
 }
 
 function addDays(date: string, days: number) {
-  return format(fnsAddDays(new Date(date), days), "yyyy-MM-dd");
+  return format(fnsAddDays(parseISO(date), days), "yyyy-MM-dd");
 }
 
 function subDays(date: string, days: number) {
-  return format(fnsSubDays(new Date(date), days), "yyyy-MM-dd");
+  return format(fnsSubDays(parseISO(date), days), "yyyy-MM-dd");
 }
 
 function isInRange(date: string, dateRange: TRange<string>): boolean {
@@ -158,12 +158,39 @@ function dateRangeToDate(
   return { min: dateRange.min, max: date }; // date is within range
 }
 
+/**
+ * Counts weekdays (Mon–Fri) in a date range, inclusive of both endpoints.
+ * O(1) — uses arithmetic instead of allocating a day array.
+ */
 function countWeekdays(dateRange: TRange<string>): number {
   if (!isValidDateRange(dateRange)) return 0;
   const start = parseISO(dateRange.min);
   const end = parseISO(dateRange.max);
-  const days = eachDayOfInterval({ start, end });
-  return days.filter((day) => !isWeekend(day)).length;
+
+  const totalDays = differenceInCalendarDays(end, start) + 1;
+  const fullWeeks = Math.floor(totalDays / 7);
+  const remainder = totalDays % 7;
+
+  // Count weekdays in the partial week starting from start's day-of-week
+  const startDay = start.getDay(); // 0=Sun, 6=Sat
+  let partialWeekdays = 0;
+  for (let i = 0; i < remainder; i++) {
+    const d = (startDay + i) % 7;
+    if (d !== 0 && d !== 6) partialWeekdays++;
+  }
+
+  return fullWeeks * 5 + partialWeekdays;
+}
+
+function countWeekdaysBetween(dateRange: TRange<string>) {
+  return countWeekdays(dateRange) - 1;
+}
+
+/** Clamps a date string to [min, max] using lexicographic ISO comparison. */
+function clampDate(date: string, min: string, max: string): string {
+  if (date < min) return min;
+  if (date > max) return max;
+  return date;
 }
 
 export const dateStrings = {
@@ -188,6 +215,7 @@ export const dateStrings = {
   isWeekDay,
   nextMonday,
   todayToWeekday,
+  clampDate,
 };
 
 export const dateRanges = {
@@ -196,4 +224,5 @@ export const dateRanges = {
   dateRangeFromDate,
   dateRangeToDate,
   countWeekdays,
+  countWeekdaysBetween,
 };
