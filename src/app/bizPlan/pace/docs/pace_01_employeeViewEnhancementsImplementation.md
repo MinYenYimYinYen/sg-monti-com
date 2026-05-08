@@ -135,7 +135,7 @@ All tasks are AI-owned — no new data layer work is required. The data foundati
 
 | Task | Component / File | Depends on | Status |
 |---|---|---|---|
-| A1 | `ServCodePriorityRow` | — | ☐ |
+| A1 | `ServCodePriorityRow` | — | ✅ |
 | A2 | `paceSelect` — `urgentServCodePaces` | — | ☐ |
 | A3 | `UrgentServCodeCard` | A2 | ☐ |
 | A4 | `UrgentServCodeRow` + `UrgentServiceList` | A2 | ☐ |
