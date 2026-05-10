@@ -1,13 +1,10 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { deepSelect } from "@/app/realGreen/deepSelect";
-import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import {
   CountSizePrice,
   CountSizePriceOps,
   baseCountSizePrice,
 } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
-import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import {
   EmployeeAllocation,
   EmployeeCardData,
@@ -18,7 +15,6 @@ import {
   ProgCodePace,
   ServCodePace,
 } from "@/app/bizPlan/pace/PaceType";
-import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { AppState } from "@/store";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
@@ -32,32 +28,10 @@ import {
 } from "@/app/bizPlan/pace/_lib/employeeLookbackUtils";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
-
-function getCategory(servCode: ServCodeDeep): PaceCategory {
-  if (servCode.alwaysAsap) return "asap";
-  if (!dateRanges.isValidDateRange(servCode.dateRange)) return "notSet";
-  const today = dateStrings.today();
-  if (today < servCode.dateRange.min) return "notStarted";
-  if (today > servCode.dateRange.max) return "overdue";
-  return "inProgress";
-}
-
-function getCSPTotal({
-  services,
-  isUnfinished,
-}: {
-  services: Service[];
-  isUnfinished: boolean;
-}) {
-  const csps = services
-    .filter((s) => {
-      if (isUnfinished) {
-        return s.program.status === "9";
-      } else return false;
-    })
-    .map((s) => CountSizePriceOps.fromService(s));
-  return CountSizePriceOps.sumAll(csps);
-}
+import { rawPaceSelect } from "@/app/bizPlan/pace/rawPaceSelect";
+import { dateStrings, dateRanges } from "@/lib/primatives/dates/dateStrings";
+import { MatrixDisplayConfig } from "@/app/bizPlan/pace/paceSlice";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 
 const CATEGORY_URGENCY: Record<PaceCategory, number> = {
   asap: 0,
@@ -217,30 +191,19 @@ const selectEmployeeLookbackMap = createSelector(
 type CapacityTracker = Map<string, CountSizePrice>;
 
 const selectServCodePaces = createSelector(
-  [deepSelect.servCodes, selectEmployeeLookbackMap, employeeSelect.employeeMap],
-  (servCodes, lookbackMap, employeeMap) => {
-    // Build a map of servCodeId → unfinishedRate for cascade allocation
-    const unfinishedRateMap = new Map<string, CountSizePrice>();
-    for (const servCode of servCodes) {
-      const unfinished = servCode.services.filter((s) =>
-        getServiceStatuses(["printed", "active", "asap"]).includes(s.status),
-      );
-      const unfinishedCSP = getCSPTotal({
-        services: unfinished,
-        isUnfinished: true,
-      });
-      const unfinishedRate = CountSizePriceOps.divideBy(
-        unfinishedCSP,
-        servCode.x.daysRemaining,
-      );
-      unfinishedRateMap.set(servCode.servCodeId, unfinishedRate);
-    }
-
+  [
+    rawPaceSelect.rawServCodePaces,
+    rawPaceSelect.rawServCodePaceMap,
+    selectEmployeeLookbackMap,
+    employeeSelect.employeeMap,
+  ],
+  (rawPaces, rawPaceMap, lookbackMap, employeeMap) => {
     // Pre-compute per-servCode team avg totals for weighted demand splitting.
     // For each servCode, sum the avgDailyCSP of all assigned employees (for this programType).
     // Employees with no lookback data contribute an even-split weight (1 unit per dimension).
     const teamAvgByServCode = new Map<string, CountSizePrice>();
-    for (const servCode of servCodes) {
+    for (const raw of rawPaces) {
+      const { servCode } = raw;
       const programTypeKey =
         servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
       let teamTotal = { ...baseCountSizePrice };
@@ -277,12 +240,10 @@ const selectServCodePaces = createSelector(
       const employeeLookback = lookbackMap.get(employee.employeeId);
 
       for (const servCodeId of employee.servCodeIds) {
-        const servCode = servCodes.find((sc) => sc.servCodeId === servCodeId);
-        if (!servCode) continue;
+        const raw = rawPaceMap.get(servCodeId);
+        if (!raw) continue;
 
-        const unfinishedRate = unfinishedRateMap.get(servCodeId) ?? {
-          ...baseCountSizePrice,
-        };
+        const { servCode, unfinishedRate } = raw;
 
         // Look up stats using this servCode's specific program type
         const programTypeKey =
@@ -398,27 +359,9 @@ const selectServCodePaces = createSelector(
       }
     }
 
-    // Now build ServCodePace[] using the pre-computed shares
-    return servCodes.map((servCode) => {
-      const finished = servCode.services.filter((s) => s.status === "S");
-      const finishedCSP = getCSPTotal({
-        services: finished,
-        isUnfinished: false,
-      });
-      const finishedRate = CountSizePriceOps.divideBy(
-        finishedCSP,
-        servCode.x.daysElapsed,
-      );
-
-      const unfinishedRate = unfinishedRateMap.get(servCode.servCodeId) ?? {
-        ...baseCountSizePrice,
-      };
-      const unfinishedCSP = getCSPTotal({
-        services: servCode.services.filter((s) =>
-          getServiceStatuses(["printed", "active", "asap"]).includes(s.status),
-        ),
-        isUnfinished: true,
-      });
+    // Now build ServCodePace[] using the pre-computed raw paces and shares
+    return rawPaces.map((raw) => {
+      const { servCode, finishedCSP, finishedRate, unfinishedCSP, unfinishedRate, category, daysRemaining } = raw;
 
       const employeeShares: EmployeeShare[] = servCode.assignedTo.map(
         (employee) => {
@@ -459,8 +402,8 @@ const selectServCodePaces = createSelector(
 
       const pace: ServCodePace = {
         servCode,
-        daysRemaining: servCode.x.daysRemaining,
-        category: getCategory(servCode),
+        daysRemaining,
+        category,
         unfinishedCSP,
         unfinishedRate,
         finishedCSP,
@@ -784,6 +727,185 @@ const selectUrgentServCodePaces = createSelector(
     ),
 );
 
+// ---------------------------------------------------------------------------
+// Matrix selectors
+// ---------------------------------------------------------------------------
+
+const selectMatrixDisplayConfig = (state: AppState): MatrixDisplayConfig =>
+  state.pace.matrixDisplayConfig;
+
+export type ServCodePaceDelta = {
+  servCodeId: string;
+  dateRange: TRange<string>;
+  /** Projected completion date based on unfinishedPerDay.count. null if no data. */
+  projectedEndDate: string | null;
+  /** Weekdays between dateRange.max and projectedEndDate. Positive = behind, negative = ahead. null if no data. */
+  deltaDays: number | null;
+};
+
+// Computes projected end date and delta days for each servCode.
+// Uses teamAvgCapacity.count (sum of assigned employees' avgDailyCSP for this programType)
+// as the daily throughput estimate: daysNeeded = unfinishedCSP.count / teamAvgCapacity.count.
+// Guards: null when no throughput data, no unfinished work, or no valid dateRange.
+const selectServCodePaceDeltaMap = createSelector(
+  [selectServCodePaces],
+  (servCodePaces): Map<string, ServCodePaceDelta> => {
+    const today = dateStrings.today();
+    const result = new Map<string, ServCodePaceDelta>();
+
+    for (const pace of servCodePaces) {
+      const { servCode, unfinishedCSP, teamAvgCapacity } = pace;
+      const servCodeId = servCode.servCodeId;
+      const dateRange = servCode.dateRange;
+
+      let projectedEndDate: string | null = null;
+      let deltaDays: number | null = null;
+
+      if (
+        teamAvgCapacity.count > 0 &&
+        unfinishedCSP.count > 0 &&
+        dateRanges.isValidDateRange(dateRange)
+      ) {
+        const daysNeeded = unfinishedCSP.count / teamAvgCapacity.count;
+        projectedEndDate = dateStrings.addWeekdays(today, daysNeeded);
+        deltaDays = dateRanges.weekdaysBetween(dateRange.max, projectedEndDate);
+      }
+
+      result.set(servCodeId, { servCodeId, dateRange, projectedEndDate, deltaDays });
+    }
+
+    return result;
+  },
+);
+
+// Min/max deltaDays across all servCodes — used to set slider bounds in the UI.
+const selectMatrixDeltaDaysBounds = createSelector(
+  [selectServCodePaceDeltaMap],
+  (deltaMap): [number, number] => {
+    let min = 0;
+    let max = 0;
+    for (const { deltaDays } of deltaMap.values()) {
+      if (deltaDays == null) continue;
+      if (deltaDays < min) min = deltaDays;
+      if (deltaDays > max) max = deltaDays;
+    }
+    return [min, max];
+  },
+);
+
+// Filtered and sorted progCodePaces for the AssignmentMatrix.
+// Applies filterAssigned, filterCategories, filterDeltaDays, then sorts by sortKey + cspDisplay.
+const selectMatrixFilteredSortedProgCodePaces = createSelector(
+  [
+    selectProgCodePaces,
+    rawPaceSelect.rawServCodePacesPerDayMap,
+    rawPaceSelect.rawServCodePacesPerDayPerEmployeeMap,
+    selectServCodePaceDeltaMap,
+    selectMatrixDisplayConfig,
+  ],
+  (
+    progCodePaces,
+    perDayMap,
+    perDayPerEmployeeMap,
+    deltaMap,
+    config,
+  ): ProgCodePace[] => {
+    const {
+      sortKey,
+      filterAssigned,
+      filterCategories,
+      filterDeltaDays,
+      cspDisplay,
+    } = config;
+
+    // Helper: get the unfinished CSP for a servCode based on display mode
+    function getServCodeCsp(servCodeId: string): CountSizePrice {
+      if (cspDisplay === "perDay") {
+        return perDayMap.get(servCodeId)?.unfinishedPerDay ?? { ...baseCountSizePrice };
+      }
+      if (cspDisplay === "perDayPerEmployee") {
+        return perDayPerEmployeeMap.get(servCodeId)?.unfinishedPerDayPerEmployee ?? { ...baseCountSizePrice };
+      }
+      // "total"
+      return perDayMap.get(servCodeId)?.unfinishedCSP ?? { ...baseCountSizePrice };
+    }
+
+    const filtered = progCodePaces.filter((p) => {
+      // Filter by assigned status
+      if (filterAssigned !== "all") {
+        const totalAssigned = p.servCodePaces.reduce(
+          (sum, sp) => sum + sp.servCode.assignedTo.length,
+          0,
+        );
+        if (filterAssigned === "withAssigned" && totalAssigned === 0) return false;
+        if (filterAssigned === "withoutAssigned" && totalAssigned > 0) return false;
+      }
+
+      // Filter by category (empty = show all)
+      if (filterCategories.length > 0) {
+        const hasMatchingCategory = p.servCodePaces.some((sp) =>
+          filterCategories.includes(sp.category),
+        );
+        if (!hasMatchingCategory) return false;
+      }
+
+      // Filter by deltaDays range (null = disabled)
+      if (filterDeltaDays != null) {
+        const [minDelta, maxDelta] = filterDeltaDays;
+        const anyInRange = p.servCodePaces.some((sp) => {
+          const delta = deltaMap.get(sp.servCode.servCodeId)?.deltaDays;
+          if (delta == null) return false;
+          return delta >= minDelta && delta <= maxDelta;
+        });
+        if (!anyInRange) return false;
+      }
+
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sortKey === "dateRange") {
+        const minA =
+          a.servCodePaces
+            .map((p) => p.servCode.dateRange.min ?? "")
+            .filter(Boolean)
+            .sort()[0] ?? "";
+        const minB =
+          b.servCodePaces
+            .map((p) => p.servCode.dateRange.min ?? "")
+            .filter(Boolean)
+            .sort()[0] ?? "";
+        if (minA !== minB) return minA.localeCompare(minB);
+        return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
+      }
+
+      if (sortKey === "assignedCount") {
+        const countA = new Set(
+          a.servCodePaces.flatMap((sp) => sp.servCode.assignedTo.map((e) => e.employeeId)),
+        ).size;
+        const countB = new Set(
+          b.servCodePaces.flatMap((sp) => sp.servCode.assignedTo.map((e) => e.employeeId)),
+        ).size;
+        if (countA !== countB) return countB - countA; // descending
+        return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
+      }
+
+      // CSP sort: sum the chosen dimension across all servCodes in the progCode
+      const dim = sortKey as "count" | "size" | "price" | "rev";
+      const sumA = a.servCodePaces.reduce(
+        (s, sp) => s + getServCodeCsp(sp.servCode.servCodeId)[dim],
+        0,
+      );
+      const sumB = b.servCodePaces.reduce(
+        (s, sp) => s + getServCodeCsp(sp.servCode.servCodeId)[dim],
+        0,
+      );
+      if (sumA !== sumB) return sumB - sumA; // descending
+      return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
+    });
+  },
+);
+
 export const paceSelect = {
   servCodePaces: selectServCodePaces,
   urgentServCodePaces: selectUrgentServCodePaces,
@@ -802,4 +924,8 @@ export const paceSelect = {
   employeeLookbackMap: selectEmployeeLookbackMap,
   employeePaceSummaries: selectEmployeePaceSummaries,
   employeeCardData: selectEmployeeCardData,
+  matrixDisplayConfig: selectMatrixDisplayConfig,
+  servCodePaceDeltaMap: selectServCodePaceDeltaMap,
+  matrixDeltaDaysBounds: selectMatrixDeltaDaysBounds,
+  matrixFilteredSortedProgCodePaces: selectMatrixFilteredSortedProgCodePaces,
 };

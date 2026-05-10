@@ -6,16 +6,19 @@ import { usePaceDeps } from "@/app/bizPlan/pace/usePaceDeps";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { rawPaceSelect } from "@/app/bizPlan/pace/rawPaceSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ProgCodePace, ServCodePace } from "@/app/bizPlan/pace/PaceType";
+import { ServCodePaceDelta } from "@/app/bizPlan/pace/paceSelect";
 import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
 import { Number } from "@/components/Number";
 import { ChevronDown, ChevronRight, Pencil } from "lucide-react";
 import { cn } from "@/style/utils";
 import { CountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
+import { MatrixDisplaySettings } from "@/app/bizPlan/assignmentPlan/matrix/MatrixDisplaySettings";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -25,6 +28,57 @@ function formatDate(iso: string): string {
   if (!iso) return "—";
   const [, month, day] = iso.split("-");
   return `${month}/${day}`;
+}
+
+// Deltas within ±ON_PACE_THRESHOLD_DAYS are considered "on pace" (green).
+// Beyond that: positive = behind (red), negative = ahead (blue).
+const ON_PACE_THRESHOLD_DAYS = 2;
+
+function deltaDaysColor(deltaDays: number): string {
+  if (deltaDays > ON_PACE_THRESHOLD_DAYS) return "text-destructive";
+  if (deltaDays < -ON_PACE_THRESHOLD_DAYS) return "text-primary";
+  return "text-accent";
+}
+
+function formatDeltaDays(deltaDays: number): string {
+  return deltaDays > 0 ? `+${deltaDays}d` : `${deltaDays}d`;
+}
+
+// ---------------------------------------------------------------------------
+// DeltaDaysDisplay — single servCode delta badge
+// ---------------------------------------------------------------------------
+
+function DeltaDaysDisplay({ deltaDays }: { deltaDays: number | null }) {
+  if (deltaDays == null) return null;
+  return (
+    <span className={`text-[10px] font-mono ${deltaDaysColor(deltaDays)}`}>
+      {formatDeltaDays(deltaDays)}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ProgDeltaDisplay — shows min/max delta range for a progCode
+// ---------------------------------------------------------------------------
+
+function ProgDeltaDisplay({ deltas }: { deltas: (number | null)[] }) {
+  const valid = deltas.filter((d): d is number => d != null);
+  if (valid.length === 0) return null;
+
+  const minDelta = Math.min(...valid);
+  const maxDelta = Math.max(...valid);
+
+  if (minDelta === maxDelta) {
+    return <DeltaDaysDisplay deltaDays={minDelta} />;
+  }
+
+  return (
+    <span className="flex items-center gap-0.5 text-[10px] font-mono">
+      <span className={deltaDaysColor(maxDelta)}>{formatDeltaDays(maxDelta)}</span>
+      <span className="text-muted-foreground">/</span>
+      <span className={deltaDaysColor(minDelta)}>{formatDeltaDays(minDelta)}</span>
+    </span>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -54,13 +108,19 @@ function CspDisplay({ csp }: { csp: CountSizePrice }) {
 
 export function AssignmentMatrix() {
   usePaceDeps();
-  useAssignmentPlan({ autoLoad: false }); // already loaded by usePaceDeps
 
   const allEmployees = useSelector(employeeSelect.employees);
   const activeEmployees = allEmployees.filter((e) => e.active);
 
-  // Use filteredSortedProgCodePaces for the default sort (urgency → dateRange.min → alpha)
-  const progCodePaces = useSelector(paceSelect.filteredSortedProgCodePaces);
+  const progCodePaces = useSelector(paceSelect.matrixFilteredSortedProgCodePaces);
+  const cspDisplay = useSelector(paceSelect.matrixDisplayConfig).cspDisplay;
+
+  // Raw CSP maps for display
+  const perDayMap = useSelector(rawPaceSelect.rawServCodePacesPerDayMap);
+  const perDayPerEmployeeMap = useSelector(rawPaceSelect.rawServCodePacesPerDayPerEmployeeMap);
+
+  // Delta map for pace delta display
+  const deltaMap = useSelector(paceSelect.servCodePaceDeltaMap);
 
   const assignmentsByEmployeeId = useSelector(
     assignmentPlanSelect.assignmentsByEmployeeId,
@@ -136,6 +196,27 @@ export function AssignmentMatrix() {
     upsert({ employeeId, servCodeIds: newServCodeIds });
   }
 
+  // Resolve the CSP to display for a servCode based on the current display mode
+  function getServCodeCsp(servCodeId: string): CountSizePrice | null {
+    if (cspDisplay === "perDay") {
+      const pace = perDayMap.get(servCodeId);
+      if (!pace) return null;
+      const csp = pace.unfinishedPerDay;
+      return csp.count > 0 || csp.size > 0 || csp.price > 0 ? csp : null;
+    }
+    if (cspDisplay === "perDayPerEmployee") {
+      const pace = perDayPerEmployeeMap.get(servCodeId);
+      if (!pace) return null;
+      const csp = pace.unfinishedPerDayPerEmployee;
+      return csp.count > 0 || csp.size > 0 || csp.price > 0 ? csp : null;
+    }
+    // "total"
+    const pace = perDayMap.get(servCodeId);
+    if (!pace) return null;
+    const csp = pace.unfinishedCSP;
+    return csp.count > 0 || csp.size > 0 || csp.price > 0 ? csp : null;
+  }
+
   return (
     <div className="flex h-full overflow-hidden">
       {/* Left panel — employee selector */}
@@ -163,7 +244,7 @@ export function AssignmentMatrix() {
           </div>
           <button
             onClick={selectAssigned}
-            className="text-[10px] text-accent-foreground bg-accent/20 hover:bg-accent/30 rounded px-1.5 py-0.5 transition-colors"
+            className="text-[10px] bg-accent/20 hover:bg-accent/30 rounded px-1.5 py-0.5 transition-colors"
           >
             Select Assigned
           </button>
@@ -206,9 +287,12 @@ export function AssignmentMatrix() {
             {/* Header row: one column per selected employee */}
             <thead className="sticky top-0 z-10 bg-card">
               <tr>
-                {/* Label column */}
+                {/* Label column — contains Display Settings in top-left corner */}
                 <th className="border border-border px-3 py-1.5 text-left font-semibold text-foreground bg-accent/10 sticky left-0 z-20 min-w-56">
-                  Program / ServCode
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Program / ServCode</span>
+                    <MatrixDisplaySettings />
+                  </div>
                 </th>
                 {selectedEmployees.map((employee) => {
                   const assignedCount =
@@ -252,6 +336,8 @@ export function AssignmentMatrix() {
                     assignmentsByEmployeeId={assignmentsByEmployeeId}
                     hoveredServCodeId={hoveredServCodeId}
                     hoveredEmployeeId={hoveredEmployeeId}
+                    getServCodeCsp={getServCodeCsp}
+                    deltaMap={deltaMap}
                     onToggleExpand={() => toggleProgExpand(progCodePace.progCode.progCodeId)}
                     onUpsert={handleUpsert}
                     onHoverServCode={setHoveredServCodeId}
@@ -278,6 +364,8 @@ type MatrixProgGroupProps = {
   assignmentsByEmployeeId: Map<string, { servCodeIds: string[] }>;
   hoveredServCodeId: string | null;
   hoveredEmployeeId: string | null;
+  getServCodeCsp: (servCodeId: string) => CountSizePrice | null;
+  deltaMap: Map<string, ServCodePaceDelta>;
   onToggleExpand: () => void;
   onUpsert: (employeeId: string, servCodeIds: string[]) => void;
   onHoverServCode: (id: string | null) => void;
@@ -291,6 +379,8 @@ function MatrixProgGroup({
   assignmentsByEmployeeId,
   hoveredServCodeId,
   hoveredEmployeeId,
+  getServCodeCsp,
+  deltaMap,
   onToggleExpand,
   onUpsert,
   onHoverServCode,
@@ -309,17 +399,17 @@ function MatrixProgGroup({
     servCodePaces.flatMap((sp) => sp.servCode.assignedTo.map((e) => e.employeeId)),
   );
 
-  // Avg CSP: average teamAvgCapacity across servCodes in this program
-  const validTeamAvgs = servCodePaces
-    .map((sp) => sp.teamAvgCapacity)
-    .filter((csp) => csp.count > 0 || csp.size > 0 || csp.price > 0);
-  const progAvgCapacity: CountSizePrice | null =
-    validTeamAvgs.length > 0
+  // Prog-level CSP: sum of all servCode CSPs using the current display mode
+  const progCspValues = servCodePaces
+    .map((sp) => getServCodeCsp(sp.servCode.servCodeId))
+    .filter((csp): csp is CountSizePrice => csp !== null);
+  const progCsp: CountSizePrice | null =
+    progCspValues.length > 0
       ? {
-          count: validTeamAvgs.reduce((s, c) => s + c.count, 0) / validTeamAvgs.length,
-          size: validTeamAvgs.reduce((s, c) => s + c.size, 0) / validTeamAvgs.length,
-          price: validTeamAvgs.reduce((s, c) => s + c.price, 0) / validTeamAvgs.length,
-          rev: validTeamAvgs.reduce((s, c) => s + c.rev, 0) / validTeamAvgs.length,
+          count: progCspValues.reduce((s, c) => s + c.count, 0),
+          size: progCspValues.reduce((s, c) => s + c.size, 0),
+          price: progCspValues.reduce((s, c) => s + c.price, 0),
+          rev: progCspValues.reduce((s, c) => s + c.rev, 0),
         }
       : null;
 
@@ -387,8 +477,14 @@ function MatrixProgGroup({
             <span className="text-[10px] text-muted-foreground">
               {assignedEmployeeIds.size} emp
             </span>
-            {/* Avg CSP */}
-            {progAvgCapacity !== null && <CspDisplay csp={progAvgCapacity} />}
+            {/* Prog-level CSP */}
+            {progCsp !== null && <CspDisplay csp={progCsp} />}
+            {/* Prog-level pace delta range */}
+            <ProgDeltaDisplay
+              deltas={servCodePaces.map(
+                (sp) => deltaMap.get(sp.servCode.servCodeId)?.deltaDays ?? null,
+              )}
+            />
           </div>
         </td>
 
@@ -429,14 +525,7 @@ function MatrixProgGroup({
         servCodePaces.map((scPace) => {
           const sc = scPace.servCode;
           const isRowHovered = hoveredServCodeId === sc.servCodeId;
-
-          // Avg CSP for this servCode — use teamAvgCapacity directly
-          const scAvgCapacity =
-            scPace.teamAvgCapacity.count > 0 ||
-            scPace.teamAvgCapacity.size > 0 ||
-            scPace.teamAvgCapacity.price > 0
-              ? scPace.teamAvgCapacity
-              : null;
+          const scCsp = getServCodeCsp(sc.servCodeId);
 
           return (
             <tr
@@ -469,8 +558,12 @@ function MatrixProgGroup({
                       <span>{formatDate(sc.dateRange.max)}</span>
                     </div>
                   )}
-                  {/* Avg CSP */}
-                  {scAvgCapacity !== null && <CspDisplay csp={scAvgCapacity} />}
+                  {/* CSP from raw selectors */}
+                  {scCsp !== null && <CspDisplay csp={scCsp} />}
+                  {/* ServCode pace delta */}
+                  <DeltaDaysDisplay
+                    deltaDays={deltaMap.get(sc.servCodeId)?.deltaDays ?? null}
+                  />
                   {/* Edit trigger — visible on row hover */}
                   <MiniServCodeControls servCode={sc}>
                     <Pencil className="w-3 h-3 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" />

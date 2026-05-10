@@ -193,6 +193,47 @@ function clampDate(date: string, min: string, max: string): string {
   return date;
 }
 
+/** Returns the next weekday strictly after the given date. */
+function nextWeekdayAfter(date: string): string {
+  const next = format(fnsAddDays(parseISO(date), 1), "yyyy-MM-dd");
+  if (isWeekDay(next)) return next;
+  return nextMonday(next);
+}
+
+/**
+ * Adds n weekdays (Mon–Fri) to a date string.
+ * Fractional n is ceiled before adding (a partial day counts as a full day).
+ * Negative n is not supported.
+ */
+function addWeekdays(date: string, n: number): string {
+  const days = Math.ceil(n);
+  if (days <= 0) return date;
+  let current = parseISO(date);
+  let remaining = days;
+  while (remaining > 0) {
+    current = fnsAddDays(current, 1);
+    if (!isWeekend(current)) {
+      remaining--;
+    }
+  }
+  return format(current, "yyyy-MM-dd");
+}
+
+/**
+ * Counts the number of weekdays between two date strings (exclusive of start, inclusive of end).
+ * Returns a positive number if end > start, negative if end < start.
+ */
+function weekdaysBetween(start: string, end: string): number {
+  if (start === end) return 0;
+  const forward = start < end;
+  const range: TRange<string> = forward
+    ? { min: start, max: end }
+    : { min: end, max: start };
+  // countWeekdays is inclusive of both endpoints; subtract 1 to exclude start
+  const count = countWeekdays(range) - 1;
+  return forward ? count : -count;
+}
+
 export const dateStrings = {
   today,
   daysAgo,
@@ -211,9 +252,11 @@ export const dateStrings = {
   yearEnd,
   addDays,
   subDays,
+  addWeekdays,
   isInRange,
   isWeekDay,
   nextMonday,
+  nextWeekdayAfter,
   todayToWeekday,
   clampDate,
 };
@@ -225,4 +268,5 @@ export const dateRanges = {
   dateRangeToDate,
   countWeekdays,
   countWeekdaysBetween,
+  weekdaysBetween,
 };
