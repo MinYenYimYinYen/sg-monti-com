@@ -37,7 +37,7 @@ type PaceState = {
 const initialState: PaceState = {
   lookbackConfig: {
     lookbackStart: dateStrings.weeksAgo(1),
-    completionThreshold: 0,
+    completionThreshold: 0.5,
   },
   matrixDisplayConfig: {
     sortKey: "dateRange",
