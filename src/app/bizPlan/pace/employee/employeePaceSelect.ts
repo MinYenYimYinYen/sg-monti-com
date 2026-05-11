@@ -241,7 +241,7 @@ type EmployeeAllocationsAtDateInput = {
   date: string;
 };
 
-function makeSelectEmployeeAllocationsAtDate({ employeeId, date }: EmployeeAllocationsAtDateInput) {
+function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocationsAtDateInput) {
   return createSelector(
     [
       paceSelect.servCodePaces,
@@ -358,7 +358,7 @@ type TimelineSegment = {
  *
  * Components do a simple map lookup — no per-render selector creation needed.
  */
-const selectEmployeeShareRemainingMap = createSelector(
+const selectEmployeeUnfinishedShareMap = createSelector(
   [paceSelect.servCodePaces],
   (paces): Map<string, Map<string, CountSizePrice>> => {
     const result = new Map<string, Map<string, CountSizePrice>>();
@@ -593,8 +593,8 @@ export const employeePaceSelect = {
   weekdayBounds: selectWeekdayBounds,
   dateTicks: selectDateTicks,
   makeEffectiveDate: makeSelectEffectiveDate,
-  makeAllocationsAtDate: makeSelectEmployeeAllocationsAtDate,
+  makeProjectedAllocations: makeSelectProjectedAllocations,
   makeNotStartedAllocations: makeSelectNotStartedAllocations,
   makeTimelineSegments: makeSelectEmployeeTimelineSegments,
-  employeeShareRemainingMap: selectEmployeeShareRemainingMap,
+  employeeUnfinishedShareMap: selectEmployeeUnfinishedShareMap,
 };

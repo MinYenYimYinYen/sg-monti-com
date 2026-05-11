@@ -11,12 +11,10 @@ import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPla
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
-import { ProgCodePace, ServCodePace } from "@/app/bizPlan/pace/PaceType";
-import { ServCodePaceDelta } from "@/app/bizPlan/pace/paceSelect";
+import { ProgCodePace, ServCodePace, ServCodePaceDelta } from "@/app/bizPlan/pace/PaceType";
 import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
 import { Number } from "@/components/Number";
 import { ChevronDown, ChevronRight, Pencil } from "lucide-react";
-import { cn } from "@/style/utils";
 import { CountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
 import { MatrixDisplaySettings } from "@/app/bizPlan/assignmentPlan/matrix/MatrixDisplaySettings";
 
@@ -137,10 +135,6 @@ export function AssignmentMatrix() {
   const [expandedProgIds, setExpandedProgIds] = useState<Set<string>>(
     () => new Set(),
   );
-
-  // Hover state for row/column highlighting
-  const [hoveredServCodeId, setHoveredServCodeId] = useState<string | null>(null);
-  const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(null);
 
   const selectedEmployees = activeEmployees.filter((e) =>
     selectedEmployeeIds.has(e.employeeId),
@@ -283,12 +277,12 @@ export function AssignmentMatrix() {
             Select employees from the left panel to begin
           </div>
         ) : (
-          <table className="border-collapse text-xs w-max min-w-full">
+          <table className="border-separate border-spacing-0 text-xs w-max min-w-full">
             {/* Header row: one column per selected employee */}
-            <thead className="sticky top-0 z-10 bg-card">
+            <thead className="sticky top-0 z-10 bg-background">
               <tr>
-                {/* Label column — contains Display Settings in top-left corner */}
-                <th className="border border-border px-3 py-1.5 text-left font-semibold text-foreground bg-accent/10 sticky left-0 z-20 min-w-56">
+                {/* Top-left corner cell — sticky on both axes */}
+                <th className="border border-border px-3 py-1.5 text-left font-semibold text-foreground sticky left-0 z-20 min-w-56 bg-background">
                   <div className="flex items-center justify-between gap-2">
                     <span>Program / ServCode</span>
                     <MatrixDisplaySettings />
@@ -297,21 +291,13 @@ export function AssignmentMatrix() {
                 {selectedEmployees.map((employee) => {
                   const assignedCount =
                     assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds.length ?? 0;
-                  const isHovered = hoveredEmployeeId === employee.employeeId;
                   return (
                     <th
                       key={employee.employeeId}
-                      className={cn(
-                        "border border-border px-2 py-1.5 text-center bg-accent/10 whitespace-nowrap min-w-20 transition-colors",
-                        isHovered && "bg-primary/10",
-                      )}
-                      onMouseEnter={() => setHoveredEmployeeId(employee.employeeId)}
-                      onMouseLeave={() => setHoveredEmployeeId(null)}
+                      className="border border-border px-2 py-1.5 text-center bg-accent/10 whitespace-nowrap min-w-20"
                     >
                       <div className="flex flex-col items-center gap-0.5">
-                        <span className={cn("font-semibold text-foreground", isHovered && "font-bold")}>
-                          {employee.name}
-                        </span>
+                        <span className="font-semibold text-foreground">{employee.name}</span>
                         {assignedCount > 0 && (
                           <span className="text-[10px] text-muted-foreground font-normal">
                             {assignedCount} codes
@@ -334,14 +320,10 @@ export function AssignmentMatrix() {
                     isExpanded={isExpanded}
                     selectedEmployees={selectedEmployees}
                     assignmentsByEmployeeId={assignmentsByEmployeeId}
-                    hoveredServCodeId={hoveredServCodeId}
-                    hoveredEmployeeId={hoveredEmployeeId}
                     getServCodeCsp={getServCodeCsp}
                     deltaMap={deltaMap}
                     onToggleExpand={() => toggleProgExpand(progCodePace.progCode.progCodeId)}
                     onUpsert={handleUpsert}
-                    onHoverServCode={setHoveredServCodeId}
-                    onHoverEmployee={setHoveredEmployeeId}
                   />
                 );
               })}
@@ -362,14 +344,10 @@ type MatrixProgGroupProps = {
   isExpanded: boolean;
   selectedEmployees: Employee[];
   assignmentsByEmployeeId: Map<string, { servCodeIds: string[] }>;
-  hoveredServCodeId: string | null;
-  hoveredEmployeeId: string | null;
   getServCodeCsp: (servCodeId: string) => CountSizePrice | null;
   deltaMap: Map<string, ServCodePaceDelta>;
   onToggleExpand: () => void;
   onUpsert: (employeeId: string, servCodeIds: string[]) => void;
-  onHoverServCode: (id: string | null) => void;
-  onHoverEmployee: (id: string | null) => void;
 };
 
 function MatrixProgGroup({
@@ -377,14 +355,10 @@ function MatrixProgGroup({
   isExpanded,
   selectedEmployees,
   assignmentsByEmployeeId,
-  hoveredServCodeId,
-  hoveredEmployeeId,
   getServCodeCsp,
   deltaMap,
   onToggleExpand,
   onUpsert,
-  onHoverServCode,
-  onHoverEmployee,
 }: MatrixProgGroupProps) {
   const { progCode, servCodePaces } = progCodePace;
   const progServCodeIds = servCodePaces.map((sp) => sp.servCode.servCodeId);
@@ -448,9 +422,9 @@ function MatrixProgGroup({
 
   return (
     <>
-      {/* Program header row */}
-      <tr className="bg-accent/5 hover:bg-accent/10">
-        <td className="border border-border px-2 py-1.5 sticky left-0 bg-accent/5 z-10">
+      {/* Program header row — bg-accent/5 only on non-sticky cells to avoid double-tint on sticky */}
+      <tr>
+        <td className="border border-border px-2 py-1.5 sticky left-0 z-10 bg-card">
           <div className="flex items-center gap-2">
             <button
               onClick={onToggleExpand}
@@ -493,17 +467,11 @@ function MatrixProgGroup({
           const assignedCount = progServCodeIds.filter((id) => assignedSet.has(id)).length;
           const allAssigned = assignedCount === progServCodeIds.length;
           const someAssigned = assignedCount > 0 && !allAssigned;
-          const isColHovered = hoveredEmployeeId === employee.employeeId;
 
           return (
             <td
               key={employee.employeeId}
-              className={cn(
-                "border border-border px-2 py-1.5 text-center bg-accent/5 transition-colors",
-                isColHovered && "bg-primary/10",
-              )}
-              onMouseEnter={() => onHoverEmployee(employee.employeeId)}
-              onMouseLeave={() => onHoverEmployee(null)}
+              className="border border-border px-2 py-1.5 text-center bg-accent/5"
             >
               <input
                 type="checkbox"
@@ -524,33 +492,14 @@ function MatrixProgGroup({
       {isExpanded &&
         servCodePaces.map((scPace) => {
           const sc = scPace.servCode;
-          const isRowHovered = hoveredServCodeId === sc.servCodeId;
           const scCsp = getServCodeCsp(sc.servCodeId);
 
           return (
-            <tr
-              key={sc.servCodeId}
-              className={cn("transition-colors", isRowHovered && "bg-primary/5")}
-              onMouseEnter={() => onHoverServCode(sc.servCodeId)}
-              onMouseLeave={() => onHoverServCode(null)}
-            >
-              {/* ServCode label cell */}
-              <td
-                className={cn(
-                  "border border-border px-2 py-1 pl-7 sticky left-0 z-10 transition-colors",
-                  isRowHovered ? "bg-primary/5" : "bg-card",
-                )}
-              >
+            <tr key={sc.servCodeId}>
+              {/* ServCode label cell — sticky left, bg-card directly for opaque background */}
+              <td className="border border-border px-2 py-1 pl-7 sticky left-0 z-10 bg-card">
                 <div className="flex items-center gap-2 group">
-                  {/* servCodeId */}
-                  <span
-                    className={cn(
-                      "font-mono text-foreground",
-                      isRowHovered && "font-semibold",
-                    )}
-                  >
-                    {sc.servCodeId}
-                  </span>
+                  <span className="font-mono text-foreground">{sc.servCodeId}</span>
                   {/* Stacked date range */}
                   {sc.dateRange.min && (
                     <div className="flex flex-col leading-none text-[10px] text-muted-foreground">
@@ -573,24 +522,11 @@ function MatrixProgGroup({
 
               {selectedEmployees.map((employee) => {
                 const assignedSet = getAssignedSet(employee);
-                const isColHovered = hoveredEmployeeId === employee.employeeId;
-                const isBothHovered = isRowHovered && isColHovered;
 
                 return (
                   <td
                     key={employee.employeeId}
-                    className={cn(
-                      "border border-border px-2 py-1 text-center transition-colors",
-                      isBothHovered
-                        ? "bg-primary/20"
-                        : isRowHovered
-                          ? "bg-primary/5"
-                          : isColHovered
-                            ? "bg-primary/10"
-                            : "",
-                    )}
-                    onMouseEnter={() => onHoverEmployee(employee.employeeId)}
-                    onMouseLeave={() => onHoverEmployee(null)}
+                    className="border border-border px-2 py-1 text-center"
                   >
                     <input
                       type="checkbox"

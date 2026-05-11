@@ -2,6 +2,7 @@ import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes"
 import { CountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export type PaceCategory =
   | "asap"
@@ -84,4 +85,17 @@ export type EmployeePaceSummary = {
   freeCapacityFraction: CountSizePrice | null;
   isOverloaded: boolean; // true if any dimension of CSP is > 1.0
 }
+
+// Floating-point noise can push a fully-loaded employee just above 1.0.
+// Use this epsilon so 100.01% doesn't trigger the overload indicator.
+export const OVERLOAD_EPSILON = 0.001;
+
+export type ServCodePaceDelta = {
+  servCodeId: string;
+  dateRange: TRange<string>;
+  /** Projected completion date based on unfinishedPerDay.count. null if no data. */
+  projectedEndDate: string | null;
+  /** Weekdays between dateRange.max and projectedEndDate. Positive = behind, negative = ahead. null if no data. */
+  deltaDays: number | null;
+};
 

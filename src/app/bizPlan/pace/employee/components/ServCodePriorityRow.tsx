@@ -59,9 +59,9 @@ export function ServCodePriorityRow({
 }: ServCodePriorityRowProps) {
   const { servCode, avgDailyCSP, expectedCSP } = allocation;
 
-  const shareRemainingMap = useSelector(employeePaceSelect.employeeShareRemainingMap);
+  const unfinishedShareMap = useSelector(employeePaceSelect.employeeUnfinishedShareMap);
   const employeeUnfinishedCSP: CountSizePrice =
-    shareRemainingMap.get(employeeId)?.get(servCode.servCodeId) ?? { ...baseCountSizePrice };
+    unfinishedShareMap.get(employeeId)?.get(servCode.servCodeId) ?? { ...baseCountSizePrice };
 
   const hasAvg = avgDailyCSP !== null;
   const status: PaceStatus = hasAvg

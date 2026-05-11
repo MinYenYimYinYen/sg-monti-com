@@ -1,14 +1,9 @@
 "use client";
 
-import { useSelector } from "react-redux";
 import { EmployeePaceSummary } from "@/app/bizPlan/pace/PaceType";
 import { Number } from "@/components/Number";
 import { cn } from "@/style/utils";
-import { LandPlot, ChevronUp, ChevronDown } from "lucide-react";
-import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
-import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
-import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
-import { useAppDispatch } from "@/lib/hooks/redux";
+import { LandPlot } from "lucide-react";
 
 type EmployeePaceDetailProps = {
   summary: EmployeePaceSummary;
@@ -27,24 +22,6 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
     freeCapacityFraction,
     isOverloaded,
   } = summary;
-
-  const dispatch = useAppDispatch();
-  const { upsert } = useAssignmentPlan({ autoLoad: false });
-  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
-
-  function handleMove(servCodeId: string, direction: "up" | "down") {
-    const currentOrder = assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds ?? [];
-    const idx = currentOrder.indexOf(servCodeId);
-    if (idx === -1) return;
-    const newOrder = [...currentOrder];
-    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= newOrder.length) return;
-    [newOrder[idx], newOrder[swapIdx]] = [newOrder[swapIdx], newOrder[idx]];
-    // Optimistic update — instant UI reaction
-    dispatch(assignmentPlanActions.reorderServCodes({ employeeId: employee.employeeId, servCodeIds: newOrder }));
-    // Persist to server
-    upsert({ employeeId: employee.employeeId, servCodeIds: newOrder });
-  }
 
   return (
     <div className="space-y-4">
@@ -131,13 +108,11 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
             Allocations
           </p>
           <div className="space-y-1">
-            {allocations.map((allocation, idx) => {
+            {allocations.map((allocation) => {
               const isZero =
                 allocation.expectedCSP.count === 0 &&
                 allocation.expectedCSP.size === 0;
               const pct = allocation.fractionConsumed?.count ?? null;
-              const isFirst = idx === 0;
-              const isLast = idx === allocations.length - 1;
               return (
                 <div
                   key={allocation.servCode.servCodeId}
@@ -146,26 +121,6 @@ export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
                     isZero && "opacity-40",
                   )}
                 >
-                  {/* Reorder controls */}
-                  <div className="flex flex-col shrink-0">
-                    <button
-                      onClick={() => handleMove(allocation.servCode.servCodeId, "up")}
-                      disabled={isFirst}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed leading-none"
-                      aria-label="Move up"
-                    >
-                      <ChevronUp className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={() => handleMove(allocation.servCode.servCodeId, "down")}
-                      disabled={isLast}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed leading-none"
-                      aria-label="Move down"
-                    >
-                      <ChevronDown className="w-3 h-3" />
-                    </button>
-                  </div>
-
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-mono text-foreground truncate">
                       {allocation.servCode.servCodeId}

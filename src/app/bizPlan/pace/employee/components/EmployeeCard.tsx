@@ -26,9 +26,10 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
 
   const employeeId = employee.employeeId;
 
-  const selectAllocationsAtDate = employeePaceSelect.makeAllocationsAtDate({
+  const mainDate = useSelector(employeePaceSelect.mainDate);
+  const selectAllocationsAtDate = employeePaceSelect.makeProjectedAllocations({
     employeeId,
-    date: useSelector(employeePaceSelect.mainDate),
+    date: mainDate,
   });
   const allDateAllocations = useSelector(selectAllocationsAtDate);
   const servCodePaceMap = useSelector(paceSelect.servCodePaceMap);

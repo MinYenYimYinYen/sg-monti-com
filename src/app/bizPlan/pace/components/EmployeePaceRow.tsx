@@ -1,6 +1,6 @@
 "use client";
 
-import { EmployeeShare } from "@/app/bizPlan/pace/PaceType";
+import { EmployeeShare, OVERLOAD_EPSILON } from "@/app/bizPlan/pace/PaceType";
 import { EmployeeDetailPopover } from "@/app/bizPlan/pace/components/EmployeeDetailPopover";
 import { Number } from "@/components/Number";
 import { cn } from "@/style/utils";
@@ -15,7 +15,6 @@ type EmployeePaceRowProps = {
 
 export function EmployeePaceRow({ share, programType, isUnderCapacity, onRemoveAction }: EmployeePaceRowProps) {
   const { employee, expectedCSP, isEstimated, fractionConsumed } = share;
-  const OVERLOAD_EPSILON = 0.001;
   const isOverloaded =
     fractionConsumed !== null &&
     (fractionConsumed.count > 1 + OVERLOAD_EPSILON ||

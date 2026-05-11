@@ -7,9 +7,6 @@ import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { paceActions } from "@/app/bizPlan/pace/paceSlice";
 import { employeePaceSelect } from "@/app/bizPlan/pace/employee/employeePaceSelect";
 import { employeePaceActions } from "@/app/bizPlan/pace/employee/employeePaceSlice";
-import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
-import { custFlagActions } from "@/app/realGreen/custFlag/_lib/custFlagSlice";
-import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
 import {
   Popover,
@@ -17,9 +14,7 @@ import {
   PopoverTrigger,
 } from "@/style/components/popover";
 import { Button } from "@/style/components/button";
-import { Checkbox } from "@/style/components/checkbox";
-import { Label } from "@/style/components/label";
-import { ScrollArea } from "@/style/components/scroll-area";
+import { Label } from "@/style/components/label";  
 import { Slider } from "@/style/components/slider";
 import { DatePicker } from "@/components/DatePicker";
 import { ChevronDown, Info, X } from "lucide-react";
@@ -30,36 +25,15 @@ export function EmployeePaceConfig() {
 
   const lookbackConfig = useSelector(paceSelect.lookbackConfig);
   const paceTolerance = useSelector(employeePaceSelect.paceTolerance);
-  const flagDocs = useSelector(flagSelect.flagDocs);
-  const selectedFlagIds = useSelector(custFlagSelect.selectedFlagIds);
   const servCodePaces = useSelector(paceSelect.servCodePaces);
 
-  const sortedFlagDocs = [...flagDocs].sort((a, b) => a.desc.localeCompare(b.desc));
   const notSetPaces = servCodePaces.filter((p) => p.category === "notSet");
-
-  function handleFlagToggle(flagId: number) {
-    const next = selectedFlagIds.includes(flagId)
-      ? selectedFlagIds.filter((id) => id !== flagId)
-      : [...selectedFlagIds, flagId];
-    dispatch(custFlagActions.setSelectedFlagIds(next));
-  }
-
-  function handleClearFlags() {
-    dispatch(custFlagActions.setSelectedFlagIds([]));
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="w-full gap-1.5 justify-between">
-          <span>
-            Config
-            {selectedFlagIds.length > 0 && (
-              <span className="ml-1 text-primary font-semibold">
-                ({selectedFlagIds.length})
-              </span>
-            )}
-          </span>
+          <span>Config</span>
           <ChevronDown className="h-3.5 w-3.5" />
         </Button>
       </PopoverTrigger>
@@ -117,48 +91,6 @@ export function EmployeePaceConfig() {
                     Exclude days where fewer than this % of assigned jobs were completed
                   </p>
                 </div>
-              </div>
-
-              {/* Flags section */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Flags
-                  </p>
-                  {selectedFlagIds.length > 0 && (
-                    <button
-                      onClick={handleClearFlags}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                {sortedFlagDocs.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No flags available</p>
-                ) : (
-                  <div className="h-36 rounded-md bg-accent/25">
-                    <ScrollArea className="h-full p-2">
-                      <div className="space-y-2 pr-2">
-                        {sortedFlagDocs.map((flag) => (
-                          <div key={flag.flagId} className="flex items-center gap-2">
-                            <Checkbox
-                              id={`emp-cfg-flag-${flag.flagId}`}
-                              checked={selectedFlagIds.includes(flag.flagId)}
-                              onCheckedChange={() => handleFlagToggle(flag.flagId)}
-                            />
-                            <Label
-                              htmlFor={`emp-cfg-flag-${flag.flagId}`}
-                              className="cursor-pointer font-normal"
-                            >
-                              {flag.desc}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                )}
               </div>
 
               {/* Pace Tolerance section */}

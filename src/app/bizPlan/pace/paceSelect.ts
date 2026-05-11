@@ -11,9 +11,11 @@ import {
   EmployeePaceSummary,
   EmployeeShare,
   LookbackConfig,
+  OVERLOAD_EPSILON,
   PaceCategory,
   ProgCodePace,
   ServCodePace,
+  ServCodePaceDelta,
 } from "@/app/bizPlan/pace/PaceType";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { AppState } from "@/store";
@@ -31,7 +33,6 @@ import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { rawPaceSelect } from "@/app/bizPlan/pace/rawPaceSelect";
 import { dateStrings, dateRanges } from "@/lib/primatives/dates/dateStrings";
 import { MatrixDisplayConfig } from "@/app/bizPlan/pace/paceSlice";
-import { TRange } from "@/lib/primatives/tRange/TRange";
 
 const CATEGORY_URGENCY: Record<PaceCategory, number> = {
   asap: 0,
@@ -46,10 +47,6 @@ function mostUrgentCategory(categories: PaceCategory[]): PaceCategory {
     CATEGORY_URGENCY[c] < CATEGORY_URGENCY[best] ? c : best,
   );
 }
-
-// Floating-point noise can push a fully-loaded employee just above 1.0.
-// Use this epsilon so 100.01% doesn't trigger the overload indicator.
-const OVERLOAD_EPSILON = 0.001;
 
 function safeDivideCSP(
   numerator: CountSizePrice,
@@ -81,14 +78,6 @@ function minCSP(a: CountSizePrice, b: CountSizePrice): CountSizePrice {
 }
 
 // Slice Selectors
-const selectSortMode = (state: AppState) => state.pace.sortMode;
-const selectActiveFilters = (state: AppState) => state.pace.activeFilters;
-const selectUnfinishedOnly = (state: AppState) => state.pace.unfinishedOnly;
-const selectSelectedServCodeIds = (state: AppState) =>
-  state.pace.selectedServCodeIds;
-const selectSelectedProgCodeId = (state: AppState) =>
-  state.pace.selectedProgCodeId;
-const selectSelectionSource = (state: AppState) => state.pace.selectionSource;
 const selectLookbackConfig = (state: AppState): LookbackConfig =>
   state.pace.lookbackConfig;
 
@@ -455,72 +444,9 @@ const selectProgCodePaces = createSelector(
   },
 );
 
-const selectFilteredSortedProgCodePaces = createSelector(
-  [
-    selectProgCodePaces,
-    selectSortMode,
-    selectActiveFilters,
-    selectUnfinishedOnly,
-  ],
-  (progCodePaces, sortMode, activeFilters, unfinishedOnly): ProgCodePace[] => {
-    const filtered = progCodePaces.filter((p) => {
-      const hasMatchingCategory = p.servCodePaces.some((sp) =>
-        activeFilters.includes(sp.category),
-      );
-      if (!hasMatchingCategory) return false;
-      if (unfinishedOnly && p.unfinishedCSP.count === 0) return false;
-      return true;
-    });
-
-    return [...filtered].sort((a, b) => {
-      if (sortMode === "byId") {
-        return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
-      }
-
-      // byDateRange: most urgent first, then earliest dateRange.min, then alphabetical
-      const urgencyA = CATEGORY_URGENCY[a.category];
-      const urgencyB = CATEGORY_URGENCY[b.category];
-      if (urgencyA !== urgencyB) return urgencyA - urgencyB;
-
-      const minA =
-        a.servCodePaces
-          .map((p) => p.servCode.dateRange.min ?? "")
-          .filter(Boolean)
-          .sort()[0] ?? "";
-      const minB =
-        b.servCodePaces
-          .map((p) => p.servCode.dateRange.min ?? "")
-          .filter(Boolean)
-          .sort()[0] ?? "";
-      if (minA !== minB) return minA.localeCompare(minB);
-
-      return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
-    });
-  },
-);
-
-// "Active" = inProgress + asap + overdue — all categories that need attention now
-const selectActiveServCodeIds = createSelector([selectServCodePaces], (paces) =>
-  paces
-    .filter(
-      (p) =>
-        p.category === "inProgress" ||
-        p.category === "asap" ||
-        p.category === "overdue",
-    )
-    .map((p) => p.servCode.servCodeId),
-);
-
-const selectSelectedPaces = createSelector(
-  [selectServCodePaceMap, selectSelectedServCodeIds],
-  (paceMap, ids) => {
-    const selectedPacesMaybe = ids.map((id) => paceMap.get(id));
-    return typeGuard.definedArray(selectedPacesMaybe);
-  },
-);
-
-// Cross-servCode capacity summary per employee
-const selectEmployeePaceSummaries = createSelector(
+// Cross-servCode capacity summary per employee, grouped by (employee, programType).
+// One entry per (employee, programType) — use employeeCardData for the merged per-employee view.
+const selectEmployeePaceByProgramType = createSelector(
   [
     selectServCodePaces,
     selectEmployeeLookbackMap,
@@ -642,11 +568,11 @@ const selectEmployeePaceSummaries = createSelector(
   },
 );
 
-// Merges employeePaceSummaries across all programTypes into one entry per employee.
+// Merges employeePaceByProgramType across all programTypes into one entry per employee.
 // Allocations are sorted by the manager's global priority order (employee.servCodeIds[]).
 // Only includes employees with at least one allocation.
 const selectEmployeeCardData = createSelector(
-  [selectEmployeePaceSummaries, assignmentPlanSelect.assignmentsByEmployeeId],
+  [selectEmployeePaceByProgramType, assignmentPlanSelect.assignmentsByEmployeeId],
   (summaries, assignmentsByEmployeeId): EmployeeCardData[] => {
     const byEmployee = new Map<string, EmployeePaceSummary[]>();
     for (const summary of summaries) {
@@ -734,15 +660,6 @@ const selectUrgentServCodePaces = createSelector(
 const selectMatrixDisplayConfig = (state: AppState): MatrixDisplayConfig =>
   state.pace.matrixDisplayConfig;
 
-export type ServCodePaceDelta = {
-  servCodeId: string;
-  dateRange: TRange<string>;
-  /** Projected completion date based on unfinishedPerDay.count. null if no data. */
-  projectedEndDate: string | null;
-  /** Weekdays between dateRange.max and projectedEndDate. Positive = behind, negative = ahead. null if no data. */
-  deltaDays: number | null;
-};
-
 // Computes projected end date and delta days for each servCode.
 // Uses the raw team avg: sum of each assigned employee's historical avgDailyCSP.count
 // for this servCode's programType — no cascade, no capacity deduction.
@@ -780,6 +697,28 @@ const selectServCodePaceDeltaMap = createSelector(
         const startDate = today > dateRange.min ? today : dateRange.min;
         projectedEndDate = dateStrings.addWeekdays(startDate, daysNeeded);
         deltaDays = dateRanges.weekdaysBetween(dateRange.max, projectedEndDate);
+      }
+
+      // Debug log: helps identify why servCodes with no completed work show delta days.
+      // The programTypeKey determines which historical bucket is used for lookback.
+      // If programTypeKey is NULL_PROGRAM_TYPE_KEY, MRP pools with ALL null-programType services.
+      if (deltaDays != null) {
+        const employeeDetails = servCode.assignedTo.map((employee) => {
+          const stats = lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
+          return {
+            employeeId: employee.employeeId,
+            avgDailyCount: stats?.avgDailyCSP.count ?? null,
+            hasLookback: stats != null,
+          };
+        });
+        console.log(`[PaceDelta] ${servCode.progCode.progCodeId}/${servCodeId}`, {
+          programTypeKey,
+          unfinishedCount: unfinishedCSP.count,
+          rawTeamAvgCount,
+          daysNeeded: unfinishedCSP.count / rawTeamAvgCount,
+          deltaDays,
+          employees: employeeDetails,
+        });
       }
 
       result.set(servCodeId, { servCodeId, dateRange, projectedEndDate, deltaDays });
@@ -922,18 +861,9 @@ export const paceSelect = {
   urgentServCodePaces: selectUrgentServCodePaces,
   servCodePaceMap: selectServCodePaceMap,
   progCodePaces: selectProgCodePaces,
-  filteredSortedProgCodePaces: selectFilteredSortedProgCodePaces,
-  activeServCodeIds: selectActiveServCodeIds,
-  selectedPaces: selectSelectedPaces,
-  selectedServCodeIds: selectSelectedServCodeIds,
-  selectionSource: selectSelectionSource,
-  selectedProgCodeId: selectSelectedProgCodeId,
-  sortMode: selectSortMode,
-  activeFilters: selectActiveFilters,
-  unfinishedOnly: selectUnfinishedOnly,
   lookbackConfig: selectLookbackConfig,
   employeeLookbackMap: selectEmployeeLookbackMap,
-  employeePaceSummaries: selectEmployeePaceSummaries,
+  employeePaceByProgramType: selectEmployeePaceByProgramType,
   employeeCardData: selectEmployeeCardData,
   matrixDisplayConfig: selectMatrixDisplayConfig,
   servCodePaceDeltaMap: selectServCodePaceDeltaMap,

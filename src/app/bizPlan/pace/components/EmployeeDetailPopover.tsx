@@ -20,7 +20,7 @@ export function EmployeeDetailPopover({
   programType,
   children,
 }: EmployeeDetailPopoverProps) {
-  const summaries = useSelector(paceSelect.employeePaceSummaries);
+  const summaries = useSelector(paceSelect.employeePaceByProgramType);
   const summary = summaries.find(
     (s) => s.employee.employeeId === employeeId && s.programType === programType,
   );

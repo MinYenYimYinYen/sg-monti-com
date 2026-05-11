@@ -1,5 +1,5 @@
-import { Pace } from "@/app/bizPlan/pace/components/Pace";
+import { EmployeePace } from "@/app/bizPlan/pace/employee/components/EmployeePace";
 
 export default function pacePage() {
-  return <Pace />
+  return <EmployeePace />
 }

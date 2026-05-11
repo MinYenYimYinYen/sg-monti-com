@@ -11,6 +11,8 @@ import {
   PopoverTrigger,
 } from "@/style/components/popover";
 import { Slider } from "@/style/components/slider";
+import { DatePicker } from "@/components/DatePicker";
+import { Label } from "@/style/components/label";
 import { SlidersHorizontal } from "lucide-react";
 import { cn } from "@/style/utils";
 
@@ -44,6 +46,50 @@ const CSP_DISPLAY_OPTIONS: { value: MatrixCspDisplay; label: string }[] = [
   { value: "perDay", label: "Per Day" },
   { value: "perDayPerEmployee", label: "Per Day / Employee" },
 ];
+
+function LookbackSection() {
+  const dispatch = useAppDispatch();
+  const lookbackConfig = useSelector(paceSelect.lookbackConfig);
+
+  return (
+    <section>
+      <p className="font-semibold text-foreground mb-1.5 uppercase tracking-wide text-[10px]">
+        Lookback
+      </p>
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Window start</Label>
+          <DatePicker
+            value={lookbackConfig.lookbackStart}
+            onChange={(date) => {
+              if (date) dispatch(paceActions.setLookbackStart(date));
+            }}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">Completion threshold</Label>
+            <span className="text-xs font-mono text-foreground">
+              {Math.round(lookbackConfig.completionThreshold * 100)}%
+            </span>
+          </div>
+          <Slider
+            min={0}
+            max={1}
+            step={0.05}
+            value={[lookbackConfig.completionThreshold]}
+            onValueChange={([value]) =>
+              dispatch(paceActions.setLookbackCompletionThreshold(value))
+            }
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Exclude days where fewer than this % of assigned jobs were completed
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export function MatrixDisplaySettings() {
   const dispatch = useAppDispatch();
@@ -213,6 +259,9 @@ export function MatrixDisplaySettings() {
             )}
           </div>
         </section>
+
+        {/* Lookback */}
+        <LookbackSection />
 
         {/* Display */}
         <section>
