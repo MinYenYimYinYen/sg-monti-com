@@ -698,139 +698,510 @@ const selectUrgentServCodePaces = createSelector(
 const selectMatrixDisplayConfig = (state: AppState): MatrixDisplayConfig =>
   state.pace.matrixDisplayConfig;
 
-// Computes projected end date and delta days for each servCode.
-// Uses the raw team avg: sum of each assigned employee's historical avgDailyCSP.count
-// for this servCode's programType — no cascade, no capacity deduction.
-// Start date is max(today, dateRange.min) so future servCodes project from their open date.
+// ---------------------------------------------------------------------------
+// Cascade-aware delta projection helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-servCode data needed for the cascade-aware projection.
+ * Keyed by servCodeId.
+ */
+type ServCodeProjectionData = {
+  servCodeId: string;
+  /** Effective open date for projection (projectionStartDate or max(today, dateRange.min)) */
+  openDate: string;
+  /** dateRange.max — the deadline */
+  closeDate: string;
+  /** Remaining work pool per dimension (activeAsapCSP, excludes printed) */
+  pool: { count: number; size: number; price: number };
+  /** Per-employee daily rate per dimension. Estimated for employees without lookback data. */
+  dailyRateByEmployee: Map<string, { count: number; size: number; price: number }>;
+};
+
+/**
+ * Simulates each employee's priority-ordered schedule and computes how much work
+ * they contribute to each servCode over the season.
+ *
+ * An employee works the highest-priority open servCode at any point in time.
+ * "Open" means: dateRange.min ≤ date ≤ dateRange.max AND remaining work > 0.
+ * The timeline is split at every servCode boundary date so we can compute
+ * each interval analytically (no day-by-day loop).
+ *
+ * Returns: Map<employeeId, Map<servCodeId, { count, size, price }>>
+ * — total units this employee contributes to each servCode.
+ */
+function buildEmployeeContributions(
+  priorityOrderedServCodeIds: string[],
+  projectionDataMap: Map<string, ServCodeProjectionData>,
+  today: string,
+): Map<string, { count: number; size: number; price: number }> {
+  // Track remaining work per servCode for this employee's simulation
+  const remaining = new Map<string, { count: number; size: number; price: number }>();
+  for (const servCodeId of priorityOrderedServCodeIds) {
+    const data = projectionDataMap.get(servCodeId);
+    if (!data) continue;
+    remaining.set(servCodeId, { ...data.pool });
+  }
+
+  // Collect all boundary dates: today + every openDate + every closeDate
+  const boundarySet = new Set<string>([today]);
+  for (const servCodeId of priorityOrderedServCodeIds) {
+    const data = projectionDataMap.get(servCodeId);
+    if (!data) continue;
+    boundarySet.add(data.openDate);
+    boundarySet.add(data.closeDate);
+  }
+  const boundaries = [...boundarySet].sort();
+
+  const contributions = new Map<string, { count: number; size: number; price: number }>();
+  for (const servCodeId of priorityOrderedServCodeIds) {
+    contributions.set(servCodeId, { count: 0, size: 0, price: 0 });
+  }
+
+  // Walk each interval between boundary dates
+  for (let i = 0; i < boundaries.length - 1; i++) {
+    const intervalStart = boundaries[i];
+    const intervalEnd = boundaries[i + 1];
+
+    // Weekdays in this interval (exclusive of end — it's the next interval's start)
+    // countWeekdays is inclusive of both endpoints, so subtract 1 for the shared endpoint
+    const intervalWeekdays = Math.max(
+      0,
+      dateRanges.countWeekdays({ min: intervalStart, max: intervalEnd }) - 1,
+    );
+    if (intervalWeekdays <= 0) continue;
+
+    // Find the highest-priority servCode that is open during this interval
+    // and still has remaining work for this employee
+    for (const servCodeId of priorityOrderedServCodeIds) {
+      const data = projectionDataMap.get(servCodeId);
+      if (!data) continue;
+
+      // ServCode must be open: openDate ≤ intervalStart AND closeDate ≥ intervalEnd
+      if (data.openDate > intervalStart || data.closeDate < intervalEnd) continue;
+
+      const rem = remaining.get(servCodeId)!;
+      const rate = data.dailyRateByEmployee.get("__self__");
+      if (!rate) continue;
+
+      // Check if there's any remaining work in any dimension
+      if (rem.count <= 0 && rem.size <= 0 && rem.price <= 0) continue;
+
+      // Contribute min(rate * days, remaining) per dimension
+      const contrib = contributions.get(servCodeId)!;
+      const countContrib = Math.min(rate.count * intervalWeekdays, rem.count);
+      const sizeContrib = Math.min(rate.size * intervalWeekdays, rem.size);
+      const priceContrib = Math.min(rate.price * intervalWeekdays, rem.price);
+
+      contrib.count += countContrib;
+      contrib.size += sizeContrib;
+      contrib.price += priceContrib;
+
+      rem.count = Math.max(0, rem.count - countContrib);
+      rem.size = Math.max(0, rem.size - sizeContrib);
+      rem.price = Math.max(0, rem.price - priceContrib);
+
+      // This employee works only one servCode per interval (highest priority)
+      break;
+    }
+  }
+
+  return contributions;
+}
+
+/**
+ * Given a shared work pool and a timeline of per-employee daily rates
+ * (each employee available from a certain date), computes the projected
+ * completion date using interval-based pool drain.
+ *
+ * employeeAvailability: Map<employeeId, { availableFrom, rate }>
+ * pool: total remaining work
+ * projectionStart: earliest date any employee can start
+ * closeDate: deadline (dateRange.max)
+ *
+ * Returns the projected completion date, or null if no employees have data.
+ */
+function computePoolDrainDate(
+  employeeAvailability: { availableFrom: string; rate: number }[],
+  pool: number,
+  projectionStart: string,
+  closeDate: string,
+): string | null {
+  if (pool <= 0) return projectionStart;
+  if (employeeAvailability.length === 0) return null;
+
+  // Collect all boundary dates for the drain simulation
+  const boundarySet = new Set<string>([projectionStart, closeDate]);
+  for (const { availableFrom } of employeeAvailability) {
+    if (availableFrom >= projectionStart) boundarySet.add(availableFrom);
+  }
+  const boundaries = [...boundarySet].sort();
+
+  let remaining = pool;
+
+  for (let i = 0; i < boundaries.length - 1; i++) {
+    const intervalStart = boundaries[i];
+    const intervalEnd = boundaries[i + 1];
+
+    // Sum rates of employees available during this interval
+    let intervalRate = 0;
+    for (const { availableFrom, rate } of employeeAvailability) {
+      if (availableFrom <= intervalStart) intervalRate += rate;
+    }
+
+    if (intervalRate <= 0) continue;
+
+    const intervalWeekdays = Math.max(
+      0,
+      dateRanges.countWeekdays({ min: intervalStart, max: intervalEnd }) - 1,
+    );
+    if (intervalWeekdays <= 0) continue;
+
+    const produced = intervalRate * intervalWeekdays;
+
+    if (produced >= remaining) {
+      // Pool drains within this interval
+      const daysNeeded = remaining / intervalRate;
+      return dateStrings.addWeekdays(intervalStart, daysNeeded);
+    }
+
+    remaining -= produced;
+  }
+
+  // Pool not exhausted by closeDate — project beyond deadline
+  // Use the rate at the last interval (all employees available)
+  let finalRate = 0;
+  for (const { availableFrom, rate } of employeeAvailability) {
+    if (availableFrom <= closeDate) finalRate += rate;
+  }
+  if (finalRate <= 0) return null;
+
+  const daysNeeded = remaining / finalRate;
+  return dateStrings.addWeekdays(closeDate, daysNeeded);
+}
+
+// ---------------------------------------------------------------------------
+// selectEmployeeAvailableFromMap
+//
+// Shared selector: for each employee, computes the date they first become
+// available to work each servCode, accounting for higher-priority servCodes
+// consuming their time first (changeover/FIFO model).
+//
+// An employee works the highest-priority open servCode at any point in time.
+// "Open" means: openDate ≤ date ≤ closeDate AND remaining work > 0.
+// The timeline is split at every servCode boundary date for analytic computation.
+//
+// Returns: Map<employeeId, Map<servCodeId, availableFromDate>>
+// ---------------------------------------------------------------------------
+
+/** Builds the projection data map (Phase 1) for a given set of servCode paces. */
+function buildProjectionDataMap(
+  servCodePaces: ServCodePace[],
+  lookbackMap: EmployeeLookbackMap,
+  perDayMap: Map<string, { activeAsapCSP: CountSizePrice; projectionStartDate: string | null; unfinishedCSP?: CountSizePrice }>,
+  today: string,
+): Map<string, ServCodeProjectionData> {
+  const projectionDataMap = new Map<string, ServCodeProjectionData>();
+
+  for (const pace of servCodePaces) {
+    const { servCode, unfinishedCSP } = pace;
+    const servCodeId = servCode.servCodeId;
+    const dateRange = servCode.dateRange;
+    const programTypeKey = servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+
+    if (!dateRanges.isValidDateRange(dateRange)) continue;
+
+    const perDayData = perDayMap.get(servCodeId);
+    const activeAsapCSP = perDayData?.activeAsapCSP ?? unfinishedCSP;
+    const openDate =
+      perDayData?.projectionStartDate ??
+      (today > dateRange.min ? today : dateRange.min);
+
+    if (!openDate) continue;
+
+    const knownRates: { count: number; size: number; price: number }[] = [];
+    for (const employee of servCode.assignedTo) {
+      const stats = lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
+      if (stats) {
+        knownRates.push({
+          count: stats.avgDailyCSP.count,
+          size: stats.avgDailyCSP.size,
+          price: stats.avgDailyCSP.price,
+        });
+      }
+    }
+
+    const avgKnownRate =
+      knownRates.length > 0
+        ? {
+            count: knownRates.reduce((s, r) => s + r.count, 0) / knownRates.length,
+            size: knownRates.reduce((s, r) => s + r.size, 0) / knownRates.length,
+            price: knownRates.reduce((s, r) => s + r.price, 0) / knownRates.length,
+          }
+        : null;
+
+    const dailyRateByEmployee = new Map<string, { count: number; size: number; price: number }>();
+    for (const employee of servCode.assignedTo) {
+      const stats = lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
+      if (stats) {
+        dailyRateByEmployee.set(employee.employeeId, {
+          count: stats.avgDailyCSP.count,
+          size: stats.avgDailyCSP.size,
+          price: stats.avgDailyCSP.price,
+        });
+      } else if (avgKnownRate) {
+        dailyRateByEmployee.set(employee.employeeId, { ...avgKnownRate });
+      } else {
+        dailyRateByEmployee.set(employee.employeeId, { count: 1, size: 1, price: 1 });
+      }
+    }
+
+    projectionDataMap.set(servCodeId, {
+      servCodeId,
+      openDate,
+      closeDate: dateRange.max,
+      pool: {
+        count: activeAsapCSP.count,
+        size: activeAsapCSP.size,
+        price: activeAsapCSP.price,
+      },
+      dailyRateByEmployee,
+    });
+  }
+
+  return projectionDataMap;
+}
+
+/** Runs Phase 2: per-employee cascade simulation to determine availableFrom dates. */
+function buildAvailableFromMap(
+  projectionDataMap: Map<string, ServCodeProjectionData>,
+  assignmentsByEmployeeId: Map<string, { servCodeIds: string[] }>,
+  today: string,
+): Map<string, Map<string, string>> {
+  const employeeAvailableFrom = new Map<string, Map<string, string>>();
+
+  for (const [employeeId, assignment] of assignmentsByEmployeeId) {
+    const priorityOrder = assignment.servCodeIds;
+    if (priorityOrder.length === 0) continue;
+
+    const selfProjectionMap = new Map<string, ServCodeProjectionData>();
+    for (const servCodeId of priorityOrder) {
+      const data = projectionDataMap.get(servCodeId);
+      if (!data) continue;
+      const rate = data.dailyRateByEmployee.get(employeeId);
+      if (!rate) continue;
+      selfProjectionMap.set(servCodeId, {
+        ...data,
+        dailyRateByEmployee: new Map([["__self__", rate]]),
+      });
+    }
+
+    const remaining = new Map<string, { count: number; size: number; price: number }>();
+    for (const servCodeId of priorityOrder) {
+      const data = selfProjectionMap.get(servCodeId);
+      if (data) remaining.set(servCodeId, { ...data.pool });
+    }
+
+    const boundarySet = new Set<string>([today]);
+    for (const servCodeId of priorityOrder) {
+      const data = selfProjectionMap.get(servCodeId);
+      if (!data) continue;
+      boundarySet.add(data.openDate);
+      boundarySet.add(data.closeDate);
+    }
+    const boundaries = [...boundarySet].sort();
+
+    const availableFrom = new Map<string, string>();
+    employeeAvailableFrom.set(employeeId, availableFrom);
+
+
+    for (let i = 0; i < boundaries.length - 1; i++) {
+      const intervalStart = boundaries[i];
+      const intervalEnd = boundaries[i + 1];
+
+      const intervalWeekdays = Math.max(
+        0,
+        dateRanges.countWeekdays({ min: intervalStart, max: intervalEnd }) - 1,
+      );
+      if (intervalWeekdays <= 0) continue;
+
+      for (const servCodeId of priorityOrder) {
+        const data = selfProjectionMap.get(servCodeId);
+        if (!data) continue;
+        if (data.openDate > intervalStart || data.closeDate < intervalEnd) continue;
+
+        const rem = remaining.get(servCodeId)!;
+        const rate = data.dailyRateByEmployee.get("__self__");
+        if (!rate) continue;
+        if (rem.count <= 0 && rem.size <= 0 && rem.price <= 0) continue;
+
+        if (!availableFrom.has(servCodeId)) {
+          availableFrom.set(servCodeId, intervalStart);
+        }
+
+        rem.count = Math.max(0, rem.count - rate.count * intervalWeekdays);
+        rem.size = Math.max(0, rem.size - rate.size * intervalWeekdays);
+        rem.price = Math.max(0, rem.price - rate.price * intervalWeekdays);
+
+        break;
+      }
+    }
+
+  }
+
+  return employeeAvailableFrom;
+}
+
+// Exported type for consumers (employeePaceSelect)
+export type EmployeeAvailableFromMap = Map<string, Map<string, string>>;
+
+const selectEmployeeAvailableFromMap = createSelector(
+  [
+    selectServCodePaces,
+    selectEmployeeLookbackMap,
+    rawPaceSelect.rawServCodePacesPerDayMap,
+    assignmentPlanSelect.assignmentsByEmployeeId,
+  ],
+  (servCodePaces, lookbackMap, perDayMap, assignmentsByEmployeeId): EmployeeAvailableFromMap => {
+    const today = dateStrings.today();
+    const projectionDataMap = buildProjectionDataMap(servCodePaces, lookbackMap, perDayMap, today);
+    return buildAvailableFromMap(projectionDataMap, assignmentsByEmployeeId, today);
+  },
+);
+
+// ---------------------------------------------------------------------------
+// selectServCodePaceDeltaMap
+//
+// Cascade-aware delta projection. Each employee works their highest-priority
+// open servCode at any point in time. Overlapping servCodes are handled by
+// priority: a higher-priority servCode greedily absorbs the employee's capacity
+// until it is complete, then the next servCode in priority order gets their
+// attention. If a lower-priority servCode opens before a higher-priority one,
+// the employee works the lower-priority one until the higher-priority one opens.
+//
+// The shared pool model: all assigned employees pull from the same work pool.
+// The pool drains at the combined rate of all currently-available employees.
+// The projected end date is when the pool hits zero.
+//
+// Uses activeAsapCSP (excludes printed/committed work) and projectionStartDate
+// (day after latest printed schedDate) for a stable intraday projection.
+//
+// programType is sourced from the CRM and must be correctly set per progCode.
+// If programType is shared across unrelated progCodes, the lookback rate will be
+// inflated by unrelated work history, producing incorrect delta projections.
+//
+// CRM gotcha: "Special Jobs" have two programType fields — one at the top of the
+// Service setup page and one at the bottom. The bottom field is the one that
+// controls the programType used here. Both must be set correctly.
+// ---------------------------------------------------------------------------
 const selectServCodePaceDeltaMap = createSelector(
   [
     selectServCodePaces,
     selectEmployeeLookbackMap,
     rawPaceSelect.rawServCodePacesPerDayMap,
+    assignmentPlanSelect.assignmentsByEmployeeId,
+    selectEmployeeAvailableFromMap,
   ],
-  (servCodePaces, lookbackMap, perDayMap): Map<string, ServCodePaceDelta> => {
+  (servCodePaces, lookbackMap, perDayMap, _assignmentsByEmployeeId, employeeAvailableFromMap): Map<string, ServCodePaceDelta> => {
     const today = dateStrings.today();
     const result = new Map<string, ServCodePaceDelta>();
 
+    // Phase 1: Build projection data
+    const projectionDataMap = buildProjectionDataMap(servCodePaces, lookbackMap, perDayMap, today);
+
+    // Phase 2: use shared selector
+    const employeeAvailableFrom = employeeAvailableFromMap;
+
+    // ---------------------------------------------------------------------------
+    // Phase 3: Shared pool drain per servCode
+    // All assigned employees pull from the same pool. The pool drains at the
+    // combined rate of employees who are currently available.
+    // ---------------------------------------------------------------------------
+
     for (const pace of servCodePaces) {
-      const { servCode, unfinishedCSP } = pace;
+      const { servCode } = pace;
       const servCodeId = servCode.servCodeId;
       const dateRange = servCode.dateRange;
-      const programTypeKey =
-        servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+      const data = projectionDataMap.get(servCodeId);
 
-      // Raw team avg: sum of assigned employees' historical avgDailyCSP for this programType.
-      // Employees without lookback data are estimated at the per-programType team average
-      // of the employees who do have data. This prevents new/untracked employees (e.g. a
-      // recently hired tech) from being invisible to the projection and making the delta
-      // appear worse than it actually is.
-      //
-      // programType is sourced from the CRM and must be correctly set per progCode.
-      // If programType is shared across unrelated progCodes, the lookback rate will be
-      // inflated by unrelated work history, producing incorrect delta projections.
-      //
-      // CRM gotcha: "Special Jobs" have two programType fields — one at the top of the
-      // Service setup page and one at the bottom. The bottom field is the one that
-      // controls the programType used here. Both must be set correctly.
-      let rawTeamAvgCount = 0;
-      let knownCountForCount = 0;
+      if (!data || !dateRanges.isValidDateRange(dateRange)) {
+        result.set(servCodeId, {
+          servCodeId,
+          dateRange,
+          projectedEndDate: null,
+          deltaDays: null,
+          deltaDaysCSP: null,
+        });
+        continue;
+      }
+
+      // Build availability list for each dimension
+      const availabilityCount: { availableFrom: string; rate: number }[] = [];
+      const availabilitySize: { availableFrom: string; rate: number }[] = [];
+      const availabilityPrice: { availableFrom: string; rate: number }[] = [];
+
       for (const employee of servCode.assignedTo) {
-        const stats =
-          lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
-        if (stats) {
-          rawTeamAvgCount += stats.avgDailyCSP.count;
-          knownCountForCount++;
-        }
-      }
-      // Estimate unknown employees at the average rate of known employees
-      const unknownCount = servCode.assignedTo.length - knownCountForCount;
-      if (unknownCount > 0 && knownCountForCount > 0) {
-        rawTeamAvgCount += (rawTeamAvgCount / knownCountForCount) * unknownCount;
+        const employeeId = employee.employeeId;
+        const rate = data.dailyRateByEmployee.get(employeeId);
+        if (!rate) continue;
+
+        // When does this employee become available to this servCode?
+        const availFrom =
+          employeeAvailableFrom.get(employeeId)?.get(servCodeId) ?? data.openDate;
+
+        if (rate.count > 0) availabilityCount.push({ availableFrom: availFrom, rate: rate.count });
+        if (rate.size > 0) availabilitySize.push({ availableFrom: availFrom, rate: rate.size });
+        if (rate.price > 0) availabilityPrice.push({ availableFrom: availFrom, rate: rate.price });
       }
 
-      // Use activeAsapCSP (excludes printed/scheduled work) and projectionStartDate
-      // (day after latest printed schedDate) for a stable intraday projection.
-      // Printed services are already committed to specific days — excluding them prevents
-      // the delta from fluctuating as today's route is completed.
-      const perDayData = perDayMap.get(servCodeId);
-      const activeAsapCSP = perDayData?.activeAsapCSP ?? unfinishedCSP;
-      const projectionStart =
-        perDayData?.projectionStartDate ??
-        (today > dateRange.min ? today : dateRange.min);
+      // Compute projected end date per dimension
+      const projectedEndCount = computePoolDrainDate(
+        availabilityCount,
+        data.pool.count,
+        data.openDate,
+        data.closeDate,
+      );
+      const projectedEndSize = computePoolDrainDate(
+        availabilitySize,
+        data.pool.size,
+        data.openDate,
+        data.closeDate,
+      );
+      const projectedEndPrice = computePoolDrainDate(
+        availabilityPrice,
+        data.pool.price,
+        data.openDate,
+        data.closeDate,
+      );
 
-      let projectedEndDate: string | null = null;
-      let deltaDays: number | null = null;
-
-      if (
-        rawTeamAvgCount > 0 &&
-        activeAsapCSP.count > 0 &&
-        dateRanges.isValidDateRange(dateRange) &&
-        projectionStart != null
-      ) {
-        const daysNeeded = activeAsapCSP.count / rawTeamAvgCount;
-        projectedEndDate = dateStrings.addWeekdays(projectionStart, daysNeeded);
-        deltaDays = dateRanges.weekdaysBetween(dateRange.max, projectedEndDate);
-      }
-
-      // Per-dimension delta days: compute independently for count, size, price.
-      // Each dimension uses its own team avg rate from the lookback map.
-      // Same unknown-employee estimation as above: fill in the team average for employees
-      // without lookback data so they aren't invisible to the projection.
-      let rawTeamAvgSize = 0;
-      let rawTeamAvgPrice = 0;
-      let knownCountForSize = 0;
-      let knownCountForPrice = 0;
-      for (const employee of servCode.assignedTo) {
-        const stats =
-          lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
-        if (stats) {
-          rawTeamAvgSize += stats.avgDailyCSP.size;
-          rawTeamAvgPrice += stats.avgDailyCSP.price;
-          knownCountForSize++;
-          knownCountForPrice++;
-        }
-      }
-      const unknownCountSize = servCode.assignedTo.length - knownCountForSize;
-      if (unknownCountSize > 0 && knownCountForSize > 0) {
-        rawTeamAvgSize += (rawTeamAvgSize / knownCountForSize) * unknownCountSize;
-      }
-      const unknownCountPrice = servCode.assignedTo.length - knownCountForPrice;
-      if (unknownCountPrice > 0 && knownCountForPrice > 0) {
-        rawTeamAvgPrice += (rawTeamAvgPrice / knownCountForPrice) * unknownCountPrice;
-      }
-
-      function computeDeltaDim(
-        workRemaining: number,
-        teamAvgRate: number,
-      ): number | null {
-        if (
-          teamAvgRate <= 0 ||
-          workRemaining <= 0 ||
-          projectionStart == null ||
-          !dateRanges.isValidDateRange(dateRange)
-        )
-          return null;
-        const daysNeeded = workRemaining / teamAvgRate;
-        const projected = dateStrings.addWeekdays(projectionStart, daysNeeded);
-        return dateRanges.weekdaysBetween(dateRange.max, projected);
-      }
+      // Primary delta uses count dimension (same as before)
+      const projectedEndDate = projectedEndCount;
+      const deltaDays =
+        projectedEndDate != null && data.pool.count > 0
+          ? dateRanges.weekdaysBetween(dateRange.max, projectedEndDate)
+          : null;
 
       const deltaDaysCSP = {
-        count: computeDeltaDim(activeAsapCSP.count, rawTeamAvgCount),
-        size: computeDeltaDim(activeAsapCSP.size, rawTeamAvgSize),
-        price: computeDeltaDim(activeAsapCSP.price, rawTeamAvgPrice),
+        count:
+          projectedEndCount != null && data.pool.count > 0
+            ? dateRanges.weekdaysBetween(dateRange.max, projectedEndCount)
+            : null,
+        size:
+          projectedEndSize != null && data.pool.size > 0
+            ? dateRanges.weekdaysBetween(dateRange.max, projectedEndSize)
+            : null,
+        price:
+          projectedEndPrice != null && data.pool.price > 0
+            ? dateRanges.weekdaysBetween(dateRange.max, projectedEndPrice)
+            : null,
       };
 
       result.set(servCodeId, {
         servCodeId,
         dateRange,
-        projectedEndDate,
+        projectedEndDate: projectedEndDate ?? null,
         deltaDays,
-        deltaDaysCSP: {
-          count: deltaDaysCSP.count,
-          size: deltaDaysCSP.size,
-          price: deltaDaysCSP.price,
-        },
+        deltaDaysCSP,
       } satisfies ServCodePaceDelta);
     }
 
@@ -995,4 +1366,5 @@ export const paceSelect = {
   servCodePaceDeltaMap: selectServCodePaceDeltaMap,
   matrixDeltaDaysBounds: selectMatrixDeltaDaysBounds,
   matrixFilteredSortedProgCodePaces: selectMatrixFilteredSortedProgCodePaces,
+  employeeAvailableFromMap: selectEmployeeAvailableFromMap,
 };

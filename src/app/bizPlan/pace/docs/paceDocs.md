@@ -80,7 +80,7 @@ Key outputs:
 - `finishedRate` — completed work ÷ days elapsed
 
 **Per-day variant** (`RawServCodePacePerDay`):
-- `activeAsapCSP` — unfinished work excluding printed (committed) services
+- `activeAsapCSP` — unfinished work **excluding** printed (committed) services
 - `unfinishedPerDay` — `activeAsapCSP` ÷ days remaining after the last printed schedDate
 - `projectionStartDate` — the day after the latest printed schedDate (or today if no printed services)
 
@@ -122,9 +122,15 @@ Employees without lookback data for a programType receive an **even-split fallba
 
 Projects a completion date for each servCode and computes `deltaDays` — how many weekdays ahead of or behind the `dateRange.max` the team is projected to finish.
 
+**Cascade-aware model**: Each employee works their highest-priority open servCode at any point in time. "Open" means `openDate ≤ date ≤ closeDate` AND remaining work > 0. The timeline is split at every servCode boundary date so each interval can be computed analytically (no day-by-day loop).
+
+**`selectEmployeeAvailableFromMap`** (shared selector, `paceSelect.ts`): For each employee, computes the date they first become available to work each servCode, accounting for higher-priority servCodes consuming their time first. Returns `Map<employeeId, Map<servCodeId, availableFromDate>>`. If a servCode is in the priority list but `availableFrom` is `undefined`, the cascade determined the employee's window for that servCode was entirely consumed by higher-priority work — they are treated as "never available."
+
+**Shared pool drain**: All assigned employees pull from the same work pool. The pool drains at the combined rate of employees who are currently available (i.e., their `availableFrom` date has been reached). The projected end date is when the pool hits zero.
+
 Formula:
 ```
-daysNeeded = activeAsapCSP.count / rawTeamAvgCount
+daysNeeded = activeAsapCSP.count / combinedAvailableRate
 projectedEndDate = addWeekdays(projectionStart, daysNeeded)
 deltaDays = weekdaysBetween(dateRange.max, projectedEndDate)
 ```
@@ -135,7 +141,35 @@ deltaDays = weekdaysBetween(dateRange.max, projectedEndDate)
 
 **`rawTeamAvgCount`** = sum of `avgDailyCSP.count` for all assigned employees with lookback data. Employees without lookback data are estimated at the **per-programType team average** of the employees who do have data — so a new tech assigned alongside an experienced one is not invisible to the projection.
 
-This layer uses no cascade or capacity deduction — it's a simple throughput projection for the matrix display.
+---
+
+## Employee Pace View — Selector Details
+
+### `makeSelectProjectedAllocations` (`employeePaceSelect.ts`)
+
+Computes each employee's expected daily CSP for each active servCode as of the **slider date** (the next routing date).
+
+**Key design decisions:**
+
+- **Slider date = day 1**: The slider represents the next date the manager will route for. `pace.unfinishedCSP` already excludes printed/committed work (via `activeAsapCSP` in `rawPaceSelect`), so it represents exactly what remains to be routed starting from the slider date. No forward projection is applied.
+- **`daysLeft`** = weekdays from slider date to `dateRange.max` (inclusive). This is the denominator for the required daily rate.
+- **Required rate** = `pace.unfinishedCSP / daysLeft`
+- **Employee's weighted share** = `requiredRate × (employee.avgDailyCSP / teamAvgCSP)`. If no lookback data, falls back to even split.
+- **Cascade gate**: If `availableFrom` is `undefined` for a servCode (the cascade determined the employee is never available), `expectedCSP` is zeroed out and `fractionConsumed` is `null`.
+
+### `ServCodePaceBar` (`employee/components/ServCodePaceBar.tsx`)
+
+Renders a segmented progress bar for a single servCode, with a popover showing forecast details.
+
+**Bar color logic:**
+- The bar is split at the **tolerance boundary date** — the first date where the projected completion fraction exits the ±`paceTolerance` band.
+- Elapsed portion (before slider date): muted green
+- On-track portion (slider → boundary): bright green
+- Behind/ahead portion (boundary → deadline): red (destructive) or blue (primary)
+
+**`overallColor`** — used for the popover header and forecast label — is derived from the **last non-muted segment** (the future portion of the bar). This ensures the header correctly reflects the pace status rather than always showing green from the elapsed segment.
+
+**`effectiveDailyCSP`** — the employee's historical `avgDailyCSP` when available; falls back to `expectedCSP` (the cascade-computed required rate) when no lookback data exists.
 
 ---
 
@@ -177,9 +211,11 @@ Controls the Assignment Matrix display:
 | `RawPaceTypes.ts` | Types for raw (pre-employee) pace data |
 | `PaceType.ts` | Types for employee-aware pace data and UI types |
 | `rawPaceSelect.ts` | Layer 1 selectors — raw CSP totals and per-day rates |
-| `paceSelect.ts` | Layers 2–4 — lookback, cascade, delta projection, matrix filters |
+| `paceSelect.ts` | Layers 2–4 — lookback, cascade, delta projection, matrix filters; exports `selectEmployeeAvailableFromMap` |
 | `paceSlice.ts` | Redux state — lookback config and matrix display config |
 | `_lib/employeeLookbackUtils.ts` | Pure functions for lookback accumulation and stats |
 | `employee/` | Employee Pace view components and slice |
+| `employee/employeePaceSelect.ts` | Per-employee allocation selectors; `makeSelectProjectedAllocations` |
+| `employee/components/ServCodePaceBar.tsx` | Segmented pace bar + forecast popover |
 | `components/` | Shared pace UI components |
 | `assignmentPlan/matrix/` | Assignment Matrix view (separate folder under `bizPlan`) |

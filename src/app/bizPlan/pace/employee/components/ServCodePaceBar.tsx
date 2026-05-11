@@ -452,7 +452,10 @@ export function ServCodePaceBar({ servCodeId, avgDailyCSP, expectedCSP, employee
     ? Math.min(100, Math.max(0, (dateRanges.countWeekdays({ min, max: crossover }) / totalWeekdays) * 100))
     : null;
 
-  const overallColor: PaceColor = segments[0]?.color ?? "accent";
+  // Use the last non-muted segment's color for the header/popover — the elapsed
+  // (muted) first segment is always green regardless of pace status.
+  const lastFutureSegment = [...segments].reverse().find((s) => !s.muted);
+  const overallColor: PaceColor = lastFutureSegment?.color ?? segments[0]?.color ?? "accent";
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

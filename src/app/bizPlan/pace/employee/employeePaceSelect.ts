@@ -247,8 +247,9 @@ function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocation
       paceSelect.servCodePaces,
       paceSelect.employeeLookbackMap,
       assignmentPlanSelect.assignmentsByEmployeeId,
+      paceSelect.employeeAvailableFromMap,
     ],
-    (servCodePaces, lookbackMap, assignmentsByEmployeeId): EmployeeAllocation[] => {
+    (servCodePaces, lookbackMap, assignmentsByEmployeeId, employeeAvailableFromMap): EmployeeAllocation[] => {
       const priorityOrder = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
@@ -265,7 +266,11 @@ function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocation
         }
       }
 
-      const daysAhead = weekdaysAheadOf(date);
+      // Cascade-aware availability: the date this employee first becomes available
+      // to each servCode, accounting for higher-priority servCodes consuming their
+      // time first (changeover/FIFO model).
+      const availableFromByServCode = employeeAvailableFromMap.get(employeeId);
+
       const allocations: EmployeeAllocation[] = [];
 
       for (const pace of servCodePaces) {
@@ -277,15 +282,38 @@ function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocation
         );
         if (!share) continue;
 
-        // Recompute required daily rate as of the given date.
-        // When projecting forward, reduce unfinishedCSP by the assumed production
-        // that has already occurred between today and the selected date.
+        // Cascade gate: if this employee hasn't become available to this servCode yet
+        // (because a higher-priority servCode is still consuming their capacity),
+        // show zero expected CSP and zero fraction consumed.
+        //
+        // availableFrom === undefined means the cascade simulation ran for this servCode
+        // (it's in the priority list) but the employee never became available — a
+        // higher-priority servCode consumed all their time during this servCode's window.
+        // Treat that as "never available" and gate to zero.
+        const availableFrom = availableFromByServCode?.get(pace.servCode.servCodeId);
+        const isInPriorityList = priorityOrder.includes(pace.servCode.servCodeId);
+        const neverAvailable = isInPriorityList && availableFrom === undefined;
+        const notYetAvailable = availableFrom !== undefined && date < availableFrom;
+
+        if (neverAvailable || notYetAvailable) {
+          allocations.push({
+            servCode: pace.servCode,
+            expectedCSP: { ...baseCountSizePrice },
+            avgDailyCSP: share.avgDailyCSP,
+            fractionConsumed: null,
+          });
+          continue;
+        }
+
+        // The slider date is "day 1" — the next routing date. pace.unfinishedCSP already
+        // excludes printed/committed work (via activeAsapCSP in rawPaceSelect), so it
+        // represents exactly what remains to be routed starting from the slider date.
+        // No forward projection needed.
         const daysLeft = pace.servCode.alwaysAsap
           ? 1 // asap: treat as 1 day remaining so rate = full unfinishedCSP
           : weekdaysRemaining(date, pace.servCode.dateRange.max ?? date);
 
-        const unfinishedCSP = projectUnfinishedCSP(pace, daysAhead);
-        const rateAsOfDate = CountSizePriceOps.divideBy(unfinishedCSP, daysLeft || 1);
+        const rateAsOfDate = CountSizePriceOps.divideBy(pace.unfinishedCSP, daysLeft || 1);
 
         // Employee's weighted share of the rate (use same avgDailyCSP weight as cascade)
         // If no lookback data, fall back to even split
@@ -409,8 +437,9 @@ function makeSelectNotStartedAllocations({ employeeId }: NotStartedAllocationsIn
       paceSelect.servCodePaces,
       paceSelect.employeeLookbackMap,
       assignmentPlanSelect.assignmentsByEmployeeId,
+      paceSelect.employeeAvailableFromMap,
     ],
-    (servCodePaces, lookbackMap, assignmentsByEmployeeId): EmployeeAllocation[] => {
+    (servCodePaces, lookbackMap, assignmentsByEmployeeId, employeeAvailableFromMap): EmployeeAllocation[] => {
       const priorityOrder = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
@@ -427,6 +456,7 @@ function makeSelectNotStartedAllocations({ employeeId }: NotStartedAllocationsIn
       }
 
       const today = dateStrings.today();
+      const availableFromByServCode = employeeAvailableFromMap.get(employeeId);
       const allocations: EmployeeAllocation[] = [];
 
       for (const pace of servCodePaces) {
@@ -438,6 +468,21 @@ function makeSelectNotStartedAllocations({ employeeId }: NotStartedAllocationsIn
           (s) => s.employee.employeeId === employeeId,
         );
         if (!share) continue;
+
+        // Cascade gate: if this employee won't be available to this servCode until
+        // after its open date (because a higher-priority servCode will still be running),
+        // show zero expected CSP. The availableFrom date for notStarted servCodes may
+        // be pushed out beyond dateRange.min by higher-priority work.
+        const availableFrom = availableFromByServCode?.get(pace.servCode.servCodeId);
+        if (availableFrom && today < availableFrom) {
+          allocations.push({
+            servCode: pace.servCode,
+            expectedCSP: { ...baseCountSizePrice },
+            avgDailyCSP: share.avgDailyCSP,
+            fractionConsumed: null,
+          });
+          continue;
+        }
 
         // daysRemaining is computed from today in ServCodeUtils (servCode.x.daysRemaining).
         // For notStarted servCodes, the window hasn't started yet, so we use the full
