@@ -202,11 +202,13 @@ function nextWeekdayAfter(date: string): string {
 
 /**
  * Adds n weekdays (Mon–Fri) to a date string.
- * Fractional n is ceiled before adding (a partial day counts as a full day).
+ * Fractional n is rounded to the nearest whole day before adding.
+ * A partial day does NOT automatically count as a full day — callers that want
+ * ceiling behaviour should round up before calling.
  * Negative n is not supported.
  */
 function addWeekdays(date: string, n: number): string {
-  const days = Math.ceil(n);
+  const days = Math.round(n);
   if (days <= 0) return date;
   let current = parseISO(date);
   let remaining = days;

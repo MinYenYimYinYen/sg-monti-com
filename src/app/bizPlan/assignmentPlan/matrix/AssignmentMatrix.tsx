@@ -10,11 +10,13 @@ import { rawPaceSelect } from "@/app/bizPlan/pace/rawPaceSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
 import { useAppDispatch } from "@/lib/hooks/redux";
+import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
+import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ProgCodePace, ServCodePace, ServCodePaceDelta } from "@/app/bizPlan/pace/PaceType";
-import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
+import { MiniServCodeDateEdit } from "@/app/bizPlan/pace/employee/components/MiniServCodeDateEdit";
 import { Number } from "@/components/Number";
-import { ChevronDown, ChevronRight, Pencil } from "lucide-react";
+import { ChevronDown, ChevronRight, LandPlot, Pencil, Save } from "lucide-react";
 import { CountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
 import { MatrixDisplaySettings } from "@/app/bizPlan/assignmentPlan/matrix/MatrixDisplaySettings";
 
@@ -43,60 +45,100 @@ function formatDeltaDays(deltaDays: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// DeltaDaysDisplay — single servCode delta badge
+// CSP symbol helpers — shared between CspDisplay and CspDeltaDisplay
+// Each symbol is a fixed-width inline element so columns align across rows.
 // ---------------------------------------------------------------------------
 
-function DeltaDaysDisplay({ deltaDays }: { deltaDays: number | null }) {
-  if (deltaDays == null) return null;
-  return (
-    <span className={`text-[10px] font-mono ${deltaDaysColor(deltaDays)}`}>
-      {formatDeltaDays(deltaDays)}
-    </span>
-  );
+// Symbol column width: wide enough for the icon + value, consistent across rows.
+const CSP_COL_CLASS = "inline-flex items-center gap-0.5 min-w-[4.5ch]";
+
+function CountSymbol() {
+  return <span className="text-[10px] leading-none">#</span>;
+}
+
+function SizeSymbol() {
+  return <LandPlot className="w-2.5 h-2.5 shrink-0" />;
+}
+
+function PriceSymbol() {
+  return <span className="text-[10px] leading-none">$</span>;
 }
 
 // ---------------------------------------------------------------------------
-// ProgDeltaDisplay — shows min/max delta range for a progCode
+// CspDisplay — renders count/size/price as one horizontal row
 // ---------------------------------------------------------------------------
 
-function ProgDeltaDisplay({ deltas }: { deltas: (number | null)[] }) {
-  const valid = deltas.filter((d): d is number => d != null);
-  if (valid.length === 0) return null;
-
-  const minDelta = Math.min(...valid);
-  const maxDelta = Math.max(...valid);
-
-  if (minDelta === maxDelta) {
-    return <DeltaDaysDisplay deltaDays={minDelta} />;
-  }
-
-  return (
-    <span className="flex items-center gap-0.5 text-[10px] font-mono">
-      <span className={deltaDaysColor(maxDelta)}>{formatDeltaDays(maxDelta)}</span>
-      <span className="text-muted-foreground">/</span>
-      <span className={deltaDaysColor(minDelta)}>{formatDeltaDays(minDelta)}</span>
-    </span>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// CspDisplay — renders count/size/price with conventional symbols
-// ---------------------------------------------------------------------------
+type DeltaDaysCSP = { count: number | null; size: number | null; price: number | null };
 
 function CspDisplay({ csp }: { csp: CountSizePrice }) {
   return (
     <span className="flex gap-1 text-[10px] text-muted-foreground">
-      <span>
-        #<Number>{csp.count}</Number>
+      <span className={CSP_COL_CLASS}><CountSymbol /><Number>{csp.count}</Number></span>
+      <span className={CSP_COL_CLASS}><SizeSymbol /><Number>{csp.size}</Number></span>
+      <span className={CSP_COL_CLASS}><PriceSymbol /><Number>{csp.price}</Number></span>
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CspDeltaDisplay — per-dimension delta days, one horizontal row
+// ---------------------------------------------------------------------------
+
+function CspDeltaDisplay({ deltaDaysCSP }: { deltaDaysCSP: DeltaDaysCSP | null }) {
+  if (deltaDaysCSP == null) return null;
+  const { count, size, price } = deltaDaysCSP;
+  if (count == null && size == null && price == null) return null;
+
+  return (
+    <span className="flex gap-1 text-[10px] font-mono">
+      <span className={`${CSP_COL_CLASS} ${count != null ? deltaDaysColor(count) : "text-muted-foreground"}`}>
+        <CountSymbol />{count != null ? formatDeltaDays(count) : "—"}
       </span>
-      <span>
-        ◻<Number>{csp.size}</Number>
+      <span className={`${CSP_COL_CLASS} ${size != null ? deltaDaysColor(size) : "text-muted-foreground"}`}>
+        <SizeSymbol />{size != null ? formatDeltaDays(size) : "—"}
       </span>
-      <span>
-        $<Number>{csp.price}</Number>
+      <span className={`${CSP_COL_CLASS} ${price != null ? deltaDaysColor(price) : "text-muted-foreground"}`}>
+        <PriceSymbol />{price != null ? formatDeltaDays(price) : "—"}
       </span>
     </span>
   );
+}
+
+// ---------------------------------------------------------------------------
+// CspWithDeltaDisplay — CSP row + delta row stacked vertically, columns aligned
+// ---------------------------------------------------------------------------
+
+function CspWithDeltaDisplay({ csp, deltaDaysCSP }: { csp: CountSizePrice; deltaDaysCSP: DeltaDaysCSP | null }) {
+  return (
+    <span className="flex flex-col gap-0">
+      <CspDisplay csp={csp} />
+      <CspDeltaDisplay deltaDaysCSP={deltaDaysCSP} />
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ProgDeltaDisplay — shows the deltaDaysCSP of the servCode with the highest
+// absolute delta dimension across all servCodes in the progCode
+// ---------------------------------------------------------------------------
+
+function getWorstDeltaCSP(deltaDaysCSPs: (DeltaDaysCSP | null)[]): DeltaDaysCSP | null {
+  let worstCSP: DeltaDaysCSP | null = null;
+  let worstAbs = -1;
+
+  for (const csp of deltaDaysCSPs) {
+    if (csp == null) continue;
+    const abs = Math.max(
+      Math.abs(csp.count ?? 0),
+      Math.abs(csp.size ?? 0),
+      Math.abs(csp.price ?? 0),
+    );
+    if (abs > worstAbs) {
+      worstAbs = abs;
+      worstCSP = csp;
+    }
+  }
+  return worstCSP;
 }
 
 // ---------------------------------------------------------------------------
@@ -123,8 +165,16 @@ export function AssignmentMatrix() {
   const assignmentsByEmployeeId = useSelector(
     assignmentPlanSelect.assignmentsByEmployeeId,
   );
+  const unsavedServCodeChanges = useSelector(progServSelect.unsavedServCodeChanges);
   const { upsert } = useAssignmentPlan({ autoLoad: false });
+  const { saveServCodeChanges } = useProgServ({});
   const dispatch = useAppDispatch();
+
+  const dateRangeChanges = unsavedServCodeChanges.filter(
+    (c) =>
+      c.updated.dateRange.min !== c.original.dateRange.min ||
+      c.updated.dateRange.max !== c.original.dateRange.max,
+  );
 
   // Local state: which employees are shown as columns
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<string>>(
@@ -190,7 +240,9 @@ export function AssignmentMatrix() {
     upsert({ employeeId, servCodeIds: newServCodeIds });
   }
 
-  // Resolve the CSP to display for a servCode based on the current display mode
+  // Resolve the CSP to display for a servCode based on the current display mode.
+  // "total" uses activeAsapCSP (excludes printed services) to match the delta calculation.
+  // perDay and perDayPerEmployee are already derived from activeAsapCSP in rawPaceSelect.
   function getServCodeCsp(servCodeId: string): CountSizePrice | null {
     if (cspDisplay === "perDay") {
       const pace = perDayMap.get(servCodeId);
@@ -204,10 +256,10 @@ export function AssignmentMatrix() {
       const csp = pace.unfinishedPerDayPerEmployee;
       return csp.count > 0 || csp.size > 0 || csp.price > 0 ? csp : null;
     }
-    // "total"
+    // "total" — use activeAsapCSP so the count matches what the delta is projected from
     const pace = perDayMap.get(servCodeId);
     if (!pace) return null;
-    const csp = pace.unfinishedCSP;
+    const csp = pace.activeAsapCSP;
     return csp.count > 0 || csp.size > 0 || csp.price > 0 ? csp : null;
   }
 
@@ -285,7 +337,19 @@ export function AssignmentMatrix() {
                 <th className="border border-border px-3 py-1.5 text-left font-semibold text-foreground sticky left-0 z-20 min-w-56 bg-background">
                   <div className="flex items-center justify-between gap-2">
                     <span>Program / ServCode</span>
-                    <MatrixDisplaySettings />
+                    <div className="flex items-center gap-1.5">
+                      {dateRangeChanges.length > 0 && (
+                        <button
+                          onClick={() => saveServCodeChanges(dateRangeChanges)}
+                          className="flex items-center gap-1 text-[10px] bg-primary/20 hover:bg-primary/30 text-primary rounded px-1.5 py-0.5 transition-colors font-normal"
+                          title="Save date range changes"
+                        >
+                          <Save className="w-3 h-3" />
+                          Save ({dateRangeChanges.length})
+                        </button>
+                      )}
+                      <MatrixDisplaySettings />
+                    </div>
                   </div>
                 </th>
                 {selectedEmployees.map((employee) => {
@@ -451,14 +515,17 @@ function MatrixProgGroup({
             <span className="text-[10px] text-muted-foreground">
               {assignedEmployeeIds.size} emp
             </span>
-            {/* Prog-level CSP */}
-            {progCsp !== null && <CspDisplay csp={progCsp} />}
-            {/* Prog-level pace delta range */}
-            <ProgDeltaDisplay
-              deltas={servCodePaces.map(
-                (sp) => deltaMap.get(sp.servCode.servCodeId)?.deltaDays ?? null,
-              )}
-            />
+            {/* Prog-level CSP + worst-servCode delta stacked the same as servCode rows */}
+            {progCsp !== null && (
+              <CspWithDeltaDisplay
+                csp={progCsp}
+                deltaDaysCSP={getWorstDeltaCSP(
+                  servCodePaces.map(
+                    (sp) => deltaMap.get(sp.servCode.servCodeId)?.deltaDaysCSP ?? null,
+                  ),
+                )}
+              />
+            )}
           </div>
         </td>
 
@@ -507,16 +574,17 @@ function MatrixProgGroup({
                       <span>{formatDate(sc.dateRange.max)}</span>
                     </div>
                   )}
-                  {/* CSP from raw selectors */}
-                  {scCsp !== null && <CspDisplay csp={scCsp} />}
-                  {/* ServCode pace delta */}
-                  <DeltaDaysDisplay
-                    deltaDays={deltaMap.get(sc.servCodeId)?.deltaDays ?? null}
-                  />
-                  {/* Edit trigger — visible on row hover */}
-                  <MiniServCodeControls servCode={sc}>
+                  {/* CSP + per-dimension delta stacked vertically, columns aligned via min-w */}
+                  {scCsp !== null && (
+                    <CspWithDeltaDisplay
+                      csp={scCsp}
+                      deltaDaysCSP={deltaMap.get(sc.servCodeId)?.deltaDaysCSP ?? null}
+                    />
+                  )}
+                  {/* Edit trigger — visible on row hover, date-only (assignment handled by checkboxes) */}
+                  <MiniServCodeDateEdit servCode={sc}>
                     <Pencil className="w-3 h-3 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </MiniServCodeControls>
+                  </MiniServCodeDateEdit>
                 </div>
               </td>
 

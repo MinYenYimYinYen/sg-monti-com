@@ -106,7 +106,13 @@ const selectRawProgCodePaces = createSelector(
         rawServCodePaces.map((p) => p.finishedCSP),
       );
 
-      return { progCode, rawServCodePaces, category, unfinishedCSP, finishedCSP };
+      return {
+        progCode,
+        rawServCodePaces,
+        category,
+        unfinishedCSP,
+        finishedCSP,
+      };
     }),
 );
 
@@ -119,7 +125,7 @@ const selectRawServCodePacesPerDay = createSelector(
   [selectRawServCodePaces],
   (rawPaces): RawServCodePacePerDay[] =>
     rawPaces.map((raw) => {
-      const { servCode, finishedCSP, unfinishedCSP } = raw;
+      const { servCode, finishedCSP } = raw;
 
       // Finished denominator: count of unique doneDates across all completed services
       const finishedDoneDates = new Set(
@@ -146,23 +152,31 @@ const selectRawServCodePacesPerDay = createSelector(
 
       // Unfinished denominator: weekdays from the day after the latest printed schedDate
       // through servCode.dateRange.max. Falls back to daysRemaining if no printed services.
-      const printedSchedDates = servCode.services
-        .filter(
-          (s) => PRINTED_STATUSES.includes(s.status) && s.program.status === "9",
-        )
+      const printedServices = servCode.services.filter(
+        (s) => PRINTED_STATUSES.includes(s.status) && s.program.status === "9",
+      );
+      const printedSchedDates = printedServices
         .map((s) => s.lastAssigned.schedDate)
         .filter(Boolean);
 
+      const today = dateStrings.today();
       let unfinishedDayCount: number;
+      let projectionStartDate: string | null = null;
+
       if (
         printedSchedDates.length > 0 &&
         dateRanges.isValidDateRange(servCode.dateRange)
       ) {
         const latestPrintedSchedDate = [...printedSchedDates].sort().at(-1)!;
         const startFrom = dateStrings.nextWeekdayAfter(latestPrintedSchedDate);
+        projectionStartDate = startFrom;
+
         // Only count days if startFrom is still within the dateRange
         if (startFrom <= servCode.dateRange.max) {
-          const remainingRange = { min: startFrom, max: servCode.dateRange.max };
+          const remainingRange = {
+            min: startFrom,
+            max: servCode.dateRange.max,
+          };
           unfinishedDayCount = Math.max(
             dateRanges.countWeekdays(remainingRange),
             1,
@@ -172,6 +186,11 @@ const selectRawServCodePacesPerDay = createSelector(
         }
       } else {
         unfinishedDayCount = Math.max(servCode.x.daysRemaining, 1);
+        // No printed services: projection starts from max(today, dateRange.min)
+        if (dateRanges.isValidDateRange(servCode.dateRange)) {
+          projectionStartDate =
+            today > servCode.dateRange.min ? today : servCode.dateRange.min;
+        }
       }
 
       const unfinishedPerDay = CountSizePriceOps.divideBy(
@@ -179,7 +198,14 @@ const selectRawServCodePacesPerDay = createSelector(
         unfinishedDayCount,
       );
 
-      return { ...raw, finishedPerDay, unfinishedPerDay, unfinishedDayCount } satisfies RawServCodePacePerDay;
+      return {
+        ...raw,
+        finishedPerDay,
+        unfinishedPerDay,
+        unfinishedDayCount,
+        activeAsapCSP,
+        projectionStartDate,
+      } satisfies RawServCodePacePerDay;
     }),
 );
 
@@ -223,5 +249,6 @@ export const rawPaceSelect = {
   rawServCodePacesPerDay: selectRawServCodePacesPerDay,
   rawServCodePacesPerDayMap: selectRawServCodePacesPerDayMap,
   rawServCodePacesPerDayPerEmployee: selectRawServCodePacesPerDayPerEmployee,
-  rawServCodePacesPerDayPerEmployeeMap: selectRawServCodePacesPerDayPerEmployeeMap,
+  rawServCodePacesPerDayPerEmployeeMap:
+    selectRawServCodePacesPerDayPerEmployeeMap,
 };

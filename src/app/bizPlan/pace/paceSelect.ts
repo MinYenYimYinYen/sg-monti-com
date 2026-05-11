@@ -89,11 +89,17 @@ const selectEmployeeLookbackMap = createSelector(
   (servCodes, lookbackConfig): EmployeeLookbackMap => {
     // Collect all services within the lookback window
     const allServices = servCodes.flatMap((sc) => sc.services);
-    const windowServices = allServices.filter(
-      (s) =>
-        s.production?.doneDate != null &&
-        s.production.doneDate >= lookbackConfig.lookbackStart,
-    );
+    // Include both completed services (by doneDate) and printed services (by schedDate).
+    // Printed are committed to their schedDate and treated as effectively done for lookback.
+    const windowServices = allServices.filter((s) => {
+      if (s.status === "S" && s.production?.doneDate != null) {
+        return s.production.doneDate >= lookbackConfig.lookbackStart;
+      }
+      if (s.status === "$" && s.lastAssigned.schedDate != null) {
+        return s.lastAssigned.schedDate >= lookbackConfig.lookbackStart;
+      }
+      return false;
+    });
 
     const validDates = getValidProductionDates(
       windowServices,
@@ -104,26 +110,47 @@ const selectEmployeeLookbackMap = createSelector(
       validDates,
     );
 
-    // Re-derive total daily CSP per employee directly from windowServices
-    // (avoids needing to re-key the already-flattened arrays by date)
+    // Re-derive total daily CSP per employee directly from windowServices.
+    // Includes both completed (by doneDate) and printed (by schedDate) services,
+    // consistent with accumulateDailyProduction, so totalAvgDailyCSP reflects
+    // the employee's true daily output including committed scheduled work.
     const totalAccumulator = new Map<string, Map<string, CountSizePrice>>();
     for (const service of windowServices) {
-      if (service.status !== "S" || !service.production?.doneDate) continue;
-      if (!validDates.has(service.production.doneDate)) continue;
+      let effectiveDate: string | null = null;
+      if (service.status === "S" && service.production?.doneDate) {
+        effectiveDate = service.production.doneDate;
+      } else if (service.status === "$" && service.lastAssigned.schedDate) {
+        effectiveDate = service.lastAssigned.schedDate;
+      }
+      if (!effectiveDate || !validDates.has(effectiveDate)) continue;
+
       const serviceCSP = CountSizePriceOps.fromService(service);
-      const date = service.production.doneDate;
-      for (const doneBy of service.production.doneBys) {
-        const employeeId = doneBy.employeeId;
-        const contribution = CountSizePriceOps.multiply(
-          serviceCSP,
-          doneBy.percent,
-        );
-        if (!totalAccumulator.has(employeeId)) {
-          totalAccumulator.set(employeeId, new Map());
+
+      if (service.status === "S" && service.production?.doneBys) {
+        for (const doneBy of service.production.doneBys) {
+          const employeeId = doneBy.employeeId;
+          const contribution = CountSizePriceOps.multiply(
+            serviceCSP,
+            doneBy.percent,
+          );
+          if (!totalAccumulator.has(employeeId))
+            totalAccumulator.set(employeeId, new Map());
+          const byDate = totalAccumulator.get(employeeId)!;
+          const existing = byDate.get(effectiveDate) ?? {
+            ...baseCountSizePrice,
+          };
+          byDate.set(
+            effectiveDate,
+            CountSizePriceOps.sum(existing, contribution),
+          );
         }
+      } else if (service.status === "$" && service.lastAssigned.employeeId) {
+        const employeeId = service.lastAssigned.employeeId;
+        if (!totalAccumulator.has(employeeId))
+          totalAccumulator.set(employeeId, new Map());
         const byDate = totalAccumulator.get(employeeId)!;
-        const existing = byDate.get(date) ?? { ...baseCountSizePrice };
-        byDate.set(date, CountSizePriceOps.sum(existing, contribution));
+        const existing = byDate.get(effectiveDate) ?? { ...baseCountSizePrice };
+        byDate.set(effectiveDate, CountSizePriceOps.sum(existing, serviceCSP));
       }
     }
 
@@ -350,7 +377,15 @@ const selectServCodePaces = createSelector(
 
     // Now build ServCodePace[] using the pre-computed raw paces and shares
     return rawPaces.map((raw) => {
-      const { servCode, finishedCSP, finishedRate, unfinishedCSP, unfinishedRate, category, daysRemaining } = raw;
+      const {
+        servCode,
+        finishedCSP,
+        finishedRate,
+        unfinishedCSP,
+        unfinishedRate,
+        category,
+        daysRemaining,
+      } = raw;
 
       const employeeShares: EmployeeShare[] = servCode.assignedTo.map(
         (employee) => {
@@ -572,7 +607,10 @@ const selectEmployeePaceByProgramType = createSelector(
 // Allocations are sorted by the manager's global priority order (employee.servCodeIds[]).
 // Only includes employees with at least one allocation.
 const selectEmployeeCardData = createSelector(
-  [selectEmployeePaceByProgramType, assignmentPlanSelect.assignmentsByEmployeeId],
+  [
+    selectEmployeePaceByProgramType,
+    assignmentPlanSelect.assignmentsByEmployeeId,
+  ],
   (summaries, assignmentsByEmployeeId): EmployeeCardData[] => {
     const byEmployee = new Map<string, EmployeePaceSummary[]>();
     for (const summary of summaries) {
@@ -665,8 +703,12 @@ const selectMatrixDisplayConfig = (state: AppState): MatrixDisplayConfig =>
 // for this servCode's programType — no cascade, no capacity deduction.
 // Start date is max(today, dateRange.min) so future servCodes project from their open date.
 const selectServCodePaceDeltaMap = createSelector(
-  [selectServCodePaces, selectEmployeeLookbackMap],
-  (servCodePaces, lookbackMap): Map<string, ServCodePaceDelta> => {
+  [
+    selectServCodePaces,
+    selectEmployeeLookbackMap,
+    rawPaceSelect.rawServCodePacesPerDayMap,
+  ],
+  (servCodePaces, lookbackMap, perDayMap): Map<string, ServCodePaceDelta> => {
     const today = dateStrings.today();
     const result = new Map<string, ServCodePaceDelta>();
 
@@ -674,54 +716,122 @@ const selectServCodePaceDeltaMap = createSelector(
       const { servCode, unfinishedCSP } = pace;
       const servCodeId = servCode.servCodeId;
       const dateRange = servCode.dateRange;
-      const programTypeKey = servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+      const programTypeKey =
+        servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
 
       // Raw team avg: sum of assigned employees' historical avgDailyCSP for this programType.
-      // Employees with no lookback data contribute 0 (excluded from the estimate).
+      // Employees without lookback data are estimated at the per-programType team average
+      // of the employees who do have data. This prevents new/untracked employees (e.g. a
+      // recently hired tech) from being invisible to the projection and making the delta
+      // appear worse than it actually is.
+      //
+      // programType is sourced from the CRM and must be correctly set per progCode.
+      // If programType is shared across unrelated progCodes, the lookback rate will be
+      // inflated by unrelated work history, producing incorrect delta projections.
+      //
+      // CRM gotcha: "Special Jobs" have two programType fields — one at the top of the
+      // Service setup page and one at the bottom. The bottom field is the one that
+      // controls the programType used here. Both must be set correctly.
       let rawTeamAvgCount = 0;
+      let knownCountForCount = 0;
       for (const employee of servCode.assignedTo) {
-        const stats = lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
-        if (stats) rawTeamAvgCount += stats.avgDailyCSP.count;
+        const stats =
+          lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
+        if (stats) {
+          rawTeamAvgCount += stats.avgDailyCSP.count;
+          knownCountForCount++;
+        }
       }
+      // Estimate unknown employees at the average rate of known employees
+      const unknownCount = servCode.assignedTo.length - knownCountForCount;
+      if (unknownCount > 0 && knownCountForCount > 0) {
+        rawTeamAvgCount += (rawTeamAvgCount / knownCountForCount) * unknownCount;
+      }
+
+      // Use activeAsapCSP (excludes printed/scheduled work) and projectionStartDate
+      // (day after latest printed schedDate) for a stable intraday projection.
+      // Printed services are already committed to specific days — excluding them prevents
+      // the delta from fluctuating as today's route is completed.
+      const perDayData = perDayMap.get(servCodeId);
+      const activeAsapCSP = perDayData?.activeAsapCSP ?? unfinishedCSP;
+      const projectionStart =
+        perDayData?.projectionStartDate ??
+        (today > dateRange.min ? today : dateRange.min);
 
       let projectedEndDate: string | null = null;
       let deltaDays: number | null = null;
 
       if (
         rawTeamAvgCount > 0 &&
-        unfinishedCSP.count > 0 &&
-        dateRanges.isValidDateRange(dateRange)
+        activeAsapCSP.count > 0 &&
+        dateRanges.isValidDateRange(dateRange) &&
+        projectionStart != null
       ) {
-        const daysNeeded = unfinishedCSP.count / rawTeamAvgCount;
-        // Future servCodes: work can't start before dateRange.min
-        const startDate = today > dateRange.min ? today : dateRange.min;
-        projectedEndDate = dateStrings.addWeekdays(startDate, daysNeeded);
+        const daysNeeded = activeAsapCSP.count / rawTeamAvgCount;
+        projectedEndDate = dateStrings.addWeekdays(projectionStart, daysNeeded);
         deltaDays = dateRanges.weekdaysBetween(dateRange.max, projectedEndDate);
       }
 
-      // Debug log: helps identify why servCodes with no completed work show delta days.
-      // The programTypeKey determines which historical bucket is used for lookback.
-      // If programTypeKey is NULL_PROGRAM_TYPE_KEY, MRP pools with ALL null-programType services.
-      if (deltaDays != null) {
-        const employeeDetails = servCode.assignedTo.map((employee) => {
-          const stats = lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
-          return {
-            employeeId: employee.employeeId,
-            avgDailyCount: stats?.avgDailyCSP.count ?? null,
-            hasLookback: stats != null,
-          };
-        });
-        console.log(`[PaceDelta] ${servCode.progCode.progCodeId}/${servCodeId}`, {
-          programTypeKey,
-          unfinishedCount: unfinishedCSP.count,
-          rawTeamAvgCount,
-          daysNeeded: unfinishedCSP.count / rawTeamAvgCount,
-          deltaDays,
-          employees: employeeDetails,
-        });
+      // Per-dimension delta days: compute independently for count, size, price.
+      // Each dimension uses its own team avg rate from the lookback map.
+      // Same unknown-employee estimation as above: fill in the team average for employees
+      // without lookback data so they aren't invisible to the projection.
+      let rawTeamAvgSize = 0;
+      let rawTeamAvgPrice = 0;
+      let knownCountForSize = 0;
+      let knownCountForPrice = 0;
+      for (const employee of servCode.assignedTo) {
+        const stats =
+          lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
+        if (stats) {
+          rawTeamAvgSize += stats.avgDailyCSP.size;
+          rawTeamAvgPrice += stats.avgDailyCSP.price;
+          knownCountForSize++;
+          knownCountForPrice++;
+        }
+      }
+      const unknownCountSize = servCode.assignedTo.length - knownCountForSize;
+      if (unknownCountSize > 0 && knownCountForSize > 0) {
+        rawTeamAvgSize += (rawTeamAvgSize / knownCountForSize) * unknownCountSize;
+      }
+      const unknownCountPrice = servCode.assignedTo.length - knownCountForPrice;
+      if (unknownCountPrice > 0 && knownCountForPrice > 0) {
+        rawTeamAvgPrice += (rawTeamAvgPrice / knownCountForPrice) * unknownCountPrice;
       }
 
-      result.set(servCodeId, { servCodeId, dateRange, projectedEndDate, deltaDays });
+      function computeDeltaDim(
+        workRemaining: number,
+        teamAvgRate: number,
+      ): number | null {
+        if (
+          teamAvgRate <= 0 ||
+          workRemaining <= 0 ||
+          projectionStart == null ||
+          !dateRanges.isValidDateRange(dateRange)
+        )
+          return null;
+        const daysNeeded = workRemaining / teamAvgRate;
+        const projected = dateStrings.addWeekdays(projectionStart, daysNeeded);
+        return dateRanges.weekdaysBetween(dateRange.max, projected);
+      }
+
+      const deltaDaysCSP = {
+        count: computeDeltaDim(activeAsapCSP.count, rawTeamAvgCount),
+        size: computeDeltaDim(activeAsapCSP.size, rawTeamAvgSize),
+        price: computeDeltaDim(activeAsapCSP.price, rawTeamAvgPrice),
+      };
+
+      result.set(servCodeId, {
+        servCodeId,
+        dateRange,
+        projectedEndDate,
+        deltaDays,
+        deltaDaysCSP: {
+          count: deltaDaysCSP.count,
+          size: deltaDaysCSP.size,
+          price: deltaDaysCSP.price,
+        },
+      } satisfies ServCodePaceDelta);
     }
 
     return result;
@@ -771,13 +881,23 @@ const selectMatrixFilteredSortedProgCodePaces = createSelector(
     // Helper: get the unfinished CSP for a servCode based on display mode
     function getServCodeCsp(servCodeId: string): CountSizePrice {
       if (cspDisplay === "perDay") {
-        return perDayMap.get(servCodeId)?.unfinishedPerDay ?? { ...baseCountSizePrice };
+        return (
+          perDayMap.get(servCodeId)?.unfinishedPerDay ?? {
+            ...baseCountSizePrice,
+          }
+        );
       }
       if (cspDisplay === "perDayPerEmployee") {
-        return perDayPerEmployeeMap.get(servCodeId)?.unfinishedPerDayPerEmployee ?? { ...baseCountSizePrice };
+        return (
+          perDayPerEmployeeMap.get(servCodeId)?.unfinishedPerDayPerEmployee ?? {
+            ...baseCountSizePrice,
+          }
+        );
       }
       // "total"
-      return perDayMap.get(servCodeId)?.unfinishedCSP ?? { ...baseCountSizePrice };
+      return (
+        perDayMap.get(servCodeId)?.unfinishedCSP ?? { ...baseCountSizePrice }
+      );
     }
 
     const filtered = progCodePaces.filter((p) => {
@@ -787,8 +907,10 @@ const selectMatrixFilteredSortedProgCodePaces = createSelector(
           (sum, sp) => sum + sp.servCode.assignedTo.length,
           0,
         );
-        if (filterAssigned === "withAssigned" && totalAssigned === 0) return false;
-        if (filterAssigned === "withoutAssigned" && totalAssigned > 0) return false;
+        if (filterAssigned === "withAssigned" && totalAssigned === 0)
+          return false;
+        if (filterAssigned === "withoutAssigned" && totalAssigned > 0)
+          return false;
       }
 
       // Filter by category (empty = show all)
@@ -831,10 +953,14 @@ const selectMatrixFilteredSortedProgCodePaces = createSelector(
 
       if (sortKey === "assignedCount") {
         const countA = new Set(
-          a.servCodePaces.flatMap((sp) => sp.servCode.assignedTo.map((e) => e.employeeId)),
+          a.servCodePaces.flatMap((sp) =>
+            sp.servCode.assignedTo.map((e) => e.employeeId),
+          ),
         ).size;
         const countB = new Set(
-          b.servCodePaces.flatMap((sp) => sp.servCode.assignedTo.map((e) => e.employeeId)),
+          b.servCodePaces.flatMap((sp) =>
+            sp.servCode.assignedTo.map((e) => e.employeeId),
+          ),
         ).size;
         if (countA !== countB) return countB - countA; // descending
         return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);

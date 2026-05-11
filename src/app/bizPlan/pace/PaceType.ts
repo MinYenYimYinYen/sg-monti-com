@@ -97,5 +97,11 @@ export type ServCodePaceDelta = {
   projectedEndDate: string | null;
   /** Weekdays between dateRange.max and projectedEndDate. Positive = behind, negative = ahead. null if no data. */
   deltaDays: number | null;
+  /**
+   * Per-dimension delta days: each field is the projected delta for that CSP dimension.
+   * Computed independently — count uses count rate, size uses size rate, price uses price rate.
+   * null if insufficient data for that dimension.
+   */
+  deltaDaysCSP: { count: number | null; size: number | null; price: number | null } | null;
 };
 

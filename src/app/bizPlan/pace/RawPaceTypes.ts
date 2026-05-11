@@ -28,6 +28,18 @@ export type RawServCodePacePerDay = RawServCodePace & {
    * Used by the delta selector to project completion without re-dividing.
    */
   unfinishedDayCount: number;
+  /**
+   * Active + asap services only (excludes printed). This is the work not yet scheduled
+   * on any route sheet — the stable "remaining unscheduled" count used for delta projection.
+   * Excludes printed services because they are already committed to specific days.
+   */
+  activeAsapCSP: CountSizePrice;
+  /**
+   * The first weekday on which no work has been printed/scheduled yet.
+   * = day after the latest printed service's schedDate, or max(today, dateRange.min) if
+   * no printed services exist. Used as the projection start date for delta calculation.
+   */
+  projectionStartDate: string | null;
 };
 
 export type RawServCodePacePerDayPerEmployee = RawServCodePacePerDay & {
