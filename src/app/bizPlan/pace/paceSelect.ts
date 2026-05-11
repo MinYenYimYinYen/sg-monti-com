@@ -744,30 +744,41 @@ export type ServCodePaceDelta = {
 };
 
 // Computes projected end date and delta days for each servCode.
-// Uses teamAvgCapacity.count (sum of assigned employees' avgDailyCSP for this programType)
-// as the daily throughput estimate: daysNeeded = unfinishedCSP.count / teamAvgCapacity.count.
-// Guards: null when no throughput data, no unfinished work, or no valid dateRange.
+// Uses the raw team avg: sum of each assigned employee's historical avgDailyCSP.count
+// for this servCode's programType — no cascade, no capacity deduction.
+// Start date is max(today, dateRange.min) so future servCodes project from their open date.
 const selectServCodePaceDeltaMap = createSelector(
-  [selectServCodePaces],
-  (servCodePaces): Map<string, ServCodePaceDelta> => {
+  [selectServCodePaces, selectEmployeeLookbackMap],
+  (servCodePaces, lookbackMap): Map<string, ServCodePaceDelta> => {
     const today = dateStrings.today();
     const result = new Map<string, ServCodePaceDelta>();
 
     for (const pace of servCodePaces) {
-      const { servCode, unfinishedCSP, teamAvgCapacity } = pace;
+      const { servCode, unfinishedCSP } = pace;
       const servCodeId = servCode.servCodeId;
       const dateRange = servCode.dateRange;
+      const programTypeKey = servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+
+      // Raw team avg: sum of assigned employees' historical avgDailyCSP for this programType.
+      // Employees with no lookback data contribute 0 (excluded from the estimate).
+      let rawTeamAvgCount = 0;
+      for (const employee of servCode.assignedTo) {
+        const stats = lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
+        if (stats) rawTeamAvgCount += stats.avgDailyCSP.count;
+      }
 
       let projectedEndDate: string | null = null;
       let deltaDays: number | null = null;
 
       if (
-        teamAvgCapacity.count > 0 &&
+        rawTeamAvgCount > 0 &&
         unfinishedCSP.count > 0 &&
         dateRanges.isValidDateRange(dateRange)
       ) {
-        const daysNeeded = unfinishedCSP.count / teamAvgCapacity.count;
-        projectedEndDate = dateStrings.addWeekdays(today, daysNeeded);
+        const daysNeeded = unfinishedCSP.count / rawTeamAvgCount;
+        // Future servCodes: work can't start before dateRange.min
+        const startDate = today > dateRange.min ? today : dateRange.min;
+        projectedEndDate = dateStrings.addWeekdays(startDate, daysNeeded);
         deltaDays = dateRanges.weekdaysBetween(dateRange.max, projectedEndDate);
       }
 
