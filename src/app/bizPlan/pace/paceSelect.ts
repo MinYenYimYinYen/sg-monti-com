@@ -179,9 +179,6 @@ const selectEmployeeLookbackMap = createSelector(
 
     const result: EmployeeLookbackMap = new Map();
     for (const [employeeId, byProgramType] of rawAccumulation) {
-      const totalMaxDailyCSP = totalMaxByEmployee.get(employeeId) ?? {
-        ...baseCountSizePrice,
-      };
       const totalAvgDailyCSP = totalAvgByEmployee.get(employeeId) ?? {
         ...baseCountSizePrice,
       };
@@ -189,11 +186,7 @@ const selectEmployeeLookbackMap = createSelector(
       for (const [programTypeKey, dailyProductions] of byProgramType) {
         statsMap.set(
           programTypeKey,
-          computeLookbackStats(
-            dailyProductions,
-            totalMaxDailyCSP,
-            totalAvgDailyCSP,
-          ),
+          computeLookbackStats(dailyProductions, totalAvgDailyCSP),
         );
       }
       result.set(employeeId, statsMap);
@@ -308,13 +301,8 @@ const selectServCodePaces = createSelector(
           continue;
         }
 
-        const { maxDailyCSP, avgDailyCSP, totalMaxDailyCSP, totalAvgDailyCSP } =
-          employeeStats;
+        const { maxDailyCSP, avgDailyCSP, totalAvgDailyCSP } = employeeStats;
 
-        // Initialize remaining capacity from totalAvgDailyCSP (cross-programType ceiling).
-        // Avg is used instead of max because totalMaxDailyCSP is a per-dimension phantom —
-        // each dimension independently takes its best day, so the combined value was never
-        // actually achieved. Avg reflects a realistic typical day.
         if (!remainingCapacity.has(employee.employeeId)) {
           remainingCapacity.set(employee.employeeId, { ...totalAvgDailyCSP });
         }
@@ -589,7 +577,7 @@ const selectEmployeePaceByProgramType = createSelector(
           programType,
           maxDailyCSP: stats?.maxDailyCSP ?? null,
           avgDailyCSP: stats?.avgDailyCSP ?? null,
-          totalMaxDailyCSP: stats?.totalMaxDailyCSP ?? null,
+          totalMaxDailyCSP: null,
           totalAvgDailyCSP: stats?.totalAvgDailyCSP ?? null,
           allocations,
           totalFractionConsumed,
