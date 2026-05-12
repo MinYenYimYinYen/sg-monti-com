@@ -3,8 +3,7 @@
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { usePaceDeps } from "@/app/bizPlan/pace/usePaceDeps";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
-import { employeePaceSelect } from "@/app/bizPlan/pace/employee/employeePaceSelect";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
 import { employeePaceActions } from "@/app/bizPlan/pace/employee/employeePaceSlice";
 import { EmployeePaceListPanel } from "@/app/bizPlan/pace/components/EmployeePaceListPanel";
 import { EmployeeCard } from "@/app/bizPlan/pace/employee/components/EmployeeCard";
@@ -24,7 +23,7 @@ export function EmployeePace() {
   const employeeCardData = useSelector(paceSelect.employeeCardData);
   const unsavedServCodeChanges = useSelector(progServSelect.unsavedServCodeChanges);
   const isAdmin = useSelector(authSelect.role) === "admin";
-  const showUpcoming = useSelector(employeePaceSelect.showUpcoming);
+  const showUpcoming = useSelector(paceSelect.showUpcoming);
   const { saveServCodeChanges } = useProgServ({});
 
   const dateRangeChanges = unsavedServCodeChanges.filter(

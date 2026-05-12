@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
 import { paceActions } from "@/app/bizPlan/pace/paceSlice";
-import { employeePaceSelect } from "@/app/bizPlan/pace/employee/employeePaceSelect";
 import { employeePaceActions } from "@/app/bizPlan/pace/employee/employeePaceSlice";
 import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
 import {
@@ -24,7 +23,7 @@ export function EmployeePaceConfig() {
   const [open, setOpen] = useState(false);
 
   const lookbackConfig = useSelector(paceSelect.lookbackConfig);
-  const paceTolerance = useSelector(employeePaceSelect.paceTolerance);
+  const paceTolerance = useSelector(paceSelect.paceTolerance);
   const servCodePaces = useSelector(paceSelect.servCodePaces);
 
   const notSetPaces = servCodePaces.filter((p) => p.category === "notSet");

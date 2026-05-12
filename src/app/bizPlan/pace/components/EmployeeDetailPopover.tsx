@@ -1,7 +1,7 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
 import { EmployeePaceDetail } from "@/app/bizPlan/pace/components/EmployeePaceDetail";
 import {
   Popover,
@@ -11,27 +11,25 @@ import {
 
 type EmployeeDetailPopoverProps = {
   employeeId: string;
-  programType: string | null;
   children: React.ReactNode;
 };
 
 export function EmployeeDetailPopover({
   employeeId,
-  programType,
   children,
 }: EmployeeDetailPopoverProps) {
-  const summaries = useSelector(paceSelect.employeePaceByProgramType);
-  const summary = summaries.find(
-    (s) => s.employee.employeeId === employeeId && s.programType === programType,
+  const cardDatas = useSelector(paceSelect.employeeCardData);
+  const cardData = cardDatas.find(
+    (c) => c.employee.employeeId === employeeId,
   );
 
-  if (!summary) return <>{children}</>;
+  if (!cardData) return <>{children}</>;
 
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-72 p-4" align="start" side="right">
-        <EmployeePaceDetail summary={summary} />
+        <EmployeePaceDetail cardData={cardData} />
       </PopoverContent>
     </Popover>
   );

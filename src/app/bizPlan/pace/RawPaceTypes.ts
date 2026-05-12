@@ -1,7 +1,7 @@
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { CountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
-import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
+import { PaceCategory } from "@/app/bizPlan/pace/PaceTypesRefactor";
 
 export type RawServCodePace = {
   servCode: ServCodeDeep;

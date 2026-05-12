@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { LookbackConfig, PaceCategory } from "@/app/bizPlan/pace/PaceType";
+import { LookbackConfig, PaceCategory } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 /** Which CSP variant to display in the AssignmentMatrix row headers. */

@@ -1,13 +1,12 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { EmployeeCardData } from "@/app/bizPlan/pace/PaceType";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { EmployeeCardData } from "@/app/bizPlan/pace/PaceTypesRefactor";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { employeePaceSelect } from "@/app/bizPlan/pace/employee/employeePaceSelect";
 import { ServCodePriorityRow } from "@/app/bizPlan/pace/employee/components/ServCodePriorityRow";
 import { AddServCodePicker } from "@/app/bizPlan/pace/employee/components/AddServCodePicker";
 import { cn } from "@/style/utils";
@@ -22,19 +21,19 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
   const dispatch = useAppDispatch();
   const { upsert } = useAssignmentPlan({ autoLoad: false });
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
-  const showUpcoming = useSelector(employeePaceSelect.showUpcoming);
+  const showUpcoming = useSelector(paceSelect.showUpcoming);
 
   const employeeId = employee.employeeId;
 
-  const mainDate = useSelector(employeePaceSelect.mainDate);
-  const selectAllocationsAtDate = employeePaceSelect.makeProjectedAllocations({
+  const mainDate = useSelector(paceSelect.mainDate);
+  const selectAllocationsAtDate = paceSelect.makeProjectedAllocations({
     employeeId,
     date: mainDate,
   });
   const allDateAllocations = useSelector(selectAllocationsAtDate);
   const servCodePaceMap = useSelector(paceSelect.servCodePaceMap);
 
-  const selectNotStartedAllocations = employeePaceSelect.makeNotStartedAllocations({ employeeId });
+  const selectNotStartedAllocations = paceSelect.makeNotStartedAllocations({ employeeId });
   const upcomingAllocations = useSelector(selectNotStartedAllocations);
 
   // Urgent servCodes (asap/overdue) are shown in UrgentServCodeCard — exclude them here

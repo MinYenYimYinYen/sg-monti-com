@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
-import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
+import { PaceCategory } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { CATEGORY_BADGE_STYLES } from "@/app/bizPlan/pace/paceStyles";
 import {
   Popover,

@@ -3,11 +3,10 @@
 import { useRef } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { employeePaceSelect, PX_PER_DAY } from "@/app/bizPlan/pace/employee/employeePaceSelect";
+import { paceSelect, PX_PER_DAY } from "@/app/bizPlan/pace/paceSelectRefactor";
 import { employeePaceActions } from "@/app/bizPlan/pace/employee/employeePaceSlice";
 import { EmployeePaceConfig } from "@/app/bizPlan/pace/components/EmployeePaceConfig";
 import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { DatePicker } from "@/components/DatePicker";
 
 // Tick labels are extracted into a sub-component so they can read the servCodePaceMap
@@ -94,9 +93,9 @@ export function EmployeePaceListPanel() {
   const dispatch = useAppDispatch();
   const trackRef = useRef<HTMLDivElement>(null);
 
-  const mainDate = useSelector(employeePaceSelect.mainDate);
-  const weekdayBounds = useSelector(employeePaceSelect.weekdayBounds);
-  const dateTicks = useSelector(employeePaceSelect.dateTicks);
+  const mainDate = useSelector(paceSelect.mainDate);
+  const weekdayBounds = useSelector(paceSelect.weekdayBounds);
+  const dateTicks = useSelector(paceSelect.dateTicks);
 
   const trackHeightPx = weekdayBounds?.trackHeightPx ?? PX_PER_DAY;
 

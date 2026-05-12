@@ -1,9 +1,9 @@
 "use client";
 
-import { EmployeeAllocation } from "@/app/bizPlan/pace/PaceType";
+import { EmployeeAllocation } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
 import { ServCodePaceBar } from "@/app/bizPlan/pace/employee/components/ServCodePaceBar";
-import { employeePaceSelect } from "@/app/bizPlan/pace/employee/employeePaceSelect";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
 import { CountSizePrice, baseCountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
 import { Number } from "@/components/Number";
 import { ChevronUp, ChevronDown, Crosshair, MoveUpRight, MoveRight, MoveDownRight } from "lucide-react";
@@ -59,7 +59,7 @@ export function ServCodePriorityRow({
 }: ServCodePriorityRowProps) {
   const { servCode, avgDailyCSP, expectedCSP } = allocation;
 
-  const unfinishedShareMap = useSelector(employeePaceSelect.employeeUnfinishedShareMap);
+  const unfinishedShareMap = useSelector(paceSelect.employeeUnfinishedShareMap);
   const employeeUnfinishedCSP: CountSizePrice =
     unfinishedShareMap.get(employeeId)?.get(servCode.servCodeId) ?? { ...baseCountSizePrice };
 

@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
-import { EmployeeShare } from "@/app/bizPlan/pace/PaceType";
+import { EmployeeCascadeEntry } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { EmployeePaceRow } from "@/app/bizPlan/pace/components/EmployeePaceRow";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
@@ -20,7 +20,7 @@ import { ChevronDown } from "lucide-react";
 
 type AssignmentEditorProps = {
   servCode: ServCodeDeep;
-  employeeShares: EmployeeShare[];
+  employeeShares: Array<EmployeeCascadeEntry & { employee: Employee }>;
   isUnderCapacity: boolean;
 };
 

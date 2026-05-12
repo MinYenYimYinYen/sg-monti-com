@@ -1,105 +1,57 @@
 "use client";
 
-import { EmployeePaceSummary } from "@/app/bizPlan/pace/PaceType";
+import { EmployeeCardData } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { Number } from "@/components/Number";
 import { cn } from "@/style/utils";
 import { LandPlot } from "lucide-react";
 
 type EmployeePaceDetailProps = {
-  summary: EmployeePaceSummary;
+  cardData: EmployeeCardData;
 };
 
-export function EmployeePaceDetail({ summary }: EmployeePaceDetailProps) {
+export function EmployeePaceDetail({ cardData }: EmployeePaceDetailProps) {
   const {
     employee,
-    programType,
-    maxDailyCSP,
-    avgDailyCSP,
-    totalMaxDailyCSP,
     totalAvgDailyCSP,
     allocations,
     totalFractionConsumed,
     freeCapacityFraction,
     isOverloaded,
-  } = summary;
+  } = cardData;
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div>
         <p className="text-sm font-semibold text-foreground">{employee.name}</p>
-        {programType && (
-          <p className="text-xs text-muted-foreground">{programType}</p>
-        )}
       </div>
 
       {/* Capacity stats */}
-      {maxDailyCSP ? (
-        <div className="rounded-md bg-accent/10 px-3 py-2 space-y-2">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-            Daily capacity (lookback)
-          </p>
-          {/* Per-programType breakdown */}
-          <div className="grid grid-cols-[auto_1fr_1fr] gap-x-3 gap-y-1 text-sm items-center">
-            <span className="text-muted-foreground" />
-            <span className="text-[10px] text-muted-foreground text-center uppercase tracking-wide">Max</span>
-            <span className="text-[10px] text-muted-foreground text-center uppercase tracking-wide">Avg</span>
+      <div className="rounded-md bg-accent/10 px-3 py-2 space-y-2">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+          Total daily capacity (all programs)
+        </p>
+        {totalAvgDailyCSP ? (
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm items-center">
             <span className="text-muted-foreground flex items-center gap-1">
               <span className="text-xs font-bold">#</span>
             </span>
-            <span className="font-mono text-foreground text-center">
-              <Number decimals={0}>{maxDailyCSP.count}</Number>
-            </span>
-            <span className="font-mono text-foreground text-center">
-              {avgDailyCSP ? <Number decimals={0}>{avgDailyCSP.count}</Number> : "—"}
+            <span className="font-mono text-foreground">
+              <Number decimals={0}>{totalAvgDailyCSP.count}</Number>
             </span>
             <span className="text-muted-foreground flex items-center gap-1">
               <LandPlot className="inline w-3.5 h-3.5" />
             </span>
-            <span className="font-mono text-foreground text-center">
-              <Number decimals={0}>{maxDailyCSP.size}</Number>
-            </span>
-            <span className="font-mono text-foreground text-center">
-              {avgDailyCSP ? <Number decimals={0}>{avgDailyCSP.size}</Number> : "—"}
+            <span className="font-mono text-foreground">
+              <Number decimals={0}>{totalAvgDailyCSP.size}</Number>
             </span>
           </div>
-          {/* Cross-programType totals — avg is the capacity ceiling */}
-          {(totalMaxDailyCSP || totalAvgDailyCSP) && (
-            <>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide pt-1 border-t border-accent/20">
-                Total daily capacity (all programs)
-              </p>
-              <div className="grid grid-cols-[auto_1fr_1fr] gap-x-3 gap-y-1 text-sm items-center">
-                <span className="text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground text-center uppercase tracking-wide">Max</span>
-                <span className="text-[10px] text-muted-foreground text-center uppercase tracking-wide font-semibold text-primary">Avg ✓</span>
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <span className="text-xs font-bold">#</span>
-                </span>
-                <span className="font-mono text-muted-foreground text-center">
-                  {totalMaxDailyCSP ? <Number decimals={0}>{totalMaxDailyCSP.count}</Number> : "—"}
-                </span>
-                <span className="font-mono text-foreground text-center font-medium">
-                  {totalAvgDailyCSP ? <Number decimals={0}>{totalAvgDailyCSP.count}</Number> : "—"}
-                </span>
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <LandPlot className="inline w-3.5 h-3.5" />
-                </span>
-                <span className="font-mono text-muted-foreground text-center">
-                  {totalMaxDailyCSP ? <Number decimals={0}>{totalMaxDailyCSP.size}</Number> : "—"}
-                </span>
-                <span className="font-mono text-foreground text-center font-medium">
-                  {totalAvgDailyCSP ? <Number decimals={0}>{totalAvgDailyCSP.size}</Number> : "—"}
-                </span>
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <p className="text-xs text-muted-foreground italic">
-          No lookback data — using even-split estimate
-        </p>
-      )}
+        ) : (
+          <p className="text-xs text-muted-foreground italic">
+            No lookback data — using even-split estimate
+          </p>
+        )}
+      </div>
 
       {/* Allocations */}
       {allocations.length > 0 && (

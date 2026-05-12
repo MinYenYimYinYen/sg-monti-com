@@ -2,9 +2,9 @@
 
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
 import { paceActions, MatrixCspDisplay, MatrixSortKey } from "@/app/bizPlan/pace/paceSlice";
-import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
+import { PaceCategory } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import {
   Popover,
   PopoverContent,

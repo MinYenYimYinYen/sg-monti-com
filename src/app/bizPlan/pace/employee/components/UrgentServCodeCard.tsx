@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
-import { ServCodePace } from "@/app/bizPlan/pace/PaceType";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
+import { ServCodePace } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
