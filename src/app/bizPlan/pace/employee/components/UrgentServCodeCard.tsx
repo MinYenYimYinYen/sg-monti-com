@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
+import { urgentSelect } from "@/app/bizPlan/pace/urgentSelect";
+import { urgentActions } from "@/app/bizPlan/pace/urgentSlice";
+import { AppDispatch } from "@/store";
 import { ServCodePace } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { Number } from "@/components/Number";
-import { LandPlot, AlertTriangle, Clock, Info } from "lucide-react";
+import { LandPlot, AlertTriangle, Clock, Info, ClipboardList } from "lucide-react";
 import { cn } from "@/style/utils";
 import {
   Popover,
@@ -21,99 +24,160 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/style/components/tooltip";
-
-// ---------------------------------------------------------------------------
-// UrgentServiceList — popover body listing unfinished services for a servCode
-//
-// Printed ("$") services are excluded — they are already scheduled/routed and
-// the production manager should not be looking for work that is already on a route.
-// ---------------------------------------------------------------------------
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/style/components/accordion";
+import { Checkbox } from "@/style/components/checkbox";
 
 const URGENT_DISPLAY_STATUSES = getServiceStatuses(["active", "asap"]);
 
-function UrgentServiceList({ services }: { services: Service[] }) {
-  const unfinished = services.filter((s) =>
-    URGENT_DISPLAY_STATUSES.includes(s.status),
-  );
+// ---------------------------------------------------------------------------
+// ChecklistServiceRow — a single row in the checklist with a toggleable checkbox
+// ---------------------------------------------------------------------------
 
-  if (unfinished.length === 0) {
-    return (
-      <p className="text-xs text-muted-foreground italic py-1">
-        No unfinished services
-      </p>
-    );
-  }
+function ChecklistServiceRow({
+  service,
+  servCodeId,
+}: {
+  service: Service;
+  servCodeId: string;
+}) {
+  const dispatch = useDispatch<AppDispatch>();
+  const checkedServIds = useSelector(urgentSelect.checkedServIds);
+  const checked = checkedServIds.includes(service.servId);
+
+  const customer = service.program.customer;
+  const city = customer.address.city ?? "";
+  const zip = customer.address.zip ?? "";
+  const location = [zip, city].filter(Boolean).join(" ");
+  const allTechNotes = service.x.allTechNotes;
 
   return (
-    <div className="space-y-1.5">
-      {unfinished.map((service) => {
-        const customer = service.program.customer;
-        const city = customer.address.city ?? "";
-        const zip = customer.address.zip ?? "";
-        const allTechNotes = service.x.allTechNotes;
-
-        return (
-          <div
-            key={service.servId}
-            className="flex items-start gap-2 text-xs py-1 border-b border-border/40 last:border-0"
-          >
-            {/* Customer link */}
-            <div className="flex-1 min-w-0">
-              <CustomerLink
-                customerId={customer.custId}
-                customerTab="customer"
-                className="font-medium text-primary hover:underline truncate block"
-              >
-                {customer.displayName}
-              </CustomerLink>
-              <div className="flex items-center gap-1.5 text-muted-foreground mt-0.5">
-                <span>{city}</span>
-                {zip && <span className="text-muted-foreground/60">·</span>}
-                <span>{zip}</span>
+    <div
+      className={cn(
+        "flex items-center gap-1.5 text-xs py-0.5 border-b border-border/20 last:border-0",
+        checked && "opacity-40",
+      )}
+    >
+      <Checkbox
+        checked={checked}
+        onCheckedChange={() => dispatch(urgentActions.toggleChecked(service.servId))}
+        className="shrink-0"
+      />
+      <span className="font-mono text-[10px] text-muted-foreground shrink-0 w-14 truncate">
+        {servCodeId}
+      </span>
+      <span className="flex-1 min-w-0 truncate">
+        <CustomerLink
+          customerId={customer.custId}
+          customerTab="customer"
+          className="font-medium text-primary hover:underline"
+        >
+          {customer.displayName}
+        </CustomerLink>
+        {location && (
+          <span className="text-muted-foreground"> · {location}</span>
+        )}
+      </span>
+      <span className="flex items-center gap-0.5 text-muted-foreground shrink-0">
+        <LandPlot className="w-3 h-3" />
+        <Number decimals={0}>{service.size}</Number>
+      </span>
+      {allTechNotes.length > 0 && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-muted-foreground shrink-0 cursor-default">
+                <Info className="size-3.5" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="p-0 max-w-none">
+              <div className="flex gap-2 p-2">
+                {allTechNotes.map((techNote, idx) => (
+                  <div key={idx} className="w-72 text-xs whitespace-pre-wrap">
+                    {techNote}
+                  </div>
+                ))}
               </div>
-            </div>
-
-            {/* Size */}
-            <span className="flex items-center gap-0.5 text-muted-foreground shrink-0">
-              <LandPlot className="w-3 h-3" />
-              <Number decimals={0}>{service.size}</Number>
-            </span>
-
-            {/* Tech notes — info icon with tooltip showing cust/prog/serv notes side-by-side */}
-            {allTechNotes.length > 0 && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="text-muted-foreground shrink-0 cursor-default">
-                      <Info className="size-4" />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="left" className="p-0 max-w-none">
-                    <div className="flex gap-2 p-2">
-                      {allTechNotes.map((techNote, idx) => (
-                        <div key={idx} className="w-72 text-xs whitespace-pre-wrap">
-                          {techNote}
-                        </div>
-                      ))}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-        );
-      })}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// UrgentServCodeRow — one row per servCode with popover trigger
+// ChecklistPopover — accordion-based checklist for all urgent servCodes
+// ---------------------------------------------------------------------------
+
+function ChecklistPopover({ urgentPaces }: { urgentPaces: ServCodePace[] }) {
+  const dispatch = useDispatch<AppDispatch>();
+  const expandedServCodeIds = useSelector(urgentSelect.expandedServCodeIds);
+
+  return (
+    <Accordion
+      type="multiple"
+      value={expandedServCodeIds}
+      onValueChange={(values) => {
+        // Sync Redux: toggle any servCodeId that changed
+        const added = values.filter((v) => !expandedServCodeIds.includes(v));
+        const removed = expandedServCodeIds.filter((v) => !values.includes(v));
+        for (const id of added) dispatch(urgentActions.toggleExpanded(id));
+        for (const id of removed) dispatch(urgentActions.toggleExpanded(id));
+      }}
+      className="w-full"
+    >
+      {urgentPaces.map((pace) => {
+        const { servCode } = pace;
+        const unfinished = servCode.services.filter((s) =>
+          URGENT_DISPLAY_STATUSES.includes(s.status),
+        );
+        if (unfinished.length === 0) return null;
+
+        return (
+          <AccordionItem
+            key={servCode.servCodeId}
+            value={servCode.servCodeId}
+            className="border-b border-border/40 last:border-0"
+          >
+            <AccordionTrigger className="py-2 px-3 text-xs font-mono hover:no-underline hover:bg-accent/10 [&[data-state=open]>svg]:rotate-180">
+              <span className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="font-semibold text-foreground truncate">
+                  {servCode.servCodeId}
+                </span>
+                <span className="text-muted-foreground shrink-0">
+                  {unfinished.length} service{unfinished.length !== 1 ? "s" : ""}
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="px-3 pb-2 pt-0">
+              <div>
+                {unfinished.map((service) => (
+                  <ChecklistServiceRow
+                    key={service.servId}
+                    service={service}
+                    servCodeId={servCode.servCodeId}
+                  />
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        );
+      })}
+    </Accordion>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// UrgentServCodeRow — display-only row (no popover)
 // ---------------------------------------------------------------------------
 
 function UrgentServCodeRow({ pace }: { pace: ServCodePace }) {
-  const [open, setOpen] = useState(false);
-  const { servCode, category, unfinishedCSP } = pace;
+  const { servCode, category } = pace;
   const isAsap = category === "asap";
 
   const unprintedCount = servCode.services.filter((s) =>
@@ -122,66 +186,36 @@ function UrgentServCodeRow({ pace }: { pace: ServCodePace }) {
   if (unprintedCount === 0) return null;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button className="w-full text-left py-1.5 flex items-center gap-2 hover:bg-accent/10 rounded px-1 transition-colors">
-          {/* Category icon */}
-          {isAsap ? (
-            <AlertTriangle className="w-3 h-3 text-destructive shrink-0" />
-          ) : (
-            <Clock className="w-3 h-3 text-destructive shrink-0" />
-          )}
+    <div className="w-full py-1.5 flex items-center gap-2 px-1">
+      {/* Category icon */}
+      {isAsap ? (
+        <AlertTriangle className="w-3 h-3 text-destructive shrink-0" />
+      ) : (
+        <Clock className="w-3 h-3 text-destructive shrink-0" />
+      )}
 
-          {/* ServCode ID */}
-          <span className="font-mono text-xs text-foreground flex-1 truncate">
-            {servCode.servCodeId}
-          </span>
+      {/* ServCode ID */}
+      <span className="font-mono text-xs text-foreground flex-1 truncate">
+        {servCode.servCodeId}
+      </span>
 
-          {/* Category badge */}
-          <span
-            className={cn(
-              "text-[9px] font-semibold uppercase tracking-wide px-1 rounded shrink-0",
-              isAsap
-                ? "bg-destructive/20 text-destructive"
-                : "bg-destructive/10 text-destructive",
-            )}
-          >
-            {isAsap ? "ASAP" : "LATE"}
-          </span>
+      {/* Category badge */}
+      <span
+        className={cn(
+          "text-[9px] font-semibold uppercase tracking-wide px-1 rounded shrink-0",
+          isAsap
+            ? "bg-destructive/20 text-destructive"
+            : "bg-destructive/10 text-destructive",
+        )}
+      >
+        {isAsap ? "ASAP" : "LATE"}
+      </span>
 
-          {/* Unfinished count — excludes printed (already routed) */}
-          <span className="text-xs font-mono text-muted-foreground shrink-0">
-            <Number decimals={0}>
-              {
-                servCode.services.filter((s) =>
-                  URGENT_DISPLAY_STATUSES.includes(s.status),
-                ).length
-              }
-            </Number>
-          </span>
-        </button>
-      </PopoverTrigger>
-
-      <PopoverContent className="w-72 p-0" align="start">
-        <div className="bg-popover">
-          <div className="bg-destructive/10">
-            {/* Popover header */}
-            <div className="px-3 py-2 border-b">
-              <p className="text-xs font-semibold text-foreground font-mono">
-                {servCode.servCodeId}
-              </p>
-              <p className="text-[10px] text-muted-foreground">
-                {servCode.progCode.progCodeId}
-              </p>
-            </div>
-            {/* Service list */}
-            <div className="px-3 py-2 max-h-72 overflow-y-auto">
-              <UrgentServiceList services={servCode.services} />
-            </div>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+      {/* Unfinished count */}
+      <span className="text-xs font-mono text-muted-foreground shrink-0">
+        <Number decimals={0}>{unprintedCount}</Number>
+      </span>
+    </div>
   );
 }
 
@@ -191,6 +225,7 @@ function UrgentServCodeRow({ pace }: { pace: ServCodePace }) {
 
 export function UrgentServCodeCard() {
   const urgentPaces = useSelector(paceSelect.urgentServCodePaces);
+  const [checklistOpen, setChecklistOpen] = useState(false);
 
   if (urgentPaces.length === 0) return null;
 
@@ -202,9 +237,37 @@ export function UrgentServCodeCard() {
           <AlertTriangle className="w-4 h-4" />
           Urgent
         </span>
-        <span className="text-xs text-muted-foreground font-mono">
-          {urgentPaces.length} servCode{urgentPaces.length !== 1 ? "s" : ""}
-        </span>
+        <div className="flex items-center gap-2">
+          {/* Checklist popover trigger */}
+          <Popover open={checklistOpen} onOpenChange={setChecklistOpen}>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded px-1.5 py-0.5 transition-colors">
+                <ClipboardList className="w-3.5 h-3.5" />
+                Checklist
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96 p-0" align="end">
+              <div className="bg-popover rounded-md overflow-hidden">
+                <div className="px-3 py-2 border-b bg-destructive/10">
+                  <p className="text-xs font-semibold text-destructive flex items-center gap-1.5">
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    Route Checklist
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Check off services as you build routes
+                  </p>
+                </div>
+                <div className="max-h-[624px] overflow-y-auto">
+                  <ChecklistPopover urgentPaces={urgentPaces} />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <span className="text-xs text-muted-foreground font-mono">
+            {urgentPaces.length} servCode{urgentPaces.length !== 1 ? "s" : ""}
+          </span>
+        </div>
       </div>
 
       {/* Rows */}

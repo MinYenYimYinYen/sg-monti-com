@@ -35,6 +35,7 @@ import quickSendReducer from "@/app/quickSend/quickSendSlice";
 import { storedTemplatesReducer } from "@/app/quickSend/storedTemplates/storedTemplatesSlice";
 import prepayReducer from "@/app/realGreen/prepay/prepaySlice";
 import { serviceEtaReducer } from "@/app/scheduling/eta/serviceEtaSlice";
+import { urgentReducer } from "@/app/bizPlan/pace/urgentSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -71,6 +72,7 @@ const rootReducer = combineReducers({
   quickSend: quickSendReducer,
   serviceEta: serviceEtaReducer,
   storedTemplates: storedTemplatesReducer,
+  urgent: urgentReducer,
 });
 
 export default rootReducer;
