@@ -1,6 +1,6 @@
 "use client";
 
-import { EmployeeCascadeEntry, OVERLOAD_EPSILON } from "@/app/bizPlan/pace/PaceTypesRefactor";
+import { EmployeeCascadeEntry } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { EmployeeDetailPopover } from "@/app/bizPlan/pace/components/EmployeeDetailPopover";
 import { Number } from "@/components/Number";
 import { cn } from "@/style/utils";
@@ -15,26 +15,15 @@ type EmployeePaceRowProps = {
 };
 
 export function EmployeePaceRow({ share, programType, isUnderCapacity, onRemoveAction }: EmployeePaceRowProps) {
-  const { employee, contributedCSP, isEstimated, fractionConsumed } = share;
-  const isOverloaded =
-    fractionConsumed !== null &&
-    (fractionConsumed.count > 1 + OVERLOAD_EPSILON ||
-      fractionConsumed.size > 1 + OVERLOAD_EPSILON ||
-      fractionConsumed.price > 1 + OVERLOAD_EPSILON);
+  const { employee, contributedCSP, isEstimated } = share;
 
   return (
     <div className="flex items-center justify-between gap-2 py-1.5">
       <EmployeeDetailPopover employeeId={employee.employeeId}>
         <button
-          className={cn(
-            "text-sm text-left truncate transition-colors hover:text-primary",
-            isOverloaded ? "text-destructive" : "text-foreground",
-          )}
+          className="text-sm text-left truncate transition-colors hover:text-primary text-foreground"
         >
           {employee.name}
-          {isOverloaded && (
-            <span className="ml-1 text-[10px] font-medium">⚠</span>
-          )}
           {isEstimated && (
             <span className="ml-1 text-[10px] text-muted-foreground">~</span>
           )}

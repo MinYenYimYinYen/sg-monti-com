@@ -16,7 +16,6 @@ export function EmployeePaceDetail({ cardData }: EmployeePaceDetailProps) {
     allocations,
     totalFractionConsumed,
     freeCapacityFraction,
-    isOverloaded,
   } = cardData;
 
   return (
@@ -78,9 +77,16 @@ export function EmployeePaceDetail({ cardData }: EmployeePaceDetailProps) {
                       {allocation.servCode.servCodeId}
                     </p>
                     <p className="text-xs text-muted-foreground font-mono flex items-center gap-1.5">
-                      <span># <Number decimals={0}>{allocation.expectedCSP.count}</Number></span>
+                      <span>
+                        #{" "}
+                        <Number decimals={0}>
+                          {allocation.expectedCSP.count}
+                        </Number>
+                      </span>
                       <LandPlot className="inline w-3 h-3" />
-                      <Number decimals={0}>{allocation.expectedCSP.size}</Number>
+                      <Number decimals={0}>
+                        {allocation.expectedCSP.size}
+                      </Number>
                     </p>
                   </div>
                   {pct !== null && !isZero && <CapacityBar fraction={pct} />}
@@ -96,42 +102,32 @@ export function EmployeePaceDetail({ cardData }: EmployeePaceDetailProps) {
         <div
           className={cn(
             "rounded-md px-3 py-2 text-sm space-y-1",
-            isOverloaded ? "bg-destructive/15" : "bg-accent/10",
+            // isOverloaded ? "bg-destructive/15" : "bg-accent/10",
           )}
         >
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Total consumed</span>
-            <span
-              className={cn(
-                "font-mono font-medium",
-                isOverloaded ? "text-destructive" : "text-foreground",
-              )}
-            >
+            <span className={cn("font-mono font-medium")}>
               <Number decimals={0} signDisplay="auto">
                 {totalFractionConsumed.count * 100}
               </Number>
               %
             </span>
           </div>
-          {freeCapacityFraction && !isOverloaded && (
+          {freeCapacityFraction && (
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Free capacity</span>
               <span className="font-mono font-medium text-foreground">
-                <Number decimals={0}>{freeCapacityFraction.count * 100}</Number>%
+                <Number decimals={0}>{freeCapacityFraction.count * 100}</Number>
+                %
               </span>
             </div>
-          )}
-          {isOverloaded && (
-            <p className="text-destructive text-xs font-medium">
-              ⚠ Overloaded — capacity exceeds 100%
-            </p>
           )}
         </div>
       )}
     </div>
   );
 }
-
 
 function CapacityBar({ fraction }: { fraction: number }) {
   const pct = Math.min(fraction * 100, 100);

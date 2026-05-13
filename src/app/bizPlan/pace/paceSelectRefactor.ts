@@ -36,6 +36,7 @@ import { LookbackConfig } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { RawServCodePacePerDay } from "@/app/bizPlan/pace/RawPaceTypes";
+import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 
 // ---------------------------------------------------------------------------
 // Slice selectors
@@ -48,8 +49,7 @@ const selectMatrixDisplayConfig = (state: AppState): MatrixDisplayConfig =>
   state.pace.matrixDisplayConfig;
 
 // employeePace slice selectors — sourced from employeePaceSlice
-const selectMainDate = (state: AppState): string =>
-  state.employeePace.mainDate;
+const selectMainDate = (state: AppState): string => state.employeePace.mainDate;
 
 const selectEmployeeDates = (state: AppState): Record<string, string> =>
   state.employeePace.employeeDates;
@@ -107,6 +107,15 @@ function minCSP(a: CountSizePrice, b: CountSizePrice): CountSizePrice {
   };
 }
 
+const selectLatestAssignmentDate = createSelector(
+  [centralSelect.services],
+  (services) => {
+    return services
+      .map((serv) => serv.lastAssigned?.schedDate ?? "")
+      .sort((a, b) => b.localeCompare(a))[0];
+  },
+);
+
 // ---------------------------------------------------------------------------
 // Layer 2 — Employee Lookback
 // ---------------------------------------------------------------------------
@@ -131,7 +140,10 @@ const selectEmployeeLookbackMap = createSelector(
       windowServices,
       lookbackConfig.completionThreshold,
     );
-    const rawAccumulation = accumulateDailyProduction(windowServices, validDates);
+    const rawAccumulation = accumulateDailyProduction(
+      windowServices,
+      validDates,
+    );
 
     // Compute totalAvgDailyCSP per employee across all programTypes
     const totalAccumulator = new Map<string, Map<string, CountSizePrice>>();
@@ -149,15 +161,25 @@ const selectEmployeeLookbackMap = createSelector(
       if (service.status === "S" && service.production?.doneBys) {
         for (const doneBy of service.production.doneBys) {
           const employeeId = doneBy.employeeId;
-          const contribution = CountSizePriceOps.multiply(serviceCSP, doneBy.percent);
-          if (!totalAccumulator.has(employeeId)) totalAccumulator.set(employeeId, new Map());
+          const contribution = CountSizePriceOps.multiply(
+            serviceCSP,
+            doneBy.percent,
+          );
+          if (!totalAccumulator.has(employeeId))
+            totalAccumulator.set(employeeId, new Map());
           const byDate = totalAccumulator.get(employeeId)!;
-          const existing = byDate.get(effectiveDate) ?? { ...baseCountSizePrice };
-          byDate.set(effectiveDate, CountSizePriceOps.sum(existing, contribution));
+          const existing = byDate.get(effectiveDate) ?? {
+            ...baseCountSizePrice,
+          };
+          byDate.set(
+            effectiveDate,
+            CountSizePriceOps.sum(existing, contribution),
+          );
         }
       } else if (service.status === "$" && service.lastAssigned.employeeId) {
         const employeeId = service.lastAssigned.employeeId;
-        if (!totalAccumulator.has(employeeId)) totalAccumulator.set(employeeId, new Map());
+        if (!totalAccumulator.has(employeeId))
+          totalAccumulator.set(employeeId, new Map());
         const byDate = totalAccumulator.get(employeeId)!;
         const existing = byDate.get(effectiveDate) ?? { ...baseCountSizePrice };
         byDate.set(effectiveDate, CountSizePriceOps.sum(existing, serviceCSP));
@@ -176,7 +198,9 @@ const selectEmployeeLookbackMap = createSelector(
 
     const result: EmployeeLookbackMap = new Map();
     for (const [employeeId, byProgramType] of rawAccumulation) {
-      const totalAvgDailyCSP = totalAvgByEmployee.get(employeeId) ?? { ...baseCountSizePrice };
+      const totalAvgDailyCSP = totalAvgByEmployee.get(employeeId) ?? {
+        ...baseCountSizePrice,
+      };
       const statsMap = new Map<string, LookbackStats | null>();
       for (const [programTypeKey, dailyProductions] of byProgramType) {
         statsMap.set(
@@ -219,7 +243,8 @@ const selectEmployeeCascadeResults = createSelector(
     >();
 
     for (const [servCodeId, perDay] of perDayMap) {
-      const programTypeKey = perDay.servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+      const programTypeKey =
+        perDay.servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
       const assignedEmployees = perDay.servCode.assignedTo;
 
       let teamAvgCSP = { ...baseCountSizePrice };
@@ -228,7 +253,8 @@ const selectEmployeeCascadeResults = createSelector(
       const knownTotalAvgs: CountSizePrice[] = [];
 
       for (const employee of assignedEmployees) {
-        const stats = lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
+        const stats =
+          lookbackMap.get(employee.employeeId)?.get(programTypeKey) ?? null;
         if (stats) {
           teamAvgCSP = CountSizePriceOps.sum(teamAvgCSP, stats.avgDailyCSP);
           teamMaxCSP = CountSizePriceOps.sum(teamMaxCSP, stats.maxDailyCSP);
@@ -287,12 +313,19 @@ const selectEmployeeCascadeResults = createSelector(
         const perDay = perDayMap.get(servCodeId);
         if (!perDay) continue;
 
-        const programTypeKey = perDay.servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
+        const programTypeKey =
+          perDay.servCode.progCode.programType ?? NULL_PROGRAM_TYPE_KEY;
         const stats = employeeLookback?.get(programTypeKey) ?? null;
         const teamStats = teamStatsCache.get(servCodeId);
         if (!teamStats) continue;
 
-        const { teamAvgCSP, teamMaxCSP, knownCount, totalAssigned, avgTotalAvgDailyCSP } = teamStats;
+        const {
+          teamAvgCSP,
+          teamMaxCSP,
+          knownCount,
+          totalAssigned,
+          avgTotalAvgDailyCSP,
+        } = teamStats;
 
         let dailyRate: CountSizePrice;
         let maxDailyRate: CountSizePrice;
@@ -307,10 +340,25 @@ const selectEmployeeCascadeResults = createSelector(
           // Weighted share: employee's proportion of the team's avg capacity
           const activeAsapCSP = perDay.activeAsapCSP;
           pool = {
-            count: teamAvgCSP.count > 0 ? activeAsapCSP.count * (stats.avgDailyCSP.count / teamAvgCSP.count) : 0,
-            size: teamAvgCSP.size > 0 ? activeAsapCSP.size * (stats.avgDailyCSP.size / teamAvgCSP.size) : 0,
-            price: teamAvgCSP.price > 0 ? activeAsapCSP.price * (stats.avgDailyCSP.price / teamAvgCSP.price) : 0,
-            rev: teamAvgCSP.rev > 0 ? activeAsapCSP.rev * (stats.avgDailyCSP.rev / teamAvgCSP.rev) : 0,
+            count:
+              teamAvgCSP.count > 0
+                ? activeAsapCSP.count *
+                  (stats.avgDailyCSP.count / teamAvgCSP.count)
+                : 0,
+            size:
+              teamAvgCSP.size > 0
+                ? activeAsapCSP.size *
+                  (stats.avgDailyCSP.size / teamAvgCSP.size)
+                : 0,
+            price:
+              teamAvgCSP.price > 0
+                ? activeAsapCSP.price *
+                  (stats.avgDailyCSP.price / teamAvgCSP.price)
+                : 0,
+            rev:
+              teamAvgCSP.rev > 0
+                ? activeAsapCSP.rev * (stats.avgDailyCSP.rev / teamAvgCSP.rev)
+                : 0,
           };
         } else {
           // Estimated: use team average rate for known employees
@@ -323,7 +371,10 @@ const selectEmployeeCascadeResults = createSelector(
             maxDailyRate = { count: 1, size: 1, price: 1, rev: 1 };
           }
           // Even split of the pool
-          pool = CountSizePriceOps.divideBy(perDay.activeAsapCSP, Math.max(totalAssigned, 1));
+          pool = CountSizePriceOps.divideBy(
+            perDay.activeAsapCSP,
+            Math.max(totalAssigned, 1),
+          );
         }
 
         // Determine open/close dates
@@ -334,13 +385,25 @@ const selectEmployeeCascadeResults = createSelector(
           openDate = today;
           closeDate = today;
         } else if (dateRanges.isValidDateRange(perDay.servCode.dateRange)) {
-          openDate = perDay.projectionStartDate ?? (today > perDay.servCode.dateRange.min ? today : perDay.servCode.dateRange.min);
+          openDate =
+            perDay.projectionStartDate ??
+            (today > perDay.servCode.dateRange.min
+              ? today
+              : perDay.servCode.dateRange.min);
           closeDate = perDay.servCode.dateRange.max;
         } else {
           continue; // No valid date range and not alwaysAsap — skip
         }
 
-        simDataList.push({ servCodeId, openDate, closeDate, pool, dailyRate, maxDailyRate, isEstimated });
+        simDataList.push({
+          servCodeId,
+          openDate,
+          closeDate,
+          pool,
+          dailyRate,
+          maxDailyRate,
+          isEstimated,
+        });
       }
 
       // Collect all boundary dates for the interval simulation
@@ -371,16 +434,19 @@ const selectEmployeeCascadeResults = createSelector(
 
         const intervalWeekdays = Math.max(
           0,
-          dateRanges.countWeekdays({ min: intervalStart, max: intervalEnd }) - 1,
+          dateRanges.countWeekdays({ min: intervalStart, max: intervalEnd }) -
+            1,
         );
         if (intervalWeekdays <= 0) continue;
 
         // Find highest-priority open servCode with remaining work
         for (const sim of simDataList) {
-          if (sim.openDate > intervalStart || sim.closeDate < intervalEnd) continue;
+          if (sim.openDate > intervalStart || sim.closeDate < intervalEnd)
+            continue;
 
           const rem = remaining.get(sim.servCodeId)!;
-          if (rem.count <= 0 && rem.size <= 0 && rem.price <= 0 && rem.rev <= 0) continue;
+          if (rem.count <= 0 && rem.size <= 0 && rem.price <= 0 && rem.rev <= 0)
+            continue;
 
           // Record first time this servCode is worked
           if (!availableFrom.has(sim.servCodeId)) {
@@ -411,13 +477,17 @@ const selectEmployeeCascadeResults = createSelector(
 
       // Assemble EmployeeCascadeEntry per servCode
       for (const sim of simDataList) {
-        const contributedCSP = contributed.get(sim.servCodeId) ?? { ...baseCountSizePrice };
+        const contributedCSP = contributed.get(sim.servCodeId) ?? {
+          ...baseCountSizePrice,
+        };
         const from = availableFrom.get(sim.servCodeId);
 
         // fractionConsumed: contributedCSP / totalAvgDailyCSP
         // For estimated employees, use avgTotalAvgDailyCSP of known co-workers
         const teamStats = teamStatsCache.get(sim.servCodeId)!;
-        const effectiveTotalAvg = totalAvgDailyCSP ?? (teamStats.knownCount > 0 ? teamStats.avgTotalAvgDailyCSP : null);
+        const effectiveTotalAvg =
+          totalAvgDailyCSP ??
+          (teamStats.knownCount > 0 ? teamStats.avgTotalAvgDailyCSP : null);
 
         const fractionConsumed = effectiveTotalAvg
           ? safeDivideCSP(contributedCSP, effectiveTotalAvg)
@@ -451,13 +521,26 @@ const selectEmployeeCascadeMap = createSelector(
 // ---------------------------------------------------------------------------
 
 const selectServCodePaces = createSelector(
-  [rawPaceSelect.rawServCodePaces, rawPaceSelect.rawServCodePacesPerDayMap, selectEmployeeCascadeMap],
+  [
+    rawPaceSelect.rawServCodePaces,
+    rawPaceSelect.rawServCodePacesPerDayMap,
+    selectEmployeeCascadeMap,
+  ],
   (rawPaces, perDayMap, cascadeMap): ServCodePace[] => {
     return rawPaces.map((raw) => {
-      const { servCode, finishedCSP, finishedRate, unfinishedCSP, unfinishedRate, category, daysRemaining } = raw;
+      const {
+        servCode,
+        finishedCSP,
+        finishedRate,
+        unfinishedCSP,
+        unfinishedRate,
+        category,
+        daysRemaining,
+      } = raw;
       const servCodeId = servCode.servCodeId;
       const perDay = perDayMap.get(servCodeId);
-      const unfinishedDayCount = perDay?.unfinishedDayCount ?? Math.max(daysRemaining, 1);
+      const unfinishedDayCount =
+        perDay?.unfinishedDayCount ?? Math.max(daysRemaining, 1);
 
       const employeeShares = servCode.assignedTo.map((employee) => {
         const cascadeResult = cascadeMap.get(employee.employeeId);
@@ -483,14 +566,20 @@ const selectServCodePaces = createSelector(
       const totalContributed = CountSizePriceOps.sumAll(
         employeeShares.map((s) => s.contributedCSP),
       );
-      const teamExpectedCSP = CountSizePriceOps.divideBy(totalContributed, unfinishedDayCount);
+      const teamExpectedCSP = CountSizePriceOps.divideBy(
+        totalContributed,
+        unfinishedDayCount,
+      );
 
       // teamAvgCapacity: sum of dailyRate across all employees
       const teamAvgCapacity = CountSizePriceOps.sumAll(
         employeeShares.map((s) => s.dailyRate),
       );
 
-      const paceDelta = CountSizePriceOps.subtract(teamExpectedCSP, unfinishedRate);
+      const paceDelta = CountSizePriceOps.subtract(
+        teamExpectedCSP,
+        unfinishedRate,
+      );
       const paceDeltaPct = safeDivideCSP(paceDelta, unfinishedRate);
 
       return {
@@ -519,7 +608,9 @@ const selectProgCodePaces = createSelector(
   [progServSelect.progCodes, selectServCodePaceMap],
   (progCodes, paceMap): ProgCodePace[] =>
     progCodes.map((progCode) => {
-      const servCodePacesMaybe = progCode.servCodes.map((sc) => paceMap.get(sc.servCodeId));
+      const servCodePacesMaybe = progCode.servCodes.map((sc) =>
+        paceMap.get(sc.servCodeId),
+      );
       const servCodePaces = typeGuard.definedArray(servCodePacesMaybe);
 
       const category: PaceCategory =
@@ -527,8 +618,12 @@ const selectProgCodePaces = createSelector(
           ? mostUrgentCategory(servCodePaces.map((p) => p.category))
           : "notSet";
 
-      const unfinishedCSP = CountSizePriceOps.sumAll(servCodePaces.map((p) => p.unfinishedCSP));
-      const finishedCSP = CountSizePriceOps.sumAll(servCodePaces.map((p) => p.finishedCSP));
+      const unfinishedCSP = CountSizePriceOps.sumAll(
+        servCodePaces.map((p) => p.unfinishedCSP),
+      );
+      const finishedCSP = CountSizePriceOps.sumAll(
+        servCodePaces.map((p) => p.finishedCSP),
+      );
 
       return { progCode, servCodePaces, category, unfinishedCSP, finishedCSP };
     }),
@@ -546,13 +641,22 @@ const selectUrgentServCodePaces = createSelector(
 
 // selectEmployeeCardData needs servCode entities — build from servCodePaceMap
 const selectEmployeeCardDataFull = createSelector(
-  [selectEmployeeCascadeResults, selectServCodePaceMap, assignmentPlanSelect.assignmentsByEmployeeId],
-  (cascadeResults, servCodePaceMap, assignmentsByEmployeeId): EmployeeCardData[] => {
+  [
+    selectEmployeeCascadeResults,
+    selectServCodePaceMap,
+    assignmentPlanSelect.assignmentsByEmployeeId,
+  ],
+  (
+    cascadeResults,
+    servCodePaceMap,
+    assignmentsByEmployeeId,
+  ): EmployeeCardData[] => {
     const result: EmployeeCardData[] = [];
 
     for (const cascadeResult of cascadeResults) {
       const { employee, totalAvgDailyCSP, byServCode } = cascadeResult;
-      const priorityOrder = assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds ?? [];
+      const priorityOrder =
+        assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds ?? [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
       const allocations: EmployeeAllocation[] = [];
@@ -584,7 +688,9 @@ const selectEmployeeCardDataFull = createSelector(
         .filter((f): f is CountSizePrice => f !== null);
 
       const totalFractionConsumed =
-        fractionValues.length > 0 ? CountSizePriceOps.sumAll(fractionValues) : null;
+        fractionValues.length > 0
+          ? CountSizePriceOps.sumAll(fractionValues)
+          : null;
 
       const freeCapacityFraction = totalFractionConsumed
         ? {
@@ -608,11 +714,13 @@ const selectEmployeeCardDataFull = createSelector(
         allocations,
         totalFractionConsumed,
         freeCapacityFraction,
-        isOverloaded,
+        // isOverloaded,
       });
     }
 
-    return result.sort((a, b) => a.employee.name.localeCompare(b.employee.name));
+    return result.sort((a, b) =>
+      a.employee.name.localeCompare(b.employee.name),
+    );
   },
 );
 
@@ -676,7 +784,11 @@ function computePoolDrainDate(
 }
 
 const selectServCodePaceDeltaMap = createSelector(
-  [selectServCodePaces, rawPaceSelect.rawServCodePacesPerDayMap, selectEmployeeCascadeMap],
+  [
+    selectServCodePaces,
+    rawPaceSelect.rawServCodePacesPerDayMap,
+    selectEmployeeCascadeMap,
+  ],
   (servCodePaces, perDayMap, cascadeMap): Map<string, ServCodePaceDelta> => {
     const today = dateStrings.today();
     const result = new Map<string, ServCodePaceDelta>();
@@ -687,7 +799,10 @@ const selectServCodePaceDeltaMap = createSelector(
       const dateRange = servCode.dateRange;
       const perDay = perDayMap.get(servCodeId);
 
-      if (!perDay || (!servCode.alwaysAsap && !dateRanges.isValidDateRange(dateRange))) {
+      if (
+        !perDay ||
+        (!servCode.alwaysAsap && !dateRanges.isValidDateRange(dateRange))
+      ) {
         result.set(servCodeId, {
           servCodeId,
           dateRange,
@@ -700,7 +815,8 @@ const selectServCodePaceDeltaMap = createSelector(
 
       const openDate = servCode.alwaysAsap
         ? today
-        : (perDay.projectionStartDate ?? (today > dateRange.min ? today : dateRange.min));
+        : (perDay.projectionStartDate ??
+          (today > dateRange.min ? today : dateRange.min));
       const closeDate = servCode.alwaysAsap ? today : dateRange.max;
 
       const availabilityCount: { availableFrom: string; rate: number }[] = [];
@@ -714,16 +830,43 @@ const selectServCodePaceDeltaMap = createSelector(
 
         const availFrom = entry.availableFrom ?? openDate;
 
-        if (entry.dailyRate.count > 0) availabilityCount.push({ availableFrom: availFrom, rate: entry.dailyRate.count });
-        if (entry.dailyRate.size > 0) availabilitySize.push({ availableFrom: availFrom, rate: entry.dailyRate.size });
-        if (entry.dailyRate.price > 0) availabilityPrice.push({ availableFrom: availFrom, rate: entry.dailyRate.price });
+        if (entry.dailyRate.count > 0)
+          availabilityCount.push({
+            availableFrom: availFrom,
+            rate: entry.dailyRate.count,
+          });
+        if (entry.dailyRate.size > 0)
+          availabilitySize.push({
+            availableFrom: availFrom,
+            rate: entry.dailyRate.size,
+          });
+        if (entry.dailyRate.price > 0)
+          availabilityPrice.push({
+            availableFrom: availFrom,
+            rate: entry.dailyRate.price,
+          });
       }
 
       const pool = perDay.activeAsapCSP;
 
-      const projectedEndCount = computePoolDrainDate(availabilityCount, pool.count, openDate, closeDate);
-      const projectedEndSize = computePoolDrainDate(availabilitySize, pool.size, openDate, closeDate);
-      const projectedEndPrice = computePoolDrainDate(availabilityPrice, pool.price, openDate, closeDate);
+      const projectedEndCount = computePoolDrainDate(
+        availabilityCount,
+        pool.count,
+        openDate,
+        closeDate,
+      );
+      const projectedEndSize = computePoolDrainDate(
+        availabilitySize,
+        pool.size,
+        openDate,
+        closeDate,
+      );
+      const projectedEndPrice = computePoolDrainDate(
+        availabilityPrice,
+        pool.price,
+        openDate,
+        closeDate,
+      );
 
       const projectedEndDate = projectedEndCount;
       const deltaDays =
@@ -732,15 +875,18 @@ const selectServCodePaceDeltaMap = createSelector(
           : null;
 
       const deltaDaysCSP = {
-        count: projectedEndCount != null && pool.count > 0
-          ? dateRanges.weekdaysBetween(closeDate, projectedEndCount)
-          : null,
-        size: projectedEndSize != null && pool.size > 0
-          ? dateRanges.weekdaysBetween(closeDate, projectedEndSize)
-          : null,
-        price: projectedEndPrice != null && pool.price > 0
-          ? dateRanges.weekdaysBetween(closeDate, projectedEndPrice)
-          : null,
+        count:
+          projectedEndCount != null && pool.count > 0
+            ? dateRanges.weekdaysBetween(closeDate, projectedEndCount)
+            : null,
+        size:
+          projectedEndSize != null && pool.size > 0
+            ? dateRanges.weekdaysBetween(closeDate, projectedEndSize)
+            : null,
+        price:
+          projectedEndPrice != null && pool.price > 0
+            ? dateRanges.weekdaysBetween(closeDate, projectedEndPrice)
+            : null,
       };
 
       result.set(servCodeId, {
@@ -778,17 +924,39 @@ const selectMatrixFilteredSortedProgCodePaces = createSelector(
     selectServCodePaceDeltaMap,
     selectMatrixDisplayConfig,
   ],
-  (progCodePaces, perDayMap, perDayPerEmployeeMap, deltaMap, config): ProgCodePace[] => {
-    const { sortKey, filterAssigned, filterCategories, filterDeltaDays, cspDisplay } = config;
+  (
+    progCodePaces,
+    perDayMap,
+    perDayPerEmployeeMap,
+    deltaMap,
+    config,
+  ): ProgCodePace[] => {
+    const {
+      sortKey,
+      filterAssigned,
+      filterCategories,
+      filterDeltaDays,
+      cspDisplay,
+    } = config;
 
     function getServCodeCsp(servCodeId: string): CountSizePrice {
       if (cspDisplay === "perDay") {
-        return perDayMap.get(servCodeId)?.unfinishedPerDay ?? { ...baseCountSizePrice };
+        return (
+          perDayMap.get(servCodeId)?.unfinishedPerDay ?? {
+            ...baseCountSizePrice,
+          }
+        );
       }
       if (cspDisplay === "perDayPerEmployee") {
-        return perDayPerEmployeeMap.get(servCodeId)?.unfinishedPerDayPerEmployee ?? { ...baseCountSizePrice };
+        return (
+          perDayPerEmployeeMap.get(servCodeId)?.unfinishedPerDayPerEmployee ?? {
+            ...baseCountSizePrice,
+          }
+        );
       }
-      return perDayMap.get(servCodeId)?.activeAsapCSP ?? { ...baseCountSizePrice };
+      return (
+        perDayMap.get(servCodeId)?.activeAsapCSP ?? { ...baseCountSizePrice }
+      );
     }
 
     const filtered = progCodePaces.filter((p) => {
@@ -797,8 +965,10 @@ const selectMatrixFilteredSortedProgCodePaces = createSelector(
           (sum, sp) => sum + sp.servCode.assignedTo.length,
           0,
         );
-        if (filterAssigned === "withAssigned" && totalAssigned === 0) return false;
-        if (filterAssigned === "withoutAssigned" && totalAssigned > 0) return false;
+        if (filterAssigned === "withAssigned" && totalAssigned === 0)
+          return false;
+        if (filterAssigned === "withoutAssigned" && totalAssigned > 0)
+          return false;
       }
 
       if (filterCategories.length > 0) {
@@ -824,19 +994,29 @@ const selectMatrixFilteredSortedProgCodePaces = createSelector(
     return [...filtered].sort((a, b) => {
       if (sortKey === "dateRange") {
         const minA =
-          a.servCodePaces.map((p) => p.servCode.dateRange.min ?? "").filter(Boolean).sort()[0] ?? "";
+          a.servCodePaces
+            .map((p) => p.servCode.dateRange.min ?? "")
+            .filter(Boolean)
+            .sort()[0] ?? "";
         const minB =
-          b.servCodePaces.map((p) => p.servCode.dateRange.min ?? "").filter(Boolean).sort()[0] ?? "";
+          b.servCodePaces
+            .map((p) => p.servCode.dateRange.min ?? "")
+            .filter(Boolean)
+            .sort()[0] ?? "";
         if (minA !== minB) return minA.localeCompare(minB);
         return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
       }
 
       if (sortKey === "assignedCount") {
         const countA = new Set(
-          a.servCodePaces.flatMap((sp) => sp.servCode.assignedTo.map((e) => e.employeeId)),
+          a.servCodePaces.flatMap((sp) =>
+            sp.servCode.assignedTo.map((e) => e.employeeId),
+          ),
         ).size;
         const countB = new Set(
-          b.servCodePaces.flatMap((sp) => sp.servCode.assignedTo.map((e) => e.employeeId)),
+          b.servCodePaces.flatMap((sp) =>
+            sp.servCode.assignedTo.map((e) => e.employeeId),
+          ),
         ).size;
         if (countA !== countB) return countB - countA;
         return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
@@ -912,20 +1092,17 @@ type WeekdayBounds = {
   trackHeightPx: number;
 };
 
-const selectDateBounds = createSelector(
-  [selectServCodePaces],
-  (paces) => {
-    const dates: string[] = [];
-    for (const pace of paces) {
-      const { dateRange } = pace.servCode;
-      if (dateRange.min) dates.push(dateRange.min);
-      if (dateRange.max) dates.push(dateRange.max);
-    }
-    if (dates.length === 0) return null;
-    const sorted = [...dates].sort();
-    return { min: sorted[0], max: sorted[sorted.length - 1] };
-  },
-);
+const selectDateBounds = createSelector([selectServCodePaces], (paces) => {
+  const dates: string[] = [];
+  for (const pace of paces) {
+    const { dateRange } = pace.servCode;
+    if (dateRange.min) dates.push(dateRange.min);
+    if (dateRange.max) dates.push(dateRange.max);
+  }
+  if (dates.length === 0) return null;
+  const sorted = [...dates].sort();
+  return { min: sorted[0], max: sorted[sorted.length - 1] };
+});
 
 const selectWeekdayBounds = createSelector(
   [selectDateBounds],
@@ -955,7 +1132,11 @@ const selectDateTicks = createSelector(
     const startsByDate = new Map<string, string[]>();
     const finishesByDate = new Map<string, string[]>();
 
-    function addTo(map: Map<string, string[]>, date: string | null | undefined, id: string) {
+    function addTo(
+      map: Map<string, string[]>,
+      date: string | null | undefined,
+      id: string,
+    ) {
       if (!date) return;
       const effectiveDate = nearestWeekday(date);
       const existing = map.get(effectiveDate) ?? [];
@@ -970,7 +1151,10 @@ const selectDateTicks = createSelector(
       addTo(finishesByDate, dateRange.max, id);
     }
 
-    const allDates = new Set([...startsByDate.keys(), ...finishesByDate.keys()]);
+    const allDates = new Set([
+      ...startsByDate.keys(),
+      ...finishesByDate.keys(),
+    ]);
 
     return [...allDates]
       .sort()
@@ -1008,7 +1192,10 @@ function weekdaysAheadOf(date: string): number {
   return Math.max(0, dateRanges.countWeekdays({ min: today, max: date }) - 1);
 }
 
-function projectUnfinishedCSP(pace: ServCodePace, daysAhead: number): CountSizePrice {
+function projectUnfinishedCSP(
+  pace: ServCodePace,
+  daysAhead: number,
+): CountSizePrice {
   if (daysAhead <= 0) return pace.unfinishedCSP;
   const projected = CountSizePriceOps.subtract(
     pace.unfinishedCSP,
@@ -1027,15 +1214,23 @@ type EmployeeAllocationsInput = {
   date: string;
 };
 
-function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocationsInput) {
+function makeSelectProjectedAllocations({
+  employeeId,
+  date,
+}: EmployeeAllocationsInput) {
   return createSelector(
     [
       selectServCodePaces,
       selectEmployeeCascadeMap,
       assignmentPlanSelect.assignmentsByEmployeeId,
     ],
-    (servCodePaces, cascadeMap, assignmentsByEmployeeId): EmployeeAllocation[] => {
-      const priorityOrder = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+    (
+      servCodePaces,
+      cascadeMap,
+      assignmentsByEmployeeId,
+    ): EmployeeAllocation[] => {
+      const priorityOrder =
+        assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
       const cascadeResult = cascadeMap.get(employeeId);
@@ -1046,16 +1241,21 @@ function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocation
       for (const pace of servCodePaces) {
         if (!isServCodeActiveOn(pace.servCode, date)) continue;
 
-        const share = pace.employeeShares.find((s) => s.employee.employeeId === employeeId);
+        const share = pace.employeeShares.find(
+          (s) => s.employee.employeeId === employeeId,
+        );
         if (!share) continue;
 
         const entry = cascadeResult?.byServCode.get(pace.servCode.servCodeId);
 
         // Cascade gate: never available or not yet available
         const availableFrom = entry?.availableFrom;
-        const isInPriorityList = priorityOrder.includes(pace.servCode.servCodeId);
+        const isInPriorityList = priorityOrder.includes(
+          pace.servCode.servCodeId,
+        );
         const neverAvailable = isInPriorityList && availableFrom === undefined;
-        const notYetAvailable = availableFrom !== undefined && date < availableFrom;
+        const notYetAvailable =
+          availableFrom !== undefined && date < availableFrom;
 
         if (neverAvailable || notYetAvailable) {
           allocations.push({
@@ -1072,7 +1272,10 @@ function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocation
           ? 1
           : weekdaysRemainingLocal(date, pace.servCode.dateRange.max ?? date);
 
-        const rateAsOfDate = CountSizePriceOps.divideBy(pace.unfinishedCSP, daysLeft || 1);
+        const rateAsOfDate = CountSizePriceOps.divideBy(
+          pace.unfinishedCSP,
+          daysLeft || 1,
+        );
 
         let expectedCSP = { ...baseCountSizePrice };
         if (!share.isEstimated && share.dailyRate) {
@@ -1082,10 +1285,22 @@ function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocation
               .map((s) => s.dailyRate),
           );
           expectedCSP = {
-            count: teamAvg.count > 0 ? rateAsOfDate.count * (share.dailyRate.count / teamAvg.count) : 0,
-            size: teamAvg.size > 0 ? rateAsOfDate.size * (share.dailyRate.size / teamAvg.size) : 0,
-            price: teamAvg.price > 0 ? rateAsOfDate.price * (share.dailyRate.price / teamAvg.price) : 0,
-            rev: teamAvg.rev > 0 ? rateAsOfDate.rev * (share.dailyRate.rev / teamAvg.rev) : 0,
+            count:
+              teamAvg.count > 0
+                ? rateAsOfDate.count * (share.dailyRate.count / teamAvg.count)
+                : 0,
+            size:
+              teamAvg.size > 0
+                ? rateAsOfDate.size * (share.dailyRate.size / teamAvg.size)
+                : 0,
+            price:
+              teamAvg.price > 0
+                ? rateAsOfDate.price * (share.dailyRate.price / teamAvg.price)
+                : 0,
+            rev:
+              teamAvg.rev > 0
+                ? rateAsOfDate.rev * (share.dailyRate.rev / teamAvg.rev)
+                : 0,
           };
         } else {
           const assignedCount = pace.employeeShares.length || 1;
@@ -1093,12 +1308,25 @@ function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocation
         }
 
         const fractionConsumed =
-          totalAvgDailyCSP && (totalAvgDailyCSP.count > 0 || totalAvgDailyCSP.size > 0)
+          totalAvgDailyCSP &&
+          (totalAvgDailyCSP.count > 0 || totalAvgDailyCSP.size > 0)
             ? {
-                count: totalAvgDailyCSP.count > 0 ? expectedCSP.count / totalAvgDailyCSP.count : 0,
-                size: totalAvgDailyCSP.size > 0 ? expectedCSP.size / totalAvgDailyCSP.size : 0,
-                price: totalAvgDailyCSP.price > 0 ? expectedCSP.price / totalAvgDailyCSP.price : 0,
-                rev: totalAvgDailyCSP.rev > 0 ? expectedCSP.rev / totalAvgDailyCSP.rev : 0,
+                count:
+                  totalAvgDailyCSP.count > 0
+                    ? expectedCSP.count / totalAvgDailyCSP.count
+                    : 0,
+                size:
+                  totalAvgDailyCSP.size > 0
+                    ? expectedCSP.size / totalAvgDailyCSP.size
+                    : 0,
+                price:
+                  totalAvgDailyCSP.price > 0
+                    ? expectedCSP.price / totalAvgDailyCSP.price
+                    : 0,
+                rev:
+                  totalAvgDailyCSP.rev > 0
+                    ? expectedCSP.rev / totalAvgDailyCSP.rev
+                    : 0,
               }
             : null;
 
@@ -1120,15 +1348,24 @@ function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocation
   );
 }
 
-function makeSelectNotStartedAllocations({ employeeId }: { employeeId: string }) {
+function makeSelectNotStartedAllocations({
+  employeeId,
+}: {
+  employeeId: string;
+}) {
   return createSelector(
     [
       selectServCodePaces,
       selectEmployeeCascadeMap,
       assignmentPlanSelect.assignmentsByEmployeeId,
     ],
-    (servCodePaces, cascadeMap, assignmentsByEmployeeId): EmployeeAllocation[] => {
-      const priorityOrder = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+    (
+      servCodePaces,
+      cascadeMap,
+      assignmentsByEmployeeId,
+    ): EmployeeAllocation[] => {
+      const priorityOrder =
+        assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
       const cascadeResult = cascadeMap.get(employeeId);
@@ -1140,7 +1377,9 @@ function makeSelectNotStartedAllocations({ employeeId }: { employeeId: string })
       for (const pace of servCodePaces) {
         if (pace.category !== "notStarted") continue;
 
-        const share = pace.employeeShares.find((s) => s.employee.employeeId === employeeId);
+        const share = pace.employeeShares.find(
+          (s) => s.employee.employeeId === employeeId,
+        );
         if (!share) continue;
 
         const entry = cascadeResult?.byServCode.get(pace.servCode.servCodeId);
@@ -1157,32 +1396,68 @@ function makeSelectNotStartedAllocations({ employeeId }: { employeeId: string })
           continue;
         }
 
-        const daysLeft = weekdaysRemainingLocal(today, pace.servCode.dateRange.max ?? today);
-        const rateAsOfToday = CountSizePriceOps.divideBy(pace.unfinishedCSP, daysLeft || 1);
+        const daysLeft = weekdaysRemainingLocal(
+          today,
+          pace.servCode.dateRange.max ?? today,
+        );
+        const rateAsOfToday = CountSizePriceOps.divideBy(
+          pace.unfinishedCSP,
+          daysLeft || 1,
+        );
 
         let expectedCSP = { ...baseCountSizePrice };
         if (!share.isEstimated && share.dailyRate) {
           const teamAvg = CountSizePriceOps.sumAll(
-            pace.employeeShares.filter((s) => !s.isEstimated).map((s) => s.dailyRate),
+            pace.employeeShares
+              .filter((s) => !s.isEstimated)
+              .map((s) => s.dailyRate),
           );
           expectedCSP = {
-            count: teamAvg.count > 0 ? rateAsOfToday.count * (share.dailyRate.count / teamAvg.count) : 0,
-            size: teamAvg.size > 0 ? rateAsOfToday.size * (share.dailyRate.size / teamAvg.size) : 0,
-            price: teamAvg.price > 0 ? rateAsOfToday.price * (share.dailyRate.price / teamAvg.price) : 0,
-            rev: teamAvg.rev > 0 ? rateAsOfToday.rev * (share.dailyRate.rev / teamAvg.rev) : 0,
+            count:
+              teamAvg.count > 0
+                ? rateAsOfToday.count * (share.dailyRate.count / teamAvg.count)
+                : 0,
+            size:
+              teamAvg.size > 0
+                ? rateAsOfToday.size * (share.dailyRate.size / teamAvg.size)
+                : 0,
+            price:
+              teamAvg.price > 0
+                ? rateAsOfToday.price * (share.dailyRate.price / teamAvg.price)
+                : 0,
+            rev:
+              teamAvg.rev > 0
+                ? rateAsOfToday.rev * (share.dailyRate.rev / teamAvg.rev)
+                : 0,
           };
         } else {
           const assignedCount = pace.employeeShares.length || 1;
-          expectedCSP = CountSizePriceOps.divideBy(rateAsOfToday, assignedCount);
+          expectedCSP = CountSizePriceOps.divideBy(
+            rateAsOfToday,
+            assignedCount,
+          );
         }
 
         const fractionConsumed =
-          totalAvgDailyCSP && (totalAvgDailyCSP.count > 0 || totalAvgDailyCSP.size > 0)
+          totalAvgDailyCSP &&
+          (totalAvgDailyCSP.count > 0 || totalAvgDailyCSP.size > 0)
             ? {
-                count: totalAvgDailyCSP.count > 0 ? expectedCSP.count / totalAvgDailyCSP.count : 0,
-                size: totalAvgDailyCSP.size > 0 ? expectedCSP.size / totalAvgDailyCSP.size : 0,
-                price: totalAvgDailyCSP.price > 0 ? expectedCSP.price / totalAvgDailyCSP.price : 0,
-                rev: totalAvgDailyCSP.rev > 0 ? expectedCSP.rev / totalAvgDailyCSP.rev : 0,
+                count:
+                  totalAvgDailyCSP.count > 0
+                    ? expectedCSP.count / totalAvgDailyCSP.count
+                    : 0,
+                size:
+                  totalAvgDailyCSP.size > 0
+                    ? expectedCSP.size / totalAvgDailyCSP.size
+                    : 0,
+                price:
+                  totalAvgDailyCSP.price > 0
+                    ? expectedCSP.price / totalAvgDailyCSP.price
+                    : 0,
+                rev:
+                  totalAvgDailyCSP.rev > 0
+                    ? expectedCSP.rev / totalAvgDailyCSP.rev
+                    : 0,
               }
             : null;
 
@@ -1229,13 +1504,31 @@ const selectEmployeeUnfinishedShareMap = createSelector(
         let shareRemaining: CountSizePrice;
         if (!share.isEstimated && share.dailyRate) {
           shareRemaining = {
-            count: teamAvg.count > 0 ? pace.unfinishedCSP.count * (share.dailyRate.count / teamAvg.count) : 0,
-            size: teamAvg.size > 0 ? pace.unfinishedCSP.size * (share.dailyRate.size / teamAvg.size) : 0,
-            price: teamAvg.price > 0 ? pace.unfinishedCSP.price * (share.dailyRate.price / teamAvg.price) : 0,
-            rev: teamAvg.rev > 0 ? pace.unfinishedCSP.rev * (share.dailyRate.rev / teamAvg.rev) : 0,
+            count:
+              teamAvg.count > 0
+                ? pace.unfinishedCSP.count *
+                  (share.dailyRate.count / teamAvg.count)
+                : 0,
+            size:
+              teamAvg.size > 0
+                ? pace.unfinishedCSP.size *
+                  (share.dailyRate.size / teamAvg.size)
+                : 0,
+            price:
+              teamAvg.price > 0
+                ? pace.unfinishedCSP.price *
+                  (share.dailyRate.price / teamAvg.price)
+                : 0,
+            rev:
+              teamAvg.rev > 0
+                ? pace.unfinishedCSP.rev * (share.dailyRate.rev / teamAvg.rev)
+                : 0,
           };
         } else {
-          shareRemaining = CountSizePriceOps.divideBy(pace.unfinishedCSP, assignedCount);
+          shareRemaining = CountSizePriceOps.divideBy(
+            pace.unfinishedCSP,
+            assignedCount,
+          );
         }
 
         byServCode.set(pace.servCode.servCodeId, shareRemaining);
@@ -1248,20 +1541,34 @@ const selectEmployeeUnfinishedShareMap = createSelector(
 
 function makeSelectEmployeeTimelineSegments(employeeId: string) {
   return createSelector(
-    [selectServCodePaces, selectEmployeeCascadeMap, selectDateBounds, selectPaceTolerance],
-    (servCodePaces, cascadeMap, dateBounds, paceTolerance): TimelineSegment[] => {
+    [
+      selectServCodePaces,
+      selectEmployeeCascadeMap,
+      selectDateBounds,
+      selectPaceTolerance,
+    ],
+    (
+      servCodePaces,
+      cascadeMap,
+      dateBounds,
+      paceTolerance,
+    ): TimelineSegment[] => {
       if (!dateBounds) return [];
 
       const boundarySet = new Set<string>([dateBounds.min, dateBounds.max]);
       for (const pace of servCodePaces) {
-        if (pace.servCode.dateRange.min) boundarySet.add(pace.servCode.dateRange.min);
-        if (pace.servCode.dateRange.max) boundarySet.add(pace.servCode.dateRange.max);
+        if (pace.servCode.dateRange.min)
+          boundarySet.add(pace.servCode.dateRange.min);
+        if (pace.servCode.dateRange.max)
+          boundarySet.add(pace.servCode.dateRange.max);
       }
       const boundaries = [...boundarySet].sort();
       if (boundaries.length < 2) return [];
 
       const cascadeResult = cascadeMap.get(employeeId);
-      const totalAvgDailyCSP = cascadeResult?.totalAvgDailyCSP ?? { ...baseCountSizePrice };
+      const totalAvgDailyCSP = cascadeResult?.totalAvgDailyCSP ?? {
+        ...baseCountSizePrice,
+      };
 
       const segments: TimelineSegment[] = [];
 
@@ -1279,28 +1586,47 @@ function makeSelectEmployeeTimelineSegments(employeeId: string) {
 
         for (const pace of servCodePaces) {
           if (!isServCodeActiveOn(pace.servCode, midDate)) continue;
-          const share = pace.employeeShares.find((s) => s.employee.employeeId === employeeId);
+          const share = pace.employeeShares.find(
+            (s) => s.employee.employeeId === employeeId,
+          );
           if (!share) continue;
 
           const daysLeft = pace.servCode.alwaysAsap
             ? 1
-            : weekdaysRemainingLocal(midDate, pace.servCode.dateRange.max ?? midDate);
+            : weekdaysRemainingLocal(
+                midDate,
+                pace.servCode.dateRange.max ?? midDate,
+              );
 
           const projectedUnfinished = projectUnfinishedCSP(pace, midDaysAhead);
-          const rateAsOfDate = CountSizePriceOps.divideBy(projectedUnfinished, daysLeft || 1);
+          const rateAsOfDate = CountSizePriceOps.divideBy(
+            projectedUnfinished,
+            daysLeft || 1,
+          );
 
           let employeeRate = 0;
-          if (!share.isEstimated && share.dailyRate && totalAvgDailyCSP.count > 0) {
+          if (
+            !share.isEstimated &&
+            share.dailyRate &&
+            totalAvgDailyCSP.count > 0
+          ) {
             const teamAvg = CountSizePriceOps.sumAll(
-              pace.employeeShares.filter((s) => !s.isEstimated).map((s) => s.dailyRate),
+              pace.employeeShares
+                .filter((s) => !s.isEstimated)
+                .map((s) => s.dailyRate),
             );
-            const employeeShare = teamAvg.count > 0
-              ? rateAsOfDate.count * (share.dailyRate.count / teamAvg.count)
-              : 0;
-            employeeRate = totalAvgDailyCSP.count > 0 ? employeeShare / totalAvgDailyCSP.count : 0;
+            const employeeShare =
+              teamAvg.count > 0
+                ? rateAsOfDate.count * (share.dailyRate.count / teamAvg.count)
+                : 0;
+            employeeRate =
+              totalAvgDailyCSP.count > 0
+                ? employeeShare / totalAvgDailyCSP.count
+                : 0;
           } else if (totalAvgDailyCSP.count > 0) {
             const assignedCount = pace.employeeShares.length || 1;
-            employeeRate = (rateAsOfDate.count / assignedCount) / totalAvgDailyCSP.count;
+            employeeRate =
+              rateAsOfDate.count / assignedCount / totalAvgDailyCSP.count;
           }
 
           totalFraction += employeeRate;
@@ -1328,6 +1654,7 @@ function makeSelectEmployeeTimelineSegments(employeeId: string) {
 // ---------------------------------------------------------------------------
 
 export const paceSelect = {
+  latestAssignmentDate: selectLatestAssignmentDate,
   // Layer 2
   employeeLookbackMap: selectEmployeeLookbackMap,
   // Layer 3

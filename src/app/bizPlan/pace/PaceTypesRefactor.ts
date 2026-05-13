@@ -63,7 +63,7 @@ export type EmployeeCardData = {
   allocations: EmployeeAllocation[];
   totalFractionConsumed: CountSizePrice | null;
   freeCapacityFraction: CountSizePrice | null;
-  isOverloaded: boolean;
+  // isOverloaded: boolean;
 };
 
 export type LookbackConfig = {

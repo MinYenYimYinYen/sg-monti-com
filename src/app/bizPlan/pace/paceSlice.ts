@@ -36,7 +36,7 @@ type PaceState = {
 
 const initialState: PaceState = {
   lookbackConfig: {
-    lookbackStart: dateStrings.weeksAgo(1),
+    lookbackStart: dateStrings.yearStart(),
     completionThreshold: 0.5,
   },
   matrixDisplayConfig: {

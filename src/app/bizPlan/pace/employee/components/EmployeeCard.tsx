@@ -16,24 +16,42 @@ type EmployeeCardProps = {
 };
 
 export function EmployeeCard({ cardData }: EmployeeCardProps) {
-  const { employee, allocations, isOverloaded } = cardData;
+  const {
+    employee,
+    allocations,
+    // isOverloaded,
+  } = cardData;
 
   const dispatch = useAppDispatch();
   const { upsert } = useAssignmentPlan({ autoLoad: false });
-  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
+  const assignmentsByEmployeeId = useSelector(
+    assignmentPlanSelect.assignmentsByEmployeeId,
+  );
   const showUpcoming = useSelector(paceSelect.showUpcoming);
 
   const employeeId = employee.employeeId;
 
   const mainDate = useSelector(paceSelect.mainDate);
+
   const selectAllocationsAtDate = paceSelect.makeProjectedAllocations({
     employeeId,
     date: mainDate,
   });
   const allDateAllocations = useSelector(selectAllocationsAtDate);
   const servCodePaceMap = useSelector(paceSelect.servCodePaceMap);
+  const servCodePaces = useSelector(paceSelect.servCodePaces);
 
-  const selectNotStartedAllocations = paceSelect.makeNotStartedAllocations({ employeeId });
+  const printedForEmployeeToday = servCodePaces
+    .flatMap((pace) => pace.servCode.services)
+    .filter(
+      (service) =>
+        service.lastAssigned?.employeeId === employeeId &&
+        service.lastAssigned?.schedDate === mainDate,
+    );
+
+  const selectNotStartedAllocations = paceSelect.makeNotStartedAllocations({
+    employeeId,
+  });
   const upcomingAllocations = useSelector(selectNotStartedAllocations);
 
   // Urgent servCodes (asap/overdue) are shown in UrgentServCodeCard — exclude them here
@@ -45,16 +63,21 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
   // When showUpcoming is true, merge upcoming allocations into the active list using
   // the full priority order from `allocations` (cardData). This ensures up/down arrows
   // work correctly because isFirst/isLast are computed against the merged list.
-  const upcomingIds = new Set(upcomingAllocations.map((a) => a.servCode.servCodeId));
+  const upcomingIds = new Set(
+    upcomingAllocations.map((a) => a.servCode.servCodeId),
+  );
   const activeIds = new Set(dateAllocations.map((a) => a.servCode.servCodeId));
 
   const visibleAllocations = showUpcoming
     ? allocations.filter(
-        (a) => activeIds.has(a.servCode.servCodeId) || upcomingIds.has(a.servCode.servCodeId),
+        (a) =>
+          activeIds.has(a.servCode.servCodeId) ||
+          upcomingIds.has(a.servCode.servCodeId),
       )
     : dateAllocations;
 
-  const currentServCodeIds = assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+  const currentServCodeIds =
+    assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
 
   function handleMove(servCodeId: string, direction: "up" | "down") {
     const idx = currentServCodeIds.indexOf(servCodeId);
@@ -73,7 +96,9 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
   }
 
   function handleRemove(servCodeId: string) {
-    const updatedServCodeIds = currentServCodeIds.filter((id) => id !== servCodeId);
+    const updatedServCodeIds = currentServCodeIds.filter(
+      (id) => id !== servCodeId,
+    );
     upsert({ employeeId, servCodeIds: updatedServCodeIds });
   }
 
@@ -88,15 +113,17 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
       <div
         className={cn(
           "flex items-center justify-between px-3 py-2 border-b rounded-t-lg",
-          isOverloaded ? "bg-destructive/10" : "bg-accent/10",
+          printedForEmployeeToday.length ? "bg-destructive/10" : "bg-accent/10",
         )}
       >
         <span className="text-sm font-semibold text-foreground">
           {employee.name}
         </span>
-        {isOverloaded && (
-          <span className="text-destructive text-xs font-medium">⚠ Overloaded</span>
-        )}
+        {printedForEmployeeToday.length ? (
+          <span className="text-destructive text-xs font-medium">
+            ⚠ Already Routed
+          </span>
+        ) : null}
       </div>
 
       {/* ServCode rows */}
