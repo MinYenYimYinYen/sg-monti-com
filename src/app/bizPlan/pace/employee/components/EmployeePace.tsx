@@ -27,6 +27,7 @@ export function EmployeePace() {
   const unsavedServCodeChanges = useSelector(progServSelect.unsavedServCodeChanges);
   const isAdmin = useSelector(authSelect.role) === "admin";
   const showUpcoming = useSelector(paceSelect.showUpcoming);
+  const rateMode = useSelector(paceSelect.rateMode);
   const { saveServCodeChanges } = useProgServ({});
 
   const dateRangeChanges = unsavedServCodeChanges.filter(
@@ -47,10 +48,26 @@ export function EmployeePace() {
             >
               Save All Date Range Changes
             </Button>
-            <DatePicker
-              value={mainDate}
-              onChange={(date) => dispatch(employeePaceActions.setMainDate(date))}
-            />
+            <div className="flex items-center gap-2">
+              <DatePicker
+                value={mainDate}
+                onChange={(date) => dispatch(employeePaceActions.setMainDate(date))}
+              />
+              <Toggle
+                pressed={rateMode === "max"}
+                onPressedChange={() =>
+                  dispatch(
+                    employeePaceActions.setRateMode(
+                      rateMode === "avg" ? "max" : "avg",
+                    ),
+                  )
+                }
+                aria-label="Toggle avg/max rate mode"
+                size="sm"
+              >
+                {rateMode === "avg" ? "Avg" : "Max"}
+              </Toggle>
+            </div>
             <div className="flex items-center gap-2">
               <Toggle
                 pressed={showUpcoming}

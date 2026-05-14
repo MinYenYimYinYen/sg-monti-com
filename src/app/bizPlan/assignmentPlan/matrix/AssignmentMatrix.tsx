@@ -13,7 +13,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
-import { ProgCodePace, ServCodePace, ServCodePaceDelta } from "@/app/bizPlan/pace/PaceTypesRefactor";
+import { ProgCodePace, ProgCodeProjectedCompletion, ServCodePaceDelta } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { MiniServCodeDateEdit } from "@/app/bizPlan/pace/employee/components/MiniServCodeDateEdit";
 import { Number } from "@/components/Number";
 import { ChevronDown, ChevronRight, LandPlot, Pencil, Save } from "lucide-react";
@@ -161,6 +161,7 @@ export function AssignmentMatrix() {
 
   // Delta map for pace delta display
   const deltaMap = useSelector(paceSelect.servCodePaceDeltaMap);
+  const progCodeProjectedCompletionMap = useSelector(paceSelect.progCodeProjectedCompletionMap);
 
   const assignmentsByEmployeeId = useSelector(
     assignmentPlanSelect.assignmentsByEmployeeId,
@@ -377,6 +378,9 @@ export function AssignmentMatrix() {
             <tbody>
               {progCodePaces.map((progCodePace) => {
                 const isExpanded = expandedProgIds.has(progCodePace.progCode.progCodeId);
+                const projectedCompletion = progCodeProjectedCompletionMap.get(
+                  progCodePace.progCode.progCodeId,
+                ) ?? null;
                 return (
                   <MatrixProgGroup
                     key={progCodePace.progCode.progCodeId}
@@ -386,6 +390,7 @@ export function AssignmentMatrix() {
                     assignmentsByEmployeeId={assignmentsByEmployeeId}
                     getServCodeCsp={getServCodeCsp}
                     deltaMap={deltaMap}
+                    projectedCompletion={projectedCompletion}
                     onToggleExpand={() => toggleProgExpand(progCodePace.progCode.progCodeId)}
                     onUpsert={handleUpsert}
                   />
@@ -410,6 +415,7 @@ type MatrixProgGroupProps = {
   assignmentsByEmployeeId: Map<string, { servCodeIds: string[] }>;
   getServCodeCsp: (servCodeId: string) => CountSizePrice | null;
   deltaMap: Map<string, ServCodePaceDelta>;
+  projectedCompletion: ProgCodeProjectedCompletion | null;
   onToggleExpand: () => void;
   onUpsert: (employeeId: string, servCodeIds: string[]) => void;
 };
@@ -421,6 +427,7 @@ function MatrixProgGroup({
   assignmentsByEmployeeId,
   getServCodeCsp,
   deltaMap,
+  projectedCompletion,
   onToggleExpand,
   onUpsert,
 }: MatrixProgGroupProps) {
@@ -515,16 +522,46 @@ function MatrixProgGroup({
             <span className="text-[10px] text-muted-foreground">
               {assignedEmployeeIds.size} emp
             </span>
-            {/* Prog-level CSP + worst-servCode delta stacked the same as servCode rows */}
+            {/* Prog-level CSP + last-servCode delta (the one that finishes latest) */}
             {progCsp !== null && (
               <CspWithDeltaDisplay
                 csp={progCsp}
-                deltaDaysCSP={getWorstDeltaCSP(
-                  servCodePaces.map(
-                    (sp) => deltaMap.get(sp.servCode.servCodeId)?.deltaDaysCSP ?? null,
-                  ),
-                )}
+                deltaDaysCSP={(() => {
+                  // Use the deltaDaysCSP of the servCode with the latest dateRange.max
+                  const lastServCode = [...servCodePaces].sort((a, b) =>
+                    (b.servCode.dateRange.max ?? "").localeCompare(
+                      a.servCode.dateRange.max ?? "",
+                    ),
+                  )[0];
+                  return lastServCode
+                    ? (deltaMap.get(lastServCode.servCode.servCodeId)?.deltaDaysCSP ?? null)
+                    : null;
+                })()}
               />
+            )}
+            {/* Projected program completion date */}
+            {projectedCompletion?.date && (
+              <span
+                className={`text-[10px] font-mono ${
+                  projectedCompletion.isEstimated
+                    ? "text-muted-foreground/50"
+                    : (() => {
+                        // Color based on the last servCode's deltaDays
+                        const lastServCode = [...servCodePaces].sort((a, b) =>
+                          (b.servCode.dateRange.max ?? "").localeCompare(
+                            a.servCode.dateRange.max ?? "",
+                          ),
+                        )[0];
+                        const deltaDays = lastServCode
+                          ? (deltaMap.get(lastServCode.servCode.servCodeId)?.deltaDays ?? null)
+                          : null;
+                        return deltaDays != null ? deltaDaysColor(deltaDays) : "text-muted-foreground";
+                      })()
+                }`}
+                title={projectedCompletion.isEstimated ? "Estimated (no production data)" : "Projected completion"}
+              >
+                →{formatDate(projectedCompletion.date)}
+              </span>
             )}
           </div>
         </td>
@@ -580,6 +617,20 @@ function MatrixProgGroup({
                       csp={scCsp}
                       deltaDaysCSP={deltaMap.get(sc.servCodeId)?.deltaDaysCSP ?? null}
                     />
+                  )}
+                  {/* Projected servCode completion date */}
+                  {deltaMap.get(sc.servCodeId)?.projectedEndDate && (
+                    <span
+                      className={`text-[10px] font-mono ${
+                        (() => {
+                          const deltaDays = deltaMap.get(sc.servCodeId)?.deltaDays ?? null;
+                          return deltaDays != null ? deltaDaysColor(deltaDays) : "text-muted-foreground";
+                        })()
+                      }`}
+                      title="Projected completion"
+                    >
+                      →{formatDate(deltaMap.get(sc.servCodeId)!.projectedEndDate!)}
+                    </span>
                   )}
                   {/* Edit trigger — visible on row hover, date-only (assignment handled by checkboxes) */}
                   <MiniServCodeDateEdit servCode={sc}>

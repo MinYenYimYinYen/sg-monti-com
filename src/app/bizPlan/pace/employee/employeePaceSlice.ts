@@ -16,6 +16,12 @@ type EmployeePaceState = {
   /** When true, upcoming (notStarted) servCodes are merged into each employee card's
    * main list in priority order so reorder arrows work correctly across all servCodes. */
   showUpcoming: boolean;
+  /**
+   * Controls whether target CSP is based on the employee's average daily rate or
+   * their maximum (aggressive routing) daily rate.
+   * 'avg' = expected pace, 'max' = best-case aggressive pace.
+   */
+  rateMode: "avg" | "max";
 };
 
 const initialState: EmployeePaceState = {
@@ -23,6 +29,7 @@ const initialState: EmployeePaceState = {
   employeeDates: {},
   paceTolerance: 0.5,
   showUpcoming: false,
+  rateMode: "avg",
 };
 
 const employeePaceSlice = createSlice({
@@ -46,6 +53,9 @@ const employeePaceSlice = createSlice({
     },
     toggleShowUpcoming: (state) => {
       state.showUpcoming = !state.showUpcoming;
+    },
+    setRateMode: (state, action: PayloadAction<"avg" | "max">) => {
+      state.rateMode = action.payload;
     },
   },
 });

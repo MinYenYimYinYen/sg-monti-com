@@ -54,6 +54,7 @@ specific employee free?).
 ### Root Cause
 
 `projectionStartDate` in `rawPaceSelect.ts` is:
+
 ```
 day after the latest printed schedDate across ALL employees for this servCode
 ```
@@ -111,16 +112,24 @@ The `closeDate` assignment is unchanged.
   servCode's services only, or to all printed services for this employee across all servCodes?
   Scoping to the servCode is more precise (an employee could be routed for servCode A but free
   for servCode B). The fix above uses per-servCode scoping — confirm this is the right choice.
+    - Answer: Let's discuss the implications of this choice. But I'm thinking that scoping to the employee and date is
+      good enough. In that case, if the employee has any printed services on a given date, their next available date is
+      the weekday after that.
+
 - **`alwaysAsap` servCodes**: These use `openDate = today` and `closeDate = today` regardless.
   Should an employee's printed routes for an `alwaysAsap` servCode also clamp their `openDate`?
   Currently they would not, since the `alwaysAsap` branch runs before the printed date logic.
+    - Let's leave this as is for now. The impact is minimal.
 - **Impact on `fractionConsumed`**: When Employee A's `openDate` is pushed to May 21st, their
   `contributedCSP` for the current period drops. Does this cause their `fractionConsumed` to
   look artificially low (underutilized) even though they're actually fully booked on printed
   routes? May need a separate "printed capacity" display concept.
+    - Agreed. When an employee is routed, what should the fraction consumed be? I need to know what is downstream from
+      fractionConsumed. Is it just a display property or a calculation that affects other parts of the system?
 - **`makeSelectProjectedAllocations` for the routed employee**: Currently, Employee A shows
   `notYetAvailable` on `mainDate` (zero CSP). Should the card instead show the printed services
   as a separate "already scheduled" line item, so the user can see what they're doing that day?
+    - No, not for now.
 
 ### Key Files to Read
 
@@ -135,7 +144,7 @@ The `closeDate` assignment is unchanged.
 
 ---
 
-## Fix: Effective Close Date for Overdue ServCodes
+## Feature 0.5 Fix: Effective Close Date for Overdue ServCodes
 
 ### User's Concern
 
@@ -177,14 +186,20 @@ is treated as due immediately and gets highest priority in the current interval.
   If sales continue to come in after the optimizer runs, the projected close date will be
   stale. Should the effective close date be recomputed on every selector run (it is, since
   it's a derived value), or should there be a "freeze" mechanism?
+    - We need not worry about this. The this will run whenever the user refreshes the browser. Stale data during a
+      single user session is not a big deal.
 - **No lookback data fallback**: When `teamAvgCSP.price === 0`, `closeDate = today` is used.
   This means the overdue servCode gets highest priority but with a zero-width window, so it
   drains in the first interval. Is this the right behavior, or should we use a global fallback
   rate (e.g., 1 service/day) to give it a realistic window?
+    - No global fallback rate. All due today when overdue is correct. If it looks wrong to user, the user can adjust the
+      date range.
 - **Interaction with Feature 0**: If Employee A is routed through May 20th and the overdue
   servCode's effective close date is May 15th, Employee A's `openDate` (May 21st) is after
   the close date — so the overdue servCode is still invisible to Employee A. Is this correct
   (they can't help with it since they're booked), or should the close date be extended further?
+    - The correct behavior is to treat the employee as fully booked on May 15th. Other employees not routed through May
+      20th will still see the overdue servCode.
 
 ### Key Files to Read
 
@@ -242,12 +257,16 @@ already account for this sequencing. The ProgCode completion date is simply the 
 
 - **Display location**: Where should the ProgCode completion date be shown? Options include
   the AssignmentMatrix row header, a tooltip on the ProgCode name, or a dedicated summary panel.
+  - It should be shown in the AssignmentMatrix row header.
 - **Confidence indicator**: Should the projected date be shown with a confidence band (e.g.,
   based on `maxDailyRate` vs `avgDailyRate` to show best/worst case), or just the single
   expected date?
+  - By default, we should use avgDailyRate.  However, a small slider control ranging from avgDailyRate to maxDailyRate could be useful for the production manager to see what end date is possible if we route aggressively.
 - **Null handling**: If any servCode in the ProgCode has `projectedEndDate = null` (no team
   data), should the ProgCode completion date also be null, or should it be computed from the
   servCodes that do have data?
+  - If no team data, we do straight math on the dateRange and assume the team shares the work equally and finishes on right on time.
+  - The styling for this should be muted, to indicate no actual projection is being made.
 
 ### Key Files to Read
 
@@ -285,6 +304,7 @@ for each progCode:
 
 A panel or modal on the ProgCode row in the AssignmentMatrix (or a dedicated optimizer page).
 Controls:
+
 - **Padding per servCode** (number input, default 0): adds N extra weekdays to each servCode's
   computed window. Example: `paddingDays = 2` gives 2 extra days before the next servCode opens,
   preventing a single bad week from cascading into every subsequent servCode being overdue.
@@ -294,10 +314,14 @@ Controls:
 ### Open Questions
 
 - Does "Apply" write to the existing `assignmentPlan` model, or does it need a new API route?
+  - Apply would write to the ServCodeDoc model (servCodeDoc.dateRange.min/max) 
 - Should the optimizer respect existing `dateRange.min` values (don't move a start date already
   communicated to customers), or fully recompute from scratch?
+  - No, but we do need a decision on overlap. In reality, date ranges do overlap, but the overdue algorithm above will handle that gracefully, so we might do better to keep the ranges non-overlapping for the purposes of the optimizer.  More discussion might be needed on this.  If we allow the user to set an overlap day count value, does that unnecessarily complicate the optimizer?
 - Should the preview show a Gantt-style visualization of the new date ranges before applying?
+  - Yes, this would be great.
 - Multi-ProgCode optimization: run across all progCodes simultaneously, or one at a time?
+  - One at a time seems right.
 
 ### Key Files to Read
 
@@ -323,6 +347,7 @@ MongoDB) and integration into the pace selectors.
 ### Data Module (5-Component Pattern)
 
 **Types** (`TimeOffTypes.ts`):
+
 ```typescript
 type TimeOffDoc = {
   id: string;           // natural key (e.g., `${employeeId}_${startDate}` or UUID)
@@ -341,6 +366,7 @@ type TimeOffDoc = {
 **Slice** (`timeOffSlice.ts`): Standard data slice. No UI state needed here.
 
 **Selectors** (`timeOffSelect.ts`):
+
 - `holidayDates`: `Set<string>` — all dates where the full team is off
 - `employeeTimeOffDates`: `Map<employeeId, Set<string>>` — per-employee off dates
 
@@ -365,10 +391,13 @@ The time off data plugs into two places in the cascade:
 
 - Should time off entries be stored as date ranges or as individual date records? Ranges are
   more compact; individual dates are simpler to query and diff.
+  - We can use date ranges.  We can build out dateStrings.ts to handle whatever we need.
 - Should the `countWorkingDays` utility live in `src/lib/primatives/dates/dateStrings` (alongside
   `countWeekdays`) or in a new pace-specific util?
+  - That depends on the params of countWorkingDays.  It seems like this is more specific to pace, so we might want to create a new util.
 - Do we need a "recurring holiday" concept (e.g., every Thanksgiving), or is manual entry
   sufficient for now?
+  - Manual is fine.
 
 ### Key Files to Read
 

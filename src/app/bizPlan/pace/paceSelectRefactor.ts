@@ -28,6 +28,7 @@ import {
   OVERLOAD_EPSILON,
   PaceCategory,
   ProgCodePace,
+  ProgCodeProjectedCompletion,
   ServCodePace,
   ServCodePaceDelta,
 } from "@/app/bizPlan/pace/PaceTypesRefactor";
@@ -59,6 +60,9 @@ const selectPaceTolerance = (state: AppState): number =>
 
 const selectShowUpcoming = (state: AppState): boolean =>
   state.employeePace.showUpcoming;
+
+const selectRateMode = (state: AppState): "avg" | "max" =>
+  state.employeePace.rateMode;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -223,10 +227,38 @@ const selectEmployeeCascadeResults = createSelector(
     rawPaceSelect.rawServCodePacesPerDayMap,
     selectEmployeeLookbackMap,
     employeeSelect.employeeMap,
+    selectMainDate,
   ],
-  (perDayMap, lookbackMap, employeeMap): EmployeeCascadeResult[] => {
-    const today = dateStrings.today();
+  (perDayMap, lookbackMap, employeeMap, mainDate): EmployeeCascadeResult[] => {
+    // Use mainDate as the reference point so the cascade reflects the selected view date.
+    // This ensures the overdue check and pool-start calculations are correct when the user
+    // is viewing a future date (e.g., next Monday) where a servCode is already past its max.
+    const today = mainDate;
     const results: EmployeeCascadeResult[] = [];
+
+    // Pre-compute per-employee latest printed schedDate across all servCodes.
+    // If an employee has any printed service on a given date, their openDate for every
+    // servCode is pushed to the weekday after that date — they're already booked.
+    const employeeLatestPrintedDate = new Map<string, string>();
+    for (const [, perDay] of perDayMap) {
+      for (const service of perDay.servCode.services) {
+        if (
+          service.status === "$" &&
+          service.lastAssigned.schedDate &&
+          service.lastAssigned.employeeId
+        ) {
+          const existing = employeeLatestPrintedDate.get(
+            service.lastAssigned.employeeId,
+          );
+          if (!existing || service.lastAssigned.schedDate > existing) {
+            employeeLatestPrintedDate.set(
+              service.lastAssigned.employeeId,
+              service.lastAssigned.schedDate,
+            );
+          }
+        }
+      }
+    }
 
     // Pre-compute per-servCode team stats for weighted share calculation.
     // For each servCode: sum avgDailyCSP of all assigned employees with lookback data.
@@ -385,12 +417,50 @@ const selectEmployeeCascadeResults = createSelector(
           openDate = today;
           closeDate = today;
         } else if (dateRanges.isValidDateRange(perDay.servCode.dateRange)) {
+          // Per-employee openDate: the later of the servCode pool start and the
+          // day after this employee's latest printed route (they're already booked).
+          const employeeLatestPrinted = employeeLatestPrintedDate.get(
+            employee.employeeId,
+          );
+          const employeeAvailableFrom = employeeLatestPrinted
+            ? dateStrings.nextWeekdayAfter(employeeLatestPrinted)
+            : null;
+
+          // projectionStartDate is the team-level pool start (day after the latest
+          // printed route across ALL employees). Only use it as a floor for employees
+          // who themselves have printed routes — an unrouted employee is available today.
+          const servCodePoolStart = employeeLatestPrinted
+            ? (perDay.projectionStartDate ??
+               (today > perDay.servCode.dateRange.min
+                 ? today
+                 : perDay.servCode.dateRange.min))
+            : (today > perDay.servCode.dateRange.min
+               ? today
+               : perDay.servCode.dateRange.min);
+
           openDate =
-            perDay.projectionStartDate ??
-            (today > perDay.servCode.dateRange.min
-              ? today
-              : perDay.servCode.dateRange.min);
-          closeDate = perDay.servCode.dateRange.max;
+            employeeAvailableFrom && employeeAvailableFrom > servCodePoolStart
+              ? employeeAvailableFrom
+              : servCodePoolStart;
+
+          // Overdue fix: if the servCode's window has passed but work remains,
+          // project a new close date based on how long the team needs to drain the pool.
+          const isOverdue = today > perDay.servCode.dateRange.max;
+          if (
+            isOverdue &&
+            perDay.activeAsapCSP.price > 0 &&
+            teamStats.teamAvgCSP.price > 0
+          ) {
+            const daysNeeded = Math.ceil(
+              perDay.activeAsapCSP.price / teamStats.teamAvgCSP.price,
+            );
+            closeDate = dateStrings.addWeekdays(today, daysNeeded);
+          } else if (isOverdue) {
+            // No lookback data — treat as due immediately so it gets highest priority
+            closeDate = today;
+          } else {
+            closeDate = perDay.servCode.dateRange.max;
+          }
         } else {
           continue; // No valid date range and not alwaysAsap — skip
         }
@@ -472,6 +542,23 @@ const selectEmployeeCascadeResults = createSelector(
           });
 
           break; // Only one servCode worked per interval
+        }
+      }
+
+      // DEBUG: log cascade state for Adam + LR1
+      if (employee.name?.toLowerCase().includes("adam")) {
+        for (const sim of simDataList) {
+          if (sim.servCodeId.toLowerCase().includes("lr1") || sim.servCodeId.toLowerCase().includes("lr")) {
+            console.log("[CASCADE DEBUG] Adam sim entry:", {
+              servCodeId: sim.servCodeId,
+              openDate: sim.openDate,
+              closeDate: sim.closeDate,
+              pool: sim.pool,
+              availableFrom: availableFrom.get(sim.servCodeId),
+              contributed: contributed.get(sim.servCodeId),
+              boundaries,
+            });
+          }
         }
       }
 
@@ -902,6 +989,48 @@ const selectServCodePaceDeltaMap = createSelector(
   },
 );
 
+// ---------------------------------------------------------------------------
+// Layer 5b — ProgCode Projected Completion Map
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the projected completion date for each ProgCode — the latest projected end date
+ * across all its servCodes. When a servCode has no team lookback data, falls back to
+ * dateRange.max (assume on-time completion). `isEstimated` is true when any fallback was used.
+ */
+const selectProgCodeProjectedCompletionMap = createSelector(
+  [selectProgCodePaces, selectServCodePaceDeltaMap],
+  (
+    progCodePaces,
+    deltaMap,
+  ): Map<string, ProgCodeProjectedCompletion> => {
+    const result = new Map<string, ProgCodeProjectedCompletion>();
+
+    for (const progCodePace of progCodePaces) {
+      const dates: string[] = [];
+      let anyEstimated = false;
+
+      for (const sp of progCodePace.servCodePaces) {
+        const delta = deltaMap.get(sp.servCode.servCodeId);
+        if (delta?.projectedEndDate != null) {
+          dates.push(delta.projectedEndDate);
+        } else if (sp.servCode.dateRange.max) {
+          // No team data — fall back to the planned end date (assume on-time)
+          anyEstimated = true;
+          dates.push(sp.servCode.dateRange.max);
+        }
+      }
+
+      result.set(progCodePace.progCode.progCodeId, {
+        date: dates.length > 0 ? [...dates].sort().at(-1)! : null,
+        isEstimated: anyEstimated,
+      });
+    }
+
+    return result;
+  },
+);
+
 const selectMatrixDeltaDaysBounds = createSelector(
   [selectServCodePaceDeltaMap],
   (deltaMap): [number, number] => {
@@ -1223,11 +1352,13 @@ function makeSelectProjectedAllocations({
       selectServCodePaces,
       selectEmployeeCascadeMap,
       assignmentPlanSelect.assignmentsByEmployeeId,
+      selectRateMode,
     ],
     (
       servCodePaces,
       cascadeMap,
       assignmentsByEmployeeId,
+      rateMode,
     ): EmployeeAllocation[] => {
       const priorityOrder =
         assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
@@ -1239,7 +1370,15 @@ function makeSelectProjectedAllocations({
       const allocations: EmployeeAllocation[] = [];
 
       for (const pace of servCodePaces) {
-        if (!isServCodeActiveOn(pace.servCode, date)) continue;
+        // Pass overdue servCodes with remaining work even when date > dateRange.max —
+        // the cascade's effective close date extends them, so they should still display.
+        const isActive = isServCodeActiveOn(pace.servCode, date);
+        const isOverdueWithWork =
+          !isActive &&
+          pace.servCode.dateRange.max != null &&
+          date > pace.servCode.dateRange.max &&
+          pace.unfinishedCSP.count > 0;
+        if (!isActive && !isOverdueWithWork) continue;
 
         const share = pace.employeeShares.find(
           (s) => s.employee.employeeId === employeeId,
@@ -1268,43 +1407,59 @@ function makeSelectProjectedAllocations({
           continue;
         }
 
-        const daysLeft = pace.servCode.alwaysAsap
-          ? 1
-          : weekdaysRemainingLocal(date, pace.servCode.dateRange.max ?? date);
-
-        const rateAsOfDate = CountSizePriceOps.divideBy(
+        // Target CSP = min(employee's daily rate, their proportional share of the demand rate).
+        // This answers "what should this employee route today?" rather than "how much of the
+        // pool did the cascade assign them?" The cascade's availableFrom gate (above) still
+        // enforces the waterfall — LR2 only gets a target once LR1 is exhausted.
+        const effectiveMax = isOverdueWithWork
+          ? date
+          : (pace.servCode.dateRange.max ?? date);
+        const daysLeft = Math.max(
+          1,
+          dateRanges.countWeekdays({ min: date, max: effectiveMax }),
+        );
+        const demandRate = CountSizePriceOps.divideBy(
           pace.unfinishedCSP,
-          daysLeft || 1,
+          daysLeft,
         );
 
-        let expectedCSP = { ...baseCountSizePrice };
-        if (!share.isEstimated && share.dailyRate) {
-          const teamAvg = CountSizePriceOps.sumAll(
+        let expectedCSP: CountSizePrice;
+        if (entry && !entry.isEstimated) {
+          // Employee's proportional share of the demand rate, weighted by their daily rate
+          const teamAvgCSP = CountSizePriceOps.sumAll(
             pace.employeeShares
               .filter((s) => !s.isEstimated)
               .map((s) => s.dailyRate),
           );
-          expectedCSP = {
+          const employeeDemandShare: CountSizePrice = {
             count:
-              teamAvg.count > 0
-                ? rateAsOfDate.count * (share.dailyRate.count / teamAvg.count)
+              teamAvgCSP.count > 0
+                ? demandRate.count * (entry.dailyRate.count / teamAvgCSP.count)
                 : 0,
             size:
-              teamAvg.size > 0
-                ? rateAsOfDate.size * (share.dailyRate.size / teamAvg.size)
+              teamAvgCSP.size > 0
+                ? demandRate.size * (entry.dailyRate.size / teamAvgCSP.size)
                 : 0,
             price:
-              teamAvg.price > 0
-                ? rateAsOfDate.price * (share.dailyRate.price / teamAvg.price)
+              teamAvgCSP.price > 0
+                ? demandRate.price * (entry.dailyRate.price / teamAvgCSP.price)
                 : 0,
             rev:
-              teamAvg.rev > 0
-                ? rateAsOfDate.rev * (share.dailyRate.rev / teamAvg.rev)
+              teamAvgCSP.rev > 0
+                ? demandRate.rev * (entry.dailyRate.rev / teamAvgCSP.rev)
                 : 0,
           };
+
+          // Use avg or max rate depending on rateMode toggle
+          const capacityRate =
+            rateMode === "max" ? entry.maxDailyRate : entry.dailyRate;
+
+          // Target is the lesser of capacity and demand — don't suggest more than needed
+          expectedCSP = minCSP(capacityRate, employeeDemandShare);
         } else {
+          // Fallback for estimated employees: even split of demand rate
           const assignedCount = pace.employeeShares.length || 1;
-          expectedCSP = CountSizePriceOps.divideBy(rateAsOfDate, assignedCount);
+          expectedCSP = CountSizePriceOps.divideBy(demandRate, assignedCount);
         }
 
         const fractionConsumed =
@@ -1668,6 +1823,7 @@ export const paceSelect = {
   employeeCardData: selectEmployeeCardDataFull,
   // Layer 5
   servCodePaceDeltaMap: selectServCodePaceDeltaMap,
+  progCodeProjectedCompletionMap: selectProgCodeProjectedCompletionMap,
   matrixDeltaDaysBounds: selectMatrixDeltaDaysBounds,
   matrixFilteredSortedProgCodePaces: selectMatrixFilteredSortedProgCodePaces,
   // Slice selectors
@@ -1677,6 +1833,7 @@ export const paceSelect = {
   employeeDates: selectEmployeeDates,
   paceTolerance: selectPaceTolerance,
   showUpcoming: selectShowUpcoming,
+  rateMode: selectRateMode,
   // Employee view
   dateBounds: selectDateBounds,
   weekdayBounds: selectWeekdayBounds,
