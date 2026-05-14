@@ -222,6 +222,14 @@ function addWeekdays(date: string, n: number): string {
 }
 
 /**
+ * Counts the total calendar days from `from` to `to` (exclusive of `from`, inclusive of `to`).
+ * Returns a positive number if `to` > `from`, negative if `to` < `from`, and 0 if equal.
+ */
+function calendarDaysBetween(from: string, to: string): number {
+  return differenceInCalendarDays(parseISO(to), parseISO(from));
+}
+
+/**
  * Counts the number of weekdays between two date strings (exclusive of start, inclusive of end).
  * Returns a positive number if end > start, negative if end < start.
  */
@@ -270,5 +278,6 @@ export const dateRanges = {
   dateRangeToDate,
   countWeekdays,
   countWeekdaysBetween,
+  calendarDaysBetween,
   weekdaysBetween,
 };
