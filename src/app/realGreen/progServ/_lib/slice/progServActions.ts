@@ -27,6 +27,7 @@ const extractServCodeDocProps = (doc: ServCodeDoc): ServCodeDocProps => ({
   alwaysAsap: doc.alwaysAsap,
   productRuleDocs: doc.productRuleDocs,
   callAheadTag: doc.callAheadTag ?? null,
+  paddingDays: doc.paddingDays,
 });
 
 const executeUpdateServCode = (
@@ -263,6 +264,7 @@ const extractProgCodeDocProps = (doc: ProgCodeDoc): ProgCodeDocProps => ({
   econPriceTableId: doc.econPriceTableId,
   minForPreferred: doc.minForPreferred,
   isInstallment: doc.isInstallment,
+  runsInSequence: doc.runsInSequence,
 });
 
 const handleUpdateProgCode = (

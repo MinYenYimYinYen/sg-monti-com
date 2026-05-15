@@ -15,11 +15,11 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ProgCodePace, ProgCodeProjectedCompletion, ServCodePaceDelta } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { MiniServCodeDateEdit } from "@/app/bizPlan/pace/employee/components/MiniServCodeDateEdit";
-import { DateRangeOptimizerDialog } from "@/app/bizPlan/assignmentPlan/matrix/DateRangeOptimizerDialog";
 import { Number } from "@/components/Number";
 import { ChevronDown, ChevronRight, LandPlot, Pencil, Save } from "lucide-react";
 import { CountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
 import { MatrixDisplaySettings } from "@/app/bizPlan/assignmentPlan/matrix/MatrixDisplaySettings";
+import { SeasonOptimizerDialog } from "@/app/bizPlan/assignmentPlan/matrix/SeasonOptimizerDialog";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -350,6 +350,7 @@ export function AssignmentMatrix() {
                           Save ({dateRangeChanges.length})
                         </button>
                       )}
+                      <SeasonOptimizerDialog />
                       <MatrixDisplaySettings />
                     </div>
                   </div>
@@ -564,8 +565,6 @@ function MatrixProgGroup({
                 →{formatDate(projectedCompletion.date)}
               </span>
             )}
-            {/* Date range optimizer — wand icon opens dialog */}
-            <DateRangeOptimizerDialog progCodePace={progCodePace} />
           </div>
         </td>
 

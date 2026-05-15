@@ -24,6 +24,7 @@ export const baseServCodeDocProps: ServCodeDocProps = {
   alwaysAsap: false,
   productRuleDocs: [],
   callAheadTag: null,
+  paddingDays: 0,
   createdAt: "",
   updatedAt: "",
 };

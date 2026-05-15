@@ -32,7 +32,7 @@ import {
   ServCodePace,
   ServCodePaceDelta,
 } from "@/app/bizPlan/pace/PaceTypesRefactor";
-import { MatrixDisplayConfig, OptimizerConfig } from "@/app/bizPlan/pace/paceSlice";
+import { MatrixDisplayConfig } from "@/app/bizPlan/pace/paceSlice";
 import { LookbackConfig } from "@/app/bizPlan/pace/PaceTypesRefactor";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
@@ -1789,183 +1789,115 @@ function makeSelectEmployeeTimelineSegments(employeeId: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Layer 6 — DateRange Optimizer
+// Layer 6 — Season Optimizer
+//
+// Uses existing cascade and delta selectors directly — no duplicate cascade logic.
+// For each servCode:
+//   proposedMin = cascade.availableFrom (when first employee starts it) for
+//                 runsInSequence progCodes; currentRange.min otherwise.
+//   proposedMax = addWeekdays(projectedEndDate, servCode.paddingDays)
 // ---------------------------------------------------------------------------
 
-/**
- * One row of optimizer output per servCode. `hasWork = false` means the servCode
- * had no unscheduled pool and was left unchanged; `newRange === currentRange`.
- */
-export type OptimizedRange = {
+/** One row of season optimizer output per servCode. */
+export type SeasonOptimizedRange = {
   servCodeId: string;
+  progCodeId: string;
+  servCodeName: string;
   currentRange: TRange<string>;
-  newRange: TRange<string>;
-  daysNeeded: number;
+  /** Proposed new start — unchanged for non-runsInSequence or already-started servCodes */
+  proposedMin: string;
+  /** Proposed new end — projectedEndDate + paddingDays, or currentRange.max if no data */
+  proposedMax: string;
+  projectedEndDate: string | null;
+  paddingDays: number;
+  runsInSequence: boolean;
+  /** True when the servCode's pool has already started (openDate ≤ today) */
+  isStarted: boolean;
+  /** True when there's unscheduled work and a projected end date exists */
   hasWork: boolean;
-  /** Computed from lookback: teamAvgCapacity.price / assignedCount (rounded to nearest dollar) */
-  computedRatePerEmployee: number;
-  assignedCount: number;
 };
 
-const selectOptimizerConfig = (state: AppState) => state.pace.optimizerConfig;
+const selectSeasonOptimizerConfig = (state: AppState) => state.pace.seasonOptimizerConfig;
 
-/**
- * Runs the forward-pass optimizer for the currently open ProgCode.
- * Returns null when no optimizer is open (progCodeId is null).
- *
- * The algorithm sequences servCodes non-overlapping from today, using
- * `teamAvgCapacity.price` (already baked with the current lookbackStart) as
- * the throughput estimate and `activeAsapCSP.price` as the work pool.
- */
-const selectOptimizerResult = createSelector(
+const selectSeasonOptimizerResult = createSelector(
   [
-    selectOptimizerConfig,
     selectProgCodePaces,
     rawPaceSelect.rawServCodePacesPerDayMap,
-    // Cascade map needed for cascade-aware employee availability
+    selectServCodePaceDeltaMap,
     selectEmployeeCascadeMap,
   ],
-  (optimizerConfig, progCodePaces, perDayMap, cascadeMap): OptimizedRange[] | null => {
-    if (!optimizerConfig.progCodeId) return null;
-
-    const progCodePace = progCodePaces.find(
-      (p) => p.progCode.progCodeId === optimizerConfig.progCodeId,
-    );
-    if (!progCodePace) return null;
-
-    const { paddingDays } = optimizerConfig;
+  (progCodePaces, perDayMap, deltaMap, cascadeMap): SeasonOptimizedRange[] => {
     const today = dateStrings.today();
+    const results: SeasonOptimizedRange[] = [];
 
-    // cursor starts at max(today, earliest current dateRange.min)
-    const activeMins = progCodePace.servCodePaces
-      .map((sp) => sp.servCode.dateRange.min)
-      .filter(Boolean)
-      .sort();
-    const earliestMin = activeMins[0] ?? today;
-    let cursor = earliestMin > today ? earliestMin : today;
+    for (const progCodePace of progCodePaces) {
+      const runsInSequence = progCodePace.progCode.runsInSequence;
 
-    // Resolve intra-progCode circularity: as we schedule each servCode, record
-    // the proposed drain date per employee so the NEXT servCode in this progCode
-    // uses the updated availability rather than the cascade's current-range value.
-    const employeeProgCodeDrainDate = new Map<string, string>();
+      // For sequential progCodes: track the day after each servCode's proposedMax so the
+      // next servCode's min is guaranteed to start AFTER the previous one ends.
+      let sequentialCursor: string | null = null;
 
-    // Sentinel far-future date for open-ended drain projection
-    const farFuture = dateStrings.addWeekdays(today, 500);
+      for (const sp of progCodePace.servCodePaces) {
+        const servCodeId = sp.servCode.servCodeId;
+        const currentRange = sp.servCode.dateRange;
+        const paddingDays = sp.servCode.paddingDays;
+        const perDay = perDayMap.get(servCodeId);
+        const delta = deltaMap.get(servCodeId);
 
-    const results: OptimizedRange[] = [];
+        const openDate = perDay
+          ? (perDay.projectionStartDate ?? (today > currentRange.min ? today : currentRange.min))
+          : currentRange.min;
 
-    for (const sp of progCodePace.servCodePaces) {
-      const servCodeId = sp.servCode.servCodeId;
-      const currentRange = sp.servCode.dateRange;
-      const perDay = perDayMap.get(servCodeId);
-      const assignedCount = Math.max(sp.servCode.assignedTo.length, 1);
-      const computedRatePerEmployee = Math.round(sp.teamAvgCapacity.price / assignedCount);
+        const isStarted = openDate <= today;
+        const projectedEndDate = delta?.projectedEndDate ?? null;
+        const hasWork = projectedEndDate !== null && (perDay?.activeAsapCSP.price ?? 0) > 0;
 
-      if (!perDay || !dateRanges.isValidDateRange(currentRange)) {
-        results.push({
-          servCodeId,
-          currentRange,
-          newRange: currentRange,
-          daysNeeded: 0,
-          hasWork: false,
-          computedRatePerEmployee,
-          assignedCount,
-        });
-        continue;
-      }
-
-      const pool = perDay.activeAsapCSP.price;
-      if (pool <= 0) {
-        results.push({
-          servCodeId,
-          currentRange,
-          newRange: currentRange,
-          daysNeeded: 0,
-          hasWork: false,
-          computedRatePerEmployee,
-          assignedCount,
-        });
-        continue;
-      }
-
-      // Determine the start date (locked or cursor)
-      const isStartLocked = !!optimizerConfig.lockedStarts[servCodeId];
-      const newMin = isStartLocked ? currentRange.min : cursor;
-
-      // Build cascade-aware per-employee availability.
-      // For each assigned employee:
-      //   1. Base availability = cascade.availableFrom (cross-progCode waterfall)
-      //   2. Intra-progCode override: can't start before they finished the previous
-      //      servCode in this same progCode (tracked by employeeProgCodeDrainDate)
-      //   3. Rate = user override ?? cascade dailyRate
-      const overridePerEmployee = optimizerConfig.rateOverrides[servCodeId];
-      const availability: { availableFrom: string; rate: number }[] = [];
-
-      for (const employee of sp.servCode.assignedTo) {
-        const cascadeResult = cascadeMap.get(employee.employeeId);
-        const entry = cascadeResult?.byServCode.get(servCodeId);
-
-        const rate =
-          overridePerEmployee != null
-            ? overridePerEmployee
-            : (entry?.dailyRate.price ?? 0);
-        if (rate <= 0) continue;
-
-        // Cross-progCode availability from the cascade
-        const cascadeAvailableFrom = entry?.availableFrom ?? newMin;
-
-        // Intra-progCode: once we've tracked a drain date for this employee within
-        // this progCode, use it directly — it chains the optimizer's own proposed
-        // completion forward, bypassing stale cascade values.
-        //
-        // For the first servCode this employee appears in (no intraDrain yet):
-        //   - If the cascade shows a real cross-progCode delay extending PAST the
-        //     servCode's current dateRange.min, respect it (employee has genuine
-        //     upstream work that doesn't change when we move this servCode's dates).
-        //   - Otherwise use newMin directly — the cascade value merely reflects the
-        //     old dateRange.min which changes on every Apply, causing instability.
-        const intraDrain = employeeProgCodeDrainDate.get(employee.employeeId);
-        const hasRealCrossProgramDelay = cascadeAvailableFrom > currentRange.min;
-        const effectiveFrom = intraDrain ?? (
-          hasRealCrossProgramDelay
-            ? (cascadeAvailableFrom > newMin ? cascadeAvailableFrom : newMin)
-            : newMin
-        );
-
-        availability.push({ availableFrom: effectiveFrom, rate });
-      }
-
-      // Use the same computePoolDrainDate logic as selectServCodePaceDeltaMap —
-      // the single source of truth for cascade-aware completion projection.
-      const drainDate = computePoolDrainDate(availability, pool, newMin, farFuture);
-
-      // newMax = drain date + buffer padding. Fallback: 1 day window if no data.
-      const newMax = drainDate
-        ? dateStrings.addWeekdays(drainDate, paddingDays)
-        : dateStrings.addWeekdays(newMin, 1 + paddingDays);
-
-      // Record each employee's proposed drain date for subsequent servCodes in this progCode
-      const effectiveDrain = drainDate ?? newMax;
-      for (const employee of sp.servCode.assignedTo) {
-        const existing = employeeProgCodeDrainDate.get(employee.employeeId);
-        if (!existing || effectiveDrain > existing) {
-          employeeProgCodeDrainDate.set(employee.employeeId, effectiveDrain);
+        let proposedMin: string;
+        if (isStarted || !runsInSequence) {
+          proposedMin = currentRange.min;
+          // Reset cursor when a started/independent servCode is encountered
+          if (isStarted) sequentialCursor = null;
+        } else {
+          // Use cascade's first-worked date: the earliest availableFrom across assigned employees
+          let earliest: string | null = null;
+          for (const employee of sp.servCode.assignedTo) {
+            const entry = cascadeMap.get(employee.employeeId)?.byServCode.get(servCodeId);
+            if (entry?.availableFrom) {
+              if (!earliest || entry.availableFrom < earliest) {
+                earliest = entry.availableFrom;
+              }
+            }
+          }
+          const cascadeMin = earliest ?? openDate;
+          // Ensure this servCode doesn't start before the previous sequential one ends
+          proposedMin = sequentialCursor && sequentialCursor > cascadeMin
+            ? sequentialCursor
+            : cascadeMin;
         }
+
+        const proposedMax = hasWork && projectedEndDate
+          ? dateStrings.addWeekdays(projectedEndDate, paddingDays)
+          : currentRange.max;
+
+        // Advance sequential cursor past this servCode's proposed end
+        if (runsInSequence && hasWork) {
+          sequentialCursor = dateStrings.addWeekdays(proposedMax, 1);
+        }
+
+        results.push({
+          servCodeId,
+          progCodeId: progCodePace.progCode.progCodeId,
+          servCodeName: sp.servCode.longName,
+          currentRange,
+          proposedMin,
+          proposedMax,
+          projectedEndDate,
+          paddingDays,
+          runsInSequence,
+          isStarted,
+          hasWork,
+        });
       }
-
-      cursor = dateStrings.addWeekdays(newMax, 1);
-
-      const daysNeeded = Math.max(1, dateRanges.weekdaysBetween(newMin, newMax));
-
-      results.push({
-        servCodeId,
-        currentRange,
-        newRange: { min: newMin, max: newMax },
-        daysNeeded,
-        hasWork: true,
-        computedRatePerEmployee,
-        assignedCount,
-      });
     }
 
     return results;
@@ -2007,9 +1939,9 @@ export const paceSelect = {
   weekdayBounds: selectWeekdayBounds,
   dateTicks: selectDateTicks,
   employeeUnfinishedShareMap: selectEmployeeUnfinishedShareMap,
-  // Layer 6 — Optimizer
-  optimizerConfig: selectOptimizerConfig,
-  optimizerResult: selectOptimizerResult,
+  // Layer 6 — Season Optimizer
+  seasonOptimizerConfig: selectSeasonOptimizerConfig,
+  seasonOptimizerResult: selectSeasonOptimizerResult,
   // Factory selectors
   makeEffectiveDate: makeSelectEffectiveDate,
   makeProjectedAllocations: makeSelectProjectedAllocations,

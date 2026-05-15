@@ -82,6 +82,12 @@ export type ProgCodeDocProps = CreatedUpdated & {
   econPriceTableId: number | null;
   minForPreferred: number | null;
   isInstallment: boolean;
+  /**
+   * When true, the season optimizer treats this progCode's servCodes as running
+   * back-to-back in cascade order — it sets both dateRange.min and max from the
+   * cascade projections. When false (default), only max is adjusted.
+   */
+  runsInSequence: boolean;
 };
 
 export type ProgCodeDoc = ProgCodeRemapped & ProgCodeDocProps;

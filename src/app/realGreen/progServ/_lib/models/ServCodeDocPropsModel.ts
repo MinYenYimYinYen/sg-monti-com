@@ -25,6 +25,7 @@ const ServCodeSchema = new mongoose.Schema<ServCodeDocPropsDoc>(
     alwaysAsap: { type: Boolean },
     productRuleDocs: [ServCodeProductSchema],
     callAheadTag: { type: String, default: null },
+    paddingDays: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

@@ -9,7 +9,7 @@ const ProgCodeDocPropsSchema = new mongoose.Schema<ProgCodeDocProps>({
   econPriceTableId: { type: Number, default: null },
   minForPreferred: { type: Number, default: null },
   isInstallment: { type: Boolean, default: false },
-
+  runsInSequence: { type: Boolean, default: false },
 });
 
 export const ProgCodeDocPropsModel = createModel(

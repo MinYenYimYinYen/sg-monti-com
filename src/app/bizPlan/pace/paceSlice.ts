@@ -14,16 +14,11 @@ type MatrixSortKey =
   | "price"
   | "rev";
 
-type OptimizerConfig = {
-  progCodeId: string | null;
-  paddingDays: number;
-  /** Saved so Cancel can restore both lookback fields */
+/** Transient state for the Season Optimizer dialog. Cleared when the dialog closes. */
+type SeasonOptimizerConfig = {
+  /** Saved when the optimizer opens so Cancel can restore the lookback settings. */
   originalLookbackStart: string | null;
   originalCompletionThreshold: number | null;
-  /** servCodeId → per-employee price/day override (integer dollars) */
-  rateOverrides: Record<string, number>;
-  /** servCodeIds whose dateRange.min is pinned — optimizer only moves the max */
-  lockedStarts: Record<string, boolean>;
 };
 
 /** UI display/filter/sort config for the AssignmentMatrix. */
@@ -44,7 +39,7 @@ type MatrixDisplayConfig = {
 type PaceState = {
   lookbackConfig: LookbackConfig;
   matrixDisplayConfig: MatrixDisplayConfig;
-  optimizerConfig: OptimizerConfig;
+  seasonOptimizerConfig: SeasonOptimizerConfig;
 };
 
 const initialState: PaceState = {
@@ -59,13 +54,9 @@ const initialState: PaceState = {
     filterDeltaDays: null,
     cspDisplay: "total",
   },
-  optimizerConfig: {
-    progCodeId: null,
-    paddingDays: 0,
+  seasonOptimizerConfig: {
     originalLookbackStart: null,
     originalCompletionThreshold: null,
-    rateOverrides: {},
-    lockedStarts: {},
   },
 };
 
@@ -100,56 +91,29 @@ const paceSlice = createSlice({
     setMatrixCspDisplay: (state, action: PayloadAction<MatrixCspDisplay>) => {
       state.matrixDisplayConfig.cspDisplay = action.payload;
     },
-    openOptimizer: (state, action: PayloadAction<{ progCodeId: string }>) => {
-      state.optimizerConfig = {
-        progCodeId: action.payload.progCodeId,
-        paddingDays: 0,
+    openSeasonOptimizer: (state) => {
+      state.seasonOptimizerConfig = {
         originalLookbackStart: state.lookbackConfig.lookbackStart,
         originalCompletionThreshold: state.lookbackConfig.completionThreshold,
-        rateOverrides: {},
-        lockedStarts: {},
       };
     },
-    setOptimizerPaddingDays: (state, action: PayloadAction<number>) => {
-      state.optimizerConfig.paddingDays = action.payload;
-    },
-    setOptimizerRateOverride: (
-      state,
-      action: PayloadAction<{ servCodeId: string; rate: number }>,
-    ) => {
-      state.optimizerConfig.rateOverrides[action.payload.servCodeId] =
-        action.payload.rate;
-    },
-    setOptimizerLockedStart: (
-      state,
-      action: PayloadAction<{ servCodeId: string; locked: boolean }>,
-    ) => {
-      if (action.payload.locked) {
-        state.optimizerConfig.lockedStarts[action.payload.servCodeId] = true;
-      } else {
-        delete state.optimizerConfig.lockedStarts[action.payload.servCodeId];
+    closeSeasonOptimizer: (state) => {
+      // Restore lookback settings that may have been changed while the optimizer was open
+      if (state.seasonOptimizerConfig.originalLookbackStart) {
+        state.lookbackConfig.lookbackStart = state.seasonOptimizerConfig.originalLookbackStart;
       }
-    },
-    closeOptimizer: (state) => {
-      if (state.optimizerConfig.originalLookbackStart) {
-        state.lookbackConfig.lookbackStart = state.optimizerConfig.originalLookbackStart;
-      }
-      if (state.optimizerConfig.originalCompletionThreshold !== null) {
+      if (state.seasonOptimizerConfig.originalCompletionThreshold !== null) {
         state.lookbackConfig.completionThreshold =
-          state.optimizerConfig.originalCompletionThreshold;
+          state.seasonOptimizerConfig.originalCompletionThreshold;
       }
-      state.optimizerConfig = {
-        progCodeId: null,
-        paddingDays: 0,
+      state.seasonOptimizerConfig = {
         originalLookbackStart: null,
         originalCompletionThreshold: null,
-        rateOverrides: {},
-        lockedStarts: {},
       };
     },
   },
 });
 
-export type { MatrixCspDisplay, MatrixSortKey, MatrixDisplayConfig, OptimizerConfig };
+export type { MatrixCspDisplay, MatrixSortKey, MatrixDisplayConfig, SeasonOptimizerConfig, PaceState };
 export const paceActions = { ...paceSlice.actions };
 export const paceReducer = paceSlice.reducer;

@@ -112,6 +112,8 @@ export type ServCodeDocProps = CreatedUpdated & {
   alwaysAsap: boolean;
   productRuleDocs: ProductRuleDoc[];
   callAheadTag: string | null;
+  /** Extra weekdays added after the projected drain date when optimizing this servCode's window. */
+  paddingDays: number;
 };
 
 export type ServCodeDoc = ServCodeCore & ServCodeDocProps;
