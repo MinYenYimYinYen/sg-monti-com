@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
 import { urgentSelect } from "@/app/bizPlan/pace/urgentSelect";
 import { urgentActions } from "@/app/bizPlan/pace/urgentSlice";
 import { AppDispatch } from "@/store";
@@ -224,7 +224,7 @@ function UrgentServCodeRow({ pace }: { pace: ServCodePace }) {
 // ---------------------------------------------------------------------------
 
 export function UrgentServCodeCard() {
-  const urgentPaces = useSelector(paceSelect.urgentServCodePaces);
+  const urgentPaces = useSelector(servCodePaceSelect.urgentServCodePaces);
   const [checklistOpen, setChecklistOpen] = useState(false);
 
   if (urgentPaces.length === 0) return null;

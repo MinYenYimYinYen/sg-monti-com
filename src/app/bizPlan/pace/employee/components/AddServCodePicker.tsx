@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
 import { PaceCategory } from "@/app/bizPlan/pace/PaceTypes";
 import { CATEGORY_BADGE_STYLES } from "@/app/bizPlan/pace/paceStyles";
 import {
@@ -39,7 +39,7 @@ export function AddServCodePicker({
   const [open, setOpen] = useState(false);
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
-  const servCodePaces = useSelector(paceSelect.servCodePaces);
+  const servCodePaces = useSelector(servCodePaceSelect.servCodePaces);
 
   // Only show servCodes not already assigned to this employee
   const assignedSet = new Set(assignedServCodeIds);

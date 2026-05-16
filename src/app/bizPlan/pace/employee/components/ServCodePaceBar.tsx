@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { ServCodePace } from "@/app/bizPlan/pace/PaceTypes";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
+import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
 import { Number } from "@/components/Number";
 import { LandPlot } from "lucide-react";
 import { cn } from "@/style/utils";
@@ -422,10 +423,10 @@ type ServCodePaceBarProps = {
 
 export function ServCodePaceBar({ servCodeId, avgDailyCSP, expectedCSP, employeeUnfinishedCSP }: ServCodePaceBarProps) {
   const [open, setOpen] = useState(false);
-  const servCodePaceMap = useSelector(paceSelect.servCodePaceMap);
-  const paceTolerance = useSelector(paceSelect.paceTolerance);
+  const servCodePaceMap = useSelector(servCodePaceSelect.servCodePaceMap);
+  const paceTolerance = useSelector(cascadeSelect.paceTolerance);
   // Use the slider date as the view anchor — the bar reflects state as of this date
-  const viewDate = useSelector(paceSelect.mainDate);
+  const viewDate = useSelector(cascadeSelect.mainDate);
 
   const pace = servCodePaceMap.get(servCodeId);
   if (!pace) return null;

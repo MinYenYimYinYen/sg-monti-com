@@ -2,7 +2,8 @@
 
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { matrixSelect } from "@/app/bizPlan/pace/selectors/matrixSelect";
+import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 import { paceActions, MatrixCspDisplay, MatrixSortKey } from "@/app/bizPlan/pace/paceSlice";
 import { PaceCategory } from "@/app/bizPlan/pace/PaceTypes";
 import {
@@ -49,7 +50,7 @@ const CSP_DISPLAY_OPTIONS: { value: MatrixCspDisplay; label: string }[] = [
 
 function LookbackSection() {
   const dispatch = useAppDispatch();
-  const lookbackConfig = useSelector(paceSelect.lookbackConfig);
+  const lookbackConfig = useSelector(cascadeSelect.lookbackConfig);
 
   return (
     <section>
@@ -93,8 +94,8 @@ function LookbackSection() {
 
 export function MatrixDisplaySettings() {
   const dispatch = useAppDispatch();
-  const config = useSelector(paceSelect.matrixDisplayConfig);
-  const [boundsMin, boundsMax] = useSelector(paceSelect.matrixDeltaDaysBounds);
+  const config = useSelector(matrixSelect.matrixDisplayConfig);
+  const [boundsMin, boundsMax] = useSelector(matrixSelect.matrixDeltaDaysBounds);
 
   const deltaEnabled = config.filterDeltaDays != null;
   const deltaRange = config.filterDeltaDays ?? [boundsMin, boundsMax];

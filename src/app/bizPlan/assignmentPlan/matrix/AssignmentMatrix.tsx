@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import { usePaceDeps } from "@/app/bizPlan/pace/usePaceDeps";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { matrixSelect } from "@/app/bizPlan/pace/selectors/matrixSelect";
 import { rawPaceSelect } from "@/app/bizPlan/pace/rawPaceSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
@@ -153,16 +153,16 @@ export function AssignmentMatrix() {
   const allEmployees = useSelector(employeeSelect.employees);
   const activeEmployees = allEmployees.filter((e) => e.active);
 
-  const progCodePaces = useSelector(paceSelect.matrixFilteredSortedProgCodePaces);
-  const cspDisplay = useSelector(paceSelect.matrixDisplayConfig).cspDisplay;
+  const progCodePaces = useSelector(matrixSelect.matrixFilteredSortedProgCodePaces);
+  const cspDisplay = useSelector(matrixSelect.matrixDisplayConfig).cspDisplay;
 
   // Raw CSP maps for display
   const perDayMap = useSelector(rawPaceSelect.rawServCodePacesPerDayMap);
   const perDayPerEmployeeMap = useSelector(rawPaceSelect.rawServCodePacesPerDayPerEmployeeMap);
 
   // Delta map for pace delta display
-  const deltaMap = useSelector(paceSelect.servCodePaceDeltaMap);
-  const progCodeProjectedCompletionMap = useSelector(paceSelect.progCodeProjectedCompletionMap);
+  const deltaMap = useSelector(matrixSelect.servCodePaceDeltaMap);
+  const progCodeProjectedCompletionMap = useSelector(matrixSelect.progCodeProjectedCompletionMap);
 
   const assignmentsByEmployeeId = useSelector(
     assignmentPlanSelect.assignmentsByEmployeeId,

@@ -14,7 +14,10 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 import { Button } from "@/style/components/button";
 import { AppState } from "@/store";
-import { paceSelect, SeasonOptimizedRange } from "@/app/bizPlan/pace/paceSelect";
+import { matrixSelect } from "@/app/bizPlan/pace/selectors/matrixSelect";
+import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
+import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
+import { SeasonOptimizedRange } from "@/app/bizPlan/pace/PaceTypes";
 import { paceActions } from "@/app/bizPlan/pace/paceSlice";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
@@ -61,10 +64,10 @@ export function SeasonOptimizerDialog() {
   const [open, setOpen] = useState(false);
   const dispatch = useAppDispatch();
 
-  const lookbackConfig = useSelector(paceSelect.lookbackConfig);
-  const seasonResult = useSelector(paceSelect.seasonOptimizerResult);
-  const progCodePaces = useSelector(paceSelect.progCodePaces);
-  const servCodePaceMap = useSelector(paceSelect.servCodePaceMap);
+  const lookbackConfig = useSelector(cascadeSelect.lookbackConfig);
+  const seasonResult = useSelector(matrixSelect.seasonOptimizerResult);
+  const progCodePaces = useSelector(servCodePaceSelect.progCodePaces);
+  const servCodePaceMap = useSelector(servCodePaceSelect.servCodePaceMap);
   const servCodeDocMap = useSelector(progServSelect.servCodeDocMap);
   const unsavedProgCodeChanges = useSelector((state: AppState) => state.progServ.unsavedProgCodeChanges);
   const { updateServCode, updateProgCode, revertProgCode, saveServCodeChanges, saveProgCodeChanges } = useProgServ({});

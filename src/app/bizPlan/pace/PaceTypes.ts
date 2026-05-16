@@ -4,6 +4,25 @@ import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 
+/** One row of season optimizer output per servCode. */
+export type SeasonOptimizedRange = {
+  servCodeId: string;
+  progCodeId: string;
+  servCodeName: string;
+  currentRange: TRange<string>;
+  /** Proposed new start — unchanged for non-runsInSequence or already-started servCodes */
+  proposedMin: string;
+  /** Proposed new end — projectedEndDate + paddingDays, or currentRange.max if no data */
+  proposedMax: string;
+  projectedEndDate: string | null;
+  paddingDays: number;
+  runsInSequence: boolean;
+  /** True when the servCode's pool has already started (openDate ≤ today) */
+  isStarted: boolean;
+  /** True when there's unscheduled work and a projected end date exists */
+  hasWork: boolean;
+};
+
 export type PaceCategory =
   | "asap"
   | "overdue"

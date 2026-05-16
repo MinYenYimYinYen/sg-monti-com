@@ -2,7 +2,9 @@
 
 import { useSelector } from "react-redux";
 import { EmployeeCardData } from "@/app/bizPlan/pace/PaceTypes";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
+import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
+import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
+import { employeeCardSelect } from "@/app/bizPlan/pace/selectors/employeeCardSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
@@ -26,19 +28,19 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
   const assignmentsByEmployeeId = useSelector(
     assignmentPlanSelect.assignmentsByEmployeeId,
   );
-  const showUpcoming = useSelector(paceSelect.showUpcoming);
+  const showUpcoming = useSelector(cascadeSelect.showUpcoming);
 
   const employeeId = employee.employeeId;
 
-  const mainDate = useSelector(paceSelect.mainDate);
+  const mainDate = useSelector(cascadeSelect.mainDate);
 
-  const selectAllocationsAtDate = paceSelect.makeProjectedAllocations({
+  const selectAllocationsAtDate = employeeCardSelect.makeProjectedAllocations({
     employeeId,
     date: mainDate,
   });
   const allDateAllocations = useSelector(selectAllocationsAtDate);
-  const servCodePaceMap = useSelector(paceSelect.servCodePaceMap);
-  const servCodePaces = useSelector(paceSelect.servCodePaces);
+  const servCodePaceMap = useSelector(servCodePaceSelect.servCodePaceMap);
+  const servCodePaces = useSelector(servCodePaceSelect.servCodePaces);
 
   const printedForEmployeeToday = servCodePaces
     .flatMap((pace) => pace.servCode.services)
@@ -48,7 +50,7 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
         service.lastAssigned?.schedDate === mainDate,
     );
 
-  const selectNotStartedAllocations = paceSelect.makeNotStartedAllocations({
+  const selectNotStartedAllocations = employeeCardSelect.makeNotStartedAllocations({
     employeeId,
   });
   const upcomingAllocations = useSelector(selectNotStartedAllocations);
