@@ -1,9 +1,9 @@
 "use client";
 
-import { EmployeeAllocation } from "@/app/bizPlan/pace/PaceTypesRefactor";
+import { EmployeeAllocation } from "@/app/bizPlan/pace/PaceTypes";
 import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
 import { ServCodePaceBar } from "@/app/bizPlan/pace/employee/components/ServCodePaceBar";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { CountSizePrice, baseCountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
 import { Number } from "@/components/Number";
 import { ChevronUp, ChevronDown, Crosshair, MoveUpRight, MoveRight, MoveDownRight } from "lucide-react";

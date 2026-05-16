@@ -14,7 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 import { Button } from "@/style/components/button";
 import { AppState } from "@/store";
-import { paceSelect, SeasonOptimizedRange } from "@/app/bizPlan/pace/paceSelectRefactor";
+import { paceSelect, SeasonOptimizedRange } from "@/app/bizPlan/pace/paceSelect";
 import { paceActions } from "@/app/bizPlan/pace/paceSlice";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";

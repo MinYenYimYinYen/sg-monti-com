@@ -8,19 +8,19 @@ All tasks are AI tasks. Work through them in order — each task unblocks the ne
 
 ## Tasks
 
-- [ ] A1: **`employeeLookbackUtils.ts`** — remove `totalMaxDailyCSP`
+- [x] A1: **`employeeLookbackUtils.ts`** — remove `totalMaxDailyCSP`
   - Drop `totalMaxDailyCSP` from `LookbackStats` type
   - Drop `totalMaxByEmployee` accumulator from `selectEmployeeLookbackMap`
   - Drop `totalMaxDailyCSP` from `computeLookbackStats` signature and return
   - Keep `maxDailyCSP` (per-programType best day — used by Employee Card "push harder" indicator)
 
-- [ ] A2: **`PaceType.ts`** — type surgery
+- [x] A2: **`PaceType.ts`** — type surgery
   - Add `EmployeeCascadeEntry` and `EmployeeCascadeResult` types
   - Drop `EmployeeShare` and `EmployeePaceSummary`
   - Update `ServCodePace.employeeShares` to `Array<EmployeeCascadeEntry & { employee: Employee }>`
   - Update `EmployeeCardData`: add `totalAvgDailyCSP: CountSizePrice | null`, drop programType-breakdown fields
 
-- [ ] A3: **`paceSelectRefactor.ts`** — new file, single source of truth
+- [x] A3: **`paceSelectRefactor.ts`** — new file, single source of truth
   - Absorbs all selectors from both `paceSelect.ts` and `employeePaceSelect.ts`
   - Layer 2: `selectEmployeeLookbackMap` (copy from `paceSelect.ts`, remove `totalMaxDailyCSP` tracking)
   - Layer 3: `selectEmployeeCascadeResults` — sequential-completion cascade per employee
@@ -45,7 +45,7 @@ All tasks are AI tasks. Work through them in order — each task unblocks the ne
     - `makeTimelineSegments` — factory selector
   - Export as single `paceSelect` const containing all selectors consumed downstream
 
-- [ ] A4: **Delete `paceSelect.ts`** and **delete `employeePaceSelect.ts`**
+- [x] A4: **Delete `paceSelect.ts`** and **delete `employeePaceSelect.ts`**
   - Update all component imports that referenced `employeePaceSelect` to use `paceSelect` instead
   - Verify no remaining imports point to either deleted file
 
@@ -55,7 +55,7 @@ All tasks are AI tasks. Work through them in order — each task unblocks the ne
 
 | Task | Status | Notes |
 |---|---|---|
-| A1 | ☐ | |
-| A2 | ☐ | |
-| A3 | ☐ | Largest task — core of the refactor |
-| A4 | ☐ | Final cleanup + import updates |
+| A1 | ✅ | Completed |
+| A2 | ✅ | Completed |
+| A3 | ✅ | Completed — core refactor fully implemented in paceSelect.ts |
+| A4 | ✅ | Completed — old files deleted, imports updated |

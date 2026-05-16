@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { usePaceDeps } from "@/app/bizPlan/pace/usePaceDeps";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { employeePaceActions } from "@/app/bizPlan/pace/employee/employeePaceSlice";
 import { EmployeeCard } from "@/app/bizPlan/pace/employee/components/EmployeeCard";
 import { UrgentServCodeCard } from "@/app/bizPlan/pace/employee/components/UrgentServCodeCard";
@@ -22,7 +22,7 @@ export function EmployeePace() {
 
   const dispatch = useAppDispatch();
   const employeeCardData = useSelector(paceSelect.employeeCardData);
-  const latestAssignmentDate = useSelector(paceSelect.latestAssignmentDate);
+  // const latestAssignmentDate = useSelector(paceSelect.latestAssignmentDate);
   const mainDate = useSelector(paceSelect.mainDate);
   const unsavedServCodeChanges = useSelector(progServSelect.unsavedServCodeChanges);
   const isAdmin = useSelector(authSelect.role) === "admin";

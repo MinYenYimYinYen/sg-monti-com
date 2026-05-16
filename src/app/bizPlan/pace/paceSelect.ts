@@ -31,9 +31,9 @@ import {
   ProgCodeProjectedCompletion,
   ServCodePace,
   ServCodePaceDelta,
-} from "@/app/bizPlan/pace/PaceTypesRefactor";
+} from "@/app/bizPlan/pace/PaceTypes";
 import { MatrixDisplayConfig } from "@/app/bizPlan/pace/paceSlice";
-import { LookbackConfig } from "@/app/bizPlan/pace/PaceTypesRefactor";
+import { LookbackConfig } from "@/app/bizPlan/pace/PaceTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
@@ -111,15 +111,6 @@ function minCSP(a: CountSizePrice, b: CountSizePrice): CountSizePrice {
     rev: Math.min(a.rev, b.rev),
   };
 }
-
-const selectLatestAssignmentDate = createSelector(
-  [centralSelect.services],
-  (services) => {
-    return services
-      .map((serv) => serv.lastAssigned?.schedDate ?? "")
-      .sort((a, b) => b.localeCompare(a))[0];
-  },
-);
 
 // ---------------------------------------------------------------------------
 // Layer 2 — Employee Lookback
@@ -772,20 +763,12 @@ const selectEmployeeCardDataFull = createSelector(
           }
         : null;
 
-      const isOverloaded = totalFractionConsumed
-        ? totalFractionConsumed.count > 1 + OVERLOAD_EPSILON ||
-          totalFractionConsumed.size > 1 + OVERLOAD_EPSILON ||
-          totalFractionConsumed.price > 1 + OVERLOAD_EPSILON ||
-          totalFractionConsumed.rev > 1 + OVERLOAD_EPSILON
-        : false;
-
       result.push({
         employee,
         totalAvgDailyCSP,
         allocations,
         totalFractionConsumed,
         freeCapacityFraction,
-        // isOverloaded,
       });
     }
 
@@ -1161,38 +1144,9 @@ function makeSelectEffectiveDate(employeeId: string) {
   );
 }
 
-function isWeekend(date: string): boolean {
-  const day = new Date(date).getUTCDay();
-  return day === 0 || day === 6;
-}
-
-function countWeekdaysLocal(from: string, to: string): number {
-  const fromMs = new Date(from).getTime();
-  const toMs = new Date(to).getTime();
-  if (toMs < fromMs) return 0;
-  let count = 0;
-  let cur = fromMs;
-  while (cur <= toMs) {
-    const day = new Date(cur).getUTCDay();
-    if (day !== 0 && day !== 6) count++;
-    cur += 24 * 60 * 60 * 1000;
-  }
-  return count;
-}
-
-function weekdayIndexOf(date: string, rangeStart: string): number {
-  if (isWeekend(date)) return -1;
-  return countWeekdaysLocal(rangeStart, date) - 1;
-}
-
-function nextDay(date: string): string {
-  const ms = new Date(date).getTime() + 24 * 60 * 60 * 1000;
-  return new Date(ms).toISOString().slice(0, 10);
-}
-
 function nearestWeekday(date: string): string {
   let d = date;
-  while (isWeekend(d)) d = nextDay(d);
+  while (!dateStrings.isWeekDay(d)) d = dateStrings.addDays(d, 1);
   return d;
 }
 
@@ -1221,7 +1175,7 @@ const selectWeekdayBounds = createSelector(
   [selectDateBounds],
   (bounds): WeekdayBounds | null => {
     if (!bounds) return null;
-    const weekdayCount = countWeekdaysLocal(bounds.min, bounds.max);
+    const weekdayCount = dateRanges.countWeekdays({ min: bounds.min, max: bounds.max });
     return {
       min: bounds.min,
       max: bounds.max,
@@ -1280,7 +1234,7 @@ const selectDateTicks = createSelector(
         return {
           date,
           labels,
-          weekdayIndex: weekdayIndexOf(date, weekdayBounds.min),
+          weekdayIndex: !dateStrings.isWeekDay(date) ? -1 : dateRanges.countWeekdays({ min: weekdayBounds.min, max: date }) - 1,
         };
       })
       .filter((t) => t.weekdayIndex >= 0);
@@ -1909,7 +1863,6 @@ const selectSeasonOptimizerResult = createSelector(
 // ---------------------------------------------------------------------------
 
 export const paceSelect = {
-  latestAssignmentDate: selectLatestAssignmentDate,
   // Layer 2
   employeeLookbackMap: selectEmployeeLookbackMap,
   // Layer 3

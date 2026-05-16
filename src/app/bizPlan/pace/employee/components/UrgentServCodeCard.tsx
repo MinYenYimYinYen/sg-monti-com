@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { paceSelect } from "@/app/bizPlan/pace/paceSelectRefactor";
+import { paceSelect } from "@/app/bizPlan/pace/paceSelect";
 import { urgentSelect } from "@/app/bizPlan/pace/urgentSelect";
 import { urgentActions } from "@/app/bizPlan/pace/urgentSlice";
 import { AppDispatch } from "@/store";
-import { ServCodePace } from "@/app/bizPlan/pace/PaceTypesRefactor";
+import { ServCodePace } from "@/app/bizPlan/pace/PaceTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";

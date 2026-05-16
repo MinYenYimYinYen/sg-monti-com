@@ -12,8 +12,8 @@ import {
   RawServCodePacePerDay,
   RawServCodePacePerDayPerEmployee,
 } from "@/app/bizPlan/pace/RawPaceTypes";
-import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import { PaceCategory } from "./PaceTypes";
 
 function getCategory(servCode: ServCodeDeep): PaceCategory {
   if (servCode.alwaysAsap) return "asap";

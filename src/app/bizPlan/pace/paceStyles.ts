@@ -1,4 +1,4 @@
-import { PaceCategory } from "@/app/bizPlan/pace/PaceType";
+import { PaceCategory } from "@/app/bizPlan/pace/PaceTypes";
 
 export const CATEGORY_BADGE_STYLES: Record<PaceCategory, string> = {
   asap: "bg-destructive/30",
