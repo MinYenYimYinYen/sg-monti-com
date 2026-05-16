@@ -1,7 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
-import { rawPaceSelect } from "@/app/bizPlan/pace/rawPaceSelect";
+import { rawPaceSelect } from "@/app/bizPlan/pace/selectors/rawPaceSelect";
 import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 import {
   CountSizePrice,

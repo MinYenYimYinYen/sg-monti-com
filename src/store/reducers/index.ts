@@ -3,7 +3,7 @@ import globalSettingsReducer from "@/app/globalSettings/_lib/globalSettingsSlice
 import uiReducer from "@/store/reduxUtil/uiSlice";
 import authReducer from "@/app/auth/authSlice";
 import { assignmentPlanReducer } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
-import { paceReducer } from "@/app/bizPlan/pace/paceSlice";
+import { paceReducer } from "@/app/bizPlan/pace/slices/paceSlice";
 import { employeePaceReducer } from "@/app/bizPlan/pace/employee/employeePaceSlice";
 import companyReducer from "@/app/realGreen/company/companySlice";
 import callAheadReducer from "@/app/realGreen/callAhead/callAheadSlice";
@@ -35,7 +35,7 @@ import quickSendReducer from "@/app/quickSend/quickSendSlice";
 import { storedTemplatesReducer } from "@/app/quickSend/storedTemplates/storedTemplatesSlice";
 import prepayReducer from "@/app/realGreen/prepay/prepaySlice";
 import { serviceEtaReducer } from "@/app/scheduling/eta/serviceEtaSlice";
-import { urgentReducer } from "@/app/bizPlan/pace/urgentSlice";
+import { urgentReducer } from "@/app/bizPlan/pace/slices/urgentSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,

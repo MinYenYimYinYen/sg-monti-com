@@ -1,9 +1,9 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
-import { MatrixDisplayConfig } from "@/app/bizPlan/pace/paceSlice";
+import { MatrixDisplayConfig } from "@/app/bizPlan/pace/slices/paceSlice";
 import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
-import { rawPaceSelect } from "@/app/bizPlan/pace/rawPaceSelect";
+import { rawPaceSelect } from "@/app/bizPlan/pace/selectors/rawPaceSelect";
 import {
   CountSizePrice,
   CountSizePriceOps,

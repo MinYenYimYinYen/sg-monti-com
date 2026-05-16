@@ -6,7 +6,7 @@ import { usePaceDeps } from "@/app/bizPlan/pace/usePaceDeps";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { matrixSelect } from "@/app/bizPlan/pace/selectors/matrixSelect";
-import { rawPaceSelect } from "@/app/bizPlan/pace/rawPaceSelect";
+import { rawPaceSelect } from "@/app/bizPlan/pace/selectors/rawPaceSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
 import { useAppDispatch } from "@/lib/hooks/redux";

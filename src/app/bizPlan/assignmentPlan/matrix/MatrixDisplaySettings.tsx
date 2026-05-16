@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { matrixSelect } from "@/app/bizPlan/pace/selectors/matrixSelect";
 import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
-import { paceActions, MatrixCspDisplay, MatrixSortKey } from "@/app/bizPlan/pace/paceSlice";
+import { paceActions, MatrixCspDisplay, MatrixSortKey } from "@/app/bizPlan/pace/slices/paceSlice";
 import { PaceCategory } from "@/app/bizPlan/pace/PaceTypes";
 import {
   Popover,

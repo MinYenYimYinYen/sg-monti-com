@@ -18,7 +18,7 @@ import { matrixSelect } from "@/app/bizPlan/pace/selectors/matrixSelect";
 import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
 import { SeasonOptimizedRange } from "@/app/bizPlan/pace/PaceTypes";
-import { paceActions } from "@/app/bizPlan/pace/paceSlice";
+import { paceActions } from "@/app/bizPlan/pace/slices/paceSlice";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import {

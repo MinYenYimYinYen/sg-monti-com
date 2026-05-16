@@ -3,7 +3,7 @@ import { AppState } from "@/store";
 import { deepSelect } from "@/app/realGreen/deepSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
-import { rawPaceSelect } from "@/app/bizPlan/pace/rawPaceSelect";
+import { rawPaceSelect } from "@/app/bizPlan/pace/selectors/rawPaceSelect";
 import {
   CountSizePrice,
   CountSizePriceOps,

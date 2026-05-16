@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
 import { PaceCategory } from "@/app/bizPlan/pace/PaceTypes";
-import { CATEGORY_BADGE_STYLES } from "@/app/bizPlan/pace/paceStyles";
 import {
   Popover,
   PopoverContent,
@@ -29,6 +28,14 @@ type AddServCodePickerProps = {
   /** ServCode IDs already assigned to this employee — excluded from the picker */
   assignedServCodeIds: string[];
   onConfirmAction: (servCodeIds: string[]) => void;
+};
+
+const CATEGORY_BADGE_STYLES: Record<PaceCategory, string> = {
+  asap: "bg-destructive/30",
+  overdue: "bg-destructive/30 border border-destructive",
+  inProgress: "bg-accent/20",
+  notStarted: "bg-primary text-muted",
+  notSet: "bg-muted/30 text-muted-foreground",
 };
 
 export function AddServCodePicker({

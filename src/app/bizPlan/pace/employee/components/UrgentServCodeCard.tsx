@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
-import { urgentSelect } from "@/app/bizPlan/pace/urgentSelect";
-import { urgentActions } from "@/app/bizPlan/pace/urgentSlice";
+import { urgentSelect } from "@/app/bizPlan/pace/selectors/urgentSelect";
+import { urgentActions } from "@/app/bizPlan/pace/slices/urgentSlice";
 import { AppDispatch } from "@/store";
 import { ServCodePace } from "@/app/bizPlan/pace/PaceTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
