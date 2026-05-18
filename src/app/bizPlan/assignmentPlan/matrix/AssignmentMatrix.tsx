@@ -17,7 +17,7 @@ import { ProgCodePace, ProgCodeProjectedCompletion, ServCodePaceDelta } from "@/
 import { MiniServCodeDateEdit } from "@/app/bizPlan/pace/employee/components/MiniServCodeDateEdit";
 import { Number } from "@/components/Number";
 import { ChevronDown, ChevronRight, LandPlot, Pencil, Save } from "lucide-react";
-import { CountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
+import { CSP } from "@/app/realGreen/customer/_lib/entities/types/CSPTypesAndClass";
 import { MatrixDisplaySettings } from "@/app/bizPlan/assignmentPlan/matrix/MatrixDisplaySettings";
 import { SeasonOptimizerDialog } from "@/app/bizPlan/assignmentPlan/matrix/SeasonOptimizerDialog";
 
@@ -71,7 +71,7 @@ function PriceSymbol() {
 
 type DeltaDaysCSP = { count: number | null; size: number | null; price: number | null };
 
-function CspDisplay({ csp }: { csp: CountSizePrice }) {
+function CspDisplay({ csp }: { csp: CSP }) {
   return (
     <span className="flex gap-1 text-[10px] text-muted-foreground">
       <span className={CSP_COL_CLASS}><CountSymbol /><Number>{csp.count}</Number></span>
@@ -109,7 +109,7 @@ function CspDeltaDisplay({ deltaDaysCSP }: { deltaDaysCSP: DeltaDaysCSP | null }
 // CspWithDeltaDisplay — CSP row + delta row stacked vertically, columns aligned
 // ---------------------------------------------------------------------------
 
-function CspWithDeltaDisplay({ csp, deltaDaysCSP }: { csp: CountSizePrice; deltaDaysCSP: DeltaDaysCSP | null }) {
+function CspWithDeltaDisplay({ csp, deltaDaysCSP }: { csp: CSP; deltaDaysCSP: DeltaDaysCSP | null }) {
   return (
     <span className="flex flex-col gap-0">
       <CspDisplay csp={csp} />
@@ -245,7 +245,7 @@ export function AssignmentMatrix() {
   // Resolve the CSP to display for a servCode based on the current display mode.
   // "total" uses activeAsapCSP (excludes printed services) to match the delta calculation.
   // perDay and perDayPerEmployee are already derived from activeAsapCSP in rawPaceSelect.
-  function getServCodeCsp(servCodeId: string): CountSizePrice | null {
+  function getServCodeCsp(servCodeId: string): CSP | null {
     if (cspDisplay === "perDay") {
       const pace = perDayMap.get(servCodeId);
       if (!pace) return null;
@@ -415,7 +415,7 @@ type MatrixProgGroupProps = {
   isExpanded: boolean;
   selectedEmployees: Employee[];
   assignmentsByEmployeeId: Map<string, { servCodeIds: string[] }>;
-  getServCodeCsp: (servCodeId: string) => CountSizePrice | null;
+  getServCodeCsp: (servCodeId: string) => CSP | null;
   deltaMap: Map<string, ServCodePaceDelta>;
   projectedCompletion: ProgCodeProjectedCompletion | null;
   onToggleExpand: () => void;
@@ -449,8 +449,8 @@ function MatrixProgGroup({
   // Prog-level CSP: sum of all servCode CSPs using the current display mode
   const progCspValues = servCodePaces
     .map((sp) => getServCodeCsp(sp.servCode.servCodeId))
-    .filter((csp): csp is CountSizePrice => csp !== null);
-  const progCsp: CountSizePrice | null =
+    .filter((csp): csp is CSP => csp !== null);
+  const progCsp: CSP | null =
     progCspValues.length > 0
       ? {
           count: progCspValues.reduce((s, c) => s + c.count, 0),

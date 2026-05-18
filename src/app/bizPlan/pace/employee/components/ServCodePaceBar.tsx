@@ -15,10 +15,10 @@ import {
 } from "@/style/components/popover";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import {
-  CountSizePrice,
-  CountSizePriceOps,
+  CSP,
+  CSPOps,
   baseCountSizePrice,
-} from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
+} from "@/app/realGreen/customer/_lib/entities/types/CSPTypesAndClass";
 
 // ---------------------------------------------------------------------------
 // Pace color semantics:
@@ -59,8 +59,8 @@ const SEGMENT_TEXT: Record<PaceColor, string> = {
  * Returns null if there is no usable daily rate.
  */
 function computeCrossoverDate(
-  employeeUnfinishedCSP: CountSizePrice,
-  effectiveDailyCSP: CountSizePrice,
+  employeeUnfinishedCSP: CSP,
+  effectiveDailyCSP: CSP,
   viewDate: string,
 ): string | null {
   const dailyRate = effectiveDailyCSP.count;
@@ -92,8 +92,8 @@ function computeCrossoverDate(
  * Returns null if there is no usable rate.
  */
 function computeCompletionFraction(
-  employeeUnfinishedCSP: CountSizePrice,
-  effectiveDailyCSP: CountSizePrice,
+  employeeUnfinishedCSP: CSP,
+  effectiveDailyCSP: CSP,
   pace: ServCodePace,
   viewDate: string,
 ): number | null {
@@ -128,8 +128,8 @@ function getPaceColor(completionFraction: number | null, paceTolerance: number):
 // ---------------------------------------------------------------------------
 
 function computeToleranceBoundaryDate(
-  employeeUnfinishedCSP: CountSizePrice,
-  effectiveDailyCSP: CountSizePrice,
+  employeeUnfinishedCSP: CSP,
+  effectiveDailyCSP: CSP,
   pace: ServCodePace,
   paceTolerance: number,
   viewDate: string,
@@ -194,8 +194,8 @@ type Segment = {
 };
 
 function computeSegments(
-  employeeUnfinishedCSP: CountSizePrice,
-  effectiveDailyCSP: CountSizePrice,
+  employeeUnfinishedCSP: CSP,
+  effectiveDailyCSP: CSP,
   pace: ServCodePace,
   paceTolerance: number,
   viewDate: string,
@@ -265,9 +265,9 @@ function ServCodePaceDetail({
 }: {
   pace: ServCodePace;
   paceTolerance: number;
-  effectiveDailyCSP: CountSizePrice;
+  effectiveDailyCSP: CSP;
   hasAvgData: boolean;
-  employeeUnfinishedCSP: CountSizePrice;
+  employeeUnfinishedCSP: CSP;
   viewDate: string;
 }) {
   const { min, max } = pace.servCode.dateRange;
@@ -299,7 +299,7 @@ function ServCodePaceDetail({
   // Subtract 1 from daysRemaining (inclusive endpoint) to get future days only.
   const futureDays = Math.max(1, daysRemaining - 1);
   const requiredRate = daysRemaining > 0
-    ? CountSizePriceOps.divideBy(employeeUnfinishedCSP, futureDays)
+    ? CSPOps.divideBy(employeeUnfinishedCSP, futureDays)
     : { ...baseCountSizePrice };
 
   // Days early/late from crossover
@@ -414,11 +414,11 @@ function ServCodePaceDetail({
 type ServCodePaceBarProps = {
   servCodeId: string;
   /** Employee's historical average daily CSP for this servCode — drives the forecast color. */
-  avgDailyCSP: CountSizePrice | null;
+  avgDailyCSP: CSP | null;
   /** Employee's required daily CSP from the cascade — used as fallback when avgDailyCSP is null. */
-  expectedCSP: CountSizePrice;
+  expectedCSP: CSP;
   /** Employee's proportional share of the servCode's remaining work — computed by selector. */
-  employeeUnfinishedCSP: CountSizePrice;
+  employeeUnfinishedCSP: CSP;
 };
 
 export function ServCodePaceBar({ servCodeId, avgDailyCSP, expectedCSP, employeeUnfinishedCSP }: ServCodePaceBarProps) {
@@ -437,7 +437,7 @@ export function ServCodePaceBar({ servCodeId, avgDailyCSP, expectedCSP, employee
   // When no production history exists, fall back to expectedCSP so the bar
   // shows a meaningful forecast rather than a "no data" red state.
   const hasAvgData = (avgDailyCSP?.count ?? 0) > 0;
-  const effectiveDailyCSP: CountSizePrice = hasAvgData ? avgDailyCSP! : expectedCSP;
+  const effectiveDailyCSP: CSP = hasAvgData ? avgDailyCSP! : expectedCSP;
 
   const segments = computeSegments(employeeUnfinishedCSP, effectiveDailyCSP, pace, paceTolerance, viewDate);
   const crossover = computeCrossoverDate(employeeUnfinishedCSP, effectiveDailyCSP, viewDate);

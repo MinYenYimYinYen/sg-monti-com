@@ -1,5 +1,5 @@
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { CountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
+import { CSP } from "@/app/realGreen/customer/_lib/entities/types/CSPTypesAndClass";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
@@ -32,16 +32,16 @@ export type PaceCategory =
 
 export type EmployeeCascadeEntry = {
   availableFrom: string | undefined;
-  contributedCSP: CountSizePrice;
-  dailyRate: CountSizePrice;
-  maxDailyRate: CountSizePrice;
-  fractionConsumed: CountSizePrice | null;
+  contributedCSP: CSP;
+  dailyRate: CSP;
+  maxDailyRate: CSP;
+  fractionConsumed: CSP | null;
   isEstimated: boolean;
 };
 
 export type EmployeeCascadeResult = {
   employee: Employee;
-  totalAvgDailyCSP: CountSizePrice | null;
+  totalAvgDailyCSP: CSP | null;
   byServCode: Map<string, EmployeeCascadeEntry>;
 };
 
@@ -49,39 +49,39 @@ export type ServCodePace = {
   servCode: ServCodeDeep;
   daysRemaining: number;
   category: PaceCategory;
-  unfinishedCSP: CountSizePrice;
-  unfinishedRate: CountSizePrice;
-  finishedCSP: CountSizePrice;
-  finishedRate: CountSizePrice;
+  unfinishedCSP: CSP;
+  unfinishedRate: CSP;
+  finishedCSP: CSP;
+  finishedRate: CSP;
   employeeShares: Array<EmployeeCascadeEntry & { employee: Employee }>;
-  teamExpectedCSP: CountSizePrice;
-  teamAvgCapacity: CountSizePrice;
-  paceDelta: CountSizePrice;
-  paceDeltaPct: CountSizePrice | null;
+  teamExpectedCSP: CSP;
+  teamAvgCapacity: CSP;
+  paceDelta: CSP;
+  paceDeltaPct: CSP | null;
 };
 
 export type ProgCodePace = {
   progCode: ProgCode;
   servCodePaces: ServCodePace[];
   category: PaceCategory;
-  unfinishedCSP: CountSizePrice;
-  finishedCSP: CountSizePrice;
+  unfinishedCSP: CSP;
+  finishedCSP: CSP;
 };
 
 export type EmployeeAllocation = {
   servCode: ServCodeDeep;
-  fractionConsumed: CountSizePrice | null;
-  expectedCSP: CountSizePrice;
-  avgDailyCSP: CountSizePrice | null;
-  maxDailyCSP: CountSizePrice | null;
+  fractionConsumed: CSP | null;
+  expectedCSP: CSP;
+  avgDailyCSP: CSP | null;
+  maxDailyCSP: CSP | null;
 };
 
 export type EmployeeCardData = {
   employee: Employee;
-  totalAvgDailyCSP: CountSizePrice | null;
+  totalAvgDailyCSP: CSP | null;
   allocations: EmployeeAllocation[];
-  totalFractionConsumed: CountSizePrice | null;
-  freeCapacityFraction: CountSizePrice | null;
+  totalFractionConsumed: CSP | null;
+  freeCapacityFraction: CSP | null;
 };
 
 export type LookbackConfig = {

@@ -22,9 +22,9 @@ import { paceActions } from "@/app/bizPlan/pace/slices/paceSlice";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import {
-  CountSizePriceOps,
+  CSPOps,
   baseCountSizePrice,
-} from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
+} from "@/app/realGreen/customer/_lib/entities/types/CSPTypesAndClass";
 import { UnsavedServCodeChanges, UnsavedProgCodeChanges } from "@/app/realGreen/progServ/_lib/types/ProgServState";
 import { dateStrings, dateRanges } from "@/lib/primatives/dates/dateStrings";
 import { TRange } from "@/lib/primatives/tRange/TRange";
@@ -336,7 +336,7 @@ export function SeasonOptimizerDialog() {
                 servCodePaceMap.get(item.servCodeId)?.teamAvgCapacity ?? { ...baseCountSizePrice },
               );
               const teamAvgRate = teamRates.length > 0
-                ? CountSizePriceOps.divideBy(CountSizePriceOps.sumAll(teamRates), teamRates.length)
+                ? CSPOps.divideBy(CSPOps.sumAll(teamRates), teamRates.length)
                 : null;
 
               // Per-employee rates for popover: average dailyRate.price across the servCodes

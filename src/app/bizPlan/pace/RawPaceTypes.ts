@@ -1,5 +1,5 @@
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { CountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
+import { CSP } from "@/app/realGreen/customer/_lib/entities/types/CSPTypesAndClass";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { PaceCategory } from "@/app/bizPlan/pace/PaceTypes";
 
@@ -7,21 +7,21 @@ export type RawServCodePace = {
   servCode: ServCodeDeep;
   daysRemaining: number;
   category: PaceCategory;
-  unfinishedCSP: CountSizePrice;
-  unfinishedRate: CountSizePrice;
-  finishedCSP: CountSizePrice;
-  finishedRate: CountSizePrice;
+  unfinishedCSP: CSP;
+  unfinishedRate: CSP;
+  finishedCSP: CSP;
+  finishedRate: CSP;
 };
 
 export type RawServCodePacePerDay = RawServCodePace & {
   /** finishedCSP divided by the count of unique days on which a completed service was done */
-  finishedPerDay: CountSizePrice;
+  finishedPerDay: CSP;
   /**
    * unfinishedCSP (active + asap only) divided by the weekday count from the day after
    * the latest printed service's schedDate through servCode.dateRange.max.
    * Falls back to daysRemaining when no printed services exist.
    */
-  unfinishedPerDay: CountSizePrice;
+  unfinishedPerDay: CSP;
   /**
    * The denominator used to compute unfinishedPerDay: weekdays from the day after the
    * latest printed schedDate through dateRange.max (or daysRemaining as fallback).
@@ -33,7 +33,7 @@ export type RawServCodePacePerDay = RawServCodePace & {
    * on any route sheet — the stable "remaining unscheduled" count used for delta projection.
    * Excludes printed services because they are already committed to specific days.
    */
-  activeAsapCSP: CountSizePrice;
+  activeAsapCSP: CSP;
   /**
    * The first weekday on which no work has been printed/scheduled yet.
    * = day after the latest printed service's schedDate, or max(today, dateRange.min) if
@@ -44,15 +44,15 @@ export type RawServCodePacePerDay = RawServCodePace & {
 
 export type RawServCodePacePerDayPerEmployee = RawServCodePacePerDay & {
   /** finishedPerDay divided by the number of employees assigned to the servCode */
-  finishedPerDayPerEmployee: CountSizePrice;
+  finishedPerDayPerEmployee: CSP;
   /** unfinishedPerDay divided by the number of employees assigned to the servCode */
-  unfinishedPerDayPerEmployee: CountSizePrice;
+  unfinishedPerDayPerEmployee: CSP;
 };
 
 export type RawProgCodePace = {
   progCode: ProgCode;
   rawServCodePaces: RawServCodePace[];
   category: PaceCategory;
-  unfinishedCSP: CountSizePrice;
-  finishedCSP: CountSizePrice;
+  unfinishedCSP: CSP;
+  finishedCSP: CSP;
 };

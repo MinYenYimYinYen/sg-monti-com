@@ -4,7 +4,7 @@ import { EmployeeAllocation } from "@/app/bizPlan/pace/PaceTypes";
 import { MiniServCodeControls } from "@/app/bizPlan/pace/employee/components/MiniServCodeControls";
 import { ServCodePaceBar } from "@/app/bizPlan/pace/employee/components/ServCodePaceBar";
 import { employeeCardSelect } from "@/app/bizPlan/pace/selectors/employeeCardSelect";
-import { CountSizePrice, baseCountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
+import { CSP, baseCountSizePrice } from "@/app/realGreen/customer/_lib/entities/types/CSPTypesAndClass";
 import { Number } from "@/components/Number";
 import { ChevronUp, ChevronDown, Crosshair, MoveUpRight, MoveRight, MoveDownRight } from "lucide-react";
 import { cn } from "@/style/utils";
@@ -60,7 +60,7 @@ export function ServCodePriorityRow({
   const { servCode, avgDailyCSP, expectedCSP } = allocation;
 
   const unfinishedShareMap = useSelector(employeeCardSelect.employeeUnfinishedShareMap);
-  const employeeUnfinishedCSP: CountSizePrice =
+  const employeeUnfinishedCSP: CSP =
     unfinishedShareMap.get(employeeId)?.get(servCode.servCodeId) ?? { ...baseCountSizePrice };
 
   const hasAvg = avgDailyCSP !== null;

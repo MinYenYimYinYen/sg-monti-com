@@ -5,10 +5,10 @@ import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
 import { rawPaceSelect } from "@/app/bizPlan/pace/selectors/rawPaceSelect";
 import {
-  CountSizePrice,
-  CountSizePriceOps,
+  CSP,
+  CSPOps,
   baseCountSizePrice,
-} from "@/app/realGreen/customer/_lib/entities/types/CountSizePrice";
+} from "@/app/realGreen/customer/_lib/entities/types/CSPTypesAndClass";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import {
   ServCodePaceDelta,
@@ -29,6 +29,8 @@ const selectSeasonOptimizerConfig = (state: AppState) => state.pace.seasonOptimi
 // Layer 5 — Delta Projection (shared pool drain)
 // ---------------------------------------------------------------------------
 
+// Simulates draining a single-dimension pool across time intervals with staggered employee availability.
+// Returns the date when the pool is exhausted, or null if no employees are available.
 function computePoolDrainDate(
   employeeAvailability: { availableFrom: string; rate: number }[],
   pool: number,
@@ -73,7 +75,7 @@ function computePoolDrainDate(
     remaining -= produced;
   }
 
-  // Pool not exhausted — project beyond deadline
+  // Pool not exhausted within the window — project beyond deadline
   let finalRate = 0;
   for (const { availableFrom, rate } of employeeAvailability) {
     if (availableFrom <= closeDate) finalRate += rate;
@@ -82,6 +84,61 @@ function computePoolDrainDate(
 
   const daysNeeded = remaining / finalRate;
   return dateStrings.addWeekdays(closeDate, daysNeeded);
+}
+
+type DimensionAvailability = { availableFrom: string; rate: number }[];
+
+// Builds per-dimension employee availability lists for a servCode's assigned employees.
+function buildDimensionAvailability(
+  servCode: { assignedTo: { employeeId: string }[] },
+  servCodeId: string,
+  openDate: string,
+  cascadeMap: ReturnType<typeof cascadeSelect.employeeCascadeMap>,
+): { count: DimensionAvailability; size: DimensionAvailability; price: DimensionAvailability } {
+  const availabilityCount: DimensionAvailability = [];
+  const availabilitySize: DimensionAvailability = [];
+  const availabilityPrice: DimensionAvailability = [];
+
+  for (const employee of servCode.assignedTo) {
+    const cascadeResult = cascadeMap.get(employee.employeeId);
+    const entry = cascadeResult?.byServCode.get(servCodeId);
+    if (!entry) continue;
+
+    const availFrom = entry.availableFrom ?? openDate;
+
+    if (entry.dailyRate.count > 0)
+      availabilityCount.push({ availableFrom: availFrom, rate: entry.dailyRate.count });
+    if (entry.dailyRate.size > 0)
+      availabilitySize.push({ availableFrom: availFrom, rate: entry.dailyRate.size });
+    if (entry.dailyRate.price > 0)
+      availabilityPrice.push({ availableFrom: availFrom, rate: entry.dailyRate.price });
+  }
+
+  return { count: availabilityCount, size: availabilitySize, price: availabilityPrice };
+}
+
+// Computes the per-dimension delta days (projected end date vs close date) for a servCode.
+function computeDeltaDaysCSP(
+  availability: ReturnType<typeof buildDimensionAvailability>,
+  pool: CSP,
+  openDate: string,
+  closeDate: string,
+): { count: number | null; size: number | null; price: number | null } {
+  const projectedEndCount = computePoolDrainDate(availability.count, pool.count, openDate, closeDate);
+  const projectedEndSize = computePoolDrainDate(availability.size, pool.size, openDate, closeDate);
+  const projectedEndPrice = computePoolDrainDate(availability.price, pool.price, openDate, closeDate);
+
+  return {
+    count: projectedEndCount != null && pool.count > 0
+      ? dateRanges.weekdaysBetween(closeDate, projectedEndCount)
+      : null,
+    size: projectedEndSize != null && pool.size > 0
+      ? dateRanges.weekdaysBetween(closeDate, projectedEndSize)
+      : null,
+    price: projectedEndPrice != null && pool.price > 0
+      ? dateRanges.weekdaysBetween(closeDate, projectedEndPrice)
+      : null,
+  };
 }
 
 const selectServCodePaceDeltaMap = createSelector(
@@ -100,10 +157,7 @@ const selectServCodePaceDeltaMap = createSelector(
       const dateRange = servCode.dateRange;
       const perDay = perDayMap.get(servCodeId);
 
-      if (
-        !perDay ||
-        (!servCode.alwaysAsap && !dateRanges.isValidDateRange(dateRange))
-      ) {
+      if (!perDay || (!servCode.alwaysAsap && !dateRanges.isValidDateRange(dateRange))) {
         result.set(servCodeId, {
           servCodeId,
           dateRange,
@@ -116,79 +170,20 @@ const selectServCodePaceDeltaMap = createSelector(
 
       const openDate = servCode.alwaysAsap
         ? today
-        : (perDay.projectionStartDate ??
-          (today > dateRange.min ? today : dateRange.min));
+        : (perDay.projectionStartDate ?? (today > dateRange.min ? today : dateRange.min));
       const closeDate = servCode.alwaysAsap ? today : dateRange.max;
 
-      const availabilityCount: { availableFrom: string; rate: number }[] = [];
-      const availabilitySize: { availableFrom: string; rate: number }[] = [];
-      const availabilityPrice: { availableFrom: string; rate: number }[] = [];
-
-      for (const employee of servCode.assignedTo) {
-        const cascadeResult = cascadeMap.get(employee.employeeId);
-        const entry = cascadeResult?.byServCode.get(servCodeId);
-        if (!entry) continue;
-
-        const availFrom = entry.availableFrom ?? openDate;
-
-        if (entry.dailyRate.count > 0)
-          availabilityCount.push({
-            availableFrom: availFrom,
-            rate: entry.dailyRate.count,
-          });
-        if (entry.dailyRate.size > 0)
-          availabilitySize.push({
-            availableFrom: availFrom,
-            rate: entry.dailyRate.size,
-          });
-        if (entry.dailyRate.price > 0)
-          availabilityPrice.push({
-            availableFrom: availFrom,
-            rate: entry.dailyRate.price,
-          });
-      }
-
+      const availability = buildDimensionAvailability(servCode, servCodeId, openDate, cascadeMap);
       const pool = perDay.activeAsapCSP;
 
-      const projectedEndCount = computePoolDrainDate(
-        availabilityCount,
-        pool.count,
-        openDate,
-        closeDate,
-      );
-      const projectedEndSize = computePoolDrainDate(
-        availabilitySize,
-        pool.size,
-        openDate,
-        closeDate,
-      );
-      const projectedEndPrice = computePoolDrainDate(
-        availabilityPrice,
-        pool.price,
-        openDate,
-        closeDate,
-      );
+      const projectedEndCount = computePoolDrainDate(availability.count, pool.count, openDate, closeDate);
+      const deltaDaysCSP = computeDeltaDaysCSP(availability, pool, openDate, closeDate);
 
       const projectedEndDate = projectedEndCount;
       const deltaDays =
         projectedEndDate != null && pool.count > 0
           ? dateRanges.weekdaysBetween(closeDate, projectedEndDate)
           : null;
-
-      const deltaDaysCSP = {
-        count:
-          projectedEndCount != null && pool.count > 0
-            ? dateRanges.weekdaysBetween(closeDate, projectedEndCount)
-            : null,
-        size:
-          projectedEndSize != null && pool.size > 0
-            ? dateRanges.weekdaysBetween(closeDate, projectedEndSize)
-            : null,
-        price:
-          projectedEndPrice != null && pool.price > 0
-            ? dateRanges.weekdaysBetween(closeDate, projectedEndPrice)
-            : null,
-      };
 
       result.set(servCodeId, {
         servCodeId,
@@ -207,40 +202,41 @@ const selectServCodePaceDeltaMap = createSelector(
 // Layer 5b — ProgCode Projected Completion Map
 // ---------------------------------------------------------------------------
 
-/**
- * Returns the projected completion date for each ProgCode — the latest projected end date
- * across all its servCodes. When a servCode has no team lookback data, falls back to
- * dateRange.max (assume on-time completion). `isEstimated` is true when any fallback was used.
- */
+// Returns the latest projected end date across all servCodes in a progCode.
+// Falls back to dateRange.max when a servCode has no team lookback data.
+function computeProgCodeProjectedCompletion(
+  servCodePaces: { servCode: { servCodeId: string; dateRange: { max: string | null } } }[],
+  deltaMap: Map<string, ServCodePaceDelta>,
+): ProgCodeProjectedCompletion {
+  const dates: string[] = [];
+  let anyEstimated = false;
+
+  for (const sp of servCodePaces) {
+    const delta = deltaMap.get(sp.servCode.servCodeId);
+    if (delta?.projectedEndDate != null) {
+      dates.push(delta.projectedEndDate);
+    } else if (sp.servCode.dateRange.max) {
+      anyEstimated = true;
+      dates.push(sp.servCode.dateRange.max);
+    }
+  }
+
+  return {
+    date: dates.length > 0 ? [...dates].sort().at(-1)! : null,
+    isEstimated: anyEstimated,
+  };
+}
+
 const selectProgCodeProjectedCompletionMap = createSelector(
   [servCodePaceSelect.progCodePaces, selectServCodePaceDeltaMap],
-  (
-    progCodePaces,
-    deltaMap,
-  ): Map<string, ProgCodeProjectedCompletion> => {
+  (progCodePaces, deltaMap): Map<string, ProgCodeProjectedCompletion> => {
     const result = new Map<string, ProgCodeProjectedCompletion>();
-
     for (const progCodePace of progCodePaces) {
-      const dates: string[] = [];
-      let anyEstimated = false;
-
-      for (const sp of progCodePace.servCodePaces) {
-        const delta = deltaMap.get(sp.servCode.servCodeId);
-        if (delta?.projectedEndDate != null) {
-          dates.push(delta.projectedEndDate);
-        } else if (sp.servCode.dateRange.max) {
-          // No team data — fall back to the planned end date (assume on-time)
-          anyEstimated = true;
-          dates.push(sp.servCode.dateRange.max);
-        }
-      }
-
-      result.set(progCodePace.progCode.progCodeId, {
-        date: dates.length > 0 ? [...dates].sort().at(-1)! : null,
-        isEstimated: anyEstimated,
-      });
+      result.set(
+        progCodePace.progCode.progCodeId,
+        computeProgCodeProjectedCompletion(progCodePace.servCodePaces, deltaMap),
+      );
     }
-
     return result;
   },
 );
@@ -259,6 +255,65 @@ const selectMatrixDeltaDaysBounds = createSelector(
   },
 );
 
+// ---------------------------------------------------------------------------
+// Matrix filter/sort helpers
+// ---------------------------------------------------------------------------
+
+// Resolves the CSP to display for a servCode based on the current display mode.
+function getServCodeCspForDisplay(
+  servCodeId: string,
+  cspDisplay: MatrixDisplayConfig["cspDisplay"],
+  perDayMap: ReturnType<typeof rawPaceSelect.rawServCodePacesPerDayMap>,
+  perDayPerEmployeeMap: ReturnType<typeof rawPaceSelect.rawServCodePacesPerDayPerEmployeeMap>,
+): CSP {
+  if (cspDisplay === "perDay") {
+    return perDayMap.get(servCodeId)?.unfinishedPerDay ?? { ...baseCountSizePrice };
+  }
+  if (cspDisplay === "perDayPerEmployee") {
+    return perDayPerEmployeeMap.get(servCodeId)?.unfinishedPerDayPerEmployee ?? { ...baseCountSizePrice };
+  }
+  return perDayMap.get(servCodeId)?.activeAsapCSP ?? { ...baseCountSizePrice };
+}
+
+// Returns true if the progCode passes the assigned-employee filter.
+function passesAssignedFilter(
+  progCodePace: ReturnType<typeof servCodePaceSelect.progCodePaces>[number],
+  filterAssigned: MatrixDisplayConfig["filterAssigned"],
+): boolean {
+  if (filterAssigned === "all") return true;
+  const totalAssigned = progCodePace.servCodePaces.reduce(
+    (sum, sp) => sum + sp.servCode.assignedTo.length,
+    0,
+  );
+  if (filterAssigned === "withAssigned" && totalAssigned === 0) return false;
+  if (filterAssigned === "withoutAssigned" && totalAssigned > 0) return false;
+  return true;
+}
+
+// Returns true if the progCode has at least one servCode matching the category filter.
+function passesCategoryFilter(
+  progCodePace: ReturnType<typeof servCodePaceSelect.progCodePaces>[number],
+  filterCategories: MatrixDisplayConfig["filterCategories"],
+): boolean {
+  if (filterCategories.length === 0) return true;
+  return progCodePace.servCodePaces.some((sp) => filterCategories.includes(sp.category));
+}
+
+// Returns true if the progCode has at least one servCode within the delta days range.
+function passesDeltaDaysFilter(
+  progCodePace: ReturnType<typeof servCodePaceSelect.progCodePaces>[number],
+  filterDeltaDays: MatrixDisplayConfig["filterDeltaDays"],
+  deltaMap: Map<string, ServCodePaceDelta>,
+): boolean {
+  if (filterDeltaDays == null) return true;
+  const [minDelta, maxDelta] = filterDeltaDays;
+  return progCodePace.servCodePaces.some((sp) => {
+    const delta = deltaMap.get(sp.servCode.servCodeId)?.deltaDays;
+    if (delta == null) return false;
+    return delta >= minDelta && delta <= maxDelta;
+  });
+}
+
 const selectMatrixFilteredSortedProgCodePaces = createSelector(
   [
     servCodePaceSelect.progCodePaces,
@@ -267,99 +322,32 @@ const selectMatrixFilteredSortedProgCodePaces = createSelector(
     selectServCodePaceDeltaMap,
     selectMatrixDisplayConfig,
   ],
-  (
-    progCodePaces,
-    perDayMap,
-    perDayPerEmployeeMap,
-    deltaMap,
-    config,
-  ) => {
-    const {
-      sortKey,
-      filterAssigned,
-      filterCategories,
-      filterDeltaDays,
-      cspDisplay,
-    } = config;
+  (progCodePaces, perDayMap, perDayPerEmployeeMap, deltaMap, config) => {
+    const { sortKey, filterAssigned, filterCategories, filterDeltaDays, cspDisplay } = config;
 
-    function getServCodeCsp(servCodeId: string): CountSizePrice {
-      if (cspDisplay === "perDay") {
-        return (
-          perDayMap.get(servCodeId)?.unfinishedPerDay ?? {
-            ...baseCountSizePrice,
-          }
-        );
-      }
-      if (cspDisplay === "perDayPerEmployee") {
-        return (
-          perDayPerEmployeeMap.get(servCodeId)?.unfinishedPerDayPerEmployee ?? {
-            ...baseCountSizePrice,
-          }
-        );
-      }
-      return (
-        perDayMap.get(servCodeId)?.activeAsapCSP ?? { ...baseCountSizePrice }
-      );
-    }
-
-    const filtered = progCodePaces.filter((p) => {
-      if (filterAssigned !== "all") {
-        const totalAssigned = p.servCodePaces.reduce(
-          (sum, sp) => sum + sp.servCode.assignedTo.length,
-          0,
-        );
-        if (filterAssigned === "withAssigned" && totalAssigned === 0)
-          return false;
-        if (filterAssigned === "withoutAssigned" && totalAssigned > 0)
-          return false;
-      }
-
-      if (filterCategories.length > 0) {
-        const hasMatchingCategory = p.servCodePaces.some((sp) =>
-          filterCategories.includes(sp.category),
-        );
-        if (!hasMatchingCategory) return false;
-      }
-
-      if (filterDeltaDays != null) {
-        const [minDelta, maxDelta] = filterDeltaDays;
-        const anyInRange = p.servCodePaces.some((sp) => {
-          const delta = deltaMap.get(sp.servCode.servCodeId)?.deltaDays;
-          if (delta == null) return false;
-          return delta >= minDelta && delta <= maxDelta;
-        });
-        if (!anyInRange) return false;
-      }
-
-      return true;
-    });
+    const filtered = progCodePaces.filter(
+      (p) =>
+        passesAssignedFilter(p, filterAssigned) &&
+        passesCategoryFilter(p, filterCategories) &&
+        passesDeltaDaysFilter(p, filterDeltaDays, deltaMap),
+    );
 
     return [...filtered].sort((a, b) => {
       if (sortKey === "dateRange") {
         const minA =
-          a.servCodePaces
-            .map((p) => p.servCode.dateRange.min ?? "")
-            .filter(Boolean)
-            .sort()[0] ?? "";
+          a.servCodePaces.map((p) => p.servCode.dateRange.min ?? "").filter(Boolean).sort()[0] ?? "";
         const minB =
-          b.servCodePaces
-            .map((p) => p.servCode.dateRange.min ?? "")
-            .filter(Boolean)
-            .sort()[0] ?? "";
+          b.servCodePaces.map((p) => p.servCode.dateRange.min ?? "").filter(Boolean).sort()[0] ?? "";
         if (minA !== minB) return minA.localeCompare(minB);
         return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
       }
 
       if (sortKey === "assignedCount") {
         const countA = new Set(
-          a.servCodePaces.flatMap((sp) =>
-            sp.servCode.assignedTo.map((e) => e.employeeId),
-          ),
+          a.servCodePaces.flatMap((sp) => sp.servCode.assignedTo.map((e) => e.employeeId)),
         ).size;
         const countB = new Set(
-          b.servCodePaces.flatMap((sp) =>
-            sp.servCode.assignedTo.map((e) => e.employeeId),
-          ),
+          b.servCodePaces.flatMap((sp) => sp.servCode.assignedTo.map((e) => e.employeeId)),
         ).size;
         if (countA !== countB) return countB - countA;
         return a.progCode.progCodeId.localeCompare(b.progCode.progCodeId);
@@ -367,11 +355,11 @@ const selectMatrixFilteredSortedProgCodePaces = createSelector(
 
       const dim = sortKey as "count" | "size" | "price" | "rev";
       const sumA = a.servCodePaces.reduce(
-        (s, sp) => s + getServCodeCsp(sp.servCode.servCodeId)[dim],
+        (s, sp) => s + getServCodeCspForDisplay(sp.servCode.servCodeId, cspDisplay, perDayMap, perDayPerEmployeeMap)[dim],
         0,
       );
       const sumB = b.servCodePaces.reduce(
-        (s, sp) => s + getServCodeCsp(sp.servCode.servCodeId)[dim],
+        (s, sp) => s + getServCodeCspForDisplay(sp.servCode.servCodeId, cspDisplay, perDayMap, perDayPerEmployeeMap)[dim],
         0,
       );
       if (sumA !== sumB) return sumB - sumA;
@@ -383,6 +371,25 @@ const selectMatrixFilteredSortedProgCodePaces = createSelector(
 // ---------------------------------------------------------------------------
 // Layer 6 — Season Optimizer
 // ---------------------------------------------------------------------------
+
+// Computes the proposed min date for a sequential servCode that hasn't started yet.
+// Uses the earliest cascade availableFrom across assigned employees, bounded by the sequential cursor.
+function computeSequentialProposedMin(
+  sp: ReturnType<typeof servCodePaceSelect.progCodePaces>[number]["servCodePaces"][number],
+  openDate: string,
+  sequentialCursor: string | null,
+  cascadeMap: ReturnType<typeof cascadeSelect.employeeCascadeMap>,
+): string {
+  let earliest: string | null = null;
+  for (const employee of sp.servCode.assignedTo) {
+    const entry = cascadeMap.get(employee.employeeId)?.byServCode.get(sp.servCode.servCodeId);
+    if (entry?.availableFrom) {
+      if (!earliest || entry.availableFrom < earliest) earliest = entry.availableFrom;
+    }
+  }
+  const cascadeMin = earliest ?? openDate;
+  return sequentialCursor && sequentialCursor > cascadeMin ? sequentialCursor : cascadeMin;
+}
 
 const selectSeasonOptimizerResult = createSelector(
   [
@@ -420,31 +427,15 @@ const selectSeasonOptimizerResult = createSelector(
         let proposedMin: string;
         if (isStarted || !runsInSequence) {
           proposedMin = currentRange.min;
-          // Reset cursor when a started/independent servCode is encountered
           if (isStarted) sequentialCursor = null;
         } else {
-          // Use cascade's first-worked date: the earliest availableFrom across assigned employees
-          let earliest: string | null = null;
-          for (const employee of sp.servCode.assignedTo) {
-            const entry = cascadeMap.get(employee.employeeId)?.byServCode.get(servCodeId);
-            if (entry?.availableFrom) {
-              if (!earliest || entry.availableFrom < earliest) {
-                earliest = entry.availableFrom;
-              }
-            }
-          }
-          const cascadeMin = earliest ?? openDate;
-          // Ensure this servCode doesn't start before the previous sequential one ends
-          proposedMin = sequentialCursor && sequentialCursor > cascadeMin
-            ? sequentialCursor
-            : cascadeMin;
+          proposedMin = computeSequentialProposedMin(sp, openDate, sequentialCursor, cascadeMap);
         }
 
         const proposedMax = hasWork && projectedEndDate
           ? dateStrings.addWeekdays(projectedEndDate, paddingDays)
           : currentRange.max;
 
-        // Advance sequential cursor past this servCode's proposed end
         if (runsInSequence && hasWork) {
           sequentialCursor = dateStrings.addWeekdays(proposedMax, 1);
         }
