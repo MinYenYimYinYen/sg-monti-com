@@ -336,7 +336,11 @@ export function SeasonOptimizerDialog() {
               const currentRunsInSequence = progCodePace.progCode.runsInSequence;
               const currentPadding = localPadding[progCodeId] ?? items[0]?.paddingDays ?? 0;
               const currentRateFrac = rateIncreaseFrac[progCodeId] ?? 0;
-              const visibleItems = items.filter((r) => r.hasWork);
+              // Sort by proposedMin so servCodes display in chronological order.
+              // For Independent progCodes the cascade may assign earlier dates to later-numbered
+              // servCodes (e.g. LD3 before LD2), so we sort here rather than relying on the
+              // original servCodePaces order.
+              const visibleItems = items.filter((r) => r.hasWork).sort((a, b) => a.proposedMin.localeCompare(b.proposedMin));
 
               // Team rate: average teamAvgCapacity across visible servCodes
               const teamRates = visibleItems.map((item) =>
