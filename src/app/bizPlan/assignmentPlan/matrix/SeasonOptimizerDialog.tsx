@@ -29,6 +29,7 @@ import { UnsavedServCodeChanges, UnsavedProgCodeChanges } from "@/app/realGreen/
 import { dateStrings, dateRanges } from "@/lib/primatives/dates/dateStrings";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { cn } from "@/style/utils";
+import { OptimizerInsightsPopover } from "@/app/bizPlan/assignmentPlan/matrix/OptimizerInsightsPopover";
 
 // ---------------------------------------------------------------------------
 // Gantt helpers
@@ -65,6 +66,7 @@ export function SeasonOptimizerDialog() {
   const dispatch = useAppDispatch();
 
   const lookbackConfig = useSelector(cascadeSelect.lookbackConfig);
+  const cascadeMap = useSelector(cascadeSelect.employeeCascadeMap);
   const seasonResult = useSelector(matrixSelect.seasonOptimizerResult);
   const progCodePaces = useSelector(servCodePaceSelect.progCodePaces);
   const servCodePaceMap = useSelector(servCodePaceSelect.servCodePaceMap);
@@ -316,7 +318,12 @@ export function SeasonOptimizerDialog() {
           {/* Timeline header */}
           <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono px-1">
             <span>{formatDate(timelineMin)}</span>
-            <span className="text-primary">{changedItems.length} change{changedItems.length !== 1 ? "s" : ""}</span>
+            <OptimizerInsightsPopover
+              changedItems={changedItems}
+              effectiveResult={effectiveResult}
+              cascadeMap={cascadeMap}
+              servCodePaceMap={servCodePaceMap}
+            />
             <span>{formatDate(timelineMax)}</span>
           </div>
 

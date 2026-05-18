@@ -32,12 +32,15 @@ const selectSeasonOptimizerConfig = (state: AppState) => state.pace.seasonOptimi
 // Simulates draining a single-dimension pool across time intervals with staggered employee availability.
 // Returns the date when the pool is exhausted, or null if no employees are available.
 function computePoolDrainDate(
-  employeeAvailability: { availableFrom: string; rate: number }[],
+  employeeAvailability: { availableFrom: string; rate: number; alreadyCommitted: number }[],
   pool: number,
   projectionStart: string,
   closeDate: string,
 ): string | null {
-  if (pool <= 0) return projectionStart;
+  // Subtract work already committed pre-interruption from the pool before simulating.
+  const totalCommitted = employeeAvailability.reduce((s, e) => s + e.alreadyCommitted, 0);
+  const effectivePool = pool - totalCommitted;
+  if (effectivePool <= 0) return projectionStart;
   if (employeeAvailability.length === 0) return null;
 
   const boundarySet = new Set<string>([projectionStart, closeDate]);
@@ -46,7 +49,7 @@ function computePoolDrainDate(
   }
   const boundaries = [...boundarySet].sort();
 
-  let remaining = pool;
+  let remaining = effectivePool;
 
   for (let i = 0; i < boundaries.length - 1; i++) {
     const intervalStart = boundaries[i];
@@ -86,9 +89,12 @@ function computePoolDrainDate(
   return dateStrings.addWeekdays(closeDate, daysNeeded);
 }
 
-type DimensionAvailability = { availableFrom: string; rate: number }[];
+type DimensionAvailability = { availableFrom: string; rate: number; alreadyCommitted: number }[];
 
 // Builds per-dimension employee availability lists for a servCode's assigned employees.
+// `alreadyCommitted` carries the work the employee completed on this servCode before a
+// higher-priority servCode preempted them, so the pool drain simulation starts from the
+// correct remaining balance rather than the full pool share.
 function buildDimensionAvailability(
   servCode: { assignedTo: { employeeId: string }[] },
   servCodeId: string,
@@ -106,12 +112,16 @@ function buildDimensionAvailability(
 
     const availFrom = entry.availableFrom ?? openDate;
 
+    // Only count contributedCSP as pre-committed when the employee was actually interrupted
+    // (availableFrom is after openDate). If availableFrom <= openDate, the employee was never
+    // pulled away — contributedCSP is their future work, not already-banked work.
+    const wasInterrupted = availFrom > openDate;
     if (entry.dailyRate.count > 0)
-      availabilityCount.push({ availableFrom: availFrom, rate: entry.dailyRate.count });
+      availabilityCount.push({ availableFrom: availFrom, rate: entry.dailyRate.count, alreadyCommitted: wasInterrupted ? entry.contributedCSP.count : 0 });
     if (entry.dailyRate.size > 0)
-      availabilitySize.push({ availableFrom: availFrom, rate: entry.dailyRate.size });
+      availabilitySize.push({ availableFrom: availFrom, rate: entry.dailyRate.size, alreadyCommitted: wasInterrupted ? entry.contributedCSP.size : 0 });
     if (entry.dailyRate.price > 0)
-      availabilityPrice.push({ availableFrom: availFrom, rate: entry.dailyRate.price });
+      availabilityPrice.push({ availableFrom: availFrom, rate: entry.dailyRate.price, alreadyCommitted: wasInterrupted ? entry.contributedCSP.price : 0 });
   }
 
   return { count: availabilityCount, size: availabilitySize, price: availabilityPrice };
@@ -119,7 +129,7 @@ function buildDimensionAvailability(
 
 // Computes the per-dimension delta days (projected end date vs close date) for a servCode.
 function computeDeltaDaysCSP(
-  availability: ReturnType<typeof buildDimensionAvailability>,
+  availability: { count: DimensionAvailability; size: DimensionAvailability; price: DimensionAvailability },
   pool: CSP,
   openDate: string,
   closeDate: string,
@@ -372,11 +382,15 @@ const selectMatrixFilteredSortedProgCodePaces = createSelector(
 // Layer 6 — Season Optimizer
 // ---------------------------------------------------------------------------
 
-// Computes the proposed min date for a sequential servCode that hasn't started yet.
-// Uses the earliest cascade availableFrom across assigned employees, bounded by the sequential cursor.
-function computeSequentialProposedMin(
+// Computes the proposed min date for a not-yet-started servCode.
+// Uses the earliest cascade availableFrom across assigned employees as a floor, bounded by:
+//   1. plannedMin — never propose earlier than the servCode's planned start date
+//   2. sequentialCursor — for sequential progCodes, never start before the previous servCode ends
+// This applies to ALL not-yet-started servCodes, not just sequential ones, because an employee's
+// cascade priority queue may delay their availability even for non-sequential programs.
+function computeCascadeAwareProposedMin(
   sp: ReturnType<typeof servCodePaceSelect.progCodePaces>[number]["servCodePaces"][number],
-  openDate: string,
+  plannedMin: string,
   sequentialCursor: string | null,
   cascadeMap: ReturnType<typeof cascadeSelect.employeeCascadeMap>,
 ): string {
@@ -387,8 +401,11 @@ function computeSequentialProposedMin(
       if (!earliest || entry.availableFrom < earliest) earliest = entry.availableFrom;
     }
   }
-  const cascadeMin = earliest ?? openDate;
-  return sequentialCursor && sequentialCursor > cascadeMin ? sequentialCursor : cascadeMin;
+  const cascadeMin = earliest ?? plannedMin;
+  // Never propose earlier than the planned start date
+  const flooredMin = cascadeMin > plannedMin ? cascadeMin : plannedMin;
+  // For sequential programs, also respect the cursor (null for non-sequential, so no effect)
+  return sequentialCursor && sequentialCursor > flooredMin ? sequentialCursor : flooredMin;
 }
 
 const selectSeasonOptimizerResult = createSelector(
@@ -425,11 +442,14 @@ const selectSeasonOptimizerResult = createSelector(
         const hasWork = projectedEndDate !== null && (perDay?.activeAsapCSP.price ?? 0) > 0;
 
         let proposedMin: string;
-        if (isStarted || !runsInSequence) {
+        if (isStarted) {
+          // Already in progress — keep the planned start date unchanged and reset the cursor.
           proposedMin = currentRange.min;
-          if (isStarted) sequentialCursor = null;
+          sequentialCursor = null;
         } else {
-          proposedMin = computeSequentialProposedMin(sp, openDate, sequentialCursor, cascadeMap);
+          // Not yet started: use cascade availability as a floor for all programs.
+          // For non-sequential programs, sequentialCursor is null so it has no effect.
+          proposedMin = computeCascadeAwareProposedMin(sp, currentRange.min, sequentialCursor, cascadeMap);
         }
 
         const proposedMax = hasWork && projectedEndDate
