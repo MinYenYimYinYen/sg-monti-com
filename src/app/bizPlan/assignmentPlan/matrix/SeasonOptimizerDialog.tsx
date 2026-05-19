@@ -323,6 +323,7 @@ export function SeasonOptimizerDialog() {
               effectiveResult={effectiveResult}
               cascadeMap={cascadeMap}
               servCodePaceMap={servCodePaceMap}
+              today={today}
             />
             <span>{formatDate(timelineMax)}</span>
           </div>

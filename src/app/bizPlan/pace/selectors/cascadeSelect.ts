@@ -20,11 +20,13 @@ import {
   getServiceEffectiveDate,
 } from "@/app/bizPlan/pace/_lib/employeeLookbackUtils";
 import {
+  CascadeTimelineEvent,
   EmployeeCascadeEntry,
   EmployeeCascadeResult,
   PaceCategory,
   LookbackConfig,
 } from "@/app/bizPlan/pace/PaceTypes";
+import { runCascadeSimulation } from "@/app/bizPlan/pace/_lib/cascadeSimulation";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 
@@ -153,19 +155,24 @@ function buildEmployeeLatestPrintedDateMap(
   perDayMap: Map<string, { servCode: ServCodeDeep }>,
 ): Map<string, string> {
   const employeeLatestPrintedDate = new Map<string, string>();
-  for (const [, perDay] of perDayMap) {
+  // Threshold: any schedDate more than 2 years out is almost certainly a RealGreen data error.
+  const twoYearsOut = dateStrings.addWeekdays(dateStrings.today(), 520);
+  for (const [servCodeId, perDay] of perDayMap) {
     for (const service of perDay.servCode.services) {
       if (
         service.status === "$" &&
         service.lastAssigned.schedDate &&
         service.lastAssigned.employeeId
       ) {
-        const existing = employeeLatestPrintedDate.get(service.lastAssigned.employeeId);
-        if (!existing || service.lastAssigned.schedDate > existing) {
-          employeeLatestPrintedDate.set(
-            service.lastAssigned.employeeId,
-            service.lastAssigned.schedDate,
+        const schedDate = service.lastAssigned.schedDate;
+        if (schedDate > twoYearsOut) {
+          console.warn(
+            `[cascade] Suspicious schedDate detected: employee=${service.lastAssigned.employeeId}, schedDate=${schedDate}, servCode=${servCodeId}`,
           );
+        }
+        const existing = employeeLatestPrintedDate.get(service.lastAssigned.employeeId);
+        if (!existing || schedDate > existing) {
+          employeeLatestPrintedDate.set(service.lastAssigned.employeeId, schedDate);
         }
       }
     }
@@ -282,14 +289,28 @@ function computeServCodeDates(
 
   const isOverdue = today > servCode.dateRange.max;
   let closeDate: string;
+  let daysNeeded: number | null = null;
 
   if (isOverdue && perDay.activeAsapCSP.price > 0 && teamStats.teamAvgCSP.price > 0) {
-    const daysNeeded = Math.ceil(perDay.activeAsapCSP.price / teamStats.teamAvgCSP.price);
+    daysNeeded = Math.ceil(perDay.activeAsapCSP.price / teamStats.teamAvgCSP.price);
     closeDate = dateStrings.addWeekdays(today, daysNeeded);
   } else if (isOverdue) {
     closeDate = today;
   } else {
     closeDate = servCode.dateRange.max;
+  }
+
+  const lrIds = ["LR1", "LR2", "LR3", "LR4", "LR5", "LR6"];
+  if (lrIds.includes(servCode.servCodeId)) {
+    console.log(
+      `[cascade ${servCode.servCodeId}] openDate=${openDate}, closeDate=${closeDate}, isOverdue=${isOverdue}` +
+      (daysNeeded !== null ? `, daysNeeded=${daysNeeded}, pool=$${perDay.activeAsapCSP.price.toFixed(0)}, teamRate=$${teamStats.teamAvgCSP.price.toFixed(2)}` : ""),
+    );
+  }
+  if (isOverdue && daysNeeded !== null && daysNeeded > 365) {
+    console.warn(
+      `[cascade] LARGE overdue extension: servCode=${servCode.servCodeId}, daysNeeded=${daysNeeded}, closeDate=${closeDate}, pool=$${perDay.activeAsapCSP.price.toFixed(0)}, teamRate=$${teamStats.teamAvgCSP.price.toFixed(2)}`,
+    );
   }
 
   return { openDate, closeDate };
@@ -362,79 +383,12 @@ function buildSimDataList(
   return simDataList;
 }
 
-// Runs the interval-by-interval simulation: drains the highest-priority open servCode
-// in each time interval. Returns contributed CSP and first-worked date per servCode.
-function runCascadeSimulation(
-  simDataList: ServCodeSimData[],
-  today: string,
-): { contributed: Map<string, CSP>; availableFrom: Map<string, string> } {
-  const boundarySet = new Set<string>([today]);
-  for (const sim of simDataList) {
-    boundarySet.add(sim.openDate);
-    boundarySet.add(sim.closeDate);
-  }
-  const boundaries = [...boundarySet].sort();
-
-  const remaining = new Map<string, CSP>();
-  for (const sim of simDataList) {
-    remaining.set(sim.servCodeId, { ...sim.pool });
-  }
-
-  const contributed = new Map<string, CSP>();
-  const availableFrom = new Map<string, string>();
-  for (const sim of simDataList) {
-    contributed.set(sim.servCodeId, { ...baseCountSizePrice });
-  }
-
-  for (let i = 0; i < boundaries.length - 1; i++) {
-    const intervalStart = boundaries[i];
-    const intervalEnd = boundaries[i + 1];
-
-    const intervalWeekdays = Math.max(
-      0,
-      dateRanges.countWeekdays({ min: intervalStart, max: intervalEnd }) - 1,
-    );
-    if (intervalWeekdays <= 0) continue;
-
-    for (const sim of simDataList) {
-      if (sim.openDate > intervalStart || sim.closeDate < intervalEnd) continue;
-
-      const rem = remaining.get(sim.servCodeId)!;
-      if (rem.count <= 0 && rem.size <= 0 && rem.price <= 0 && rem.rev <= 0) continue;
-
-      if (!availableFrom.has(sim.servCodeId)) {
-        availableFrom.set(sim.servCodeId, intervalStart);
-      }
-
-      const drained: CSP = {
-        count: Math.min(sim.dailyRate.count * intervalWeekdays, rem.count),
-        size: Math.min(sim.dailyRate.size * intervalWeekdays, rem.size),
-        price: Math.min(sim.dailyRate.price * intervalWeekdays, rem.price),
-        rev: Math.min(sim.dailyRate.rev * intervalWeekdays, rem.rev),
-      };
-
-      const prev = contributed.get(sim.servCodeId)!;
-      contributed.set(sim.servCodeId, CSPOps.sum(prev, drained));
-
-      remaining.set(sim.servCodeId, {
-        count: Math.max(0, rem.count - drained.count),
-        size: Math.max(0, rem.size - drained.size),
-        price: Math.max(0, rem.price - drained.price),
-        rev: Math.max(0, rem.rev - drained.rev),
-      });
-
-      break; // Only one servCode worked per interval
-    }
-  }
-
-  return { contributed, availableFrom };
-}
-
 // Assembles the EmployeeCascadeEntry map for one employee from simulation results.
 function buildByServCodeMap(
   simDataList: ServCodeSimData[],
   contributed: Map<string, CSP>,
   availableFrom: Map<string, string>,
+  timelineEvents: Map<string, CascadeTimelineEvent[]>,
   totalAvgDailyCSP: CSP | null,
   teamStatsCache: Map<string, TeamStats>,
 ): Map<string, EmployeeCascadeEntry> {
@@ -460,6 +414,7 @@ function buildByServCodeMap(
       maxDailyRate: sim.maxDailyRate,
       fractionConsumed,
       isEstimated: sim.isEstimated,
+      timelineEvents: timelineEvents.get(sim.servCodeId) ?? [],
     });
   }
 
@@ -478,11 +433,19 @@ const selectEmployeeCascadeResults = createSelector(
     const employeeLatestPrintedDate = buildEmployeeLatestPrintedDateMap(perDayMap);
     const teamStatsCache = buildTeamStatsCache(perDayMap, lookbackMap);
 
+  const twoYearsOut = dateStrings.addWeekdays(today, 520);
     const results: EmployeeCascadeResult[] = [];
 
     for (const employee of employeeMap.values()) {
       const employeeLookback = lookbackMap.get(employee.employeeId);
       const totalAvgDailyCSP = getTotalAvgDailyCSP(employeeLookback);
+
+      const latestPrinted = employeeLatestPrintedDate.get(employee.employeeId);
+      if (latestPrinted && latestPrinted > twoYearsOut) {
+        console.warn(
+          `[cascade] Employee ${employee.employeeId} has far-future latestPrinted=${latestPrinted} — this will corrupt cascade openDates`,
+        );
+      }
 
       const simDataList = buildSimDataList(
         employee,
@@ -493,12 +456,15 @@ const selectEmployeeCascadeResults = createSelector(
         today,
       );
 
-      const { contributed, availableFrom } = runCascadeSimulation(simDataList, today);
+      const { contributed, availableFrom, timelineEvents } = runCascadeSimulation(simDataList, today);
+      // Note: drainDate and contributedPriceByBoundary are not used in the Redux cascade path —
+      // they are only consumed by the optimizer popover which runs its own fresh simulation.
 
       const byServCode = buildByServCodeMap(
         simDataList,
         contributed,
         availableFrom,
+        timelineEvents,
         totalAvgDailyCSP,
         teamStatsCache,
       );

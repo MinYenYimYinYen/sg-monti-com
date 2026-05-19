@@ -30,6 +30,15 @@ export type PaceCategory =
   | "notStarted"
   | "notSet";
 
+/** A leave or resume event recorded by the cascade simulation for one employee on one servCode. */
+export type CascadeTimelineEvent =
+  | { kind: "leave"; date: string; toServCodeId: string }
+  /**
+   * `fromServCodeId`: the servCode the employee was working immediately before resuming here,
+   * or null if there was a gap (downtime) with no other servCode winning that interval.
+   */
+  | { kind: "resume"; date: string; fromServCodeId: string | null };
+
 export type EmployeeCascadeEntry = {
   availableFrom: string | undefined;
   contributedCSP: CSP;
@@ -37,6 +46,13 @@ export type EmployeeCascadeEntry = {
   maxDailyRate: CSP;
   fractionConsumed: CSP | null;
   isEstimated: boolean;
+  /**
+   * Ordered sequence of leave/resume events for this employee on this servCode.
+   * A "leave" event means the employee was pulled off this servCode to work a
+   * higher-priority one. A "resume" event means they returned.
+   * Empty when there are no interruptions.
+   */
+  timelineEvents: CascadeTimelineEvent[];
 };
 
 export type EmployeeCascadeResult = {
@@ -58,6 +74,8 @@ export type ServCodePace = {
   teamAvgCapacity: CSP;
   paceDelta: CSP;
   paceDeltaPct: CSP | null;
+  /** Active + asap unscheduled work pool — the stable remaining work not yet on any route sheet. */
+  activeAsapCSP: CSP;
 };
 
 export type ProgCodePace = {

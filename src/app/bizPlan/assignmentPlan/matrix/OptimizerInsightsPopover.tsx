@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/style/components/tab
 import { SeasonOptimizedRange } from "@/app/bizPlan/pace/PaceTypes";
 import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
+import { runCascadeSimulation } from "@/app/bizPlan/pace/_lib/cascadeSimulation";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { cn } from "@/style/utils";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -17,7 +18,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 type ServCodeEventKind =
   | { kind: "opens"; employeeIds: string[] }
   | { kind: "closes" }
-  | { kind: "employeeResumes"; employeeId: string }
+  | { kind: "employeeResumes"; employeeId: string; fromServCodeId: string | null }
   | { kind: "employeeLeaves"; employeeId: string; toServCodeId: string };
 
 type ServCodeDateRow = {
@@ -53,183 +54,146 @@ function signedDays(n: number): string {
   return n > 0 ? `+${n}d` : `${n}d`;
 }
 
-// Builds per-servCode event groups from effectiveResult, cascadeMap, and servCodePaceMap.
+// Builds per-servCode event groups by running a fresh cascade simulation using
+// the optimizer's proposed dates (proposedMin/proposedMax) as open/close dates.
+// This ensures sequential progCodes show the correct start dates rather than
+// the stale dateRange.min values stored in RealGreen.
 function buildServCodeEventGroups(
   effectiveResult: SeasonOptimizedRange[],
   cascadeMap: ReturnType<typeof cascadeSelect.employeeCascadeMap>,
   servCodePaceMap: ReturnType<typeof servCodePaceSelect.servCodePaceMap>,
+  today: string,
 ): ServCodeEventGroup[] {
-  // Quick lookup: servCodeId → proposedMin
-  const openDateByServCode = new Map<string, string>();
-  for (const item of effectiveResult) {
-    openDateByServCode.set(item.servCodeId, item.proposedMin);
-  }
-
-  // Build a lookup: employeeId → Set of dates on which they close another servCode.
-  // Used to distinguish "employee starts fresh on open date" from "employee is still
-  // finishing another servCode on the open date and joins the next weekday".
-  const employeeCloseDates = new Map<string, Set<string>>();
-  for (const item of effectiveResult) {
-    if (!item.hasWork) continue;
-    const pace = servCodePaceMap.get(item.servCodeId);
-    for (const emp of pace?.servCode.assignedTo ?? []) {
-      if (!employeeCloseDates.has(emp.employeeId)) employeeCloseDates.set(emp.employeeId, new Set());
-      employeeCloseDates.get(emp.employeeId)!.add(item.proposedMax);
-    }
-  }
-
   const groups: ServCodeEventGroup[] = [];
 
   for (const item of effectiveResult) {
     if (!item.hasWork) continue;
 
     const pace = servCodePaceMap.get(item.servCodeId);
-    const totalPoolPrice = pace?.servCode
-      ? (pace.teamAvgCapacity.price > 0
-        ? pace.teamAvgCapacity.price * Math.max(1, dateRanges.countWeekdays({ min: item.proposedMin, max: item.proposedMax }))
-        : 0)
-      : 0;
-    // Use activeAsapCSP price as the total pool (unfinished work remaining)
-    // teamAvgCapacity is daily rate; we want the pool = activeAsapCSP from rawPaceSelect
-    // Since we don't have rawPaceSelect here, approximate: pool ≈ dailyRate × total days
-    const dailyRate = pace?.teamAvgCapacity.price ?? 0;
-    const totalDays = Math.max(1, dateRanges.countWeekdays({ min: item.proposedMin, max: item.proposedMax }));
-    const poolPrice = dailyRate * totalDays;
-
-    // Collect all boundary dates for this servCode
-    const boundarySet = new Set<string>([item.proposedMin, item.proposedMax]);
-
-    // Employee cascade events for this servCode
+    const totalPoolPrice = pace?.activeAsapCSP.price ?? 0;
     const assignedEmployeeIds = pace?.servCode.assignedTo.map((e) => e.employeeId) ?? [];
+
+    // Run a fresh per-employee simulation using proposed dates for this servCode.
+    // Each employee's priority list is their full servCodeIds list; we use proposedMin/Max
+    // from effectiveResult as the open/close dates so sequential chaining is respected.
+    type EmployeeSimResult = {
+      availableFrom: string | undefined;
+      timelineEvents: ReturnType<typeof runCascadeSimulation>["timelineEvents"] extends Map<string, infer V> ? V : never;
+      contributedPriceByBoundary: Map<string, number>;
+    };
+    const employeeSimResults = new Map<string, EmployeeSimResult>();
 
     for (const employeeId of assignedEmployeeIds) {
       const cascadeResult = cascadeMap.get(employeeId);
-      const entry = cascadeResult?.byServCode.get(item.servCodeId);
-      if (!entry?.availableFrom) continue;
+      if (!cascadeResult) continue;
 
-      // ── Case 1: Employee was never available from the open date ──
-      // availableFrom > proposedMin means the employee was finishing a higher-priority
-      // servCode before this one opened (e.g. IC1 closes on LR2's open date).
-      const anotherServCodeClosesOnOpenDate = employeeCloseDates.get(employeeId)?.has(item.proposedMin) ?? false;
-      const effectiveResumeDate = (entry.availableFrom === item.proposedMin && anotherServCodeClosesOnOpenDate)
-        ? dateStrings.nextWeekdayAfter(entry.availableFrom)
-        : entry.availableFrom;
-      const rawAvailableFrom = entry.availableFrom;
+      // Build sim entries for this employee using proposed dates from effectiveResult.
+      // Pool = dailyRate × proposed duration so the simulation has enough work to run
+      // through all intervals and detect preemptions. contributedCSP is wrong here
+      // because it reflects the Redux cascade's stale dates (often zero for sequential
+      // servCodes whose dateRange.min hasn't been updated yet).
+      const simEntries = cascadeResult.employee.servCodeIds
+        .map((servCodeId) => {
+          const entry = cascadeResult.byServCode.get(servCodeId);
+          if (!entry) return null;
+          const proposed = effectiveResult.find((r) => r.servCodeId === servCodeId);
+          const openDate = proposed ? proposed.proposedMin : (entry.availableFrom ?? today);
+          const closeDate = proposed ? proposed.proposedMax : today;
+          const proposedWeekdays = Math.max(1, dateRanges.countWeekdays({ min: openDate, max: closeDate }));
+          // Use dailyRate × duration as pool; fall back to 1/day if dailyRate is zero.
+          const effectiveDailyRate = entry.dailyRate.price > 0 ? entry.dailyRate : { count: 1, size: 1, price: 1, rev: 1 };
+          const pool = {
+            count: effectiveDailyRate.count * proposedWeekdays,
+            size: effectiveDailyRate.size * proposedWeekdays,
+            price: effectiveDailyRate.price * proposedWeekdays,
+            rev: effectiveDailyRate.rev * proposedWeekdays,
+          };
+          return {
+            servCodeId,
+            openDate,
+            closeDate,
+            pool,
+            dailyRate: effectiveDailyRate,
+          };
+        })
+        .filter((e): e is NonNullable<typeof e> => e !== null);
 
-      if (effectiveResumeDate > item.proposedMin) {
-        boundarySet.add(effectiveResumeDate);
-        for (const [otherServCodeId] of cascadeResult!.byServCode) {
-          if (otherServCodeId === item.servCodeId) continue;
-          const otherOpenDate = openDateByServCode.get(otherServCodeId);
-          if (!otherOpenDate) continue;
-          if (otherOpenDate > item.proposedMin && otherOpenDate <= rawAvailableFrom) {
-            boundarySet.add(otherOpenDate);
-          }
-        }
+      const simResult = runCascadeSimulation(simEntries, today);
+      const avFrom = simResult.availableFrom.get(item.servCodeId);
+      const events = simResult.timelineEvents.get(item.servCodeId) ?? [];
+      const byBoundary = simResult.contributedPriceByBoundary.get(item.servCodeId) ?? new Map<string, number>();
+      employeeSimResults.set(employeeId, { availableFrom: avFrom, timelineEvents: events, contributedPriceByBoundary: byBoundary });
+    }
+
+    // Collect boundary dates from the fresh simulation results.
+    const boundarySet = new Set<string>([item.proposedMin, item.proposedMax]);
+    for (const [, simRes] of employeeSimResults) {
+      if (simRes.availableFrom && simRes.availableFrom > item.proposedMin) {
+        boundarySet.add(simRes.availableFrom);
       }
-
-      // ── Case 2: Mid-servCode preemption ──
-      // Employee started this servCode (availableFrom <= proposedMin) but a higher-priority
-      // servCode opens mid-way (e.g. IC2 opens during LR3). The cascade's availableFrom
-      // only records the first worked date, not the resume date after interruption.
-      // Detect by scanning for other servCodes whose openDate falls strictly between
-      // entry.availableFrom and item.proposedMax.
-      for (const [otherServCodeId] of cascadeResult!.byServCode) {
-        if (otherServCodeId === item.servCodeId) continue;
-        const otherOpenDate = openDateByServCode.get(otherServCodeId);
-        if (!otherOpenDate) continue;
-        // The interrupting servCode opens after this servCode started and before it ends
-        if (otherOpenDate > entry.availableFrom && otherOpenDate < item.proposedMax) {
-          // Add the leave date as a boundary
-          boundarySet.add(otherOpenDate);
-          // Resume date = next weekday after the interrupting servCode closes
-          const otherItem = effectiveResult.find((r) => r.servCodeId === otherServCodeId);
-          if (otherItem) {
-            const resumeDate = dateStrings.nextWeekdayAfter(otherItem.proposedMax);
-            if (resumeDate < item.proposedMax) {
-              boundarySet.add(resumeDate);
-            }
-          }
-        }
+      for (const event of simRes.timelineEvents) {
+        boundarySet.add(event.date);
       }
     }
 
     const boundaries = [...boundarySet].sort();
 
-    // Build date rows
+    // Build cumulative team drain at each boundary by summing across all employee simulations.
+    // This replaces the linear formula (totalPoolPrice - dailyRate × elapsed) which assumed
+    // the full team works every day — incorrect when employees leave for higher-priority servCodes.
+    const cumulativeTeamDrainAtBoundary = new Map<string, number>();
+    for (const boundary of boundaries) {
+      let totalDrain = 0;
+      for (const [, simRes] of employeeSimResults) {
+        const byBoundary = simRes.contributedPriceByBoundary;
+        // Find the latest boundary ≤ this date in the employee's map.
+        let empDrain = 0;
+        for (const [bDate, drain] of byBoundary) {
+          if (bDate <= boundary) empDrain = drain;
+        }
+        totalDrain += empDrain;
+      }
+      cumulativeTeamDrainAtBoundary.set(boundary, totalDrain);
+    }
+
     const dateRows: ServCodeDateRow[] = boundaries.map((date) => {
-      const weekdaysElapsed = Math.max(0, dateRanges.countWeekdays({ min: item.proposedMin, max: date }) - 1);
-      const remainingPrice = Math.max(0, poolPrice - dailyRate * weekdaysElapsed);
+      const drained = cumulativeTeamDrainAtBoundary.get(date) ?? 0;
+      const remainingPrice = Math.max(0, totalPoolPrice - drained);
       const events: ServCodeEventKind[] = [];
 
-      // Opens event: list employees available from day 1.
-      // Exclude employees who are still finishing another servCode on the open date
-      // (detected by: availableFrom === proposedMin AND another servCode closes that day).
+      // Opens event: employees available from day 1.
       if (date === item.proposedMin) {
         const immediatelyAvailable = assignedEmployeeIds.filter((employeeId) => {
-          const entry = cascadeMap.get(employeeId)?.byServCode.get(item.servCodeId);
-          const availFrom = entry?.availableFrom;
-          if (!availFrom || availFrom < item.proposedMin) return true;
-          // availableFrom === proposedMin: only exclude if another servCode closes that day
-          if (availFrom === item.proposedMin) {
-            return !(employeeCloseDates.get(employeeId)?.has(item.proposedMin) ?? false);
-          }
-          return false;
+          const simRes = employeeSimResults.get(employeeId);
+          return !simRes?.availableFrom || simRes.availableFrom <= item.proposedMin;
         });
         events.push({ kind: "opens", employeeIds: immediatelyAvailable });
       }
 
-      // Closes event
+      // Closes event.
       if (date === item.proposedMax) {
         events.push({ kind: "closes" });
       }
 
-      // Employee resume / leave events
+      // Per-employee events.
       for (const employeeId of assignedEmployeeIds) {
-        const cascadeResult = cascadeMap.get(employeeId);
-        const entry = cascadeResult?.byServCode.get(item.servCodeId);
-        if (!entry?.availableFrom) continue;
+        const simRes = employeeSimResults.get(employeeId);
+        if (!simRes?.availableFrom) continue;
 
-        // ── Case 1: Employee was never available from the open date ──
-        const anotherClosesOnOpen = employeeCloseDates.get(employeeId)?.has(item.proposedMin) ?? false;
-        const effectiveResume = (entry.availableFrom === item.proposedMin && anotherClosesOnOpen)
-          ? dateStrings.nextWeekdayAfter(entry.availableFrom)
-          : entry.availableFrom;
-        const rawAvailFrom = entry.availableFrom;
-
-        if (effectiveResume === date && effectiveResume > item.proposedMin) {
-          events.push({ kind: "employeeResumes", employeeId });
-        }
-
-        if (effectiveResume > item.proposedMin) {
-          for (const [otherServCodeId] of cascadeResult!.byServCode) {
-            if (otherServCodeId === item.servCodeId) continue;
-            const otherOpenDate = openDateByServCode.get(otherServCodeId);
-            if (otherOpenDate === date && otherOpenDate > item.proposedMin && otherOpenDate <= rawAvailFrom) {
-              events.push({ kind: "employeeLeaves", employeeId, toServCodeId: otherServCodeId });
-            }
+        // Initial late-start (no timeline events = simple delay from start).
+        if (simRes.availableFrom === date && simRes.availableFrom > item.proposedMin) {
+          if (simRes.timelineEvents.length === 0) {
+            events.push({ kind: "employeeResumes", employeeId, fromServCodeId: null });
           }
         }
 
-        // ── Case 2: Mid-servCode preemption ──
-        // Employee started this servCode but a higher-priority servCode opens mid-way.
-        for (const [otherServCodeId] of cascadeResult!.byServCode) {
-          if (otherServCodeId === item.servCodeId) continue;
-          const otherOpenDate = openDateByServCode.get(otherServCodeId);
-          if (!otherOpenDate) continue;
-          if (otherOpenDate > entry.availableFrom && otherOpenDate < item.proposedMax) {
-            // Leave event: employee departs on the interrupting servCode's open date
-            if (otherOpenDate === date) {
-              events.push({ kind: "employeeLeaves", employeeId, toServCodeId: otherServCodeId });
-            }
-            // Resume event: employee returns the next weekday after the interrupting servCode closes
-            const otherItem = effectiveResult.find((r) => r.servCodeId === otherServCodeId);
-            if (otherItem) {
-              const resumeDate = dateStrings.nextWeekdayAfter(otherItem.proposedMax);
-              if (resumeDate === date && resumeDate < item.proposedMax) {
-                events.push({ kind: "employeeResumes", employeeId });
-              }
-            }
+        // Leave and resume events from the fresh simulation.
+        for (const event of simRes.timelineEvents) {
+          if (event.date !== date) continue;
+          if (event.kind === "leave") {
+            events.push({ kind: "employeeLeaves", employeeId, toServCodeId: event.toServCodeId });
+          } else {
+            events.push({ kind: "employeeResumes", employeeId, fromServCodeId: event.fromServCodeId });
           }
         }
       }
@@ -237,12 +201,11 @@ function buildServCodeEventGroups(
       return { date, remainingPrice, events };
     });
 
-    // Only include rows that have events
     const rowsWithEvents = dateRows.filter((r) => r.events.length > 0);
 
     groups.push({
       servCodeId: item.servCodeId,
-      totalPoolPrice: poolPrice,
+      totalPoolPrice,
       proposedMin: item.proposedMin,
       proposedMax: item.proposedMax,
       dateRows: rowsWithEvents,
@@ -323,6 +286,10 @@ function EventDetail({ event }: { event: ServCodeEventKind }) {
         <div className="text-[10px]">
           <span className="font-mono text-primary">{event.employeeId}</span>
           <span className="text-muted-foreground"> available</span>
+          {event.fromServCodeId !== null
+            ? <span className="text-muted-foreground"> (from <span className="font-mono text-foreground">{event.fromServCodeId}</span>)</span>
+            : <span className="text-muted-foreground"> (from downtime)</span>
+          }
         </div>
       );
     case "employeeLeaves":
@@ -444,6 +411,7 @@ type OptimizerInsightsPopoverProps = {
   effectiveResult: SeasonOptimizedRange[];
   cascadeMap: ReturnType<typeof cascadeSelect.employeeCascadeMap>;
   servCodePaceMap: ReturnType<typeof servCodePaceSelect.servCodePaceMap>;
+  today: string;
 };
 
 export function OptimizerInsightsPopover({
@@ -451,8 +419,9 @@ export function OptimizerInsightsPopover({
   effectiveResult,
   cascadeMap,
   servCodePaceMap,
+  today,
 }: OptimizerInsightsPopoverProps) {
-  const groups = buildServCodeEventGroups(effectiveResult, cascadeMap, servCodePaceMap);
+  const groups = buildServCodeEventGroups(effectiveResult, cascadeMap, servCodePaceMap, today);
 
   return (
     <Popover>

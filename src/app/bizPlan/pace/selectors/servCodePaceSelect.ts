@@ -46,6 +46,7 @@ function getEmployeeShareEntry(
     maxDailyRate: { ...baseCountSizePrice },
     fractionConsumed: null,
     isEstimated: true,
+    timelineEvents: [],
   };
 }
 
@@ -88,6 +89,7 @@ const selectServCodePaces = createSelector(
 
       const paceDelta = CSPOps.subtract(teamExpectedCSP, unfinishedRate);
       const paceDeltaPct = CSPOps.safeDivide(paceDelta, unfinishedRate);
+      const activeAsapCSP = perDay?.activeAsapCSP ?? { ...baseCountSizePrice };
 
       return {
         servCode,
@@ -102,6 +104,7 @@ const selectServCodePaces = createSelector(
         teamAvgCapacity,
         paceDelta,
         paceDeltaPct,
+        activeAsapCSP,
       } satisfies ServCodePace;
     });
   },
@@ -132,7 +135,7 @@ const selectProgCodePaces = createSelector(
         servCodePaces.map((p) => p.finishedCSP),
       );
 
-      return { progCode, servCodePaces, category, unfinishedCSP, finishedCSP };
+      return { progCode, servCodePaces, category, unfinishedCSP, finishedCSP } satisfies ProgCodePace;
     }),
 );
 

@@ -15,6 +15,7 @@ import {
   ProgCodeProjectedCompletion,
   SeasonOptimizedRange,
 } from "@/app/bizPlan/pace/PaceTypes";
+import { runCascadeSimulation } from "@/app/bizPlan/pace/_lib/cascadeSimulation";
 
 // ---------------------------------------------------------------------------
 // Slice selectors
@@ -408,6 +409,150 @@ function computeCascadeAwareProposedMin(
   return sequentialCursor && sequentialCursor > flooredMin ? sequentialCursor : flooredMin;
 }
 
+// Runs a multi-employee cascade simulation for a single servCode using proposed dates,
+// and returns the date the team's combined pool is exhausted.
+// Each employee's simulation is run independently (priority-ordered per their servCodeIds),
+// then their per-interval contributions are summed to find the team drain date.
+function computeSimulatedDrainDate(
+  sp: ReturnType<typeof servCodePaceSelect.progCodePaces>[number]["servCodePaces"][number],
+  proposedMin: string,
+  activeAsapCSP: number,
+  cascadeMap: ReturnType<typeof cascadeSelect.employeeCascadeMap>,
+  allProposedRanges: Map<string, { proposedMin: string; proposedMax: string }>,
+  today: string,
+): string | null {
+  if (activeAsapCSP <= 0) return null;
+
+  // Generous close date: proposedMin + 2× current duration (or 365 weekdays), so the
+  // simulation window is never artificially capped by a stale dateRange.max.
+  const currentDuration = Math.max(
+    1,
+    dateRanges.countWeekdays({ min: sp.servCode.dateRange.min, max: sp.servCode.dateRange.max }),
+  );
+  const generousCloseDate = dateStrings.addWeekdays(proposedMin, currentDuration * 2 + 30);
+
+  // Collect per-interval team drain by summing across all employee simulations.
+  // We need boundaries from all employees' simulations to build a unified timeline.
+  const allBoundaries = new Set<string>([proposedMin, generousCloseDate, today]);
+
+  type EmployeeSimData = {
+    simEntries: ReturnType<typeof buildEmployeeSimEntries>;
+    servCodeId: string;
+  };
+
+  const employeeSimDataList: EmployeeSimData[] = [];
+
+  for (const employee of sp.servCode.assignedTo) {
+    const cascadeResult = cascadeMap.get(employee.employeeId);
+    if (!cascadeResult) continue;
+
+    const simEntries = buildEmployeeSimEntries(
+      cascadeResult,
+      allProposedRanges,
+      generousCloseDate,
+      today,
+    );
+    employeeSimDataList.push({ simEntries, servCodeId: sp.servCode.servCodeId });
+
+    for (const entry of simEntries) {
+      allBoundaries.add(entry.openDate);
+      allBoundaries.add(entry.closeDate);
+    }
+  }
+
+  const boundaries = [...allBoundaries].sort();
+
+  const isLR3 = sp.servCode.servCodeId === "LR3";
+  if (isLR3) {
+    console.log(`[LR3 drain] activeAsapCSP=$${activeAsapCSP.toFixed(0)}, proposedMin=${proposedMin}, generousCloseDate=${generousCloseDate}`);
+    for (const { simEntries, servCodeId } of employeeSimDataList) {
+      const lr3Entry = simEntries.find((e) => e.servCodeId === servCodeId);
+      if (lr3Entry) {
+        console.log(`  [LR3 drain] employee sim entry: openDate=${lr3Entry.openDate}, closeDate=${lr3Entry.closeDate}, pool.price=$${lr3Entry.pool.price.toFixed(0)}, dailyRate.price=$${lr3Entry.dailyRate.price.toFixed(2)}`);
+      }
+    }
+    console.log(`  [LR3 drain] boundaries: ${boundaries.join(", ")}`);
+  }
+
+  // Run each employee's simulation and collect their per-interval drain for this servCode.
+  let remainingPool = activeAsapCSP;
+
+  for (let i = 0; i < boundaries.length - 1; i++) {
+    const intervalStart = boundaries[i];
+    const intervalEnd = boundaries[i + 1];
+
+    const intervalWeekdays = Math.max(
+      0,
+      dateRanges.countWeekdays({ min: intervalStart, max: intervalEnd }) - 1,
+    );
+    if (intervalWeekdays <= 0) continue;
+
+    // Sum drain from all employees for this servCode in this interval.
+    let intervalTeamDrain = 0;
+    for (const { simEntries, servCodeId } of employeeSimDataList) {
+      // Determine if this employee wins this servCode in this interval.
+      // Winner = first eligible entry in priority order with remaining pool.
+      // We need to track remaining per employee — run a lightweight check.
+      const winnerEntry = simEntries.find((entry) => {
+        if (entry.openDate > intervalStart || entry.closeDate < intervalEnd) return false;
+        // Simplified: assume pool is non-zero (we set pool = dailyRate × duration)
+        return true;
+      });
+      if (winnerEntry?.servCodeId === servCodeId) {
+        intervalTeamDrain += winnerEntry.dailyRate.price * intervalWeekdays;
+      }
+    }
+
+    if (isLR3) {
+      console.log(`  [LR3 drain] interval ${intervalStart}→${intervalEnd}: weekdays=${intervalWeekdays}, teamDrain=$${intervalTeamDrain.toFixed(0)}, remainingBefore=$${remainingPool.toFixed(0)}`);
+    }
+
+    if (intervalTeamDrain <= 0) continue;
+
+    if (intervalTeamDrain >= remainingPool) {
+      const daysNeeded = remainingPool / (intervalTeamDrain / intervalWeekdays);
+      const drainDate = dateStrings.addWeekdays(intervalStart, daysNeeded);
+      if (isLR3) console.log(`  [LR3 drain] EXHAUSTED in this interval → drainDate=${drainDate}`);
+      return drainDate;
+    }
+
+    remainingPool -= intervalTeamDrain;
+  }
+
+  // Pool not exhausted — project beyond the generous window
+  const fallbackDate = dateStrings.addWeekdays(generousCloseDate, Math.ceil(remainingPool / 1));
+  if (isLR3) console.log(`  [LR3 drain] pool NOT exhausted in window, remainingPool=$${remainingPool.toFixed(0)}, fallback=${fallbackDate}`);
+  return fallbackDate;
+}
+
+// Builds sim entries for one employee using proposed dates from allProposedRanges.
+// Pool = dailyRate × proposed duration (generous, so simulation runs through all intervals).
+function buildEmployeeSimEntries(
+  cascadeResult: ReturnType<typeof cascadeSelect.employeeCascadeMap> extends Map<string, infer V> ? V : never,
+  allProposedRanges: Map<string, { proposedMin: string; proposedMax: string }>,
+  fallbackCloseDate: string,
+  today: string,
+) {
+  return cascadeResult.employee.servCodeIds
+    .map((servCodeId) => {
+      const entry = cascadeResult.byServCode.get(servCodeId);
+      if (!entry) return null;
+      const proposed = allProposedRanges.get(servCodeId);
+      const openDate = proposed ? proposed.proposedMin : (entry.availableFrom ?? today);
+      const closeDate = proposed ? proposed.proposedMax : fallbackCloseDate;
+      const proposedWeekdays = Math.max(1, dateRanges.countWeekdays({ min: openDate, max: closeDate }));
+      const effectiveDailyRate = entry.dailyRate.price > 0 ? entry.dailyRate : { count: 1, size: 1, price: 1, rev: 1 };
+      const pool = {
+        count: effectiveDailyRate.count * proposedWeekdays,
+        size: effectiveDailyRate.size * proposedWeekdays,
+        price: effectiveDailyRate.price * proposedWeekdays,
+        rev: effectiveDailyRate.rev * proposedWeekdays,
+      };
+      return { servCodeId, openDate, closeDate, pool, dailyRate: effectiveDailyRate };
+    })
+    .filter((e): e is NonNullable<typeof e> => e !== null);
+}
+
 const selectSeasonOptimizerResult = createSelector(
   [
     servCodePaceSelect.progCodePaces,
@@ -419,11 +564,72 @@ const selectSeasonOptimizerResult = createSelector(
     const today = dateStrings.today();
     const results: SeasonOptimizedRange[] = [];
 
+    // First pass: compute proposedMin for all servCodes (needed for the drain simulation).
+    // We need a two-pass approach: pass 1 computes proposedMin, pass 2 runs the simulation
+    // using all proposed ranges as context for each employee's priority queue.
+    const proposedMinByServCode = new Map<string, string>();
+
     for (const progCodePace of progCodePaces) {
       const runsInSequence = progCodePace.progCode.runsInSequence;
+      let sequentialCursor: string | null = null;
 
-      // For sequential progCodes: track the day after each servCode's proposedMax so the
-      // next servCode's min is guaranteed to start AFTER the previous one ends.
+      for (const sp of progCodePace.servCodePaces) {
+        const servCodeId = sp.servCode.servCodeId;
+        const currentRange = sp.servCode.dateRange;
+        const perDay = perDayMap.get(servCodeId);
+
+        const openDate = perDay
+          ? (perDay.projectionStartDate ?? (today > currentRange.min ? today : currentRange.min))
+          : currentRange.min;
+        const isStarted = openDate <= today;
+
+        let proposedMin: string;
+        if (isStarted) {
+          proposedMin = currentRange.min;
+          sequentialCursor = null;
+        } else {
+          proposedMin = computeCascadeAwareProposedMin(sp, currentRange.min, sequentialCursor, cascadeMap);
+        }
+
+        proposedMinByServCode.set(servCodeId, proposedMin);
+
+        // Advance cursor using a temporary proposedMax estimate (will be refined in pass 2).
+        // For the cursor we use projectedEndDate + padding as a rough estimate.
+        if (runsInSequence) {
+          const delta = deltaMap.get(servCodeId);
+          const projectedEndDate = delta?.projectedEndDate ?? null;
+          const paddingDays = sp.servCode.paddingDays;
+          const hasWork = projectedEndDate !== null && (perDay?.activeAsapCSP.price ?? 0) > 0;
+          if (hasWork && projectedEndDate) {
+            const roughMax = dateStrings.addWeekdays(projectedEndDate, paddingDays);
+            sequentialCursor = dateStrings.addWeekdays(roughMax, 1);
+          }
+        }
+      }
+    }
+
+    // Build allProposedRanges with rough proposedMax for the simulation context.
+    // We'll refine proposedMax per servCode in the second pass.
+    const allProposedRanges = new Map<string, { proposedMin: string; proposedMax: string }>();
+    for (const progCodePace of progCodePaces) {
+      for (const sp of progCodePace.servCodePaces) {
+        const servCodeId = sp.servCode.servCodeId;
+        const proposedMin = proposedMinByServCode.get(servCodeId) ?? sp.servCode.dateRange.min;
+        const delta = deltaMap.get(servCodeId);
+        const projectedEndDate = delta?.projectedEndDate ?? null;
+        const paddingDays = sp.servCode.paddingDays;
+        const perDay = perDayMap.get(servCodeId);
+        const hasWork = projectedEndDate !== null && (perDay?.activeAsapCSP.price ?? 0) > 0;
+        const roughMax = hasWork && projectedEndDate
+          ? dateStrings.addWeekdays(projectedEndDate, paddingDays)
+          : sp.servCode.dateRange.max;
+        allProposedRanges.set(servCodeId, { proposedMin, proposedMax: roughMax });
+      }
+    }
+
+    // Second pass: compute simulation-derived proposedMax and build final results.
+    for (const progCodePace of progCodePaces) {
+      const runsInSequence = progCodePace.progCode.runsInSequence;
       let sequentialCursor: string | null = null;
 
       for (const sp of progCodePace.servCodePaces) {
@@ -436,25 +642,44 @@ const selectSeasonOptimizerResult = createSelector(
         const openDate = perDay
           ? (perDay.projectionStartDate ?? (today > currentRange.min ? today : currentRange.min))
           : currentRange.min;
-
         const isStarted = openDate <= today;
         const projectedEndDate = delta?.projectedEndDate ?? null;
-        const hasWork = projectedEndDate !== null && (perDay?.activeAsapCSP.price ?? 0) > 0;
+        const activeAsapPrice = perDay?.activeAsapCSP.price ?? 0;
+        const hasWork = projectedEndDate !== null && activeAsapPrice > 0;
 
-        let proposedMin: string;
-        if (isStarted) {
-          // Already in progress — keep the planned start date unchanged and reset the cursor.
-          proposedMin = currentRange.min;
-          sequentialCursor = null;
+        const proposedMin = proposedMinByServCode.get(servCodeId) ?? currentRange.min;
+
+        // Apply sequential cursor to proposedMin.
+        const effectiveProposedMin = (runsInSequence && !isStarted && sequentialCursor && sequentialCursor > proposedMin)
+          ? sequentialCursor
+          : proposedMin;
+
+        let proposedMax: string;
+        if (hasWork) {
+          // Run simulation to find the true drain date using proposed dates.
+          // Update allProposedRanges with the effective proposedMin before simulating.
+          allProposedRanges.set(servCodeId, {
+            proposedMin: effectiveProposedMin,
+            proposedMax: allProposedRanges.get(servCodeId)?.proposedMax ?? currentRange.max,
+          });
+
+          const simDrainDate = computeSimulatedDrainDate(
+            sp,
+            effectiveProposedMin,
+            activeAsapPrice,
+            cascadeMap,
+            allProposedRanges,
+            today,
+          );
+          proposedMax = simDrainDate
+            ? dateStrings.addWeekdays(simDrainDate, paddingDays)
+            : currentRange.max;
         } else {
-          // Not yet started: use cascade availability as a floor for all programs.
-          // For non-sequential programs, sequentialCursor is null so it has no effect.
-          proposedMin = computeCascadeAwareProposedMin(sp, currentRange.min, sequentialCursor, cascadeMap);
+          proposedMax = currentRange.max;
         }
 
-        const proposedMax = hasWork && projectedEndDate
-          ? dateStrings.addWeekdays(projectedEndDate, paddingDays)
-          : currentRange.max;
+        // Update allProposedRanges with the final proposedMax for downstream servCodes.
+        allProposedRanges.set(servCodeId, { proposedMin: effectiveProposedMin, proposedMax });
 
         if (runsInSequence && hasWork) {
           sequentialCursor = dateStrings.addWeekdays(proposedMax, 1);
@@ -465,7 +690,7 @@ const selectSeasonOptimizerResult = createSelector(
           progCodeId: progCodePace.progCode.progCodeId,
           servCodeName: sp.servCode.longName,
           currentRange,
-          proposedMin,
+          proposedMin: effectiveProposedMin,
           proposedMax,
           projectedEndDate,
           paddingDays,
