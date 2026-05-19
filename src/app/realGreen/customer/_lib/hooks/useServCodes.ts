@@ -17,67 +17,44 @@ export function useServCodes() {
   }
   
   function getServicesByRuleDesc(services: Service[]) {
-    // Separate services with rules from those without
-    const servicesWithRules: Service[] = [];
-    const servicesWithoutRules: Service[] = [];
+    // Build groups keyed by "servCodeId-ruleDesc" (or just "servCodeId" for no-rule services).
+    // Iterating service-by-rule directly avoids the pivot() approach, which incorrectly
+    // merges services from different servCodes that share the same rule description.
+    const result = new Map<string, Service[]>();
 
     services.forEach((service) => {
+      const servCodeId = service.servCode.servCodeId;
+
       if (service.servCode.productRules.length === 0) {
-        servicesWithoutRules.push(service);
+        const key = servCodeId;
+        if (!result.has(key)) result.set(key, []);
+        result.get(key)!.push(service);
       } else {
-        servicesWithRules.push(service);
+        const matchingRules = service.servCode.productRules.filter((rule) => {
+          switch (rule.sizeOperator) {
+            case "all":
+              return true;
+            case "lte":
+              return service.size <= rule.size;
+            case "gt":
+              return service.size > rule.size;
+            default:
+              return false;
+          }
+        });
+
+        matchingRules.forEach((rule) => {
+          const key = `${servCodeId}-${rule.desc}`;
+          if (!result.has(key)) result.set(key, []);
+          result.get(key)!.push(service);
+        });
       }
     });
 
-    // Pivot to flatten services -> productRules relationship
-    // Filter rules to only include those that match the service's size
-    const pivoted = new Grouper(servicesWithRules)
-      .pivot(
-        (service) => {
-          return service.servCode.productRules.filter((rule) => {
-            const operator = rule.sizeOperator;
-            switch (operator) {
-              case "all":
-                return true;
-              case "lte":
-                return service.size <= rule.size;
-              case "gt":
-                return service.size > rule.size;
-              default:
-                return false;
-            }
-          });
-        },
-        "services",
-        "desc"
-      );
-
-    // Group by servCodeId and rule description
-    const grouped = new Grouper(pivoted)
-      .groupBy((rule) => {
-        const service = rule.services[0];
-        return `${service.servCode.servCodeId}-${rule.desc}`;
-      })
-      .summarize((idWithRule, rules) => {
-        const allServices = rules.flatMap((rule) => rule.services);
-        return {
-          idWithRule,
-          services: allServices,
-        };
-      });
-
-    // Group services without rules by servCodeId
-    const groupedWithoutRules = new Grouper(servicesWithoutRules)
-      .groupBy((service) => service.servCode.servCodeId)
-      .summarize((idWithRule, services) => {
-        return {
-          idWithRule,
-          services,
-        };
-      });
-
-    // Combine both groups
-    return [...grouped, ...groupedWithoutRules];
+    return Array.from(result.entries()).map(([idWithRule, groupServices]) => ({
+      idWithRule,
+      services: groupServices,
+    }));
   }
 
   return { getServCodeCounts, getServicesByRuleDesc };
