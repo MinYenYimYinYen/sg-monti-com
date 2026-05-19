@@ -287,31 +287,17 @@ function computeServCodeDates(
       ? employeeAvailableFrom
       : servCodePoolStart;
 
-  const isOverdue = today > servCode.dateRange.max;
-  let closeDate: string;
-  let daysNeeded: number | null = null;
-
-  if (isOverdue && perDay.activeAsapCSP.price > 0 && teamStats.teamAvgCSP.price > 0) {
-    daysNeeded = Math.ceil(perDay.activeAsapCSP.price / teamStats.teamAvgCSP.price);
-    closeDate = dateStrings.addWeekdays(today, daysNeeded);
-  } else if (isOverdue) {
-    closeDate = today;
-  } else {
-    closeDate = servCode.dateRange.max;
-  }
-
-  const lrIds = ["LR1", "LR2", "LR3", "LR4", "LR5", "LR6"];
-  if (lrIds.includes(servCode.servCodeId)) {
-    console.log(
-      `[cascade ${servCode.servCodeId}] openDate=${openDate}, closeDate=${closeDate}, isOverdue=${isOverdue}` +
-      (daysNeeded !== null ? `, daysNeeded=${daysNeeded}, pool=$${perDay.activeAsapCSP.price.toFixed(0)}, teamRate=$${teamStats.teamAvgCSP.price.toFixed(2)}` : ""),
-    );
-  }
-  if (isOverdue && daysNeeded !== null && daysNeeded > 365) {
-    console.warn(
-      `[cascade] LARGE overdue extension: servCode=${servCode.servCodeId}, daysNeeded=${daysNeeded}, closeDate=${closeDate}, pool=$${perDay.activeAsapCSP.price.toFixed(0)}, teamRate=$${teamStats.teamAvgCSP.price.toFixed(2)}`,
-    );
-  }
+  // closeDate is capacity-derived — dateRange.max is the answer we're computing, not an input.
+  // The cascade simulation must run until the pool is exhausted; capping it at dateRange.max
+  // would produce artificially large "remaining" values for servCodes that are preempted by
+  // higher-priority work. Use a generous 3× multiplier so the window is never artificially capped.
+  const hasWork = perDay.activeAsapCSP.price > 0 && teamStats.teamAvgCSP.price > 0;
+  const daysNeeded = hasWork
+    ? Math.ceil(perDay.activeAsapCSP.price / teamStats.teamAvgCSP.price)
+    : 0;
+  const closeDate = daysNeeded > 0
+    ? dateStrings.addWeekdays(openDate, daysNeeded * 3 + 30)
+    : openDate;
 
   return { openDate, closeDate };
 }
@@ -456,7 +442,28 @@ const selectEmployeeCascadeResults = createSelector(
         today,
       );
 
+      // Log cascade sim entries for LR servCodes to diagnose Events remaining values.
+      const lrEntries = simDataList.filter((s) => s.servCodeId.startsWith("LR"));
+      if (lrEntries.length > 0) {
+        for (const s of lrEntries) {
+          console.log(
+            `[cascade-sim emp=${employee.employeeId}] ${s.servCodeId}: openDate=${s.openDate}, closeDate=${s.closeDate}, pool.price=$${s.pool.price.toFixed(0)}, dailyRate.price=$${s.dailyRate.price.toFixed(2)}`,
+          );
+        }
+      }
+
       const { contributed, availableFrom, timelineEvents } = runCascadeSimulation(simDataList, today);
+
+      // Log cascade results for LR servCodes.
+      if (lrEntries.length > 0) {
+        for (const s of lrEntries) {
+          const c = contributed.get(s.servCodeId);
+          const af = availableFrom.get(s.servCodeId);
+          console.log(
+            `[cascade-result emp=${employee.employeeId}] ${s.servCodeId}: contributed.price=$${c?.price.toFixed(0) ?? "n/a"}, availableFrom=${af ?? "n/a"}`,
+          );
+        }
+      }
       // Note: drainDate and contributedPriceByBoundary are not used in the Redux cascade path —
       // they are only consumed by the optimizer popover which runs its own fresh simulation.
 

@@ -203,6 +203,18 @@ function buildServCodeEventGroups(
 
     const rowsWithEvents = dateRows.filter((r) => r.events.length > 0);
 
+    // Log the same data shown in the Events display for LR servCodes.
+    if (item.servCodeId.startsWith("LR")) {
+      console.log(
+        `[events-display] ${item.servCodeId}: proposedMin=${item.proposedMin}, proposedMax=${item.proposedMax}, totalPoolPrice=$${totalPoolPrice.toFixed(0)}`,
+      );
+      for (const row of rowsWithEvents) {
+        console.log(
+          `  [events-display] ${item.servCodeId} @ ${row.date}: remaining=$${row.remainingPrice.toFixed(0)}, events=[${row.events.map((e) => e.kind).join(", ")}]`,
+        );
+      }
+    }
+
     groups.push({
       servCodeId: item.servCodeId,
       totalPoolPrice,

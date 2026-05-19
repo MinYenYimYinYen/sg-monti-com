@@ -423,13 +423,15 @@ function computeSimulatedDrainDate(
 ): string | null {
   if (activeAsapCSP <= 0) return null;
 
-  // Generous close date: proposedMin + 2× current duration (or 365 weekdays), so the
-  // simulation window is never artificially capped by a stale dateRange.max.
-  const currentDuration = Math.max(
-    1,
-    dateRanges.countWeekdays({ min: sp.servCode.dateRange.min, max: sp.servCode.dateRange.max }),
-  );
-  const generousCloseDate = dateStrings.addWeekdays(proposedMin, currentDuration * 2 + 30);
+  // Generous close date: proposedMin + 3× the capacity-derived days-to-complete, so the
+  // simulation window is never artificially capped. We deliberately avoid dateRange.max here —
+  // the optimizer computes the proposed range; dateRange.max is only for post-hoc monitoring.
+  const teamDailyRate = sp.servCode.assignedTo.reduce((sum, emp) => {
+    const entry = cascadeMap.get(emp.employeeId)?.byServCode.get(sp.servCode.servCodeId);
+    return sum + (entry?.dailyRate.price ?? 0);
+  }, 0);
+  const daysToComplete = teamDailyRate > 0 ? Math.ceil(activeAsapCSP / teamDailyRate) : 260;
+  const generousCloseDate = dateStrings.addWeekdays(proposedMin, daysToComplete * 3 + 30);
 
   // Collect per-interval team drain by summing across all employee simulations.
   // We need boundaries from all employees' simulations to build a unified timeline.
@@ -462,18 +464,6 @@ function computeSimulatedDrainDate(
 
   const boundaries = [...allBoundaries].sort();
 
-  const isLR3 = sp.servCode.servCodeId === "LR3";
-  if (isLR3) {
-    console.log(`[LR3 drain] activeAsapCSP=$${activeAsapCSP.toFixed(0)}, proposedMin=${proposedMin}, generousCloseDate=${generousCloseDate}`);
-    for (const { simEntries, servCodeId } of employeeSimDataList) {
-      const lr3Entry = simEntries.find((e) => e.servCodeId === servCodeId);
-      if (lr3Entry) {
-        console.log(`  [LR3 drain] employee sim entry: openDate=${lr3Entry.openDate}, closeDate=${lr3Entry.closeDate}, pool.price=$${lr3Entry.pool.price.toFixed(0)}, dailyRate.price=$${lr3Entry.dailyRate.price.toFixed(2)}`);
-      }
-    }
-    console.log(`  [LR3 drain] boundaries: ${boundaries.join(", ")}`);
-  }
-
   // Run each employee's simulation and collect their per-interval drain for this servCode.
   let remainingPool = activeAsapCSP;
 
@@ -503,52 +493,63 @@ function computeSimulatedDrainDate(
       }
     }
 
-    if (isLR3) {
-      console.log(`  [LR3 drain] interval ${intervalStart}→${intervalEnd}: weekdays=${intervalWeekdays}, teamDrain=$${intervalTeamDrain.toFixed(0)}, remainingBefore=$${remainingPool.toFixed(0)}`);
-    }
-
     if (intervalTeamDrain <= 0) continue;
 
     if (intervalTeamDrain >= remainingPool) {
       const daysNeeded = remainingPool / (intervalTeamDrain / intervalWeekdays);
-      const drainDate = dateStrings.addWeekdays(intervalStart, daysNeeded);
-      if (isLR3) console.log(`  [LR3 drain] EXHAUSTED in this interval → drainDate=${drainDate}`);
-      return drainDate;
+      return dateStrings.addWeekdays(intervalStart, daysNeeded);
     }
 
     remainingPool -= intervalTeamDrain;
   }
 
-  // Pool not exhausted — project beyond the generous window
-  const fallbackDate = dateStrings.addWeekdays(generousCloseDate, Math.ceil(remainingPool / 1));
-  if (isLR3) console.log(`  [LR3 drain] pool NOT exhausted in window, remainingPool=$${remainingPool.toFixed(0)}, fallback=${fallbackDate}`);
-  return fallbackDate;
+  // Pool not exhausted — project beyond the generous window using the team's actual daily rate.
+  const fallbackDailyRate = teamDailyRate > 0 ? teamDailyRate : 1;
+  return dateStrings.addWeekdays(generousCloseDate, Math.ceil(remainingPool / fallbackDailyRate));
 }
 
 // Builds sim entries for one employee using proposed dates from allProposedRanges.
-// Pool = dailyRate × proposed duration (generous, so simulation runs through all intervals).
+// closeDate is capacity-derived when lookback data exists (openDate + pool/rate),
+// otherwise falls back to proposedMax (which is dateRange.max for no-lookback servCodes).
+// This prevents fictitious lookahead windows from blocking employees for unrealistic durations.
 function buildEmployeeSimEntries(
   cascadeResult: ReturnType<typeof cascadeSelect.employeeCascadeMap> extends Map<string, infer V> ? V : never,
   allProposedRanges: Map<string, { proposedMin: string; proposedMax: string }>,
   fallbackCloseDate: string,
   today: string,
 ) {
-  return cascadeResult.employee.servCodeIds
-    .map((servCodeId) => {
+  const servCodeIds = cascadeResult.employee.servCodeIds;
+  return servCodeIds
+    .map((servCodeId, idx) => {
       const entry = cascadeResult.byServCode.get(servCodeId);
       if (!entry) return null;
       const proposed = allProposedRanges.get(servCodeId);
       const openDate = proposed ? proposed.proposedMin : (entry.availableFrom ?? today);
-      const closeDate = proposed ? proposed.proposedMax : fallbackCloseDate;
+
+      // closeDate = when this employee finishes this servCode and moves to the next one.
+      // entry.availableFrom is when they START this servCode (first become available for it),
+      // not when they finish. The finish date is the availableFrom of the NEXT servCode in
+      // their priority list. Fall back to proposedMax or fallbackCloseDate when unavailable.
+      const effectiveDailyRate = entry.dailyRate.price > 0 ? entry.dailyRate : null;
+      let closeDate: string | undefined;
+      for (let j = idx + 1; j < servCodeIds.length; j++) {
+        const nextEntry = cascadeResult.byServCode.get(servCodeIds[j]);
+        if (nextEntry?.availableFrom) {
+          closeDate = nextEntry.availableFrom;
+          break;
+        }
+      }
+      if (!closeDate) closeDate = proposed?.proposedMax ?? fallbackCloseDate;
+
       const proposedWeekdays = Math.max(1, dateRanges.countWeekdays({ min: openDate, max: closeDate }));
-      const effectiveDailyRate = entry.dailyRate.price > 0 ? entry.dailyRate : { count: 1, size: 1, price: 1, rev: 1 };
+      const rateForPool = effectiveDailyRate ?? { count: 1, size: 1, price: 1, rev: 1 };
       const pool = {
-        count: effectiveDailyRate.count * proposedWeekdays,
-        size: effectiveDailyRate.size * proposedWeekdays,
-        price: effectiveDailyRate.price * proposedWeekdays,
-        rev: effectiveDailyRate.rev * proposedWeekdays,
+        count: rateForPool.count * proposedWeekdays,
+        size: rateForPool.size * proposedWeekdays,
+        price: rateForPool.price * proposedWeekdays,
+        rev: rateForPool.rev * proposedWeekdays,
       };
-      return { servCodeId, openDate, closeDate, pool, dailyRate: effectiveDailyRate };
+      return { servCodeId, openDate, closeDate, pool, dailyRate: rateForPool };
     })
     .filter((e): e is NonNullable<typeof e> => e !== null);
 }
@@ -586,7 +587,12 @@ const selectSeasonOptimizerResult = createSelector(
         let proposedMin: string;
         if (isStarted) {
           proposedMin = currentRange.min;
-          sequentialCursor = null;
+          // Only reset the sequential cursor if this servCode has no remaining work.
+          // An overdue servCode with remaining work must still advance the cursor so
+          // downstream sequential servCodes don't start before it finishes.
+          if ((perDay?.activeAsapCSP.price ?? 0) === 0) {
+            sequentialCursor = null;
+          }
         } else {
           proposedMin = computeCascadeAwareProposedMin(sp, currentRange.min, sequentialCursor, cascadeMap);
         }
@@ -595,13 +601,15 @@ const selectSeasonOptimizerResult = createSelector(
 
         // Advance cursor using a temporary proposedMax estimate (will be refined in pass 2).
         // For the cursor we use projectedEndDate + padding as a rough estimate.
+        // Fall back to today when projectedEndDate is unavailable (e.g. overdue with no lookback).
         if (runsInSequence) {
           const delta = deltaMap.get(servCodeId);
           const projectedEndDate = delta?.projectedEndDate ?? null;
           const paddingDays = sp.servCode.paddingDays;
-          const hasWork = projectedEndDate !== null && (perDay?.activeAsapCSP.price ?? 0) > 0;
-          if (hasWork && projectedEndDate) {
-            const roughMax = dateStrings.addWeekdays(projectedEndDate, paddingDays);
+          const hasWorkForCursor = (perDay?.activeAsapCSP.price ?? 0) > 0;
+          if (hasWorkForCursor) {
+            const roughEndDate = projectedEndDate ?? today;
+            const roughMax = dateStrings.addWeekdays(roughEndDate, paddingDays);
             sequentialCursor = dateStrings.addWeekdays(roughMax, 1);
           }
         }
@@ -615,14 +623,25 @@ const selectSeasonOptimizerResult = createSelector(
       for (const sp of progCodePace.servCodePaces) {
         const servCodeId = sp.servCode.servCodeId;
         const proposedMin = proposedMinByServCode.get(servCodeId) ?? sp.servCode.dateRange.min;
+        // Skip servCodes with no valid start date — the second pass guard will handle them.
+        if (!proposedMin) {
+          allProposedRanges.set(servCodeId, { proposedMin: "", proposedMax: "" });
+          continue;
+        }
         const delta = deltaMap.get(servCodeId);
         const projectedEndDate = delta?.projectedEndDate ?? null;
         const paddingDays = sp.servCode.paddingDays;
         const perDay = perDayMap.get(servCodeId);
-        const hasWork = projectedEndDate !== null && (perDay?.activeAsapCSP.price ?? 0) > 0;
-        const roughMax = hasWork && projectedEndDate
+        const activeAsapPrice = perDay?.activeAsapCSP.price ?? 0;
+        const hasLookback = projectedEndDate !== null && activeAsapPrice > 0;
+        // For the rough seed:
+        // - Has lookback data: use projectedEndDate + padding (capacity-derived)
+        // - No lookback data but has dateRange.max: use dateRange.max as the window boundary
+        //   (legitimate use — evenly divides workload across the known window)
+        // - Neither: use proposedMin (zero-width, no work to schedule)
+        const roughMax = hasLookback && projectedEndDate
           ? dateStrings.addWeekdays(projectedEndDate, paddingDays)
-          : sp.servCode.dateRange.max;
+          : (sp.servCode.dateRange.max ?? proposedMin);
         allProposedRanges.set(servCodeId, { proposedMin, proposedMax: roughMax });
       }
     }
@@ -645,7 +664,9 @@ const selectSeasonOptimizerResult = createSelector(
         const isStarted = openDate <= today;
         const projectedEndDate = delta?.projectedEndDate ?? null;
         const activeAsapPrice = perDay?.activeAsapCSP.price ?? 0;
-        const hasWork = projectedEndDate !== null && activeAsapPrice > 0;
+        // "Overdue" is not a meaningful concept for the optimizer — dateRange.max is only for
+        // post-hoc monitoring. A servCode has work to do if its pool is non-empty, period.
+        const hasWork = activeAsapPrice > 0;
 
         const proposedMin = proposedMinByServCode.get(servCodeId) ?? currentRange.min;
 
@@ -653,6 +674,24 @@ const selectSeasonOptimizerResult = createSelector(
         const effectiveProposedMin = (runsInSequence && !isStarted && sequentialCursor && sequentialCursor > proposedMin)
           ? sequentialCursor
           : proposedMin;
+
+        // Guard: servCodes with no start date cannot be optimized — skip them.
+        if (!effectiveProposedMin || !dateRanges.isValidDateRange({ min: effectiveProposedMin, max: effectiveProposedMin })) {
+          results.push({
+            servCodeId,
+            progCodeId: progCodePace.progCode.progCodeId,
+            servCodeName: sp.servCode.longName,
+            currentRange,
+            proposedMin: effectiveProposedMin ?? "",
+            proposedMax: effectiveProposedMin ?? "",
+            projectedEndDate,
+            paddingDays,
+            runsInSequence,
+            isStarted,
+            hasWork: false,
+          });
+          continue;
+        }
 
         let proposedMax: string;
         if (hasWork) {
@@ -671,11 +710,20 @@ const selectSeasonOptimizerResult = createSelector(
             allProposedRanges,
             today,
           );
+          // Fall back to a capacity-derived estimate — never use dateRange.max in the optimizer.
           proposedMax = simDrainDate
             ? dateStrings.addWeekdays(simDrainDate, paddingDays)
-            : currentRange.max;
+            : dateStrings.addWeekdays(effectiveProposedMin, 260);
+
+          // Log optimizer second-pass results for MLC progCode LR servCodes.
+          if (progCodePace.progCode.progCodeId === "MLC" && servCodeId.startsWith("LR")) {
+            console.log(
+              `[optimizer MLC] ${servCodeId}: effectiveProposedMin=${effectiveProposedMin}, simDrainDate=${simDrainDate ?? "null"}, proposedMax=${proposedMax}, activeAsapPrice=$${activeAsapPrice.toFixed(0)}`,
+            );
+          }
         } else {
-          proposedMax = currentRange.max;
+          // No work remaining — proposed window is just the proposedMin itself (zero-width).
+          proposedMax = effectiveProposedMin;
         }
 
         // Update allProposedRanges with the final proposedMax for downstream servCodes.
