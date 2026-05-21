@@ -21,11 +21,11 @@ const handlers: HandlerMap<AssignmentPlanContract> = {
   },
   upsertAssignmentPlan: {
     roles: ["admin"],
-    handler: async ({ employeeId, servCodeIds }) => {
+    handler: async ({ employeeId, entries }) => {
       await connectToMongoDB();
       const result: AssignmentPlan = await AssignmentPlanModel.findOneAndUpdate(
         { employeeId },
-        { employeeId, servCodeIds },
+        { employeeId, entries },
         { upsert: true, new: true },
       ).lean();
       const assignmentPlan: AssignmentPlan = cleanMongoObject(result);

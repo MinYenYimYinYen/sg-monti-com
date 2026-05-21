@@ -10,6 +10,7 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
+import { flattenEntries } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import {
@@ -62,20 +63,26 @@ export function MiniServCodeControls({ servCode, children }: MiniServCodeControl
 
   function handleRemoveEmployee(employeeId: string) {
     const existingPlan = assignmentsByEmployeeId.get(employeeId);
-    const updatedServCodeIds = (existingPlan?.servCodeIds ?? []).filter(
-      (id) => id !== servCode.servCodeId,
+    const existingEntries = existingPlan?.entries ?? [];
+    const newEntries = existingEntries.filter((entry) =>
+      entry.kind === "single"
+        ? entry.servCodeId !== servCode.servCodeId
+        : !entry.servCodeIds.includes(servCode.servCodeId),
     );
-    upsert({ employeeId, servCodeIds: updatedServCodeIds });
+    upsert({ employeeId, entries: newEntries });
   }
 
   function handleConfirmAdd() {
     for (const employeeId of pendingIds) {
       const existingPlan = assignmentsByEmployeeId.get(employeeId);
-      const updatedServCodeIds = [
-        ...(existingPlan?.servCodeIds ?? []),
-        servCode.servCodeId,
+      const existingEntries = existingPlan?.entries ?? [];
+      const existingIds = new Set(flattenEntries(existingEntries));
+      if (existingIds.has(servCode.servCodeId)) continue;
+      const newEntries = [
+        ...existingEntries,
+        { kind: "single" as const, servCodeId: servCode.servCodeId },
       ];
-      upsert({ employeeId, servCodeIds: updatedServCodeIds });
+      upsert({ employeeId, entries: newEntries });
     }
     setPendingIds(new Set());
     setAddOpen(false);

@@ -2,12 +2,22 @@ import { createSelector } from "@reduxjs/toolkit";
 import { deepSelect } from "@/app/realGreen/deepSelect";
 import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
+import { flattenEntries } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { rawPaceSelect } from "@/app/bizPlan/pace/selectors/rawPaceSelect";
 import { runDayCrawlSimulation } from "@/app/bizPlan/paceCrawler/_lib/dayCrawlSimulation";
-import { DayCrawlServCodeEntry, DayCrawlEmployeeEntry, CrawlerResult } from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
-import { ServCodePaceDelta, ProgCodeProjectedCompletion, SeasonOptimizedRange } from "@/app/bizPlan/pace/PaceTypes";
+import {
+  DayCrawlServCodeEntry,
+  DayCrawlEmployeeEntry,
+  DayCrawlPriorityEntry,
+  CrawlerResult,
+} from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
+import {
+  ServCodePaceDelta,
+  ProgCodeProjectedCompletion,
+  SeasonOptimizedRange,
+} from "@/app/bizPlan/pace/PaceTypes";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 // ---------------------------------------------------------------------------
@@ -24,7 +34,11 @@ const TWO_YEARS_WEEKDAYS = 520;
  * = today if no printed services
  */
 const selectNextDateByEmployee = createSelector(
-  [deepSelect.servCodes, cascadeSelect.mainDate, assignmentPlanSelect.assignmentsByEmployeeId],
+  [
+    deepSelect.servCodes,
+    cascadeSelect.mainDate,
+    assignmentPlanSelect.assignmentsByEmployeeId,
+  ],
   (servCodes, today, assignmentsByEmployeeId): Map<string, string> => {
     const twoYearsOut = dateStrings.addWeekdays(today, TWO_YEARS_WEEKDAYS);
     const latestPrintedByEmployee = new Map<string, string>();
@@ -38,9 +52,14 @@ const selectNextDateByEmployee = createSelector(
         ) {
           const schedDate = service.lastAssigned.schedDate;
           if (schedDate > twoYearsOut) continue; // guard against data errors
-          const existing = latestPrintedByEmployee.get(service.lastAssigned.employeeId);
+          const existing = latestPrintedByEmployee.get(
+            service.lastAssigned.employeeId,
+          );
           if (!existing || schedDate > existing) {
-            latestPrintedByEmployee.set(service.lastAssigned.employeeId, schedDate);
+            latestPrintedByEmployee.set(
+              service.lastAssigned.employeeId,
+              schedDate,
+            );
           }
         }
       }
@@ -51,7 +70,7 @@ const selectNextDateByEmployee = createSelector(
     // Seed from printed services — only for employees with assignments.
     for (const [employeeId, latestDate] of latestPrintedByEmployee) {
       const plan = assignmentsByEmployeeId.get(employeeId);
-      if (plan && plan.servCodeIds.length > 0) {
+      if (plan && flattenEntries(plan.entries).length > 0) {
         result.set(employeeId, dateStrings.nextWeekdayAfter(latestDate));
       }
     }
@@ -59,7 +78,7 @@ const selectNextDateByEmployee = createSelector(
     // Ensure all assigned employees appear — those with no printed services get the next
     // weekday after today (routes are never created for today itself).
     for (const [employeeId, plan] of assignmentsByEmployeeId) {
-      if (plan.servCodeIds.length > 0 && !result.has(employeeId)) {
+      if (flattenEntries(plan.entries).length > 0 && !result.has(employeeId)) {
         result.set(employeeId, dateStrings.nextWeekdayAfter(today));
       }
     }
@@ -147,18 +166,70 @@ const selectEmployeeLookbackPriceMap = createSelector(
 );
 
 // ---------------------------------------------------------------------------
-// Layer 3b — Daily Rate by Employee by ServCode
+// Layer 3b — Total Avg Daily Price by Employee
+// ---------------------------------------------------------------------------
+
+/**
+ * "What is each employee's total avg daily price across all programTypes?"
+ *
+ * = totalAvgDailyCSP.price from any programType entry in the lookback map
+ * (totalAvgDailyCSP is the same across all programType entries for a given employee)
+ *
+ * Used as the drain rate for group entries — full daily capacity.
+ * Map<employeeId, number>
+ */
+const selectTotalAvgDailyPriceByEmployee = createSelector(
+  [cascadeSelect.employeeLookbackMap],
+  (lookbackMap): Map<string, number> => {
+    const result = new Map<string, number>();
+    for (const [employeeId, byProgramType] of lookbackMap) {
+      for (const stats of byProgramType.values()) {
+        if (stats != null && stats.totalAvgDailyCSP.price > 0) {
+          result.set(employeeId, stats.totalAvgDailyCSP.price);
+          break; // totalAvgDailyCSP is the same across all programType entries
+        }
+      }
+    }
+    return result;
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Layer 3b.5 — Team Average Total Daily Price (fallback for new employees)
+// ---------------------------------------------------------------------------
+
+/**
+ * "What is the team's average total daily price?"
+ *
+ * = average of totalAvgDailyPriceByEmployee across all employees with data.
+ * Used as a fallback for employees with no lookback history (e.g. new hires).
+ * Returns 0 if no employees have data.
+ */
+const selectTeamAvgTotalDailyPrice = createSelector(
+  [selectTotalAvgDailyPriceByEmployee],
+  (totalAvgMap): number => {
+    if (totalAvgMap.size === 0) return 0;
+    let sum = 0;
+    for (const price of totalAvgMap.values()) {
+      sum += price;
+    }
+    return sum / totalAvgMap.size;
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Layer 3c — Daily Rate by Employee by ServCode
 // ---------------------------------------------------------------------------
 
 /**
  * "What is each employee's daily price rate per servCode?"
  *
- * For each employee × servCode pair:
- * 1. Look up the employee's own lookback rate for the servCode's programType.
- * 2. If no own rate: use team average ÷ known-employee count as a fallback.
- *    Team = all employees assigned to this servCode (from servCode.assignedTo).
- *    Known = those with lookback data for this programType.
- * 3. If no team data at all: rate = 0 (employee contributes nothing to the crawl).
+ * Fallback chain for each employee × servCode pair:
+ * 1. Employee's own lookback rate for the servCode's programType.
+ * 2. Team average for this servCode's assignedTo list (employees RealGreen has assigned).
+ * 3. Team average across ALL employees with lookback data for this programType
+ *    (handles servCodes where assignedTo is empty or contains only new employees).
+ * 4. teamAvgTotalDailyPrice — last resort cross-programType fallback.
  *
  * Map<employeeId, Map<servCodeId, number>>
  */
@@ -167,12 +238,21 @@ const selectDailyRateByEmployeeByServCode = createSelector(
     employeeSelect.employeeMap,
     selectEmployeeLookbackPriceMap,
     selectServCodeProgramTypeMap,
+    selectTeamAvgTotalDailyPrice,
     progServSelect.servCodeMap,
   ],
-  (employeeMap, lookbackPriceMap, programTypeMap, servCodeMap): Map<string, Map<string, number>> => {
-    // Pre-compute team stats per servCode: sum of known rates + known count.
-    // Only computed once and reused across all employees.
-    const teamStatsByServCode = new Map<string, { teamTotal: number; knownCount: number }>();
+  (
+    employeeMap,
+    lookbackPriceMap,
+    programTypeMap,
+    teamAvgTotalDailyPrice,
+    servCodeMap,
+  ): Map<string, Map<string, number>> => {
+    // Pre-compute team stats per servCode (from assignedTo list).
+    const teamStatsByServCode = new Map<
+      string,
+      { teamTotal: number; knownCount: number }
+    >();
 
     for (const servCode of servCodeMap.values()) {
       const programType = programTypeMap.get(servCode.servCodeId);
@@ -181,13 +261,35 @@ const selectDailyRateByEmployeeByServCode = createSelector(
       let teamTotal = 0;
       let knownCount = 0;
       for (const assignedEmployee of servCode.assignedTo) {
-        const rate = lookbackPriceMap.get(assignedEmployee.employeeId)?.get(programType);
+        const rate = lookbackPriceMap
+          .get(assignedEmployee.employeeId)
+          ?.get(programType);
         if (rate != null && rate > 0) {
           teamTotal += rate;
           knownCount++;
         }
       }
       teamStatsByServCode.set(servCode.servCodeId, { teamTotal, knownCount });
+    }
+
+    // Pre-compute team stats per programType across ALL employees with lookback data.
+    // This is the fallback when a servCode's assignedTo list has no known employees
+    // (e.g. a new servCode, or one where all assigned employees are also new hires).
+    const teamStatsByProgramType = new Map<
+      string,
+      { teamTotal: number; knownCount: number }
+    >();
+
+    for (const [, byProgramType] of lookbackPriceMap) {
+      for (const [programType, rate] of byProgramType) {
+        if (rate > 0) {
+          const existing = teamStatsByProgramType.get(programType) ?? { teamTotal: 0, knownCount: 0 };
+          teamStatsByProgramType.set(programType, {
+            teamTotal: existing.teamTotal + rate,
+            knownCount: existing.knownCount + 1,
+          });
+        }
+      }
     }
 
     const result = new Map<string, Map<string, number>>();
@@ -201,18 +303,28 @@ const selectDailyRateByEmployeeByServCode = createSelector(
         const programType = programTypeMap.get(servCodeId);
         if (!programType) continue;
 
-        const ownRate = lookbackPriceMap.get(employee.employeeId)?.get(programType);
+        const ownRate = lookbackPriceMap
+          .get(employee.employeeId)
+          ?.get(programType);
 
         if (ownRate != null && ownRate > 0) {
+          // Step 1: own lookback rate
           rateByServCode.set(servCodeId, ownRate);
         } else {
-          // Fallback: team average ÷ known count
-          const teamStats = teamStatsByServCode.get(servCodeId);
-          const fallback =
-            teamStats && teamStats.knownCount > 0
-              ? teamStats.teamTotal / teamStats.knownCount
-              : 0;
-          rateByServCode.set(servCodeId, fallback);
+          const servCodeStats = teamStatsByServCode.get(servCodeId);
+          if (servCodeStats && servCodeStats.knownCount > 0) {
+            // Step 2: team avg from servCode's assignedTo list
+            rateByServCode.set(servCodeId, servCodeStats.teamTotal / servCodeStats.knownCount);
+          } else {
+            const ptStats = teamStatsByProgramType.get(programType);
+            if (ptStats && ptStats.knownCount > 0) {
+              // Step 3: team avg across all employees for this programType
+              rateByServCode.set(servCodeId, ptStats.teamTotal / ptStats.knownCount);
+            } else {
+              // Step 4: cross-programType team avg (last resort)
+              rateByServCode.set(servCodeId, teamAvgTotalDailyPrice);
+            }
+          }
         }
       }
 
@@ -255,6 +367,9 @@ const selectActivePoolPriceByServCode = createSelector(
  *
  * Assembles DayCrawlServCodeEntry[] and DayCrawlEmployeeEntry[] from layers 1–4,
  * then calls runDayCrawlSimulation.
+ *
+ * Employee entries use priorityEntries (from assignmentPlan.entries) instead of flat servCodeIds,
+ * so group entries are passed through to the simulation correctly.
  */
 const selectCrawlerResult = createSelector(
   [
@@ -262,7 +377,10 @@ const selectCrawlerResult = createSelector(
     selectServCodeOpenDateFloor,
     selectDailyRateByEmployeeByServCode,
     selectActivePoolPriceByServCode,
+    selectTotalAvgDailyPriceByEmployee,
+    selectTeamAvgTotalDailyPrice,
     employeeSelect.employeeMap,
+    assignmentPlanSelect.assignmentsByEmployeeId,
     progServSelect.progCodes,
     cascadeSelect.mainDate,
   ],
@@ -271,7 +389,10 @@ const selectCrawlerResult = createSelector(
     openDateFloorMap,
     dailyRateMap,
     activePoolMap,
+    totalAvgDailyPriceMap,
+    teamAvgTotalDailyPrice,
     employeeMap,
+    assignmentsByEmployeeId,
     progCodes,
     today,
   ): CrawlerResult => {
@@ -283,7 +404,9 @@ const selectCrawlerResult = createSelector(
         if (!floor) continue; // excluded (no valid dateRange)
 
         const pool = activePoolMap.get(servCode.servCodeId) ?? 0;
-        const currentMax = servCode.alwaysAsap ? today : (servCode.dateRange.max ?? today);
+        const currentMax = servCode.alwaysAsap
+          ? today
+          : (servCode.dateRange.max ?? today);
 
         servCodeEntries.push({
           servCodeId: servCode.servCodeId,
@@ -297,18 +420,43 @@ const selectCrawlerResult = createSelector(
       }
     }
 
-    // Build employee entries — only assigned employees
+    // Build employee entries — use assignmentPlan.entries to preserve group structure
     const employeeEntries: DayCrawlEmployeeEntry[] = [];
-    for (const employee of employeeMap.values()) {
-      if (employee.servCodeIds.length === 0) continue;
+    for (const [employeeId, plan] of assignmentsByEmployeeId) {
+      if (plan.entries.length === 0) continue;
 
-      const dailyRates = dailyRateMap.get(employee.employeeId) ?? new Map<string, number>();
-      const nextAvailableDate = nextDateByEmployee.get(employee.employeeId) ?? dateStrings.nextWeekdayAfter(today);
+      const employee = employeeMap.get(employeeId);
+      if (!employee) continue;
+
+      // Build DayCrawlPriorityEntry[] from AssignmentEntry[]
+      const priorityEntries: DayCrawlPriorityEntry[] = plan.entries.map(
+        (entry) => {
+          if (entry.kind === "single") {
+            return { kind: "single", servCodeId: entry.servCodeId };
+          } else {
+            return {
+              kind: "group",
+              servCodeIds: entry.servCodeIds,
+              label: entry.label ?? entry.servCodeIds.join("+"),
+            };
+          }
+        },
+      );
+
+      const dailyRates =
+        dailyRateMap.get(employeeId) ?? new Map<string, number>();
+      // Fall back to team average for new employees with no lookback history.
+      const totalAvgDailyPrice =
+        totalAvgDailyPriceMap.get(employeeId) ?? teamAvgTotalDailyPrice;
+      const nextAvailableDate =
+        nextDateByEmployee.get(employeeId) ??
+        dateStrings.nextWeekdayAfter(today);
 
       employeeEntries.push({
-        employeeId: employee.employeeId,
-        servCodeIds: employee.servCodeIds,
+        employeeId,
+        priorityEntries,
         dailyRates,
+        totalAvgDailyPrice,
         nextAvailableDate,
       });
     }
@@ -328,7 +476,11 @@ const selectCrawlerResult = createSelector(
  * deltaDaysCSP = null (price-only for now).
  */
 const selectServCodeDeltaMap = createSelector(
-  [selectCrawlerResult, selectActivePoolPriceByServCode, progServSelect.servCodes],
+  [
+    selectCrawlerResult,
+    selectActivePoolPriceByServCode,
+    progServSelect.servCodes,
+  ],
   (crawlerResult, activePoolMap, servCodes): Map<string, ServCodePaceDelta> => {
     const result = new Map<string, ServCodePaceDelta>();
 
@@ -398,7 +550,12 @@ const selectProgCodeProjectedCompletionMap = createSelector(
  * One SeasonOptimizedRange per servCode, built from crawlerResult.
  */
 const selectSeasonOptimizerResult = createSelector(
-  [selectCrawlerResult, selectActivePoolPriceByServCode, progServSelect.progCodes, cascadeSelect.mainDate],
+  [
+    selectCrawlerResult,
+    selectActivePoolPriceByServCode,
+    progServSelect.progCodes,
+    cascadeSelect.mainDate,
+  ],
   (crawlerResult, activePoolMap, progCodes, today): SeasonOptimizedRange[] => {
     const results: SeasonOptimizedRange[] = [];
 
@@ -409,7 +566,8 @@ const selectSeasonOptimizerResult = createSelector(
         const pool = activePoolMap.get(servCodeId) ?? 0;
         const hasWork = pool > 0;
 
-        const resolvedFloor = crawled?.resolvedOpenDateFloor ?? servCode.dateRange.min ?? today;
+        const resolvedFloor =
+          crawled?.resolvedOpenDateFloor ?? servCode.dateRange.min ?? today;
         const isStarted = resolvedFloor <= today;
 
         results.push({
@@ -448,6 +606,21 @@ const selectEmployeeTimelineMap = createSelector(
 );
 
 // ---------------------------------------------------------------------------
+// Layer 6c — ServCode Timeline Map
+// ---------------------------------------------------------------------------
+
+/**
+ * "Who is working each servCode/group, and when does the crew change?"
+ *
+ * Extracted directly from crawlerResult.servCodeTimeline — no additional computation.
+ * Map<entryLabel, ServCodeTimelineEvent[]>
+ */
+const selectServCodeTimelineMap = createSelector(
+  [selectCrawlerResult],
+  (crawlerResult) => crawlerResult.servCodeTimeline,
+);
+
+// ---------------------------------------------------------------------------
 // Single export
 // ---------------------------------------------------------------------------
 
@@ -460,6 +633,10 @@ export const paceCrawlerSelect = {
   // Layer 3a
   employeeLookbackPriceMap: selectEmployeeLookbackPriceMap,
   // Layer 3b
+  totalAvgDailyPriceByEmployee: selectTotalAvgDailyPriceByEmployee,
+  // Layer 3b.5
+  teamAvgTotalDailyPrice: selectTeamAvgTotalDailyPrice,
+  // Layer 3c
   dailyRateByEmployeeByServCode: selectDailyRateByEmployeeByServCode,
   // Layer 4
   activePoolPriceByServCode: selectActivePoolPriceByServCode,
@@ -471,4 +648,6 @@ export const paceCrawlerSelect = {
   seasonOptimizerResult: selectSeasonOptimizerResult,
   // Layer 6b
   employeeTimelineMap: selectEmployeeTimelineMap,
+  // Layer 6c
+  servCodeTimelineMap: selectServCodeTimelineMap,
 };

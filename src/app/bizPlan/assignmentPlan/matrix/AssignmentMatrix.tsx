@@ -9,6 +9,7 @@ import { matrixSelect } from "@/app/bizPlan/pace/selectors/matrixSelect";
 import { rawPaceSelect } from "@/app/bizPlan/pace/selectors/rawPaceSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
+import { flattenEntries, AssignmentPlan } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
@@ -215,9 +216,10 @@ export function AssignmentMatrix() {
   function selectAssigned() {
     const assignedIds = new Set(
       activeEmployees
-        .filter(
-          (e) => (assignmentsByEmployeeId.get(e.employeeId)?.servCodeIds.length ?? 0) > 0,
-        )
+        .filter((e) => {
+          const plan = assignmentsByEmployeeId.get(e.employeeId);
+          return plan ? flattenEntries(plan.entries).length > 0 : false;
+        })
         .map((e) => e.employeeId),
     );
     setSelectedEmployeeIds(assignedIds);
@@ -236,10 +238,9 @@ export function AssignmentMatrix() {
   }
 
   function handleUpsert(employeeId: string, newServCodeIds: string[]) {
-    dispatch(
-      assignmentPlanActions.reorderServCodes({ employeeId, servCodeIds: newServCodeIds }),
-    );
-    upsert({ employeeId, servCodeIds: newServCodeIds });
+    const newEntries = newServCodeIds.map((id) => ({ kind: "single" as const, servCodeId: id }));
+    dispatch(assignmentPlanActions.reorderEntries({ employeeId, entries: newEntries }));
+    upsert({ employeeId, entries: newEntries });
   }
 
   // Resolve the CSP to display for a servCode based on the current display mode.
@@ -299,8 +300,8 @@ export function AssignmentMatrix() {
         </div>
         <div className="flex-1 overflow-y-auto py-1">
           {activeEmployees.map((employee) => {
-            const assignedCount =
-              assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds.length ?? 0;
+            const plan = assignmentsByEmployeeId.get(employee.employeeId);
+            const assignedCount = plan ? flattenEntries(plan.entries).length : 0;
             return (
               <label
                 key={employee.employeeId}
@@ -356,8 +357,8 @@ export function AssignmentMatrix() {
                   </div>
                 </th>
                 {selectedEmployees.map((employee) => {
-                  const assignedCount =
-                    assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds.length ?? 0;
+                  const planForHeader = assignmentsByEmployeeId.get(employee.employeeId);
+                  const assignedCount = planForHeader ? flattenEntries(planForHeader.entries).length : 0;
                   return (
                     <th
                       key={employee.employeeId}
@@ -414,7 +415,7 @@ type MatrixProgGroupProps = {
   progCodePace: ProgCodePace;
   isExpanded: boolean;
   selectedEmployees: Employee[];
-  assignmentsByEmployeeId: Map<string, { servCodeIds: string[] }>;
+  assignmentsByEmployeeId: Map<string, AssignmentPlan>;
   getServCodeCsp: (servCodeId: string) => CSP | null;
   deltaMap: Map<string, ServCodePaceDelta>;
   projectedCompletion: ProgCodeProjectedCompletion | null;
@@ -461,11 +462,13 @@ function MatrixProgGroup({
       : null;
 
   function getAssignedSet(employee: Employee): Set<string> {
-    return new Set(assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds ?? []);
+    const plan = assignmentsByEmployeeId.get(employee.employeeId);
+    return new Set(plan ? flattenEntries(plan.entries) : []);
   }
 
   function toggleProgForEmployee(employee: Employee) {
-    const currentIds = assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds ?? [];
+    const plan = assignmentsByEmployeeId.get(employee.employeeId);
+    const currentIds = plan ? flattenEntries(plan.entries) : [];
     const assignedSet = getAssignedSet(employee);
     const allAssigned = progServCodeIds.every((id) => assignedSet.has(id));
 
@@ -481,7 +484,8 @@ function MatrixProgGroup({
   }
 
   function toggleServCodeForEmployee(employee: Employee, servCodeId: string) {
-    const currentIds = assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds ?? [];
+    const plan = assignmentsByEmployeeId.get(employee.employeeId);
+    const currentIds = plan ? flattenEntries(plan.entries) : [];
     const assignedSet = getAssignedSet(employee);
 
     let newIds: string[];

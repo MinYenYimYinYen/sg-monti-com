@@ -15,19 +15,19 @@ function eventLabel(event: EmployeeTimelineEvent): { text: string; color: string
   switch (event.kind) {
     case "starts":
       return {
-        text: event.fromServCodeId
-          ? `starts ${event.servCodeId} (from ${event.fromServCodeId})`
-          : `starts ${event.servCodeId}`,
+        text: event.fromEntryLabel != null
+          ? `starts ${event.entryLabel} (from ${event.fromEntryLabel})`
+          : `starts ${event.entryLabel}`,
         color: "text-accent",
       };
     case "finishes":
       return {
-        text: `finishes ${event.servCodeId}`,
+        text: `finishes ${event.entryLabel}`,
         color: "text-primary",
       };
     case "switches":
       return {
-        text: `switches ${event.fromServCodeId} → ${event.toServCodeId}`,
+        text: `switches ${event.fromEntryLabel} → ${event.toEntryLabel}`,
         color: "text-secondary",
       };
     case "downtime":
@@ -94,11 +94,14 @@ export function EmployeeTimelinePanel() {
 
         {selectedEmployeeId !== null && (
           <>
-            <p className="text-xs font-semibold text-foreground mb-3">
+            <p className="text-xs font-semibold text-foreground mb-1">
               {employeeMap.get(selectedEmployeeId)?.name ?? selectedEmployeeId}
               <span className="ml-2 text-[10px] text-muted-foreground font-normal">
                 {selectedTimeline.length} events
               </span>
+            </p>
+            <p className="text-[10px] text-muted-foreground mb-3">
+              Group entries appear as their label (e.g. "RC1+R01"). Starts/switches/finishes track entry-level transitions.
             </p>
 
             {selectedTimeline.length === 0 && (
@@ -108,12 +111,25 @@ export function EmployeeTimelinePanel() {
             <div className="space-y-0.5">
               {selectedTimeline.map(({ date, event }, idx) => {
                 const { text, color } = eventLabel(event);
+                // Highlight group-related events
+                const isGroupEvent =
+                  (event.kind === "starts" && event.entryLabel.includes("+")) ||
+                  (event.kind === "finishes" && event.entryLabel.includes("+")) ||
+                  (event.kind === "switches" &&
+                    (event.fromEntryLabel.includes("+") || event.toEntryLabel.includes("+")));
+
                 return (
-                  <div key={idx} className="flex items-baseline gap-3 text-xs">
+                  <div
+                    key={idx}
+                    className={`flex items-baseline gap-3 text-xs ${isGroupEvent ? "bg-primary/5 rounded px-1" : ""}`}
+                  >
                     <span className="font-mono text-muted-foreground w-10 shrink-0 text-right">
                       {formatDate(date)}
                     </span>
                     <span className={`font-mono ${color}`}>{text}</span>
+                    {isGroupEvent && (
+                      <span className="text-[9px] text-primary bg-primary/10 rounded px-1 shrink-0">group</span>
+                    )}
                   </div>
                 );
               })}

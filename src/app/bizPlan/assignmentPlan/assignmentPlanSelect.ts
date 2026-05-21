@@ -2,6 +2,7 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
+import { flattenEntries } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 
 const selectAssignmentPlans = (state: AppState) =>
   state.assignmentPlan.assignmentPlans;
@@ -14,7 +15,7 @@ const selectAssignmentsByEmployeeId = createSelector(
 );
 
 // Inverted map: servCodeId → Employee[] ordered by each employee's priority for that servCode.
-// Built by iterating each employee's servCodeIds[] and recording their position (priority index).
+// Built by iterating each employee's entries and recording their position (priority index).
 // Consumers (e.g. hydrateAssignedTo) receive employees in priority order for a given servCode.
 const selectAssignmentsByServCodeId = createSelector(
   [selectAssignmentPlans],
@@ -22,7 +23,9 @@ const selectAssignmentsByServCodeId = createSelector(
     const map = new Map<string, { employeeId: string; priority: number }[]>();
 
     for (const plan of assignmentPlans) {
-      plan.servCodeIds.forEach((servCodeId, priority) => {
+      // Flatten entries to get all servCodeIds in priority order
+      const allServCodeIds = flattenEntries(plan.entries);
+      allServCodeIds.forEach((servCodeId, priority) => {
         const existing = map.get(servCodeId) ?? [];
         existing.push({ employeeId: plan.employeeId, priority });
         map.set(servCodeId, existing);
@@ -41,10 +44,6 @@ const selectAssignmentsByServCodeId = createSelector(
     return sortedMap;
   },
 );
-
-// Convenience selector: servCodeId → Employee[] (fully hydrated, priority-ordered)
-// Used by hydrateAssignedTo — requires employeeMap to be passed in at call site.
-// See hydrateAssignedTo.ts for usage.
 
 export const assignmentPlanSelect = {
   assignmentPlans: selectAssignmentPlans,

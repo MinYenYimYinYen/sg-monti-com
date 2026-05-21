@@ -1,12 +1,21 @@
-import mongoose, { Schema } from "mongoose";
-import { AssignmentPlan } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
+import { Schema } from "mongoose";
 import { createModel } from "@/lib/mongoose/createModel";
 
-interface AssignmentPlanDoc extends AssignmentPlan, mongoose.Document {}
+const AssignmentEntrySchema = new Schema(
+  {
+    kind: { type: String, enum: ["single", "group"], required: true },
+    // single entry
+    servCodeId: { type: String },
+    // group entry
+    servCodeIds: { type: [String] },
+    label: { type: String },
+  },
+  { _id: false },
+);
 
-const AssignmentPlanSchema = new Schema<AssignmentPlanDoc>({
+const AssignmentPlanSchema = new Schema({
   employeeId: { type: String, required: true },
-  servCodeIds: { type: [String], required: true },
+  entries: { type: [AssignmentEntrySchema], required: true, default: [] },
 });
 
 export const AssignmentPlanModel = createModel("AssignmentPlan", AssignmentPlanSchema);

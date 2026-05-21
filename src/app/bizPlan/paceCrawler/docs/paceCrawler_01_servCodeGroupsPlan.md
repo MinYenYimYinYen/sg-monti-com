@@ -193,3 +193,99 @@ const selectTotalAvgDailyPriceByEmployee = createSelector(
 5. Update `dayCrawlSimulation.ts` to handle group entries
 6. Update `selectCrawlerResult` to build group entries
 7. Update `AssignmentEditorPanel.tsx` with group UI
+
+---
+
+## Implementation Status (as of 2026-05-20)
+
+### Completed (G1–G4)
+
+**G1 — `AssignmentPlanTypes.ts`** ✅
+- Added `AssignmentSingleEntry`, `AssignmentGroupEntry`, `AssignmentEntry` discriminated union
+- `AssignmentPlan.entries: AssignmentEntry[]` replaces `servCodeIds: string[]`
+- Added `flattenEntries(entries)` helper — returns all servCodeIds in order
+
+**G2 — `AssignmentPlanModel.ts` + `route.ts`** ✅
+- Mongoose schema updated with `AssignmentEntrySchema` subdocument
+- `route.ts` `upsertAssignmentPlan` handler uses `entries` field
+- **⚠ Migration required**: existing Mongo data uses old `servCodeIds` schema — must drop collection before testing
+
+**G3 — `assignmentPlanSlice.ts`** ✅
+- `reorderServCodes` action renamed to `reorderEntries`
+- Accepts `{ employeeId, entries: AssignmentEntry[] }`
+- Creates new plan if one doesn't exist yet
+
+**G4 — `assignmentPlanSelect.ts` + `employeeSelect.ts`** ✅
+- `assignmentsByServCodeId` flattens entries via `flattenEntries`
+- `employee.servCodeIds` derived by flattening entries (backward-compat for all consumers)
+- All consumers updated: `EmployeeCard`, `MiniServCodeControls`, `employeeCardSelect`,
+  `AssignmentMatrix`, `AssignmentEditorPanel`, `CrawlerResultPanel`, `paceCrawlerSelect`
+
+**AssignmentEditorPanel group UI** ✅ (partial — UI supports groups, crawl does not yet)
+- `AssignmentEditorPanel.tsx` supports creating, breaking, and adding to groups via checkboxes
+- Groups display as `entry.servCodeIds.join(" + ")` with a "group" badge
+- The crawl simulation still treats each entry as a single servCode (G5–G8 not done)
+
+---
+
+### Remaining (G5–G9)
+
+**G5 — `selectTotalAvgDailyPriceByEmployee`** ☐
+Add to `paceCrawlerSelect.ts` alongside `selectEmployeeLookbackPriceMap`:
+```typescript
+// Map<employeeId, number> — employee's total avg daily price across all programTypes
+const selectTotalAvgDailyPriceByEmployee = createSelector(
+  [cascadeSelect.employeeLookbackMap],
+  (lookbackMap): Map<string, number> => {
+    const result = new Map<string, number>();
+    for (const [employeeId, byProgramType] of lookbackMap) {
+      for (const stats of byProgramType.values()) {
+        if (stats?.totalAvgDailyCSP.price > 0) {
+          result.set(employeeId, stats.totalAvgDailyCSP.price);
+          break;
+        }
+      }
+    }
+    return result;
+  },
+);
+```
+Also update `LookbackPricePanel` to show a "Total $/day" column.
+
+**G6 — Update `PaceCrawlerTypes.ts`** ☐
+Add `DayCrawlGroupEntry` type and update `DayCrawlEmployeeEntry`:
+```typescript
+export type DayCrawlSingleEntry = { kind: "single"; servCodeId: string };
+export type DayCrawlGroupEntry = {
+  kind: "group";
+  servCodeIds: string[];
+  // Combined pool = sum of member pools; rate = employee.totalAvgDailyPrice
+};
+export type DayCrawlPriorityEntry = DayCrawlSingleEntry | DayCrawlGroupEntry;
+
+// Update DayCrawlEmployeeEntry:
+export type DayCrawlEmployeeEntry = {
+  employeeId: string;
+  priorityEntries: DayCrawlPriorityEntry[]; // replaces servCodeIds
+  dailyRates: Map<string, number>;          // per-servCode rates (for singles)
+  totalAvgDailyPrice: number;               // for groups
+  nextAvailableDate: string;
+};
+```
+
+**G7 — Update `dayCrawlSimulation.ts`** ☐
+Handle `DayCrawlGroupEntry` in the simulation loop:
+- Group entry: drain all member pools simultaneously at `employee.totalAvgDailyPrice`
+- Group's effective open date = `min(member.openDateFloor)`
+- Group's sequential identity = inherited from the one sequential member (if any)
+- Each member's `projectedEndDate` = the group's drain date
+
+**G8 — Update `selectCrawlerResult`** ☐
+Build `DayCrawlPriorityEntry[]` from `assignmentPlan.entries`:
+- `single` entries → `DayCrawlSingleEntry`
+- `group` entries → `DayCrawlGroupEntry` with combined pool from `activePoolMap`
+- Pass `totalAvgDailyPriceByEmployee` to employee entries
+
+**G9 — Update `AssignmentEditorPanel`** ☐
+Minor: the editor already supports group creation/editing. After G5–G8 are done, verify
+that the crawl correctly uses groups and update the dev panel display if needed.

@@ -442,28 +442,8 @@ const selectEmployeeCascadeResults = createSelector(
         today,
       );
 
-      // Log cascade sim entries for LR servCodes to diagnose Events remaining values.
-      const lrEntries = simDataList.filter((s) => s.servCodeId.startsWith("LR"));
-      if (lrEntries.length > 0) {
-        for (const s of lrEntries) {
-          console.log(
-            `[cascade-sim emp=${employee.employeeId}] ${s.servCodeId}: openDate=${s.openDate}, closeDate=${s.closeDate}, pool.price=$${s.pool.price.toFixed(0)}, dailyRate.price=$${s.dailyRate.price.toFixed(2)}`,
-          );
-        }
-      }
-
       const { contributed, availableFrom, timelineEvents } = runCascadeSimulation(simDataList, today);
 
-      // Log cascade results for LR servCodes.
-      if (lrEntries.length > 0) {
-        for (const s of lrEntries) {
-          const c = contributed.get(s.servCodeId);
-          const af = availableFrom.get(s.servCodeId);
-          console.log(
-            `[cascade-result emp=${employee.employeeId}] ${s.servCodeId}: contributed.price=$${c?.price.toFixed(0) ?? "n/a"}, availableFrom=${af ?? "n/a"}`,
-          );
-        }
-      }
       // Note: drainDate and contributedPriceByBoundary are not used in the Redux cascade path —
       // they are only consumed by the optimizer popover which runs its own fresh simulation.
 

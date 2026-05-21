@@ -7,6 +7,7 @@ import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSel
 import { employeeCardSelect } from "@/app/bizPlan/pace/selectors/employeeCardSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
+import { flattenEntries } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { ServCodePriorityRow } from "@/app/bizPlan/pace/employee/components/ServCodePriorityRow";
@@ -77,8 +78,9 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
       )
     : dateAllocations;
 
-  const currentServCodeIds =
-    assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+  const currentPlan = assignmentsByEmployeeId.get(employeeId);
+  const currentEntries = currentPlan?.entries ?? [];
+  const currentServCodeIds = flattenEntries(currentEntries);
 
   function handleMove(servCodeId: string, direction: "up" | "down") {
     const idx = currentServCodeIds.indexOf(servCodeId);
@@ -87,25 +89,26 @@ export function EmployeeCard({ cardData }: EmployeeCardProps) {
     const swapIdx = direction === "up" ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= newOrder.length) return;
     [newOrder[idx], newOrder[swapIdx]] = [newOrder[swapIdx], newOrder[idx]];
-    dispatch(
-      assignmentPlanActions.reorderServCodes({
-        employeeId,
-        servCodeIds: newOrder,
-      }),
-    );
-    upsert({ employeeId, servCodeIds: newOrder });
+    const newEntries = newOrder.map((id) => ({ kind: "single" as const, servCodeId: id }));
+    dispatch(assignmentPlanActions.reorderEntries({ employeeId, entries: newEntries }));
+    upsert({ employeeId, entries: newEntries });
   }
 
   function handleRemove(servCodeId: string) {
-    const updatedServCodeIds = currentServCodeIds.filter(
-      (id) => id !== servCodeId,
+    const newEntries = currentEntries.filter((entry) =>
+      entry.kind === "single"
+        ? entry.servCodeId !== servCodeId
+        : !entry.servCodeIds.includes(servCodeId),
     );
-    upsert({ employeeId, servCodeIds: updatedServCodeIds });
+    upsert({ employeeId, entries: newEntries });
   }
 
   function handleAddServCodes(newServCodeIds: string[]) {
-    const updatedServCodeIds = [...currentServCodeIds, ...newServCodeIds];
-    upsert({ employeeId, servCodeIds: updatedServCodeIds });
+    const newEntries = [
+      ...currentEntries,
+      ...newServCodeIds.map((id) => ({ kind: "single" as const, servCodeId: id })),
+    ];
+    upsert({ employeeId, entries: newEntries });
   }
 
   return (

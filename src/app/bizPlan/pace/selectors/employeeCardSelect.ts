@@ -2,6 +2,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
+import { flattenEntries } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import {
   CSP,
   CSPOps,
@@ -148,8 +149,8 @@ const selectEmployeeCardDataFull = createSelector(
 
     for (const cascadeResult of cascadeResults) {
       const { employee, totalAvgDailyCSP, byServCode } = cascadeResult;
-      const priorityOrder =
-        assignmentsByEmployeeId.get(employee.employeeId)?.servCodeIds ?? [];
+      const plan = assignmentsByEmployeeId.get(employee.employeeId);
+      const priorityOrder = plan ? flattenEntries(plan.entries) : [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
       const allocations: EmployeeAllocation[] = [];
@@ -298,8 +299,8 @@ function makeSelectProjectedAllocations({ employeeId, date }: EmployeeAllocation
       cascadeSelect.rateMode,
     ],
     (servCodePaces, cascadeMap, assignmentsByEmployeeId, rateMode): EmployeeAllocation[] => {
-      const priorityOrder =
-        assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+      const planForEmployee = assignmentsByEmployeeId.get(employeeId);
+      const priorityOrder = planForEmployee ? flattenEntries(planForEmployee.entries) : [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
       const cascadeResult = cascadeMap.get(employeeId);
@@ -395,8 +396,8 @@ function makeSelectNotStartedAllocations({ employeeId }: { employeeId: string })
       assignmentPlanSelect.assignmentsByEmployeeId,
     ],
     (servCodePaces, cascadeMap, assignmentsByEmployeeId): EmployeeAllocation[] => {
-      const priorityOrder =
-        assignmentsByEmployeeId.get(employeeId)?.servCodeIds ?? [];
+      const planForNotStarted = assignmentsByEmployeeId.get(employeeId);
+      const priorityOrder = planForNotStarted ? flattenEntries(planForNotStarted.entries) : [];
       const priorityIndex = new Map(priorityOrder.map((id, idx) => [id, idx]));
 
       const cascadeResult = cascadeMap.get(employeeId);
