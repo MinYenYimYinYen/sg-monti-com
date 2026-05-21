@@ -20,7 +20,7 @@ import {
  * Sequential progCodes are handled by locking N+1 until N drains.
  * Group entries drain all member pools simultaneously at the employee's totalAvgDailyPrice.
  *
- * Returns projected end dates, proposed date ranges, per-employee timeline events,
+ * Returns projected end dates, optimized date ranges, per-employee timeline events,
  * and per-entry (servCode/group) crew transition events with pool snapshots.
  */
 export function runDayCrawlSimulation(
@@ -37,11 +37,11 @@ export function runDayCrawlSimulation(
   }
 
   // ---------------------------------------------------------------------------
-  // 2. Initialize resolved open date floors (mutable — sequential N+1 updated during crawl)
+  // 2. Initialize resolved servCode range mins (mutable — sequential N+1 updated during crawl)
   // ---------------------------------------------------------------------------
-  const resolvedOpenDateFloor = new Map<string, string>();
+  const resolvedServCodeRangeMin = new Map<string, string>();
   for (const entry of servCodeEntries) {
-    resolvedOpenDateFloor.set(entry.servCodeId, entry.openDateFloor);
+    resolvedServCodeRangeMin.set(entry.servCodeId, entry.servCodeRangeMin);
   }
 
   // ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ export function runDayCrawlSimulation(
   }
 
   for (const group of sequentialGroups.values()) {
-    const sorted = [...group].sort((a, b) => a.openDateFloor.localeCompare(b.openDateFloor));
+    const sorted = [...group].sort((a, b) => a.servCodeRangeMin.localeCompare(b.servCodeRangeMin));
     for (let i = 0; i < sorted.length; i++) {
       const current = sorted[i];
       sequentialLocks.set(current.servCodeId, i > 0);
@@ -101,9 +101,6 @@ export function runDayCrawlSimulation(
 
   // Helper: get the current pool for an entry label (sum for groups, direct for singles)
   function getEntryPool(entryLabel: string): number {
-    // Check if it's a group label (contains "+") — look up all member pools
-    // We identify groups by checking if any servCode entry has this label
-    // For simplicity: try direct lookup first, then sum if not found
     const directPool = pools.get(entryLabel);
     if (directPool !== undefined) return directPool;
     // It's a group — find members by scanning employee entries
@@ -119,7 +116,6 @@ export function runDayCrawlSimulation(
 
   // Helper: get an employee's daily rate for an entry label
   function getEmployeeRateForEntry(employee: DayCrawlEmployeeEntry, entryLabel: string): number {
-    // Check if it's a single servCode
     const directRate = employee.dailyRates.get(entryLabel);
     if (directRate !== undefined) return directRate;
     // It's a group — use totalAvgDailyPrice
@@ -191,7 +187,7 @@ export function runDayCrawlSimulation(
           const { servCodeId } = priorityEntry;
 
           if (sequentialLocks.get(servCodeId) === true) continue;
-          const floor = resolvedOpenDateFloor.get(servCodeId);
+          const floor = resolvedServCodeRangeMin.get(servCodeId);
           if (!floor) continue;
           const effectiveOpenDate = personalOpenDate > floor ? personalOpenDate : floor;
           if (day < effectiveOpenDate) continue;
@@ -216,14 +212,11 @@ export function runDayCrawlSimulation(
 
           // ServCode timeline — handle entry/exit transitions
           if (prevEntryLabel !== servCodeId) {
-            // Employee is starting or returning to this entry
             if (prevEntryLabel !== null) {
-              // Leaving previous entry
               const prevActive = activeEmployeesByEntry.get(prevEntryLabel);
               if (prevActive) prevActive.delete(employee.employeeId);
               recordServCodeEvent(prevEntryLabel, day, employee.employeeId, "leaves", servCodeId);
             }
-            // Joining this entry
             if (!activeEmployeesByEntry.has(servCodeId)) activeEmployeesByEntry.set(servCodeId, new Set());
             activeEmployeesByEntry.get(servCodeId)!.add(employee.employeeId);
             const kind = prevEntryLabel === null ? "starts" : "returns";
@@ -234,14 +227,16 @@ export function runDayCrawlSimulation(
           if (newPool <= 0 && projectedEndDate.get(servCodeId) === null) {
             projectedEndDate.set(servCodeId, day);
             timeline.push({ date: day, event: { kind: "finishes", entryLabel: servCodeId } });
-            // Record finishes in servCode timeline
             activeEmployeesByEntry.get(servCodeId)?.delete(employee.employeeId);
             recordServCodeEvent(servCodeId, day, employee.employeeId, "finishes");
 
             const successor = sequentialSuccessor.get(servCodeId);
             if (successor) {
               sequentialLocks.set(successor, false);
-              resolvedOpenDateFloor.set(successor, dateStrings.nextWeekdayAfter(day));
+              // Use `day` (not nextWeekdayAfter) so the successor opens immediately —
+              // the employee already used today for the predecessor, so they'll pick up
+              // the successor on the very next day with no gap.
+              resolvedServCodeRangeMin.set(successor, day);
             }
           }
 
@@ -256,7 +251,7 @@ export function runDayCrawlSimulation(
 
           for (const servCodeId of servCodeIds) {
             if (sequentialLocks.get(servCodeId) === true) { groupLocked = true; break; }
-            const floor = resolvedOpenDateFloor.get(servCodeId);
+            const floor = resolvedServCodeRangeMin.get(servCodeId);
             const pool = pools.get(servCodeId) ?? 0;
             if (pool > 0) {
               groupHasPool = true;
@@ -301,7 +296,10 @@ export function runDayCrawlSimulation(
               const successor = sequentialSuccessor.get(servCodeId);
               if (successor) {
                 sequentialLocks.set(successor, false);
-                resolvedOpenDateFloor.set(successor, dateStrings.nextWeekdayAfter(day));
+                // Use `day` (not nextWeekdayAfter) so the successor opens immediately —
+                // the employee already used today for the predecessor, so they'll pick up
+                // the successor on the very next day with no gap.
+                resolvedServCodeRangeMin.set(successor, day);
               }
             }
           }
@@ -345,11 +343,9 @@ export function runDayCrawlSimulation(
 
       // Record downtime
       if (workedEntryLabel === null) {
-        // If employee was working something, they're leaving it (no eligible work)
         if (prevEntryLabel !== null) {
           const prevActive = activeEmployeesByEntry.get(prevEntryLabel);
           if (prevActive) prevActive.delete(employee.employeeId);
-          // Don't record a "leaves" event for downtime — it's implicit
         }
         if (!inDowntime.get(employee.employeeId)) {
           timeline.push({ date: day, event: { kind: "downtime" } });
@@ -370,19 +366,15 @@ export function runDayCrawlSimulation(
 
   for (const entry of servCodeEntries) {
     const endDate = projectedEndDate.get(entry.servCodeId) ?? null;
-    const openFloor = resolvedOpenDateFloor.get(entry.servCodeId) ?? entry.openDateFloor;
+    const optimizedMin = resolvedServCodeRangeMin.get(entry.servCodeId) ?? entry.servCodeRangeMin;
 
-    const proposedMax =
-      endDate != null
-        ? dateStrings.addWeekdays(endDate, entry.paddingDays)
-        : entry.currentMax;
+    const optimizedMax = endDate ?? entry.servCodeRangeMax;
 
     byServCode.set(entry.servCodeId, {
       servCodeId: entry.servCodeId,
-      resolvedOpenDateFloor: openFloor,
+      optimizedMin,
       projectedEndDate: endDate,
-      proposedMin: openFloor,
-      proposedMax,
+      optimizedMax,
     });
   }
 

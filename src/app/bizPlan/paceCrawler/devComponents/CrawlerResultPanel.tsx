@@ -131,12 +131,12 @@ export function CrawlerResultPanel() {
     const projectedEnd = memberEndDates.length > 0 ? [...memberEndDates].sort().at(-1)! : null;
 
     const memberOptMins = group.servCodeIds
-      .map((id) => crawlerResult.byServCode.get(id)?.proposedMin)
+      .map((id) => crawlerResult.byServCode.get(id)?.optimizedMin)
       .filter((d): d is string => d != null);
     const optMin = memberOptMins.length > 0 ? [...memberOptMins].sort()[0] : "—";
 
     const memberOptMaxes = group.servCodeIds
-      .map((id) => crawlerResult.byServCode.get(id)?.proposedMax)
+      .map((id) => crawlerResult.byServCode.get(id)?.optimizedMax)
       .filter((d): d is string => d != null);
     const optMax = memberOptMaxes.length > 0 ? [...memberOptMaxes].sort().at(-1)! : "—";
 
@@ -182,8 +182,8 @@ export function CrawlerResultPanel() {
           servCodeId,
           progCodeId: meta?.progCodeId ?? "—",
           projectedEnd: memberEnd,
-          optMin: result?.proposedMin ?? "—",
-          optMax: result?.proposedMax ?? "—",
+          optMin: result?.optimizedMin ?? "—",
+          optMax: result?.optimizedMax ?? "—",
           scMax: memberScMax,
           pool: meta?.pool ?? 0,
           endColor: memberEndColor,
@@ -203,7 +203,7 @@ export function CrawlerResultPanel() {
         const scMin = sc.alwaysAsap ? today : (sc.dateRange.min ?? "");
         const scMax = sc.alwaysAsap ? today : (sc.dateRange.max ?? "");
         const projectedEnd = result?.projectedEndDate ?? null;
-        const optMax = result?.proposedMax ?? scMax;
+        const optMax = result?.optimizedMax ?? scMax;
 
         let endColor = "text-muted-foreground";
         if (projectedEnd && scMax) {
@@ -217,7 +217,7 @@ export function CrawlerResultPanel() {
           runsInSequence: progCode.runsInSequence,
           projectedEnd,
           scMin,
-          optMin: result?.proposedMin ?? "—",
+          optMin: result?.optimizedMin ?? "—",
           optMax,
           scMax,
           pool,

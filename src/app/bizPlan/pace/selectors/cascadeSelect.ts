@@ -2,7 +2,6 @@ import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
 import { deepSelect } from "@/app/realGreen/deepSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
-import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { rawPaceSelect } from "@/app/bizPlan/pace/selectors/rawPaceSelect";
 import {
   CSP,
@@ -18,12 +17,11 @@ import {
   computeLookbackStats,
   getValidProductionDates,
   getServiceEffectiveDate,
-} from "@/app/bizPlan/pace/_lib/employeeLookbackUtils";
+} from "@/app/bizPlan/paceCrawler/_lib/employeeLookbackUtils";
 import {
   CascadeTimelineEvent,
   EmployeeCascadeEntry,
   EmployeeCascadeResult,
-  PaceCategory,
   LookbackConfig,
 } from "@/app/bizPlan/pace/PaceTypes";
 import { runCascadeSimulation } from "@/app/bizPlan/pace/_lib/cascadeSimulation";

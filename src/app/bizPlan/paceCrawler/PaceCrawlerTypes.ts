@@ -2,6 +2,8 @@
 // Priority entries — single servCode or a group worked together
 // ---------------------------------------------------------------------------
 
+import {TRange} from "@/lib/primatives/tRange/TRange";
+
 export type DayCrawlSingleEntry = {
   kind: "single";
   servCodeId: string;
@@ -27,7 +29,7 @@ export type DayCrawlPriorityEntry = DayCrawlSingleEntry | DayCrawlGroupEntry;
 
 /**
  * One servCode's entry in the day-crawl simulation.
- * The caller is responsible for resolving openDateFloor and pool before passing in.
+ * The caller is responsible for resolving servCodeRangeMin and pool before passing in.
  */
 export type DayCrawlServCodeEntry = {
   servCodeId: string;
@@ -36,16 +38,14 @@ export type DayCrawlServCodeEntry = {
   runsInSequence: boolean;
   /**
    * The earliest calendar date this servCode is eligible to be worked.
-   * For independent servCodes and the first servCode of a sequential progCode: dateRange.min.
-   * For sequential N+1 servCodes: set dynamically during the crawl when N drains.
+   * = servCode.dateRange.min for independent servCodes and the first in a sequential progCode.
+   * = dynamically resolved during the crawl when the predecessor drains (for N+1 servCodes).
    */
-  openDateFloor: string;
+  servCodeRangeMin: string;
   /** Remaining unscheduled work pool — price (dollars) only. */
   pool: number;
-  /** Padding days added to projectedEndDate to compute proposedMax. */
-  paddingDays: number;
-  /** dateRange.max from RealGreen — used as fallback proposedMax when no lookback data. */
-  currentMax: string;
+  /** servCode.dateRange.max from RealGreen — used as fallback optimizedMax when no lookback data. */
+  servCodeRangeMax: string;
 };
 
 /**
@@ -112,27 +112,22 @@ export type EmployeeTimelineEvent =
 export type CrawlerServCodeResult = {
   servCodeId: string;
   /**
-   * The effective open date floor used in the crawl.
+   * The effective start date used in the crawl.
    * For sequential N+1 servCodes, this is the dynamically resolved date
-   * (max of dateRange.min and projectedEndDate[N] + 1 weekday).
+   * (= projectedEndDate[N], the day the predecessor drained).
+   * This is the crawler's recommended new season start.
    */
-  resolvedOpenDateFloor: string;
+  optimizedMin: string;
   /**
    * The day the work pool's price hit zero.
    * Null when no employees have lookback data and the pool could not be drained.
    */
   projectedEndDate: string | null;
   /**
-   * The proposed season start date for this servCode.
-   * = resolvedOpenDateFloor
+   * The crawler's recommended new season end date.
+   * = projectedEndDate when known, or servCodeRangeMax (servCode.dateRange.max) as fallback.
    */
-  proposedMin: string;
-  /**
-   * The proposed season end date for this servCode.
-   * = addWeekdays(projectedEndDate, paddingDays) when projectedEndDate is known.
-   * = currentMax (dateRange.max) as fallback when no lookback data.
-   */
-  proposedMax: string;
+  optimizedMax: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -170,7 +165,53 @@ export type ServCodeTimelineEvent = {
 export type CrawlerResult = {
   byServCode: Map<string, CrawlerServCodeResult>;
   /** Per-employee ordered list of timeline events recorded during the crawl. */
-  employeeTimeline: Map<string, { date: string; event: EmployeeTimelineEvent }[]>;
+  employeeTimeline: Map<
+    string,
+    { date: string; event: EmployeeTimelineEvent }[]
+  >;
   /** Per-entry (servCode or group label) ordered list of crew transition events. */
   servCodeTimeline: Map<string, ServCodeTimelineEvent[]>;
+};
+
+/** One row of season optimizer output per servCode. */
+export type SeasonOptimizedRange = {
+  servCodeId: string;
+  progCodeId: string;
+  servCodeName: string;
+  /** The existing RealGreen-assigned date range for this servCode. */
+  servCodeRange: TRange<string>;
+  /** Crawler's recommended new start date. */
+  optimizedMin: string;
+  /** Crawler's recommended new end date — projectedEndDate, or servCodeRange.max if no data. */
+  optimizedMax: string;
+  projectedEndDate: string | null;
+  runsInSequence: boolean;
+  /** True when the servCode's pool has already started (optimizedMin ≤ today) */
+  isStarted: boolean;
+  /** True when there's unscheduled work and a projected end date exists */
+  hasWork: boolean;
+};
+
+export type ServCodePaceDelta = {
+  servCodeId: string;
+  /** The existing RealGreen-assigned date range for this servCode. */
+  servCodeRange: TRange<string>;
+  projectedEndDate: string | null;
+  deltaDays: number | null;
+  deltaDaysCSP: {
+    count: number | null;
+    size: number | null;
+    price: number | null;
+  } | null;
+};
+
+/** Projected completion date for a ProgCode (latest projected end date across all its servCodes). */
+export type ProgCodeProjectedCompletion = {
+  /** The projected completion date (ISO date string), or null if no servCodes have data. */
+  date: string | null;
+  /**
+   * True if any servCode in the progCode had no team lookback data and fell back to
+   * servCodeRange.max as its projected end date. Muted styling should be applied when true.
+   */
+  isEstimated: boolean;
 };

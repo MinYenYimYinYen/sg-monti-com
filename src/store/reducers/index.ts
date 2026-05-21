@@ -35,7 +35,8 @@ import quickSendReducer from "@/app/quickSend/quickSendSlice";
 import { storedTemplatesReducer } from "@/app/quickSend/storedTemplates/storedTemplatesSlice";
 import prepayReducer from "@/app/realGreen/prepay/prepaySlice";
 import { serviceEtaReducer } from "@/app/scheduling/eta/serviceEtaSlice";
-import { urgentReducer } from "@/app/bizPlan/pace/slices/urgentSlice";
+import { urgentReducer } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentSlice";
+import { paceCrawlerReducer } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -73,6 +74,7 @@ const rootReducer = combineReducers({
   serviceEta: serviceEtaReducer,
   storedTemplates: storedTemplatesReducer,
   urgent: urgentReducer,
+  paceCrawler: paceCrawlerReducer,
 });
 
 export default rootReducer;

@@ -12,6 +12,8 @@ import { DeltaMapPanel } from "@/app/bizPlan/paceCrawler/devComponents/DeltaMapP
 import { AssignmentEditorPanel } from "@/app/bizPlan/paceCrawler/devComponents/AssignmentEditorPanel";
 import { EmployeeTimelinePanel } from "@/app/bizPlan/paceCrawler/devComponents/EmployeeTimelinePanel";
 import { ServCodeTimelinePanel } from "@/app/bizPlan/paceCrawler/devComponents/ServCodeTimelinePanel";
+import { GanttChartPanel } from "@/app/bizPlan/paceCrawler/devComponents/GanttChartPanel";
+import { EmployeeCardPanel } from "@/app/bizPlan/paceCrawler/devComponents/EmployeeCardPanel";
 
 export default function PaceCrawlerPage() {
   usePaceCrawlerDeps();
@@ -37,6 +39,8 @@ export default function PaceCrawlerPage() {
           <TabsTrigger value="assignments" variant="accent">Assignments</TabsTrigger>
           <TabsTrigger value="timeline" variant="accent">Timeline</TabsTrigger>
           <TabsTrigger value="scTimeline" variant="accent">SC Timeline</TabsTrigger>
+          <TabsTrigger value="gantt" variant="accent">Gantt</TabsTrigger>
+          <TabsTrigger value="employeeCardPlan" variant="accent">Employee Plan</TabsTrigger>
         </TabsList>
 
         <TabsContent value="nextDate" className="overflow-auto">
@@ -77,6 +81,14 @@ export default function PaceCrawlerPage() {
 
         <TabsContent value="scTimeline" className="overflow-hidden">
           <ServCodeTimelinePanel />
+        </TabsContent>
+
+        <TabsContent value="gantt" className="overflow-hidden">
+          <GanttChartPanel />
+        </TabsContent>
+
+        <TabsContent value="employeeCardPlan" className="overflow-hidden">
+          <EmployeeCardPanel />
         </TabsContent>
       </Tabs>
     </div>

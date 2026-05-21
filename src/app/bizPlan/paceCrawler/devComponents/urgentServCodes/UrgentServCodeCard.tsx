@@ -2,16 +2,15 @@
 
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { servCodePaceSelect } from "@/app/bizPlan/pace/selectors/servCodePaceSelect";
-import { urgentSelect } from "@/app/bizPlan/pace/selectors/urgentSelect";
+import { urgentServCodesSelect } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentServCodesSelect";
 import { urgentActions } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentSlice";
 import { AppDispatch } from "@/store";
-import { ServCodePace } from "@/app/bizPlan/pace/PaceTypes";
+import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { Number } from "@/components/Number";
-import { LandPlot, AlertTriangle, Clock, Info, ClipboardList } from "lucide-react";
+import { AlertTriangle, Clock, Info, ClipboardList, LandPlot } from "lucide-react";
 import { cn } from "@/style/utils";
 import {
   Popover,
@@ -35,7 +34,7 @@ import { Checkbox } from "@/style/components/checkbox";
 const URGENT_DISPLAY_STATUSES = getServiceStatuses(["active", "asap"]);
 
 // ---------------------------------------------------------------------------
-// ChecklistServiceRow — a single row in the checklist with a toggleable checkbox
+// ChecklistServiceRow
 // ---------------------------------------------------------------------------
 
 function ChecklistServiceRow({
@@ -46,7 +45,7 @@ function ChecklistServiceRow({
   servCodeId: string;
 }) {
   const dispatch = useDispatch<AppDispatch>();
-  const checkedServIds = useSelector(urgentSelect.checkedServIds);
+  const checkedServIds = useSelector(urgentServCodesSelect.checkedServIds);
   const checked = checkedServIds.includes(service.servId);
 
   const customer = service.program.customer;
@@ -111,19 +110,25 @@ function ChecklistServiceRow({
 }
 
 // ---------------------------------------------------------------------------
-// ChecklistPopover — accordion-based checklist for all urgent servCodes
+// ChecklistPopover
 // ---------------------------------------------------------------------------
 
-function ChecklistPopover({ urgentPaces }: { urgentPaces: ServCodePace[] }) {
+function ChecklistPopover({
+  asapServCodes,
+  overdueServCodes,
+}: {
+  asapServCodes: ServCodeDeep[];
+  overdueServCodes: ServCodeDeep[];
+}) {
   const dispatch = useDispatch<AppDispatch>();
-  const expandedServCodeIds = useSelector(urgentSelect.expandedServCodeIds);
+  const expandedServCodeIds = useSelector(urgentServCodesSelect.expandedServCodeIds);
+  const allServCodes = [...asapServCodes, ...overdueServCodes];
 
   return (
     <Accordion
       type="multiple"
       value={expandedServCodeIds}
       onValueChange={(values) => {
-        // Sync Redux: toggle any servCodeId that changed
         const added = values.filter((v) => !expandedServCodeIds.includes(v));
         const removed = expandedServCodeIds.filter((v) => !values.includes(v));
         for (const id of added) dispatch(urgentActions.toggleExpanded(id));
@@ -131,8 +136,7 @@ function ChecklistPopover({ urgentPaces }: { urgentPaces: ServCodePace[] }) {
       }}
       className="w-full"
     >
-      {urgentPaces.map((pace) => {
-        const { servCode } = pace;
+      {allServCodes.map((servCode) => {
         const unfinished = servCode.services.filter((s) =>
           URGENT_DISPLAY_STATUSES.includes(s.status),
         );
@@ -173,13 +177,16 @@ function ChecklistPopover({ urgentPaces }: { urgentPaces: ServCodePace[] }) {
 }
 
 // ---------------------------------------------------------------------------
-// UrgentServCodeRow — display-only row (no popover)
+// UrgentServCodeRow
 // ---------------------------------------------------------------------------
 
-function UrgentServCodeRow({ pace }: { pace: ServCodePace }) {
-  const { servCode, category } = pace;
-  const isAsap = category === "asap";
-
+function UrgentServCodeRow({
+  servCode,
+  isAsap,
+}: {
+  servCode: ServCodeDeep;
+  isAsap: boolean;
+}) {
   const unprintedCount = servCode.services.filter((s) =>
     URGENT_DISPLAY_STATUSES.includes(s.status),
   ).length;
@@ -187,19 +194,16 @@ function UrgentServCodeRow({ pace }: { pace: ServCodePace }) {
 
   return (
     <div className="w-full py-1.5 flex items-center gap-2 px-1">
-      {/* Category icon */}
       {isAsap ? (
         <AlertTriangle className="w-3 h-3 text-destructive shrink-0" />
       ) : (
         <Clock className="w-3 h-3 text-destructive shrink-0" />
       )}
 
-      {/* ServCode ID */}
       <span className="font-mono text-xs text-foreground flex-1 truncate">
         {servCode.servCodeId}
       </span>
 
-      {/* Category badge */}
       <span
         className={cn(
           "text-[9px] font-semibold uppercase tracking-wide px-1 rounded shrink-0",
@@ -211,7 +215,6 @@ function UrgentServCodeRow({ pace }: { pace: ServCodePace }) {
         {isAsap ? "ASAP" : "LATE"}
       </span>
 
-      {/* Unfinished count */}
       <span className="text-xs font-mono text-muted-foreground shrink-0">
         <Number decimals={0}>{unprintedCount}</Number>
       </span>
@@ -220,14 +223,16 @@ function UrgentServCodeRow({ pace }: { pace: ServCodePace }) {
 }
 
 // ---------------------------------------------------------------------------
-// UrgentServCodeCard — the main export
+// UrgentServCodeCard
 // ---------------------------------------------------------------------------
 
 export function UrgentServCodeCard() {
-  const urgentPaces = useSelector(servCodePaceSelect.urgentServCodePaces);
+  const asapServCodes = useSelector(urgentServCodesSelect.alwaysAsapServCodes);
+  const overdueServCodes = useSelector(urgentServCodesSelect.overdueServCodes);
   const [checklistOpen, setChecklistOpen] = useState(false);
 
-  if (urgentPaces.length === 0) return null;
+  const totalCount = asapServCodes.length + overdueServCodes.length;
+  if (totalCount === 0) return null;
 
   return (
     <div className="border rounded-lg bg-card w-72 flex flex-col">
@@ -238,7 +243,6 @@ export function UrgentServCodeCard() {
           Urgent
         </span>
         <div className="flex items-center gap-2">
-          {/* Checklist popover trigger */}
           <Popover open={checklistOpen} onOpenChange={setChecklistOpen}>
             <PopoverTrigger asChild>
               <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded px-1.5 py-0.5 transition-colors">
@@ -258,22 +262,28 @@ export function UrgentServCodeCard() {
                   </p>
                 </div>
                 <div className="max-h-[624px] overflow-y-auto">
-                  <ChecklistPopover urgentPaces={urgentPaces} />
+                  <ChecklistPopover
+                    asapServCodes={asapServCodes}
+                    overdueServCodes={overdueServCodes}
+                  />
                 </div>
               </div>
             </PopoverContent>
           </Popover>
 
           <span className="text-xs text-muted-foreground font-mono">
-            {urgentPaces.length} servCode{urgentPaces.length !== 1 ? "s" : ""}
+            {totalCount} servCode{totalCount !== 1 ? "s" : ""}
           </span>
         </div>
       </div>
 
       {/* Rows */}
       <div className="flex-1 px-2 py-1 divide-y divide-border/30">
-        {urgentPaces.map((pace) => (
-          <UrgentServCodeRow key={pace.servCode.servCodeId} pace={pace} />
+        {asapServCodes.map((servCode) => (
+          <UrgentServCodeRow key={servCode.servCodeId} servCode={servCode} isAsap={true} />
+        ))}
+        {overdueServCodes.map((servCode) => (
+          <UrgentServCodeRow key={servCode.servCodeId} servCode={servCode} isAsap={false} />
         ))}
       </div>
     </div>

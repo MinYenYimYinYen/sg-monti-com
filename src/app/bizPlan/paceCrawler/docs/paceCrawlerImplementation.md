@@ -4,6 +4,21 @@
 
 ---
 
+## Terminology
+
+Two distinct date range concepts exist in this module. Use these terms consistently:
+
+| Term | Meaning | Source |
+|---|---|---|
+| `servCodeRange` | The RealGreen-assigned date range (`servCode.dateRange`) | `ServCodeDeep.dateRange` |
+| `optimizedRange` | The crawler's recommended date range | Output of `runDayCrawlSimulation` |
+| `servCodeRangeMin` | `servCodeRange.min` — earliest eligible work date | `DayCrawlServCodeEntry.servCodeRangeMin` |
+| `servCodeRangeMax` | `servCodeRange.max` — RealGreen season end (fallback) | `DayCrawlServCodeEntry.servCodeRangeMax` |
+| `optimizedMin` | Crawler's recommended start (= `resolvedServCodeRangeMin` at drain) | `CrawlerServCodeResult.optimizedMin` |
+| `optimizedMax` | Crawler's recommended end (= `projectedEndDate`, or `servCodeRangeMax` as fallback) | `CrawlerServCodeResult.optimizedMax` |
+
+---
+
 ## Design Principles
 
 1. **Price only** — no CSP/CSPOps. Every rate, pool, and drain is a plain `number` (price in
@@ -25,7 +40,8 @@ src/app/bizPlan/paceCrawler/
 │   ├── paceCrawlerPlan.md
 │   └── paceCrawlerImplementation.md    ← this file
 ├── _lib/
-│   └── dayCrawlSimulation.ts           ← pure function, no Redux
+│   ├── dayCrawlSimulation.ts           ← pure function, no Redux
+│   └── employeeLookbackUtils.ts        ← lookback stat helpers
 ├── devComponents/
 │   ├── NextDateByEmployeePanel.tsx
 │   ├── OpenDateFloorPanel.tsx
@@ -36,11 +52,15 @@ src/app/bizPlan/paceCrawler/
 │   ├── DeltaMapPanel.tsx
 │   ├── AssignmentEditorPanel.tsx
 │   ├── EmployeeTimelinePanel.tsx
-│   └── ServCodeTimelinePanel.tsx
-├── page.tsx                            ← dev page, tabbed (10 tabs)
+│   ├── ServCodeTimelinePanel.tsx
+│   └── GanttChartPanel.tsx
+├── page.tsx                            ← dev page, tabbed (11 tabs)
 ├── usePaceCrawlerDeps.ts
 ├── PaceCrawlerTypes.ts
-└── paceCrawlerSelect.ts
+├── paceCrawlerSelect.ts
+├── paceCrawlerSlice.ts                 ← mainDate slice
+├── paceCrawlerLookbackSelect.ts        ← employeeLookbackMap (independent of pace/)
+└── paceCrawlerRawSelect.ts             ← activeAsapCSP per servCode (independent of pace/)
 ```
 
 ---
@@ -50,7 +70,7 @@ src/app/bizPlan/paceCrawler/
 | Selector | Returns | Single question answered |
 |---|---|---|
 | `selectNextDateByEmployee` | `Map<employeeId, string>` | When is each employee next available? |
-| `selectServCodeOpenDateFloor` | `Map<servCodeId, string>` | What is each servCode's static open date floor? |
+| `selectServCodeOpenDateFloor` | `Map<servCodeId, string>` | What is each servCode's static open date floor (= `servCodeRangeMin`)? |
 | `selectServCodeProgramTypeMap` | `Map<servCodeId, string>` | What programType does each servCode belong to? |
 | `selectEmployeeLookbackPriceMap` | `Map<employeeId, Map<programType, number>>` | What is each employee's avg daily price per programType? |
 | `selectTotalAvgDailyPriceByEmployee` | `Map<employeeId, number>` | What is each employee's total avg daily price (for group drain)? |
@@ -58,9 +78,9 @@ src/app/bizPlan/paceCrawler/
 | `selectDailyRateByEmployeeByServCode` | `Map<employeeId, Map<servCodeId, number>>` | What is each employee's daily price rate per servCode? |
 | `selectActivePoolPriceByServCode` | `Map<servCodeId, number>` | How much unscheduled price remains per servCode? |
 | `selectCrawlerResult` | `CrawlerResult` | Run the crawl — when does each servCode drain? |
-| `selectServCodeDeltaMap` | `Map<servCodeId, ServCodePaceDelta>` | How many days ahead/behind is each servCode? |
+| `selectServCodeDeltaMap` | `Map<servCodeId, ServCodePaceDelta>` | How many days ahead/behind is each servCode vs its `servCodeRange.max`? |
 | `selectProgCodeProjectedCompletionMap` | `Map<progCodeId, ProgCodeProjectedCompletion>` | When does each program finish? |
-| `selectSeasonOptimizerResult` | `SeasonOptimizedRange[]` | What should the date ranges be? |
+| `selectSeasonOptimizerResult` | `SeasonOptimizedRange[]` | What should the date ranges be? (includes both `servCodeRange` and `optimizedMin`/`optimizedMax`) |
 | `selectEmployeeTimelineMap` | `Map<employeeId, events[]>` | What is each employee doing on each significant date? |
 | `selectServCodeTimelineMap` | `Map<entryLabel, ServCodeTimelineEvent[]>` | Who is working each servCode/group, and when does the crew change? |
 
@@ -76,7 +96,7 @@ Simplified all CSP fields to plain `number` (price).
 
 ### A1: `usePaceCrawlerDeps.ts` + `page.tsx` scaffold ✅
 
-Dev page at `/bizPlan/paceCrawler` with 10 tabs.
+Dev page at `/bizPlan/paceCrawler` with tabs.
 
 ---
 
@@ -90,16 +110,14 @@ Dev page at `/bizPlan/paceCrawler` with 10 tabs.
 
 ### A4: `selectEmployeeLookbackPriceMap` + `LookbackPricePanel` ✅
 
-**Updated (2026-05-20)**: Panel now shows a "Total $/day" column (cross-programType total used
-as group drain rate). Also shows a "No-history employees" section for new hires using the team
-avg fallback, with the team avg value and employee count displayed.
+Panel shows a "Total $/day" column (cross-programType total used as group drain rate). Also shows
+a "No-history employees" section for new hires using the team avg fallback.
 
 ---
 
 ### A5: `selectDailyRateByEmployeeByServCode` + `DailyRatePanel` ✅
 
-**Updated (2026-05-20)**: Panel now shows group entries with "total (group)" source label.
-Selector now has a 4-step fallback chain:
+Selector has a 4-step fallback chain:
 1. Own lookback rate for the servCode's programType
 2. Team avg from servCode's `assignedTo` list
 3. Team avg across ALL employees for this programType (fixes new servCodes / new hires)
@@ -109,58 +127,51 @@ Selector now has a 4-step fallback chain:
 
 ### A6: `selectActivePoolPriceByServCode` + `ActivePoolPanel` ✅
 
-**Updated (2026-05-20)**: Panel now shows expandable group rows with combined pool.
+Panel shows expandable group rows with combined pool.
 
 ---
 
 ### A7: `dayCrawlSimulation.ts` + `selectCrawlerResult` + `CrawlerResultPanel` ✅
 
-**Updated (2026-05-20)**:
-- Simulation now handles `DayCrawlGroupEntry` — drains all member pools simultaneously at
+Key behaviors:
+- Simulation handles `DayCrawlGroupEntry` — drains all member pools simultaneously at
   `employee.totalAvgDailyPrice`, proportionally distributed across members.
-- Sequential N+1 floor is now `nextWeekday(drainDate)` directly — no longer
-  `max(dateRange.min, nextWeekday)`. Sequential servCodes are proposed back-to-back.
-- `selectCrawlerResult` now reads `assignmentPlan.entries` directly (preserving group structure)
-  instead of flattened `servCodeIds`.
+- Sequential N+1 floor is set to `day` (the drain day itself) — not `nextWeekdayAfter(day)`.
+  This means the successor opens on the drain day and the employee picks it up the very next
+  day with no gap. (Setting it to `nextWeekdayAfter` caused a 1-day downtime gap.)
+- `selectCrawlerResult` reads `assignmentPlan.entries` directly (preserving group structure).
 - `selectCrawlerResult` uses `teamAvgTotalDailyPrice` as fallback for employees with no lookback.
-- `CrawlerResultPanel` columns renamed: `SC Min`, `Proj End`, `Opt Min`, `Opt Max`, `SC Max`.
-  Group rows now show SC Min (earliest member dateRange.min). Debug `console.log` removed.
-- Simulation now records `servCodeTimeline` (per-entry crew transition events with pool snapshots).
+- Simulation records `servCodeTimeline` (per-entry crew transition events with pool snapshots).
+
+**CrawlerResultPanel columns**: SC Min | Proj End | Opt Min | Opt Max | SC Max
 
 ---
 
 ### A8: Layer 6 selectors + `DeltaMapPanel` ✅
 
-**Updated (2026-05-20)**: `DeltaMapPanel` now shows expandable group rows and hides null-delta rows.
+`DeltaMapPanel` shows expandable group rows and hides null-delta rows.
+Delta is computed as `weekdaysBetween(servCodeRange.max, projectedEndDate)`.
 
 ---
 
 ### A8.5: `AssignmentEditorPanel` — assignment priority editor ✅
 
-**Updated (2026-05-20)**:
 - Date ranges shown in parens after each entry label: `RC1 (05/15–07/30)`
-- Group badge is now a clickable button that opens a popover showing per-member date ranges
+- Group badge is a clickable button that opens a popover showing per-member date ranges
 - Popover has X button per member to remove from group (ejected as standalone single entry)
-- `progServSelect.servCodeMap` used for date range lookups
 
 ---
 
 ### A8.6: `selectEmployeeTimelineMap` + `EmployeeTimelinePanel` ✅
 
-**Updated (2026-05-20)**: Timeline events now use `entryLabel`/`fromEntryLabel` instead of
-`servCodeId`/`fromServCodeId`. Group events are highlighted with a "group" badge.
+Timeline events use `entryLabel`/`fromEntryLabel`. Group events highlighted with a "group" badge.
 
 ---
 
 ### A8.7: ServCode Groups (G1–G9) ✅
 
-All G1–G9 tasks complete. See `paceCrawler_01_servCodeGroupsPlan.md` for details.
-
 Key changes:
 - `AssignmentPlanTypes.ts`: `AssignmentEntry` discriminated union (`single` | `group`)
-- `AssignmentPlanModel.ts`, `route.ts`: Mongoose schema updated
-- `assignmentPlanSlice.ts`: `reorderEntries` action
-- `assignmentPlanSelect.ts`, `employeeSelect.ts`: flatten entries for all consumers
 - `PaceCrawlerTypes.ts`: `DayCrawlSingleEntry`, `DayCrawlGroupEntry`, `DayCrawlPriorityEntry`
 - `DayCrawlEmployeeEntry`: `priorityEntries` replaces `servCodeIds`; `totalAvgDailyPrice` added
 - `selectTotalAvgDailyPriceByEmployee` (Layer 3b): group drain rate per employee
@@ -168,7 +179,7 @@ Key changes:
 
 ---
 
-### A8.8: `ServCodeTimelinePanel` + `selectServCodeTimelineMap` ✅ (2026-05-20)
+### A8.8: `ServCodeTimelinePanel` + `selectServCodeTimelineMap` ✅
 
 New "SC Timeline" tab. Pivoted view keyed on servCode/group entry label.
 
@@ -186,17 +197,52 @@ type ServCodeTimelineEvent = {
 };
 ```
 
-Built **inside the simulation** (not post-hoc) so pool snapshots are exact. Tracks
-`activeEmployeesByEntry` during the crawl; records events at every crew transition.
-
-**Panel**: left panel = entry selector (sorted by first event date). Right panel = event log
-table: Date | Employee | Event | Emp $/day | Team $/day | $ Remaining.
+Built inside the simulation (not post-hoc) so pool snapshots are exact.
 
 ---
 
-### A9: Update `matrixSelect.ts` — delegate to `paceCrawlerSelect` ☐
+### A9: Terminology rename ✅ (2026-05-21)
 
-### A10: Fix `OptimizerInsightsPopover.tsx` closeDate ☐
+Renamed all date range terms across `PaceCrawlerTypes.ts`, `dayCrawlSimulation.ts`,
+`paceCrawlerSelect.ts`, and `GanttChartPanel.tsx`:
+
+| Old | New |
+|---|---|
+| `openDateFloor` | `servCodeRangeMin` |
+| `currentMax` | `servCodeRangeMax` |
+| `resolvedOpenDateFloor` (internal Map) | `resolvedServCodeRangeMin` |
+| `proposedMin` / `proposedMax` | `optimizedMin` / `optimizedMax` |
+| `currentRange` | `servCodeRange` |
+| `dateRange` (in `ServCodePaceDelta`) | `servCodeRange` |
+
+---
+
+### A10: `GanttChartPanel` ✅ (2026-05-21)
+
+New "Gantt" tab. One row per progCode, all servCodes for that progCode rendered as horizontal
+bars on the same row.
+
+**Two bars per servCode** (stacked vertically within the row):
+- **Top bar** (thin, muted): `servCodeRange.min` → `servCodeRange.max` — the RealGreen-assigned window
+- **Bottom bar** (primary/30): `optimizedMin` → `optimizedMax` — the crawler's recommendation
+
+**Layout**: percentage-based positioning (fills full available width). Week header shows
+`W##` / `M/DD` stacked. Today line in destructive color. Filters to assigned servCodes only.
+
+---
+
+### A11: `paceCrawlerSlice.ts` + store registration ✅ (2026-05-21)
+
+New slice with `mainDate` field. Registered as `state.paceCrawler` in root reducer.
+`paceCrawlerSelect.mainDate` reads from this slice.
+
+---
+
+### A12: `paceCrawlerLookbackSelect.ts` + `paceCrawlerRawSelect.ts` ✅ (2026-05-21)
+
+Extracted `selectEmployeeLookbackMap` and `rawServCodePacesPerDayMap` out of the `pace/` folder
+into standalone paceCrawler-owned selectors. `paceCrawlerSelect` no longer imports from
+`cascadeSelect` or `rawPaceSelect`.
 
 ---
 
@@ -217,54 +263,51 @@ table: Date | Employee | Event | Emp $/day | Team $/day | $ Remaining.
 | A8.6: `selectEmployeeTimelineMap` + `EmployeeTimelinePanel` | ✅ |
 | A8.7: ServCode Groups (G1–G9) | ✅ |
 | A8.8: `ServCodeTimelinePanel` + `selectServCodeTimelineMap` | ✅ |
-| A9: Update `matrixSelect.ts` — delegate to `paceCrawlerSelect` | ☐ |
-| A10: Fix `OptimizerInsightsPopover.tsx` closeDate | ☐ |
-| Cleanup: Remove debug console logs | ✅ |
+| A9: Terminology rename (servCodeRange / optimizedRange) | ✅ |
+| A10: `GanttChartPanel` (dual-bar: servCodeRange + optimizedRange) | ✅ |
+| A11: `paceCrawlerSlice.ts` + store registration | ✅ |
+| A12: `paceCrawlerLookbackSelect.ts` + `paceCrawlerRawSelect.ts` (pace/ independence) | ✅ |
 
 ---
 
-## Session Notes (as of 2026-05-20)
+### A13: "Apply Optimized Ranges" button in `GanttChartPanel` ✅ (2026-05-21)
 
-### What was built this session
+Added a toolbar div above the Gantt chart with a primary "Apply Optimized Ranges" button.
 
-**ServCode Groups (G5–G9)**
-- `selectTotalAvgDailyPriceByEmployee` — employee's total avg daily price for group drain rate
-- `selectTeamAvgTotalDailyPrice` — team average fallback for new hires with no history
-- `PaceCrawlerTypes.ts` — `DayCrawlSingleEntry`, `DayCrawlGroupEntry`, `DayCrawlPriorityEntry`
-- `dayCrawlSimulation.ts` — group entries drain all members at `totalAvgDailyPrice`
-- `selectCrawlerResult` — reads `assignmentPlan.entries` directly (preserves group structure)
+**Filter logic**: Only servCodes where `hasWork === true` AND `optimizedMin !== servCodeRange.min` OR `optimizedMax !== servCodeRange.max` are included. ServCodes with no remaining work are never touched. Button is disabled when the filtered list is empty.
 
-**Rate fallback improvements**
-- `selectDailyRateByEmployeeByServCode` now has a 4-step fallback chain. Step 3 (programType-wide
-  team avg) fixes new servCodes and new hires whose servCodes have no `assignedTo` history.
-- `selectCrawlerResult` uses `teamAvgTotalDailyPrice` as fallback for `totalAvgDailyPrice` when
-  an employee has no lookback history at all.
+**Save flow**: Calls `updateServCode` for each changed servCode (staging changes in Redux), then calls `saveServCodeChanges()` which reads from `progServ.unsavedServCodeChanges`. Follows the same pattern as `EmployeePace.tsx`.
 
-**Sequential back-to-back fix**
-- Sequential N+1 servCodes now open on `nextWeekday(N drain date)` directly, not
-  `max(dateRange.min, nextWeekday)`. The optimizer proposes back-to-back scheduling.
+**Toolbar**: `flex` div with `border-b` above the scrollable chart area. Shows a count badge on the button and a helper text line.
 
-**Dev panel updates**
-- All panels updated for group awareness (expandable rows, group badges, date ranges)
-- `CrawlerResultPanel` columns renamed: SC Min, Proj End, Opt Min, Opt Max, SC Max
-- `AssignmentEditorPanel`: date ranges in parens, group badge popover with per-member dates and X
-  to eject from group (ejected servCode stays assigned as standalone single entry)
+---
 
-**ServCodeTimelinePanel (A8.8)**
-- New "SC Timeline" tab — pivoted view keyed on servCode/group
-- `ServCodeTimelineEvent` type with pool snapshots and team drain rate
-- Built inside the simulation for exact pool values at each transition
+### A14: `selectEmployeeCardPlanData` + `EmployeeCardPlanPanel` ✅ (2026-05-21)
 
-### Schema migration required
-`AssignmentPlan` schema changed from `servCodeIds: string[]` to `entries: AssignmentEntry[]`.
-Existing Mongo data must be dropped before testing.
+New Layer 7 selector and "Employee Plan" tab for the production manager's daily deployment view.
 
-### Remaining work (next session)
-- **A9**: Wire `matrixSelect.ts` to delegate `servCodePaceDeltaMap`, `progCodeProjectedCompletionMap`,
-  and `seasonOptimizerResult` to `paceCrawlerSelect`.
-- **A10**: Fix `OptimizerInsightsPopover.tsx` — `closeDate` should be capacity-derived, not `proposedMax`.
-- **Verify SC Timeline**: check that pool snapshots are accurate and team drain rates make sense.
-- **ServCode Groups plan doc**: update G5–G9 status to ✅.
+**New type**: `EmployeeCardPlanData` (exported from `paceCrawlerSelect.ts`):
+```typescript
+type EmployeeCardPlanData = {
+  employeeId: string;
+  employeeName: string;
+  entryLabel: string | null;       // what they should work today (null = downtime/not started)
+  servCodeIds: string[];
+  isGroup: boolean;
+  employeeDailyRate: number;       // this employee's $/day for this entry
+  teamDailyRate: number;           // sum of all active employees' rates
+  poolRemaining: number;           // pool snapshot at nearest event before mainDate
+  nextAvailableDate: string;
+  isDowntime: boolean;
+  notStartedYet: boolean;
+};
+```
+
+**`selectEmployeeActiveEntryAtDate`** (internal): Scans each employee's `employeeTimeline` in reverse from `mainDate`. The last `starts` or `switches` event at or before `mainDate` gives the active entry. `finishes` → no active work. `downtime` → isDowntime = true.
+
+**`selectEmployeeCardPlanData`**: Combines `activeEntryAtDate` + `servCodeTimeline` (for pool/rate snapshots) + `nextDateByEmployee`. One `EmployeeCardPlanData` per assigned employee. Sorted: active workers first (by entryLabel), then downtime/no-work, then not-started.
+
+**`EmployeeCardPlanPanel`**: Card grid (flex-wrap) with a `DatePicker` toolbar dispatching `paceCrawlerActions.setMainDate`. Each card shows: employee name, entry label (with "group" badge), member servCode IDs for groups, my rate / team rate / pool remaining. Inactive cards (downtime, not started) are dimmed with a status label.
 
 ---
 
@@ -291,3 +334,10 @@ update the programType in RealGreen to bring the CRM data into sync.
 **Panel layout**: Group by programType → list servCodes under each group with their progCodeId
 and longName. Highlight `__null__` group in red (these servCodes have no programType and will
 always fall back to team-average rates).
+
+---
+
+### TODO: Wire `matrixSelect.ts` to delegate to `paceCrawlerSelect`
+
+`matrixSelect.ts` should delegate `servCodePaceDeltaMap`, `progCodeProjectedCompletionMap`,
+and `seasonOptimizerResult` to `paceCrawlerSelect` rather than computing them independently.
