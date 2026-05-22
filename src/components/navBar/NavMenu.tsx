@@ -97,7 +97,7 @@ const bizPlanSection: NavSection = {
     { title: "Products", href: "/bizPlan/products", roles: ["admin"] },
     {
       title: "Pace",
-      href: "/bizPlan/pace",
+      href: "/bizPlan/paceCrawler",
       roles: ["admin", "office", "tech"],
     },
   ],
