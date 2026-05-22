@@ -35,6 +35,8 @@ function eventDescription(event: ServCodeTimelineEvent): { text: string; color: 
   }
 }
 
+export { ServCodeTimelinePanel as ServCodeTimeLine };
+
 export function ServCodeTimelinePanel() {
   const servCodeTimelineMap = useSelector(paceCrawlerSelect.servCodeTimelineMap);
   const employeeMap = useSelector(employeeSelect.employeeMap);
@@ -111,7 +113,7 @@ export function ServCodeTimelinePanel() {
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground mb-3">
-              Crew transitions with pool snapshots. Team $/day = sum of all active employees' rates at that moment.
+              {"Crew transitions with pool snapshots. Team $/day = sum of all active employees' rates at that moment."}
             </p>
 
             {selectedEvents.length === 0 && (

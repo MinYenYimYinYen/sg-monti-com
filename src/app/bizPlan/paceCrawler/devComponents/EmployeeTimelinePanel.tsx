@@ -38,6 +38,8 @@ function eventLabel(event: EmployeeTimelineEvent): { text: string; color: string
   }
 }
 
+export { EmployeeTimelinePanel as EmployeeTimeLine };
+
 export function EmployeeTimelinePanel() {
   const timelineMap = useSelector(paceCrawlerSelect.employeeTimelineMap);
   const employeeMap = useSelector(employeeSelect.employeeMap);
@@ -101,7 +103,7 @@ export function EmployeeTimelinePanel() {
               </span>
             </p>
             <p className="text-[10px] text-muted-foreground mb-3">
-              Group entries appear as their label (e.g. "RC1+R01"). Starts/switches/finishes track entry-level transitions.
+              {'Group entries appear as their label (e.g. "RC1+R01"). Starts/switches/finishes track entry-level transitions.'}
             </p>
 
             {selectedTimeline.length === 0 && (
