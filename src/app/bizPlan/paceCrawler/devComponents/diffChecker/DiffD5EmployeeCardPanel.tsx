@@ -1,11 +1,10 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { useAppDispatch } from "@/lib/hooks/redux";
 import { employeeCardSelect } from "@/app/bizPlan/paceCrawler/employeeCardSelect";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { paceCrawlerActions } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
-import { UrgentServCodeCard } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/UrgentServCodeCard";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { DatePicker } from "@/components/DatePicker";
 import { cn } from "@/style/utils";
 import type { EmployeeCardData, OpenServCodeRow } from "@/app/bizPlan/paceCrawler/employeeCardSelect";
@@ -38,7 +37,9 @@ function ServCodeRow({ row }: { row: OpenServCodeRow }) {
         ? "text-secondary"
         : "text-muted-foreground";
 
-  const rateColor = row.isOverdue ? "text-destructive" : "text-primary";
+  const rateColor = row.isOverdue
+    ? "text-destructive"
+    : "text-primary";
 
   return (
     <div className="flex items-start gap-2 py-1.5 border-b border-border/40 last:border-0">
@@ -59,11 +60,12 @@ function ServCodeRow({ row }: { row: OpenServCodeRow }) {
         )}
       </div>
 
-      {/* Required $/day */}
+      {/* Required $/day — the primary number */}
       <div className="flex-1 min-w-0">
         <div className={`font-mono text-xs font-semibold ${rateColor}`}>
           {formatDollars(row.requiredDailyPrice)}/day
         </div>
+        {/* Historical vs diff — secondary context */}
         <div className={`font-mono text-[10px] ${diffColor}`}>
           hist: {formatDollars(row.historicalDailyPrice)}
           {row.diffPrice !== 0 && isFinite(row.diffPrice) && (
@@ -96,6 +98,8 @@ function ServCodeRow({ row }: { row: OpenServCodeRow }) {
 
 function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
   const { employee, isAlreadyRouted, openServCodes } = cardData;
+
+  // Header: neutral unless already routed today
   const headerBg = isAlreadyRouted ? "bg-destructive/10" : "bg-accent/10";
 
   return (
@@ -129,10 +133,10 @@ function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
 }
 
 // ---------------------------------------------------------------------------
-// EmployeeCardPanel
+// DiffD5EmployeeCardPanel
 // ---------------------------------------------------------------------------
 
-export function EmployeeCardPanel() {
+export function DiffD5EmployeeCardPanel() {
   const dispatch = useAppDispatch();
   const mainDate = useSelector(paceCrawlerSelect.mainDate);
   const cardData = useSelector(employeeCardSelect.employeeCardData);
@@ -164,17 +168,21 @@ export function EmployeeCardPanel() {
         </span>
       </div>
 
+      {/* Legend */}
+      <div className="shrink-0 px-3 py-1.5 border-b border-border/40 bg-card/50 flex items-center gap-4 text-[10px] text-muted-foreground">
+        <span><strong className="text-primary">Required $/day</strong> = what you need to route today to stay on track</span>
+        <span><strong className="text-foreground">hist:</strong> historical avg (simulator baseline)</span>
+        <span className="text-accent">green = ahead</span>
+        <span className="text-secondary">orange = behind</span>
+        <span className="text-destructive">red = overdue</span>
+      </div>
+
       {/* Card grid */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="flex flex-row flex-wrap gap-4 content-start">
-          {/* Urgent card always first */}
-          <UrgentServCodeCard />
-
-          {/* Employee cards */}
           {cardData.map((card) => (
             <EmployeeCard key={card.employee.employeeId} cardData={card} />
           ))}
-
           {cardData.length === 0 && (
             <p className="text-xs text-muted-foreground italic">
               No assigned employees found. Configure assignments first.

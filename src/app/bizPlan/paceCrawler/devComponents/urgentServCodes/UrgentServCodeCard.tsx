@@ -10,7 +10,7 @@ import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTyp
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { Number } from "@/components/Number";
-import { AlertTriangle, Clock, Info, ClipboardList, LandPlot } from "lucide-react";
+import { AlertTriangle, Clock, Info, ClipboardList, LandPlot, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/style/utils";
 import {
   Popover,
@@ -116,13 +116,17 @@ function ChecklistServiceRow({
 function ChecklistPopover({
   asapServCodes,
   overdueServCodes,
+  showOverdue,
 }: {
   asapServCodes: ServCodeDeep[];
   overdueServCodes: ServCodeDeep[];
+  showOverdue: boolean;
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const expandedServCodeIds = useSelector(urgentServCodesSelect.expandedServCodeIds);
-  const allServCodes = [...asapServCodes, ...overdueServCodes];
+  const visibleServCodes = showOverdue
+    ? [...asapServCodes, ...overdueServCodes]
+    : asapServCodes;
 
   return (
     <Accordion
@@ -136,7 +140,7 @@ function ChecklistPopover({
       }}
       className="w-full"
     >
-      {allServCodes.map((servCode) => {
+      {visibleServCodes.map((servCode) => {
         const unfinished = servCode.services.filter((s) =>
           URGENT_DISPLAY_STATUSES.includes(s.status),
         );
@@ -227,12 +231,17 @@ function UrgentServCodeRow({
 // ---------------------------------------------------------------------------
 
 export function UrgentServCodeCard() {
+  const dispatch = useDispatch<AppDispatch>();
   const asapServCodes = useSelector(urgentServCodesSelect.alwaysAsapServCodes);
   const overdueServCodes = useSelector(urgentServCodesSelect.overdueServCodes);
+  const showOverdue = useSelector(urgentServCodesSelect.showOverdue);
   const [checklistOpen, setChecklistOpen] = useState(false);
 
-  const totalCount = asapServCodes.length + overdueServCodes.length;
-  if (totalCount === 0) return null;
+  const asapCount = asapServCodes.length;
+  const overdueCount = overdueServCodes.length;
+  const visibleCount = asapCount + (showOverdue ? overdueCount : 0);
+
+  if (asapCount === 0 && overdueCount === 0) return null;
 
   return (
     <div className="border rounded-lg bg-card w-72 flex flex-col">
@@ -243,6 +252,24 @@ export function UrgentServCodeCard() {
           Urgent
         </span>
         <div className="flex items-center gap-2">
+          {/* Toggle overdue visibility */}
+          {overdueCount > 0 && (
+            <button
+              onClick={() => dispatch(urgentActions.toggleShowOverdue())}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded px-1.5 py-0.5 transition-colors"
+              title={showOverdue ? "Hide overdue servCodes" : `Show ${overdueCount} overdue servCode${overdueCount !== 1 ? "s" : ""}`}
+            >
+              {showOverdue ? (
+                <EyeOff className="w-3.5 h-3.5" />
+              ) : (
+                <Eye className="w-3.5 h-3.5" />
+              )}
+              <span>
+                {showOverdue ? "Hide Late" : `Late (${overdueCount})`}
+              </span>
+            </button>
+          )}
+
           <Popover open={checklistOpen} onOpenChange={setChecklistOpen}>
             <PopoverTrigger asChild>
               <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded px-1.5 py-0.5 transition-colors">
@@ -265,15 +292,13 @@ export function UrgentServCodeCard() {
                   <ChecklistPopover
                     asapServCodes={asapServCodes}
                     overdueServCodes={overdueServCodes}
+                    showOverdue={showOverdue}
                   />
                 </div>
               </div>
             </PopoverContent>
           </Popover>
 
-          <span className="text-xs text-muted-foreground font-mono">
-            {totalCount} servCode{totalCount !== 1 ? "s" : ""}
-          </span>
         </div>
       </div>
 
@@ -282,7 +307,7 @@ export function UrgentServCodeCard() {
         {asapServCodes.map((servCode) => (
           <UrgentServCodeRow key={servCode.servCodeId} servCode={servCode} isAsap={true} />
         ))}
-        {overdueServCodes.map((servCode) => (
+        {showOverdue && overdueServCodes.map((servCode) => (
           <UrgentServCodeRow key={servCode.servCodeId} servCode={servCode} isAsap={false} />
         ))}
       </div>

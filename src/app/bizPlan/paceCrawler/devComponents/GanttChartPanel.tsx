@@ -5,6 +5,7 @@ import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
+import { UnsavedServCodeChanges } from "@/app/realGreen/progServ/_lib/types/ProgServState";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { getWeekNumber } from "@/lib/primatives/dates/getWeek";
 import { SeasonOptimizedRange } from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
@@ -155,6 +156,7 @@ export function GanttChartPanel() {
   // Read unsaved changes so the button can reflect pending state (unused directly but
   // ensures the component re-renders when changes are staged/cleared).
   useSelector(progServSelect.unsavedServCodeChanges);
+  const servCodeDocMap = useSelector(progServSelect.servCodeDocMap);
   const { updateServCode, saveServCodeChanges } = useProgServ({});
 
   // Build set of servCodeIds that have at least one assigned employee
@@ -185,15 +187,45 @@ export function GanttChartPanel() {
   );
 
   function handleApplyOptimizedRanges() {
+    const unsavedChanges: UnsavedServCodeChanges[] = changedRanges.flatMap((row) => {
+      const doc = servCodeDocMap.get(row.servCodeId);
+      if (!doc) return [];
+      return [
+        {
+          original: {
+            servCodeId: doc.servCodeId,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            dateRange: doc.dateRange,
+            alwaysAsap: doc.alwaysAsap,
+            productRuleDocs: doc.productRuleDocs,
+            callAheadTag: doc.callAheadTag ?? null,
+            paddingDays: doc.paddingDays,
+          },
+          updated: {
+            servCodeId: doc.servCodeId,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            dateRange: { min: row.optimizedMin, max: row.optimizedMax },
+            alwaysAsap: doc.alwaysAsap,
+            productRuleDocs: doc.productRuleDocs,
+            callAheadTag: doc.callAheadTag ?? null,
+            paddingDays: doc.paddingDays,
+          },
+        },
+      ];
+    });
+
+    // Optimistically update Redux state so the Gantt re-renders immediately.
     for (const row of changedRanges) {
       updateServCode({
         servCodeId: row.servCodeId,
         dateRange: { min: row.optimizedMin, max: row.optimizedMax },
       });
     }
-    // saveServCodeChanges reads from progServ.unsavedServCodeChanges — the updates above
-    // are staged synchronously in Redux before this call resolves.
-    void saveServCodeChanges();
+
+    // Persist to DB — loading/error feedback handled globally by uiSlice.
+    void saveServCodeChanges(unsavedChanges);
   }
 
   if (filteredResult.length === 0) {

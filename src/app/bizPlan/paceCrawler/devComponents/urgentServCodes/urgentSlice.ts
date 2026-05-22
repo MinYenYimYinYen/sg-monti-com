@@ -5,11 +5,14 @@ type UrgentState = {
   checkedServIds: number[];
   /** servCodeIds of accordion items currently expanded in the checklist */
   expandedServCodeIds: string[];
+  /** Whether overdue (LATE) servCodes are shown in the card and checklist. Default false. */
+  showOverdue: boolean;
 };
 
 const initialState: UrgentState = {
   checkedServIds: [],
   expandedServCodeIds: [],
+  showOverdue: false,
 };
 
 const urgentSlice = createSlice({
@@ -31,6 +34,9 @@ const urgentSlice = createSlice({
       } else {
         state.expandedServCodeIds.splice(idx, 1);
       }
+    },
+    toggleShowOverdue: (state) => {
+      state.showOverdue = !state.showOverdue;
     },
     resetChecklist: (state) => {
       state.checkedServIds = [];

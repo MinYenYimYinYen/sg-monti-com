@@ -23,6 +23,9 @@ const selectCheckedServIds = (state: AppState): number[] =>
 const selectExpandedServCodeIds = (state: AppState): string[] =>
   state.urgent.expandedServCodeIds;
 
+const selectShowOverdue = (state: AppState): boolean =>
+  state.urgent.showOverdue;
+
 const selectMainDate = (state: AppState) => state.paceCrawler.mainDate;
 const selectOverdueServCodes = createSelector(
   [selectMainDate, deepSelect.servCodes],
@@ -42,4 +45,5 @@ export const urgentServCodesSelect = {
   overdueServCodes: selectOverdueServCodes,
   checkedServIds: selectCheckedServIds,
   expandedServCodeIds: selectExpandedServCodeIds,
+  showOverdue: selectShowOverdue,
 };
