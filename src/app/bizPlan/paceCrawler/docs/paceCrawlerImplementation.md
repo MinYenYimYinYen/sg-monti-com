@@ -337,7 +337,6 @@ always fall back to team-average rates).
 
 ---
 
-### TODO: Wire `matrixSelect.ts` to delegate to `paceCrawlerSelect`
+## Legacy Module Removal (Completed 2026-05-23)
 
-`matrixSelect.ts` should delegate `servCodePaceDeltaMap`, `progCodeProjectedCompletionMap`,
-and `seasonOptimizerResult` to `paceCrawlerSelect` rather than computing them independently.
+The entire `pace` module (including `matrixSelect.ts`, `cascadeSelect.ts`, and all pace components) was removed in commit `9efd945`. All consumers now use `paceCrawlerSelect` directly. The paceCrawler module is the single source of truth for season planning, delta tracking, and projected completion dates.
