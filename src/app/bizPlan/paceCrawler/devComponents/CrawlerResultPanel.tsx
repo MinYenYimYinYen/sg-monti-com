@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
-import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { ChevronRight } from "lucide-react";
 
@@ -20,7 +19,7 @@ export function CrawlerResultPanel() {
     paceCrawlerSelect.activePoolPriceByServCode,
   );
   const progCodes = useSelector(progServSelect.progCodes);
-  const today = useSelector(cascadeSelect.mainDate);
+  const today = useSelector(paceCrawlerSelect.mainDate);
   const assignmentsByEmployeeId = useSelector(
     assignmentPlanSelect.assignmentsByEmployeeId,
   );

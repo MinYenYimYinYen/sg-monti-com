@@ -4,6 +4,14 @@
 
 import {TRange} from "@/lib/primatives/tRange/TRange";
 
+export type CascadeTimelineEvent =
+  | { kind: "leave"; date: string; toServCodeId: string }
+  /**
+   * `fromServCodeId`: the servCode the employee was working immediately before resuming here,
+   * or null if there was a gap (downtime) with no other servCode winning that interval.
+   */
+  | { kind: "resume"; date: string; fromServCodeId: string | null };
+
 export type DayCrawlSingleEntry = {
   kind: "single";
   servCodeId: string;

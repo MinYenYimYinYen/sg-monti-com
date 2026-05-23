@@ -1,14 +1,13 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { useAppDispatch } from "@/lib/hooks/redux";
 import { employeeCardSelect } from "@/app/bizPlan/paceCrawler/employeeCardSelect";
-import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
-import { paceCrawlerActions } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
 import { UrgentServCodeCard } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/UrgentServCodeCard";
-import { DatePicker } from "@/components/DatePicker";
 import { cn } from "@/style/utils";
-import type { EmployeeCardData, OpenServCodeRow } from "@/app/bizPlan/paceCrawler/employeeCardSelect";
+import type {
+  EmployeeCardData,
+  OpenServCodeRow,
+} from "@/app/bizPlan/paceCrawler/employeeCardSelect";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -68,8 +67,11 @@ function ServCodeRow({ row }: { row: OpenServCodeRow }) {
           hist: {formatDollars(row.historicalDailyPrice)}
           {row.diffPrice !== 0 && isFinite(row.diffPrice) && (
             <span className="ml-1">
-              ({row.diffPrice > 0 ? "+" : ""}{formatDollars(row.diffPrice)}
-              {row.diffPercent !== null && ` / ${formatPercent(row.diffPercent)}`})
+              ({row.diffPrice > 0 ? "+" : ""}
+              {formatDollars(row.diffPrice)}
+              {row.diffPercent !== null &&
+                ` / ${formatPercent(row.diffPercent)}`}
+              )
             </span>
           )}
         </div>
@@ -101,7 +103,12 @@ function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
   return (
     <div className="border rounded-lg bg-card w-72 flex flex-col">
       {/* Header — employee name + routed badge only */}
-      <div className={cn("flex items-center justify-between px-3 py-2 border-b rounded-t-lg", headerBg)}>
+      <div
+        className={cn(
+          "flex items-center justify-between px-3 py-2 border-b rounded-t-lg",
+          headerBg,
+        )}
+      >
         <span className="text-sm font-semibold text-foreground truncate">
           {employee.name}
         </span>
@@ -133,37 +140,10 @@ function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
 // ---------------------------------------------------------------------------
 
 export function EmployeeCardPanel() {
-  const dispatch = useAppDispatch();
-  const mainDate = useSelector(paceCrawlerSelect.mainDate);
   const cardData = useSelector(employeeCardSelect.employeeCardData);
-
-  const withOpen = cardData.filter((c) => c.openServCodes.length > 0).length;
-  const withOverdue = cardData.filter((c) =>
-    c.openServCodes.some((r) => r.isOverdue),
-  ).length;
-  const withBehind = cardData.filter((c) =>
-    c.openServCodes.some((r) => r.isBehind && !r.isOverdue),
-  ).length;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Toolbar */}
-      <div className="shrink-0 flex items-center gap-3 px-3 py-2 border-b border-border bg-card">
-        <DatePicker
-          value={mainDate}
-          onChange={(date) => dispatch(paceCrawlerActions.setMainDate(date))}
-        />
-        <span className="text-[10px] text-muted-foreground">
-          {withOpen} employees with open work
-          {withOverdue > 0 && (
-            <span className="text-destructive ml-2">· {withOverdue} overdue</span>
-          )}
-          {withBehind > 0 && (
-            <span className="text-secondary ml-2">· {withBehind} behind</span>
-          )}
-        </span>
-      </div>
-
       {/* Card grid */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="flex flex-row flex-wrap gap-4 content-start">

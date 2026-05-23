@@ -3,8 +3,8 @@ import globalSettingsReducer from "@/app/globalSettings/_lib/globalSettingsSlice
 import uiReducer from "@/store/reduxUtil/uiSlice";
 import authReducer from "@/app/auth/authSlice";
 import { assignmentPlanReducer } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
-import { paceReducer } from "@/app/bizPlan/pace/slices/paceSlice";
-import { employeePaceReducer } from "@/app/bizPlan/pace/employee/employeePaceSlice";
+// import { paceReducer } from "@/app/bizPlan/pace/slices/paceSlice";
+// import { employeePaceReducer } from "@/app/bizPlan/pace/employee/employeePaceSlice";
 import companyReducer from "@/app/realGreen/company/companySlice";
 import callAheadReducer from "@/app/realGreen/callAhead/callAheadSlice";
 import discountReducer from "@/app/realGreen/discount/discountSlice";
@@ -44,8 +44,8 @@ const rootReducer = combineReducers({
   appMethod: appMethodReducer,
   assignmentPlan: assignmentPlanReducer,
   assignment: assignmentReducer,
-  pace: paceReducer,
-  employeePace: employeePaceReducer,
+  // pace: paceReducer,
+  // employeePace: employeePaceReducer,
   createAppMethod: createAppMethodReducer,
   auth: authReducer,
   callAhead: callAheadReducer,

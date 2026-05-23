@@ -14,14 +14,17 @@ import {
   getValidProductionDates,
   getServiceEffectiveDate,
 } from "@/app/bizPlan/paceCrawler/_lib/employeeLookbackUtils";
-import { LookbackConfig } from "@/app/bizPlan/pace/PaceTypes";
+import {
+  LookbackConfig,
+  DEFAULT_LOOKBACK_CONFIG,
+} from "@/app/bizPlan/paceCrawler/_lib/lookbackConfig";
 
 // ---------------------------------------------------------------------------
-// Slice selector
+// Default config (no UI yet — use constant defaults instead of Redux state)
 // ---------------------------------------------------------------------------
 
-const selectLookbackConfig = (state: AppState): LookbackConfig =>
-  state.pace.lookbackConfig;
+const selectLookbackConfig = (_state: AppState): LookbackConfig =>
+  DEFAULT_LOOKBACK_CONFIG;
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -3,12 +3,11 @@
 import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
-import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 
 export function NextDateByEmployeePanel() {
   const nextDateMap = useSelector(paceCrawlerSelect.nextDateByEmployee);
   const employeeMap = useSelector(employeeSelect.employeeMap);
-  const today = useSelector(cascadeSelect.mainDate);
+  const today = useSelector(paceCrawlerSelect.mainDate);
 
   const rows = [...employeeMap.values()]
     .filter((e) => e.active && e.servCodeIds.length > 0)

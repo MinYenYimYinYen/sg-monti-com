@@ -3,13 +3,12 @@
 import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
-import { cascadeSelect } from "@/app/bizPlan/pace/selectors/cascadeSelect";
 
 export function OpenDateFloorPanel() {
   const openDateFloorMap = useSelector(paceCrawlerSelect.servCodeOpenDateFloor);
   const programTypeMap = useSelector(paceCrawlerSelect.servCodeProgramTypeMap);
   const progCodes = useSelector(progServSelect.progCodes);
-  const today = useSelector(cascadeSelect.mainDate);
+  const today = useSelector(paceCrawlerSelect.mainDate);
 
   const rows = progCodes.flatMap((progCode) =>
     progCode.servCodes

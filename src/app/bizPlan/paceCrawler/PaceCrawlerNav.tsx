@@ -25,7 +25,7 @@ export function PaceCrawlerNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="shrink-0 flex items-center gap-1 px-3 py-2 border-b border-border bg-card">
+    <>
       {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
         // Exact match for the root route; prefix match for sub-routes
         const isActive =
@@ -49,6 +49,6 @@ export function PaceCrawlerNav() {
           </Link>
         );
       })}
-    </nav>
+    </>
   );
 }
