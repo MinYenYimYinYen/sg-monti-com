@@ -46,7 +46,7 @@ function matchServiceToEquipmentMasters(
 
 /**
  * Attempts to match a service to each sub-product of each other master.
- * Matching is independent of equipment master matching — a service may match both.
+ * Only called when the service did not match any equipment master.
  * Returns true if at least one match was found.
  */
 function matchServiceToOtherMasters(
@@ -132,12 +132,16 @@ export function buildLoadoutActuals(
       equipmentMatchedServices,
       service,
     );
-    const otherMatch = matchServiceToOtherMasters(
-      serviceProductIds,
-      otherMasterDefs,
-      otherSubMatchedServices,
-      service,
-    );
+    // Only match other masters when the service did NOT match an equipment master.
+    // Services applied via tank mix should not be double-counted in standalone sub-product rows.
+    const otherMatch =
+      !equipmentMatch &&
+      matchServiceToOtherMasters(
+        serviceProductIds,
+        otherMasterDefs,
+        otherSubMatchedServices,
+        service,
+      );
     if (!equipmentMatch && !otherMatch) unmatchedServices.push(service);
   }
 
