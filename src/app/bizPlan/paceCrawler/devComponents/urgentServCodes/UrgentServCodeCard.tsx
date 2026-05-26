@@ -32,6 +32,8 @@ import {
 import { Checkbox } from "@/style/components/checkbox";
 
 const URGENT_DISPLAY_STATUSES = getServiceStatuses(["active", "asap"]);
+const isActionableService = (s: { status: string; program: { status: string } }) =>
+  URGENT_DISPLAY_STATUSES.includes(s.status) && s.program.status === "9";
 
 // ---------------------------------------------------------------------------
 // ChecklistServiceRow
@@ -141,9 +143,7 @@ function ChecklistPopover({
       className="w-full"
     >
       {visibleServCodes.map((servCode) => {
-        const unfinished = servCode.services.filter((s) =>
-          URGENT_DISPLAY_STATUSES.includes(s.status),
-        );
+        const unfinished = servCode.services.filter(isActionableService);
         if (unfinished.length === 0) return null;
 
         return (
@@ -191,9 +191,7 @@ function UrgentServCodeRow({
   servCode: ServCodeDeep;
   isAsap: boolean;
 }) {
-  const unprintedCount = servCode.services.filter((s) =>
-    URGENT_DISPLAY_STATUSES.includes(s.status),
-  ).length;
+  const unprintedCount = servCode.services.filter(isActionableService).length;
   if (unprintedCount === 0) return null;
 
   return (
