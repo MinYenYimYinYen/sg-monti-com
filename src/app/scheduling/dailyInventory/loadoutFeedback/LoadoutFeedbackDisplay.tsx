@@ -104,51 +104,6 @@ function DeltaCell({
 }
 
 // ---------------------------------------------------------------------------
-// Service compliance check
-// ---------------------------------------------------------------------------
-
-/**
- * Determines whether a service used the products required by its servCode's productRules.
- *
- * Rule matching: the first rule whose size condition applies to service.size is used.
- *   "all" → always applies
- *   "lte" → applies when service.size <= rule.size
- *   "gt"  → applies when service.size > rule.size
- *
- * Compliance: ALL expected productMaster IDs must appear in usedAppProducts (AND logic).
- */
-function getServiceCompliance(service: Service): "pass" | "fail" | "no-rule" {
-  const rules = service.servCode.productRules;
-  if (rules.length === 0) return "no-rule";
-
-  const applicableRule = rules.find((rule) => {
-    if (rule.sizeOperator === "all") return true;
-    if (rule.sizeOperator === "lte") return service.size <= rule.size;
-    if (rule.sizeOperator === "gt") return service.size > rule.size;
-    return false;
-  });
-
-  if (!applicableRule) return "no-rule";
-
-  // Collect all sub-product IDs from all masters in the rule.
-  // RealGreen logs sub-product IDs in usedAppProducts, not master IDs.
-  const expectedSubIds = applicableRule.productMasters.flatMap((pm) =>
-    pm.subProductConfigs.map((c) => c.subId),
-  );
-
-  if (expectedSubIds.length === 0) return "no-rule";
-
-  const usedProductIds = new Set(
-    service.production?.usedAppProducts
-      ?.filter((ap) => ap.productCommon.unit.metric !== "area")
-      .map((ap) => ap.productId) ?? [],
-  );
-  const allExpectedUsed = expectedSubIds.every((id) => usedProductIds.has(id));
-
-  return allExpectedUsed ? "pass" : "fail";
-}
-
-// ---------------------------------------------------------------------------
 // ServiceProductsCell — per-product code tags with treated-area discrepancy tooltip
 // ---------------------------------------------------------------------------
 
@@ -168,7 +123,8 @@ function ServiceProductsCell({
 
   const serviceWarnings = serviceWarningMap.get(service.servId);
   // If the master "area" row has a treated discrepancy, all sub-products for this service are suspect.
-  const hasMasterTreatedDiscrepancy = serviceWarnings !== undefined && serviceWarnings.length > 0;
+  const hasMasterTreatedDiscrepancy =
+    serviceWarnings !== undefined && serviceWarnings.length > 0;
 
   return (
     <TooltipProvider>
@@ -193,7 +149,9 @@ function ServiceProductsCell({
                   </TooltipTrigger>
                   <TooltipContent>
                     {hasMasterTreatedDiscrepancy ? (
-                      serviceWarnings.map((warning, i) => <p key={i}>{warning}</p>)
+                      serviceWarnings.map((warning, i) => (
+                        <p key={i}>{warning}</p>
+                      ))
                     ) : (
                       <>
                         <p>
@@ -264,7 +222,7 @@ function ServiceDetailTable({
           </thead>
           <tbody>
             {services.map((service) => {
-              const compliance = getServiceCompliance(service);
+              const compliance = service.x.productRuleCompliance;
               const rowBg =
                 compliance === "pass"
                   ? "bg-accent/10"
@@ -528,7 +486,6 @@ function EquipmentMixSection({
   );
 }
 
-
 // ---------------------------------------------------------------------------
 // Other Products Section (non-equipment masters)
 // ---------------------------------------------------------------------------
@@ -643,13 +600,21 @@ function OtherProductRow({
           {formatAmount(entry.startAmount, entry.unitConfigDisplay, amountView)}
         </td>
         <td className="py-2 text-foreground text-right tabular-nums">
-          {formatAmount(entry.finishAmount, entry.unitConfigDisplay, amountView)}
+          {formatAmount(
+            entry.finishAmount,
+            entry.unitConfigDisplay,
+            amountView,
+          )}
         </td>
         <td className="py-2 text-foreground text-right tabular-nums">
           {formatAmount(entry.actualUsed, entry.unitConfigDisplay, amountView)}
         </td>
         <td className="py-2 text-foreground text-right tabular-nums">
-          {formatAmount(entry.postedAmount, entry.unitConfigDisplay, amountView)}
+          {formatAmount(
+            entry.postedAmount,
+            entry.unitConfigDisplay,
+            amountView,
+          )}
         </td>
         <DeltaCell
           value={entry.actualVsPosted}
@@ -676,7 +641,7 @@ function OtherProductRow({
 export function LoadoutFeedbackDisplay({
   feedback,
 }: {
-  feedback: any // LoadoutFeedback;
+  feedback: any; // LoadoutFeedback;
 }) {
   const [view, setView] = useState<FeedbackView>("percent");
   const serviceWarningMap = feedback.serviceWarningMap;
@@ -695,8 +660,16 @@ export function LoadoutFeedbackDisplay({
         </RadioGroup>
       </div>
       <ScheduleSummary feedback={feedback} />
-      <EquipmentMixSection feedback={feedback} view={view} serviceWarningMap={serviceWarningMap} />
-      <OtherProductsSection feedback={feedback} view={view} serviceWarningMap={serviceWarningMap} />
+      <EquipmentMixSection
+        feedback={feedback}
+        view={view}
+        serviceWarningMap={serviceWarningMap}
+      />
+      <OtherProductsSection
+        feedback={feedback}
+        view={view}
+        serviceWarningMap={serviceWarningMap}
+      />
     </div>
   );
 }

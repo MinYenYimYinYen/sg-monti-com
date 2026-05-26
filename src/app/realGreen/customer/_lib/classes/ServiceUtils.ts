@@ -9,6 +9,8 @@ import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 import { Discount } from "@/app/realGreen/discount/DiscountTypes";
 import { applyDiscounts } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 
+export type ProductRuleCompliance = "pass" | "fail" | "no-rule" | null;
+
 export class ServiceUtils {
   constructor(private readonly service: Omit<Service, "x">) {}
 
@@ -119,6 +121,48 @@ export class ServiceUtils {
       this.service.discount,
       this.service.program.discount,
     ]);
+  }
+
+  /**
+   * Checks whether the service used the products required by its servCode's productRules.
+   *
+   * Rule matching: the first rule whose size condition applies to service.size is used.
+   *   "all" → always applies
+   *   "lte" → applies when service.size <= rule.size
+   *   "gt"  → applies when service.size > rule.size
+   *
+   * Compliance: ALL expected sub-product IDs (from the applicable rule's productMasters)
+   * must appear in usedAppProducts (AND logic). Returns "no-rule" when no rule applies
+   * or no expected products are configured.
+   */
+  public get productRuleCompliance(): ProductRuleCompliance {
+    if (this.service.status !== "S") return null;
+    const rules = this.service.servCode.productRules;
+    if (rules.length === 0) return "no-rule";
+
+    const applicableRule = rules.find((rule) => {
+      if (rule.sizeOperator === "all") return true;
+      if (rule.sizeOperator === "lte") return this.service.size <= rule.size;
+      if (rule.sizeOperator === "gt") return this.service.size > rule.size;
+      return false;
+    });
+
+    if (!applicableRule) return "no-rule";
+
+    const expectedSubIds = applicableRule.productMasters.flatMap((pm) =>
+      pm.subProductConfigs.map((c) => c.subId),
+    );
+    if (expectedSubIds.length === 0) return "no-rule";
+
+    const usedProductIds = new Set(
+      this.service.production?.usedAppProducts
+        ?.filter((ap) => ap.productCommon.unit.metric !== "area")
+        .map((ap) => ap.productId) ?? [],
+    );
+
+    return expectedSubIds.every((id) => usedProductIds.has(id))
+      ? "pass"
+      : "fail";
   }
 
   /**

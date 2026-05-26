@@ -37,6 +37,7 @@ import prepayReducer from "@/app/realGreen/prepay/prepaySlice";
 import { serviceEtaReducer } from "@/app/scheduling/eta/serviceEtaSlice";
 import { urgentReducer } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentSlice";
 import { paceCrawlerReducer } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
+import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFeedback/report/loadoutReportSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -75,6 +76,7 @@ const rootReducer = combineReducers({
   storedTemplates: storedTemplatesReducer,
   urgent: urgentReducer,
   paceCrawler: paceCrawlerReducer,
+  loadoutReport: loadoutReportReducer,
 });
 
 export default rootReducer;
