@@ -11,7 +11,7 @@ export function Layer3ServicesPanel() {
     <div className="flex flex-col gap-2 text-sm">
       <h3 className="font-semibold text-foreground">Layer 3 — Services in Store</h3>
       <p className="text-foreground/60 text-xs">
-        <code>centralSelect.services</code> — {services.length} total, {completedServices.length} completed (status "S").
+        <code>centralSelect.services</code> — {services.length} total, {completedServices.length} completed (status &#34;S&#34;).
         If this is 0, <code>recentProduction</code> has not loaded yet or returned no results.
       </p>
       {completedServices.length === 0 ? (
