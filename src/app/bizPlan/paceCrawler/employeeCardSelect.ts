@@ -9,6 +9,7 @@ import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import {
   RequiredDailyEntry,
   DiffResult,
@@ -29,6 +30,8 @@ export type OpenServCodesForEmployee = {
 
 const selectMainDate = (state: AppState): string => state.paceCrawler.mainDate;
 
+const ACTIVE_ASAP_STATUSES = getServiceStatuses(["active", "asap"]);
+
 // ---------------------------------------------------------------------------
 // Step D0 — Open ServCodes per Employee
 // ---------------------------------------------------------------------------
@@ -38,7 +41,7 @@ const selectMainDate = (state: AppState): string => state.paceCrawler.mainDate;
  *
  * A servCode is open when ALL of the following are true:
  * 1. It is in the employee's assignment plan (single or group member).
- * 2. It has at least one service (services.length > 0) — early filter before DiffChecker math.
+ * 2. It has at least one active or asap service on an active program (status "9").
  * 3. mainDate is within servCode.dateRange OR servCode.alwaysAsap === true.
  *
  * ServCodes are returned in assignment-plan priority order.
@@ -70,8 +73,11 @@ const selectOpenServCodesForEmployees = createSelector(
         const servCode = servCodeDeepMap.get(servCodeId);
         if (!servCode) continue;
 
-        // Early filter: skip servCodes with no services at all
-        if (servCode.services.length === 0) continue;
+        // Early filter: skip servCodes with no actionable work (active/asap on an active program).
+        const hasWorkRemaining = servCode.services.some(
+          (s) => ACTIVE_ASAP_STATUSES.includes(s.status) && s.program.status === "9",
+        );
+        if (!hasWorkRemaining) continue;
 
         // Open criteria: mainDate is within [dateRange.min, dateRange.max] OR alwaysAsap.
         // dateRangeFromDate is NOT used here — it returns non-null for future ranges too.

@@ -364,8 +364,10 @@ const selectActivePoolPriceByServCode = createSelector(
   (servCodes): Map<string, number> => {
     const result = new Map<string, number>();
     for (const servCode of servCodes) {
-      const activePoolServices = servCode.services.filter((s) =>
-        getServiceStatuses(["active", "asap"]).includes(s.status),
+      const activePoolServices = servCode.services.filter(
+        (s) =>
+          getServiceStatuses(["active", "asap"]).includes(s.status) &&
+          s.program.status === "9",
       );
       result.set(
         servCode.servCodeId,

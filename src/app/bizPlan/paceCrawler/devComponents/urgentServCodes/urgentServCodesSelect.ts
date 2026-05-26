@@ -3,12 +3,18 @@ import { deepSelect } from "@/app/realGreen/deepSelect";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { dateRanges } from "@/lib/primatives/dates/dateStrings";
 import { AppState } from "@/store";
+import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
+
+const ACTIVE_ASAP_STATUSES = getServiceStatuses(["active", "asap"]);
+
+const hasWorkRemaining = (services: { status: string; program: { status: string } }[]) =>
+  services.some((s) => ACTIVE_ASAP_STATUSES.includes(s.status) && s.program.status === "9");
 
 const selectAlwaysAsapServCodes = createSelector(
   [deepSelect.servCodes],
   (servCodes) =>
     servCodes.filter(
-      (servCode) => servCode.alwaysAsap && servCode.services.length > 0,
+      (servCode) => servCode.alwaysAsap && hasWorkRemaining(servCode.services),
     ),
 );
 
@@ -33,7 +39,7 @@ const selectOverdueServCodes = createSelector(
     const overdue = servCodes.filter((servCode) => {
       if (!dateRanges.isValidDateRange(servCode.dateRange)) return false;
       if (servCode.alwaysAsap) return false;
-      return servCode.dateRange.max < mainDate && servCode.services.length > 0;
+      return servCode.dateRange.max < mainDate && hasWorkRemaining(servCode.services);
     });
     return overdue;
   },
