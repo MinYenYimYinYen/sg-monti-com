@@ -10,7 +10,13 @@ import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { getWeekNumber } from "@/lib/primatives/dates/getWeek";
 import { SeasonOptimizedRange } from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
 import { Button } from "@/style/components/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 import { Zap } from "lucide-react";
+import {
+  buildSegmentsFromTimeline,
+  GanttBarDetail,
+  type GanttSegment,
+} from "@/app/bizPlan/paceCrawler/devComponents/GanttBarDetail";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -22,13 +28,14 @@ const GROUP_GAP = 2; // px gap between progCode rows
 const HEADER_HEIGHT = 40; // px — week header
 
 // Palette for group color accents — cycles if more groups than colors.
-// Using OKLCH-friendly semantic approximations via Tailwind opacity classes.
-const GROUP_COLORS = [
-  { bar: "border-l-[3px] border-l-primary", label: "bg-primary/10" },
-  { bar: "border-l-[3px] border-l-secondary", label: "bg-secondary/10" },
-  { bar: "border-l-[3px] border-l-accent", label: "bg-accent/20" },
-  { bar: "border-l-[3px] border-l-destructive", label: "bg-destructive/10" },
-  { bar: "border-l-[3px] border-l-[oklch(0.65_0.18_300)]", label: "bg-[oklch(0.65_0.18_300)]/10" },
+// Applied per-bar (left border stripe), not per-row, since a single progCode row
+// can contain servCodes from multiple different groups.
+const GROUP_BAR_COLORS = [
+  "border-l-[3px] border-l-primary",
+  "border-l-[3px] border-l-secondary",
+  "border-l-[3px] border-l-accent",
+  "border-l-[3px] border-l-destructive",
+  "border-l-[3px] border-l-[oklch(0.65_0.18_300)]",
 ];
 
 // ---------------------------------------------------------------------------
@@ -74,10 +81,12 @@ function getMondaysInRange(start: string, end: string): string[] {
 type ProgGroup = {
   progCodeId: string;
   rows: SeasonOptimizedRange[];
-  /** Canonical group label this progCode row belongs to (null = ungrouped / single) */
-  groupLabel: string | null;
-  /** Index into GROUP_COLORS palette (null = ungrouped) */
-  colorIndex: number | null;
+  /**
+   * The group label of the first grouped servCode in this row, used only for
+   * sort ordering (so rows from the same group cluster together).
+   * Null if all servCodes in this row are ungrouped singles.
+   */
+  primaryGroupLabel: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -94,7 +103,9 @@ function buildServCodeGroupMap(
   for (const plan of assignmentsByEmployeeId.values()) {
     for (const entry of plan.entries) {
       if (entry.kind === "group") {
-        const label = entry.label ?? entry.servCodeIds.join("+");
+        // Normalize label by sorting servCodeIds — matches the normalization in paceCrawlerSelect
+        // so employees with the same group members in different orders share the same color/sort key.
+        const label = entry.label ?? [...entry.servCodeIds].sort().join("+");
         for (const servCodeId of entry.servCodeIds) {
           if (!result.has(servCodeId)) {
             result.set(servCodeId, label);
@@ -110,20 +121,137 @@ function buildServCodeGroupMap(
 // Sub-components
 // ---------------------------------------------------------------------------
 
+function SegmentedBar({
+  servCodeId,
+  groupLabel,
+  segments,
+  totalDays,
+  chartStart,
+  barStart,
+  barEnd,
+  barColor,
+  groupBarColor,
+}: {
+  servCodeId: string;
+  groupLabel: string | null;
+  segments: GanttSegment[];
+  totalDays: number;
+  chartStart: string;
+  barStart: string;
+  barEnd: string;
+  barColor: string;
+  /** Per-servCode group color class (left border stripe). Null for ungrouped singles. */
+  groupBarColor: string | null;
+}) {
+  const startDay = dayOffset(chartStart, barStart);
+  const widthDays = Math.max(dayOffset(barStart, barEnd), 1);
+  const leftPct = (startDay / totalDays) * 100;
+  const widthPct = (widthDays / totalDays) * 100;
+
+  // No segments — render a plain unsegmented bar
+  if (segments.length === 0) {
+    return (
+      <div
+        className={`absolute top-1/2 rounded-full overflow-hidden ${barColor} ${groupBarColor ?? ""}`}
+        style={{
+          left: `${leftPct}%`,
+          width: `${widthPct}%`,
+          height: 18,
+          transform: "translateY(10%)",
+        }}
+      >
+        <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-mono truncate leading-none pointer-events-none">
+          {servCodeId}
+        </span>
+      </div>
+    );
+  }
+
+  // Segmented bar — pill outer, flex segments inside
+  return (
+    <div
+      className={`absolute top-1/2 rounded-full overflow-hidden flex ${barColor}`}
+      style={{
+        left: `${leftPct}%`,
+        width: `${widthPct}%`,
+        height: 18,
+        transform: "translateY(10%)",
+      }}
+    >
+      {/* ServCode label — absolutely positioned over the full bar */}
+      <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-mono truncate leading-none pointer-events-none z-10">
+        {servCodeId}
+      </span>
+
+      {segments.map((segment, idx) => {
+        const segStart = segment.startDate < barStart ? barStart : segment.startDate;
+        const segEnd = segment.endDate
+          ? (segment.endDate > barEnd ? barEnd : segment.endDate)
+          : barEnd;
+
+        const segWidthDays = Math.max(dayOffset(segStart, segEnd), 1);
+        const segWidthPct = (segWidthDays / widthDays) * 100;
+
+        const isFirst = idx === 0;
+        const isLast = idx === segments.length - 1;
+
+        const roundingClass = isFirst && isLast
+          ? "rounded-full"
+          : isFirst
+            ? "rounded-l-full"
+            : isLast
+              ? "rounded-r-full"
+              : "border-l border-r border-border/40";
+
+        const leftBorderClass = !isFirst && !(isFirst && isLast) ? "border-l border-border/40" : "";
+
+        return (
+          <Popover key={idx}>
+            <PopoverTrigger asChild>
+              <button
+                className={`h-full cursor-pointer hover:brightness-90 transition-[filter] ${roundingClass} ${leftBorderClass} ${groupBarColor ?? ""}`}
+                style={{ width: `${segWidthPct}%` }}
+              />
+            </PopoverTrigger>
+            <PopoverContent
+              className="p-3 w-auto max-w-xs"
+              side="top"
+              align="start"
+              sideOffset={6}
+            >
+              <GanttBarDetail
+                servCodeId={servCodeId}
+                groupLabel={groupLabel}
+                segment={segment}
+              />
+            </PopoverContent>
+          </Popover>
+        );
+      })}
+    </div>
+  );
+}
+
 function GanttProgRow({
   group,
   totalDays,
   chartStart,
+  servCodeTimelineMap,
+  crawlerResult,
+  servCodeGroupMap,
+  groupColorIndex,
 }: {
   group: ProgGroup;
   totalDays: number;
   chartStart: string;
+  servCodeTimelineMap: ReturnType<typeof paceCrawlerSelect.servCodeTimelineMap>;
+  crawlerResult: ReturnType<typeof paceCrawlerSelect.crawlerResult>;
+  servCodeGroupMap: Map<string, string>;
+  groupColorIndex: Map<string, number>;
 }) {
-  const colorEntry = group.colorIndex !== null ? GROUP_COLORS[group.colorIndex % GROUP_COLORS.length] : null;
-
   return (
     <div
-      className="relative border-b border-border/50"
+      className="relative border-b border-border/50 bg-card"
       style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
     >
       {group.rows.map((row) => {
@@ -141,13 +269,24 @@ function GanttProgRow({
 
         // --- optimizedRange bar (crawler result) ---
         if (!isValidDate(row.optimizedMin) || !isValidDate(row.optimizedMax)) return null;
-        const startDay = dayOffset(chartStart, row.optimizedMin);
-        const widthDays = Math.max(dayOffset(row.optimizedMin, row.optimizedMax), 1);
-        const leftPct = (startDay / totalDays) * 100;
-        const widthPct = (widthDays / totalDays) * 100;
 
         const barColor = row.hasWork ? "bg-primary/30" : "bg-muted-foreground/20";
-        const groupTooltip = group.groupLabel ? ` | Group: ${group.groupLabel}` : "";
+
+        // Per-servCode group color — look up this specific servCode's group label
+        const servCodeGroupLabel = servCodeGroupMap.get(row.servCodeId) ?? null;
+        const colorIdx = servCodeGroupLabel !== null ? (groupColorIndex.get(servCodeGroupLabel) ?? null) : null;
+        const groupBarColor = colorIdx !== null ? (GROUP_BAR_COLORS[colorIdx % GROUP_BAR_COLORS.length] ?? null) : null;
+
+        // Determine the timeline key: group label if grouped, servCodeId if single
+        const crawledResult = crawlerResult.byServCode.get(row.servCodeId);
+        const timelineKey = crawledResult?.groupLabel ?? row.servCodeId;
+        const timelineEvents = servCodeTimelineMap.get(timelineKey) ?? [];
+
+        const segments = buildSegmentsFromTimeline(
+          timelineEvents,
+          row.optimizedMin,
+          row.optimizedMax,
+        );
 
         return (
           <div key={row.servCodeId}>
@@ -165,22 +304,18 @@ function GanttProgRow({
               />
             )}
 
-            {/* optimizedRange bar — bottom, primary, with label and optional group accent */}
-            <div
-              className={`absolute top-1/2 rounded-full overflow-hidden ${barColor} ${colorEntry ? colorEntry.bar : ""}`}
-              style={{
-                left: `${leftPct}%`,
-                width: `${widthPct}%`,
-                height: 18,
-                // Offset downward slightly to sit below the servCodeRange bar
-                transform: "translateY(10%)",
-              }}
-              title={`${row.servCodeId}: ${row.optimizedMin} → ${row.optimizedMax}${groupTooltip}`}
-            >
-              <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-mono truncate leading-none">
-                {row.servCodeId}
-              </span>
-            </div>
+            {/* Segmented optimizedRange bar */}
+            <SegmentedBar
+              servCodeId={row.servCodeId}
+              groupLabel={crawledResult?.groupLabel ?? null}
+              segments={segments}
+              totalDays={totalDays}
+              chartStart={chartStart}
+              barStart={row.optimizedMin}
+              barEnd={row.optimizedMax}
+              barColor={barColor}
+              groupBarColor={groupBarColor}
+            />
           </div>
         );
       })}
@@ -196,6 +331,8 @@ export function GanttChartPanel() {
   const seasonResult = useSelector(paceCrawlerSelect.seasonOptimizerResult);
   const today = useSelector(paceCrawlerSelect.mainDate);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
+  const crawlerResult = useSelector(paceCrawlerSelect.crawlerResult);
+  const servCodeTimelineMap = useSelector(paceCrawlerSelect.servCodeTimelineMap);
   // Read unsaved changes so the button can reflect pending state (unused directly but
   // ensures the component re-renders when changes are staged/cleared).
   useSelector(progServSelect.unsavedServCodeChanges);
@@ -309,7 +446,9 @@ export function GanttChartPanel() {
   const totalDays = Math.max(dayOffset(chartStart, chartEnd), 1);
 
   // ---------------------------------------------------------------------------
-  // Build servCodeId → groupLabel map and assign color indices per group label
+  // Build servCodeId → groupLabel map and assign color indices per group label.
+  // Color is applied per-bar (not per-row) so each servCode gets the correct
+  // group color even when a progCode row contains servCodes from multiple groups.
   // ---------------------------------------------------------------------------
   const servCodeGroupMap = buildServCodeGroupMap(assignmentsByEmployeeId);
 
@@ -327,7 +466,7 @@ export function GanttChartPanel() {
   // Group rows by progCode, then sort so grouped servCodes appear adjacent.
   //
   // Sort order:
-  // 1. Rows that belong to a group are sorted by their group label (alphabetically),
+  // 1. Rows that belong to a group are sorted by their primary group label (alphabetically),
   //    so all members of the same group cluster together.
   // 2. Within a group, sequential servCodes are sorted by optimizedMin.
   // 3. Ungrouped rows sort by progCodeId.
@@ -340,7 +479,7 @@ export function GanttChartPanel() {
   }
 
   // Determine the primary group label for a progCode row (the group label of its first member,
-  // or null if all members are ungrouped singles).
+  // or null if all members are ungrouped singles). Used only for sort ordering.
   function getPrimaryGroupLabel(rows: SeasonOptimizedRange[]): string | null {
     for (const row of rows) {
       const label = servCodeGroupMap.get(row.servCodeId);
@@ -355,18 +494,17 @@ export function GanttChartPanel() {
     const sorted = isSequential
       ? [...rows].sort((a, b) => a.optimizedMin.localeCompare(b.optimizedMin))
       : rows;
-    const groupLabel = getPrimaryGroupLabel(sorted);
-    const colorIndex = groupLabel !== null ? (groupColorIndex.get(groupLabel) ?? null) : null;
-    rawGroups.push({ progCodeId, rows: sorted, groupLabel, colorIndex });
+    const primaryGroupLabel = getPrimaryGroupLabel(sorted);
+    rawGroups.push({ progCodeId, rows: sorted, primaryGroupLabel });
   }
 
-  // Sort: grouped rows first (by group label), then ungrouped (by progCodeId)
+  // Sort: grouped rows first (by primary group label), then ungrouped (by progCodeId)
   const groups = [...rawGroups].sort((a, b) => {
-    if (a.groupLabel !== null && b.groupLabel !== null) {
-      return a.groupLabel.localeCompare(b.groupLabel);
+    if (a.primaryGroupLabel !== null && b.primaryGroupLabel !== null) {
+      return a.primaryGroupLabel.localeCompare(b.primaryGroupLabel);
     }
-    if (a.groupLabel !== null) return -1;
-    if (b.groupLabel !== null) return 1;
+    if (a.primaryGroupLabel !== null) return -1;
+    if (b.primaryGroupLabel !== null) return 1;
     return a.progCodeId.localeCompare(b.progCodeId);
   });
 
@@ -412,26 +550,20 @@ export function GanttChartPanel() {
             {/* Header spacer */}
             <div style={{ height: HEADER_HEIGHT }} className="border-b border-border bg-card" />
 
-            {groups.map((group) => {
-              const colorEntry = group.colorIndex !== null
-                ? GROUP_COLORS[group.colorIndex % GROUP_COLORS.length]
-                : null;
-              return (
-                <div
-                  key={group.progCodeId}
-                  className={`flex items-center px-2 border-b border-border/50 ${colorEntry ? colorEntry.label : "bg-card"}`}
-                  style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
-                  title={group.groupLabel ? `Group: ${group.groupLabel}` : undefined}
+            {groups.map((group) => (
+              <div
+                key={group.progCodeId}
+                className="flex items-center px-2 border-b border-border/50 bg-card"
+                style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
+              >
+                <span
+                  className="text-xs font-semibold text-foreground truncate font-mono"
+                  title={group.progCodeId}
                 >
-                  <span
-                    className="text-xs font-semibold text-foreground truncate font-mono"
-                    title={group.progCodeId}
-                  >
-                    {group.progCodeId}
-                  </span>
-                </div>
-              );
-            })}
+                  {group.progCodeId}
+                </span>
+              </div>
+            ))}
           </div>
 
           {/* Chart area — fills remaining width */}
@@ -486,6 +618,10 @@ export function GanttChartPanel() {
                   group={group}
                   totalDays={totalDays}
                   chartStart={chartStart}
+                  servCodeTimelineMap={servCodeTimelineMap}
+                  crawlerResult={crawlerResult}
+                  servCodeGroupMap={servCodeGroupMap}
+                  groupColorIndex={groupColorIndex}
                 />
               ))}
             </div>
@@ -512,8 +648,12 @@ export function GanttChartPanel() {
           <span>Today</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-1 h-3 bg-primary/10 border-l-[3px] border-l-primary rounded-sm" />
-          <span>Grouped servCodes (color = same group)</span>
+          <div className="w-1 h-3 bg-primary/30 border-l-[3px] border-l-primary rounded-sm" />
+          <span>Grouped servCodes (left stripe = same group)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-primary/30 border-l border-border/40" />
+          <span>Click segment for crew detail</span>
         </div>
       </div>
     </div>

@@ -136,6 +136,12 @@ export type CrawlerServCodeResult = {
    * = projectedEndDate when known, or servCodeRangeMax (servCode.dateRange.max) as fallback.
    */
   optimizedMax: string;
+  /**
+   * The group label this servCode was crawled under, if it was part of a group entry.
+   * Null for singles. Used to look up the correct key in servCodeTimeline.
+   * e.g. "CC3+LA3+SE3+SC2" for a member of that group.
+   */
+  groupLabel: string | null;
 };
 
 // ---------------------------------------------------------------------------

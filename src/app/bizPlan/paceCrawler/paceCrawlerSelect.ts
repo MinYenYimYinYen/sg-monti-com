@@ -453,10 +453,13 @@ const selectCrawlerResult = createSelector(
           if (entry.kind === "single") {
             return { kind: "single", servCodeId: entry.servCodeId };
           } else {
+            // Normalize the label by sorting servCodeIds so employees with the same
+            // group members (in different priority orders) share the same timeline key.
+            const normalizedLabel = entry.label ?? [...entry.servCodeIds].sort().join("+");
             return {
               kind: "group",
               servCodeIds: entry.servCodeIds,
-              label: entry.label ?? entry.servCodeIds.join("+"),
+              label: normalizedLabel,
             };
           }
         },

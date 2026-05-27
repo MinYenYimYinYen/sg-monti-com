@@ -362,19 +362,37 @@ export function runDayCrawlSimulation(
   // ---------------------------------------------------------------------------
   // 7. Build CrawlerResult
   // ---------------------------------------------------------------------------
+
+  // Build servCodeId → groupLabel map from employee priority entries.
+  // The label is already normalized (sorted) by the caller (paceCrawlerSelect),
+  // but we guard here too in case the simulation is called directly.
+  const servCodeGroupLabelMap = new Map<string, string>();
+  for (const employee of employeeEntries) {
+    for (const pe of employee.priorityEntries) {
+      if (pe.kind === "group") {
+        for (const servCodeId of pe.servCodeIds) {
+          if (!servCodeGroupLabelMap.has(servCodeId)) {
+            servCodeGroupLabelMap.set(servCodeId, pe.label);
+          }
+        }
+      }
+    }
+  }
+
   const byServCode = new Map<string, CrawlerServCodeResult>();
 
   for (const entry of servCodeEntries) {
     const endDate = projectedEndDate.get(entry.servCodeId) ?? null;
     const optimizedMin = resolvedServCodeRangeMin.get(entry.servCodeId) ?? entry.servCodeRangeMin;
-
     const optimizedMax = endDate ?? entry.servCodeRangeMax;
+    const groupLabel = servCodeGroupLabelMap.get(entry.servCodeId) ?? null;
 
     byServCode.set(entry.servCodeId, {
       servCodeId: entry.servCodeId,
       optimizedMin,
       projectedEndDate: endDate,
       optimizedMax,
+      groupLabel,
     });
   }
 
