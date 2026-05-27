@@ -5,17 +5,19 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
-import { flattenEntries, AssignmentEntry } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
+import { flattenEntries, AssignmentEntry, AssignmentPlan } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
-import { ChevronUp, ChevronDown, ChevronRight, X, Plus, Copy, ClipboardPaste } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronRight, X, Plus, Copy, ClipboardPaste, FlaskConical, Zap, Save, Trash2, Download } from "lucide-react";
 import { Button } from "@/style/components/button";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+type EditorMode = "live" | "draft";
 
 type ConfigGroup = {
   fingerprint: string;
@@ -36,24 +38,23 @@ type SelectionAction =
 function buildConfigGroups(
   selectedEmployeeIds: Set<string>,
   assignmentsByEmployeeId: ReturnType<typeof assignmentPlanSelect.assignmentsByEmployeeId>,
+  draftPlans: Map<string, AssignmentEntry[]>,
+  mode: EditorMode,
 ): ConfigGroup[] {
   const groupMap = new Map<string, ConfigGroup>();
 
   for (const employeeId of selectedEmployeeIds) {
-    const plan = assignmentsByEmployeeId.get(employeeId);
-    const entries = plan?.entries ?? [];
-    const fingerprint = flattenEntries(entries).join(",");
+    const entries =
+      mode === "draft"
+        ? (draftPlans.get(employeeId) ?? assignmentsByEmployeeId.get(employeeId)?.entries ?? [])
+        : (assignmentsByEmployeeId.get(employeeId)?.entries ?? []);
+    const fingerprint = (mode === "draft" ? "draft:" : "") + flattenEntries(entries).join(",") + "|" + employeeId;
 
-    const existing = groupMap.get(fingerprint);
-    if (existing) {
-      existing.employeeIds.push(employeeId);
-    } else {
-      groupMap.set(fingerprint, {
-        fingerprint,
-        employeeIds: [employeeId],
-        entries: [...entries],
-      });
-    }
+    groupMap.set(fingerprint, {
+      fingerprint,
+      employeeIds: [employeeId],
+      entries: [...entries],
+    });
   }
 
   return [...groupMap.values()];
@@ -247,12 +248,149 @@ function AddServCodesSection({
 }
 
 // ---------------------------------------------------------------------------
+// ScenarioBar — save / load / delete / promote scenarios
+// ---------------------------------------------------------------------------
+
+type ScenarioBarProps = {
+  draftPlans: Map<string, AssignmentEntry[]>;
+  assignmentsByEmployeeId: ReturnType<typeof assignmentPlanSelect.assignmentsByEmployeeId>;
+  onLoadScenario: (plans: AssignmentPlan[]) => void;
+  onPromoteToLive: () => void;
+  upsertScenario: ReturnType<typeof useAssignmentPlan>["upsertScenario"];
+  removeScenario: ReturnType<typeof useAssignmentPlan>["removeScenario"];
+};
+
+function ScenarioBar({
+  draftPlans,
+  assignmentsByEmployeeId,
+  onLoadScenario,
+  onPromoteToLive,
+  upsertScenario,
+  removeScenario,
+}: ScenarioBarProps) {
+  const scenarios = useSelector(assignmentPlanSelect.scenarios);
+  const [scenarioName, setScenarioName] = useState("");
+  const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
+
+  function buildCurrentPlans(): AssignmentPlan[] {
+    // Merge: start from all live plans, overlay any draft overrides
+    const allEmployeeIds = new Set([
+      ...[...assignmentsByEmployeeId.keys()],
+      ...[...draftPlans.keys()],
+    ]);
+    return [...allEmployeeIds].map((employeeId) => ({
+      employeeId,
+      entries: draftPlans.get(employeeId) ?? assignmentsByEmployeeId.get(employeeId)?.entries ?? [],
+    }));
+  }
+
+  function handleSave() {
+    const name = scenarioName.trim();
+    if (!name) return;
+    upsertScenario({
+      name,
+      createdAt: new Date().toISOString(),
+      plans: buildCurrentPlans(),
+    });
+    setScenarioName("");
+  }
+
+  return (
+    <div className="border-b border-secondary/30 bg-secondary/5 px-3 py-2 space-y-2">
+      {/* Save row */}
+      <div className="flex items-center gap-1.5">
+        <input
+          type="text"
+          value={scenarioName}
+          onChange={(e) => setScenarioName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
+          placeholder="Scenario name…"
+          className="flex-1 h-6 text-[10px] px-2 rounded border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-secondary"
+        />
+        <button
+          onClick={handleSave}
+          disabled={!scenarioName.trim()}
+          className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-semibold bg-secondary/20 text-secondary hover:bg-secondary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          title="Save scenario"
+        >
+          <Save className="w-3 h-3" />
+          Save
+        </button>
+        <button
+          onClick={onPromoteToLive}
+          className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+          title="Promote draft to live (persists to DB)"
+        >
+          <Zap className="w-3 h-3" />
+          Promote
+        </button>
+      </div>
+
+      {/* Saved scenarios list */}
+      {scenarios.length > 0 && (
+        <div className="space-y-0.5 max-h-32 overflow-y-auto">
+          {scenarios.map((scenario) => (
+            <div
+              key={scenario.name}
+              className="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-secondary/10 group"
+            >
+              <span className="flex-1 text-[10px] text-foreground truncate">{scenario.name}</span>
+              <span className="text-[9px] text-muted-foreground shrink-0">
+                {new Date(scenario.createdAt).toLocaleDateString()}
+              </span>
+              <button
+                onClick={() => onLoadScenario(scenario.plans)}
+                className="p-0.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0"
+                title="Load scenario into draft"
+              >
+                <Download className="w-3 h-3" />
+              </button>
+              {confirmDeleteName === scenario.name ? (
+                <>
+                  <button
+                    onClick={() => {
+                      removeScenario(scenario.name);
+                      setConfirmDeleteName(null);
+                    }}
+                    className="text-[9px] text-destructive font-semibold hover:underline shrink-0"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteName(null)}
+                    className="text-[9px] text-muted-foreground hover:underline shrink-0"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setConfirmDeleteName(scenario.name)}
+                  className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                  title="Delete scenario"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {scenarios.length === 0 && (
+        <p className="text-[10px] text-muted-foreground">No saved scenarios yet.</p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // AssignmentEditorPanel
 // ---------------------------------------------------------------------------
 
 export function AssignmentEditorPanel() {
   const dispatch = useAppDispatch();
-  const { upsert } = useAssignmentPlan({ autoLoad: false });
+  const { upsert, upsertScenario, removeScenario } = useAssignmentPlan({ autoLoad: false });
 
   const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
@@ -260,6 +398,10 @@ export function AssignmentEditorPanel() {
   const servCodeMap = useSelector(progServSelect.servCodeMap);
 
   const activeEmployees = [...employeeMap.values()].filter((e) => e.active);
+
+  const [mode, setMode] = useState<EditorMode>("live");
+  // Draft state: employeeId → entries override (only populated in draft mode)
+  const [draftPlans, setDraftPlans] = useState<Map<string, AssignmentEntry[]>>(new Map());
 
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<string>>(new Set());
   const [pendingByGroup, setPendingByGroup] = useState<Map<string, Set<string>>>(new Map());
@@ -270,6 +412,38 @@ export function AssignmentEditorPanel() {
   const [clipboard, setClipboard] = useState<{ entries: AssignmentEntry[]; sourceFingerprint: string } | null>(null);
   // Which group is pending paste confirmation
   const [pendingPasteGroup, setPendingPasteGroup] = useState<string | null>(null);
+
+  function enterDraftMode() {
+    // Snapshot current live state into draft
+    const snapshot = new Map<string, AssignmentEntry[]>();
+    for (const [employeeId, plan] of assignmentsByEmployeeId) {
+      snapshot.set(employeeId, [...plan.entries]);
+    }
+    setDraftPlans(snapshot);
+    setMode("draft");
+  }
+
+  function exitDraftMode() {
+    setDraftPlans(new Map());
+    setMode("live");
+  }
+
+  function loadScenario(plans: AssignmentPlan[]) {
+    const next = new Map<string, AssignmentEntry[]>();
+    for (const plan of plans) {
+      next.set(plan.employeeId, [...plan.entries]);
+    }
+    setDraftPlans(next);
+  }
+
+  function promoteToLive() {
+    // Persist all draft overrides to DB and update Redux
+    for (const [employeeId, entries] of draftPlans) {
+      dispatch(assignmentPlanActions.reorderEntries({ employeeId, entries }));
+      upsert({ employeeId, entries });
+    }
+    exitDraftMode();
+  }
 
   /** Returns "MM/DD–MM/DD" for a single servCode, or null if no valid dateRange. */
   function getServCodeDateRange(servCodeId: string): string | null {
@@ -324,9 +498,19 @@ export function AssignmentEditorPanel() {
   }
 
   function applyToGroup(employeeIds: string[], newEntries: AssignmentEntry[]) {
-    for (const employeeId of employeeIds) {
-      dispatch(assignmentPlanActions.reorderEntries({ employeeId, entries: newEntries }));
-      upsert({ employeeId, entries: newEntries });
+    if (mode === "draft") {
+      setDraftPlans((prev) => {
+        const next = new Map(prev);
+        for (const employeeId of employeeIds) {
+          next.set(employeeId, newEntries);
+        }
+        return next;
+      });
+    } else {
+      for (const employeeId of employeeIds) {
+        dispatch(assignmentPlanActions.reorderEntries({ employeeId, entries: newEntries }));
+        upsert({ employeeId, entries: newEntries });
+      }
     }
   }
 
@@ -584,7 +768,7 @@ export function AssignmentEditorPanel() {
     });
   }
 
-  const configGroups = buildConfigGroups(selectedEmployeeIds, assignmentsByEmployeeId);
+  const configGroups = buildConfigGroups(selectedEmployeeIds, assignmentsByEmployeeId, draftPlans, mode);
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -631,282 +815,318 @@ export function AssignmentEditorPanel() {
       </div>
 
       {/* Right panel — config groups */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {selectedEmployeeIds.size === 0 && (
-          <p className="text-sm text-muted-foreground text-center mt-8">
-            Select employees from the left panel to edit their assignments.
-          </p>
+      <div className={`flex-1 flex flex-col overflow-hidden ${mode === "draft" ? "border-l-2 border-secondary/50" : ""}`}>
+        {/* Mode toggle bar */}
+        <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 ${mode === "draft" ? "bg-secondary/10 border-secondary/30" : "bg-card"}`}>
+          <button
+            onClick={mode === "live" ? enterDraftMode : exitDraftMode}
+            className={`flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-semibold transition-colors ${
+              mode === "draft"
+                ? "bg-secondary text-white"
+                : "bg-muted text-muted-foreground hover:bg-accent/20 hover:text-foreground"
+            }`}
+            title={mode === "live" ? "Enter draft mode (edits won't persist)" : "Exit draft mode"}
+          >
+            <FlaskConical className="w-3 h-3" />
+            {mode === "draft" ? "Draft" : "Live"}
+          </button>
+          {mode === "draft" && (
+            <span className="text-[10px] text-secondary font-medium">
+              Changes are local — use Promote to persist
+            </span>
+          )}
+        </div>
+
+        {/* Scenario bar — draft mode only */}
+        {mode === "draft" && (
+          <ScenarioBar
+            draftPlans={draftPlans}
+            assignmentsByEmployeeId={assignmentsByEmployeeId}
+            onLoadScenario={loadScenario}
+            onPromoteToLive={promoteToLive}
+            upsertScenario={upsertScenario}
+            removeScenario={removeScenario}
+          />
         )}
 
-        {configGroups.map((group) => {
-          const employeeNames = group.employeeIds
-            .map((id) => employeeMap.get(id)?.name ?? id)
-            .join(", ");
+        {/* Config groups scroll area */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          {selectedEmployeeIds.size === 0 && (
+            <p className="text-sm text-muted-foreground text-center mt-8">
+              Select employees from the left panel to edit their assignments.
+            </p>
+          )}
 
-          const existingIds = new Set(flattenEntries(group.entries));
-          const pending = getPending(group.fingerprint);
-          const selectedIndices = selectedByGroup.get(group.fingerprint) ?? new Set<number>();
-          const action = resolveSelectionAction(group.entries, selectedIndices);
+          {configGroups.map((group) => {
+            const employeeNames = group.employeeIds
+              .map((id) => employeeMap.get(id)?.name ?? id)
+              .join(", ");
 
-          return (
-            <div key={group.fingerprint} className="border border-border rounded overflow-hidden">
-              {/* Group header */}
-              <div className="px-3 py-2 bg-accent/10 border-b border-border">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-foreground">
-                      {group.employeeIds.length > 1
-                        ? `${group.employeeIds.length} employees — same config`
-                        : "1 employee"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground truncate">{employeeNames}</p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {/* Selection action button */}
-                    {action && (
+            const existingIds = new Set(flattenEntries(group.entries));
+            const pending = getPending(group.fingerprint);
+            const selectedIndices = selectedByGroup.get(group.fingerprint) ?? new Set<number>();
+            const action = resolveSelectionAction(group.entries, selectedIndices);
+
+            return (
+              <div key={group.fingerprint} className="border border-border rounded overflow-hidden">
+                {/* Group header */}
+                <div className="px-3 py-2 bg-accent/10 border-b border-border">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground">
+                        {group.employeeIds.length > 1
+                          ? `${group.employeeIds.length} employees — same config`
+                          : "1 employee"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate">{employeeNames}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {/* Selection action button */}
+                      {action && (
+                        <button
+                          onClick={() => executeSelectionAction(group, action)}
+                          className={`text-[10px] rounded px-2 py-0.5 transition-colors font-semibold ${
+                            action.kind === "breakGroup"
+                              ? "bg-destructive/20 text-destructive hover:bg-destructive/30"
+                              : "bg-primary/20 text-primary hover:bg-primary/30"
+                          }`}
+                        >
+                          {action.kind === "makeGroup" && `Make Group (${action.indices.length})`}
+                          {action.kind === "breakGroup" && "Break Group"}
+                          {action.kind === "addToGroup" && `Add to Group (+${action.singleIndices.length})`}
+                        </button>
+                      )}
+                      {/* Copy button */}
                       <button
-                        onClick={() => executeSelectionAction(group, action)}
-                        className={`text-[10px] rounded px-2 py-0.5 transition-colors font-semibold ${
-                          action.kind === "breakGroup"
-                            ? "bg-destructive/20 text-destructive hover:bg-destructive/30"
-                            : "bg-primary/20 text-primary hover:bg-primary/30"
+                        onClick={() => {
+                          setClipboard({ entries: [...group.entries], sourceFingerprint: group.fingerprint });
+                          setPendingPasteGroup(null);
+                        }}
+                        disabled={group.entries.length === 0}
+                        className={`p-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+                          clipboard?.sourceFingerprint === group.fingerprint
+                            ? "text-accent bg-accent/10"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
                         }`}
+                        title="Copy config"
                       >
-                        {action.kind === "makeGroup" && `Make Group (${action.indices.length})`}
-                        {action.kind === "breakGroup" && "Break Group"}
-                        {action.kind === "addToGroup" && `Add to Group (+${action.singleIndices.length})`}
+                        <Copy className="w-3 h-3" />
                       </button>
-                    )}
-                    {/* Copy button */}
-                    <button
-                      onClick={() => {
-                        setClipboard({ entries: [...group.entries], sourceFingerprint: group.fingerprint });
-                        setPendingPasteGroup(null);
-                      }}
-                      disabled={group.entries.length === 0}
-                      className={`p-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-                        clipboard?.sourceFingerprint === group.fingerprint
-                          ? "text-accent bg-accent/10"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
-                      }`}
-                      title="Copy config"
-                    >
-                      <Copy className="w-3 h-3" />
-                    </button>
-                    {/* Paste button — shown on non-source groups when clipboard is set */}
-                    {clipboard && clipboard.sourceFingerprint !== group.fingerprint && (
+                      {/* Paste button — shown on non-source groups when clipboard is set */}
+                      {clipboard && clipboard.sourceFingerprint !== group.fingerprint && (
+                        <button
+                          onClick={() => setPendingPasteGroup(
+                            pendingPasteGroup === group.fingerprint ? null : group.fingerprint
+                          )}
+                          className="p-1 rounded text-primary hover:bg-primary/10 transition-colors"
+                          title="Paste config"
+                        >
+                          <ClipboardPaste className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {/* Paste confirmation row */}
+                  {pendingPasteGroup === group.fingerprint && (
+                    <div className="mt-1.5 flex items-center gap-2 text-[10px]">
+                      <span className="text-muted-foreground">Overwrite this config?</span>
                       <button
-                        onClick={() => setPendingPasteGroup(
-                          pendingPasteGroup === group.fingerprint ? null : group.fingerprint
-                        )}
-                        className="p-1 rounded text-primary hover:bg-primary/10 transition-colors"
-                        title="Paste config"
+                        onClick={() => {
+                          if (!clipboard) return;
+                          applyToGroup(group.employeeIds, clipboard.entries);
+                          setClipboard(null);
+                          setPendingPasteGroup(null);
+                        }}
+                        className="text-primary font-semibold hover:underline"
                       >
-                        <ClipboardPaste className="w-3 h-3" />
+                        Confirm
                       </button>
-                    )}
-                  </div>
+                      <button
+                        onClick={() => setPendingPasteGroup(null)}
+                        className="text-muted-foreground hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {/* Paste confirmation row */}
-                {pendingPasteGroup === group.fingerprint && (
-                  <div className="mt-1.5 flex items-center gap-2 text-[10px]">
-                    <span className="text-muted-foreground">Overwrite this config?</span>
-                    <button
-                      onClick={() => {
-                        if (!clipboard) return;
-                        applyToGroup(group.employeeIds, clipboard.entries);
-                        setClipboard(null);
-                        setPendingPasteGroup(null);
-                      }}
-                      className="text-primary font-semibold hover:underline"
-                    >
-                      Confirm
-                    </button>
-                    <button
-                      onClick={() => setPendingPasteGroup(null)}
-                      className="text-muted-foreground hover:underline"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
 
-              {/* Priority list */}
-              <div className="divide-y divide-border/50">
-                {group.entries.length === 0 && (
-                  <p className="px-3 py-2 text-[10px] text-muted-foreground">No servCodes assigned.</p>
-                )}
-                {group.entries.map((entry, index) => {
-                  const label = entry.kind === "single"
-                    ? entry.servCodeId
-                    : entry.servCodeIds.join(" + ");
-                  const dateRange = entry.kind === "single"
-                    ? getServCodeDateRange(entry.servCodeId)
-                    : getGroupDateRange(entry.servCodeIds);
-                  const isSelected = selectedIndices.has(index);
-                  const multiSelect = selectedIndices.size >= 2;
-                  const sortedSelected = [...selectedIndices].sort((a, b) => a - b);
-                  const isTopSelected = multiSelect && sortedSelected[0] === index;
-                  const isBottomSelected = multiSelect && sortedSelected[sortedSelected.length - 1] === index;
-                  const canMoveUp = sortedSelected[0] > 0;
-                  const canMoveDown = sortedSelected[sortedSelected.length - 1] < group.entries.length - 1;
+                {/* Priority list */}
+                <div className="divide-y divide-border/50">
+                  {group.entries.length === 0 && (
+                    <p className="px-3 py-2 text-[10px] text-muted-foreground">No servCodes assigned.</p>
+                  )}
+                  {group.entries.map((entry, index) => {
+                    const label = entry.kind === "single"
+                      ? entry.servCodeId
+                      : entry.servCodeIds.join(" + ");
+                    const dateRange = entry.kind === "single"
+                      ? getServCodeDateRange(entry.servCodeId)
+                      : getGroupDateRange(entry.servCodeIds);
+                    const isSelected = selectedIndices.has(index);
+                    const multiSelect = selectedIndices.size >= 2;
+                    const sortedSelected = [...selectedIndices].sort((a, b) => a - b);
+                    const isTopSelected = multiSelect && sortedSelected[0] === index;
+                    const isBottomSelected = multiSelect && sortedSelected[sortedSelected.length - 1] === index;
+                    const canMoveUp = sortedSelected[0] > 0;
+                    const canMoveDown = sortedSelected[sortedSelected.length - 1] < group.entries.length - 1;
 
-                  return (
-                    <div
-                      key={index}
-                      className={`flex items-center gap-1.5 px-2 py-1.5 text-xs ${isSelected ? "bg-primary/5" : "hover:bg-accent/5"}`}
-                    >
-                      {/* Selection checkbox */}
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleEntrySelection(group.fingerprint, index)}
-                        className="accent-primary shrink-0"
-                      />
-                      {/* Position number */}
-                      <span className="text-[10px] text-muted-foreground w-4 text-right shrink-0">
-                        {index + 1}
-                      </span>
-                      {/* ↑↓ buttons — left of label */}
-                      <div className="flex items-center gap-0 shrink-0">
-                        {multiSelect && isTopSelected ? (
-                          <button
-                            onClick={(e) => moveSelectedUp(group, selectedIndices, e)}
-                            disabled={!canMoveUp}
-                            className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
-                            title="Move selection up"
-                          >
-                            <ChevronUp className="w-3 h-3" />
-                          </button>
-                        ) : multiSelect && isBottomSelected ? (
-                          <button
-                            onClick={(e) => moveSelectedDown(group, selectedIndices, e)}
-                            disabled={!canMoveDown}
-                            className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
-                            title="Move selection down"
-                          >
-                            <ChevronDown className="w-3 h-3" />
-                          </button>
-                        ) : multiSelect && isSelected ? (
-                          <span className="w-[14px] shrink-0" />
-                        ) : !multiSelect ? (
-                          <>
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center gap-1.5 px-2 py-1.5 text-xs ${isSelected ? "bg-primary/5" : "hover:bg-accent/5"}`}
+                      >
+                        {/* Selection checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleEntrySelection(group.fingerprint, index)}
+                          className="accent-primary shrink-0"
+                        />
+                        {/* Position number */}
+                        <span className="text-[10px] text-muted-foreground w-4 text-right shrink-0">
+                          {index + 1}
+                        </span>
+                        {/* ↑↓ buttons — left of label */}
+                        <div className="flex items-center gap-0 shrink-0">
+                          {multiSelect && isTopSelected ? (
                             <button
-                              onClick={(e) => moveUp(group, index, e)}
-                              disabled={index === 0}
+                              onClick={(e) => moveSelectedUp(group, selectedIndices, e)}
+                              disabled={!canMoveUp}
                               className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
-                              title="Move up (Enter to repeat)"
+                              title="Move selection up"
                             >
                               <ChevronUp className="w-3 h-3" />
                             </button>
+                          ) : multiSelect && isBottomSelected ? (
                             <button
-                              onClick={(e) => moveDown(group, index, e)}
-                              disabled={index === group.entries.length - 1}
+                              onClick={(e) => moveSelectedDown(group, selectedIndices, e)}
+                              disabled={!canMoveDown}
                               className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
-                              title="Move down (Enter to repeat)"
+                              title="Move selection down"
                             >
                               <ChevronDown className="w-3 h-3" />
                             </button>
-                          </>
-                        ) : (
-                          <span className="w-[14px] shrink-0" />
-                        )}
-                      </div>
-                      {/* Label + date range */}
-                      <span className={`font-mono ${entry.kind === "group" ? "text-primary" : "text-foreground"}`}>
-                        {label}
-                      </span>
-                      {dateRange && (
-                        <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                          ({dateRange})
+                          ) : multiSelect && isSelected ? (
+                            <span className="w-[14px] shrink-0" />
+                          ) : !multiSelect ? (
+                            <>
+                              <button
+                                onClick={(e) => moveUp(group, index, e)}
+                                disabled={index === 0}
+                                className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
+                                title="Move up (Enter to repeat)"
+                              >
+                                <ChevronUp className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={(e) => moveDown(group, index, e)}
+                                disabled={index === group.entries.length - 1}
+                                className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
+                                title="Move down (Enter to repeat)"
+                              >
+                                <ChevronDown className="w-3 h-3" />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="w-[14px] shrink-0" />
+                          )}
+                        </div>
+                        {/* Label + date range */}
+                        <span className={`font-mono ${entry.kind === "group" ? "text-primary" : "text-foreground"}`}>
+                          {label}
                         </span>
-                      )}
-                      {entry.kind === "group" && (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              className="text-[9px] text-primary shrink-0 bg-primary/10 hover:bg-primary/20 rounded px-1 transition-colors"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              group
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-56 p-2" align="start">
-                            <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
-                              Member date ranges
-                            </p>
-                            <div className="space-y-0.5">
-                              {entry.servCodeIds.map((servCodeId) => {
-                                const range = getServCodeDateRange(servCodeId);
-                                return (
-                                  <div key={servCodeId} className="flex items-center gap-1 text-[10px]">
-                                    <span className="font-mono text-foreground flex-1">{servCodeId}</span>
-                                    <span className="font-mono text-muted-foreground">{range ?? "—"}</span>
-                                    <button
-                                      onClick={() => {
-                                        // Remove this servCode from the group but keep it as a standalone
-                                        // single entry immediately after the group in the priority list.
-                                        const remaining = entry.servCodeIds.filter((id) => id !== servCodeId);
-                                        const updatedGroupEntry: AssignmentEntry =
-                                          remaining.length === 1
-                                            ? { kind: "single", servCodeId: remaining[0] }
-                                            : { kind: "group", servCodeIds: remaining, label: entry.label };
-                                        const ejectedEntry: AssignmentEntry = { kind: "single", servCodeId };
-                                        const newEntries: AssignmentEntry[] = [
-                                          ...group.entries.slice(0, index),
-                                          updatedGroupEntry,
-                                          ejectedEntry,
-                                          ...group.entries.slice(index + 1),
-                                        ];
-                                        applyToGroup(group.employeeIds, newEntries);
-                                      }}
-                                      className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors shrink-0"
-                                      title={`Remove ${servCodeId} from group`}
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                      {/* Spacer to push remove button to the right */}
-                      <span className="flex-1" />
-                      {/* Remove button */}
-                      <button
-                        onClick={() => remove(group, index)}
-                        className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors shrink-0"
-                        title="Remove"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+                        {dateRange && (
+                          <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                            ({dateRange})
+                          </span>
+                        )}
+                        {entry.kind === "group" && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                className="text-[9px] text-primary shrink-0 bg-primary/10 hover:bg-primary/20 rounded px-1 transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                group
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-56 p-2" align="start">
+                              <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
+                                Member date ranges
+                              </p>
+                              <div className="space-y-0.5">
+                                {entry.servCodeIds.map((servCodeId) => {
+                                  const range = getServCodeDateRange(servCodeId);
+                                  return (
+                                    <div key={servCodeId} className="flex items-center gap-1 text-[10px]">
+                                      <span className="font-mono text-foreground flex-1">{servCodeId}</span>
+                                      <span className="font-mono text-muted-foreground">{range ?? "—"}</span>
+                                      <button
+                                        onClick={() => {
+                                          // Remove this servCode from the group but keep it as a standalone
+                                          // single entry immediately after the group in the priority list.
+                                          const remaining = entry.servCodeIds.filter((id) => id !== servCodeId);
+                                          const updatedGroupEntry: AssignmentEntry =
+                                            remaining.length === 1
+                                              ? { kind: "single", servCodeId: remaining[0] }
+                                              : { kind: "group", servCodeIds: remaining, label: entry.label };
+                                          const ejectedEntry: AssignmentEntry = { kind: "single", servCodeId };
+                                          const newEntries: AssignmentEntry[] = [
+                                            ...group.entries.slice(0, index),
+                                            updatedGroupEntry,
+                                            ejectedEntry,
+                                            ...group.entries.slice(index + 1),
+                                          ];
+                                          applyToGroup(group.employeeIds, newEntries);
+                                        }}
+                                        className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                                        title={`Remove ${servCodeId} from group`}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                        {/* Spacer to push remove button to the right */}
+                        <span className="flex-1" />
+                        {/* Remove button */}
+                        <button
+                          onClick={() => remove(group, index)}
+                          className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                          title="Remove"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
 
-              {/* Add servCodes — progCode picker */}
-              <AddServCodesSection
-                groupFingerprint={group.fingerprint}
-                isOpen={openAddGroup === group.fingerprint}
-                onToggleOpen={() => setOpenAddGroup(
-                  openAddGroup === group.fingerprint ? null : group.fingerprint
-                )}
-                existingIds={existingIds}
-                pendingIds={pending}
-                onToggleServCode={(id) => toggleServCode(group.fingerprint, id)}
-                onToggleProgCode={(ids) => toggleProgCode(group.fingerprint, ids)}
-                onConfirm={() => {
-                  confirmAdd(group);
-                  setOpenAddGroup(null);
-                }}
-              />
-            </div>
-          );
-        })}
+                {/* Add servCodes — progCode picker */}
+                <AddServCodesSection
+                  groupFingerprint={group.fingerprint}
+                  isOpen={openAddGroup === group.fingerprint}
+                  onToggleOpen={() => setOpenAddGroup(
+                    openAddGroup === group.fingerprint ? null : group.fingerprint
+                  )}
+                  existingIds={existingIds}
+                  pendingIds={pending}
+                  onToggleServCode={(id) => toggleServCode(group.fingerprint, id)}
+                  onToggleProgCode={(ids) => toggleProgCode(group.fingerprint, ids)}
+                  onConfirm={() => {
+                    confirmAdd(group);
+                    setOpenAddGroup(null);
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

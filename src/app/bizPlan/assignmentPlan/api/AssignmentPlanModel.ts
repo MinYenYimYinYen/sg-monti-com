@@ -19,3 +19,23 @@ const AssignmentPlanSchema = new Schema({
 });
 
 export const AssignmentPlanModel = createModel("AssignmentPlan", AssignmentPlanSchema);
+
+// ---------------------------------------------------------------------------
+// Scenario Model
+// ---------------------------------------------------------------------------
+
+const AssignmentPlanEmbedSchema = new Schema(
+  {
+    employeeId: { type: String, required: true },
+    entries: { type: [AssignmentEntrySchema], required: true, default: [] },
+  },
+  { _id: false },
+);
+
+const ScenarioSchema = new Schema({
+  name: { type: String, required: true, unique: true },
+  createdAt: { type: String, required: true },
+  plans: { type: [AssignmentPlanEmbedSchema], required: true, default: [] },
+});
+
+export const ScenarioModel = createModel("AssignmentScenario", ScenarioSchema);

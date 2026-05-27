@@ -1,8 +1,8 @@
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { AssignmentPlanContract } from "@/app/bizPlan/assignmentPlan/api/AssignmentPlanContract";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { AssignmentPlanModel } from "@/app/bizPlan/assignmentPlan/api/AssignmentPlanModel";
-import { AssignmentPlan } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
+import { AssignmentPlanModel, ScenarioModel } from "@/app/bizPlan/assignmentPlan/api/AssignmentPlanModel";
+import { AssignmentPlan, Scenario } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import {
   cleanMongoArray,
   cleanMongoObject,
@@ -30,6 +30,37 @@ const handlers: HandlerMap<AssignmentPlanContract> = {
       ).lean();
       const assignmentPlan: AssignmentPlan = cleanMongoObject(result);
       return { success: true, payload: assignmentPlan };
+    },
+  },
+
+  getScenarios: {
+    roles: ["admin", "office", "tech"],
+    handler: async () => {
+      await connectToMongoDB();
+      const result: Scenario[] = await ScenarioModel.find().lean();
+      return { success: true, payload: cleanMongoArray(result) };
+    },
+  },
+
+  upsertScenario: {
+    roles: ["admin"],
+    handler: async ({ name, createdAt, plans }) => {
+      await connectToMongoDB();
+      const result: Scenario = await ScenarioModel.findOneAndUpdate(
+        { name },
+        { name, createdAt, plans },
+        { upsert: true, new: true },
+      ).lean();
+      return { success: true, payload: cleanMongoObject(result) };
+    },
+  },
+
+  deleteScenario: {
+    roles: ["admin"],
+    handler: async ({ name }) => {
+      await connectToMongoDB();
+      await ScenarioModel.deleteOne({ name });
+      return { success: true, payload: { name } };
     },
   },
 };

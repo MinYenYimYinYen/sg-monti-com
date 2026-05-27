@@ -1,13 +1,14 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { AssignmentPlanContract } from "@/app/bizPlan/assignmentPlan/api/AssignmentPlanContract";
-import { AssignmentEntry, AssignmentPlan } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
+import { AssignmentEntry, AssignmentPlan, Scenario } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 
 type AssignmentPlanState = {
   assignmentPlans: AssignmentPlan[];
+  scenarios: Scenario[];
 };
 
-const initialState: AssignmentPlanState = { assignmentPlans: [] };
+const initialState: AssignmentPlanState = { assignmentPlans: [], scenarios: [] };
 
 const assignmentPlanSlice = createSlice({
   name: "assignmentPlans",
@@ -47,6 +48,22 @@ const assignmentPlanSlice = createSlice({
         state.assignmentPlans.push(updatedAssignmentPlan);
       }
     });
+    builder.addCase(getScenarios.fulfilled, (state, action) => {
+      state.scenarios = action.payload;
+    });
+    builder.addCase(upsertScenario.fulfilled, (state, action) => {
+      const updated = action.payload;
+      const idx = state.scenarios.findIndex((s) => s.name === updated.name);
+      if (idx !== -1) {
+        state.scenarios[idx] = updated;
+      } else {
+        state.scenarios.push(updated);
+      }
+    });
+    builder.addCase(deleteScenario.fulfilled, (state, action) => {
+      const { name } = action.payload;
+      state.scenarios = state.scenarios.filter((s) => s.name !== name);
+    });
   },
 });
 
@@ -68,9 +85,39 @@ const upsertAssignmentPlan = createStandardThunk<
   typePrefix: "assignmentPlans/upsertAssignmentPlan",
 });
 
+const getScenarios = createStandardThunk<
+  AssignmentPlanContract,
+  "getScenarios"
+>({
+  opName: "getScenarios",
+  apiPath: "/bizPlan/assignmentPlan/api",
+  typePrefix: "assignmentPlans/getScenarios",
+});
+
+const upsertScenario = createStandardThunk<
+  AssignmentPlanContract,
+  "upsertScenario"
+>({
+  opName: "upsertScenario",
+  apiPath: "/bizPlan/assignmentPlan/api",
+  typePrefix: "assignmentPlans/upsertScenario",
+});
+
+const deleteScenario = createStandardThunk<
+  AssignmentPlanContract,
+  "deleteScenario"
+>({
+  opName: "deleteScenario",
+  apiPath: "/bizPlan/assignmentPlan/api",
+  typePrefix: "assignmentPlans/deleteScenario",
+});
+
 export const assignmentPlanActions = {
   ...assignmentPlanSlice.actions,
   getAssignmentPlans,
   upsertAssignmentPlan,
+  getScenarios,
+  upsertScenario,
+  deleteScenario,
 };
 export const assignmentPlanReducer = assignmentPlanSlice.reducer;

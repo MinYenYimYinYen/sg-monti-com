@@ -17,6 +17,15 @@ export function useAssignmentPlan({ autoLoad }: { autoLoad: boolean }) {
     }
   }, [autoLoad, dispatch]);
 
+  useEffect(() => {
+    dispatch(
+      assignmentPlanActions.getScenarios({
+        params: {},
+        config: { showLoading: false },
+      }),
+    );
+  }, [dispatch]);
+
   const upsert = (
     params: AssignmentPlanContract["upsertAssignmentPlan"]["params"],
   ) =>
@@ -27,5 +36,23 @@ export function useAssignmentPlan({ autoLoad }: { autoLoad: boolean }) {
       }),
     );
 
-  return { upsert };
+  const upsertScenario = (
+    params: AssignmentPlanContract["upsertScenario"]["params"],
+  ) =>
+    dispatch(
+      assignmentPlanActions.upsertScenario({
+        params,
+        config: { showLoading: false },
+      }),
+    );
+
+  const removeScenario = (name: string) =>
+    dispatch(
+      assignmentPlanActions.deleteScenario({
+        params: { name },
+        config: { showLoading: false },
+      }),
+    );
+
+  return { upsert, upsertScenario, removeScenario };
 }

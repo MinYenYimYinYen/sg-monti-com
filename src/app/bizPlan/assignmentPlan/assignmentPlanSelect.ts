@@ -7,6 +7,13 @@ import { flattenEntries } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes
 const selectAssignmentPlans = (state: AppState) =>
   state.assignmentPlan.assignmentPlans;
 
+const selectScenarios = (state: AppState) => state.assignmentPlan.scenarios;
+
+const selectScenarioMap = createSelector(
+  [selectScenarios],
+  (scenarios) => new Grouper(scenarios).toUniqueMap((s) => s.name),
+);
+
 // Map of employeeId → AssignmentPlan (direct lookup for employee detail view)
 const selectAssignmentsByEmployeeId = createSelector(
   [selectAssignmentPlans],
@@ -49,6 +56,8 @@ export const assignmentPlanSelect = {
   assignmentPlans: selectAssignmentPlans,
   assignmentsByEmployeeId: selectAssignmentsByEmployeeId,
   assignmentsByServCodeId: selectAssignmentsByServCodeId,
+  scenarios: selectScenarios,
+  scenarioMap: selectScenarioMap,
 };
 
 // Re-export the Employee type for use in hydrateAssignedTo without circular imports

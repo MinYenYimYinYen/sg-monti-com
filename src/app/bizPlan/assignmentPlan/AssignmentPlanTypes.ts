@@ -1,3 +1,21 @@
+// ---------------------------------------------------------------------------
+// Scenario
+// ---------------------------------------------------------------------------
+
+/**
+ * A named snapshot of all employee assignment plans for scenario exploration.
+ * `name` is the natural key — must be unique.
+ */
+export type Scenario = {
+  name: string;
+  createdAt: string;
+  plans: AssignmentPlan[];
+};
+
+// ---------------------------------------------------------------------------
+// Assignment Entries
+// ---------------------------------------------------------------------------
+
 /**
  * A single servCode entry in an employee's priority list.
  */
