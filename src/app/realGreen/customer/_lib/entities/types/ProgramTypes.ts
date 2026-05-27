@@ -40,9 +40,9 @@ export type ProgramRaw = {
   // estimateRequestDate: string | null;
   // estimateRequestedBy: string;
   // estimateRequestTakenBy: string;
-  // holdBeginDate: string | null;
-  // holdCode: number | null;
-  // holdDate: string | null;
+  holdBeginDate: string | null;
+  holdCode: number | null;
+  holdDate: string | null;
   id: number;
   // includeInConfirmationLetter: boolean;
   // isAutoRenew: boolean;
@@ -109,6 +109,9 @@ export type ProgramCore = {
   status: string;
   techNote: string;
   tempSeq: number;
+  holdCodeId: number | null;
+  holdStart: string | null;
+  holdEnd: string | null;
 };
 
 export type ProgramDocProps = CreatedUpdated & {

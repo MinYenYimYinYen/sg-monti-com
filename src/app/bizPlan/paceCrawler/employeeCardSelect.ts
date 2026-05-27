@@ -9,7 +9,6 @@ import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import {
   RequiredDailyEntry,
   DiffResult,
@@ -29,8 +28,6 @@ export type OpenServCodesForEmployee = {
 };
 
 const selectMainDate = (state: AppState): string => state.paceCrawler.mainDate;
-
-const ACTIVE_ASAP_STATUSES = getServiceStatuses(["active", "asap"]);
 
 // ---------------------------------------------------------------------------
 // Step D0 — Open ServCodes per Employee
@@ -74,9 +71,7 @@ const selectOpenServCodesForEmployees = createSelector(
         if (!servCode) continue;
 
         // Early filter: skip servCodes with no actionable work (active/asap on an active program).
-        const hasWorkRemaining = servCode.services.some(
-          (s) => ACTIVE_ASAP_STATUSES.includes(s.status) && s.program.status === "9",
-        );
+        const hasWorkRemaining = servCode.services.some((s) => s.x.isActionable);
         if (!hasWorkRemaining) continue;
 
         // Open criteria: mainDate is within [dateRange.min, dateRange.max] OR alwaysAsap.

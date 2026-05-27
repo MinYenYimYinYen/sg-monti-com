@@ -33,6 +33,9 @@ export const baseProgramNoX: Omit<Program, "x"> = {
   discount: null,
   promise: null,
   promiseIssues: [],
+  holdStart: null,
+  holdEnd: null,
+  holdCodeId: null,
 };
 
 export const baseProgram: Program = {

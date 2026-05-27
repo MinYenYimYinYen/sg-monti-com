@@ -4,6 +4,8 @@ import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTyp
 import { ServiceQuery } from "@/app/realGreen/customer/_lib/classes/ServiceQuery";
 import { isEcon } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 import { PriceTable } from "@/app/realGreen/priceTable/_types/PriceTableTypes";
+import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export class ProgramUtils {
   constructor(private readonly program: Omit<Program, "x">) {}
@@ -26,7 +28,8 @@ export class ProgramUtils {
    * Used to determine economy vs preferred pricing.
    */
   public get activeServiceCount(): number {
-    return this.serviceQuery.byStatus("active", "asap", "printed", "completed").results.length;
+    return this.serviceQuery.byStatus("active", "asap", "printed", "completed")
+      .results.length;
   }
 
   /**
@@ -51,5 +54,22 @@ export class ProgramUtils {
       return this.program.progCode.econPriceTable;
     }
     return this.program.progCode.priceTable;
+  }
+
+  public get isOnHold(): boolean {
+    // The RealGreen API sometimes returns null for holdStart even when a hold is active.
+    // We treat a program as on hold if: holdCodeId is set AND today <= holdEnd.
+    if (!this.program.holdCodeId || !this.program.holdEnd) return false;
+    const onHold = dateStrings.today() <= this.program.holdEnd;
+    return onHold;
+  }
+
+  /** True when this program is active (status "9"), not on hold, and its customer is also actionable. */
+  public get isActionable(): boolean {
+    return (
+      this.program.status === "9" &&
+      !this.isOnHold &&
+      this.program.customer.x.isActionable
+    );
   }
 }

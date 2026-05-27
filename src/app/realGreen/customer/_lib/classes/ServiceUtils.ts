@@ -178,4 +178,14 @@ export class ServiceUtils {
       discounts: this.applicableDiscounts,
     });
   }
+
+  /**
+   * True when this service has an active or asap status and its program is actionable.
+   * This is the single source of truth for "does this service represent schedulable work?"
+   */
+  public get isActionable(): boolean {
+    const ACTIVE_ASAP = ["Y", "*"];
+    return ACTIVE_ASAP.includes(this.service.status) && this.service.program.x.isActionable;
+  }
+
 }

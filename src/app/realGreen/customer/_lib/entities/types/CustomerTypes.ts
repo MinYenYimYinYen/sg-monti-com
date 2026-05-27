@@ -45,7 +45,7 @@ export type CustomerRaw = {
   contactPreferences: ContactPreferenceRaw | null;
   // countyID: string;
   // creditHoldStatus: number;
-  // creditLimit: number;
+  creditLimit: number;
   // customerContAllow: string;
   // customerWebsiteUrl: string;
   directions: string;
@@ -55,7 +55,7 @@ export type CustomerRaw = {
   // doNotPutOnCreditHold: boolean;
   // due1: number;
   // due2: number;
-  // due3: number;
+  due3: number;
   // due4: number;
   // due5: number;
   // due6: number;
@@ -65,9 +65,9 @@ export type CustomerRaw = {
   // estimateGivenDate: string | null;
   // estimatedHouseCost: number | null;
   // firstName: string;
-  // holdBegin: string | null;
-  // holdCode: number | null;
-  // holdEnd: string | null;
+  holdBegin: string | null;
+  holdCode: number | null;
+  holdEnd: string | null;
   id: number;
   importDate: string | null;
   // invoiceType: number;
@@ -107,7 +107,7 @@ export type CustomerRaw = {
   // propertyItemsToDelete: number[] | null;
   // propertyItemsToUpdate: CustomerProperty[] | null;
   // referenceID: string;
-  // remitBalance: number;
+  remitBalance: number;
   // residentalOrCommercialType: string;
   // routeCode: string;
   // since: string;
@@ -158,8 +158,14 @@ export type CustomerCore = {
   netBalance: number;
   // phones: PhoneRaw[];
   contactPoints: ContactPoint[];
+  creditLimit: number;
+  due3: number;
+  remitBalance: number;
   size: number;
   status: string;
+  holdCodeId: number | null;
+  holdStart: string | null;
+  holdEnd: string | null;
   subdivisionId: number;
   taxIds: string[];
   techNote: string;

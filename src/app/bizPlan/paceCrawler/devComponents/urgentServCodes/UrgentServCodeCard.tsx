@@ -7,7 +7,6 @@ import { urgentActions } from "@/app/bizPlan/paceCrawler/devComponents/urgentSer
 import { AppDispatch } from "@/store";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { Number } from "@/components/Number";
 import { AlertTriangle, Clock, Info, ClipboardList, LandPlot, Eye, EyeOff } from "lucide-react";
@@ -30,10 +29,6 @@ import {
   AccordionTrigger,
 } from "@/style/components/accordion";
 import { Checkbox } from "@/style/components/checkbox";
-
-const URGENT_DISPLAY_STATUSES = getServiceStatuses(["active", "asap"]);
-const isActionableService = (s: { status: string; program: { status: string } }) =>
-  URGENT_DISPLAY_STATUSES.includes(s.status) && s.program.status === "9";
 
 // ---------------------------------------------------------------------------
 // ChecklistServiceRow
@@ -143,7 +138,7 @@ function ChecklistPopover({
       className="w-full"
     >
       {visibleServCodes.map((servCode) => {
-        const unfinished = servCode.services.filter(isActionableService);
+        const unfinished = servCode.services.filter((s) => s.x.isActionable);
         if (unfinished.length === 0) return null;
 
         return (
@@ -191,7 +186,7 @@ function UrgentServCodeRow({
   servCode: ServCodeDeep;
   isAsap: boolean;
 }) {
-  const unprintedCount = servCode.services.filter(isActionableService).length;
+  const unprintedCount = servCode.services.filter((service) => service.x.isActionable).length;
   if (unprintedCount === 0) return null;
 
   return (

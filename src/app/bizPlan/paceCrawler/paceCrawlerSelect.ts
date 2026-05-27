@@ -17,7 +17,6 @@ import {
   SeasonOptimizedRange,
 } from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
-import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 
 // ---------------------------------------------------------------------------
 // Slice selector
@@ -386,11 +385,7 @@ const selectActivePoolPriceByServCode = createSelector(
   (servCodes): Map<string, number> => {
     const result = new Map<string, number>();
     for (const servCode of servCodes) {
-      const activePoolServices = servCode.services.filter(
-        (s) =>
-          getServiceStatuses(["active", "asap"]).includes(s.status) &&
-          s.program.status === "9",
-      );
+      const activePoolServices = servCode.services.filter((s) => s.x.isActionable);
       result.set(
         servCode.servCodeId,
         activePoolServices.reduce((total, service) => total + service.price, 0),

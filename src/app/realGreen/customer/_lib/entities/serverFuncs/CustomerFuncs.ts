@@ -49,8 +49,14 @@ function remapCustomer(raw: CustomerRaw): CustomerCore {
     netBalance: raw.netBalance,
     // phones: raw.phones,
     contactPoints: mapContactPoints(raw),
+    creditLimit: raw.creditLimit,
+    due3: raw.due3,
+    remitBalance: raw.remitBalance,
     size: raw.size,
     status: raw.statusCharacter,
+    holdCodeId: raw.holdCode,
+    holdStart: raw.holdBegin ? raw.holdBegin.split("T")[0] : null,
+    holdEnd: raw.holdEnd ? raw.holdEnd.split("T")[0] : null,
     subdivisionId: raw.subdivisionID || baseNumId,
     taxIds: typeGuard
       .definedArray([raw.taxID1, raw.taxID2, raw.taxID3])

@@ -2,6 +2,8 @@ import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProgramCore, ProgramDoc, ProgramRaw } from "../types/ProgramTypes";
 
 function remapProgram(raw: ProgramRaw): ProgramCore {
+  const rawHoldBeginDate = raw.holdBeginDate;
+
   return {
     avgPrice: raw.averagePrice,
     billingType: raw.billingType,
@@ -21,6 +23,9 @@ function remapProgram(raw: ProgramRaw): ProgramCore {
     status: raw.status,
     techNote: raw.technicianNote,
     tempSeq: raw.temporarySequence / 10,
+    holdCodeId: raw.holdCode,
+    holdStart: raw.holdBeginDate ? raw.holdBeginDate.split("T")[0] : null,
+    holdEnd: raw.holdDate ? raw.holdDate.split("T")[0] : null,
   };
 }
 
