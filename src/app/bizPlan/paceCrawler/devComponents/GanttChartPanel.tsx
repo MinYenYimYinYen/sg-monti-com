@@ -21,6 +21,16 @@ const ROW_HEIGHT = 36; // px per progCode row (tall enough for two stacked bars)
 const GROUP_GAP = 2; // px gap between progCode rows
 const HEADER_HEIGHT = 40; // px — week header
 
+// Palette for group color accents — cycles if more groups than colors.
+// Using OKLCH-friendly semantic approximations via Tailwind opacity classes.
+const GROUP_COLORS = [
+  { bar: "border-l-[3px] border-l-primary", label: "bg-primary/10" },
+  { bar: "border-l-[3px] border-l-secondary", label: "bg-secondary/10" },
+  { bar: "border-l-[3px] border-l-accent", label: "bg-accent/20" },
+  { bar: "border-l-[3px] border-l-destructive", label: "bg-destructive/10" },
+  { bar: "border-l-[3px] border-l-[oklch(0.65_0.18_300)]", label: "bg-[oklch(0.65_0.18_300)]/10" },
+];
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -64,7 +74,37 @@ function getMondaysInRange(start: string, end: string): string[] {
 type ProgGroup = {
   progCodeId: string;
   rows: SeasonOptimizedRange[];
+  /** Canonical group label this progCode row belongs to (null = ungrouped / single) */
+  groupLabel: string | null;
+  /** Index into GROUP_COLORS palette (null = ungrouped) */
+  colorIndex: number | null;
 };
+
+// ---------------------------------------------------------------------------
+// Build servCodeId → groupLabel map from assignment plans
+//
+// When different employees have different groupings for the same servCode,
+// we use the first grouping encountered (most common in practice).
+// ---------------------------------------------------------------------------
+
+function buildServCodeGroupMap(
+  assignmentsByEmployeeId: ReturnType<typeof assignmentPlanSelect.assignmentsByEmployeeId>,
+): Map<string, string> {
+  const result = new Map<string, string>();
+  for (const plan of assignmentsByEmployeeId.values()) {
+    for (const entry of plan.entries) {
+      if (entry.kind === "group") {
+        const label = entry.label ?? entry.servCodeIds.join("+");
+        for (const servCodeId of entry.servCodeIds) {
+          if (!result.has(servCodeId)) {
+            result.set(servCodeId, label);
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -79,6 +119,8 @@ function GanttProgRow({
   totalDays: number;
   chartStart: string;
 }) {
+  const colorEntry = group.colorIndex !== null ? GROUP_COLORS[group.colorIndex % GROUP_COLORS.length] : null;
+
   return (
     <div
       className="relative border-b border-border/50"
@@ -105,6 +147,7 @@ function GanttProgRow({
         const widthPct = (widthDays / totalDays) * 100;
 
         const barColor = row.hasWork ? "bg-primary/30" : "bg-muted-foreground/20";
+        const groupTooltip = group.groupLabel ? ` | Group: ${group.groupLabel}` : "";
 
         return (
           <div key={row.servCodeId}>
@@ -122,9 +165,9 @@ function GanttProgRow({
               />
             )}
 
-            {/* optimizedRange bar — bottom, primary, with label */}
+            {/* optimizedRange bar — bottom, primary, with label and optional group accent */}
             <div
-              className={`absolute top-1/2 rounded-full ${barColor}`}
+              className={`absolute top-1/2 rounded-full overflow-hidden ${barColor} ${colorEntry ? colorEntry.bar : ""}`}
               style={{
                 left: `${leftPct}%`,
                 width: `${widthPct}%`,
@@ -132,7 +175,7 @@ function GanttProgRow({
                 // Offset downward slightly to sit below the servCodeRange bar
                 transform: "translateY(10%)",
               }}
-              title={`${row.servCodeId}: ${row.optimizedMin} → ${row.optimizedMax}`}
+              title={`${row.servCodeId}: ${row.optimizedMin} → ${row.optimizedMax}${groupTooltip}`}
             >
               <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-mono truncate leading-none">
                 {row.servCodeId}
@@ -265,7 +308,30 @@ export function GanttChartPanel() {
 
   const totalDays = Math.max(dayOffset(chartStart, chartEnd), 1);
 
-  // Group rows by progCode
+  // ---------------------------------------------------------------------------
+  // Build servCodeId → groupLabel map and assign color indices per group label
+  // ---------------------------------------------------------------------------
+  const servCodeGroupMap = buildServCodeGroupMap(assignmentsByEmployeeId);
+
+  // Assign a stable color index to each unique group label (in order of first appearance)
+  const groupColorIndex = new Map<string, number>();
+  let nextColorIndex = 0;
+  for (const row of filteredResult) {
+    const groupLabel = servCodeGroupMap.get(row.servCodeId) ?? null;
+    if (groupLabel !== null && !groupColorIndex.has(groupLabel)) {
+      groupColorIndex.set(groupLabel, nextColorIndex++);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Group rows by progCode, then sort so grouped servCodes appear adjacent.
+  //
+  // Sort order:
+  // 1. Rows that belong to a group are sorted by their group label (alphabetically),
+  //    so all members of the same group cluster together.
+  // 2. Within a group, sequential servCodes are sorted by optimizedMin.
+  // 3. Ungrouped rows sort by progCodeId.
+  // ---------------------------------------------------------------------------
   const groupMap = new Map<string, SeasonOptimizedRange[]>();
   for (const row of filteredResult) {
     const existing = groupMap.get(row.progCodeId) ?? [];
@@ -273,14 +339,36 @@ export function GanttChartPanel() {
     groupMap.set(row.progCodeId, existing);
   }
 
-  const groups: ProgGroup[] = [];
+  // Determine the primary group label for a progCode row (the group label of its first member,
+  // or null if all members are ungrouped singles).
+  function getPrimaryGroupLabel(rows: SeasonOptimizedRange[]): string | null {
+    for (const row of rows) {
+      const label = servCodeGroupMap.get(row.servCodeId);
+      if (label) return label;
+    }
+    return null;
+  }
+
+  const rawGroups: ProgGroup[] = [];
   for (const [progCodeId, rows] of groupMap) {
     const isSequential = rows.some((r) => r.runsInSequence);
     const sorted = isSequential
       ? [...rows].sort((a, b) => a.optimizedMin.localeCompare(b.optimizedMin))
       : rows;
-    groups.push({ progCodeId, rows: sorted });
+    const groupLabel = getPrimaryGroupLabel(sorted);
+    const colorIndex = groupLabel !== null ? (groupColorIndex.get(groupLabel) ?? null) : null;
+    rawGroups.push({ progCodeId, rows: sorted, groupLabel, colorIndex });
   }
+
+  // Sort: grouped rows first (by group label), then ungrouped (by progCodeId)
+  const groups = [...rawGroups].sort((a, b) => {
+    if (a.groupLabel !== null && b.groupLabel !== null) {
+      return a.groupLabel.localeCompare(b.groupLabel);
+    }
+    if (a.groupLabel !== null) return -1;
+    if (b.groupLabel !== null) return 1;
+    return a.progCodeId.localeCompare(b.progCodeId);
+  });
 
   const mondays = getMondaysInRange(chartStart, chartEnd);
 
@@ -324,20 +412,26 @@ export function GanttChartPanel() {
             {/* Header spacer */}
             <div style={{ height: HEADER_HEIGHT }} className="border-b border-border bg-card" />
 
-            {groups.map((group) => (
-              <div
-                key={group.progCodeId}
-                className="flex items-center px-2 border-b border-border/50 bg-card"
-                style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
-              >
-                <span
-                  className="text-xs font-semibold text-foreground truncate font-mono"
-                  title={group.progCodeId}
+            {groups.map((group) => {
+              const colorEntry = group.colorIndex !== null
+                ? GROUP_COLORS[group.colorIndex % GROUP_COLORS.length]
+                : null;
+              return (
+                <div
+                  key={group.progCodeId}
+                  className={`flex items-center px-2 border-b border-border/50 ${colorEntry ? colorEntry.label : "bg-card"}`}
+                  style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
+                  title={group.groupLabel ? `Group: ${group.groupLabel}` : undefined}
                 >
-                  {group.progCodeId}
-                </span>
-              </div>
-            ))}
+                  <span
+                    className="text-xs font-semibold text-foreground truncate font-mono"
+                    title={group.progCodeId}
+                  >
+                    {group.progCodeId}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Chart area — fills remaining width */}
@@ -416,6 +510,10 @@ export function GanttChartPanel() {
         <div className="flex items-center gap-1.5">
           <div className="w-0 h-3 border-l-2 border-destructive/70" />
           <span>Today</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1 h-3 bg-primary/10 border-l-[3px] border-l-primary rounded-sm" />
+          <span>Grouped servCodes (color = same group)</span>
         </div>
       </div>
     </div>

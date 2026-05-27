@@ -29,4 +29,9 @@ export interface AssignmentPlanContract extends ApiContract {
     params: { name: string };
     result: DataResponse<{ name: string }>;
   };
+
+  activateScenario: {
+    params: { name: string };
+    result: DataResponse<Scenario[]>;
+  };
 }

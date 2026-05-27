@@ -9,32 +9,13 @@ export function useAssignmentPlan({ autoLoad }: { autoLoad: boolean }) {
   useEffect(() => {
     if (autoLoad) {
       dispatch(
-        assignmentPlanActions.getAssignmentPlans({
+        assignmentPlanActions.getScenarios({
           params: {},
-          config: { loadingMsg: "Loading assignment plans..." },
+          config: { loadingMsg: "Loading scenarios..." },
         }),
       );
     }
   }, [autoLoad, dispatch]);
-
-  useEffect(() => {
-    dispatch(
-      assignmentPlanActions.getScenarios({
-        params: {},
-        config: { showLoading: false },
-      }),
-    );
-  }, [dispatch]);
-
-  const upsert = (
-    params: AssignmentPlanContract["upsertAssignmentPlan"]["params"],
-  ) =>
-    dispatch(
-      assignmentPlanActions.upsertAssignmentPlan({
-        params,
-        config: { showLoading: false },
-      }),
-    );
 
   const upsertScenario = (
     params: AssignmentPlanContract["upsertScenario"]["params"],
@@ -54,5 +35,13 @@ export function useAssignmentPlan({ autoLoad }: { autoLoad: boolean }) {
       }),
     );
 
-  return { upsert, upsertScenario, removeScenario };
+  const activateScenario = (name: string) =>
+    dispatch(
+      assignmentPlanActions.activateScenario({
+        params: { name },
+        config: { showLoading: false },
+      }),
+    );
+
+  return { upsertScenario, removeScenario, activateScenario };
 }

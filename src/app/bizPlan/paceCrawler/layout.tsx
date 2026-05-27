@@ -2,6 +2,7 @@
 
 import { usePaceCrawlerDeps } from "@/app/bizPlan/paceCrawler/usePaceCrawlerDeps";
 import { PaceCrawlerNav } from "@/app/bizPlan/paceCrawler/PaceCrawlerNav";
+import { AssignmentScenarioSelector } from "@/app/bizPlan/paceCrawler/AssignmentScenarioSelector";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
@@ -26,6 +27,7 @@ export default function PaceCrawlerLayout({ children }: { children: React.ReactN
               if (date) dispatch(paceCrawlerActions.setMainDate(date));
             }}
           />
+          <AssignmentScenarioSelector />
         </div>
         <div className="flex items-center gap-1">
           <PaceCrawlerNav />

@@ -9,6 +9,8 @@
 export type Scenario = {
   name: string;
   createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
   plans: AssignmentPlan[];
 };
 

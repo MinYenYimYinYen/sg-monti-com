@@ -44,11 +44,11 @@ const handlers: HandlerMap<AssignmentPlanContract> = {
 
   upsertScenario: {
     roles: ["admin"],
-    handler: async ({ name, createdAt, plans }) => {
+    handler: async ({ name, createdAt, updatedAt, isActive, plans }) => {
       await connectToMongoDB();
       const result: Scenario = await ScenarioModel.findOneAndUpdate(
         { name },
-        { name, createdAt, plans },
+        { name, createdAt, updatedAt, isActive, plans },
         { upsert: true, new: true },
       ).lean();
       return { success: true, payload: cleanMongoObject(result) };
@@ -61,6 +61,18 @@ const handlers: HandlerMap<AssignmentPlanContract> = {
       await connectToMongoDB();
       await ScenarioModel.deleteOne({ name });
       return { success: true, payload: { name } };
+    },
+  },
+
+  activateScenario: {
+    roles: ["admin"],
+    handler: async ({ name }) => {
+      await connectToMongoDB();
+      // Deactivate all, then activate the named one atomically
+      await ScenarioModel.updateMany({}, { isActive: false });
+      await ScenarioModel.updateOne({ name }, { isActive: true });
+      const result: Scenario[] = await ScenarioModel.find().lean();
+      return { success: true, payload: cleanMongoArray(result) };
     },
   },
 };

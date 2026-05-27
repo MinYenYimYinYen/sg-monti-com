@@ -35,6 +35,8 @@ const AssignmentPlanEmbedSchema = new Schema(
 const ScenarioSchema = new Schema({
   name: { type: String, required: true, unique: true },
   createdAt: { type: String, required: true },
+  updatedAt: { type: String, required: true },
+  isActive: { type: Boolean, required: true, default: false },
   plans: { type: [AssignmentPlanEmbedSchema], required: true, default: [] },
 });
 

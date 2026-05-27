@@ -50,6 +50,8 @@ const assignmentPlanSlice = createSlice({
     });
     builder.addCase(getScenarios.fulfilled, (state, action) => {
       state.scenarios = action.payload;
+      const active = action.payload.find((s) => s.isActive);
+      if (active) state.assignmentPlans = active.plans;
     });
     builder.addCase(upsertScenario.fulfilled, (state, action) => {
       const updated = action.payload;
@@ -59,10 +61,17 @@ const assignmentPlanSlice = createSlice({
       } else {
         state.scenarios.push(updated);
       }
+      // If the saved scenario is active, sync assignmentPlans
+      if (updated.isActive) state.assignmentPlans = updated.plans;
     });
     builder.addCase(deleteScenario.fulfilled, (state, action) => {
       const { name } = action.payload;
       state.scenarios = state.scenarios.filter((s) => s.name !== name);
+    });
+    builder.addCase(activateScenario.fulfilled, (state, action) => {
+      state.scenarios = action.payload;
+      const active = action.payload.find((s) => s.isActive);
+      if (active) state.assignmentPlans = active.plans;
     });
   },
 });
@@ -112,6 +121,15 @@ const deleteScenario = createStandardThunk<
   typePrefix: "assignmentPlans/deleteScenario",
 });
 
+const activateScenario = createStandardThunk<
+  AssignmentPlanContract,
+  "activateScenario"
+>({
+  opName: "activateScenario",
+  apiPath: "/bizPlan/assignmentPlan/api",
+  typePrefix: "assignmentPlans/activateScenario",
+});
+
 export const assignmentPlanActions = {
   ...assignmentPlanSlice.actions,
   getAssignmentPlans,
@@ -119,5 +137,6 @@ export const assignmentPlanActions = {
   getScenarios,
   upsertScenario,
   deleteScenario,
+  activateScenario,
 };
 export const assignmentPlanReducer = assignmentPlanSlice.reducer;

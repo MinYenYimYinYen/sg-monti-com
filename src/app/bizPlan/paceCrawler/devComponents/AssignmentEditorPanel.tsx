@@ -5,19 +5,16 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
-import { flattenEntries, AssignmentEntry, AssignmentPlan } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
+import { flattenEntries, AssignmentEntry } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
-import { useAssignmentPlan } from "@/app/bizPlan/assignmentPlan/useAssignmentPlan";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
-import { ChevronUp, ChevronDown, ChevronRight, X, Plus, Copy, ClipboardPaste, FlaskConical, Zap, Save, Trash2, Download } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronRight, X, Plus, Copy, ClipboardPaste } from "lucide-react";
 import { Button } from "@/style/components/button";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-type EditorMode = "live" | "draft";
 
 type ConfigGroup = {
   fingerprint: string;
@@ -38,17 +35,13 @@ type SelectionAction =
 function buildConfigGroups(
   selectedEmployeeIds: Set<string>,
   assignmentsByEmployeeId: ReturnType<typeof assignmentPlanSelect.assignmentsByEmployeeId>,
-  draftPlans: Map<string, AssignmentEntry[]>,
-  mode: EditorMode,
 ): ConfigGroup[] {
   const groupMap = new Map<string, ConfigGroup>();
 
   for (const employeeId of selectedEmployeeIds) {
-    const entries =
-      mode === "draft"
-        ? (draftPlans.get(employeeId) ?? assignmentsByEmployeeId.get(employeeId)?.entries ?? [])
-        : (assignmentsByEmployeeId.get(employeeId)?.entries ?? []);
-    const fingerprint = (mode === "draft" ? "draft:" : "") + flattenEntries(entries).join(",") + "|" + employeeId;
+    const entries = assignmentsByEmployeeId.get(employeeId)?.entries ?? [];
+    // Each employee gets its own group card (fingerprint includes employeeId)
+    const fingerprint = flattenEntries(entries).join(",") + "|" + employeeId;
 
     groupMap.set(fingerprint, {
       fingerprint,
@@ -248,149 +241,11 @@ function AddServCodesSection({
 }
 
 // ---------------------------------------------------------------------------
-// ScenarioBar — save / load / delete / promote scenarios
-// ---------------------------------------------------------------------------
-
-type ScenarioBarProps = {
-  draftPlans: Map<string, AssignmentEntry[]>;
-  assignmentsByEmployeeId: ReturnType<typeof assignmentPlanSelect.assignmentsByEmployeeId>;
-  onLoadScenario: (plans: AssignmentPlan[]) => void;
-  onPromoteToLive: () => void;
-  upsertScenario: ReturnType<typeof useAssignmentPlan>["upsertScenario"];
-  removeScenario: ReturnType<typeof useAssignmentPlan>["removeScenario"];
-};
-
-function ScenarioBar({
-  draftPlans,
-  assignmentsByEmployeeId,
-  onLoadScenario,
-  onPromoteToLive,
-  upsertScenario,
-  removeScenario,
-}: ScenarioBarProps) {
-  const scenarios = useSelector(assignmentPlanSelect.scenarios);
-  const [scenarioName, setScenarioName] = useState("");
-  const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
-
-  function buildCurrentPlans(): AssignmentPlan[] {
-    // Merge: start from all live plans, overlay any draft overrides
-    const allEmployeeIds = new Set([
-      ...[...assignmentsByEmployeeId.keys()],
-      ...[...draftPlans.keys()],
-    ]);
-    return [...allEmployeeIds].map((employeeId) => ({
-      employeeId,
-      entries: draftPlans.get(employeeId) ?? assignmentsByEmployeeId.get(employeeId)?.entries ?? [],
-    }));
-  }
-
-  function handleSave() {
-    const name = scenarioName.trim();
-    if (!name) return;
-    upsertScenario({
-      name,
-      createdAt: new Date().toISOString(),
-      plans: buildCurrentPlans(),
-    });
-    setScenarioName("");
-  }
-
-  return (
-    <div className="border-b border-secondary/30 bg-secondary/5 px-3 py-2 space-y-2">
-      {/* Save row */}
-      <div className="flex items-center gap-1.5">
-        <input
-          type="text"
-          value={scenarioName}
-          onChange={(e) => setScenarioName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
-          placeholder="Scenario name…"
-          className="flex-1 h-6 text-[10px] px-2 rounded border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-secondary"
-        />
-        <button
-          onClick={handleSave}
-          disabled={!scenarioName.trim()}
-          className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-semibold bg-secondary/20 text-secondary hover:bg-secondary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          title="Save scenario"
-        >
-          <Save className="w-3 h-3" />
-          Save
-        </button>
-        <button
-          onClick={onPromoteToLive}
-          className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
-          title="Promote draft to live (persists to DB)"
-        >
-          <Zap className="w-3 h-3" />
-          Promote
-        </button>
-      </div>
-
-      {/* Saved scenarios list */}
-      {scenarios.length > 0 && (
-        <div className="space-y-0.5 max-h-32 overflow-y-auto">
-          {scenarios.map((scenario) => (
-            <div
-              key={scenario.name}
-              className="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-secondary/10 group"
-            >
-              <span className="flex-1 text-[10px] text-foreground truncate">{scenario.name}</span>
-              <span className="text-[9px] text-muted-foreground shrink-0">
-                {new Date(scenario.createdAt).toLocaleDateString()}
-              </span>
-              <button
-                onClick={() => onLoadScenario(scenario.plans)}
-                className="p-0.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0"
-                title="Load scenario into draft"
-              >
-                <Download className="w-3 h-3" />
-              </button>
-              {confirmDeleteName === scenario.name ? (
-                <>
-                  <button
-                    onClick={() => {
-                      removeScenario(scenario.name);
-                      setConfirmDeleteName(null);
-                    }}
-                    className="text-[9px] text-destructive font-semibold hover:underline shrink-0"
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteName(null)}
-                    className="text-[9px] text-muted-foreground hover:underline shrink-0"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setConfirmDeleteName(scenario.name)}
-                  className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
-                  title="Delete scenario"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {scenarios.length === 0 && (
-        <p className="text-[10px] text-muted-foreground">No saved scenarios yet.</p>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // AssignmentEditorPanel
 // ---------------------------------------------------------------------------
 
 export function AssignmentEditorPanel() {
   const dispatch = useAppDispatch();
-  const { upsert, upsertScenario, removeScenario } = useAssignmentPlan({ autoLoad: false });
 
   const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
@@ -399,51 +254,12 @@ export function AssignmentEditorPanel() {
 
   const activeEmployees = [...employeeMap.values()].filter((e) => e.active);
 
-  const [mode, setMode] = useState<EditorMode>("live");
-  // Draft state: employeeId → entries override (only populated in draft mode)
-  const [draftPlans, setDraftPlans] = useState<Map<string, AssignmentEntry[]>>(new Map());
-
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<string>>(new Set());
   const [pendingByGroup, setPendingByGroup] = useState<Map<string, Set<string>>>(new Map());
   const [openAddGroup, setOpenAddGroup] = useState<string | null>(null);
-  // Selected entry indices per config group (for grouping operations)
   const [selectedByGroup, setSelectedByGroup] = useState<Map<string, Set<number>>>(new Map());
-  // Clipboard: copied entries + source fingerprint
   const [clipboard, setClipboard] = useState<{ entries: AssignmentEntry[]; sourceFingerprint: string } | null>(null);
-  // Which group is pending paste confirmation
   const [pendingPasteGroup, setPendingPasteGroup] = useState<string | null>(null);
-
-  function enterDraftMode() {
-    // Snapshot current live state into draft
-    const snapshot = new Map<string, AssignmentEntry[]>();
-    for (const [employeeId, plan] of assignmentsByEmployeeId) {
-      snapshot.set(employeeId, [...plan.entries]);
-    }
-    setDraftPlans(snapshot);
-    setMode("draft");
-  }
-
-  function exitDraftMode() {
-    setDraftPlans(new Map());
-    setMode("live");
-  }
-
-  function loadScenario(plans: AssignmentPlan[]) {
-    const next = new Map<string, AssignmentEntry[]>();
-    for (const plan of plans) {
-      next.set(plan.employeeId, [...plan.entries]);
-    }
-    setDraftPlans(next);
-  }
-
-  function promoteToLive() {
-    // Persist all draft overrides to DB and update Redux
-    for (const [employeeId, entries] of draftPlans) {
-      dispatch(assignmentPlanActions.reorderEntries({ employeeId, entries }));
-      upsert({ employeeId, entries });
-    }
-    exitDraftMode();
-  }
 
   /** Returns "MM/DD–MM/DD" for a single servCode, or null if no valid dateRange. */
   function getServCodeDateRange(servCodeId: string): string | null {
@@ -497,20 +313,10 @@ export function AssignmentEditorPanel() {
     setSelectedEmployeeIds(new Set());
   }
 
+  // All edits update Redux only (local). Persisting happens via Save/Save As in the toolbar.
   function applyToGroup(employeeIds: string[], newEntries: AssignmentEntry[]) {
-    if (mode === "draft") {
-      setDraftPlans((prev) => {
-        const next = new Map(prev);
-        for (const employeeId of employeeIds) {
-          next.set(employeeId, newEntries);
-        }
-        return next;
-      });
-    } else {
-      for (const employeeId of employeeIds) {
-        dispatch(assignmentPlanActions.reorderEntries({ employeeId, entries: newEntries }));
-        upsert({ employeeId, entries: newEntries });
-      }
+    for (const employeeId of employeeIds) {
+      dispatch(assignmentPlanActions.reorderEntries({ employeeId, entries: newEntries }));
     }
   }
 
@@ -768,7 +574,7 @@ export function AssignmentEditorPanel() {
     });
   }
 
-  const configGroups = buildConfigGroups(selectedEmployeeIds, assignmentsByEmployeeId, draftPlans, mode);
+  const configGroups = buildConfigGroups(selectedEmployeeIds, assignmentsByEmployeeId);
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -814,41 +620,8 @@ export function AssignmentEditorPanel() {
         </div>
       </div>
 
-      {/* Right panel — config groups */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${mode === "draft" ? "border-l-2 border-secondary/50" : ""}`}>
-        {/* Mode toggle bar */}
-        <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 ${mode === "draft" ? "bg-secondary/10 border-secondary/30" : "bg-card"}`}>
-          <button
-            onClick={mode === "live" ? enterDraftMode : exitDraftMode}
-            className={`flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-semibold transition-colors ${
-              mode === "draft"
-                ? "bg-secondary text-white"
-                : "bg-muted text-muted-foreground hover:bg-accent/20 hover:text-foreground"
-            }`}
-            title={mode === "live" ? "Enter draft mode (edits won't persist)" : "Exit draft mode"}
-          >
-            <FlaskConical className="w-3 h-3" />
-            {mode === "draft" ? "Draft" : "Live"}
-          </button>
-          {mode === "draft" && (
-            <span className="text-[10px] text-secondary font-medium">
-              Changes are local — use Promote to persist
-            </span>
-          )}
-        </div>
-
-        {/* Scenario bar — draft mode only */}
-        {mode === "draft" && (
-          <ScenarioBar
-            draftPlans={draftPlans}
-            assignmentsByEmployeeId={assignmentsByEmployeeId}
-            onLoadScenario={loadScenario}
-            onPromoteToLive={promoteToLive}
-            upsertScenario={upsertScenario}
-            removeScenario={removeScenario}
-          />
-        )}
-
+      {/* Right panel */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Config groups scroll area */}
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {selectedEmployeeIds.size === 0 && (
@@ -1015,7 +788,7 @@ export function AssignmentEditorPanel() {
                                 onClick={(e) => moveUp(group, index, e)}
                                 disabled={index === 0}
                                 className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
-                                title="Move up (Enter to repeat)"
+                                title="Move up"
                               >
                                 <ChevronUp className="w-3 h-3" />
                               </button>
@@ -1023,7 +796,7 @@ export function AssignmentEditorPanel() {
                                 onClick={(e) => moveDown(group, index, e)}
                                 disabled={index === group.entries.length - 1}
                                 className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
-                                title="Move down (Enter to repeat)"
+                                title="Move down"
                               >
                                 <ChevronDown className="w-3 h-3" />
                               </button>
@@ -1064,8 +837,6 @@ export function AssignmentEditorPanel() {
                                       <span className="font-mono text-muted-foreground">{range ?? "—"}</span>
                                       <button
                                         onClick={() => {
-                                          // Remove this servCode from the group but keep it as a standalone
-                                          // single entry immediately after the group in the priority list.
                                           const remaining = entry.servCodeIds.filter((id) => id !== servCodeId);
                                           const updatedGroupEntry: AssignmentEntry =
                                             remaining.length === 1
