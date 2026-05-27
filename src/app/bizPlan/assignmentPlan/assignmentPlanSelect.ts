@@ -14,11 +14,15 @@ const selectScenarioMap = createSelector(
   (scenarios) => new Grouper(scenarios).toUniqueMap((s) => s.name),
 );
 
-// Map of employeeId → AssignmentPlan (direct lookup for employee detail view)
+// Map of employeeId → AssignmentPlan — only employees with at least one entry.
+// Employees with empty plans are excluded so they don't appear in cards, the crawler, or
+// any downstream selector that iterates this map.
 const selectAssignmentsByEmployeeId = createSelector(
   [selectAssignmentPlans],
   (assignmentPlans) =>
-    new Grouper(assignmentPlans).toUniqueMap((ap) => ap.employeeId),
+    new Grouper(assignmentPlans.filter((ap) => ap.entries.length > 0)).toUniqueMap(
+      (ap) => ap.employeeId,
+    ),
 );
 
 // Inverted map: servCodeId → Employee[] ordered by each employee's priority for that servCode.

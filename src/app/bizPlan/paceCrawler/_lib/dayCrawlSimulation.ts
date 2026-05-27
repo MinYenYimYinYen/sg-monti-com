@@ -26,8 +26,11 @@ import {
 export function runDayCrawlSimulation(
   servCodeEntries: DayCrawlServCodeEntry[],
   employeeEntries: DayCrawlEmployeeEntry[],
-  today: string,
+  /** The first day to simulate. Computed by selectCrawlStart in paceCrawlerSelect. */
+  crawlStart: string,
 ): CrawlerResult {
+  // `today` is used as the internal loop variable name for clarity within the simulation.
+  const today = crawlStart;
   // ---------------------------------------------------------------------------
   // 1. Initialize pools (mutable clones — never mutate inputs)
   // ---------------------------------------------------------------------------
@@ -166,7 +169,7 @@ export function runDayCrawlSimulation(
   // 6. Walk forward day by day
   // ---------------------------------------------------------------------------
   const maxDay = dateStrings.addWeekdays(today, 365);
-  let day = dateStrings.nextWeekdayAfter(today);
+  let day = today;
 
   while (day <= maxDay) {
     let anyRemaining = false;
@@ -289,10 +292,9 @@ export function runDayCrawlSimulation(
             pools.set(servCodeId, newPool);
             anyMemberDrained = true;
 
-            if (newPool <= 0 && projectedEndDate.get(servCodeId) === null) {
-              projectedEndDate.set(servCodeId, day);
-              timeline.push({ date: day, event: { kind: "finishes", entryLabel: label } });
-
+            // Sequential successor unlock — handled per-member so the successor opens
+            // as soon as this member's pool drains (even if other group members haven't).
+            if (newPool <= 0) {
               const successor = sequentialSuccessor.get(servCodeId);
               if (successor) {
                 sequentialLocks.set(successor, false);
@@ -330,9 +332,18 @@ export function runDayCrawlSimulation(
             recordServCodeEvent(label, day, employee.employeeId, kind, undefined, prevEntryLabel ?? undefined);
           }
 
-          // Check if all member pools drained — record group finishes
+          // Check if all member pools drained — record group finishes and set a shared
+          // projectedEndDate for all members. Using the allDrained moment (rather than
+          // per-member drain) guarantees every member gets the same optimizedMax, which
+          // is the correct model: grouped servCodes are worked simultaneously and finish together.
           const allDrained = servCodeIds.every((id) => (pools.get(id) ?? 0) <= 0);
           if (allDrained) {
+            for (const servCodeId of servCodeIds) {
+              if (projectedEndDate.get(servCodeId) === null) {
+                projectedEndDate.set(servCodeId, day);
+              }
+            }
+            timeline.push({ date: day, event: { kind: "finishes", entryLabel: label } });
             activeEmployeesByEntry.get(label)?.delete(employee.employeeId);
             recordServCodeEvent(label, day, employee.employeeId, "finishes");
           }
@@ -394,6 +405,43 @@ export function runDayCrawlSimulation(
       optimizedMax,
       groupLabel,
     });
+  }
+
+  // Align group members' optimizedMin so all members share the same start date.
+  // Rule: if a group contains a sequential servCode, its optimizedMin is authoritative
+  // (it reflects the dynamically resolved unlock date from the crawl). For groups with
+  // no sequential member, use the minimum optimizedMin across all members.
+  const sequentialServCodeIds = new Set<string>();
+  for (const entry of servCodeEntries) {
+    if (entry.runsInSequence) sequentialServCodeIds.add(entry.servCodeId);
+  }
+
+  const groupMinMap = new Map<string, string>();
+
+  // Pass 1: sequential members rule — their optimizedMin is the authoritative group start.
+  for (const [servCodeId, groupLabel] of servCodeGroupLabelMap) {
+    if (!sequentialServCodeIds.has(servCodeId)) continue;
+    const result = byServCode.get(servCodeId);
+    if (!result) continue;
+    groupMinMap.set(groupLabel, result.optimizedMin);
+  }
+
+  // Pass 2: for groups with no sequential member, use the minimum optimizedMin.
+  for (const [servCodeId, groupLabel] of servCodeGroupLabelMap) {
+    if (groupMinMap.has(groupLabel)) continue; // already claimed by a sequential member
+    const result = byServCode.get(servCodeId);
+    if (!result) continue;
+    const existing = groupMinMap.get(groupLabel);
+    if (existing === undefined || result.optimizedMin < existing) {
+      groupMinMap.set(groupLabel, result.optimizedMin);
+    }
+  }
+
+  for (const [servCodeId, groupLabel] of servCodeGroupLabelMap) {
+    const result = byServCode.get(servCodeId);
+    const sharedMin = groupMinMap.get(groupLabel);
+    if (!result || sharedMin === undefined) continue;
+    byServCode.set(servCodeId, { ...result, optimizedMin: sharedMin });
   }
 
   return { byServCode, employeeTimeline, servCodeTimeline };

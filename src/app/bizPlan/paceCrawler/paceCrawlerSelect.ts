@@ -26,6 +26,28 @@ import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus"
 const selectMainDate = (state: AppState): string => state.paceCrawler.mainDate;
 
 // ---------------------------------------------------------------------------
+// Layer 0 — Crawl Start Date
+// ---------------------------------------------------------------------------
+
+/**
+ * "What is the first day the crawl should simulate?"
+ *
+ * If mainDate is a future planning date, the crawl starts on mainDate itself.
+ * If mainDate is today or in the past, the crawl starts on the next weekday after actual today
+ * (routes are never created for today itself — the crawl only projects future work).
+ *
+ * Note: dateStrings.today() is called inside the selector computation. It is not derived
+ * from Redux state, but it is stable within a render cycle and correct at selector evaluation time.
+ */
+const selectCrawlStart = createSelector(
+  [selectMainDate],
+  (mainDate): string => {
+    const actualToday = dateStrings.today();
+    return mainDate > actualToday ? mainDate : dateStrings.nextWeekdayAfter(actualToday);
+  },
+);
+
+// ---------------------------------------------------------------------------
 // Layer 1 — Employee Availability
 // ---------------------------------------------------------------------------
 
@@ -36,15 +58,16 @@ const TWO_YEARS_WEEKDAYS = 520;
  * "When is each employee next available to work unscheduled jobs?"
  *
  * = nextWeekdayAfter(employee's latest printed schedDate across all servCodes)
- * = today if no printed services
+ * = crawlStart if no printed services
  */
 const selectNextDateByEmployee = createSelector(
   [
     deepSelect.servCodes,
     selectMainDate,
+    selectCrawlStart,
     assignmentPlanSelect.assignmentsByEmployeeId,
   ],
-  (servCodes, today, assignmentsByEmployeeId): Map<string, string> => {
+  (servCodes, today, crawlStart, assignmentsByEmployeeId): Map<string, string> => {
     const twoYearsOut = dateStrings.addWeekdays(today, TWO_YEARS_WEEKDAYS);
     const latestPrintedByEmployee = new Map<string, string>();
 
@@ -80,11 +103,10 @@ const selectNextDateByEmployee = createSelector(
       }
     }
 
-    // Ensure all assigned employees appear — those with no printed services get the next
-    // weekday after today (routes are never created for today itself).
+    // Ensure all assigned employees appear — those with no printed services get the crawl start.
     for (const [employeeId, plan] of assignmentsByEmployeeId) {
       if (flattenEntries(plan.entries).length > 0 && !result.has(employeeId)) {
-        result.set(employeeId, dateStrings.nextWeekdayAfter(today));
+        result.set(employeeId, crawlStart);
       }
     }
 
@@ -403,6 +425,7 @@ const selectCrawlerResult = createSelector(
     assignmentPlanSelect.assignmentsByEmployeeId,
     progServSelect.progCodes,
     selectMainDate,
+    selectCrawlStart,
   ],
   (
     nextDateByEmployee,
@@ -415,6 +438,7 @@ const selectCrawlerResult = createSelector(
     assignmentsByEmployeeId,
     progCodes,
     today,
+    crawlStart,
   ): CrawlerResult => {
     // Build servCode entries
     const servCodeEntries: DayCrawlServCodeEntry[] = [];
@@ -471,8 +495,7 @@ const selectCrawlerResult = createSelector(
       const totalAvgDailyPrice =
         totalAvgDailyPriceMap.get(employeeId) ?? teamAvgTotalDailyPrice;
       const nextAvailableDate =
-        nextDateByEmployee.get(employeeId) ??
-        dateStrings.nextWeekdayAfter(today);
+        nextDateByEmployee.get(employeeId) ?? crawlStart;
 
       employeeEntries.push({
         employeeId,
@@ -483,7 +506,7 @@ const selectCrawlerResult = createSelector(
       });
     }
 
-    return runDayCrawlSimulation(servCodeEntries, employeeEntries, today);
+    return runDayCrawlSimulation(servCodeEntries, employeeEntries, crawlStart);
   },
 );
 
@@ -650,6 +673,8 @@ const selectServCodeTimelineMap = createSelector(
 export const paceCrawlerSelect = {
   // Slice selectors
   mainDate: selectMainDate,
+  // Layer 0
+  crawlStart: selectCrawlStart,
   // Layer 1
   nextDateByEmployee: selectNextDateByEmployee,
   // Layer 2

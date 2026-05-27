@@ -3,6 +3,7 @@ import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { AssignmentPlanContract } from "@/app/bizPlan/assignmentPlan/api/AssignmentPlanContract";
 import { AssignmentEntry, AssignmentPlan, Scenario } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 
+
 type AssignmentPlanState = {
   assignmentPlans: AssignmentPlan[];
   scenarios: Scenario[];
@@ -34,20 +35,6 @@ const assignmentPlanSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getAssignmentPlans.fulfilled, (state, action) => {
-      state.assignmentPlans = action.payload;
-    });
-    builder.addCase(upsertAssignmentPlan.fulfilled, (state, action) => {
-      const updatedAssignmentPlan = action.payload;
-      const existingIndex = state.assignmentPlans.findIndex(
-        (doc) => doc.employeeId === updatedAssignmentPlan.employeeId,
-      );
-      if (existingIndex !== -1) {
-        state.assignmentPlans[existingIndex] = updatedAssignmentPlan;
-      } else {
-        state.assignmentPlans.push(updatedAssignmentPlan);
-      }
-    });
     builder.addCase(getScenarios.fulfilled, (state, action) => {
       state.scenarios = action.payload;
       const active = action.payload.find((s) => s.isActive);
@@ -74,24 +61,6 @@ const assignmentPlanSlice = createSlice({
       if (active) state.assignmentPlans = active.plans;
     });
   },
-});
-
-const getAssignmentPlans = createStandardThunk<
-  AssignmentPlanContract,
-  "getAssignmentPlans"
->({
-  opName: "getAssignmentPlans",
-  apiPath: "/bizPlan/assignmentPlan/api",
-  typePrefix: "assignmentPlans/getAssignmentPlans",
-});
-
-const upsertAssignmentPlan = createStandardThunk<
-  AssignmentPlanContract,
-  "upsertAssignmentPlan"
->({
-  opName: "upsertAssignmentPlan",
-  apiPath: "/bizPlan/assignmentPlan/api",
-  typePrefix: "assignmentPlans/upsertAssignmentPlan",
 });
 
 const getScenarios = createStandardThunk<
@@ -132,8 +101,6 @@ const activateScenario = createStandardThunk<
 
 export const assignmentPlanActions = {
   ...assignmentPlanSlice.actions,
-  getAssignmentPlans,
-  upsertAssignmentPlan,
   getScenarios,
   upsertScenario,
   deleteScenario,

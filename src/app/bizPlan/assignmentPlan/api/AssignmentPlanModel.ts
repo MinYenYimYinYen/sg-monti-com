@@ -1,6 +1,10 @@
 import { Schema } from "mongoose";
 import { createModel } from "@/lib/mongoose/createModel";
 
+// ---------------------------------------------------------------------------
+// Scenario Model
+// ---------------------------------------------------------------------------
+
 const AssignmentEntrySchema = new Schema(
   {
     kind: { type: String, enum: ["single", "group"], required: true },
@@ -12,17 +16,6 @@ const AssignmentEntrySchema = new Schema(
   },
   { _id: false },
 );
-
-const AssignmentPlanSchema = new Schema({
-  employeeId: { type: String, required: true },
-  entries: { type: [AssignmentEntrySchema], required: true, default: [] },
-});
-
-export const AssignmentPlanModel = createModel("AssignmentPlan", AssignmentPlanSchema);
-
-// ---------------------------------------------------------------------------
-// Scenario Model
-// ---------------------------------------------------------------------------
 
 const AssignmentPlanEmbedSchema = new Schema(
   {
