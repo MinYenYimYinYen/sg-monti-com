@@ -94,7 +94,7 @@ const realGreenParams: NavSection = {
 const bizPlanSection: NavSection = {
   title: "Biz Plan",
   navItems: [
-    { title: "Products", href: "/bizPlan/products", roles: ["admin"] },
+    { title: "Product Forecast", href: "/bizPlan/products", roles: ["admin"] },
     {
       title: "Pace",
       href: "/bizPlan/paceCrawler",
