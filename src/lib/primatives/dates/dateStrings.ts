@@ -131,7 +131,8 @@ function todayToWeekday() {
   return nextMonday(date);
 }
 
-function isValidDateRange(dateRange: TRange<string>): boolean {
+function isValidDateRange(dateRange: TRange<string> | null): boolean {
+  if (!dateRange) return false;
   const start = parseISO(dateRange.min);
   const end = parseISO(dateRange.max);
   return !isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end;

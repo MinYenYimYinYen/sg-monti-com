@@ -6,14 +6,16 @@ import { useEffect } from "react";
 import { recentProductionGetDocs } from "@/app/realGreen/customer/slices/customerSlices";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { dateRanges } from "@/lib/primatives/dates/dateStrings";
 
-export function useRecentProduction(dateRange: TRange<string>) {
+export function useRecentProduction(dateRange: TRange<string> | null) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
+  const isValidDateRange = dateRanges.isValidDateRange(dateRange);
 
   useEffect(() => {
-    if (!season) return;
+    if (!season || !isValidDateRange) return;
     dispatch(
       recentProductionGetDocs({
         params: {
@@ -26,10 +28,10 @@ export function useRecentProduction(dateRange: TRange<string>) {
         },
       }),
     );
-  }, [dateRange, dispatch, season]);
+  }, [dateRange, dispatch, isValidDateRange, season]);
 
   const refresh = () => {
-    if (!season) return;
+    if (!season || !isValidDateRange) return;
     dispatch(
       recentProductionGetDocs({
         params: {

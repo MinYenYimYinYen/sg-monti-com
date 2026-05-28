@@ -2,14 +2,14 @@
 
 ## Human Tasks
 
-- [ ] Y0: Modify `useRecentProduction` — null-safe signature
-- [ ] Y1: `InventoryTypes.ts` — all new types
-- [ ] Y2: `InventoryCheckModel.ts` — Mongoose model
-- [ ] Y3: `inventoryContract.ts` — API contract
-- [ ] Y4: `api/route.ts` — API route handler
-- [ ] Y5: `inventorySlice.ts` — Redux slice (state + actions + thunks)
-- [ ] Y6: `inventorySelect.ts` — selectors (including prediction computation)
-- [ ] Y7: Register `inventoryReducer` in `src/store/reducers/index.ts`
+- [x] Y0: Modify `useRecentProduction` — null-safe signature
+- [x] Y1: `InventoryTypes.ts` — all new types
+- [x] Y2: `InventoryCheckModel.ts` — Mongoose model
+- [x] Y3: `inventoryContract.ts` — API contract
+- [x] Y4: `api/route.ts` — API route handler
+- [x] Y5: `inventorySlice.ts` — Redux slice (state + actions + thunks)
+- [x] Y6: `inventorySelect.ts` — selectors (including prediction computation)
+- [x] Y7: Register `inventoryReducer` in `src/store/reducers/index.ts`
 
 ## AI Tasks
 

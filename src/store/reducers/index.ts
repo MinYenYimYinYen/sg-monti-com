@@ -38,6 +38,7 @@ import { serviceEtaReducer } from "@/app/scheduling/eta/serviceEtaSlice";
 import { urgentReducer } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentSlice";
 import { paceCrawlerReducer } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
 import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFeedback/report/loadoutReportSlice";
+import { inventoryReducer } from "@/app/inventory/inventorySlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -56,6 +57,7 @@ const rootReducer = combineReducers({
   discount: discountReducer,
   employee: employeeReducer,
   flag: flagReducer,
+  inventory: inventoryReducer,
   loadout: loadoutReducer,
   loadoutStart: loadoutStartReducer,
   loadoutFinish: loadoutFinishReducer,
