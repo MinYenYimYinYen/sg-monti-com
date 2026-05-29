@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { TRange } from "@/lib/primatives/tRange/TRange";
-import { DatePicker } from "@/components/DatePicker";
+import { DatePicker, DatePickerProps } from "@/components/DatePicker";
 import { cn } from "@/lib/tailwindUtils";
 import { validateDateRange } from "@/lib/primatives/dates/dateRangeSchema";
 
@@ -10,12 +10,14 @@ interface DateRangePickerProps {
   value?: TRange<string>;
   onChange?: (value: TRange<string>) => void;
   className?: string;
+  size?: DatePickerProps["size"];
 }
 
 export function DateRangePicker({
   value = { min: "", max: "" },
   onChange,
   className,
+  size,
 }: DateRangePickerProps) {
   const handleMinChange = (date: string) => {
     onChange?.({
@@ -40,6 +42,7 @@ export function DateRangePicker({
         onChange={handleMinChange}
         placeholder="Start"
         isInvalid={!!validation.errors?.min}
+        size={size}
       />
       <span className="text-muted-foreground text-sm">to</span>
       <DatePicker
@@ -47,6 +50,7 @@ export function DateRangePicker({
         onChange={handleMaxChange}
         placeholder="End"
         isInvalid={!!validation.errors?.max}
+        size={size}
       />
     </div>
   );

@@ -12,7 +12,7 @@ import {
 type UnitSelectorProps = {
   metric: Metric;
   value: UnitLabel;
-  onChange: (unit: UnitLabel) => void;
+  onChangeAction: (unit: UnitLabel) => void;
 };
 
 // All UnitLabel values filtered by metric
@@ -22,11 +22,11 @@ function getUnitsForMetric(metric: Metric): UnitLabel[] {
     .map(([label]) => label);
 }
 
-export function UnitSelector({ metric, value, onChange }: UnitSelectorProps) {
+export function UnitSelector({ metric, value, onChangeAction }: UnitSelectorProps) {
   const units = getUnitsForMetric(metric);
 
   return (
-    <Select value={value} onValueChange={(v) => onChange(v as UnitLabel)}>
+    <Select value={value} onValueChange={(v) => onChangeAction(v as UnitLabel)}>
       <SelectTrigger className="w-32">
         <SelectValue />
       </SelectTrigger>

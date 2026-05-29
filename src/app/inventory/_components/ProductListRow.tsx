@@ -31,8 +31,7 @@ export function ProductListRow({ product, prediction }: ProductListRowProps) {
   const countsSelector = inventorySelect.makeCountsForProduct(product.productId);
   const counts = useSelector(countsSelector);
 
-  const metric = product.unit.metric;
-  const totalAppUnits = sumCountsToAppUnits(counts, metric);
+  const totalAppUnits = sumCountsToAppUnits(counts, product);
   const totalDisplay = product.unitConfigDisplay.format({
     amount: totalAppUnits,
     targetContexts: ["load", "app"],

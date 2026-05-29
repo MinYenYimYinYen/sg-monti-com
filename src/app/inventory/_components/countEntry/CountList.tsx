@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ProductCount } from "@/app/inventory/InventoryTypes";
+import { useInventory } from "@/app/inventory/useInventory";
 import { Button } from "@/style/components/button";
 import { Trash2 } from "lucide-react";
 import {
@@ -14,8 +15,8 @@ import {
 } from "@/style/components/dialog";
 
 type CountListProps = {
+  productId: number;
   counts: ProductCount[];
-  onRemove: (index: number) => void;
 };
 
 function formatCount(count: ProductCount): string {
@@ -25,7 +26,8 @@ function formatCount(count: ProductCount): string {
   return `${count.qty} ${count.unit}`;
 }
 
-export function CountList({ counts, onRemove }: CountListProps) {
+export function CountList({ productId, counts }: CountListProps) {
+  const { removeCount } = useInventory();
   const [pendingRemoveIndex, setPendingRemoveIndex] = useState<number | null>(null);
 
   if (counts.length === 0) {
@@ -94,7 +96,7 @@ export function CountList({ counts, onRemove }: CountListProps) {
               intensity="solid"
               onClick={() => {
                 if (pendingRemoveIndex !== null) {
-                  onRemove(pendingRemoveIndex);
+                  removeCount(productId, pendingRemoveIndex);
                   setPendingRemoveIndex(null);
                 }
               }}

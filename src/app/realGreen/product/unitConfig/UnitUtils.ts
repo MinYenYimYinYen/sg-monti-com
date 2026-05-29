@@ -1,8 +1,10 @@
 import {
   AreaUnit,
   LengthUnit,
+  Metric,
   TimeUnit,
   UnitLabel,
+  UL_METRIC_MAP,
   VolumeUnit,
   WeightUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
@@ -443,6 +445,80 @@ export class UnitUtils {
     const toSeconds = toTime * this.TIME_TO_SECONDS[toTimeUnit];
     const targetLbs = lbsPerSecond * toSeconds;
     return targetLbs / this.WEIGHT_TO_LBS[toWeightUnit];
+  }
+
+  /**
+   * Finds the most human-readable (canonical) unit for a given quantity in app/base units.
+   *
+   * Selects the largest unit where the converted value is ≥ 1. This is sometimes called
+   * "best-fit" or "canonical form" — the same principle used in measurement systems to
+   * prefer "2.5 Gal" over "320 Fl Oz" when both represent the same quantity.
+   *
+   * Only considers units defined in UL_METRIC_MAP for the given metric. If no unit yields
+   * a value ≥ 1, falls back to the smallest unit (the one with the smallest conversion factor).
+   *
+   * @example
+   * UnitUtils.bestFitUnit(320, "volume")
+   * // → { unit: UnitLabel.mGal, value: 2.5 }  (320 Fl Oz = 2.5 Gal)
+   *
+   * @example
+   * UnitUtils.bestFitUnit(0.5, "volume")
+   * // → { unit: UnitLabel.flOz, value: 0.5 }  (fallback — nothing ≥ 1 in app units)
+   */
+  static bestFitUnit(
+    quantity: number,
+    fromUnit: UnitLabel,
+    metric: Metric,
+  ): { unit: UnitLabel; value: number } {
+    // Gather all UnitLabel values that belong to this metric
+    const candidates = (Object.entries(UL_METRIC_MAP) as [UnitLabel, Metric][])
+      .filter(([, m]) => m === metric)
+      .map(([label]) => label);
+
+    if (candidates.length === 0) {
+      return { unit: UnitLabel.unknown, value: quantity };
+    }
+
+    // Build a list of { unit, factor } where factor is the metric's internal base unit
+    // equivalent per 1 of that unit (e.g. VOLUME_TO_GALLONS["Fl Oz"] = 1/128).
+    // We also compute the fromUnit's factor so we can normalize the input quantity.
+    const getBaseFactor = (unit: UnitLabel): number => {
+      switch (metric) {
+        case "volume":
+          return UnitUtils.VOLUME_TO_GALLONS[unit as VolumeUnit["desc"]] ?? 1;
+        case "weight":
+          return UnitUtils.WEIGHT_TO_LBS[unit as WeightUnit["desc"]] ?? 1;
+        case "length":
+          return UnitUtils.LENGTH_TO_FEET[unit as LengthUnit["desc"]] ?? 1;
+        case "time":
+          return UnitUtils.TIME_TO_SECONDS[unit as TimeUnit["desc"]] ?? 1;
+        case "area":
+          return UnitUtils.AREA_TO_SQ_FT[unit as AreaUnit["desc"]] ?? 1;
+        default:
+          return 1;
+      }
+    };
+
+    // Convert input quantity to the metric's internal base unit
+    const fromFactor = getBaseFactor(fromUnit);
+    const quantityInBase = quantity * fromFactor;
+
+    const withFactors = candidates.map((unit) => ({ unit, factor: getBaseFactor(unit) }));
+
+    // Sort largest unit first (highest factor = largest unit)
+    withFactors.sort((a, b) => b.factor - a.factor);
+
+    // Find the largest unit where the converted value is ≥ 1
+    for (const { unit, factor } of withFactors) {
+      const converted = quantityInBase / factor;
+      if (converted >= 1) {
+        return { unit, value: converted };
+      }
+    }
+
+    // Fallback: use the smallest unit (last in sorted list)
+    const smallest = withFactors[withFactors.length - 1];
+    return { unit: smallest.unit, value: quantityInBase / smallest.factor };
   }
 
   /**

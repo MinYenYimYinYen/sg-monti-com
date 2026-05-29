@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { authSelect } from "@/app/auth/authSlice";
@@ -19,14 +19,34 @@ import {
   AccordionTrigger,
 } from "@/style/components/accordion";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { InventoryPrediction } from "@/app/inventory/InventoryTypes";
+import { InventoryPrediction, ProductCount } from "@/app/inventory/InventoryTypes";
+import { ClipboardList, ChevronDown, ChevronUp } from "lucide-react";
+
+// ---------------------------------------------------------------------------
+// Module-level persistence — survives component unmount/remount within the
+// same browser session (e.g. navigating to a product page and back).
+// ---------------------------------------------------------------------------
+
+let savedScrollTop = 0;
+let savedOpenCategories: string[] | null = null;
+
+// ---------------------------------------------------------------------------
 
 type ProductListAccordionProps = {
   activeProducts: ProductCommon[];
   predictionMap: Map<number, InventoryPrediction>;
+  counts: Record<number, ProductCount[]>;
+  openCategories: string[];
+  onOpenChange: (categories: string[]) => void;
 };
 
-function ProductListAccordion({ activeProducts, predictionMap }: ProductListAccordionProps) {
+function ProductListAccordion({
+  activeProducts,
+  predictionMap,
+  counts,
+  openCategories,
+  onOpenChange,
+}: ProductListAccordionProps) {
   // Group by category, sort categories and products alphabetically
   const byCategory = new Map<string, ProductCommon[]>();
   for (const product of activeProducts) {
@@ -34,36 +54,57 @@ function ProductListAccordion({ activeProducts, predictionMap }: ProductListAcco
     if (!byCategory.has(cat)) byCategory.set(cat, []);
     byCategory.get(cat)!.push(product);
   }
-  // Sort products within each category
   byCategory.forEach((products) =>
     products.sort((a, b) => a.description.localeCompare(b.description)),
   );
   const sortedCategories = Array.from(byCategory.keys()).sort();
 
   return (
-    <Accordion type="multiple" defaultValue={sortedCategories} className="px-0">
-      {sortedCategories.map((category) => (
-        <AccordionItem key={category} value={category}>
-          <AccordionTrigger className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
-            {category} ({byCategory.get(category)!.length})
-          </AccordionTrigger>
-          <AccordionContent className="pb-0">
-            <ul>
-              {byCategory.get(category)!.map((product) => (
-                <li key={product.productId}>
-                  <ProductListRow
-                    product={product}
-                    prediction={predictionMap.get(product.productId)}
-                  />
-                </li>
-              ))}
-            </ul>
-          </AccordionContent>
-        </AccordionItem>
-      ))}
+    <Accordion
+      type="multiple"
+      value={openCategories}
+      onValueChange={onOpenChange}
+      className="px-0"
+    >
+      {sortedCategories.map((category) => {
+        const products = byCategory.get(category)!;
+        const total = products.length;
+        const countedCount = products.filter(
+          (p) => (counts[p.productId]?.length ?? 0) > 0,
+        ).length;
+        const allCounted = countedCount === total;
+
+        return (
+          <AccordionItem key={category} value={category}>
+            <AccordionTrigger className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+              <span className="flex items-center gap-1.5">
+                {category}
+                <span className={allCounted ? "text-accent" : ""}>
+                  ({countedCount}/{total})
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-0">
+              <ul>
+                {products.map((product) => (
+                  <li key={product.productId}>
+                    <ProductListRow
+                      product={product}
+                      prediction={predictionMap.get(product.productId)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        );
+      })}
     </Accordion>
   );
 }
+
+// Module-level persistence for header open state
+let savedHeaderOpen = true;
 
 export default function InventoryPage() {
   useInventoryDeps();
@@ -79,6 +120,7 @@ export default function InventoryPage() {
   }, [role, router]);
 
   const activeProducts = useSelector(inventorySelect.activeProducts);
+  const lastCheck = useSelector(inventorySelect.lastCheck);
   const predictions = useSelector(inventorySelect.predictions);
   const productIdsFromServices = useSelector(inventorySelect.productIdsFromServices);
   const session = useSelector(inventorySelect.session);
@@ -88,8 +130,6 @@ export default function InventoryPage() {
   const predictionMap = new Map(predictions.map((p) => [p.productId, p]));
 
   // Auto-populate products discovered from services in the date range.
-  // Uses productIdsFromServices (independent of activeProductIds) to avoid
-  // the chicken-and-egg problem where predictions require active products.
   useEffect(() => {
     for (const productId of productIdsFromServices) {
       if (!session.activeProductIds.includes(productId)) {
@@ -98,28 +138,103 @@ export default function InventoryPage() {
     }
   }, [productIdsFromServices, session.activeProductIds, addProduct]);
 
+  // ---------------------------------------------------------------------------
+  // Accordion open state — initialized from saved state or all-open default
+  // ---------------------------------------------------------------------------
+
+  const sortedCategories = Array.from(
+    new Set(activeProducts.map((p) => p.category || "Uncategorized")),
+  ).sort();
+
+  const categoriesKey = sortedCategories.join(",");
+
+  const [openCategories, setOpenCategories] = useState<string[]>(
+    savedOpenCategories ?? sortedCategories,
+  );
+
+  // When new categories appear (e.g. products added), open them by default
+  React.useEffect(() => {
+    setOpenCategories((prev) => {
+      const newCats = sortedCategories.filter((c) => !prev.includes(c));
+      if (newCats.length === 0) return prev;
+      return [...prev, ...newCats];
+    });
+  }, [categoriesKey, sortedCategories]);
+
+  const handleOpenChange = (categories: string[]) => {
+    savedOpenCategories = categories;
+    setOpenCategories(categories);
+  };
+
+  // ---------------------------------------------------------------------------
+  // Scroll position save/restore
+  // ---------------------------------------------------------------------------
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = savedScrollTop;
+    }
+  }, []);
+
+  const handleScroll = () => {
+    if (scrollRef.current) {
+      savedScrollTop = scrollRef.current.scrollTop;
+    }
+  };
+
+  const [headerOpen, setHeaderOpen] = useState(savedHeaderOpen);
+
+  const toggleHeader = () => {
+    const next = !headerOpen;
+    savedHeaderOpen = next;
+    setHeaderOpen(next);
+  };
+
   if (role && role !== "admin") {
     return null;
   }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Sticky header */}
-      <div className="shrink-0 px-4 py-3 border-b border-border bg-card flex flex-col gap-3">
-        <h1 className="text-base font-semibold">Inventory</h1>
+      {/* Collapsible header */}
+      <div className="shrink-0 bg-card border-b border-border">
+        {/* Trigger row */}
+        <button
+          onClick={toggleHeader}
+          className="w-full flex items-center justify-between px-4 py-3 text-left"
+          aria-expanded={headerOpen}
+        >
+          <span className="flex items-center gap-2 text-base font-semibold">
+            <ClipboardList className="h-4 w-4 text-muted-foreground" />
+            Inventory
+          </span>
+          {headerOpen ? (
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          )}
+        </button>
 
-        {/* Date range search */}
-        <DateRangeSearchControl />
+        {/* Collapsible content */}
+        {headerOpen && (
+          <div className="px-4 pb-3 flex flex-col gap-3 border-t border-border">
+            {/* Date range search — keyed on lastCheck so it remounts when data arrives */}
+            <DateRangeSearchControl key={lastCheck?.checkDate ?? "no-check"} />
 
-        {/* Add product triggers */}
-        <div className="flex items-center gap-2">
-          <AddFromPrevInventorySheet />
-          <AddManualSheet />
-        </div>
+            {/* Add product triggers */}
+            <div className="flex items-center gap-2">
+              <AddFromPrevInventorySheet />
+              <AddManualSheet />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Scrollable product list */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto" onScroll={handleScroll}>
         {activeProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-2 p-6 text-center">
             <p className="text-sm text-muted-foreground">
@@ -133,6 +248,9 @@ export default function InventoryPage() {
           <ProductListAccordion
             activeProducts={activeProducts}
             predictionMap={predictionMap}
+            counts={session.counts}
+            openCategories={openCategories}
+            onOpenChange={handleOpenChange}
           />
         )}
       </div>

@@ -5,31 +5,71 @@ import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { UnitLabel } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { ProductCount } from "@/app/inventory/InventoryTypes";
 import { UnitSelector } from "@/app/inventory/_components/countEntry/UnitSelector";
+import { useInventory } from "@/app/inventory/useInventory";
 import { Input } from "@/style/components/input";
 import { Button } from "@/style/components/button";
 import { Switch } from "@/style/components/switch";
 import { Label } from "@/style/components/label";
+import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 
 type CountFormProps = {
+  productId: number;
   product: ProductCommon;
-  onAdd: (count: ProductCount) => void;
 };
 
-function getDefaultUnit(product: ProductCommon): UnitLabel {
-  const loadLabel = product.unitConfig.conversions.load.unitLabel;
-  const appLabel = product.unitConfig.conversions.app.unitLabel;
-  // Use load unit if it's a real label (not the base sentinel), else fall back to app unit
-  return (loadLabel as UnitLabel) || (appLabel as UnitLabel) || UnitLabel.unknown;
+/**
+ * Determines whether the product's load unit represents a physical container
+ * (e.g. "1 Gal Jug" = 128 Fl Oz). A load unit is a container when it has a
+ * real label (not the base sentinel) and its conversionFactor > 1, meaning
+ * one load unit equals multiple app units.
+ */
+function getContainerDefaults(product: ProductCommon): {
+  isContainer: boolean;
+  containerSize: string;
+  unit: UnitLabel;
+} {
+  const loadConversion = product.unitConfig.conversions.load;
+  const appConversion = product.unitConfig.conversions.app;
+
+  const isContainer =
+    loadConversion.unitLabel !== baseStrId && loadConversion.conversionFactor > 1;
+
+  if (isContainer) {
+    // The conversionFactor is in app units (e.g. 128 Fl Oz per jug).
+    // Use bestFitUnit to express it in the most human-readable unit (e.g. 2.5 Gal, not 320 Fl Oz).
+    const metric = appConversion.baseMetric;
+    const best = UnitUtils.bestFitUnit(
+      loadConversion.conversionFactor,
+      appConversion.unitLabel as UnitLabel,
+      metric,
+    );
+    return {
+      isContainer: true,
+      containerSize: String(best.value),
+      unit: best.unit,
+    };
+  }
+
+  // No container — default unit is load label if real, else app label
+  const defaultUnit =
+    loadConversion.unitLabel !== baseStrId
+      ? (loadConversion.unitLabel as UnitLabel)
+      : (appConversion.unitLabel as UnitLabel) || UnitLabel.unknown;
+
+  return { isContainer: false, containerSize: "", unit: defaultUnit };
 }
 
-export function CountForm({ product, onAdd }: CountFormProps) {
-  const defaultUnit = getDefaultUnit(product);
+export function CountForm({ productId, product }: CountFormProps) {
+  const { addCount } = useInventory();
   const metric = product.unit.metric;
 
+  const defaults = getContainerDefaults(product);
+
   const [qty, setQty] = useState("");
-  const [unit, setUnit] = useState<UnitLabel>(defaultUnit);
-  const [isContainer, setIsContainer] = useState(false);
-  const [unitQty, setUnitQty] = useState("");
+  const [unit, setUnit] = useState<UnitLabel>(defaults.unit);
+  const [isContainer, setIsContainer] = useState(defaults.isContainer);
+  const [unitQty, setUnitQty] = useState(defaults.containerSize);
   const [location, setLocation] = useState("");
 
   const handleAdd = () => {
@@ -43,11 +83,11 @@ export function CountForm({ product, onAdd }: CountFormProps) {
       ...(location.trim() ? { location: location.trim() } : {}),
     };
 
-    onAdd(count);
+    addCount(productId, count);
 
-    // Reset qty, unitQty, location — keep unit selection
+    // Reset qty and location — keep unit, container toggle, and container size
+    // so the user can quickly enter another count of the same container type
     setQty("");
-    setUnitQty("");
     setLocation("");
   };
 
@@ -77,7 +117,7 @@ export function CountForm({ product, onAdd }: CountFormProps) {
           />
         )}
 
-        <UnitSelector metric={metric} value={unit} onChange={setUnit} />
+        <UnitSelector metric={metric} value={unit} onChangeAction={setUnit} />
 
         {isContainer && (
           <span className="text-sm text-muted-foreground">container(s)</span>

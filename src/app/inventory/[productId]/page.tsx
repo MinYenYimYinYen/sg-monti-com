@@ -10,7 +10,6 @@ import { CountForm } from "@/app/inventory/_components/countEntry/CountForm";
 import { CountList } from "@/app/inventory/_components/countEntry/CountList";
 import { Button } from "@/style/components/button";
 import { ChevronLeft } from "lucide-react";
-import { ProductCount } from "@/app/inventory/InventoryTypes";
 
 type Params = { productId: string };
 
@@ -19,7 +18,7 @@ export default function CountEntryPage({ params }: { params: Promise<Params> }) 
   const productId = parseInt(productIdStr, 10);
 
   const router = useRouter();
-  const { addCount, removeCount } = useInventory();
+  useInventory();
 
   const allProductsMap = useSelector(productSelect.allProductsMap);
   const product = allProductsMap.get(productId);
@@ -39,20 +38,11 @@ export default function CountEntryPage({ params }: { params: Promise<Params> }) 
     );
   }
 
-  const metric = product.unit.metric;
-  const totalAppUnits = sumCountsToAppUnits(counts, metric);
+  const totalAppUnits = sumCountsToAppUnits(counts, product);
   const totalDisplay = product.unitConfigDisplay.format({
     amount: totalAppUnits,
     targetContexts: ["load", "app"],
   });
-
-  const handleAdd = (count: ProductCount) => {
-    addCount(productId, count);
-  };
-
-  const handleRemove = (index: number) => {
-    removeCount(productId, index);
-  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -77,12 +67,12 @@ export default function CountEntryPage({ params }: { params: Promise<Params> }) 
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
-        <CountForm product={product} onAdd={handleAdd} />
+        <CountForm productId={productId} product={product} />
         <div>
           <h2 className="text-sm font-medium text-muted-foreground mb-2">
             Recorded counts
           </h2>
-          <CountList counts={counts} onRemove={handleRemove} />
+          <CountList productId={productId} counts={counts} />
         </div>
       </div>
     </div>

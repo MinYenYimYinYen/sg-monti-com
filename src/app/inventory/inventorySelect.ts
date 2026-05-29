@@ -3,7 +3,8 @@ import { createSelector } from "@reduxjs/toolkit";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
-import { UnitLabel, Metric } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { UnitLabel } from "@/app/realGreen/product/unitConfig/UnitTypes";
+import { VolumeUnit, WeightUnit, LengthUnit, TimeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import {
   InventoryCheck,
   InventoryCheckEntryHydrated,
@@ -186,28 +187,32 @@ export const inventorySelect = {
 /**
  * Converts a single ProductCount to app units.
  *
- * Formula: qty × (unitQty ?? 1), then convert from count.unit to the product's app unit.
- * For metrics without a UnitUtils converter (area, count, unknown), returns the raw quantity.
+ * Formula: qty × (unitQty ?? 1), then convert from count.unit to the product's actual app unit.
+ * The app unit is product.unitConfig.conversions.app.unitLabel — it is the base unit that
+ * UnitConfigDisplay.format() expects. We must convert to this specific label, not a hardcoded
+ * metric sentinel (e.g. mGal), because the product's app unit may differ (e.g. Fl Oz vs Gal).
  */
-export function countToAppUnits(count: ProductCount, metric: Metric): number {
+export function countToAppUnits(count: ProductCount, product: ProductCommon): number {
   const rawQty = count.qty * (count.unitQty ?? 1);
+  const appUnit = product.unitConfig.conversions.app.unitLabel;
+  const metric = product.unit.metric;
 
   switch (metric) {
     case "volume":
-      return UnitUtils.volume(rawQty, count.unit as Parameters<typeof UnitUtils.volume>[1]).to(
-        UnitLabel.mGal,
+      return UnitUtils.volume(rawQty, count.unit as VolumeUnit["desc"]).to(
+        appUnit as VolumeUnit["desc"],
       );
     case "weight":
-      return UnitUtils.weight(rawQty, count.unit as Parameters<typeof UnitUtils.weight>[1]).to(
-        UnitLabel.lbs,
+      return UnitUtils.weight(rawQty, count.unit as WeightUnit["desc"]).to(
+        appUnit as WeightUnit["desc"],
       );
     case "length":
-      return UnitUtils.distance(rawQty, count.unit as Parameters<typeof UnitUtils.distance>[1]).to(
-        UnitLabel.ft,
+      return UnitUtils.distance(rawQty, count.unit as LengthUnit["desc"]).to(
+        appUnit as LengthUnit["desc"],
       );
     case "time":
-      return UnitUtils.time(rawQty, count.unit as Parameters<typeof UnitUtils.time>[1]).to(
-        UnitLabel.sec,
+      return UnitUtils.time(rawQty, count.unit as TimeUnit["desc"]).to(
+        appUnit as TimeUnit["desc"],
       );
     // area, count, unknown — no conversion, return raw
     default:
@@ -218,6 +223,6 @@ export function countToAppUnits(count: ProductCount, metric: Metric): number {
 /**
  * Sums all ProductCounts for a product to a single app-unit total.
  */
-export function sumCountsToAppUnits(counts: ProductCount[], metric: Metric): number {
-  return counts.reduce((sum, count) => sum + countToAppUnits(count, metric), 0);
+export function sumCountsToAppUnits(counts: ProductCount[], product: ProductCommon): number {
+  return counts.reduce((sum, count) => sum + countToAppUnits(count, product), 0);
 }
