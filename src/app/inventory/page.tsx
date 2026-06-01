@@ -20,7 +20,8 @@ import {
 } from "@/style/components/accordion";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { InventoryPrediction, ProductCount } from "@/app/inventory/InventoryTypes";
-import { ClipboardList, ChevronDown, ChevronUp } from "lucide-react";
+import Link from "next/link";
+import { ClipboardList, ChevronDown, ChevronUp, History } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Module-level persistence — survives component unmount/remount within the
@@ -211,11 +212,22 @@ export default function InventoryPage() {
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
             Inventory
           </span>
-          {headerOpen ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          )}
+          <div className="flex items-center gap-2">
+            <Link
+              href="/inventory/history"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent/10"
+              aria-label="View inventory history"
+            >
+              <History className="h-3.5 w-3.5" />
+              History
+            </Link>
+            {headerOpen ? (
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
         </button>
 
         {/* Collapsible content */}
