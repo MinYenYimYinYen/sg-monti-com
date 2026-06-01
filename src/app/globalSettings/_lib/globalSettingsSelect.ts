@@ -14,10 +14,16 @@ const selectCoverSheetsConfig = createSelector(
   (settings) => settings?.coverSheetsConfig,
 );
 
+const selectGenLedgerAccountMap = createSelector(
+  [selectSettings],
+  (settings) => settings?.genLedgerAccountMap ?? {},
+);
+
 export const globalSettingsSelect = {
   settings: selectSettings,
   season: selectSeason,
   coverSheetsConfig: selectCoverSheetsConfig,
+  genLedgerAccountMap: selectGenLedgerAccountMap,
 };
 
 

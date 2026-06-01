@@ -3,15 +3,22 @@ import { FileRejection, useDropzone } from "react-dropzone";
 export function CSVDropzone({
   className,
   onFileDrop,
+  onFilesDrop,
+  multiple = false,
 }: {
   className?: string;
-  onFileDrop: (file: File) => void;
+  onFileDrop?: (file: File) => void;
+  onFilesDrop?: (files: File[]) => void;
+  multiple?: boolean;
 }) {
   const onDrop = (acceptedFiles: File[], fileRejections: FileRejection[]) => {
-    console.log(acceptedFiles);
-    onFileDrop(acceptedFiles[0]);
     if (fileRejections.length > 0) {
       console.log(fileRejections);
+    }
+    if (multiple && onFilesDrop) {
+      onFilesDrop(acceptedFiles);
+    } else if (onFileDrop) {
+      onFileDrop(acceptedFiles[0]);
     }
   };
 
@@ -21,7 +28,7 @@ export function CSVDropzone({
       "text/csv": [".csv"],
       "application/vnd.ms-excel": [".csv"],
     },
-    multiple: false,
+    multiple,
   });
 
   return (
@@ -39,7 +46,9 @@ export function CSVDropzone({
           </p>
         ) : (
           <p className={"text-muted-foreground text-sm"}>
-            Drop a CSV here, or click to select.
+            {multiple
+              ? "Drop CSVs here, or click to select."
+              : "Drop a CSV here, or click to select."}
           </p>
         )}
       </div>

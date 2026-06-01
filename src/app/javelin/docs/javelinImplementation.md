@@ -290,9 +290,9 @@ Renders (inside a `<Container variant="page">`):
 
 | Step | Description | Status | Depends On |
 |---|---|---|---|
-| 1 | Data Foundation (types, slice, selectors, GlobalSettings, store) | ⬜ Not started | — |
-| 2 | Parsing Layer (parser, sanity checks, dropZone `multiple` prop) | ⬜ Not started | Step 1 |
-| 3 | Transform & Export (`genLedgerTransform.ts`) | ⬜ Not started | Step 1 |
-| 4 | Drop Zone Component (`GenLedgerDropZone`) | ⬜ Not started | Steps 1, 2 |
-| 5 | Results Table (`JavelinResultsTable`) | ⬜ Not started | Steps 1, 2 |
-| 6 | Header & Page Shell (`JavelinHeader`, `page.tsx`) | ⬜ Not started | Steps 1, 3, 4, 5 |
+| 1 | Data Foundation (types, slice, selectors, GlobalSettings, store) | ✅ Complete | — |
+| 2 | Parsing Layer (parser, sanity checks, dropZone `multiple` prop) | ✅ Complete | Step 1 |
+| 3 | Transform & Export (`genLedgerTransform.ts`) | ✅ Complete | Step 1 |
+| 4 | Drop Zone Component (`GenLedgerDropZone`) | ✅ Complete | Steps 1, 2 |
+| 5 | Results Table (`JavelinResultsTable`) | ✅ Complete | Steps 1, 2 |
+| 6 | Header & Page Shell (`JavelinHeader`, `page.tsx`) | ✅ Complete | Steps 1, 3, 4, 5 |

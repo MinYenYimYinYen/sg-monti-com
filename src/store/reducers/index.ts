@@ -39,6 +39,7 @@ import { urgentReducer } from "@/app/bizPlan/paceCrawler/devComponents/urgentSer
 import { paceCrawlerReducer } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
 import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFeedback/report/loadoutReportSlice";
 import { inventoryReducer } from "@/app/inventory/inventorySlice";
+import javelinReducer from "@/app/javelin/javelinSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -79,6 +80,7 @@ const rootReducer = combineReducers({
   urgent: urgentReducer,
   paceCrawler: paceCrawlerReducer,
   loadoutReport: loadoutReportReducer,
+  javelin: javelinReducer,
 });
 
 export default rootReducer;

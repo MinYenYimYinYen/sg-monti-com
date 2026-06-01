@@ -1,5 +1,6 @@
 import { GlobalSettings } from "@/app/globalSettings/_lib/GlobalSettingsTypes";
 import { baseCoverSheetsConfig } from "@/app/scheduling/coverSheets/_lib/config/CoverSheetsTypes";
+import { GenLedgerAccountEntry } from "@/app/javelin/JavelinTypes";
 
 export const baseGlobalSettings: GlobalSettings = {
   createdAt: "",
@@ -13,4 +14,5 @@ export const baseGlobalSettings: GlobalSettings = {
     "Manual": []
   },
   companyId: 592421,
+  genLedgerAccountMap: {} as Record<string, GenLedgerAccountEntry>,
 };

@@ -17,7 +17,12 @@ const GlobalSettingsSchema = new mongoose.Schema<GlobalSettings>(
       type: Object,
       required: true,
       default: baseGlobalSettings.phoneMap,
-    }
+    },
+    genLedgerAccountMap: {
+      type: Object,
+      required: true,
+      default: {},
+    },
   },
   { timestamps: true },
 );
