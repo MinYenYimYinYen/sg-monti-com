@@ -6,6 +6,7 @@ import {
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { CustomerCore, CustomerDoc, CustomerRaw } from "../types/CustomerTypes";
 import { ContactPoint } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
+import { AgingParams } from "@/app/realGreen/customer/_lib/classes/Aging";
 
 function mapContactPoints(raw: CustomerRaw): ContactPoint[] {
   const phoneContacts = raw.phones.map((phone) => ({
@@ -51,6 +52,15 @@ function remapCustomer(raw: CustomerRaw): CustomerCore {
     contactPoints: mapContactPoints(raw),
     creditLimit: raw.creditLimit,
     due3: raw.due3,
+    agingParams: {
+      due1: raw.due1,
+      due2: raw.due2,
+      due3: raw.due3,
+      due4: raw.due4,
+      due5: raw.due5,
+      due6: raw.due6,
+      due7: raw.due7,
+    } satisfies AgingParams,
     remitBalance: raw.remitBalance,
     size: raw.size,
     status: raw.statusCharacter,

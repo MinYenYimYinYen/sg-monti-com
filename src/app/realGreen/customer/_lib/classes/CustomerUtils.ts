@@ -41,11 +41,9 @@ export class CustomerUtils {
     return onHold;
   }
 
-  /** True when remitBalance exceeds creditLimit, or due3 is positive. */
+  /** True when remitBalance exceeds creditLimit, or any balance in due3 or higher is positive. */
   public get isCreditHold(): boolean {
-    const onCreditHold =
-      this.customer.remitBalance > this.customer.creditLimit || this.customer.due3 > 0;
-    return onCreditHold;
+    return this.customer.remitBalance > this.customer.creditLimit || this.customer.aging.isCreditHold;
   }
 
   /** True when this customer is active, not on hold, not on credit hold, and eligible for scheduling (status "9"). */

@@ -12,7 +12,7 @@ import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { Flag } from "@/app/realGreen/flag/FlagTypes";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
-
+import { Aging, AgingParams } from "@/app/realGreen/customer/_lib/classes/Aging";
 
 export type CustomerRaw = {
   address: Address;
@@ -53,13 +53,13 @@ export type CustomerRaw = {
   displayName: string;
   // doNotChargeInterest: boolean;
   // doNotPutOnCreditHold: boolean;
-  // due1: number;
-  // due2: number;
+  due1: number;
+  due2: number;
   due3: number;
-  // due4: number;
-  // due5: number;
-  // due6: number;
-  // due7: number;
+  due4: number;
+  due5: number;
+  due6: number;
+  due7: number;
   email: string;
   // estimateBy: string | null;
   // estimateGivenDate: string | null;
@@ -160,6 +160,7 @@ export type CustomerCore = {
   contactPoints: ContactPoint[];
   creditLimit: number;
   due3: number;
+  agingParams: AgingParams;
   remitBalance: number;
   size: number;
   status: string;
@@ -180,6 +181,7 @@ export type CustomerDoc = CustomerCore & CustomerDocProps;
 
 export type CustomerProps = {
   x: CustomerUtils;
+  aging: Aging;
   programs: Program[];
   taxCodes: TaxCode[];
   taxRate: number;

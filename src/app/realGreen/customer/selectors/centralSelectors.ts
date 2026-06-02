@@ -27,6 +27,7 @@ import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { taxCodeSelect } from "../../taxCode/taxCodeSelectors";
 import { serviceEtaSelect } from "@/app/scheduling/eta/serviceEtaSelect";
 import { hydrateEta } from "@/app/realGreen/customer/selectors/hydrateEta";
+import { Aging } from "@/app/realGreen/customer/_lib/classes/Aging";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -139,6 +140,7 @@ export const selectCustomers = createSelector(
         taxRate,
         callAhead: callAheadDocMap.get(custDoc.callAheadId) ?? null,
         discount: discountDocMap.get(custDoc.discountId) ?? null,
+        aging: new Aging(custDoc.agingParams),
         flags: hydrateFlags(custDoc.custId, custIdFlagIds, flagDocMap),
         promise: custPromiseResult.promise,
         promiseIssues: custPromiseResult.issues,
