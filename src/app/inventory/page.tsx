@@ -22,6 +22,7 @@ import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { InventoryPrediction, ProductCount } from "@/app/inventory/InventoryTypes";
 import Link from "next/link";
 import { ClipboardList, ChevronDown, ChevronUp, History } from "lucide-react";
+import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 // ---------------------------------------------------------------------------
 // Module-level persistence — survives component unmount/remount within the
@@ -125,7 +126,7 @@ export default function InventoryPage() {
   const predictions = useSelector(inventorySelect.predictions);
   const productIdsFromServices = useSelector(inventorySelect.productIdsFromServices);
   const session = useSelector(inventorySelect.session);
-  const { addProduct } = useInventory();
+  const { addProduct, loadCheckIntoSession } = useInventory();
 
   // Build a prediction map for O(1) lookup in ProductListRow
   const predictionMap = new Map(predictions.map((p) => [p.productId, p]));
@@ -138,6 +139,20 @@ export default function InventoryPage() {
       }
     }
   }, [productIdsFromServices, session.activeProductIds, addProduct]);
+
+  // When checks load in, auto-restore today's check into the session if the
+  // session is currently empty (no active products and no counts recorded).
+  const checks = useSelector(inventorySelect.checks);
+  useEffect(() => {
+    const today = dateStrings.today();
+    const hasToday = checks.some((c) => c.checkDate === today);
+    const sessionIsEmpty =
+      session.activeProductIds.length === 0 &&
+      Object.keys(session.counts).length === 0;
+    if (hasToday && sessionIsEmpty) {
+      loadCheckIntoSession(today);
+    }
+  }, [checks, session.activeProductIds, session.counts, loadCheckIntoSession]);
 
   // ---------------------------------------------------------------------------
   // Accordion open state — initialized from saved state or all-open default

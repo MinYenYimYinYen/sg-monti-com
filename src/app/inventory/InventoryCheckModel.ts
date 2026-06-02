@@ -31,8 +31,8 @@ const InventoryCheckSchema = new mongoose.Schema<InventoryCheckDoc>(
   { timestamps: true },
 );
 
-// Index for fast "latest check" queries
-InventoryCheckSchema.index({ checkDate: -1 });
+// Unique index enforces one check per date; descending order for fast "latest check" queries
+InventoryCheckSchema.index({ checkDate: -1 }, { unique: true });
 
 export const InventoryCheckModel = createModel(
   "InventoryCheck",

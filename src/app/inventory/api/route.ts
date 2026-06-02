@@ -27,11 +27,15 @@ const handlers: HandlerMap<InventoryContract> = {
     roles: ["admin"],
     handler: async ({ check }) => {
       await connectToMongoDB();
-      // Always insert — each check is an immutable snapshot
-      const doc = await InventoryCheckModel.create(check);
+      // Upsert — replaces the existing check for this date if one exists
+      const doc = await InventoryCheckModel.findOneAndUpdate(
+        { checkDate: check.checkDate },
+        { $set: check },
+        { upsert: true, new: true },
+      ).lean();
       return {
         success: true,
-        payload: cleanMongoObject<InventoryCheckDoc>(doc.toObject()),
+        payload: cleanMongoObject<InventoryCheckDoc>(doc!),
       };
     },
   },

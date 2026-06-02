@@ -73,6 +73,18 @@ const inventorySlice = createSlice({
     clearSession(state) {
       state.session = { dateRange: null, activeProductIds: [], counts: {} };
     },
+
+    // Loads a saved check's products and counts into the session by date.
+    // Finds the matching check in state.checks — no-ops if not found.
+    loadCheckIntoSession(state, action: PayloadAction<string>) {
+      const date = action.payload;
+      const check = state.checks.find((c) => c.checkDate === date);
+      if (!check) return;
+      state.session.activeProductIds = check.entries.map((e) => e.productId);
+      state.session.counts = Object.fromEntries(
+        check.entries.map((e) => [e.productId, e.counts]),
+      );
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(getInventoryChecks.fulfilled, (state, action) => {
@@ -80,7 +92,14 @@ const inventorySlice = createSlice({
     });
 
     builder.addCase(saveInventoryCheck.fulfilled, (state, action) => {
-      state.checks.unshift(action.payload);
+      const idx = state.checks.findIndex(
+        (c) => c.checkDate === action.payload.checkDate,
+      );
+      if (idx !== -1) {
+        state.checks[idx] = action.payload;
+      } else {
+        state.checks.unshift(action.payload);
+      }
     });
   },
 });

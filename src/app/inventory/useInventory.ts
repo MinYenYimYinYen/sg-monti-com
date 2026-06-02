@@ -36,6 +36,9 @@ export function useInventory({ autoLoad }: { autoLoad?: boolean } = {}) {
   const setDateRange = (range: TRange<string> | null) =>
     dispatch(inventoryActions.setDateRange(range));
 
+  const loadCheckIntoSession = (date: string) =>
+    dispatch(inventoryActions.loadCheckIntoSession(date));
+
   const save = async (check: InventoryCheckDoc) => {
     await dispatch(
       inventoryActions.saveInventoryCheck({
@@ -46,5 +49,5 @@ export function useInventory({ autoLoad }: { autoLoad?: boolean } = {}) {
     dispatch(inventoryActions.clearSession());
   };
 
-  return { addProduct, removeProduct, addCount, removeCount, setDateRange, save };
+  return { addProduct, removeProduct, addCount, removeCount, setDateRange, loadCheckIntoSession, save };
 }
