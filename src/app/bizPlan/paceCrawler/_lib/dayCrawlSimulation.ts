@@ -166,6 +166,47 @@ export function runDayCrawlSimulation(
   }
 
   // ---------------------------------------------------------------------------
+  // 3b. Pre-crawl sequential cascade for past-due servCodes.
+  //
+  // If a sequential servCode's window has already closed (crawlStart > servCodeRangeMax),
+  // it will never drain during the crawl — its pool would stay locked forever.
+  // Instead, carry its remaining pool forward to the next sequential servCode and
+  // unlock the successor immediately. Cascade through the chain as needed.
+  //
+  // This handles the real-world case where a sequential round (e.g. LR1) is past its
+  // season end date but still has remaining work. The work carries over to the next
+  // round (LR2), which opens immediately. LR1 will appear as "LATE" in the Urgent card.
+  // ---------------------------------------------------------------------------
+  for (const group of sequentialGroups.values()) {
+    const sorted = [...group].sort((a, b) => a.servCodeRangeMin.localeCompare(b.servCodeRangeMin));
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const current = sorted[i];
+      const successor = sorted[i + 1];
+      const currentPool = pools.get(current.servCodeId) ?? 0;
+      const isPastDue = today > current.servCodeRangeMax;
+
+      if (isPastDue && currentPool > 0) {
+        // Carry remaining pool forward to the successor
+        const successorPool = pools.get(successor.servCodeId) ?? 0;
+        pools.set(successor.servCodeId, successorPool + currentPool);
+        pools.set(current.servCodeId, 0);
+        // Unlock the successor. Use the predecessor's servCodeRangeMax as the floor
+        // so the Gantt shows LR2 starting where LR1 ended (sequential continuity).
+        // The effective open date for employees is max(personalOpenDate, floor), so
+        // employees won't actually start before they're available — this only affects
+        // the optimizedMin display and the "Apply Optimized Ranges" output.
+        sequentialLocks.set(successor.servCodeId, false);
+        resolvedServCodeRangeMin.set(successor.servCodeId, current.servCodeRangeMax);
+      } else if (isPastDue && currentPool <= 0) {
+        // Already drained and past due — just unlock the successor
+        sequentialLocks.set(successor.servCodeId, false);
+        resolvedServCodeRangeMin.set(successor.servCodeId, current.servCodeRangeMax);
+      }
+      // If not past due, leave the lock as-is (handled during the crawl)
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // 6. Walk forward day by day
   // ---------------------------------------------------------------------------
   const maxDay = dateStrings.addWeekdays(today, 365);
@@ -226,7 +267,7 @@ export function runDayCrawlSimulation(
             recordServCodeEvent(servCodeId, day, employee.employeeId, kind, undefined, prevEntryLabel ?? undefined);
           }
 
-          // Check if pool just drained
+            // Check if pool just drained
           if (newPool <= 0 && projectedEndDate.get(servCodeId) === null) {
             projectedEndDate.set(servCodeId, day);
             timeline.push({ date: day, event: { kind: "finishes", entryLabel: servCodeId } });
@@ -248,16 +289,23 @@ export function runDayCrawlSimulation(
         } else {
           const { servCodeIds, label } = priorityEntry;
 
-          let groupLocked = false;
+          // Build the set of eligible (unlocked) members for this day.
+          // Locked sequential members are skipped — they are waiting for their predecessor
+          // to drain. The group proceeds with whatever unlocked members have pool remaining.
+          // This prevents a deadlock where N+1 locked members permanently block the group
+          // from working the unlocked N member.
           let groupFloor: string | null = null;
           let groupHasPool = false;
 
+          const eligibleMemberIds: string[] = [];
+
           for (const servCodeId of servCodeIds) {
-            if (sequentialLocks.get(servCodeId) === true) { groupLocked = true; break; }
+            if (sequentialLocks.get(servCodeId) === true) continue; // locked — skip, not a deadlock
             const floor = resolvedServCodeRangeMin.get(servCodeId);
             const pool = pools.get(servCodeId) ?? 0;
             if (pool > 0) {
               groupHasPool = true;
+              eligibleMemberIds.push(servCodeId);
               if (floor != null) {
                 if (groupFloor === null) { groupFloor = floor; }
                 else if (floor.localeCompare(groupFloor) < 0) { groupFloor = floor; }
@@ -265,7 +313,6 @@ export function runDayCrawlSimulation(
             }
           }
 
-          if (groupLocked) continue;
           if (!groupHasPool) continue;
           if (!groupFloor) continue;
 
@@ -275,15 +322,15 @@ export function runDayCrawlSimulation(
           const rate = employee.totalAvgDailyPrice;
           if (rate <= 0) continue;
 
-          const memberPools = servCodeIds.map((id) => pools.get(id) ?? 0);
+          const memberPools = eligibleMemberIds.map((id) => pools.get(id) ?? 0);
           const totalPool = memberPools.reduce((sum, p) => sum + p, 0);
           if (totalPool <= 0) continue;
 
           const actualDrain = Math.min(rate, totalPool);
           let anyMemberDrained = false;
 
-          for (let i = 0; i < servCodeIds.length; i++) {
-            const servCodeId = servCodeIds[i];
+          for (let i = 0; i < eligibleMemberIds.length; i++) {
+            const servCodeId = eligibleMemberIds[i];
             const memberPool = memberPools[i];
             if (memberPool <= 0) continue;
 
