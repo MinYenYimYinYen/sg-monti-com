@@ -6,6 +6,7 @@ import { inventoryActions } from "@/app/inventory/inventorySlice";
 import { InventoryCheckDoc, ProductCount } from "@/app/inventory/InventoryTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
+import { clearInventorySession } from "@/lib/inventory/inventorySessionStorage";
 
 export function useInventory({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
@@ -47,6 +48,7 @@ export function useInventory({ autoLoad }: { autoLoad?: boolean } = {}) {
       }),
     ).unwrap();
     dispatch(inventoryActions.clearSession());
+    clearInventorySession();
   };
 
   return { addProduct, removeProduct, addCount, removeCount, setDateRange, loadCheckIntoSession, save };

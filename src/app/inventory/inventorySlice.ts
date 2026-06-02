@@ -74,6 +74,11 @@ const inventorySlice = createSlice({
       state.session = { dateRange: null, activeProductIds: [], counts: {} };
     },
 
+    // Restores a previously persisted session (e.g. from localStorage).
+    restoreSession(state, action: PayloadAction<InventorySession>) {
+      state.session = action.payload;
+    },
+
     // Loads a saved check's products and counts into the session by date.
     // Finds the matching check in state.checks — no-ops if not found.
     loadCheckIntoSession(state, action: PayloadAction<string>) {
