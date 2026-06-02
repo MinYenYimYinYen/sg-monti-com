@@ -8,9 +8,7 @@ import { inventorySelect } from "@/app/inventory/inventorySelect";
 import { useInventory } from "@/app/inventory/useInventory";
 import { useInventoryDeps } from "@/app/inventory/useInventoryDeps";
 import { ProductListRow } from "@/app/inventory/_components/ProductListRow";
-import { DateRangeSearchControl } from "@/app/inventory/_components/DateRangeSearchControl";
-import { AddFromPrevInventorySheet } from "@/app/inventory/_components/AddFromPrevInventorySheet";
-import { AddManualSheet } from "@/app/inventory/_components/AddManualSheet";
+import { SelectProductsSheet } from "@/app/inventory/_components/SelectProductsSheet";
 import { SaveInventoryButton } from "@/app/inventory/_components/SaveInventoryButton";
 import {
   Accordion,
@@ -21,7 +19,7 @@ import {
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { InventoryPrediction, ProductCount } from "@/app/inventory/InventoryTypes";
 import Link from "next/link";
-import { ClipboardList, ChevronDown, ChevronUp, History } from "lucide-react";
+import { ClipboardList, History } from "lucide-react";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 // ---------------------------------------------------------------------------
@@ -105,9 +103,6 @@ function ProductListAccordion({
   );
 }
 
-// Module-level persistence for header open state
-let savedHeaderOpen = true;
-
 export default function InventoryPage() {
   useInventoryDeps();
 
@@ -122,23 +117,12 @@ export default function InventoryPage() {
   }, [role, router]);
 
   const activeProducts = useSelector(inventorySelect.activeProducts);
-  const lastCheck = useSelector(inventorySelect.lastCheck);
   const predictions = useSelector(inventorySelect.predictions);
-  const productIdsFromServices = useSelector(inventorySelect.productIdsFromServices);
   const session = useSelector(inventorySelect.session);
-  const { addProduct, loadCheckIntoSession } = useInventory();
+  const { loadCheckIntoSession } = useInventory();
 
   // Build a prediction map for O(1) lookup in ProductListRow
   const predictionMap = new Map(predictions.map((p) => [p.productId, p]));
-
-  // Auto-populate products discovered from services in the date range.
-  useEffect(() => {
-    for (const productId of productIdsFromServices) {
-      if (!session.activeProductIds.includes(productId)) {
-        addProduct(productId);
-      }
-    }
-  }, [productIdsFromServices, session.activeProductIds, addProduct]);
 
   // When checks load in, auto-restore today's check into the session if the
   // session is currently empty (no active products and no counts recorded).
@@ -201,63 +185,28 @@ export default function InventoryPage() {
     }
   };
 
-  const [headerOpen, setHeaderOpen] = useState(savedHeaderOpen);
-
-  const toggleHeader = () => {
-    const next = !headerOpen;
-    savedHeaderOpen = next;
-    setHeaderOpen(next);
-  };
-
   if (role && role !== "admin") {
     return null;
   }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Collapsible header */}
-      <div className="shrink-0 bg-card border-b border-border">
-        {/* Trigger row */}
-        <button
-          onClick={toggleHeader}
-          className="w-full flex items-center justify-between px-4 py-3 text-left"
-          aria-expanded={headerOpen}
-        >
-          <span className="flex items-center gap-2 text-base font-semibold">
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
-            Inventory
-          </span>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/inventory/history"
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent/10"
-              aria-label="View inventory history"
-            >
-              <History className="h-3.5 w-3.5" />
-              History
-            </Link>
-            {headerOpen ? (
-              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            )}
-          </div>
-        </button>
-
-        {/* Collapsible content */}
-        {headerOpen && (
-          <div className="px-4 pb-3 flex flex-col gap-3 border-t border-border">
-            {/* Date range search — keyed on lastCheck so it remounts when data arrives */}
-            <DateRangeSearchControl key={lastCheck?.checkDate ?? "no-check"} />
-
-            {/* Add product triggers */}
-            <div className="flex items-center gap-2">
-              <AddFromPrevInventorySheet />
-              <AddManualSheet />
-            </div>
-          </div>
-        )}
+      {/* Fixed header */}
+      <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2 text-base font-semibold">
+          <ClipboardList className="h-4 w-4 text-muted-foreground" />
+          Inventory
+        </span>
+        <div className="flex items-center gap-2">
+          <SelectProductsSheet />
+          <Link
+            href="/inventory/history"
+            className="flex items-center text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent/10"
+            aria-label="View inventory history"
+          >
+            <History className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
 
       {/* Scrollable product list */}
@@ -268,7 +217,7 @@ export default function InventoryPage() {
               No products added yet.
             </p>
             <p className="text-xs text-muted-foreground">
-              Search a date range to auto-populate, or use Prev. Inv / Manual to add products.
+              Tap &ldquo;Select Products to Count&rdquo; to get started.
             </p>
           </div>
         ) : (

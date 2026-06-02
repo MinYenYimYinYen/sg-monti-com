@@ -31,6 +31,9 @@ export function ProductListRow({ product, prediction }: ProductListRowProps) {
   const countsSelector = inventorySelect.makeCountsForProduct(product.productId);
   const counts = useSelector(countsSelector);
 
+  const lastCountSelector = inventorySelect.makeLastCountForProduct(product.productId);
+  const lastCount = useSelector(lastCountSelector);
+
   const totalAppUnits = sumCountsToAppUnits(counts, product);
   const totalDisplay = product.unitConfigDisplay.format({
     amount: totalAppUnits,
@@ -53,7 +56,7 @@ export function ProductListRow({ product, prediction }: ProductListRowProps) {
 
   return (
     <>
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-card active:bg-accent/10">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-card active:bg-accent/10">
         {/* Tap target — navigates to count entry */}
         <button
           className="flex-1 flex flex-col items-start text-left min-w-0"
@@ -79,6 +82,11 @@ export function ProductListRow({ product, prediction }: ProductListRowProps) {
           ) : (
             <span className="text-xs text-muted-foreground mt-1 italic">
               Tap to add counts
+            </span>
+          )}
+          {lastCount && (
+            <span className="text-xs text-muted-foreground mt-0.5">
+              Last: {product.unitConfigDisplay.format({ amount: lastCount.totalCount, targetContexts: ["load", "app"] }).formattedString} ({lastCount.date})
             </span>
           )}
         </button>

@@ -9,6 +9,7 @@ import {
   InventoryCheck,
   InventoryCheckEntryHydrated,
   InventoryPrediction,
+  LastProductCount,
   ProductCount,
 } from "@/app/inventory/InventoryTypes";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
@@ -168,6 +169,75 @@ const makeSelectCountsForProduct = (productId: number) =>
     (session): ProductCount[] => session.counts[productId] ?? [],
   );
 
+/**
+ * Builds a map of the most recent saved count for each product across all checks.
+ * checks are sorted newest-first, so the first occurrence of each productId wins.
+ */
+const selectLastCountMap = createSelector(
+  [selectChecks],
+  (checks): Map<number, LastProductCount> => {
+    const map = new Map<number, LastProductCount>();
+    for (const check of checks) {
+      for (const entry of check.entries) {
+        if (!map.has(entry.productId)) {
+          map.set(entry.productId, {
+            totalCount: entry.totalCount,
+            unit: entry.unit,
+            date: check.checkDate,
+          });
+        }
+      }
+    }
+    return map;
+  },
+);
+
+/**
+ * Factory selector — returns a selector for the LastProductCount of a specific product.
+ * Create once per productId (e.g., at the component level) to avoid re-creating on every render.
+ */
+const makeSelectLastCountForProduct = (productId: number) =>
+  createSelector(
+    [selectLastCountMap],
+    (lastCountMap): LastProductCount | null => lastCountMap.get(productId) ?? null,
+  );
+
+/**
+ * Products that have a last recorded count > 0 across all checks.
+ * Sorted alphabetically by description.
+ */
+const selectProductsWithNonZeroLastCount = createSelector(
+  [selectLastCountMap, productSelect.allProductsMap],
+  (lastCountMap, allProductsMap): ProductCommon[] => {
+    const products: ProductCommon[] = [];
+    for (const [productId, lastCount] of lastCountMap) {
+      if (lastCount.totalCount > 0) {
+        const product = allProductsMap.get(productId);
+        if (product) products.push(product);
+      }
+    }
+    return products.sort((a, b) => a.description.localeCompare(b.description));
+  },
+);
+
+/**
+ * Products that have a last recorded count === 0 across all checks.
+ * Sorted alphabetically by description.
+ */
+const selectProductsWithZeroLastCount = createSelector(
+  [selectLastCountMap, productSelect.allProductsMap],
+  (lastCountMap, allProductsMap): ProductCommon[] => {
+    const products: ProductCommon[] = [];
+    for (const [productId, lastCount] of lastCountMap) {
+      if (lastCount.totalCount === 0) {
+        const product = allProductsMap.get(productId);
+        if (product) products.push(product);
+      }
+    }
+    return products.sort((a, b) => a.description.localeCompare(b.description));
+  },
+);
+
 export const inventorySelect = {
   checks: selectChecks,
   lastCheck: selectLastCheck,
@@ -178,6 +248,9 @@ export const inventorySelect = {
   predictions: selectPredictions,
   productIdsFromServices: selectProductIdsFromServices,
   makeCountsForProduct: makeSelectCountsForProduct,
+  makeLastCountForProduct: makeSelectLastCountForProduct,
+  productsWithNonZeroLastCount: selectProductsWithNonZeroLastCount,
+  productsWithZeroLastCount: selectProductsWithZeroLastCount,
 };
 
 // ---------------------------------------------------------------------------

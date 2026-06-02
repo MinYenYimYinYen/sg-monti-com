@@ -37,6 +37,12 @@ export type InventorySession = {
   counts: Record<number, ProductCount[]>; // retained even when product removed from activeProductIds
 };
 
+export type LastProductCount = {
+  totalCount: number;
+  unit: UnitLabel;
+  date: string; // checkDate of the check it came from
+};
+
 export type InventoryPrediction = {
   productId: number;
   product: ProductCommon;

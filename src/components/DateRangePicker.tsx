@@ -36,7 +36,7 @@ export function DateRangePicker({
   const validation = validateDateRange(value);
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2 flex-wrap", className)}>
       <DatePicker
         value={value.min}
         onChange={handleMinChange}
