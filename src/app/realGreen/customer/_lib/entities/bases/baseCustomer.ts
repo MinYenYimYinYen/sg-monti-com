@@ -3,6 +3,7 @@ import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseAddress } from "@/app/realGreen/_lib/subTypes/Address";
 import { baseContactPreference } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
+import { Aging, baseAgingParams } from "@/app/realGreen/customer/_lib/classes/Aging";
 
 export const baseCustomerNoX: Omit<Customer, "x"> = {
   custId: baseNumId,
@@ -49,6 +50,8 @@ export const baseCustomerNoX: Omit<Customer, "x"> = {
   flags: [],
   promise: null,
   promiseIssues: [],
+  agingParams: baseAgingParams,
+  aging: new Aging(baseAgingParams),
 };
 
 export const baseCustomer: Customer = {

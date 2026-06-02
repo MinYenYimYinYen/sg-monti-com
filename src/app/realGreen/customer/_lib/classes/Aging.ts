@@ -8,6 +8,16 @@ export type AgingParams = {
   due7: number;
 };
 
+export const baseAgingParams: AgingParams = {
+  due1: 0,
+  due2: 0,
+  due3: 0,
+  due4: 0,
+  due5: 0,
+  due6: 0,
+  due7: 0,
+};
+
 export class Aging {
   constructor(public readonly params: AgingParams) {}
 
