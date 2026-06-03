@@ -40,6 +40,7 @@ import { paceCrawlerReducer } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
 import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFeedback/report/loadoutReportSlice";
 import { inventoryReducer } from "@/app/inventory/inventorySlice";
 import javelinReducer from "@/app/javelin/javelinSlice";
+import depositReducer from "@/app/javelin/depositSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -81,6 +82,7 @@ const rootReducer = combineReducers({
   paceCrawler: paceCrawlerReducer,
   loadoutReport: loadoutReportReducer,
   javelin: javelinReducer,
+  deposit: depositReducer,
 });
 
 export default rootReducer;

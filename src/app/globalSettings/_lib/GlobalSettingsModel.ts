@@ -23,6 +23,11 @@ const GlobalSettingsSchema = new mongoose.Schema<GlobalSettings>(
       required: true,
       default: {},
     },
+    depositAccountMap: {
+      type: Object,
+      required: true,
+      default: {},
+    },
   },
   { timestamps: true },
 );

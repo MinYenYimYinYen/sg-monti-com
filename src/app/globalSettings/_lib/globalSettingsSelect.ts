@@ -1,6 +1,7 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { baseGlobalSettings } from "@/app/globalSettings/_lib/baseGlobalSettings";
+import { emptyDepositAccountMap } from "@/app/javelin/depositSlice";
 
 const selectSettings = (state: AppState) => state.globalSettings.settings ?? baseGlobalSettings;
 
@@ -19,11 +20,17 @@ const selectGenLedgerAccountMap = createSelector(
   (settings) => settings?.genLedgerAccountMap ?? {},
 );
 
+const selectDepositAccountMap = createSelector(
+  [selectSettings],
+  (settings) => settings?.depositAccountMap ?? emptyDepositAccountMap,
+);
+
 export const globalSettingsSelect = {
   settings: selectSettings,
   season: selectSeason,
   coverSheetsConfig: selectCoverSheetsConfig,
   genLedgerAccountMap: selectGenLedgerAccountMap,
+  depositAccountMap: selectDepositAccountMap,
 };
 
 
