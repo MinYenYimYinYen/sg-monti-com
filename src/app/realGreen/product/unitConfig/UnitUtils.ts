@@ -3,8 +3,8 @@ import {
   LengthUnit,
   Metric,
   TimeUnit,
-  UnitLabel,
   UL_METRIC_MAP,
+  UnitLabel,
   VolumeUnit,
   WeightUnit,
 } from "@/app/realGreen/product/unitConfig/UnitTypes";
@@ -292,11 +292,13 @@ export class UnitUtils {
   );
   private static readonly WEIGHT_UNITS = [
     UnitLabel.lbs,
+    UnitLabel.oz,
   ] as const satisfies WeightUnit["desc"][];
 
   // Weight conversions (to pounds)
   private static readonly WEIGHT_TO_LBS: Record<WeightUnit["desc"], number> = {
     [UnitLabel.lbs]: 1,
+    [UnitLabel.oz]: 1 / 16,
   };
   /**
    * Weight converter with fluent API
@@ -307,7 +309,7 @@ export class UnitUtils {
    *
    * @example
    * // Get all available units
-   * UnitUtils.weight.getAllUnits()  // ["Lbs"]
+   * UnitUtils.weight.getAllUnits()  // ["Lbs", "Oz"]
    */
   static readonly weight: WeightConverter = Object.assign(
     (value: number, fromUnit: WeightUnit["desc"]) => {
@@ -321,6 +323,7 @@ export class UnitUtils {
         toAll: (): { [K in WeightUnit["desc"]]: number } => {
           return {
             [UnitLabel.lbs]: lbs / UnitUtils.WEIGHT_TO_LBS[UnitLabel.lbs],
+            [UnitLabel.oz]: lbs / UnitUtils.WEIGHT_TO_LBS[UnitLabel.oz],
           };
         },
       };
@@ -329,6 +332,7 @@ export class UnitUtils {
       getAllUnits: (): WeightUnit["desc"][] => UnitUtils.WEIGHT_UNITS,
       getConversionFactors: (): { [K in WeightUnit["desc"]]: number } => ({
         [UnitLabel.lbs]: UnitUtils.WEIGHT_TO_LBS[UnitLabel.lbs],
+        [UnitLabel.oz]: UnitUtils.WEIGHT_TO_LBS[UnitLabel.oz],
       }),
     },
   );
@@ -503,7 +507,10 @@ export class UnitUtils {
     const fromFactor = getBaseFactor(fromUnit);
     const quantityInBase = quantity * fromFactor;
 
-    const withFactors = candidates.map((unit) => ({ unit, factor: getBaseFactor(unit) }));
+    const withFactors = candidates.map((unit) => ({
+      unit,
+      factor: getBaseFactor(unit),
+    }));
 
     // Sort largest unit first (highest factor = largest unit)
     withFactors.sort((a, b) => b.factor - a.factor);

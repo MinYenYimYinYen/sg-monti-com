@@ -2,6 +2,7 @@ import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 
 export enum UnitLabel {
   lbs = "Lbs",
+  oz = "Oz",
   flOz = "Fl Oz",
   sf = "SF",
   ksf = "1000 SF",
@@ -40,6 +41,7 @@ export const UL_METRIC_MAP = {
   [UnitLabel.mGal]: "volume",
   [UnitLabel.flOz]: "volume",
   [UnitLabel.lbs]: "weight",
+  [UnitLabel.oz]: "weight",
   [UnitLabel.unknown]: "unknown",
 } as const satisfies Record<UnitLabel, Metric>;
 
