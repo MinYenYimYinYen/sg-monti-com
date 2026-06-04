@@ -143,7 +143,7 @@ export function MixChartByProductAmountPDF({
                       key={partIdx}
                       style={tw("flex flex-row gap-1 items-center justify-center")}
                     >
-                      <PDFNumber>{part.amount}</PDFNumber>
+                      <Text>{part.formattedAmount}</Text>
                       <Text style={tw(part.isWhole ? "font-bold" : "text-[10px]")}>
                         {part.unit}
                       </Text>

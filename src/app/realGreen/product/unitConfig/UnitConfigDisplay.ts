@@ -9,6 +9,8 @@ import {
  */
 export type CompoundUnitPart = {
   amount: number;
+  /** Pre-formatted string representation of amount with appropriate precision. */
+  formattedAmount: string;
   unit: string;
   isWhole: boolean; // True for whole numbers (major units), false for remainders
 };
@@ -29,12 +31,50 @@ export type FormatCompoundUnitParams = {
   amount: number; // Quantity in app/base units
   targetContexts: UnitContext[]; // Waterfall array, e.g., ["load", "app"]
   rounding?: "round" | "floor" | "ceil" | "none";
+  /**
+   * When set, each part is formatted with at least this many significant figures
+   * instead of the default 2-decimal-place rounding.
+   *
+   * Algorithm:
+   * - value ≥ 10  → 0 decimal places
+   * - 1 ≤ value < 10 → 1 decimal place
+   * - value < 1   → enough decimals for minSigFigs significant figures
+   */
+  minSigFigs?: number;
 };
 
 /**
  * Threshold below which remainders are not displayed (0.01 base units)
  */
 const REMAINDER_THRESHOLD = 0.01;
+
+/**
+ * Computes the number of decimal places needed to display `value` with at least
+ * `minSigFigs` significant figures.
+ *
+ * - value ≥ 10  → 0 decimal places
+ * - 1 ≤ value < 10 → 1 decimal place
+ * - value < 1   → -floor(log10(|value|)) + (minSigFigs - 1) decimal places
+ */
+function calcDecimalsForMinSigFigs(value: number, minSigFigs: number): number {
+  if (value === 0) return 0;
+  const abs = Math.abs(value);
+  if (abs >= 10) return 0;
+  if (abs >= 1) return 1;
+  return -Math.floor(Math.log10(abs)) + (minSigFigs - 1);
+}
+
+/**
+ * Formats a number to a string using either minSigFigs precision or the standard
+ * rounding mode.
+ */
+function formatAmount(value: number, rounding: "round" | "floor" | "ceil" | "none", minSigFigs?: number): string {
+  if (minSigFigs !== undefined) {
+    const decimals = calcDecimalsForMinSigFigs(value, minSigFigs);
+    return value.toFixed(decimals);
+  }
+  return String(applyRounding(value, rounding));
+}
 
 /**
  * Apply rounding based on the specified mode
@@ -89,11 +129,16 @@ export class UnitConfigDisplay {
    * @example
    * // Amount less than 1 major unit: "58 Fl Oz"
    * format({ amount: 58, targetContexts: ["load", "app"] })
+   *
+   * @example
+   * // With minSigFigs: "0.29 Oz" instead of "0 Oz"
+   * format({ amount: 0.29, targetContexts: ["load", "app"], minSigFigs: 2 })
    */
   format({
     amount,
     targetContexts,
     rounding = "none",
+    minSigFigs,
   }: FormatCompoundUnitParams): CompoundUnitDisplay {
     const appConversion = this.unitConfig.conversions.app;
 
@@ -103,15 +148,17 @@ export class UnitConfigDisplay {
       (targetContexts.length === 1 && targetContexts[0] === "app")
     ) {
       const roundedAmount = applyRounding(amount, rounding);
+      const formatted = formatAmount(amount, rounding, minSigFigs);
 
       const part: CompoundUnitPart = {
         amount: roundedAmount,
+        formattedAmount: formatted,
         unit: appConversion.unitLabel,
         isWhole: false,
       };
       return {
         parts: [part],
-        formattedString: `${part.amount} ${part.unit}`,
+        formattedString: `${formatted} ${part.unit}`,
       };
     }
 
@@ -125,14 +172,16 @@ export class UnitConfigDisplay {
     if (validContexts.length === 0) {
       // Fallback to app units if no valid contexts
       const roundedAmount = applyRounding(amount, rounding);
+      const formatted = formatAmount(amount, rounding, minSigFigs);
       const part: CompoundUnitPart = {
         amount: roundedAmount,
+        formattedAmount: formatted,
         unit: appConversion.unitLabel,
         isWhole: false,
       };
       return {
         parts: [part],
-        formattedString: `${part.amount} ${part.unit}`,
+        formattedString: `${formatted} ${part.unit}`,
       };
     }
 
@@ -153,8 +202,10 @@ export class UnitConfigDisplay {
       if (amountInContext < 1) continue;
 
       const wholeUnits = Math.floor(amountInContext);
+      // Whole-unit parts are always integers — no sig-fig treatment needed
       parts.push({
         amount: wholeUnits,
+        formattedAmount: String(wholeUnits),
         unit: conversion.unitLabel,
         isWhole: true,
       });
@@ -188,23 +239,27 @@ export class UnitConfigDisplay {
             conversion.conversionFactor;
 
           const roundedTotal = applyRounding(totalInContext, rounding);
+          const formatted = formatAmount(totalInContext, rounding, minSigFigs);
 
           // Replace parts array with single rounded part
           return {
             parts: [
               {
                 amount: roundedTotal,
+                formattedAmount: formatted,
                 unit: appConversion.unitLabel,
                 isWhole: false,
               },
             ],
-            formattedString: `${roundedTotal} ${appConversion.unitLabel}`,
+            formattedString: `${formatted} ${appConversion.unitLabel}`,
           };
         } else {
           // Different units - add as separate remainder part
           const roundedRemainder = applyRounding(remainingAmount, rounding);
+          const formatted = formatAmount(remainingAmount, rounding, minSigFigs);
           parts.push({
             amount: roundedRemainder,
+            formattedAmount: formatted,
             unit: appConversion.unitLabel,
             isWhole: false,
           });
@@ -215,16 +270,18 @@ export class UnitConfigDisplay {
           this.unitConfig.conversions[lastProcessedContext];
         const totalInLastContext = amount / lastConversion.conversionFactor;
         const roundedTotal = applyRounding(totalInLastContext, rounding);
+        const formatted = formatAmount(totalInLastContext, rounding, minSigFigs);
 
         return {
           parts: [
             {
               amount: roundedTotal,
+              formattedAmount: formatted,
               unit: lastConversion.unitLabel,
               isWhole: false,
             },
           ],
-          formattedString: `${roundedTotal} ${lastConversion.unitLabel}`,
+          formattedString: `${formatted} ${lastConversion.unitLabel}`,
         };
       }
     }
@@ -238,34 +295,38 @@ export class UnitConfigDisplay {
         const conversion = this.unitConfig.conversions[firstNonAppContext];
         const amountInContext = amount / conversion.conversionFactor;
         const roundedAmount = applyRounding(amountInContext, rounding);
+        const formatted = formatAmount(amountInContext, rounding, minSigFigs);
 
         return {
           parts: [
             {
               amount: roundedAmount,
+              formattedAmount: formatted,
               unit: conversion.unitLabel,
               isWhole: false,
             },
           ],
-          formattedString: `${roundedAmount} ${conversion.unitLabel}`,
+          formattedString: `${formatted} ${conversion.unitLabel}`,
         };
       }
 
       // Fallback to app units only if no other context was specified
       const roundedAmount = applyRounding(amount, rounding);
+      const formatted = formatAmount(amount, rounding, minSigFigs);
       const part: CompoundUnitPart = {
         amount: roundedAmount,
+        formattedAmount: formatted,
         unit: appConversion.unitLabel,
         isWhole: false,
       };
       return {
         parts: [part],
-        formattedString: `${part.amount} ${part.unit}`,
+        formattedString: `${formatted} ${part.unit}`,
       };
     }
 
     // Format string
-    const formattedString = parts.map((p) => `${p.amount} ${p.unit}`).join(" ");
+    const formattedString = parts.map((p) => `${p.formattedAmount} ${p.unit}`).join(" ");
 
     return {
       parts,

@@ -136,6 +136,7 @@ export function generateMixChartData(
       col.unitConfigDisplay.format({
         amount: col.ratePerKsf * size,
         targetContexts: ["load", "app"],
+        minSigFigs: 2,
       }),
     ),
   }));
@@ -190,6 +191,7 @@ export function generateMixChartByProductAmount(
       col.unitConfigDisplay.format({
         amount: col.ratePerKsf * sizeCovered,
         targetContexts: ["load", "app"],
+        minSigFigs: 2,
       }),
     );
 
