@@ -108,7 +108,6 @@ const uiSlice = createSlice({
       // B. SUCCESS
       .addMatcher(isFulfilled, (state, action) => {
         const requestId = getRequestId(action);
-        const typePrefix = getTypePrefix(action);
 
         // Remove from active
         const index = state.activeRequests.indexOf(requestId);
