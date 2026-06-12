@@ -83,6 +83,13 @@ const uiSlice = createSlice({
         const requestId = getRequestId(action);
         state.activeRequests.push(requestId);
 
+        // Optimistically reset the timer the moment a post-expiry request goes pending.
+        // Without this, concurrent or rapid re-render calls after expiry can slip past
+        // both the dedup check (not yet in activeRequests) and the cache check
+        // (lastFetched still shows the expired timestamp) before the fulfilled action
+        // has a chance to write the new timestamp.
+        state.lastFetched[requestId] = Date.now();
+
         // The 'meta' property here is populated by getPendingMeta in smartThunkOptions
         // It contains { showLoading, loadingMsg } directly.
         const meta = action.meta as ThunkConfig;
