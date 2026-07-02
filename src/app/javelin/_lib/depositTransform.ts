@@ -22,12 +22,21 @@ export const DEPOSIT_FIELDS: DepositField[] = [
   "netDeposit",
 ];
 
+// Fields that warrant a description label in the output CSV to disambiguate
+// lines that share the same QB account (e.g., Sales and Refund both map to Credit Card Payments).
+const FIELD_DESCRIPTION: Partial<Record<DepositField, string>> = {
+  refundAmount: "Refund",
+  chargeBackAmount: "Chargeback",
+  adjustmentAmount: "Adjustment",
+};
+
 type QBJournalRow = {
   "*JournalNo": string;
   "*JournalDate": string;
   "*AccountName": string;
   "*Debits": number | string;
   "*Credits": number | string;
+  "Description": string;
   "Name": string;
 };
 
@@ -81,13 +90,14 @@ export function transformToDepositCSV(
         "*AccountName": accountName,
         "*Debits": effectiveSide === "debit" ? absValue : "",
         "*Credits": effectiveSide === "credit" ? absValue : "",
+        "Description": FIELD_DESCRIPTION[field] ?? "",
         "Name": entry.name ?? "",
       });
     }
   });
 
   return Papa.unparse(outputRows, {
-    columns: ["*JournalNo", "*JournalDate", "*AccountName", "*Debits", "*Credits", "Name"],
+    columns: ["*JournalNo", "*JournalDate", "*AccountName", "*Debits", "*Credits", "Description", "Name"],
   });
 }
 
