@@ -21,7 +21,9 @@ import {
 } from "@/style/components/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/style/components/tabs";
 import { TRange } from "@/lib/primatives/tRange/TRange";
-import { PackageSearch, Search } from "lucide-react";
+import { Loader2, PackageSearch, Search } from "lucide-react";
+import { uiSelect } from "@/store/reduxUtil/uiSlice";
+import { AppState } from "@/store";
 
 // ---------------------------------------------------------------------------
 // Select All / None control
@@ -141,6 +143,9 @@ function ByProductionDateTab({
   const productIdsFromServices = useSelector(inventorySelect.productIdsFromServices);
   const allProductsMap = useSelector(productSelect.allProductsMap);
   const sessionDateRange = useSelector(inventorySelect.sessionDateRange);
+  const isLoading = useSelector((state: AppState) =>
+    uiSelect.isLoadingType(state, "recentProduction/getCustDocs"),
+  );
 
   const [localRange, setLocalRange] = useState<TRange<string>>(() => ({
     min: lastCheck?.checkDate ?? "",
@@ -179,6 +184,11 @@ function ByProductionDateTab({
         <p className="text-sm text-muted-foreground text-center py-3">
           Search a date range to see products from completed services.
         </p>
+      ) : isLoading ? (
+        <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading products...
+        </div>
       ) : (
         <div className="flex flex-col flex-1 min-h-0">
           <SelectAllNone

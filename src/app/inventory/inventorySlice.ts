@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { InventoryContract } from "@/app/inventory/api/InventoryContract";
 import {
@@ -7,7 +7,7 @@ import {
   ProductCount,
 } from "@/app/inventory/InventoryTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
-import { AppState } from "@/store";
+import { AppState, AppThunk } from "@/store";
 import { saveInventorySession } from "@/lib/inventory/inventorySessionStorage";
 
 type InventoryState = {
@@ -136,14 +136,14 @@ const inventorySlice = createSlice({
  * Reads the current session from Redux state and persists it to localStorage.
  * Call this after any action that mutates session data so the save is not
  * tied to a specific component's lifecycle.
+ *
+ * Implemented as a plain thunk (not createAsyncThunk) so it dispatches no
+ * pending/fulfilled/rejected actions and stays invisible to uiSlice matchers.
  */
-const persistSession = createAsyncThunk(
-  "inventory/persistSession",
-  (_, { getState }) => {
-    const session = (getState() as AppState).inventory.session;
-    saveInventorySession(session);
-  },
-);
+const persistSession = (): AppThunk => (_, getState) => {
+  const session = (getState() as AppState).inventory.session;
+  saveInventorySession(session);
+};
 
 const getInventoryChecks = createStandardThunk<
   InventoryContract,

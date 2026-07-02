@@ -74,7 +74,7 @@ export function CountForm({ productId, product }: CountFormProps) {
 
   const handleAdd = () => {
     const parsedQty = parseFloat(qty);
-    if (!parsedQty || parsedQty <= 0) return;
+    if (isNaN(parsedQty) || parsedQty < 0) return;
 
     const count: ProductCount = {
       qty: parsedQty,
@@ -149,7 +149,7 @@ export function CountForm({ productId, product }: CountFormProps) {
         variant="primary"
         intensity="solid"
         onClick={handleAdd}
-        disabled={!qty || parseFloat(qty) <= 0}
+        disabled={qty === "" || isNaN(parseFloat(qty)) || parseFloat(qty) < 0}
         className="w-full"
       >
         Add
