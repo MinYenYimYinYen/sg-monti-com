@@ -22,20 +22,30 @@ export function useInventory({ autoLoad }: { autoLoad?: boolean } = {}) {
     }
   }, [autoLoad, dispatch]);
 
-  const addProduct = (productId: number) =>
+  const addProduct = (productId: number) => {
     dispatch(inventoryActions.addProductToSession(productId));
+    dispatch(inventoryActions.persistSession());
+  };
 
-  const removeProduct = (productId: number) =>
+  const removeProduct = (productId: number) => {
     dispatch(inventoryActions.removeProductFromSession(productId));
+    dispatch(inventoryActions.persistSession());
+  };
 
-  const addCount = (productId: number, count: ProductCount) =>
+  const addCount = (productId: number, count: ProductCount) => {
     dispatch(inventoryActions.addCount({ productId, count }));
+    dispatch(inventoryActions.persistSession());
+  };
 
-  const removeCount = (productId: number, index: number) =>
+  const removeCount = (productId: number, index: number) => {
     dispatch(inventoryActions.removeCount({ productId, index }));
+    dispatch(inventoryActions.persistSession());
+  };
 
-  const setDateRange = (range: TRange<string> | null) =>
+  const setDateRange = (range: TRange<string> | null) => {
     dispatch(inventoryActions.setDateRange(range));
+    dispatch(inventoryActions.persistSession());
+  };
 
   const loadCheckIntoSession = (date: string) =>
     dispatch(inventoryActions.loadCheckIntoSession(date));

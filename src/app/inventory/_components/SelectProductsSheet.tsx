@@ -24,6 +24,48 @@ import { TRange } from "@/lib/primatives/tRange/TRange";
 import { PackageSearch, Search } from "lucide-react";
 
 // ---------------------------------------------------------------------------
+// Select All / None control
+// ---------------------------------------------------------------------------
+
+type SelectAllNoneProps = {
+  products: ProductCommon[];
+  activeProductIds: number[];
+  selectedIds: Set<number>;
+  onBulkSelect: (ids: number[], selected: boolean) => void;
+};
+
+function SelectAllNone({ products, activeProductIds, selectedIds, onBulkSelect }: SelectAllNoneProps) {
+  const selectable = products.filter((p) => !activeProductIds.includes(p.productId));
+  if (selectable.length === 0) return null;
+
+  const allSelected = selectable.every((p) => selectedIds.has(p.productId));
+  const ids = selectable.map((p) => p.productId);
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-1 shrink-0">
+      <span className="text-xs text-muted-foreground">Select:</span>
+      <button
+        type="button"
+        onClick={() => onBulkSelect(ids, true)}
+        disabled={allSelected}
+        className="text-xs text-primary underline-offset-2 hover:underline disabled:opacity-40 disabled:no-underline"
+      >
+        All
+      </button>
+      <span className="text-xs text-muted-foreground">·</span>
+      <button
+        type="button"
+        onClick={() => onBulkSelect(ids, false)}
+        disabled={!selectable.some((p) => selectedIds.has(p.productId))}
+        className="text-xs text-primary underline-offset-2 hover:underline disabled:opacity-40 disabled:no-underline"
+      >
+        None
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Shared product list with checkboxes
 // ---------------------------------------------------------------------------
 
@@ -85,12 +127,14 @@ type ByProductionDateTabProps = {
   activeProductIds: number[];
   selectedIds: Set<number>;
   onToggle: (productId: number) => void;
+  onBulkSelect: (ids: number[], selected: boolean) => void;
 };
 
 function ByProductionDateTab({
   activeProductIds,
   selectedIds,
   onToggle,
+  onBulkSelect,
 }: ByProductionDateTabProps) {
   const lastCheck = useSelector(inventorySelect.lastCheck);
   const { setDateRange } = useInventory();
@@ -131,21 +175,29 @@ function ByProductionDateTab({
       </div>
 
       {/* Product list */}
-      <div className="flex-1 overflow-y-auto">
-        {!sessionDateRange ? (
-          <p className="text-sm text-muted-foreground text-center py-3">
-            Search a date range to see products from completed services.
-          </p>
-        ) : (
-          <ProductCheckList
+      {!sessionDateRange ? (
+        <p className="text-sm text-muted-foreground text-center py-3">
+          Search a date range to see products from completed services.
+        </p>
+      ) : (
+        <div className="flex flex-col flex-1 min-h-0">
+          <SelectAllNone
             products={products}
             activeProductIds={activeProductIds}
             selectedIds={selectedIds}
-            onToggle={onToggle}
-            emptyMessage="No products found in the selected date range."
+            onBulkSelect={onBulkSelect}
           />
-        )}
-      </div>
+          <div className="flex-1 overflow-y-auto">
+            <ProductCheckList
+              products={products}
+              activeProductIds={activeProductIds}
+              selectedIds={selectedIds}
+              onToggle={onToggle}
+              emptyMessage="No products found in the selected date range."
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -158,12 +210,14 @@ type FromLastCountTabProps = {
   activeProductIds: number[];
   selectedIds: Set<number>;
   onToggle: (productId: number) => void;
+  onBulkSelect: (ids: number[], selected: boolean) => void;
 };
 
 function FromLastCountTab({
   activeProductIds,
   selectedIds,
   onToggle,
+  onBulkSelect,
 }: FromLastCountTabProps) {
   const hydratedChecks = useSelector(inventorySelect.hydratedChecks);
   const lastCheck = hydratedChecks[0];
@@ -187,6 +241,12 @@ function FromLastCountTab({
       <p className="text-xs text-muted-foreground shrink-0">
         From check on {lastCheck.checkDate} — showing products with qty &gt; 0
       </p>
+      <SelectAllNone
+        products={products}
+        activeProductIds={activeProductIds}
+        selectedIds={selectedIds}
+        onBulkSelect={onBulkSelect}
+      />
       <div className="flex-1 overflow-y-auto">
         <ProductCheckList
           products={products}
@@ -209,6 +269,7 @@ type LastCountTabProps = {
   activeProductIds: number[];
   selectedIds: Set<number>;
   onToggle: (productId: number) => void;
+  onBulkSelect: (ids: number[], selected: boolean) => void;
   emptyMessage: string;
 };
 
@@ -217,17 +278,26 @@ function LastCountTab({
   activeProductIds,
   selectedIds,
   onToggle,
+  onBulkSelect,
   emptyMessage,
 }: LastCountTabProps) {
   return (
-    <div className="flex-1 overflow-y-auto">
-      <ProductCheckList
+    <div className="flex flex-col flex-1 min-h-0">
+      <SelectAllNone
         products={products}
         activeProductIds={activeProductIds}
         selectedIds={selectedIds}
-        onToggle={onToggle}
-        emptyMessage={emptyMessage}
+        onBulkSelect={onBulkSelect}
       />
+      <div className="flex-1 overflow-y-auto">
+        <ProductCheckList
+          products={products}
+          activeProductIds={activeProductIds}
+          selectedIds={selectedIds}
+          onToggle={onToggle}
+          emptyMessage={emptyMessage}
+        />
+      </div>
     </div>
   );
 }
@@ -240,9 +310,10 @@ type ManualTabProps = {
   activeProductIds: number[];
   selectedIds: Set<number>;
   onToggle: (productId: number) => void;
+  onBulkSelect: (ids: number[], selected: boolean) => void;
 };
 
-function ManualTab({ activeProductIds, selectedIds, onToggle }: ManualTabProps) {
+function ManualTab({ activeProductIds, selectedIds, onToggle, onBulkSelect }: ManualTabProps) {
   const productSingles = useSelector(productSelect.productSingles);
   const productSubs = useSelector(productSelect.productSubs);
   const [filter, setFilter] = useState("");
@@ -274,6 +345,13 @@ function ManualTab({ activeProductIds, selectedIds, onToggle }: ManualTabProps) 
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
         className="shrink-0"
+      />
+      {/* Select All/None applies to all currently visible (filtered) products */}
+      <SelectAllNone
+        products={filtered}
+        activeProductIds={activeProductIds}
+        selectedIds={selectedIds}
+        onBulkSelect={onBulkSelect}
       />
       <div className="flex-1 overflow-y-auto flex flex-col gap-2">
         {sortedCategories.map((category) => (
@@ -321,6 +399,21 @@ export function SelectProductsSheet() {
         next.delete(productId);
       } else {
         next.add(productId);
+      }
+      return next;
+    });
+  };
+
+  const bulkSelect = (ids: number[], selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (session.activeProductIds.includes(id)) continue;
+        if (selected) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
       }
       return next;
     });
@@ -382,6 +475,7 @@ export function SelectProductsSheet() {
               activeProductIds={session.activeProductIds}
               selectedIds={selectedIds}
               onToggle={toggleId}
+              onBulkSelect={bulkSelect}
             />
           </TabsContent>
 
@@ -390,6 +484,7 @@ export function SelectProductsSheet() {
               activeProductIds={session.activeProductIds}
               selectedIds={selectedIds}
               onToggle={toggleId}
+              onBulkSelect={bulkSelect}
             />
           </TabsContent>
 
@@ -399,6 +494,7 @@ export function SelectProductsSheet() {
               activeProductIds={session.activeProductIds}
               selectedIds={selectedIds}
               onToggle={toggleId}
+              onBulkSelect={bulkSelect}
               emptyMessage="No products with a non-zero last count."
             />
           </TabsContent>
@@ -409,6 +505,7 @@ export function SelectProductsSheet() {
               activeProductIds={session.activeProductIds}
               selectedIds={selectedIds}
               onToggle={toggleId}
+              onBulkSelect={bulkSelect}
               emptyMessage="No products with a zero last count."
             />
           </TabsContent>
@@ -418,6 +515,7 @@ export function SelectProductsSheet() {
               activeProductIds={session.activeProductIds}
               selectedIds={selectedIds}
               onToggle={toggleId}
+              onBulkSelect={bulkSelect}
             />
           </TabsContent>
         </Tabs>

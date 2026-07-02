@@ -10,10 +10,7 @@ import { useRecentProduction } from "@/app/realGreen/customer/hooks/useRecentPro
 import { useInventory } from "@/app/inventory/useInventory";
 import { inventorySelect } from "@/app/inventory/inventorySelect";
 import { inventoryActions } from "@/app/inventory/inventorySlice";
-import {
-  loadInventorySession,
-  saveInventorySession,
-} from "@/lib/inventory/inventorySessionStorage";
+import { loadInventorySession } from "@/lib/inventory/inventorySessionStorage";
 import { CustomerContextMode } from "@/app/realGreen/customer/slices/customerSlices";
 
 const INVENTORY_CONTEXTS: CustomerContextMode[] = ["recentProduction"];
@@ -40,22 +37,21 @@ export function useInventoryDeps() {
   useRecentProduction(dateRange);
 
   // ---------------------------------------------------------------------------
-  // localStorage session persistence
+  // localStorage session restore (one-time, guarded by prevSessionChecked flag)
   // ---------------------------------------------------------------------------
 
-  // On mount: restore any in-progress session from today's localStorage entry.
-  // Runs once — the empty dependency array is intentional.
+  // prevSessionChecked lives in Redux — survives component remounts (e.g. navigating
+  // to [productId] and back). The effect still runs on every mount of this hook,
+  // but the flag ensures the restore only happens once per app session.
+  const prevSessionChecked = useSelector(inventorySelect.prevSessionChecked);
   useEffect(() => {
+    if (prevSessionChecked) return;
     const saved = loadInventorySession();
     if (saved) {
+      // restoreSession also sets prevSessionChecked and todayCheckLoaded in the reducer
       dispatch(inventoryActions.restoreSession(saved));
+    } else {
+      dispatch(inventoryActions.markPrevSessionChecked());
     }
-  }, [dispatch]);
-
-  // On every session change: write the current session to localStorage so the
-  // user can resume where they left off if they navigate away or close the app.
-  const session = useSelector(inventorySelect.session);
-  useEffect(() => {
-    saveInventorySession(session);
-  }, [session]);
+  }, [prevSessionChecked, dispatch]);
 }

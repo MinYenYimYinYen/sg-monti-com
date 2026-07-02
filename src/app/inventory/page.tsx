@@ -5,8 +5,10 @@ import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { authSelect } from "@/app/auth/authSlice";
 import { inventorySelect } from "@/app/inventory/inventorySelect";
+import { inventoryActions } from "@/app/inventory/inventorySlice";
 import { useInventory } from "@/app/inventory/useInventory";
 import { useInventoryDeps } from "@/app/inventory/useInventoryDeps";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { ProductListRow } from "@/app/inventory/_components/ProductListRow";
 import { SelectProductsSheet } from "@/app/inventory/_components/SelectProductsSheet";
 import { SaveInventoryButton } from "@/app/inventory/_components/SaveInventoryButton";
@@ -106,6 +108,7 @@ function ProductListAccordion({
 export default function InventoryPage() {
   useInventoryDeps();
 
+  const dispatch = useAppDispatch();
   const role = useSelector(authSelect.role);
   const router = useRouter();
 
@@ -124,19 +127,21 @@ export default function InventoryPage() {
   // Build a prediction map for O(1) lookup in ProductListRow
   const predictionMap = new Map(predictions.map((p) => [p.productId, p]));
 
-  // When checks load in, auto-restore today's check into the session if the
-  // session is currently empty (no active products and no counts recorded).
+  // When checks load in, auto-restore today's check into the session — but only
+  // if it hasn't already been loaded (guarded by todayCheckLoaded flag in Redux).
+  // This prevents re-running on every count addition and on component remounts.
   const checks = useSelector(inventorySelect.checks);
+  const todayCheckLoaded = useSelector(inventorySelect.todayCheckLoaded);
   useEffect(() => {
+    if (todayCheckLoaded) return;
     const today = dateStrings.today();
     const hasToday = checks.some((c) => c.checkDate === today);
-    const sessionIsEmpty =
-      session.activeProductIds.length === 0 &&
-      Object.keys(session.counts).length === 0;
-    if (hasToday && sessionIsEmpty) {
+    if (hasToday) {
       loadCheckIntoSession(today);
+    } else {
+      dispatch(inventoryActions.markTodayCheckLoaded());
     }
-  }, [checks, session.activeProductIds, session.counts, loadCheckIntoSession]);
+  }, [todayCheckLoaded, checks, loadCheckIntoSession, dispatch]);
 
   // ---------------------------------------------------------------------------
   // Accordion open state — initialized from saved state or all-open default

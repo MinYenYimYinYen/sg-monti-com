@@ -21,6 +21,8 @@ import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 const selectChecks = (state: AppState) => state.inventory.checks;
 const selectSession = (state: AppState) => state.inventory.session;
 const selectSessionDateRange = (state: AppState) => state.inventory.session.dateRange;
+const selectPrevSessionChecked = (state: AppState) => state.inventory.prevSessionChecked;
+const selectTodayCheckLoaded = (state: AppState) => state.inventory.todayCheckLoaded;
 
 // ---------------------------------------------------------------------------
 // Derived selectors
@@ -244,6 +246,8 @@ export const inventorySelect = {
   hydratedChecks: selectHydratedChecks,
   session: selectSession,
   sessionDateRange: selectSessionDateRange,
+  prevSessionChecked: selectPrevSessionChecked,
+  todayCheckLoaded: selectTodayCheckLoaded,
   activeProducts: selectActiveProducts,
   predictions: selectPredictions,
   productIdsFromServices: selectProductIdsFromServices,

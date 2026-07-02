@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { InventoryContract } from "@/app/inventory/api/InventoryContract";
 import {
@@ -7,10 +7,16 @@ import {
   ProductCount,
 } from "@/app/inventory/InventoryTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { AppState } from "@/store";
+import { saveInventorySession } from "@/lib/inventory/inventorySessionStorage";
 
 type InventoryState = {
   checks: InventoryCheckDoc[];
   session: InventorySession;
+  /** True once the localStorage restore attempt has been made. Prevents re-running on remount. */
+  prevSessionChecked: boolean;
+  /** True once today's saved check (or a localStorage session) has been loaded. Prevents re-running on remount. */
+  todayCheckLoaded: boolean;
 };
 
 const initialSession: InventorySession = {
@@ -22,6 +28,8 @@ const initialSession: InventorySession = {
 const initialState: InventoryState = {
   checks: [],
   session: initialSession,
+  prevSessionChecked: false,
+  todayCheckLoaded: false,
 };
 
 const inventorySlice = createSlice({
@@ -72,11 +80,20 @@ const inventorySlice = createSlice({
 
     clearSession(state) {
       state.session = { dateRange: null, activeProductIds: [], counts: {} };
+      state.todayCheckLoaded = false;
     },
 
     // Restores a previously persisted session (e.g. from localStorage).
+    // Also marks todayCheckLoaded so the auto-load effect doesn't overwrite the restored session.
     restoreSession(state, action: PayloadAction<InventorySession>) {
       state.session = action.payload;
+      state.prevSessionChecked = true;
+      state.todayCheckLoaded = true;
+    },
+
+    // Marks that the localStorage restore attempt has been made (even if nothing was found).
+    markPrevSessionChecked(state) {
+      state.prevSessionChecked = true;
     },
 
     // Loads a saved check's products and counts into the session by date.
@@ -89,6 +106,12 @@ const inventorySlice = createSlice({
       state.session.counts = Object.fromEntries(
         check.entries.map((e) => [e.productId, e.counts]),
       );
+      state.todayCheckLoaded = true;
+    },
+
+    // Marks that the today-check load attempt has been made (even if no check existed).
+    markTodayCheckLoaded(state) {
+      state.todayCheckLoaded = true;
     },
   },
   extraReducers: (builder) => {
@@ -108,6 +131,19 @@ const inventorySlice = createSlice({
     });
   },
 });
+
+/**
+ * Reads the current session from Redux state and persists it to localStorage.
+ * Call this after any action that mutates session data so the save is not
+ * tied to a specific component's lifecycle.
+ */
+const persistSession = createAsyncThunk(
+  "inventory/persistSession",
+  (_, { getState }) => {
+    const session = (getState() as AppState).inventory.session;
+    saveInventorySession(session);
+  },
+);
 
 const getInventoryChecks = createStandardThunk<
   InventoryContract,
@@ -131,6 +167,7 @@ export const inventoryActions = {
   ...inventorySlice.actions,
   getInventoryChecks,
   saveInventoryCheck,
+  persistSession,
 };
 
 export const inventoryReducer = inventorySlice.reducer;
