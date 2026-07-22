@@ -9,7 +9,7 @@ import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes"
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { Number } from "@/components/Number";
-import { AlertTriangle, Clock, Info, ClipboardList, LandPlot, Eye, EyeOff } from "lucide-react";
+import { AlertTriangle, Clock, Info, ClipboardList, LandPlot } from "lucide-react";
 import { cn } from "@/style/utils";
 import {
   Popover,
@@ -113,17 +113,13 @@ function ChecklistServiceRow({
 function ChecklistPopover({
   asapServCodes,
   overdueServCodes,
-  showOverdue,
 }: {
   asapServCodes: ServCodeDeep[];
   overdueServCodes: ServCodeDeep[];
-  showOverdue: boolean;
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const expandedServCodeIds = useSelector(urgentServCodesSelect.expandedServCodeIds);
-  const visibleServCodes = showOverdue
-    ? [...asapServCodes, ...overdueServCodes]
-    : asapServCodes;
+  const visibleServCodes = [...asapServCodes, ...overdueServCodes];
 
   return (
     <Accordion
@@ -224,17 +220,11 @@ function UrgentServCodeRow({
 // ---------------------------------------------------------------------------
 
 export function UrgentServCodeCard() {
-  const dispatch = useDispatch<AppDispatch>();
   const asapServCodes = useSelector(urgentServCodesSelect.alwaysAsapServCodes);
   const overdueServCodes = useSelector(urgentServCodesSelect.overdueServCodes);
-  const showOverdue = useSelector(urgentServCodesSelect.showOverdue);
   const [checklistOpen, setChecklistOpen] = useState(false);
 
-  const asapCount = asapServCodes.length;
-  const overdueCount = overdueServCodes.length;
-  const visibleCount = asapCount + (showOverdue ? overdueCount : 0);
-
-  if (asapCount === 0 && overdueCount === 0) return null;
+  if (asapServCodes.length === 0 && overdueServCodes.length === 0) return null;
 
   return (
     <div className="border rounded-lg bg-card w-72 flex flex-col">
@@ -244,55 +234,33 @@ export function UrgentServCodeCard() {
           <AlertTriangle className="w-4 h-4" />
           Urgent
         </span>
-        <div className="flex items-center gap-2">
-          {/* Toggle overdue visibility */}
-          {overdueCount > 0 && (
-            <button
-              onClick={() => dispatch(urgentActions.toggleShowOverdue())}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded px-1.5 py-0.5 transition-colors"
-              title={showOverdue ? "Hide overdue servCodes" : `Show ${overdueCount} overdue servCode${overdueCount !== 1 ? "s" : ""}`}
-            >
-              {showOverdue ? (
-                <EyeOff className="w-3.5 h-3.5" />
-              ) : (
-                <Eye className="w-3.5 h-3.5" />
-              )}
-              <span>
-                {showOverdue ? "Hide Late" : `Late (${overdueCount})`}
-              </span>
+        <Popover open={checklistOpen} onOpenChange={setChecklistOpen}>
+          <PopoverTrigger asChild>
+            <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded px-1.5 py-0.5 transition-colors">
+              <ClipboardList className="w-3.5 h-3.5" />
+              Checklist
             </button>
-          )}
-
-          <Popover open={checklistOpen} onOpenChange={setChecklistOpen}>
-            <PopoverTrigger asChild>
-              <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded px-1.5 py-0.5 transition-colors">
-                <ClipboardList className="w-3.5 h-3.5" />
-                Checklist
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-96 p-0" align="end">
-              <div className="bg-popover rounded-md overflow-hidden">
-                <div className="px-3 py-2 border-b bg-destructive/10">
-                  <p className="text-xs font-semibold text-destructive flex items-center gap-1.5">
-                    <ClipboardList className="w-3.5 h-3.5" />
-                    Route Checklist
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Check off services as you build routes
-                  </p>
-                </div>
-                <div className="max-h-[624px] overflow-y-auto">
-                  <ChecklistPopover
-                    asapServCodes={asapServCodes}
-                    overdueServCodes={overdueServCodes}
-                    showOverdue={showOverdue}
-                  />
-                </div>
+          </PopoverTrigger>
+          <PopoverContent className="w-96 p-0" align="end">
+            <div className="bg-popover rounded-md overflow-hidden">
+              <div className="px-3 py-2 border-b bg-destructive/10">
+                <p className="text-xs font-semibold text-destructive flex items-center gap-1.5">
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  Route Checklist
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Check off services as you build routes
+                </p>
               </div>
-            </PopoverContent>
-          </Popover>
-
-        </div>
+              <div className="max-h-[624px] overflow-y-auto">
+                <ChecklistPopover
+                  asapServCodes={asapServCodes}
+                  overdueServCodes={overdueServCodes}
+                />
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Rows */}
@@ -300,7 +268,7 @@ export function UrgentServCodeCard() {
         {asapServCodes.map((servCode) => (
           <UrgentServCodeRow key={servCode.servCodeId} servCode={servCode} isAsap={true} />
         ))}
-        {showOverdue && overdueServCodes.map((servCode) => (
+        {overdueServCodes.map((servCode) => (
           <UrgentServCodeRow key={servCode.servCodeId} servCode={servCode} isAsap={false} />
         ))}
       </div>
