@@ -1,11 +1,7 @@
 import mongoose from "mongoose";
-import {
-  ServiceDocProps,
-} from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import { ServiceDocProps } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { createModel } from "@/lib/mongoose/createModel";
-import {AssignmentDoc} from "@/app/assignment/AssignmentTypes";
-
-interface ServiceDocPropsDoc extends mongoose.Document, ServiceDocProps {}
+import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 
 const assignmentSchema = new mongoose.Schema<AssignmentDoc>(
   {
@@ -20,7 +16,7 @@ const assignmentSchema = new mongoose.Schema<AssignmentDoc>(
   },
 );
 
-const serviceDocPropsSchema = new mongoose.Schema<ServiceDocPropsDoc>(
+const serviceDocPropsSchema = new mongoose.Schema<ServiceDocProps>(
   {
     servId: { type: Number, required: true, unique: true },
     assignments: { type: [assignmentSchema], required: true, default: [] },
@@ -30,7 +26,7 @@ const serviceDocPropsSchema = new mongoose.Schema<ServiceDocPropsDoc>(
   },
 );
 
-export const ServiceDocPropsModel = createModel<ServiceDocPropsDoc>(
+export const ServiceDocPropsModel = createModel<ServiceDocProps>(
   "ServiceDocProps",
   serviceDocPropsSchema,
 );
