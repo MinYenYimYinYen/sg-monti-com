@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { BarChart2, CalendarDays, GitBranch, Settings2, Users } from "lucide-react";
+import { BarChart2, CalendarDays, ClipboardList, GitBranch, Settings2, Users } from "lucide-react";
 import { cn } from "@/style/utils";
 
 // ---------------------------------------------------------------------------
@@ -11,6 +11,7 @@ import { cn } from "@/style/utils";
 
 const NAV_ITEMS = [
   { label: "Employee Plan", href: "/bizPlan/paceCrawler", icon: Users },
+  { label: "Priorities", href: "/bizPlan/paceCrawler/priorities", icon: ClipboardList },
   { label: "Assignments", href: "/bizPlan/paceCrawler/assignments", icon: Settings2 },
   { label: "Emp Timeline", href: "/bizPlan/paceCrawler/empTimeline", icon: CalendarDays },
   { label: "SC Timeline", href: "/bizPlan/paceCrawler/scTimeline", icon: GitBranch },

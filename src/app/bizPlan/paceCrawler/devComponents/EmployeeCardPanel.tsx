@@ -2,8 +2,6 @@
 
 import { useSelector } from "react-redux";
 import { employeeCardSelect } from "@/app/bizPlan/paceCrawler/employeeCardSelect";
-import { UrgentServCodeCard } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/UrgentServCodeCard";
-import { PriorityServiceCard } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/PriorityServiceCard";
 import { cn } from "@/style/utils";
 import type {
   EmployeeCardData,
@@ -156,12 +154,6 @@ export function EmployeeCardPanel() {
       {/* Card grid */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="flex flex-row flex-wrap gap-4 content-start">
-          {/* Urgent card always first */}
-          <UrgentServCodeCard />
-
-          {/* Priority scheduling card */}
-          <PriorityServiceCard />
-
           {/* Employee cards */}
           {cardData.map((card) => (
             <EmployeeCard key={card.employee.employeeId} cardData={card} />

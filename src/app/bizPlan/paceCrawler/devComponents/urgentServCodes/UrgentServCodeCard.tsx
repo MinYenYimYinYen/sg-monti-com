@@ -51,63 +51,146 @@ function ChecklistServiceRow({
   const location = [zip, city].filter(Boolean).join(" ");
   const allTechNotes = service.x.allTechNotes;
 
+  const isAsap = service.status === "*";
+  const isPromised = service.isPromised;
+  const hasBadges = isAsap || isPromised;
+
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 text-xs py-0.5 border-b border-border/20 last:border-0",
+        "flex flex-col py-0.5 border-b border-border/20 last:border-0",
         checked && "opacity-40",
       )}
     >
-      <Checkbox
-        checked={checked}
-        onCheckedChange={() => dispatch(urgentActions.toggleChecked(service.servId))}
-        className="shrink-0"
-      />
-      <span className="font-mono text-[10px] text-muted-foreground shrink-0 w-14 truncate">
-        {servCodeId}
-      </span>
-      <span className="flex-1 min-w-0 truncate">
-        <CustomerLink
-          customerId={customer.custId}
-          customerTab="customer"
-          className="font-medium text-primary hover:underline"
-        >
-          {customer.displayName}
-        </CustomerLink>
-        {location && (
-          <span className="text-muted-foreground"> · {location}</span>
+      {/* Main row */}
+      <div className="flex items-center gap-1.5 text-xs">
+        <Checkbox
+          checked={checked}
+          onCheckedChange={() => dispatch(urgentActions.toggleChecked(service.servId))}
+          className="shrink-0"
+        />
+        <span className="font-mono text-[10px] text-muted-foreground shrink-0 w-14 truncate">
+          {servCodeId}
+        </span>
+        <span className="flex-1 min-w-0 truncate">
+          <CustomerLink
+            customerId={customer.custId}
+            customerTab="customer"
+            className="font-medium text-primary hover:underline"
+          >
+            {customer.displayName}
+          </CustomerLink>
+          {location && (
+            <span className="text-muted-foreground"> · {location}</span>
+          )}
+        </span>
+        <span className="flex items-center gap-0.5 text-muted-foreground shrink-0">
+          <LandPlot className="w-3 h-3" />
+          <Number decimals={0}>{service.size}</Number>
+        </span>
+        {allTechNotes.length > 0 && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-muted-foreground shrink-0 cursor-default">
+                  <Info className="size-3.5" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="p-0 max-w-none">
+                <div className="flex gap-2 p-2">
+                  {allTechNotes.map((techNote, idx) => (
+                    <div key={idx} className="w-72 text-xs whitespace-pre-wrap">
+                      {techNote}
+                    </div>
+                  ))}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
-      </span>
-      <span className="flex items-center gap-0.5 text-muted-foreground shrink-0">
-        <LandPlot className="w-3 h-3" />
-        <Number decimals={0}>{service.size}</Number>
-      </span>
-      {allTechNotes.length > 0 && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="text-muted-foreground shrink-0 cursor-default">
-                <Info className="size-3.5" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="left" className="p-0 max-w-none">
-              <div className="flex gap-2 p-2">
-                {allTechNotes.map((techNote, idx) => (
-                  <div key={idx} className="w-72 text-xs whitespace-pre-wrap">
-                    {techNote}
-                  </div>
-                ))}
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+      </div>
+
+      {/* Badge row */}
+      {hasBadges && (
+        <div className="flex gap-1 pl-[calc(1rem+0.375rem+3.5rem+0.375rem)]">
+          {isAsap && (
+            <span className="rounded px-1 py-0.5 bg-destructive/20 text-destructive font-medium leading-none text-[9px]">
+              ASAP
+            </span>
+          )}
+          {isPromised && (
+            <span className="rounded px-1 py-0.5 bg-secondary/20 text-secondary font-medium leading-none text-[9px]">
+              Promised
+            </span>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// ChecklistPopover
+// UrgentChecklistContent — reusable full-page checklist (all expanded by default)
+// ---------------------------------------------------------------------------
+
+export function UrgentChecklistContent({
+  asapServCodes,
+  overdueServCodes,
+}: {
+  asapServCodes: ServCodeDeep[];
+  overdueServCodes: ServCodeDeep[];
+}) {
+  const visibleServCodes = [...asapServCodes, ...overdueServCodes];
+  const allServCodeIds = visibleServCodes
+    .filter((sc) => sc.services.some((s) => s.x.isActionable))
+    .map((sc) => sc.servCodeId);
+
+  return (
+    <Accordion
+      type="multiple"
+      defaultValue={allServCodeIds}
+      className="w-full"
+    >
+      {visibleServCodes.map((servCode) => {
+        const unfinished = servCode.services.filter((s) => s.x.isActionable);
+        if (unfinished.length === 0) return null;
+
+        return (
+          <AccordionItem
+            key={servCode.servCodeId}
+            value={servCode.servCodeId}
+            className="border-b border-border/40 last:border-0"
+          >
+            <AccordionTrigger className="py-2 px-3 text-xs font-mono hover:no-underline hover:bg-accent/10 [&[data-state=open]>svg]:rotate-180">
+              <span className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="font-semibold text-foreground truncate">
+                  {servCode.servCodeId}
+                </span>
+                <span className="text-muted-foreground shrink-0">
+                  {unfinished.length} service{unfinished.length !== 1 ? "s" : ""}
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="px-3 pb-2 pt-0">
+              <div>
+                {unfinished.map((service) => (
+                  <ChecklistServiceRow
+                    key={service.servId}
+                    service={service}
+                    servCodeId={servCode.servCodeId}
+                  />
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        );
+      })}
+    </Accordion>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ChecklistPopover — used in the card's popover (Redux-tracked expand state)
 // ---------------------------------------------------------------------------
 
 function ChecklistPopover({

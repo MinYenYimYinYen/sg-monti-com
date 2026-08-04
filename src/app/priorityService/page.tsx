@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { Plus } from "lucide-react";
 import { Container } from "@/components/Containers";
 import { Button } from "@/style/components/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/style/components/card";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/style/components/card";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { ScrollArea } from "@/style/components/scroll-area";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { usePriorityService } from "@/app/priorityService/usePriorityService";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
 import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
@@ -16,12 +17,16 @@ import { PriorityServiceListItem } from "@/app/priorityService/_components/Prior
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
+import { priorityServiceCustomerActions } from "@/app/realGreen/customer/slices/customerSlices";
+import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 
 // ---------------------------------------------------------------------------
 // PriorityServicePage
 // ---------------------------------------------------------------------------
 
 export default function PriorityServicePage() {
+  const dispatch = useAppDispatch();
+
   // Load priority service docs
   usePriorityService({ autoLoad: true });
 
@@ -37,6 +42,26 @@ export default function PriorityServicePage() {
   const docs = useSelector(priorityServiceSelect.docs);
   const priorityServiceMap = useSelector(priorityServiceSelect.priorityServiceMap);
   const lookupCustomer = useSelector(singleCustSelect.customer);
+  const season = useSelector(globalSettingsSelect.season);
+
+  // Load the full customer/program/service data for each priority service doc
+  // into the "priorityService" customer context so the CRUD list can hydrate.
+  useEffect(() => {
+    if (!docs.length || !season) return;
+    dispatch(
+      priorityServiceCustomerActions.getDocs({
+        params: {
+          schemeName: "byServIds",
+          season,
+          schemeParams: { servIds: docs.map((d) => d.servId) },
+        },
+        config: {
+          loadingMsg: "Loading priority services...",
+          force: true,
+        },
+      }),
+    );
+  }, [dispatch, docs, season]);
 
   // null = nothing selected, "new" = create form, number = edit form for that servId
   const [selected, setSelected] = useState<number | "new" | null>(null);

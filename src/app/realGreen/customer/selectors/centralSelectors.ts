@@ -1,6 +1,7 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
+import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
@@ -75,6 +76,14 @@ const selectServCodeMap = createSelector(
   (servCodes) => new Grouper(servCodes).toUniqueMap((s) => s.servCodeId),
 );
 
+const selectPriorityServiceDocs = (state: AppState): PriorityServiceDoc[] =>
+  state.priorityService.docs;
+
+const selectPriorityServiceDocMap = createSelector(
+  [selectPriorityServiceDocs],
+  (docs) => new Grouper(docs).toUniqueMap((d) => d.servId),
+);
+
 export const selectCustomers = createSelector(
   [
     selectCustomerDocs,
@@ -92,6 +101,7 @@ export const selectCustomers = createSelector(
     centralDocPropsSelect.assignments,
     serviceConditionSelect.serviceConditionsByServId,
     serviceEtaSelect.serviceEtaMap,
+    selectPriorityServiceDocMap,
   ],
   (
     customerDocs,
@@ -109,6 +119,7 @@ export const selectCustomers = createSelector(
     newAssignments,
     serviceConditionsByServId,
     serviceEtaMap,
+    priorityServiceDocMap,
   ) => {
     // Builder types for type-safe construction without 'x'
     type CustomerBuilder = Omit<Customer, "x">;
@@ -214,6 +225,7 @@ export const selectCustomers = createSelector(
             promise: servPromiseResult.promise,
             promiseIssues: servPromiseResult.issues,
             loadoutInventory: hydratePlannedLoadout({ servDoc, servCodeMap }),
+            priorityService: priorityServiceDocMap.get(servDoc.servId) ?? null,
           };
 
           // Add x after all other properties are set - mutate in place to preserve references

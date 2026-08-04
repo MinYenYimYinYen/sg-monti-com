@@ -14,6 +14,7 @@ import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
 import { Assignment, AssignmentDoc } from "@/app/assignment/AssignmentTypes";
+import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
 
 export type ServiceRaw = {
   // actualManHours?: number;
@@ -125,6 +126,7 @@ export type ServiceProps = {
   promiseIssues: string[];
   loadoutInventory: LoadoutBase;
   eta: string | null;
+  priorityService: PriorityServiceDoc | null;
 };
 
 export type Service = ServiceDoc & ServiceProps;

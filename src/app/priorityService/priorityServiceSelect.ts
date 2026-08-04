@@ -3,22 +3,23 @@ import { createSelector } from "@reduxjs/toolkit";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { PriorityService } from "@/app/priorityService/PriorityServiceTypes";
+import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
+
+const ELIGIBLE_STATUSES = getServiceStatuses(["active", "asap", "printed"]);
 
 const selectDocs = (state: AppState) => state.priorityService.docs;
 
 const selectPriorityServices = createSelector(
-  [selectDocs, centralSelect.services],
-  (docs, services) => {
-    const serviceMap = new Grouper(services).toUniqueMap((s) => s.servId);
-
+  [centralSelect.services],
+  (services) => {
     const hydrated: PriorityService[] = [];
 
-    for (const doc of docs) {
-      const service = serviceMap.get(doc.servId);
-      // Exclude if service not found in active context or is completed
-      if (!service || service.status === "S") continue;
+    for (const service of services) {
+      if (!service.priorityService) continue;
+      // Only include services with schedulable statuses
+      if (!ELIGIBLE_STATUSES.includes(service.status)) continue;
 
-      hydrated.push({ ...doc, service });
+      hydrated.push({ ...service.priorityService, service });
     }
 
     // Sort ascending by date (single date or dateRange.min)

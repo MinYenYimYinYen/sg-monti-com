@@ -30,6 +30,9 @@ import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
+
+const ELIGIBLE_STATUSES = getServiceStatuses(["active", "asap", "printed"]);
 
 interface PriorityServiceFormProps {
   /** When provided, the form is in edit mode for this existing doc. */
@@ -98,7 +101,7 @@ export function PriorityServiceForm({
     customer?.programs.find((p) => p.progId === selectedProgId) ?? null;
 
   const eligibleServices: Service[] =
-    selectedProgram?.services.filter((s) => s.status !== "S") ?? [];
+    selectedProgram?.services.filter((s) => ELIGIBLE_STATUSES.includes(s.status)) ?? [];
 
   // Auto-select service if only one eligible
   const resolvedServId: number | null = (() => {
