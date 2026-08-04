@@ -5,6 +5,9 @@ import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import { CustomerDoc } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
+import { ProgramDoc } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
+import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { baseProgCode } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
@@ -84,185 +87,212 @@ const selectPriorityServiceDocMap = createSelector(
   (docs) => new Grouper(docs).toUniqueMap((d) => d.servId),
 );
 
-export const selectCustomers = createSelector(
-  [
-    selectCustomerDocs,
-    selectProgramDocMap,
-    selectServiceDocMap,
-    selectProgCodeMapByDefId,
-    selectServCodeMap,
-    taxCodeSelect.taxCodeMap,
-    callAheadSelect.callAheadMap,
-    discountSelect.discountDocMap,
-    productSelect.allProductsMap,
-    employeeSelect.employeeMap,
-    flagSelect.flagDocMap,
-    custFlagSelect.custIdFlagIds,
-    centralDocPropsSelect.assignments,
-    serviceConditionSelect.serviceConditionsByServId,
-    serviceEtaSelect.serviceEtaMap,
-    selectPriorityServiceDocMap,
-  ],
-  (
-    customerDocs,
-    programDocMap,
-    serviceDocMap,
-    progCodeMap,
-    servCodeMap,
-    basicTaxCodeMap,
-    callAheadDocMap,
-    discountDocMap,
-    allProductsMap,
-    employeeMap,
-    flagDocMap,
-    custIdFlagIds,
-    newAssignments,
-    serviceConditionsByServId,
-    serviceEtaMap,
-    priorityServiceDocMap,
-  ) => {
-    // Builder types for type-safe construction without 'x'
-    type CustomerBuilder = Omit<Customer, "x">;
-    type ProgramBuilder = Omit<Program, "x">;
-    type ServiceBuilder = Omit<Service, "x">;
+// ---------------------------------------------------------------------------
+// makeCustomersSelector — reusable hydration factory
+//
+// Accepts selectors for customer/program/service docs from any source slice
+// (central Map, single slice, etc.) and returns a fully hydrated Customer[].
+// Create instances at module level to preserve memoization.
+// ---------------------------------------------------------------------------
 
-    const customers: Customer[] = customerDocs.map((custDoc) => {
-      const taxCodesMaybe = custDoc.taxIds.map((taxId) =>
-        basicTaxCodeMap.get(taxId),
-      );
+type DocArraySelector<T> = (state: AppState) => T[];
 
-      const taxCodes = typeGuard.definedArray(taxCodesMaybe);
-      const taxRate = taxCodes.reduce(
-        (acc, taxCode) => acc + taxCode.taxRate,
-        0,
-      );
-      // Parse customer promise inline
-      const custPromiseResult = parsePromiseString({
-        techNote: custDoc.techNote,
-        entityType: "customer",
-        entityId: custDoc.custId,
-      });
+export function makeCustomersSelector(
+  custDocsSelector: DocArraySelector<CustomerDoc>,
+  progDocsSelector: DocArraySelector<ProgramDoc>,
+  servDocsSelector: DocArraySelector<ServiceDoc>,
+) {
+  const selectProgDocMapLocal = createSelector(
+    [progDocsSelector],
+    (programDocs) => new Grouper(programDocs).groupBy((prog) => prog.custId).toMap(),
+  );
 
-      // Phase 1: Build customer without x, empty programs array
-      const customerBuilder: CustomerBuilder = {
-        ...custDoc,
-        programs: [],
-        taxCodes,
-        taxRate,
-        callAhead: callAheadDocMap.get(custDoc.callAheadId) ?? null,
-        discount: discountDocMap.get(custDoc.discountId) ?? null,
-        aging: new Aging(custDoc.agingParams),
-        flags: hydrateFlags(custDoc.custId, custIdFlagIds, flagDocMap),
-        promise: custPromiseResult.promise,
-        promiseIssues: custPromiseResult.issues,
-      };
+  const selectServiceDocMapLocal = createSelector(
+    [servDocsSelector],
+    (serviceDocs) => new Grouper(serviceDocs).groupBy((s) => s.progId).toMap(),
+  );
 
-      const progDocs = programDocMap.get(custDoc.custId) || [];
+  return createSelector(
+    [
+      custDocsSelector,
+      selectProgDocMapLocal,
+      selectServiceDocMapLocal,
+      selectProgCodeMapByDefId,
+      selectServCodeMap,
+      taxCodeSelect.taxCodeMap,
+      callAheadSelect.callAheadMap,
+      discountSelect.discountDocMap,
+      productSelect.allProductsMap,
+      employeeSelect.employeeMap,
+      flagSelect.flagDocMap,
+      custFlagSelect.custIdFlagIds,
+      centralDocPropsSelect.assignments,
+      serviceConditionSelect.serviceConditionsByServId,
+      serviceEtaSelect.serviceEtaMap,
+      selectPriorityServiceDocMap,
+    ],
+    (
+      customerDocs,
+      programDocMap,
+      serviceDocMap,
+      progCodeMap,
+      servCodeMap,
+      basicTaxCodeMap,
+      callAheadDocMap,
+      discountDocMap,
+      allProductsMap,
+      employeeMap,
+      flagDocMap,
+      custIdFlagIds,
+      newAssignments,
+      serviceConditionsByServId,
+      serviceEtaMap,
+      priorityServiceDocMap,
+    ) => {
+      // Builder types for type-safe construction without 'x'
+      type CustomerBuilder = Omit<Customer, "x">;
+      type ProgramBuilder = Omit<Program, "x">;
+      type ServiceBuilder = Omit<Service, "x">;
 
-      // Phase 2: Build programs referencing the customer builder
-      const programs = progDocs.map((progDoc) => {
-        const progCode = progCodeMap.get(progDoc.progDefId) || baseProgCode;
+      const customers: Customer[] = customerDocs.map((custDoc) => {
+        const taxCodesMaybe = custDoc.taxIds.map((taxId) =>
+          basicTaxCodeMap.get(taxId),
+        );
 
-        // Parse program promise inline
-        const progPromiseResult = parsePromiseString({
-          techNote: progDoc.techNote,
-          entityType: "program",
-          entityId: progDoc.progId,
+        const taxCodes = typeGuard.definedArray(taxCodesMaybe);
+        const taxRate = taxCodes.reduce(
+          (acc, taxCode) => acc + taxCode.taxRate,
+          0,
+        );
+        // Parse customer promise inline
+        const custPromiseResult = parsePromiseString({
+          techNote: custDoc.techNote,
+          entityType: "customer",
+          entityId: custDoc.custId,
         });
 
-        const programBuilder: ProgramBuilder = {
-          ...progDoc,
-          customer: customerBuilder as Customer,
-          services: [],
-          progCode,
-          callAhead: callAheadDocMap.get(progDoc.callAheadId) ?? null,
-          discount: discountDocMap.get(progDoc.discountId) ?? null,
-          promise: progPromiseResult.promise,
-          promiseIssues: progPromiseResult.issues,
+        // Phase 1: Build customer without x, empty programs array
+        const customerBuilder: CustomerBuilder = {
+          ...custDoc,
+          programs: [],
+          taxCodes,
+          taxRate,
+          callAhead: callAheadDocMap.get(custDoc.callAheadId) ?? null,
+          discount: discountDocMap.get(custDoc.discountId) ?? null,
+          aging: new Aging(custDoc.agingParams),
+          flags: hydrateFlags(custDoc.custId, custIdFlagIds, flagDocMap),
+          promise: custPromiseResult.promise,
+          promiseIssues: custPromiseResult.issues,
         };
 
-        const serviceDocs = serviceDocMap.get(progDoc.progId) ?? [];
+        const progDocs = programDocMap.get(custDoc.custId) || [];
 
-        // Phase 3: Build services referencing the program builder
-        const services = serviceDocs.map((servDoc) => {
-          const servCode = servCodeMap.get(servDoc.servCodeId) ?? baseServCode;
+        // Phase 2: Build programs referencing the customer builder
+        const programs = progDocs.map((progDoc) => {
+          const progCode = progCodeMap.get(progDoc.progDefId) || baseProgCode;
 
-          const lastAssigned = hydrateLastAssigned(
-            servDoc,
-            newAssignments,
-            progDoc,
-            employeeMap,
-          );
-
-          // Parse service promise inline
-          const servPromiseResult = parsePromiseString({
-            techNote: servDoc.techNote,
-            entityType: "service",
-            entityId: servDoc.servId,
+          // Parse program promise inline
+          const progPromiseResult = parsePromiseString({
+            techNote: progDoc.techNote,
+            entityType: "program",
+            entityId: progDoc.progId,
           });
 
-          const serviceBuilder: ServiceBuilder = {
-            ...servDoc,
-            // Merge optimistic ETA override from centralDocProps state
-            eta: hydrateEta({
-              servId: servDoc.servId,
-              invoice: servDoc.invoice,
-              serviceEtaMap,
-            }),
-            program: programBuilder as Program,
-            servCode,
-            callAhead: callAheadDocMap.get(servDoc.callAheadId) ?? null,
-            discount: discountDocMap.get(servDoc.discountId) ?? null,
-            production: hydrateProduction({
-              productionCore: servDoc.productionCore,
-              allProductsMap,
-              employeeMap,
-              serviceDoc: servDoc,
-              serviceConditions:
-                serviceConditionsByServId.get(servDoc.servId) ?? [],
-            }),
-            lastAssigned,
-            promise: servPromiseResult.promise,
-            promiseIssues: servPromiseResult.issues,
-            loadoutInventory: hydratePlannedLoadout({ servDoc, servCodeMap }),
-            priorityService: priorityServiceDocMap.get(servDoc.servId) ?? null,
+          const programBuilder: ProgramBuilder = {
+            ...progDoc,
+            customer: customerBuilder as Customer,
+            services: [],
+            progCode,
+            callAhead: callAheadDocMap.get(progDoc.callAheadId) ?? null,
+            discount: discountDocMap.get(progDoc.discountId) ?? null,
+            promise: progPromiseResult.promise,
+            promiseIssues: progPromiseResult.issues,
           };
 
-          // Add x after all other properties are set - mutate in place to preserve references
-          (serviceBuilder as Service).x = new ServiceUtils(serviceBuilder);
+          const serviceDocs = serviceDocMap.get(progDoc.progId) ?? [];
 
-          return serviceBuilder as Service;
+          // Phase 3: Build services referencing the program builder
+          const services = serviceDocs.map((servDoc) => {
+            const servCode = servCodeMap.get(servDoc.servCodeId) ?? baseServCode;
+
+            const lastAssigned = hydrateLastAssigned(
+              servDoc,
+              newAssignments,
+              progDoc,
+              employeeMap,
+            );
+
+            // Parse service promise inline
+            const servPromiseResult = parsePromiseString({
+              techNote: servDoc.techNote,
+              entityType: "service",
+              entityId: servDoc.servId,
+            });
+
+            const serviceBuilder: ServiceBuilder = {
+              ...servDoc,
+              // Merge optimistic ETA override from centralDocProps state
+              eta: hydrateEta({
+                servId: servDoc.servId,
+                invoice: servDoc.invoice,
+                serviceEtaMap,
+              }),
+              program: programBuilder as Program,
+              servCode,
+              callAhead: callAheadDocMap.get(servDoc.callAheadId) ?? null,
+              discount: discountDocMap.get(servDoc.discountId) ?? null,
+              production: hydrateProduction({
+                productionCore: servDoc.productionCore,
+                allProductsMap,
+                employeeMap,
+                serviceDoc: servDoc,
+                serviceConditions:
+                  serviceConditionsByServId.get(servDoc.servId) ?? [],
+              }),
+              lastAssigned,
+              promise: servPromiseResult.promise,
+              promiseIssues: servPromiseResult.issues,
+              loadoutInventory: hydratePlannedLoadout({ servDoc, servCodeMap }),
+              priorityService: priorityServiceDocMap.get(servDoc.servId) ?? null,
+            };
+
+            // Add x after all other properties are set - mutate in place to preserve references
+            (serviceBuilder as Service).x = new ServiceUtils(serviceBuilder);
+
+            return serviceBuilder as Service;
+          });
+
+          // Populate services array before adding x
+          programBuilder.services = services;
+
+          // Add x after services are populated - mutate in place to preserve references
+          (programBuilder as Program).x = new ProgramUtils(programBuilder);
+
+          return programBuilder as Program;
         });
 
-        // Populate services array before adding x
-        programBuilder.services = services;
+        // Populate programs array before adding x
+        customerBuilder.programs = programs;
 
-        // Add x after services are populated - mutate in place to preserve references
-        (programBuilder as Program).x = new ProgramUtils(programBuilder);
+        // Add x after programs are populated - mutate in place to preserve references
+        (customerBuilder as Customer).x = new CustomerUtils(customerBuilder);
 
-        return programBuilder as Program;
+        return customerBuilder as Customer;
       });
+      return customers;
+    },
+  );
+}
 
-      // Populate programs array before adding x
-      customerBuilder.programs = programs;
+// ---------------------------------------------------------------------------
+// Central selector instances — use the central Map as the source
+// ---------------------------------------------------------------------------
 
-      // Add x after programs are populated - mutate in place to preserve references
-      (customerBuilder as Customer).x = new CustomerUtils(customerBuilder);
-
-      return customerBuilder as Customer;
-    });
-    return customers;
-  },
+export const selectCustomers = makeCustomersSelector(
+  selectCustomerDocs,
+  selectProgramDocs,
+  selectServiceDocs,
 );
-
-// PRE custFlagFilter Implementation selectors
-// const selectPrograms = createSelector([selectCustomers], (customers) => {
-//   return customers.flatMap((c) => c.programs);
-// });
-//
-// const selectServices = createSelector([selectPrograms], (programs) => {
-//   return programs.flatMap((p) => p.services);
-// });
 
 const selectCustomerMap = createSelector([selectCustomers], (customers) => {
   return new Grouper(customers).toUniqueMap((c) => c.custId);

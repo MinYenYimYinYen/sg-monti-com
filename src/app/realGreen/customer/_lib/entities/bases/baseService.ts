@@ -78,6 +78,7 @@ export const baseService: Service = {
     promiseIssues: [],
     loadoutInventory: baseLoadout,
     eta: null,
+    priorityService: null,
   }),
 
   ...baseServiceDoc,
@@ -91,4 +92,5 @@ export const baseService: Service = {
   promiseIssues: [],
   loadoutInventory: baseLoadout,
   eta: null,
+  priorityService: null,
 };

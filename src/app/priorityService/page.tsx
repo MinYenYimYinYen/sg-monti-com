@@ -13,6 +13,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { usePriorityService } from "@/app/priorityService/usePriorityService";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
 import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
+import { singleCustomerActions } from "@/app/realGreen/customer/slices/customerSlices";
 import { PriorityServiceForm } from "@/app/priorityService/_components/PriorityServiceForm";
 import { PriorityServiceListItem } from "@/app/priorityService/_components/PriorityServiceListItem";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
@@ -31,7 +32,8 @@ export default function PriorityServicePage() {
   // Load priority service docs
   usePriorityService({ autoLoad: true });
 
-  // "priorityService" handles both the list items and the form's customer lookup
+  // "priorityService" context handles the list hydration only.
+  // The form's customer lookup uses the "single" context independently.
   useCustomerContext({ contexts: ["priorityService"] });
 
   // ProgServ needed to resolve servCode names in the form dropdowns
@@ -42,6 +44,8 @@ export default function PriorityServicePage() {
 
   const docs = useSelector(priorityServiceSelect.docs);
   const priorityServiceMap = useSelector(priorityServiceSelect.priorityServiceMap);
+  // lookupCustomer reads from state.customer.single (not central), so it never
+  // conflicts with the priorityService list context.
   const lookupCustomer = useSelector(singleCustSelect.customer);
   const season = useSelector(globalSettingsSelect.season);
 
@@ -81,14 +85,15 @@ export default function PriorityServicePage() {
     <Container variant="scroll-shell" title="Priority Scheduling">
       <div className="flex gap-4 flex-1 min-h-0 overflow-hidden">
         {/* ── Left panel: list ── */}
-        <div className="w-72 shrink-0 flex flex-col gap-2">
+        <div className="w-[432px] shrink-0 flex flex-col gap-2">
           <Button
             variant="primary"
             intensity="soft"
             className="w-full justify-start gap-2"
             onClick={() => {
+              // Clear any previously looked-up single customer before opening the new form
               if (lookupCustomer) {
-                dispatch(priorityServiceCustomerActions.removeCustomer(lookupCustomer.custId));
+                dispatch(singleCustomerActions.removeCustomer(lookupCustomer.custId));
               }
               setSelected("new");
             }}

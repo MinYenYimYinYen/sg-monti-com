@@ -22,7 +22,7 @@ import { DatePicker } from "@/components/DatePicker";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { FormGroup } from "@/components/FormGroup";
 import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
-import { priorityServiceCustomerActions } from "@/app/realGreen/customer/slices/customerSlices";
+import { singleCustomerActions } from "@/app/realGreen/customer/slices/customerSlices";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
 import { usePriorityService } from "@/app/priorityService/usePriorityService";
@@ -51,7 +51,7 @@ export function PriorityServiceForm({
   const lookup = (custId: number) => {
     if (!season || !custId || custId < 0) return;
     dispatch(
-      priorityServiceCustomerActions.getDocs({
+      singleCustomerActions.getDocs({
         params: {
           schemeName: "singleCustomer",
           season,
@@ -63,8 +63,9 @@ export function PriorityServiceForm({
   };
 
   const clearCustomer = (custId: number) => {
-    dispatch(priorityServiceCustomerActions.removeCustomer(custId));
+    dispatch(singleCustomerActions.removeCustomer(custId));
   };
+
   const { upsert, deleteOne } = usePriorityService();
   const priorityServiceMap = useSelector(priorityServiceSelect.priorityServiceMap);
 
@@ -91,7 +92,7 @@ export function PriorityServiceForm({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Loaded customer from single context
+  // Loaded customer from single context (reads from state.customer.single, not central)
   const customer = useSelector(singleCustSelect.customer);
 
   const isEditMode = !!existingDoc;
@@ -122,12 +123,18 @@ export function PriorityServiceForm({
 
   const effectiveDoc = existingDoc ?? existingForServ;
 
-  const handleCustIdBlur = () => {
+  const handleCustIdSearch = () => {
     const id = parseInt(custIdInput, 10);
     if (!isNaN(id) && id > 0) {
       lookup(id);
       setSelectedProgId(null);
       setSelectedServId(null);
+    }
+  };
+
+  const handleCustIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleCustIdSearch();
     }
   };
 
@@ -228,7 +235,8 @@ export function PriorityServiceForm({
                 placeholder="Enter customer ID"
                 value={custIdInput}
                 onChange={(e) => setCustIdInput(e.target.value)}
-                onBlur={handleCustIdBlur}
+                onBlur={handleCustIdSearch}
+                onKeyDown={handleCustIdKeyDown}
               />
             </FormGroup>
 
