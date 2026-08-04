@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { Container } from "@/components/Containers";
 import { Button } from "@/style/components/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/style/components/card";
+import { format, parseISO, isValid } from "date-fns";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { useAppDispatch } from "@/lib/hooks/redux";
@@ -85,7 +86,12 @@ export default function PriorityServicePage() {
             variant="primary"
             intensity="soft"
             className="w-full justify-start gap-2"
-            onClick={() => setSelected("new")}
+            onClick={() => {
+              if (lookupCustomer) {
+                dispatch(priorityServiceCustomerActions.removeCustomer(lookupCustomer.custId));
+              }
+              setSelected("new");
+            }}
           >
             <Plus className="w-4 h-4" />
             New Entry
@@ -175,6 +181,25 @@ export default function PriorityServicePage() {
                   <span className="font-mono">{selectedDoc.servCodeId}</span>
                   {" · "}
                   {selectedDoc.date ?? `${selectedDoc.dateRange?.min}–${selectedDoc.dateRange?.max}`}
+                  {selectedPs && (() => {
+                    const si = selectedPs.service.x.schedInfo;
+                    if (!si) return null;
+                    const dateStr = (() => {
+                      try {
+                        const d = parseISO(si.schedDate);
+                        return isValid(d) ? format(d, "EEE M/d") : si.schedDate;
+                      } catch {
+                        return si.schedDate;
+                      }
+                    })();
+                    return (
+                      <span className="block mt-0.5 text-[10px] tabular-nums">
+                        {si.hasAssignment
+                          ? `$ ${si.employeeId} · ${dateStr} · Stop ${si.sequence}`
+                          : dateStr}
+                      </span>
+                    );
+                  })()}
                 </CardDescription>
                 {selectedPs && (() => {
                   const custNote = selectedPs.service.program.customer.techNote;

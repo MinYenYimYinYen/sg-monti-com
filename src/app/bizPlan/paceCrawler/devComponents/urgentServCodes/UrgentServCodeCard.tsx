@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { format, parseISO, isValid } from "date-fns";
 import { urgentServCodesSelect } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentServCodesSelect";
 import { urgentActions } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentSlice";
 import { AppDispatch } from "@/store";
@@ -125,6 +126,27 @@ function ChecklistServiceRow({
           )}
         </div>
       )}
+
+      {/* Schedule info row (printed services only) */}
+      {(() => {
+        const si = service.x.schedInfo;
+        if (!si) return null;
+        const dateStr = (() => {
+          try {
+            const d = parseISO(si.schedDate);
+            return isValid(d) ? format(d, "EEE M/d") : si.schedDate;
+          } catch {
+            return si.schedDate;
+          }
+        })();
+        return (
+          <div className="pl-[calc(1rem+0.375rem+3.5rem+0.375rem)] text-xs text-foreground tabular-nums">
+            {si.hasAssignment
+              ? `$ ${si.employeeId} · ${dateStr} · Stop ${si.sequence}`
+              : dateStr}
+          </div>
+        );
+      })()}
     </div>
   );
 }

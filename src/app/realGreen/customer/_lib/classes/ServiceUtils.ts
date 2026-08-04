@@ -8,6 +8,7 @@ import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 import { Discount } from "@/app/realGreen/discount/DiscountTypes";
 import { applyDiscounts } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
+import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export type ProductRuleCompliance = "pass" | "fail" | "no-rule" | null;
 
@@ -186,6 +187,35 @@ export class ServiceUtils {
   public get isActionable(): boolean {
     const ACTIVE_ASAP = ["Y", "*"];
     return ACTIVE_ASAP.includes(this.service.status) && this.service.program.x.isActionable;
+  }
+
+  /**
+   * Schedule info for printed services (status === "$").
+   * Returns null for non-printed services.
+   *
+   * `hasAssignment` is true when a real assignment record exists (employeeId is not the
+   * base placeholder). When false, the schedDate comes from the program's nextDate fallback.
+   *
+   * Display guidance:
+   *   hasAssignment → "LR5 ($ 1LS Tue 8/4 Stop 10)"
+   *   !hasAssignment → "LR5 Tue 8/4"
+   */
+  public get schedInfo(): {
+    schedDate: string;
+    employeeId: string;
+    sequence: number;
+    hasAssignment: boolean;
+  } | null {
+    if (this.service.status !== "$") return null;
+    const la = this.service.lastAssigned;
+    if (!la.schedDate) return null;
+    const hasAssignment = la.employeeId !== baseStrId && la.employeeId.length > 0;
+    return {
+      schedDate: la.schedDate,
+      employeeId: la.employeeId,
+      sequence: la.sequence,
+      hasAssignment,
+    };
   }
 
 }

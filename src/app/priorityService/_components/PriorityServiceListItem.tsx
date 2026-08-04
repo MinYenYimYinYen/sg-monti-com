@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { CalendarClock } from "lucide-react";
 import { cn } from "@/style/utils";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
@@ -69,6 +69,25 @@ export function PriorityServiceListItem({ servId, isSelected, onClick }: Priorit
         )}
         <span className="tabular-nums">{formatDateDisplay(ps)}</span>
       </div>
+      {(() => {
+        const si = ps.service.x.schedInfo;
+        if (!si) return null;
+        const dateStr = (() => {
+          try {
+            const d = parseISO(si.schedDate);
+            return isValid(d) ? format(d, "EEE M/d") : si.schedDate;
+          } catch {
+            return si.schedDate;
+          }
+        })();
+        return (
+          <div className="text-[10px] text-muted-foreground tabular-nums pl-5 mt-0.5">
+            {si.hasAssignment
+              ? `$ ${si.employeeId} · ${dateStr} · Stop ${si.sequence}`
+              : dateStr}
+          </div>
+        );
+      })()}
     </button>
   );
 }

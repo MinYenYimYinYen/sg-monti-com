@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { CalendarClock, ClipboardList, Info } from "lucide-react";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
 import { urgentServCodesSelect } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentServCodesSelect";
@@ -47,6 +47,15 @@ function formatDateDisplay(ps: PriorityService): string {
     return `${formatDate(ps.dateRange.min)}–${formatDate(ps.dateRange.max)}`;
   }
   return "";
+}
+
+function formatSchedDate(isoDate: string): string {
+  try {
+    const d = parseISO(isoDate);
+    return isValid(d) ? format(d, "EEE M/d") : isoDate;
+  } catch {
+    return isoDate;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -106,12 +115,12 @@ function PriorityServiceRow({ ps }: { ps: PriorityService }) {
         </span>
 
         {/* ServCode */}
-        <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+        <span className="font-mono text-xs text-foreground shrink-0">
           {service.servCode.servCodeId}
         </span>
 
         {/* Date */}
-        <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
+        <span className="text-xs text-foreground shrink-0 tabular-nums">
           {formatDateDisplay(ps)}
         </span>
 
@@ -153,6 +162,19 @@ function PriorityServiceRow({ ps }: { ps: PriorityService }) {
           )}
         </div>
       )}
+
+      {/* Schedule info row (printed services only) */}
+      {(() => {
+        const si = service.x.schedInfo;
+        if (!si) return null;
+        return (
+          <div className="pl-[calc(1rem+0.375rem)] text-xs text-foreground tabular-nums">
+            {si.hasAssignment
+              ? `$ ${si.employeeId} · ${formatSchedDate(si.schedDate)} · Stop ${si.sequence}`
+              : formatSchedDate(si.schedDate)}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -166,11 +188,12 @@ export function PriorityChecklistContent({
 }: {
   priorityServices: PriorityService[];
 }) {
-  // Group by the sort key (date or dateRange.min) — selector already sorted ascending
+  // Group by start date (date or dateRange.min) — selector already sorted ascending.
+  // The accordion header shows only the start date so date-range entries group correctly.
   const groups: { dateKey: string; label: string; items: PriorityService[] }[] = [];
   for (const ps of priorityServices) {
     const dateKey = ps.date ?? ps.dateRange?.min ?? "";
-    const label = formatDateDisplay(ps);
+    const label = formatDate(dateKey);
     const existing = groups.find((g) => g.dateKey === dateKey);
     if (existing) {
       existing.items.push(ps);
