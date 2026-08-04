@@ -101,6 +101,11 @@ const bizPlanSection: NavSection = {
       href: "/bizPlan/paceCrawler",
       roles: ["admin", "office", "tech"],
     },
+    {
+      title: "Priority Scheduling",
+      href: "/priorityService",
+      roles: ["admin", "office"],
+    },
   ],
 };
 

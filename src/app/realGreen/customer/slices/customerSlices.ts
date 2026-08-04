@@ -140,6 +140,17 @@ export const byAssignmentActions = {
 };
 export const byAssignmentReducer = byAssignmentSlice.reducer;
 
+export const priorityServiceCustomerSlice = createCustomerSlice("priorityServiceCustomer");
+export const priorityServiceCustomerGetDocs = createGetCustDocsThunk(
+  "priorityServiceCustomer",
+  priorityServiceCustomerSlice,
+);
+export const priorityServiceCustomerActions = {
+  ...priorityServiceCustomerSlice.actions,
+  getDocs: priorityServiceCustomerGetDocs,
+};
+export const priorityServiceCustomerReducer = priorityServiceCustomerSlice.reducer;
+
 // ---------------------------------------------------------------------------
 // Slice registry — single source of truth for all customer slice instances.
 // The central slice loops over this to register extraReducers, eliminating
@@ -154,6 +165,7 @@ export type CustomerSliceGetDocs = ReturnType<typeof createGetCustDocsThunk>;
 export type CustomerContextMode =
   | "active"
   | "byAssignment"
+  | "priorityService"
   | "printed"
   | "lastSeasonProduction"
   | "recentProduction"
@@ -203,6 +215,12 @@ export const customerSliceRegistry: CustomerSliceRegistryEntry[] = [
     actions: byAssignmentActions,
     getDocs: byAssignmentGetDocs,
     reducer: byAssignmentReducer,
+  },
+  {
+    context: "priorityService",
+    actions: priorityServiceCustomerActions,
+    getDocs: priorityServiceCustomerGetDocs,
+    reducer: priorityServiceCustomerReducer,
   },
 ];
 

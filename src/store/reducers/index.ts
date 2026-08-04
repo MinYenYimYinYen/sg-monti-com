@@ -41,6 +41,7 @@ import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFee
 import { inventoryReducer } from "@/app/inventory/inventorySlice";
 import javelinReducer from "@/app/javelin/javelinSlice";
 import depositReducer from "@/app/javelin/depositSlice";
+import { priorityServiceReducer } from "@/app/priorityService/priorityServiceSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -83,6 +84,7 @@ const rootReducer = combineReducers({
   loadoutReport: loadoutReportReducer,
   javelin: javelinReducer,
   deposit: depositReducer,
+  priorityService: priorityServiceReducer,
 });
 
 export default rootReducer;

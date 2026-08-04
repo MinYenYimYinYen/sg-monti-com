@@ -1,8 +1,4 @@
-1. Refactors
-   1. Eliminate the toggle for show overdue in the checklist
-      1. Should just always show these.
-   2. The optimizer prioritizes a servCode or a group of servCodes when calculating what will be done.  But the employee view cards display the full list of priority services. We should either gray out the non-top priority services, or just not display them. AI will weigh in on this with pros/cons for each approach based on the real world decision a production manager would make based on the info.
-2. New Features
+
    1. Add a new checklist item type for "Priority Scheduling"
       1. Call it "PriorityService"
       2. Properties:

@@ -3,6 +3,7 @@
 import { useSelector } from "react-redux";
 import { employeeCardSelect } from "@/app/bizPlan/paceCrawler/employeeCardSelect";
 import { UrgentServCodeCard } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/UrgentServCodeCard";
+import { PriorityServiceCard } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/PriorityServiceCard";
 import { cn } from "@/style/utils";
 import type {
   EmployeeCardData,
@@ -157,6 +158,9 @@ export function EmployeeCardPanel() {
         <div className="flex flex-row flex-wrap gap-4 content-start">
           {/* Urgent card always first */}
           <UrgentServCodeCard />
+
+          {/* Priority scheduling card */}
+          <PriorityServiceCard />
 
           {/* Employee cards */}
           {cardData.map((card) => (

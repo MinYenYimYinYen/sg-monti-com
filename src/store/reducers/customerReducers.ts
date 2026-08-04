@@ -5,6 +5,7 @@ import {
   byAssignmentReducer,
   lastSeasonProductionReducer,
   printedCustomerReducer,
+  priorityServiceCustomerReducer,
   recentProductionReducer,
   singleCustomerReducer,
 } from "@/app/realGreen/customer/slices/customerSlices";
@@ -14,6 +15,7 @@ export const customerReducer = combineReducers({
   byAssignment: byAssignmentReducer,
   lastSeasonProduction: lastSeasonProductionReducer,
   printed: printedCustomerReducer,
+  priorityService: priorityServiceCustomerReducer,
   recentProduction: recentProductionReducer,
   single: singleCustomerReducer,
   central: centralCustomerReducer,
