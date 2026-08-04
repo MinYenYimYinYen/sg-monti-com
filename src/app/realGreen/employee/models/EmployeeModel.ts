@@ -1,9 +1,8 @@
 import mongoose from "mongoose";
-import {EmployeeDocProps} from "@/app/realGreen/employee/types/EmployeeTypes";
+import { EmployeeDocProps } from "@/app/realGreen/employee/types/EmployeeTypes";
+import { createModel } from "@/lib/mongoose/createModel";
 
-interface EmployeeDoc extends EmployeeDocProps, mongoose.Document {}
-
-const EmployeeSchema = new mongoose.Schema(
+const EmployeeSchema = new mongoose.Schema<EmployeeDocProps>(
   {
     employeeId: { type: String, required: true, unique: true },
     phone: { type: String, required: true },
@@ -11,7 +10,4 @@ const EmployeeSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export const EmployeeModel =
-  (mongoose.models?.Employee as mongoose.Model<EmployeeDoc>) ||
-  mongoose.model<EmployeeDoc>("Employee", EmployeeSchema);
-
+export const EmployeeModel = createModel<EmployeeDocProps>("Employee", EmployeeSchema);

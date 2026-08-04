@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
 import { ServCodeDocProps } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { ProductRuleDoc } from "@/app/realGreen/progServ/_lib/types/ProductRule";
-
-interface ServCodeDocPropsDoc extends ServCodeDocProps, mongoose.Document {}
+import { createModel } from "@/lib/mongoose/createModel";
 
 const ServCodeProductSchema = new mongoose.Schema<ProductRuleDoc>({
   size: { type: Number, required: true },
@@ -18,7 +17,7 @@ const DateRangeSchema = new mongoose.Schema(
   { _id: false },
 );
 
-const ServCodeSchema = new mongoose.Schema<ServCodeDocPropsDoc>(
+const ServCodeSchema = new mongoose.Schema<ServCodeDocProps>(
   {
     servCodeId: { type: String, required: true, unique: true },
     dateRange: { type: DateRangeSchema, default: () => ({ min: "", max: "" }) },
@@ -30,8 +29,6 @@ const ServCodeSchema = new mongoose.Schema<ServCodeDocPropsDoc>(
   { timestamps: true },
 );
 
-const ServCodeDocPropsModel =
-  (mongoose.models?.ServCodeDocProps as mongoose.Model<ServCodeDocPropsDoc>) ||
-  mongoose.model<ServCodeDocPropsDoc>("ServCodeDocProps", ServCodeSchema);
+const ServCodeDocPropsModel = createModel<ServCodeDocProps>("ServCodeDocProps", ServCodeSchema);
 
 export default ServCodeDocPropsModel;

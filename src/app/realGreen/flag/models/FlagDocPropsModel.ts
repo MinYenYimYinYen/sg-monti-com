@@ -1,17 +1,12 @@
 import mongoose from "mongoose";
 import { FlagDocProps } from "@/app/realGreen/flag/FlagTypes";
+import { createModel } from "@/lib/mongoose/createModel";
 
-interface FlagDocPropsDoc extends mongoose.Document, FlagDocProps {}
-
-const flagDocPropsSchema = new mongoose.Schema<FlagDocPropsDoc>(
+const flagDocPropsSchema = new mongoose.Schema<FlagDocProps>(
   {
     flagId: { type: Number, required: true, unique: true },
   },
   { timestamps: true },
 );
 
-export const FlagDocPropsModel =
-  (mongoose.models?.FlagDocProps as mongoose.Model<FlagDocPropsDoc>) ||
-  mongoose.model<FlagDocPropsDoc>("FlagDocProps", flagDocPropsSchema);
-
-
+export const FlagDocPropsModel = createModel<FlagDocProps>("FlagDocProps", flagDocPropsSchema);
