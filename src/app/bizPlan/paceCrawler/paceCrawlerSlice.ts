@@ -4,10 +4,13 @@ import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 type PaceCrawlerState = {
   /** Global date slider — sets the "view date" for the pace crawler */
   mainDate: string;
+  /** Persists the employee selection in the AssignmentEditorPanel across navigation */
+  assignmentEditorSelectedEmployeeIds: string[];
 };
 
 const initialState: PaceCrawlerState = {
   mainDate: dateStrings.today(),
+  assignmentEditorSelectedEmployeeIds: [],
 };
 
 const paceCrawlerSlice = createSlice({
@@ -16,6 +19,9 @@ const paceCrawlerSlice = createSlice({
   reducers: {
     setMainDate: (state, action: PayloadAction<string>) => {
       state.mainDate = action.payload;
+    },
+    setAssignmentEditorSelectedEmployeeIds: (state, action: PayloadAction<string[]>) => {
+      state.assignmentEditorSelectedEmployeeIds = action.payload;
     },
   },
 });

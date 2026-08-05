@@ -8,6 +8,8 @@ import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPl
 import { flattenEntries, AssignmentEntry } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
+import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
+import { paceCrawlerActions } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 import { ChevronUp, ChevronDown, ChevronRight, X, Plus, Copy, ClipboardPaste } from "lucide-react";
 import { Button } from "@/style/components/button";
@@ -41,7 +43,7 @@ function buildConfigGroups(
   for (const employeeId of selectedEmployeeIds) {
     const entries = assignmentsByEmployeeId.get(employeeId)?.entries ?? [];
     // Each employee gets its own group card (fingerprint includes employeeId)
-    const fingerprint = flattenEntries(entries).join(",") + "|" + employeeId;
+    const fingerprint = employeeId;
 
     groupMap.set(fingerprint, {
       fingerprint,
@@ -254,7 +256,9 @@ export function AssignmentEditorPanel() {
 
   const activeEmployees = [...employeeMap.values()].filter((e) => e.active);
 
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<string>>(new Set());
+  const selectedEmployeeIdsArr = useSelector(paceCrawlerSelect.assignmentEditorSelectedEmployeeIds);
+  const selectedEmployeeIds = new Set(selectedEmployeeIdsArr);
+
   const [pendingByGroup, setPendingByGroup] = useState<Map<string, Set<string>>>(new Map());
   const [openAddGroup, setOpenAddGroup] = useState<string | null>(null);
   const [selectedByGroup, setSelectedByGroup] = useState<Map<string, Set<number>>>(new Map());
@@ -289,28 +293,24 @@ export function AssignmentEditorPanel() {
   }
 
   function toggleEmployee(employeeId: string) {
-    setSelectedEmployeeIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(employeeId)) next.delete(employeeId);
-      else next.add(employeeId);
-      return next;
-    });
+    const next = new Set(selectedEmployeeIds);
+    if (next.has(employeeId)) next.delete(employeeId);
+    else next.add(employeeId);
+    dispatch(paceCrawlerActions.setAssignmentEditorSelectedEmployeeIds([...next]));
   }
 
   function selectAssigned() {
-    const assignedIds = new Set(
-      activeEmployees
-        .filter((e) => {
-          const plan = assignmentsByEmployeeId.get(e.employeeId);
-          return plan ? flattenEntries(plan.entries).length > 0 : false;
-        })
-        .map((e) => e.employeeId),
-    );
-    setSelectedEmployeeIds(assignedIds);
+    const assignedIds = activeEmployees
+      .filter((e) => {
+        const plan = assignmentsByEmployeeId.get(e.employeeId);
+        return plan ? flattenEntries(plan.entries).length > 0 : false;
+      })
+      .map((e) => e.employeeId);
+    dispatch(paceCrawlerActions.setAssignmentEditorSelectedEmployeeIds(assignedIds));
   }
 
   function clearAll() {
-    setSelectedEmployeeIds(new Set());
+    dispatch(paceCrawlerActions.setAssignmentEditorSelectedEmployeeIds([]));
   }
 
   // All edits update Redux only (local). Persisting happens via Save/Save As in the toolbar.
@@ -702,7 +702,7 @@ export function AssignmentEditorPanel() {
                   {/* Paste confirmation row */}
                   {pendingPasteGroup === group.fingerprint && (
                     <div className="mt-1.5 flex items-center gap-2 text-[10px]">
-                      <span className="text-muted-foreground">Overwrite this config?</span>
+                      <span className="text-muted-foreground shrink-0">Paste:</span>
                       <button
                         onClick={() => {
                           if (!clipboard) return;
@@ -710,15 +710,33 @@ export function AssignmentEditorPanel() {
                           setClipboard(null);
                           setPendingPasteGroup(null);
                         }}
-                        className="text-primary font-semibold hover:underline"
+                        className="text-destructive font-semibold hover:underline shrink-0"
                       >
-                        Confirm
+                        Overwrite
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!clipboard) return;
+                          const existingIds = new Set(flattenEntries(group.entries));
+                          const toAppend = clipboard.entries.filter((entry) => {
+                            const ids = entry.kind === "single"
+                              ? [entry.servCodeId]
+                              : entry.servCodeIds;
+                            return ids.every((id) => !existingIds.has(id));
+                          });
+                          applyToGroup(group.employeeIds, [...group.entries, ...toAppend]);
+                          setClipboard(null);
+                          setPendingPasteGroup(null);
+                        }}
+                        className="text-primary font-semibold hover:underline shrink-0"
+                      >
+                        Append
                       </button>
                       <button
                         onClick={() => setPendingPasteGroup(null)}
-                        className="text-muted-foreground hover:underline"
+                        className="text-muted-foreground hover:underline shrink-0"
                       >
-                        Cancel
+                        ✕
                       </button>
                     </div>
                   )}

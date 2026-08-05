@@ -38,7 +38,15 @@ const assignmentPlanSlice = createSlice({
     builder.addCase(getScenarios.fulfilled, (state, action) => {
       state.scenarios = action.payload;
       const active = action.payload.find((s) => s.isActive);
-      if (active) state.assignmentPlans = active.plans;
+      if (active) {
+        // Only overwrite local plans if there are no unsaved changes.
+        // This prevents re-navigation from wiping edits that haven't been saved yet.
+        const hasLocalPlans = state.assignmentPlans.length > 0;
+        const isDirty = JSON.stringify(active.plans) !== JSON.stringify(state.assignmentPlans);
+        if (!hasLocalPlans || !isDirty) {
+          state.assignmentPlans = active.plans;
+        }
+      }
     });
     builder.addCase(upsertScenario.fulfilled, (state, action) => {
       const updated = action.payload;

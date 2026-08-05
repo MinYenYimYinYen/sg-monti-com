@@ -24,6 +24,9 @@ import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 const selectMainDate = (state: AppState): string => state.paceCrawler.mainDate;
 
+const selectAssignmentEditorSelectedEmployeeIds = (state: AppState): string[] =>
+  state.paceCrawler.assignmentEditorSelectedEmployeeIds;
+
 // ---------------------------------------------------------------------------
 // Layer 0 — Crawl Start Date
 // ---------------------------------------------------------------------------
@@ -668,6 +671,7 @@ const selectServCodeTimelineMap = createSelector(
 export const paceCrawlerSelect = {
   // Slice selectors
   mainDate: selectMainDate,
+  assignmentEditorSelectedEmployeeIds: selectAssignmentEditorSelectedEmployeeIds,
   // Layer 0
   crawlStart: selectCrawlStart,
   // Layer 1

@@ -15,9 +15,14 @@ const handlers: HandlerMap<PriorityServiceContract> = {
     handler: async () => {
       await connectToMongoDB();
       const docs = await PriorityServiceModel.find({}).lean();
+      const sorted = cleanMongoArray<PriorityServiceDoc>(docs).sort((a, b) => {
+        const aDate = a.date ?? a.dateRange?.min ?? "";
+        const bDate = b.date ?? b.dateRange?.min ?? "";
+        return aDate.localeCompare(bDate);
+      });
       return {
         success: true,
-        payload: cleanMongoArray<PriorityServiceDoc>(docs),
+        payload: cleanMongoArray<PriorityServiceDoc>(sorted),
       };
     },
   },

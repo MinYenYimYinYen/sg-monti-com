@@ -34,8 +34,13 @@ const schedulingSection: NavSection = {
   title: "Scheduling",
   navItems: [
     {
-      title: "Routing",
-      href: "/scheduling/routing",
+      title: "Pace",
+      href: "/bizPlan/paceCrawler",
+      roles: ["admin", "office", "tech"],
+    },
+    {
+      title: "Priority Scheduling",
+      href: "/priorityService",
       roles: ["admin", "office"],
     },
     {
@@ -96,16 +101,7 @@ const bizPlanSection: NavSection = {
   navItems: [
     { title: "Product Forecast", href: "/bizPlan/products", roles: ["admin"] },
     { title: "Monthly Inventory", href: "/inventory", roles: ["admin"] },
-    {
-      title: "Pace",
-      href: "/bizPlan/paceCrawler",
-      roles: ["admin", "office", "tech"],
-    },
-    {
-      title: "Priority Scheduling",
-      href: "/priorityService",
-      roles: ["admin", "office"],
-    },
+
   ],
 };
 
