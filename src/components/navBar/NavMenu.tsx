@@ -58,6 +58,16 @@ const schedulingSection: NavSection = {
       href: "/scheduling/dailyInventory",
       roles: ["admin", "office", "tech"],
     },
+    {
+      title: "Time Off Calendar",
+      href: "/plannedTimeOff/calendar",
+      roles: ["admin", "office"],
+    },
+    {
+      title: "Holidays",
+      href: "/holiday",
+      roles: ["admin"],
+    },
   ],
 };
 

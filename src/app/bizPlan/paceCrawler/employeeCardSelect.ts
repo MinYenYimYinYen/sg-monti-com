@@ -15,6 +15,7 @@ import {
   OpenServCodeRow,
   EmployeeCardData,
 } from "@/app/bizPlan/paceCrawler/_lib/diffChecker/DiffCheckerTypes";
+import { holidaySelect } from "@/app/holiday/holidaySelect";
 
 export type { OpenServCodeRow, EmployeeCardData };
 
@@ -323,6 +324,8 @@ const selectDiffResultByEmployeeByServCode = createSelector(
  * enriched with DiffChecker data from D4.
  *
  * isAlreadyRouted: employee has any printed service (status "$") with schedDate === mainDate.
+ * isOnLeave: employee has personal planned time off covering mainDate.
+ * isHoliday: a company holiday covers mainDate (same for all employees).
  *
  * Sorted: employees with open servCodes first (by name), then employees with no open servCodes.
  */
@@ -333,6 +336,7 @@ const selectEmployeeCardData = createSelector(
     paceCrawlerSelect.activePoolPriceByServCode,
     deepSelect.servCodes,
     selectMainDate,
+    holidaySelect.holidayDates,
   ],
   (
     openServCodesForEmployees,
@@ -340,6 +344,7 @@ const selectEmployeeCardData = createSelector(
     activePoolMap,
     servCodes,
     mainDate,
+    holidayDates,
   ): EmployeeCardData[] => {
     // Build already-routed set: employees with a printed service on mainDate
     const alreadyRoutedEmployeeIds = new Set<string>();
@@ -355,12 +360,18 @@ const selectEmployeeCardData = createSelector(
       }
     }
 
+    const isHoliday = holidayDates.has(mainDate);
+
     const cards: EmployeeCardData[] = [];
 
     for (const { employee, openServCodes } of openServCodesForEmployees) {
       const employeeId = employee.employeeId;
       const diffByServCode = diffResultMap.get(employeeId);
       const assignedServCodeIds = openServCodes.map((sc) => sc.servCodeId);
+
+      const isOnLeave = employee.plannedTimeOff.some(
+        (pto) => mainDate >= pto.dateRange.min && mainDate <= pto.dateRange.max,
+      );
 
       // Build open servCode rows — D0 already filtered by dateRange and services.count;
       // here we additionally require activePool > 0 (unscheduled work remains).
@@ -394,6 +405,8 @@ const selectEmployeeCardData = createSelector(
       cards.push({
         employee,
         isAlreadyRouted: alreadyRoutedEmployeeIds.has(employeeId),
+        isOnLeave,
+        isHoliday,
         openServCodes: openServCodeRows,
         assignedServCodeIds,
       });

@@ -220,6 +220,12 @@ export function runDayCrawlSimulation(
     if (!anyRemaining) break;
 
     for (const employee of employeeEntries) {
+      // Skip this employee entirely if they are on leave or a holiday today
+      if (employee.timeOffDates.has(day)) {
+        lastWorkedEntryLabel.set(employee.employeeId, null);
+        continue;
+      }
+
       const personalOpenDate = employee.nextAvailableDate;
       const timeline = employeeTimeline.get(employee.employeeId)!;
       const prevEntryLabel = lastWorkedEntryLabel.get(employee.employeeId) ?? null;

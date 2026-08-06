@@ -104,12 +104,12 @@ function ServCodeRow({ row, isPriority }: { row: OpenServCodeRow; isPriority: bo
 // ---------------------------------------------------------------------------
 
 function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
-  const { employee, isAlreadyRouted, openServCodes } = cardData;
+  const { employee, isAlreadyRouted, isOnLeave, isHoliday, openServCodes } = cardData;
   const headerBg = isAlreadyRouted ? "bg-destructive/10" : "bg-accent/10";
 
   return (
     <div className="border rounded-lg bg-card w-72 flex flex-col">
-      {/* Header — employee name + routed badge only */}
+      {/* Header — employee name + status badges */}
       <div
         className={cn(
           "flex items-center justify-between px-3 py-2 border-b rounded-t-lg",
@@ -119,11 +119,23 @@ function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
         <span className="text-sm font-semibold text-foreground truncate">
           {employee.name}
         </span>
-        {isAlreadyRouted && (
-          <span className="text-destructive text-xs font-medium shrink-0 ml-2">
-            ⚠ Routed
-          </span>
-        )}
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          {isAlreadyRouted && (
+            <span className="text-destructive text-xs font-medium">
+              ⚠ Routed
+            </span>
+          )}
+          {isOnLeave && (
+            <span className="text-accent text-xs font-medium">
+              🏖 On Leave
+            </span>
+          )}
+          {isHoliday && (
+            <span className="text-secondary text-xs font-medium">
+              🎉 Holiday
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ServCode rows */}

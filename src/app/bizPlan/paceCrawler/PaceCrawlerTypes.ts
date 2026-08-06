@@ -83,6 +83,11 @@ export type DayCrawlEmployeeEntry = {
    * = today if no printed services.
    */
   nextAvailableDate: string;
+  /**
+   * ISO date strings on which this employee is on planned time off or a company holiday.
+   * The crawler skips these days silently (no drain, no timeline event).
+   */
+  timeOffDates: Set<string>;
 };
 
 // ---------------------------------------------------------------------------

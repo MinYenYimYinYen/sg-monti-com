@@ -17,6 +17,7 @@ import {
   SeasonOptimizedRange,
 } from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { holidaySelect } from "@/app/holiday/holidaySelect";
 
 // ---------------------------------------------------------------------------
 // Slice selector
@@ -410,6 +411,8 @@ const selectActivePoolPriceByServCode = createSelector(
  *
  * Employee entries use priorityEntries (from assignmentPlan.entries) instead of flat servCodeIds,
  * so group entries are passed through to the simulation correctly.
+ *
+ * timeOffDates per employee = personal PTO dates ∪ global holiday dates.
  */
 const selectCrawlerResult = createSelector(
   [
@@ -424,6 +427,7 @@ const selectCrawlerResult = createSelector(
     progServSelect.progCodes,
     selectMainDate,
     selectCrawlStart,
+    holidaySelect.holidayDates,
   ],
   (
     nextDateByEmployee,
@@ -437,6 +441,7 @@ const selectCrawlerResult = createSelector(
     progCodes,
     today,
     crawlStart,
+    holidayDates,
   ): CrawlerResult => {
     // Build servCode entries
     const servCodeEntries: DayCrawlServCodeEntry[] = [];
@@ -495,12 +500,23 @@ const selectCrawlerResult = createSelector(
       const nextAvailableDate =
         nextDateByEmployee.get(employeeId) ?? crawlStart;
 
+      // Build timeOffDates: personal PTO dates ∪ global holiday dates
+      const timeOffDates = new Set<string>(holidayDates);
+      for (const pto of employee.plannedTimeOff) {
+        let ptoDay = pto.dateRange.min;
+        while (ptoDay <= pto.dateRange.max) {
+          if (dateStrings.isWeekDay(ptoDay)) timeOffDates.add(ptoDay);
+          ptoDay = dateStrings.addDays(ptoDay, 1);
+        }
+      }
+
       employeeEntries.push({
         employeeId,
         priorityEntries,
         dailyRates,
         totalAvgDailyPrice,
         nextAvailableDate,
+        timeOffDates,
       });
     }
 

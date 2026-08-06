@@ -42,6 +42,8 @@ import { inventoryReducer } from "@/app/inventory/inventorySlice";
 import javelinReducer from "@/app/javelin/javelinSlice";
 import depositReducer from "@/app/javelin/depositSlice";
 import { priorityServiceReducer } from "@/app/priorityService/priorityServiceSlice";
+import { plannedTimeOffReducer } from "@/app/plannedTimeOff/plannedTimeOffSlice";
+import { holidayReducer } from "@/app/holiday/holidaySlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -85,6 +87,8 @@ const rootReducer = combineReducers({
   javelin: javelinReducer,
   deposit: depositReducer,
   priorityService: priorityServiceReducer,
+  plannedTimeOff: plannedTimeOffReducer,
+  holiday: holidayReducer,
 });
 
 export default rootReducer;

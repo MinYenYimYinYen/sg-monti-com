@@ -1,4 +1,5 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
 
 export type EmployeeRaw = {
   id: string;
@@ -33,6 +34,8 @@ export type EmployeeDoc = EmployeeDocProps & EmployeeCore;
 export type EmployeeProps = {
   /** Priority-ordered servCode IDs from AssignmentPlan — first = highest priority */
   servCodeIds: string[];
+  /** Planned time off entries for this employee, hydrated from plannedTimeOffSelect */
+  plannedTimeOff: PlannedTimeOff[];
 };
 
 export type Employee = EmployeeProps & EmployeeDoc;

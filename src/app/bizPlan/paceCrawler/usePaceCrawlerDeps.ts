@@ -8,6 +8,8 @@ import { useSelectedCustFlags } from "@/app/realGreen/custFlag/_lib/useSelectedC
 import { CustomerContextMode } from "@/app/realGreen/customer/slices/customerSlices";
 import { useDiscount } from "@/app/realGreen/discount/useDiscount";
 import { usePriorityService } from "@/app/priorityService/usePriorityService";
+import { usePlannedTimeOff } from "@/app/plannedTimeOff/usePlannedTimeOff";
+import { useHoliday } from "@/app/holiday/useHoliday";
 
 const PACE_CRAWLER_CONTEXTS: CustomerContextMode[] = ["active"];
 
@@ -21,4 +23,6 @@ export function usePaceCrawlerDeps() {
   useSelectedCustFlags();
   useDiscount({ autoLoad: true });
   usePriorityService({ autoLoad: true });
+  usePlannedTimeOff({ autoLoad: true });
+  useHoliday({ autoLoad: true });
 }

@@ -73,6 +73,10 @@ export type EmployeeCardData = {
   employee: Employee;
   /** True when the employee has any printed service (status "$") with schedDate === mainDate. */
   isAlreadyRouted: boolean;
+  /** True when the employee has personal planned time off covering mainDate. */
+  isOnLeave: boolean;
+  /** True when a company holiday covers mainDate (applies to all employees). */
+  isHoliday: boolean;
   /** Priority-ordered open servCodes for this employee on mainDate (pool > 0, date in range). */
   openServCodes: OpenServCodeRow[];
   /** All servCodeIds in the employee's assignment plan (for context). */
