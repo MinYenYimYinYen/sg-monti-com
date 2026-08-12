@@ -239,6 +239,7 @@ export function useSchedPromise() {
 - **Summary**: Handles complex data fetching (Customers → Programs -> Services) using a streaming pipeline and "Search Schemes".
 
 ## Session Learnings (Key Conventions)
+* **Tool Result Loop Detection**: If a tool call returns the same result as the previous call (especially `read_file` returning the same file content repeatedly), **stop immediately**. Do not retry the same or different tool calls. The session is in a broken state where tool results are being replayed. Acknowledge the loop to the user and wait for them to interrupt and restart the task. Continuing to call tools in this state wastes the context window and makes recovery harder.
 * **Silent Error Handling**: Use `handleError(e, { silent: true })` to suppress toasts for expected errors.
 * **Admin-Assisted Auth**: Password resets are handled via admin approval, not email.
 * **"Applied" Role**: New users are gated with an "applied" role until approved.

@@ -42,6 +42,8 @@ import depositReducer from "@/app/javelin/depositSlice";
 import { priorityServiceReducer } from "@/app/priorityService/priorityServiceSlice";
 import { plannedTimeOffReducer } from "@/app/plannedTimeOff/plannedTimeOffSlice";
 import { holidayReducer } from "@/app/holiday/holidaySlice";
+import { timeCardImportReducer } from "@/app/timeCard/import/timeCardImportSlice";
+import { timeCardPayrollReducer } from "@/app/timeCard/payroll/timeCardPayrollSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -87,6 +89,8 @@ const rootReducer = combineReducers({
   priorityService: priorityServiceReducer,
   plannedTimeOff: plannedTimeOffReducer,
   holiday: holidayReducer,
+  timeCardImport: timeCardImportReducer,
+  timeCardPayroll: timeCardPayrollReducer,
 });
 
 export default rootReducer;
