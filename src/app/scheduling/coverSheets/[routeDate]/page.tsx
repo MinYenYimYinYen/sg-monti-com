@@ -29,7 +29,6 @@ import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
-import { ScrollArea } from "@/style/components/scroll-area";
 import {
   servCodeHasSeed,
   textHasSeedOrPreEm,
@@ -142,7 +141,7 @@ function CoverSheetsPDF({
   productCommonMap,
 }: CoverSheetsPDFProps) {
   return (
-    <Document>
+    <Document title={`Cover Sheets ${routeDate}`}>
       {[...serviceByEmployee.keys()].map((employeeId) => {
         const services = serviceByEmployee.get(employeeId)!;
         const employee = services[0].lastAssigned.employee;
@@ -315,7 +314,7 @@ function CoverSheetsPDF({
                 "asap",
                 "active",
                 "printed",
-              ).results;
+              ).results.filter((s) => s.servId !== service.servId && (s.x.isActionable || s.status === "$"));
 
               const remaining = remainingServices.map((service) => {
                 const isPrinted = service.status === "$";
@@ -559,6 +558,7 @@ function CoverSheetsPDF({
                       </View>
                     )}
                   </View>
+                  {history.length > 0 && (
                   <View
                     id={"HISTORY"}
                     style={tw(
@@ -616,9 +616,10 @@ function CoverSheetsPDF({
                             })}
                           </View>
                         </View>
-                      );
+                        );
                     })}
                   </View>
+                  )}
                   {isPest && (
                     <View
                       id={"PEST_HISTORY"}
@@ -733,6 +734,7 @@ function CoverSheetsPDF({
                       })}
                     </View>
                   )}
+                  {remaining.length > 0 && (
                   <View
                     id={"REMAINING"}
                     style={tw("flex flex-row gap-1 flex-wrap text-xs")}
@@ -764,6 +766,7 @@ function CoverSheetsPDF({
                       );
                     })}
                   </View>
+                  )}
                 </View>
               );
             })}
