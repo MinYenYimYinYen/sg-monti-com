@@ -42,6 +42,7 @@ import depositReducer from "@/app/javelin/depositSlice";
 import { priorityServiceReducer } from "@/app/priorityService/priorityServiceSlice";
 import { plannedTimeOffReducer } from "@/app/plannedTimeOff/plannedTimeOffSlice";
 import { holidayReducer } from "@/app/holiday/holidaySlice";
+import { timeCardReducer } from "@/app/timeCard/timeCardSlice";
 import { timeCardImportReducer } from "@/app/timeCard/import/timeCardImportSlice";
 import { timeCardPayrollReducer } from "@/app/timeCard/payroll/timeCardPayrollSlice";
 import { customerValueFilterReducer } from "@/app/bizPlan/customerValue/customerValueFilterSlice";
@@ -90,6 +91,7 @@ const rootReducer = combineReducers({
   priorityService: priorityServiceReducer,
   plannedTimeOff: plannedTimeOffReducer,
   holiday: holidayReducer,
+  timeCard: timeCardReducer,
   timeCardImport: timeCardImportReducer,
   timeCardPayroll: timeCardPayrollReducer,
   customerValueFilter: customerValueFilterReducer,
