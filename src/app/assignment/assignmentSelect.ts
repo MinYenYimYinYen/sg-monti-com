@@ -9,6 +9,8 @@ const selectBySchedDate = (state: AppState) => state.assignment.bySchedDate;
 
 const selectAvailableDates = (state: AppState) => state.assignment.availableDates;
 
+const selectBySchedDateRange = (state: AppState) => state.assignment.bySchedDateRange;
+
 const selectServIdsForDate = createSelector(
   [selectBySchedDate],
   (assignments) => assignments.map((a) => a.servId),
@@ -24,12 +26,18 @@ const selectServIdsByEmployee = createSelector(
   (assignments) => new Grouper(assignments).groupBy((a) => a.employeeId).toMap(),
 );
 
+const selectAssignmentsByEmployeeForRange = createSelector(
+  [selectBySchedDateRange],
+  (assignments) => new Grouper(assignments).groupBy((a) => a.employeeId).toMap(),
+);
 
 export const assignmentSelect = {
   loadedByEmpIdAndSchedDate: selectByEmployeeIdAndSchedDate,
   bySchedDate: selectBySchedDate,
   availableDates: selectAvailableDates,
+  bySchedDateRange: selectBySchedDateRange,
   servIdsForDate: selectServIdsForDate,
   techsForDate: selectTechsForDate,
   servIdsByEmployee: selectServIdsByEmployee,
+  assignmentsByEmployeeForRange: selectAssignmentsByEmployeeForRange,
 };

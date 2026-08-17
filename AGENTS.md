@@ -233,13 +233,99 @@ export function useSchedPromise() {
     - Ensure sensitive fields are removed before returning.
 - **Universal Handler**: All API routes must use `createRpcHandler(handlers)` to ensure consistent logging, auth, and error formatting.
 
+## Tab-Routed Page Layout Pattern
+
+Use this pattern when a feature has multiple views navigated by tabs, implemented as Next.js App Router sub-routes.
+
+### When to Use
+- A feature has 2+ distinct views (e.g., "By Employee", "By Date")
+- Views share a common header (controls, filters, title)
+- Views share a data orchestration hook (`useDeps`)
+
+### File Structure
+
+```
+src/app/featureName/
+  layout.tsx          ← "use client" — calls useDeps(), renders PageLayout
+  page.tsx            ← redirect to first tab, or root tab content
+  useDeps.ts          ← orchestrates all data hooks for this feature
+  tabA/
+    page.tsx          ← tab A content
+  tabB/
+    page.tsx          ← tab B content
+```
+
+### Components
+
+**`PageLayout`** (`src/components/PageLayout/PageLayout.tsx`)
+The outer shell. Handles the `flex flex-col h-full overflow-hidden` structure, the sticky header bar, and the scrollable body. Use compound component slots:
+- `<PageLayout.Header left={} right={} />` — `shrink-0 bg-card border-b` bar with left/right slots
+- `<PageLayout.Body>` — `flex-1 min-h-0 overflow-hidden` body
+
+**`TabNav`** (`src/components/PageLayout/TabNav.tsx`)
+Renders a list of `TabNavItem` (`{ label, href, icon? }`) as styled nav links. Handles active-state detection:
+- Exact match for the root href (e.g., `/productivity`)
+- `pathname.startsWith(href)` for sub-routes
+
+```tsx
+const TABS: TabNavItem[] = [
+  { label: "Summary", href: "/productivity" },
+  { label: "By Date", href: "/productivity/byDate", icon: CalendarDays },
+] as const;
+
+<TabNav items={TABS} rootHref="/productivity" />
+```
+
+### Layout Template
+
+```tsx
+"use client";
+import { PageLayout } from "@/components/PageLayout/PageLayout";
+import { TabNav } from "@/components/PageLayout/TabNav";
+import { useFeatureDeps } from "./useFeatureDeps";
+
+const TABS = [
+  { label: "Tab A", href: "/featureName" },
+  { label: "Tab B", href: "/featureName/tabB" },
+] as const;
+
+export default function FeatureLayout({ children }: { children: React.ReactNode }) {
+  useFeatureDeps();
+  return (
+    <PageLayout>
+      <PageLayout.Header
+        left={/* feature-specific controls */}
+        right={<TabNav items={TABS} rootHref="/featureName" />}
+      />
+      <PageLayout.Body>{children}</PageLayout.Body>
+    </PageLayout>
+  );
+}
+```
+
+### Key Rules
+- **`layout.tsx` is the only place `useDeps()` is called** — sub-route pages never call it again.
+- **Sub-route `page.tsx` files are thin** — they render one panel component and nothing else.
+- **`useDeps.ts` is always feature-specific** — it is not shared between features.
+- **The root `page.tsx`** either redirects to the first tab (`redirect("/featureName/tabA")`) or renders the root tab content directly.
+- **`PageLayout.Header` slots are optional** — omit `left` or `right` if not needed.
+
+### Examples
+- `src/app/bizPlan/paceCrawler/layout.tsx` — header with date picker + icon-based `TabNav`
+- `src/app/bizPlan/customerValue/layout.tsx` — header with filter panel + `Button asChild` nav (pre-dates this pattern; new pages use `TabNav`)
+
+---
+
 ## RealGreen Customer Module
 - **Reference**: See `src/app/realGreen/customer/customer.readme.md`.
 - **Streaming**: See `src/app/realGreen/customer/streaming.readme.md`.
 - **Summary**: Handles complex data fetching (Customers → Programs -> Services) using a streaming pipeline and "Search Schemes".
 
 ## Session Learnings (Key Conventions)
-* **Tool Result Loop Detection**: If a tool call returns the same result as the previous call (especially `read_file` returning the same file content repeatedly), **stop immediately**. Do not retry the same or different tool calls. The session is in a broken state where tool results are being replayed. Acknowledge the loop to the user and wait for them to interrupt and restart the task. Continuing to call tools in this state wastes the context window and makes recovery harder.
+* **Tool Result Loop Detection**: If a tool call returns the same result as the immediately preceding call of the same tool on the same path (especially `read_file` returning identical file content repeatedly), the session is in a broken state where tool results are being replayed. **Stop all tool calls immediately.**
+    - **In Plan Mode**: Use `plan_mode_respond` to acknowledge the loop to the user and wait for them to interrupt and restart the task.
+    - **In Act Mode**: Use `attempt_completion` to report: (1) that a tool result loop was detected, (2) which tool/path is looping, and (3) which files were successfully read before the loop started — so the user can provide that context on restart without re-reading from disk.
+    - **Never** retry the same or a different tool call after detecting a loop. Results will continue to be replayed regardless of what you call, and continuing wastes context and risks decisions based on stale data.
 * **Silent Error Handling**: Use `handleError(e, { silent: true })` to suppress toasts for expected errors.
 * **Admin-Assisted Auth**: Password resets are handled via admin approval, not email.
 * **"Applied" Role**: New users are gated with an "applied" role until approved.

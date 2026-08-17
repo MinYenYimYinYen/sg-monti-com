@@ -24,8 +24,7 @@ export class ServiceUtils {
   }
 
   public get doneDate(): string | null {
-    const timeRange = this.service.production?.timeRange || null;
-    return timeRange?.max || null;
+    return this.service.production?.doneDate ?? null;
   }
 
   public get productsUsed(): AppProduct[] | null {

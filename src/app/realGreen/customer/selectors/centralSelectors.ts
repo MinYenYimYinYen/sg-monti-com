@@ -14,6 +14,7 @@ import { callAheadSelect } from "../../callAhead/selectors/callAheadSelect";
 import { discountSelect } from "../../discount/selectors/discountSelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import hydrateProduction from "@/app/realGreen/customer/selectors/hydrateProduction";
+import { getProductionOrFallback } from "@/app/productivity/completedServiceProductionFallback";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
@@ -241,13 +242,29 @@ export function makeCustomersSelector(
               servCode,
               callAhead: callAheadDocMap.get(servDoc.callAheadId) ?? null,
               discount: discountDocMap.get(servDoc.discountId) ?? null,
-              production: hydrateProduction({
-                productionCore: servDoc.productionCore,
-                allProductsMap,
-                employeeMap,
-                serviceDoc: servDoc,
-                serviceConditions:
-                  serviceConditionsByServId.get(servDoc.servId) ?? [],
+              production: getProductionOrFallback({
+                ...servDoc,
+                production: hydrateProduction({
+                  productionCore: servDoc.productionCore,
+                  allProductsMap,
+                  employeeMap,
+                  serviceDoc: servDoc,
+                  serviceConditions:
+                    serviceConditionsByServId.get(servDoc.servId) ?? [],
+                }),
+                // Provide required ServiceProps fields so the shape satisfies
+                // Omit<Service, "x"> for the fallback check. These are
+                // overwritten by the serviceBuilder spread below.
+                program: programBuilder as Program,
+                servCode,
+                callAhead: callAheadDocMap.get(servDoc.callAheadId) ?? null,
+                discount: discountDocMap.get(servDoc.discountId) ?? null,
+                lastAssigned,
+                promise: null,
+                promiseIssues: [],
+                loadoutInventory: { masters: [], singles: [], subProducts: [] },
+                eta: null,
+                priorityService: null,
               }),
               lastAssigned,
               promise: servPromiseResult.promise,

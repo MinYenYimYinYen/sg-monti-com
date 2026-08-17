@@ -7,12 +7,14 @@ type AssignmentState = {
   byEmployeeIdAndSchedDate: AssignmentDoc[];
   bySchedDate: AssignmentDoc[];
   availableDates: string[];
+  bySchedDateRange: AssignmentDoc[];
 };
 
 const initialState: AssignmentState = {
   byEmployeeIdAndSchedDate: [],
   bySchedDate: [],
   availableDates: [],
+  bySchedDateRange: [],
 };
 
 const getByEmployeeIdAndSchedDate = createStandardThunk<
@@ -36,6 +38,12 @@ const getAvailableDates = createStandardThunk<AssignmentContract, "getAvailableD
   opName: "getAvailableDates",
 });
 
+const getBySchedDateRange = createStandardThunk<AssignmentContract, "getBySchedDateRange">({
+  typePrefix: "assignment/getBySchedDateRange",
+  apiPath: "/assignment/api",
+  opName: "getBySchedDateRange",
+});
+
 const assignmentSlice = createSlice({
   name: "assignment",
   initialState,
@@ -54,6 +62,9 @@ const assignmentSlice = createSlice({
     builder.addCase(getAvailableDates.fulfilled, (state, action) => {
       state.availableDates = action.payload;
     });
+    builder.addCase(getBySchedDateRange.fulfilled, (state, action) => {
+      state.bySchedDateRange = action.payload;
+    });
   },
 });
 
@@ -63,4 +74,5 @@ export const assignmentActions = {
   getByEmployeeIdAndSchedDate,
   getBySchedDate,
   getAvailableDates,
+  getBySchedDateRange,
 };

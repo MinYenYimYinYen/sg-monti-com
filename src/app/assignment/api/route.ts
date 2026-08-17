@@ -73,6 +73,27 @@ const handlers: HandlerMap<AssignmentContract> = {
       return { success: true, payload: dates };
     },
   },
+
+  getBySchedDateRange: {
+    roles: ["office", "admin", "tech"],
+    handler: async ({ dateRange }) => {
+      await connectToMongoDB();
+      const docs = await ServiceDocPropsModel.find(
+        {
+          "assignments.schedDate": { $gte: dateRange.min, $lte: dateRange.max },
+        },
+        { assignments: 1, _id: 0 },
+      ).lean();
+
+      const assignments: AssignmentDoc[] = docs.flatMap((doc) =>
+        doc.assignments.filter(
+          (a) => a.schedDate >= dateRange.min && a.schedDate <= dateRange.max,
+        ),
+      );
+
+      return { success: true, payload: assignments };
+    },
+  },
 };
 
 export const POST = createRpcHandler(handlers);
