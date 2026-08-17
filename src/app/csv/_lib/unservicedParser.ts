@@ -25,9 +25,9 @@ const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {
     "AssignedToEmployeeId",
     "ScheduledDateAsDate",
     "ServiceStatus",
-    "Sequence",
   ],
-  optionalColumns: [],
+  // Sequence is optional — empty means unsequenced (treated as 0).
+  optionalColumns: ["Sequence"],
   transformations: {
     ServiceId: (val) => parseInt(val, 10),
     AssignedToEmployeeId: (val) => val.trim(),
@@ -38,7 +38,16 @@ const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {
     ServiceStatus: (val) => val.trim(),
 
     // RealGreen stores sequence multiplied by 10; divide to normalize.
-    Sequence: (val) => parseInt(val, 10) / 10,
+    // Blank/whitespace is treated as 0 (unsequenced). Non-numeric strings throw.
+    Sequence: (val) => {
+      const trimmed = val.trim();
+      if (trimmed === "") return 0;
+      const parsed = parseInt(trimmed, 10);
+      if (isNaN(parsed)) {
+        throw new Error(`Expected a number, received "${trimmed}"`);
+      }
+      return parsed / 10;
+    },
   },
   schema: ServiceUnservicedSchema,
   // Sequence of 0 is technically valid after normalization (RealGreen sends 0 for unsequenced rows).

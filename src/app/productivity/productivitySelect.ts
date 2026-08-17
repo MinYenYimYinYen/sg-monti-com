@@ -6,6 +6,8 @@ import { TimeCard } from "@/app/timeCard/TimeCard";
 import { dateRanges } from "@/lib/primatives/dates/dateStrings";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { Punch } from "@/app/timeCard/TimeCardTypes";
+import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
+import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 
 // ---------------------------------------------------------------------------
 // ProductivityTotals — the core metric shape for all aggregations.
@@ -487,6 +489,142 @@ const selectRouteGapsByDate = createSelector(
 );
 
 // ---------------------------------------------------------------------------
+// Canonical row types — the source of truth for each aggregation level.
+// Pages select one of these and pass directly to DataGrid.
+// ---------------------------------------------------------------------------
+
+/** One row per employee — aggregated across the full date range. */
+export type EmployeeProductivityRow = {
+  employeeId: string;
+  employee: Employee | null;
+  totals: ProductivityTotals;
+  labor: { totalMinutes: number; regularMinutes: number; overtimeMinutes: number } | null;
+  completion: { assigned: number; completed: number; pct: number } | null;
+  routeGaps: RouteGaps | null;
+};
+
+/** One row per date — aggregated across all employees for that date. */
+export type DateProductivityRow = {
+  date: string;
+  totals: ProductivityTotals;
+  routeGaps: RouteGaps | null;
+};
+
+/**
+ * One row per date for a specific employee.
+ * Selector returns Map<empId, EmployeeDateProductivityRow[]>.
+ * Page does .get(empId) to get the rows for the current employee.
+ */
+export type EmployeeDateProductivityRow = {
+  date: string;
+  totals: ProductivityTotals;
+  dayMinutes: number;
+  routeGaps: RouteGaps | null;
+};
+
+/**
+ * One row per employee for a specific date.
+ * Selector returns Map<date, DateEmployeeProductivityRow[]>.
+ * Page does .get(date) to get the rows for the current date.
+ */
+export type DateEmployeeProductivityRow = {
+  employeeId: string;
+  employee: Employee | null;
+  totals: ProductivityTotals;
+  routeGaps: RouteGaps | null;
+};
+
+// ---------------------------------------------------------------------------
+// Row selectors — hydrate canonical row types from the underlying Maps.
+// ---------------------------------------------------------------------------
+
+/** All employees, aggregated across the date range. Used by byEmployee/page. */
+const selectEmployeeRows = createSelector(
+  [
+    selectByEmployee,
+    selectLaborByEmployee,
+    selectAssignmentCompletionByEmployee,
+    selectRouteGapsByEmployee,
+    employeeSelect.employeeMap,
+  ],
+  (byEmployee, laborByEmployee, completionByEmployee, routeGapsByEmployee, employeeMap): EmployeeProductivityRow[] =>
+    Array.from(byEmployee.entries()).map(([employeeId, totals]) => ({
+      employeeId,
+      employee: employeeMap.get(employeeId) ?? null,
+      totals,
+      labor: laborByEmployee.get(employeeId) ?? null,
+      completion: completionByEmployee.get(employeeId) ?? null,
+      routeGaps: routeGapsByEmployee.get(employeeId) ?? null,
+    })),
+);
+
+/** All dates, aggregated across all employees. Used by byDate/page. */
+const selectDateRows = createSelector(
+  [selectByDateByEmployee, selectRouteGapsByDate],
+  (byDateByEmployee, routeGapsByDate): DateProductivityRow[] =>
+    Array.from(byDateByEmployee.entries()).map(([date, byEmployee]) => {
+      const totals = emptyTotals();
+      for (const empTotals of byEmployee.values()) {
+        totals.wholeCount += empTotals.wholeCount;
+        totals.fractionalCount += empTotals.fractionalCount;
+        totals.size += empTotals.size;
+        totals.revenue += empTotals.revenue;
+      }
+      return {
+        date,
+        totals,
+        routeGaps: routeGapsByDate.get(date) ?? null,
+      };
+    }),
+);
+
+/**
+ * All employees × all dates.
+ * Returns Map<empId, EmployeeDateProductivityRow[]> — page does .get(empId).
+ * Used by byEmployee/[empId]/page.
+ */
+const selectEmployeeDateRowsByEmployee = createSelector(
+  [selectByEmployeeByDate, selectLaborByEmployeeByDate, selectRouteGapsByEmployeeByDate],
+  (byEmployeeByDate, laborByEmployeeByDate, routeGapsByEmployeeByDate): Map<string, EmployeeDateProductivityRow[]> => {
+    const result = new Map<string, EmployeeDateProductivityRow[]>();
+    for (const [employeeId, byDate] of byEmployeeByDate) {
+      const minutesByDate = laborByEmployeeByDate.get(employeeId);
+      const gapsByDate = routeGapsByEmployeeByDate.get(employeeId);
+      const rows: EmployeeDateProductivityRow[] = Array.from(byDate.entries()).map(([date, totals]) => ({
+        date,
+        totals,
+        dayMinutes: minutesByDate?.get(date) ?? 0,
+        routeGaps: gapsByDate?.get(date) ?? null,
+      }));
+      result.set(employeeId, rows);
+    }
+    return result;
+  },
+);
+
+/**
+ * All dates × all employees.
+ * Returns Map<date, DateEmployeeProductivityRow[]> — page does .get(date).
+ * Used by byDate/[date]/page.
+ */
+const selectDateEmployeeRowsByDate = createSelector(
+  [selectByDateByEmployee, selectRouteGapsByEmployeeByDate, employeeSelect.employeeMap],
+  (byDateByEmployee, routeGapsByEmployeeByDate, employeeMap): Map<string, DateEmployeeProductivityRow[]> => {
+    const result = new Map<string, DateEmployeeProductivityRow[]>();
+    for (const [date, byEmployee] of byDateByEmployee) {
+      const rows: DateEmployeeProductivityRow[] = Array.from(byEmployee.entries()).map(([employeeId, totals]) => ({
+        employeeId,
+        employee: employeeMap.get(employeeId) ?? null,
+        totals,
+        routeGaps: routeGapsByEmployeeByDate.get(employeeId)?.get(date) ?? null,
+      }));
+      result.set(date, rows);
+    }
+    return result;
+  },
+);
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -504,4 +642,9 @@ export const productivitySelect = {
   routeGapsByEmployeeByDate: selectRouteGapsByEmployeeByDate,
   routeGapsByEmployee: selectRouteGapsByEmployee,
   routeGapsByDate: selectRouteGapsByDate,
+  // Canonical row selectors
+  employeeRows: selectEmployeeRows,
+  dateRows: selectDateRows,
+  employeeDateRowsByEmployee: selectEmployeeDateRowsByEmployee,
+  dateEmployeeRowsByDate: selectDateEmployeeRowsByDate,
 };

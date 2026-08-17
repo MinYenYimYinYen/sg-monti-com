@@ -42,20 +42,34 @@ function transformRow<T extends object>(
     for (const [csvColumn, targetField] of Object.entries(
       config.columnMappings,
     )) {
-      const value = row[csvColumn];
+      const value = (row[csvColumn] ?? "").trim();
 
-      if (value === undefined || value === "") {
+      if (value === "") {
         if (config.requiredColumns.includes(csvColumn)) {
           return { error: `Missing required value for column: ${csvColumn}` };
+        }
+        // Optional column with empty value — run transformation to get default, or skip
+        const optionalTransformation = config.transformations[csvColumn];
+        if (optionalTransformation) {
+          try {
+            result[targetField] = optionalTransformation("") as any;
+          } catch {
+            // Transformation rejected empty string — skip the field
+          }
         }
         continue;
       }
 
       // Apply transformation if defined
       const transformation = config.transformations[csvColumn];
-      const transformedValue = transformation ? transformation(value) : value;
-
-      result[targetField] = transformedValue as any;
+      try {
+        const transformedValue = transformation ? transformation(value) : value;
+        result[targetField] = transformedValue as any;
+      } catch (transformError) {
+        return {
+          error: `Column "${csvColumn}" — ${transformError instanceof Error ? transformError.message : "Unknown error"} (received: ${JSON.stringify(value)})`,
+        };
+      }
     }
 
     // Validate the transformed object with Zod schema
