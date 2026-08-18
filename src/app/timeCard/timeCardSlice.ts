@@ -5,10 +5,12 @@ import { Punch } from "@/app/timeCard/TimeCardTypes";
 
 type TimeCardState = {
   docs: Punch[];
+  lastImportedDate: string | null;
 };
 
 const initialState: TimeCardState = {
   docs: [],
+  lastImportedDate: null,
 };
 
 const importPunches = createStandardThunk<TimeCardContract, "importPunches">({
@@ -23,6 +25,12 @@ const getPunches = createStandardThunk<TimeCardContract, "getPunches">({
   opName: "getPunches",
 });
 
+const getLastImportedDate = createStandardThunk<TimeCardContract, "getLastImportedDate">({
+  typePrefix: "timeCard/getLastImportedDate",
+  apiPath: "/timeCard/api",
+  opName: "getLastImportedDate",
+});
+
 const timeCardSlice = createSlice({
   name: "timeCard",
   initialState,
@@ -30,6 +38,10 @@ const timeCardSlice = createSlice({
   extraReducers: (builder) => {
     builder.addCase(getPunches.fulfilled, (state, action) => {
       state.docs = action.payload;
+    });
+
+    builder.addCase(getLastImportedDate.fulfilled, (state, action) => {
+      state.lastImportedDate = action.payload;
     });
 
     // importPunches returns { imported, errors } — not Punch[].
@@ -44,6 +56,7 @@ export const timeCardActions = {
   ...timeCardSlice.actions,
   importPunches,
   getPunches,
+  getLastImportedDate,
 };
 
 export const timeCardReducer = timeCardSlice.reducer;

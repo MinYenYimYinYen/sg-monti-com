@@ -13,4 +13,8 @@ export interface TimeCardContract extends ApiContract {
     params: { employeeIds?: string[]; dateRange?: TRange<string> };
     result: DataResponse<Punch[]>;
   };
+  getLastImportedDate: {
+    params: Record<string, never>;
+    result: DataResponse<string | null>;
+  };
 }

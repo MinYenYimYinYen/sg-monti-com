@@ -1,24 +1,36 @@
 "use client";
 
-import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { timeCardActions } from "@/app/timeCard/timeCardSlice";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
-type UseTimeCardParams = {
+type FetchPunchesParams = {
   dateRange?: TRange<string>;
   employeeIds?: string[];
 };
 
-export function useTimeCard({ dateRange, employeeIds }: UseTimeCardParams = {}) {
+export function useTimeCard() {
   const dispatch = useAppDispatch();
 
-  useEffect(() => {
+  const fetchPunches = (params: FetchPunchesParams = {}) =>
     dispatch(
       timeCardActions.getPunches({
-        params: { dateRange, employeeIds },
+        params,
         config: { loadingMsg: "Loading time cards..." },
       }),
     );
-  }, [dispatch, dateRange, employeeIds]);
+
+  const fetchLastImportedDate = () =>
+    dispatch(
+      timeCardActions.getLastImportedDate({
+        params: {},
+        config: {
+          loadingMsg: "Loading last import date...",
+          staleTime: realGreenConst.paramTypesCacheTime,
+        },
+      }),
+    );
+
+  return { fetchPunches, fetchLastImportedDate };
 }
