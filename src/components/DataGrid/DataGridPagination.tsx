@@ -18,21 +18,12 @@ import {
 
 interface DataGridPaginationProps<TData> {
   table: Table<TData>;
-  pageIndex: number;
-  pageCount: number;
-  pageSize: number;
-  canPreviousPage: boolean;
-  canNextPage: boolean;
 }
 
-export function DataGridPagination<TData>({
-  table,
-  pageIndex,
-  pageCount,
-  pageSize,
-  canPreviousPage,
-  canNextPage,
-}: DataGridPaginationProps<TData>) {
+export function DataGridPagination<TData>({ table }: DataGridPaginationProps<TData>) {
+  const { pageIndex, pageSize } = table.getState().pagination;
+  const pageCount = table.getPageCount();
+
   return (
     <div className="flex items-center justify-between px-2">
       <div className="flex-1 text-sm text-muted-foreground">
@@ -48,17 +39,15 @@ export function DataGridPagination<TData>({
           <p className="text-sm font-medium">Rows per page</p>
           <Select
             value={`${pageSize}`}
-            onValueChange={(value) => {
-              table.setPageSize(Number(value));
-            }}
+            onValueChange={(value) => table.setPageSize(Number(value))}
           >
             <SelectTrigger className="h-8 w-[70px]">
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
-              {[10, 20, 30, 40, 50, 100].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize}
+              {[10, 20, 30, 40, 50, 100].map((size) => (
+                <SelectItem key={size} value={`${size}`}>
+                  {size}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -72,7 +61,7 @@ export function DataGridPagination<TData>({
             variant="outline"
             className="hidden h-8 w-8 p-0 lg:flex"
             onClick={() => table.setPageIndex(0)}
-            disabled={!canPreviousPage}
+            disabled={!table.getCanPreviousPage()}
           >
             <span className="sr-only">Go to first page</span>
             <ChevronsLeft className="h-4 w-4" />
@@ -81,7 +70,7 @@ export function DataGridPagination<TData>({
             variant="outline"
             className="h-8 w-8 p-0"
             onClick={() => table.previousPage()}
-            disabled={!canPreviousPage}
+            disabled={!table.getCanPreviousPage()}
           >
             <span className="sr-only">Go to previous page</span>
             <ChevronLeft className="h-4 w-4" />
@@ -90,7 +79,7 @@ export function DataGridPagination<TData>({
             variant="outline"
             className="h-8 w-8 p-0"
             onClick={() => table.nextPage()}
-            disabled={!canNextPage}
+            disabled={!table.getCanNextPage()}
           >
             <span className="sr-only">Go to next page</span>
             <ChevronRight className="h-4 w-4" />
@@ -99,7 +88,7 @@ export function DataGridPagination<TData>({
             variant="outline"
             className="hidden h-8 w-8 p-0 lg:flex"
             onClick={() => table.setPageIndex(pageCount - 1)}
-            disabled={!canNextPage}
+            disabled={!table.getCanNextPage()}
           >
             <span className="sr-only">Go to last page</span>
             <ChevronsRight className="h-4 w-4" />

@@ -13,7 +13,8 @@ export const dateColumns: ColumnDef<DateProductivityRow>[] = [
   {
     id: "date",
     size: 130,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="Date" />,
+    meta: { label: "Date" },
+    header: ({ column }) => <DataGridColumnHeader column={column} title="Date" isSorted={column.getIsSorted()} />,
     accessorFn: (row) => row.date,
     cell: ({ row }) => (
       <Link
@@ -28,28 +29,32 @@ export const dateColumns: ColumnDef<DateProductivityRow>[] = [
   {
     id: "stops",
     size: 80,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="Stops" />,
+    meta: { label: "Stops" },
+    header: ({ column }) => <DataGridColumnHeader column={column} title="Stops" isSorted={column.getIsSorted()} />,
     accessorFn: (row) => row.totals.wholeCount,
     cell: ({ row }) => <Number>{row.original.totals.wholeCount}</Number>,
   },
   {
     id: "revenue",
     size: 110,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="Revenue" />,
+    meta: { label: "Revenue" },
+    header: ({ column }) => <DataGridColumnHeader column={column} title="Revenue" isSorted={column.getIsSorted()} />,
     accessorFn: (row) => row.totals.revenue,
     cell: ({ row }) => <Number isMoney decimals={0}>{row.original.totals.revenue}</Number>,
   },
   {
     id: "size",
     size: 90,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="Size" />,
+    meta: { label: "Size" },
+    header: ({ column }) => <DataGridColumnHeader column={column} title="Size" isSorted={column.getIsSorted()} />,
     accessorFn: (row) => row.totals.size,
     cell: ({ row }) => <Number decimals={0}>{row.original.totals.size}</Number>,
   },
   {
     id: "revenuePerStop",
     size: 110,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="Rev/Stop" />,
+    meta: { label: "Rev/Stop" },
+    header: ({ column }) => <DataGridColumnHeader column={column} title="Rev/Stop" isSorted={column.getIsSorted()} />,
     accessorFn: (row) => row.totals.wholeCount > 0 ? row.totals.revenue / row.totals.wholeCount : 0,
     cell: ({ row }) => {
       const { revenue, wholeCount } = row.original.totals;
@@ -60,7 +65,8 @@ export const dateColumns: ColumnDef<DateProductivityRow>[] = [
   {
     id: "sizePerStop",
     size: 100,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="Size/Stop" />,
+    meta: { label: "Size/Stop" },
+    header: ({ column }) => <DataGridColumnHeader column={column} title="Size/Stop" isSorted={column.getIsSorted()} />,
     accessorFn: (row) => row.totals.wholeCount > 0 ? row.totals.size / row.totals.wholeCount : 0,
     cell: ({ row }) => {
       const { size, wholeCount } = row.original.totals;
@@ -71,7 +77,8 @@ export const dateColumns: ColumnDef<DateProductivityRow>[] = [
   {
     id: "beforeFirst",
     size: 90,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="Before 1st" />,
+    meta: { label: "Before 1st" },
+    header: ({ column }) => <DataGridColumnHeader column={column} title="Before 1st" isSorted={column.getIsSorted()} />,
     accessorFn: (row) => row.routeGaps?.beforeFirstStop ?? null,
     cell: ({ row }) => {
       const gaps = row.original.routeGaps;
@@ -88,7 +95,8 @@ export const dateColumns: ColumnDef<DateProductivityRow>[] = [
   {
     id: "between",
     size: 90,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="Between" />,
+    meta: { label: "Between" },
+    header: ({ column }) => <DataGridColumnHeader column={column} title="Between" isSorted={column.getIsSorted()} />,
     accessorFn: (row) => row.routeGaps?.betweenStops ?? null,
     cell: ({ row }) => {
       const gaps = row.original.routeGaps;
@@ -105,7 +113,8 @@ export const dateColumns: ColumnDef<DateProductivityRow>[] = [
   {
     id: "avgBetween",
     size: 90,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="Avg Between" />,
+    meta: { label: "Avg Between" },
+    header: ({ column }) => <DataGridColumnHeader column={column} title="Avg Between" isSorted={column.getIsSorted()} />,
     accessorFn: (row) =>
       row.routeGaps && row.routeGaps.gapCount > 0 && row.routeGaps.betweenStops !== null
         ? row.routeGaps.betweenStops / row.routeGaps.gapCount
@@ -126,7 +135,8 @@ export const dateColumns: ColumnDef<DateProductivityRow>[] = [
   {
     id: "afterLast",
     size: 90,
-    header: ({ column }) => <DataGridColumnHeader column={column} title="After Last" />,
+    meta: { label: "After Last" },
+    header: ({ column }) => <DataGridColumnHeader column={column} title="After Last" isSorted={column.getIsSorted()} />,
     accessorFn: (row) => row.routeGaps?.afterLastStop ?? null,
     cell: ({ row }) => {
       const gaps = row.original.routeGaps;

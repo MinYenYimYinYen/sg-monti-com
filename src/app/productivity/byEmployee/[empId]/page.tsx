@@ -55,6 +55,7 @@ export default function ByEmployeeDetailPage({ params }: { params: Promise<Param
             columns={columns}
             enableSorting
             enablePagination={false}
+            enableColumnVisibility
             rowVariant="alternating"
           />
         )}

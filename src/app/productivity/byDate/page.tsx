@@ -16,6 +16,7 @@ export default function ByDatePage() {
         columns={dateColumns}
         enableSorting
         enablePagination={false}
+        enableColumnVisibility
         rowVariant="alternating"
       />
     </div>

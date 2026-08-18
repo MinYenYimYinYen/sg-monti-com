@@ -41,6 +41,7 @@ export default function ByDateDetailPage({ params }: { params: Promise<Params> }
             columns={columns}
             enableSorting
             enablePagination={false}
+            enableColumnVisibility
             rowVariant="alternating"
           />
         )}

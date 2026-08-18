@@ -30,5 +30,10 @@ export function useProductivity() {
     );
   }, [dispatch, doneDateRange, isValidRange]);
 
-  useTimeCard({ dateRange: isValidRange ? doneDateRange : undefined });
+  const { fetchPunches } = useTimeCard();
+
+  useEffect(() => {
+    if (!isValidRange) return;
+    fetchPunches({ dateRange: doneDateRange });
+  }, [fetchPunches, doneDateRange, isValidRange]);
 }

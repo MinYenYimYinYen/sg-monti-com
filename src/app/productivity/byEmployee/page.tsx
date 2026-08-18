@@ -16,6 +16,7 @@ export default function ByEmployeePage() {
         columns={employeeColumns}
         enableSorting
         enablePagination={false}
+        enableColumnVisibility
         rowVariant="alternating"
       />
     </div>

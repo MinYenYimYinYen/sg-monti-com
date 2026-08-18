@@ -30,6 +30,7 @@ import { cn } from "@/style/utils";
 import { DataGridProps } from "./types";
 import { DataGridPagination } from "./DataGridPagination";
 import { DataGridToolbar } from "./DataGridToolbar";
+import { DataGridColumnPanel } from "./DataGridColumnPanel";
 
 export function DataGrid<TData>({
   data,
@@ -50,12 +51,9 @@ export function DataGrid<TData>({
   globalFilterPlaceholder = "Search...",
 }: DataGridProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
-  );
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState<string>("");
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>({});
   const [expanded, setExpanded] = React.useState({});
   const [pagination, setPagination] = React.useState<PaginationState>({
@@ -66,6 +64,7 @@ export function DataGrid<TData>({
   const table = useReactTable({
     data,
     columns,
+    defaultColumn: { minSize: 40 },
     state: {
       sorting,
       columnFilters,
@@ -82,9 +81,10 @@ export function DataGrid<TData>({
     columnResizeMode,
     globalFilterFn: (row, columnId, filterValue) => {
       // If no columns specified, search all string columns
-      const columnsToSearch = globalFilterColumns.length > 0
-        ? globalFilterColumns
-        : Object.keys(row.original as object);
+      const columnsToSearch =
+        globalFilterColumns.length > 0
+          ? globalFilterColumns
+          : Object.keys(row.original as object);
 
       const searchValue = String(filterValue).toLowerCase();
 
@@ -103,64 +103,50 @@ export function DataGrid<TData>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
     getFilteredRowModel: enableFiltering ? getFilteredRowModel() : undefined,
-    getPaginationRowModel: enablePagination
-      ? getPaginationRowModel()
-      : undefined,
+    getPaginationRowModel: enablePagination ? getPaginationRowModel() : undefined,
     getExpandedRowModel: enableRowExpansion ? getExpandedRowModel() : undefined,
     getRowCanExpand,
     manualPagination: false,
   });
 
-  // Reset to first page when data changes
+  // Reset to first page when data reference changes
   React.useEffect(() => {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-  }, [data.length]);
-
-  const getRowVariantClass = (isExpanded: boolean) => {
-    switch (rowVariant) {
-      case "alternating":
-        return "even:bg-accent/10 hover:bg-accent/15";
-      case "expandable":
-        return cn("cursor-pointer hover:bg-muted/50", isExpanded && "bg-muted");
-      default:
-        return "hover:bg-muted/50";
-    }
-  };
+  }, [data]);
 
   return (
     <div className={cn("space-y-4", className)}>
-      {(enableFiltering || enableColumnVisibility) && (
+      {enableFiltering && (
         <DataGridToolbar
           table={table}
-          enableFiltering={enableFiltering}
-          enableColumnVisibility={enableColumnVisibility}
-          columnVisibility={columnVisibility}
-          globalFilter={globalFilter}
           globalFilterPlaceholder={globalFilterPlaceholder}
         />
       )}
 
-      <div className="rounded-md border">
-        <Table className="table-fixed">
+      <div className="relative rounded-md border">
+        {enableColumnVisibility && <DataGridColumnPanel table={table} columnVisibility={columnVisibility} />}
+        <Table variant="scroll">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {enableRowExpansion && <TableHead className="w-[40px]" />}
                 {headerGroup.headers.map((header) => {
-                  const isFluid = (header.column.columnDef.meta as any)?.isFluid;
+                  // Only apply an explicit width when the user has manually resized this column.
+                  // Otherwise let the browser auto-size based on content (table-layout: auto).
+                  const explicitWidth =
+                    columnSizing[header.column.id] !== undefined
+                      ? header.getSize()
+                      : undefined;
                   return (
                     <TableHead
                       key={header.id}
-                      style={{ width: isFluid ? "auto" : header.getSize() }}
+                      style={explicitWidth !== undefined ? { width: explicitWidth } : undefined}
                       enableColumnResizing={enableColumnResizing}
                       header={header}
                     >
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -172,8 +158,13 @@ export function DataGrid<TData>({
               table.getRowModel().rows.map((row) => (
                 <React.Fragment key={row.id}>
                   <TableRow
+                    variant={rowVariant === "expandable" ? "expandable" : rowVariant === "alternating" ? "alternating" : "default"}
                     data-state={row.getIsSelected() && "selected"}
-                    className={getRowVariantClass(row.getIsExpanded())}
+                    className={
+                      rowVariant === "expandable" && row.getIsExpanded()
+                        ? "bg-muted"
+                        : undefined
+                    }
                     onClick={
                       enableRowExpansion && row.getCanExpand()
                         ? () => row.toggleExpanded()
@@ -192,16 +183,16 @@ export function DataGrid<TData>({
                       </TableCell>
                     )}
                     {row.getVisibleCells().map((cell) => {
-                      const isFluid = (cell.column.columnDef.meta as any)?.isFluid;
+                      const explicitWidth =
+                        columnSizing[cell.column.id] !== undefined
+                          ? cell.column.getSize()
+                          : undefined;
                       return (
                         <TableCell
                           key={cell.id}
-                          style={{ width: isFluid ? "auto" : cell.column.getSize() }}
+                          style={explicitWidth !== undefined ? { width: explicitWidth } : undefined}
                         >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
                       );
                     })}
@@ -210,8 +201,7 @@ export function DataGrid<TData>({
                     <TableRow>
                       <TableCell
                         colSpan={
-                          row.getVisibleCells().length +
-                          (enableRowExpansion ? 1 : 0)
+                          row.getVisibleCells().length + (enableRowExpansion ? 1 : 0)
                         }
                       >
                         {renderSubComponent(row)}
@@ -235,14 +225,7 @@ export function DataGrid<TData>({
       </div>
 
       {enablePagination && (
-        <DataGridPagination
-          table={table}
-          pageIndex={pagination.pageIndex}
-          pageSize={pagination.pageSize}
-          pageCount={table.getPageCount()}
-          canPreviousPage={table.getCanPreviousPage()}
-          canNextPage={table.getCanNextPage()}
-        />
+        <DataGridPagination table={table} />
       )}
     </div>
   );

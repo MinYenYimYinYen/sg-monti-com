@@ -16,31 +16,34 @@ const columns: ColumnDef<CustomerValueByZip>[] = [
   {
     accessorKey: "zip",
     size: 90,
+    meta: { label: "Zip" },
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Zip" />
+      <DataGridColumnHeader column={column} title="Zip" isSorted={column.getIsSorted()} />
     ),
   },
   {
     accessorKey: "city",
     size: 140,
-    meta: { isFluid: true },
+    meta: { label: "City" },
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="City" />
+      <DataGridColumnHeader column={column} title="City" isSorted={column.getIsSorted()} />
     ),
   },
   {
     accessorKey: "activeCustomerCount",
     size: 110,
+    meta: { label: "Customers" },
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Customers" />
+      <DataGridColumnHeader column={column} title="Customers" isSorted={column.getIsSorted()} />
     ),
     cell: ({ getValue }) => <Number>{getValue<number>()}</Number>,
   },
   {
     accessorKey: "customerValue",
     size: 130,
+    meta: { label: "Value" },
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Value" />
+      <DataGridColumnHeader column={column} title="Value" isSorted={column.getIsSorted()} />
     ),
     cell: ({ getValue }) => (
       <Number isMoney decimals={0}>{getValue<number>()}</Number>
@@ -49,8 +52,9 @@ const columns: ColumnDef<CustomerValueByZip>[] = [
   {
     accessorKey: "avgCustomerValue",
     size: 130,
+    meta: { label: "Avg Value" },
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Avg Value" />
+      <DataGridColumnHeader column={column} title="Avg Value" isSorted={column.getIsSorted()} />
     ),
     cell: ({ getValue }) => (
       <Number isMoney decimals={0}>{getValue<number>()}</Number>
@@ -59,8 +63,9 @@ const columns: ColumnDef<CustomerValueByZip>[] = [
   {
     accessorKey: "avgCustomerSize",
     size: 110,
+    meta: { label: "Avg Size" },
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Avg Size" />
+      <DataGridColumnHeader column={column} title="Avg Size" isSorted={column.getIsSorted()} />
     ),
     cell: ({ getValue }) => (
       <Number decimals={0}>{getValue<number>()}</Number>
@@ -69,24 +74,27 @@ const columns: ColumnDef<CustomerValueByZip>[] = [
   {
     accessorKey: "pestControlCustomerCount",
     size: 90,
+    meta: { label: "Pest" },
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Pest" />
+      <DataGridColumnHeader column={column} title="Pest" isSorted={column.getIsSorted()} />
     ),
     cell: ({ getValue }) => <Number>{getValue<number>()}</Number>,
   },
   {
     accessorKey: "mlcCustomerCount",
     size: 80,
+    meta: { label: "MLC" },
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="MLC" />
+      <DataGridColumnHeader column={column} title="MLC" isSorted={column.getIsSorted()} />
     ),
     cell: ({ getValue }) => <Number>{getValue<number>()}</Number>,
   },
   {
     accessorKey: "avgExtraServicesPerCustomer",
     size: 110,
+    meta: { label: "Avg Extra" },
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Avg Extra" />
+      <DataGridColumnHeader column={column} title="Avg Extra" isSorted={column.getIsSorted()} />
     ),
     cell: ({ getValue }) => (
       <Number decimals={1}>{getValue<number>()}</Number>
