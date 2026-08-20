@@ -1,12 +1,16 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
-import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
+import { customerValueSeasonSelect } from "@/app/bizPlan/customerValue/customerValueSeasonSelect";
 
-/** Status codes that count as "active" for customer value purposes. */
+/**
+ * Status codes that count as "active" for customer value purposes.
+ * Services must also have price > 0 to be considered revenue-producing.
+ */
 export const ACTIVE_SERVICE_STATUSES = new Set(["Y", "*", "S", "$"]);
 
+// AppState is used by selectSelectedZips below
 const selectSelectedZips = (state: AppState): string[] | null =>
   state.customerValueFilter.selectedZips;
 
@@ -14,18 +18,25 @@ const selectSelectedZips = (state: AppState): string[] | null =>
  * Active customers: status === "9" AND at least one service with a qualifying status
  * from an active program (program.status === "9").
  * This is the base dataset for all customerValue pages.
+ *
+ * Uses customer.programs (the season-filtered array from currentSeasonCustomers) rather
+ * than customer.x.services, which reads from the original CustomerUtils instance built
+ * against the unfiltered central maps and would include historical season data.
  */
 const selectActiveCustomers = createSelector(
-  [centralSelect.customers],
-  (customers): Customer[] =>
-    customers.filter((customer) => {
+  [customerValueSeasonSelect.currentSeasonCustomers],
+  (customers): Customer[] => {
+    return customers.filter((customer) => {
       if (customer.status !== "9") return false;
-      return customer.x.services.some(
-        (service) =>
-          ACTIVE_SERVICE_STATUSES.has(service.status) &&
-          service.program.status === "9",
+      return customer.programs.some(
+        (program) =>
+          program.status === "9" &&
+          program.services.some(
+            (service) => ACTIVE_SERVICE_STATUSES.has(service.status) && service.price > 0,
+          ),
       );
-    }),
+    });
+  },
 );
 
 /**

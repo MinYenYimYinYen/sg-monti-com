@@ -151,6 +151,17 @@ export const priorityServiceCustomerActions = {
 };
 export const priorityServiceCustomerReducer = priorityServiceCustomerSlice.reducer;
 
+export const multiSeasonProductionSlice = createCustomerSlice("multiSeasonProduction");
+export const multiSeasonProductionGetDocs = createGetCustDocsThunk(
+  "multiSeasonProduction",
+  multiSeasonProductionSlice,
+);
+export const multiSeasonProductionActions = {
+  ...multiSeasonProductionSlice.actions,
+  getDocs: multiSeasonProductionGetDocs,
+};
+export const multiSeasonProductionReducer = multiSeasonProductionSlice.reducer;
+
 // ---------------------------------------------------------------------------
 // Slice registry — single source of truth for all customer slice instances.
 // The central slice loops over this to register extraReducers, eliminating
@@ -169,7 +180,8 @@ export type CustomerContextMode =
   | "printed"
   | "lastSeasonProduction"
   | "recentProduction"
-  | "single";
+  | "single"
+  | "multiSeasonProduction";
 
 export type CustomerSliceRegistryEntry = {
   /** The CustomerContextMode key this slice maps to. */
@@ -221,6 +233,12 @@ export const customerSliceRegistry: CustomerSliceRegistryEntry[] = [
     actions: priorityServiceCustomerActions,
     getDocs: priorityServiceCustomerGetDocs,
     reducer: priorityServiceCustomerReducer,
+  },
+  {
+    context: "multiSeasonProduction",
+    actions: multiSeasonProductionActions,
+    getDocs: multiSeasonProductionGetDocs,
+    reducer: multiSeasonProductionReducer,
   },
 ];
 

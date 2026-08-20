@@ -27,11 +27,16 @@ const selectCustomerValueByZip = createSelector(
         for (const customer of customersInZip) {
           totalSize += customer.size;
 
-          const qualifyingServices = customer.x.services.filter(
-            (service) =>
-              ACTIVE_SERVICE_STATUSES.has(service.status) &&
-              service.program.status === "9",
-          );
+          // Use customer.programs (season-filtered array) rather than customer.x.services,
+          // which reads from the original CustomerUtils built against the unfiltered central
+          // maps and would include services from all historical seasons.
+          const qualifyingServices = customer.programs
+            .filter((program) => program.status === "9")
+            .flatMap((program) =>
+              program.services.filter(
+                (service) => ACTIVE_SERVICE_STATUSES.has(service.status) && service.price > 0,
+              ),
+            );
 
           // Customer value: sum of getPriceAfterDiscounts across all qualifying services
           for (const service of qualifyingServices) {

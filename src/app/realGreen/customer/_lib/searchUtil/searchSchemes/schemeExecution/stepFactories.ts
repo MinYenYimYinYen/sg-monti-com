@@ -213,26 +213,54 @@ export function createPaginationStep<TRawData extends RawData>(
       // Map to Raw Criteria here
       const rawCriteria = mapCriteria(config.stepName, searchCriteria);
 
+      // Each page returns one or more batches. A page that hits a corrupted record
+      // uses binarySearchCorruptedRecord to recover valid data and returns multiple
+      // smaller batches instead of one full-page batch.
       const promises = Array.from({ length: estimatedPages }).map(
         async (_, i) => {
+          const offset = i * PAGE_SIZE;
           const start = Date.now();
 
           const body = {
             ...rawCriteria,
             records: PAGE_SIZE,
-            offset: i * PAGE_SIZE,
+            offset,
           };
 
-          const rawData: TRawData = await rgSearch<TRawData>(body);
+          try {
+            const rawData: TRawData = await rgSearch<TRawData>(body);
 
+            const items =
+              (rawData as any)?.items || (Array.isArray(rawData) ? rawData : []);
 
-          const items =
-            (rawData as any)?.items || (Array.isArray(rawData) ? rawData : []);
+            return {
+              batches: [{ data: items as TRawData, duration: Date.now() - start }],
+            };
+          } catch (error) {
+            const isCorrupted =
+              error instanceof Error &&
+              error.message === "Nullable object must have a value.";
 
-          return {
-            data: items as TRawData,
-            duration: Date.now() - start,
-          };
+            if (isCorrupted) {
+              console.error(
+                `***** [createPaginationStep] Page ${i} (offset ${offset}) FAILED — recovering via binary search *****`,
+              );
+              // Collect all recovered batches from the async generator into an array
+              // so we can return them from this regular async function.
+              const batches: Array<{ data: TRawData; duration: number }> = [];
+              for await (const { items, duration } of binarySearchCorruptedRecord<TRawData>(
+                rawCriteria,
+                offset,
+                PAGE_SIZE,
+              )) {
+                batches.push({ data: items as TRawData, duration });
+              }
+              return { batches };
+            }
+
+            // Non-corrupted error — rethrow
+            throw error;
+          }
         },
       );
 
@@ -241,27 +269,33 @@ export function createPaginationStep<TRawData extends RawData>(
       let totalRecords = 0;
       let cumulativeRecords = 0;
 
-      for (const res of results) {
-        totalRecords += res.data.length;
+      // Flatten all batches from all pages (recovered pages produce multiple batches)
+      for (const result of results) {
+        for (const batch of result.batches) {
+          totalRecords += batch.data.length;
 
-        const remapData = remapFn(res.data);
-        let mongoData = await mongoFn(remapData);
+          const remapData = remapFn(batch.data);
+          let mongoData = await mongoFn(remapData);
 
-        if (config.filterFn) {
-          mongoData = config.filterFn(mongoData, pipelineData || []);
+          if (config.filterFn) {
+            mongoData = config.filterFn(mongoData, pipelineData || []);
+          }
+
+          cumulativeRecords += mongoData.length;
+
+          yield {
+            data: mongoData,
+            metrics: { calls: 1, durationMs: batch.duration, cumulativeRecords },
+          } as StepResult;
         }
-
-        cumulativeRecords += mongoData.length;
-
-        yield {
-          data: mongoData,
-          metrics: { calls: 1, durationMs: res.duration, cumulativeRecords },
-        } as StepResult;
       }
 
-      // Check for overflow on the last page
+      // Check for overflow on the last page — use the last batch of the last result.
+      // A recovered page may have produced multiple smaller batches; we check the
+      // last one to see if it was full-sized (indicating more records may exist).
       const lastResult = results[results.length - 1];
-      if (lastResult && lastResult.data.length === PAGE_SIZE) {
+      const lastBatch = lastResult?.batches.at(-1);
+      if (lastBatch && (lastBatch.data as unknown[]).length === PAGE_SIZE) {
         const nextOffset = estimatedPages * PAGE_SIZE;
 
         for await (const {
