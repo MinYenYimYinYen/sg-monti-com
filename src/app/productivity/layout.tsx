@@ -8,6 +8,7 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { useProductivity } from "@/app/productivity/useProductivity";
 import { productivitySelect } from "@/app/productivity/productivitySelect";
 import { productivityActions } from "@/app/productivity/productivitySlice";
+import { PunchImportWidget } from "@/components/timeCardImport/PunchImportWidget";
 
 const TABS: TabNavItem[] = [
   { label: "By Employee", href: "/productivity/byEmployee" },
@@ -24,11 +25,14 @@ export default function ProductivityLayout({ children }: { children: React.React
     <PageLayout>
       <PageLayout.Header
         left={
-          <DateRangePicker
-            value={doneDateRange}
-            onChange={(range) => dispatch(productivityActions.setDoneDateRange(range))}
-            size="sm"
-          />
+          <>
+            <DateRangePicker
+              value={doneDateRange}
+              onChange={(range) => dispatch(productivityActions.setDoneDateRange(range))}
+              size="sm"
+            />
+            <PunchImportWidget />
+          </>
         }
         right={<TabNav items={TABS} rootHref="/productivity/byEmployee" />}
       />

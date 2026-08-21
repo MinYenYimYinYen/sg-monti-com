@@ -17,6 +17,8 @@ type TimeCardImportState = {
   skippedPunchIds: number[];
   importStage: ImportStage;
   saveStatus: SaveStatus;
+  /** Persisted in Redux so the sheet stays open when the user navigates away to generate a CSV. */
+  isImportSheetOpen: boolean;
 };
 
 const initialState: TimeCardImportState = {
@@ -24,6 +26,7 @@ const initialState: TimeCardImportState = {
   skippedPunchIds: [],
   importStage: { stage: "idle" },
   saveStatus: "idle",
+  isImportSheetOpen: false,
 };
 
 const importPunches = createStandardThunk<TimeCardContract, "importPunches">({
@@ -53,6 +56,12 @@ const timeCardImportSlice = createSlice({
     },
     setSaveStatus(state, action: PayloadAction<SaveStatus>) {
       state.saveStatus = action.payload;
+    },
+    openImportSheet(state) {
+      state.isImportSheetOpen = true;
+    },
+    closeImportSheet(state) {
+      state.isImportSheetOpen = false;
     },
     resetImport(state) {
       state.csvRows = [];

@@ -21,6 +21,8 @@ const selectSkippedPunchIdsSet = createSelector(
   (ids): Set<number> => new Set(ids),
 );
 
+const selectIsImportSheetOpen = (state: AppState) => state.timeCardImport.isImportSheetOpen;
+
 export const timeCardImportSelect = {
   all: selectAll,
   byEmployee: selectByEmployee,
@@ -28,4 +30,5 @@ export const timeCardImportSelect = {
   skippedPunchIdsSet: selectSkippedPunchIdsSet,
   importStage: selectImportStage,
   saveStatus: selectSaveStatus,
+  isImportSheetOpen: selectIsImportSheetOpen,
 };

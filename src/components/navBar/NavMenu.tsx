@@ -111,7 +111,7 @@ const bizPlanSection: NavSection = {
   navItems: [
     { title: "Product Forecast", href: "/bizPlan/products", roles: ["admin"] },
     { title: "Monthly Inventory", href: "/inventory", roles: ["admin"] },
-
+    { title: "Productivity", href: "/productivity", roles: ["admin", "office"] },
   ],
 };
 
