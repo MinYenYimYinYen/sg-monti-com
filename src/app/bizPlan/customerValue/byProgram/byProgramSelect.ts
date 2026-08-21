@@ -1,6 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { customerValueFilterSelect, ACTIVE_SERVICE_STATUSES } from "@/app/bizPlan/customerValue/customerValueFilterSelect";
+import { getPriceChartPrice } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 
 export type CustomerValueByProgram = {
   progCodeId: string;
@@ -13,6 +14,14 @@ export type CustomerValueByProgram = {
   avgSize: number;
   totalRev: number;
   avgServiceRev: number;
+  /** Mean price-chart (acquisition) price across qualifying services that have a price table. */
+  avgAcquisitionPrice: number;
+  /**
+   * Ratio of actual average service revenue to average acquisition price.
+   * 1.0 = charging at acquisition price; 1.25 = fully matured (regular price).
+   * 0 when no acquisition price data is available.
+   */
+  avgMaturityRatio: number;
 };
 
 /**
@@ -58,6 +67,26 @@ const selectCustomerValueByProgram = createSelector(
           0,
         );
 
+        let totalAcqPrice = 0;
+        let acqServiceCount = 0;
+        for (const service of services) {
+          const priceTable = service.program.x.priceTable;
+          if (priceTable !== null) {
+            const acqPrice = getPriceChartPrice({ size: service.size, priceTable });
+            if (acqPrice !== null) {
+              totalAcqPrice += acqPrice;
+              acqServiceCount++;
+            }
+          }
+        }
+
+        const avgAcquisitionPrice =
+          acqServiceCount > 0 ? totalAcqPrice / acqServiceCount : 0;
+        const avgActualRevForAcqServices =
+          acqServiceCount > 0 ? totalRev / acqServiceCount : 0;
+        const avgMaturityRatio =
+          avgAcquisitionPrice > 0 ? avgActualRevForAcqServices / avgAcquisitionPrice : 0;
+
         return {
           progCodeId,
           description: firstService.program.progCode.description,
@@ -69,6 +98,8 @@ const selectCustomerValueByProgram = createSelector(
           avgSize: serviceCount > 0 ? totalSize / serviceCount : 0,
           totalRev,
           avgServiceRev: serviceCount > 0 ? totalRev / serviceCount : 0,
+          avgAcquisitionPrice,
+          avgMaturityRatio,
         };
       });
   },
@@ -90,6 +121,8 @@ export type ProgramTotals = {
   avgSize: number;
   totalRev: number;
   avgServiceRev: number;
+  avgAcquisitionPrice: number;
+  avgMaturityRatio: number;
 };
 
 const selectProgramTotals = createSelector(
@@ -100,6 +133,15 @@ const selectProgramTotals = createSelector(
     const customerCount = rows.reduce((sum, r) => sum + r.customerCount, 0);
     const totalSize = rows.reduce((sum, r) => sum + r.totalSize, 0);
     const totalRev = rows.reduce((sum, r) => sum + r.totalRev, 0);
+    // Weighted by service count for acquisition price and maturity ratio
+    const weightedAcqSum = rows.reduce(
+      (sum, r) => sum + r.avgAcquisitionPrice * r.serviceCount,
+      0,
+    );
+    const weightedMaturitySum = rows.reduce(
+      (sum, r) => sum + r.avgMaturityRatio * r.serviceCount,
+      0,
+    );
 
     return {
       serviceCount,
@@ -110,6 +152,8 @@ const selectProgramTotals = createSelector(
       avgSize: serviceCount > 0 ? totalSize / serviceCount : 0,
       totalRev,
       avgServiceRev: serviceCount > 0 ? totalRev / serviceCount : 0,
+      avgAcquisitionPrice: serviceCount > 0 ? weightedAcqSum / serviceCount : 0,
+      avgMaturityRatio: serviceCount > 0 ? weightedMaturitySum / serviceCount : 0,
     };
   },
 );

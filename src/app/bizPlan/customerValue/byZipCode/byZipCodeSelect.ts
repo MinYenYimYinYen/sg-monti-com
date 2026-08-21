@@ -3,6 +3,7 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { zipCodeSelect } from "@/app/realGreen/zipCode/zipCodeSelectors";
 import { CustomerValueByZip } from "@/app/bizPlan/customerValue/customerValueTypes";
 import { customerValueFilterSelect, ACTIVE_SERVICE_STATUSES } from "@/app/bizPlan/customerValue/customerValueFilterSelect";
+import { getPriceChartPrice } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 
 /**
  * Computes CustomerValueByZip for every zip code in the filtered customer set.
@@ -23,6 +24,8 @@ const selectCustomerValueByZip = createSelector(
         let pestControlCount = 0;
         let mlcCount = 0;
         let extraServiceCount = 0;
+        let totalAcqPrice = 0;
+        let acqServiceCount = 0;
 
         for (const customer of customersInZip) {
           totalSize += customer.size;
@@ -36,6 +39,16 @@ const selectCustomerValueByZip = createSelector(
           // Customer value: sum of getPriceAfterDiscounts across all qualifying services
           for (const service of qualifyingServices) {
             totalValue += service.x.getPriceAfterDiscounts("price");
+
+            // Acquisition price: price-chart lookup using the program's effective price table
+            const priceTable = service.program.x.priceTable;
+            if (priceTable !== null) {
+              const acqPrice = getPriceChartPrice({ size: service.size, priceTable });
+              if (acqPrice !== null) {
+                totalAcqPrice += acqPrice;
+                acqServiceCount++;
+              }
+            }
           }
 
           // Pest control: at least one program with programType === "H"
@@ -65,6 +78,14 @@ const selectCustomerValueByZip = createSelector(
           activeCustomerCount > 0 ? totalSize / activeCustomerCount : 0;
         const avgExtraServicesPerCustomer =
           activeCustomerCount > 0 ? extraServiceCount / activeCustomerCount : 0;
+        const avgAcquisitionPrice =
+          acqServiceCount > 0 ? totalAcqPrice / acqServiceCount : 0;
+        // Ratio of actual avg service rev to avg acquisition price.
+        // Computed over the same services that have a price table to keep numerator/denominator aligned.
+        const avgActualRevForAcqServices =
+          acqServiceCount > 0 ? totalValue / acqServiceCount : 0;
+        const avgMaturityRatio =
+          avgAcquisitionPrice > 0 ? avgActualRevForAcqServices / avgAcquisitionPrice : 0;
 
         return {
           zip,
@@ -76,6 +97,8 @@ const selectCustomerValueByZip = createSelector(
           pestControlCustomerCount: pestControlCount,
           mlcCustomerCount: mlcCount,
           avgExtraServicesPerCustomer,
+          avgAcquisitionPrice,
+          avgMaturityRatio,
         };
       });
   },
@@ -96,6 +119,8 @@ export type CustomerValueTotals = {
   pestControlCustomerCount: number;
   mlcCustomerCount: number;
   avgExtraServicesPerCustomer: number;
+  avgAcquisitionPrice: number;
+  avgMaturityRatio: number;
 };
 
 /** Weighted totals across all zip rows (already filtered by the shared filter). */
@@ -115,6 +140,15 @@ const selectTotals = createSelector(
       (sum, r) => sum + r.avgCustomerSize * r.activeCustomerCount,
       0,
     );
+    // Weighted acquisition price and maturity ratio (weighted by customer count)
+    const weightedAcqSum = rows.reduce(
+      (sum, r) => sum + r.avgAcquisitionPrice * r.activeCustomerCount,
+      0,
+    );
+    const weightedMaturitySum = rows.reduce(
+      (sum, r) => sum + r.avgMaturityRatio * r.activeCustomerCount,
+      0,
+    );
 
     return {
       activeCustomerCount: totalCustomers,
@@ -125,6 +159,8 @@ const selectTotals = createSelector(
       mlcCustomerCount: totalMlc,
       avgExtraServicesPerCustomer:
         totalCustomers > 0 ? weightedExtraSum / totalCustomers : 0,
+      avgAcquisitionPrice: totalCustomers > 0 ? weightedAcqSum / totalCustomers : 0,
+      avgMaturityRatio: totalCustomers > 0 ? weightedMaturitySum / totalCustomers : 0,
     };
   },
 );

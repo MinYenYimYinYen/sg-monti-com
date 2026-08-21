@@ -100,6 +100,28 @@ const columns: ColumnDef<CustomerValueByZip>[] = [
       <Number decimals={1}>{getValue<number>()}</Number>
     ),
   },
+  {
+    accessorKey: "avgAcquisitionPrice",
+    size: 120,
+    meta: { label: "Avg Acq Price" },
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="Avg Acq Price" isSorted={column.getIsSorted()} />
+    ),
+    cell: ({ getValue }) => (
+      <Number isMoney decimals={0}>{getValue<number>()}</Number>
+    ),
+  },
+  {
+    accessorKey: "avgMaturityRatio",
+    size: 100,
+    meta: { label: "Maturity" },
+    header: ({ column }) => (
+      <DataGridColumnHeader column={column} title="Maturity" isSorted={column.getIsSorted()} />
+    ),
+    cell: ({ getValue }) => (
+      <span><Number decimals={0}>{getValue<number>() * 100}</Number>%</span>
+    ),
+  },
 ];
 
 function TotalsBar({ totals }: { totals: CustomerValueTotals }) {
@@ -145,6 +167,18 @@ function TotalsBar({ totals }: { totals: CustomerValueTotals }) {
         <span className="text-xs text-muted-foreground">Avg Extra Svcs</span>
         <span className="font-semibold">
           <Number decimals={1}>{totals.avgExtraServicesPerCustomer}</Number>
+        </span>
+      </div>
+      <div className="flex flex-col">
+        <span className="text-xs text-muted-foreground">Avg Acq Price</span>
+        <span className="font-semibold">
+          <Number isMoney decimals={0}>{totals.avgAcquisitionPrice}</Number>
+        </span>
+      </div>
+      <div className="flex flex-col">
+        <span className="text-xs text-muted-foreground">Maturity</span>
+        <span className="font-semibold">
+          <Number decimals={0}>{totals.avgMaturityRatio * 100}</Number>%
         </span>
       </div>
     </div>
