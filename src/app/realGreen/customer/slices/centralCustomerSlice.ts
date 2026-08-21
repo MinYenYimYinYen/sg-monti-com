@@ -66,13 +66,13 @@ export const centralCustomerSlice = createSlice({
         }
       });
 
-      // Fetch start: clear all Maps when an active context begins fetching.
-      builder.addCase(entry.getDocs.pending, (state) => {
-        if (state.activeContexts.includes(entry.context)) {
-          state.CustDocMap.clear();
-          state.ProgDocMap.clear();
-          state.ServDocMap.clear();
-        }
+      // Fetch start: do NOT clear the central maps here.
+      // Each source slice already clears its own docs arrays on pending.
+      // The central maps are additive across all active contexts — clearing them
+      // here would nuke data from other contexts that are loading in parallel.
+      // The maps are rebuilt from scratch via switchContexts when contexts change.
+      builder.addCase(entry.getDocs.pending, (_state) => {
+        // intentionally empty
       });
 
       // Remove customer: mirror the source-slice removal in the central Maps.

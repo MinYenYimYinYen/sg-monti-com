@@ -19,13 +19,16 @@ export function ZipCodeFilter() {
   const customerCountByZip = useSelector(customerValueFilterSelect.customerCountByZip);
   const zipCodeMap = useSelector(zipCodeSelect.zipCodeMap);
 
-  const [hasSaved, setHasSaved] = useState(() => {
+  const [hasSaved, setHasSaved] = useState(false);
+
+  // Check localStorage after mount (localStorage is unavailable during SSR).
+  useEffect(() => {
     try {
-      return localStorage.getItem(STORAGE_KEY) !== null;
+      setHasSaved(localStorage.getItem(STORAGE_KEY) !== null);
     } catch {
-      return false;
+      // localStorage unavailable
     }
-  });
+  }, []);
 
   // Default to all selected on first load (null = uninitialized)
   useEffect(() => {

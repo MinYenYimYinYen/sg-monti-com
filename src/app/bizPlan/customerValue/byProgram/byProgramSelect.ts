@@ -43,13 +43,18 @@ export type CustomerValueByProgram = {
 const selectCustomerValueByProgram = createSelector(
   [customerValueFilterSelect.filteredCustomers],
   (customers): CustomerValueByProgram[] => {
-    // Flatten all qualifying services from active programs across all filtered customers
+    // Flatten all qualifying services from active programs across all filtered customers.
+    // Use customer.programs (season-filtered array) rather than customer.x.services,
+    // which reads from the original CustomerUtils built against the unfiltered central
+    // maps and would include services from all historical seasons.
     const allQualifyingServices = customers.flatMap((customer) =>
-      customer.x.services.filter(
-        (service) =>
-          ACTIVE_SERVICE_STATUSES.has(service.status) &&
-          service.program.status === "9",
-      ),
+      customer.programs
+        .filter((program) => program.status === "9")
+        .flatMap((program) =>
+          program.services.filter(
+            (service) => ACTIVE_SERVICE_STATUSES.has(service.status) && service.price > 0,
+          ),
+        ),
     );
 
     return new Grouper(allQualifyingServices)

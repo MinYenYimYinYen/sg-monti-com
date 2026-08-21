@@ -296,6 +296,40 @@ const byServIds = ({ season, schemeParams }: SearchSchemeParams): SearchScheme =
   };
 };
 
+const multiSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => {
+  return {
+    schemeName: "multiSeasonProduction",
+    steps: [
+      createPaginationStep({
+        stepName: "services",
+        optimizerKey: "multiSeasonServices",
+        searchCriteria: {
+          season: { min: season - 4, max: season - 1 },
+          servStats: getServiceStatuses(["completed"]),
+        } as ServiceSearchCriteria,
+      }),
+      createBatchSizeStep({
+        stepName: "programs",
+        optimizerKey: "multiSeasonPrograms",
+        getIds: (pipelineData) => {
+          const dupedIds = (pipelineData as ServiceDoc[]).map((s) => s.progId);
+          return [...new Set(dupedIds)];
+        },
+        getSearchCriteria: (ids) => ({ progIds: ids }),
+      }),
+      createBatchSizeStep({
+        stepName: "customers",
+        optimizerKey: "multiSeasonCustomers",
+        getIds: (pipelineData) => {
+          const dupedIds = (pipelineData as ProgramDoc[]).map((p) => p.custId);
+          return [...new Set(dupedIds)];
+        },
+        getSearchCriteria: (ids) => ({ custIds: ids }),
+      }),
+    ],
+  };
+};
+
 export const searchScheme = {
   activeCustomers,
   byServIds,
@@ -303,4 +337,5 @@ export const searchScheme = {
   lastSeasonProduction,
   recentProduction,
   singleCustomer,
+  multiSeasonProduction,
 };
