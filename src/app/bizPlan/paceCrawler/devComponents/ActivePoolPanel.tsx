@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
+import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
-import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { ChevronRight } from "lucide-react";
 
 export function ActivePoolPanel() {
   const activePoolMap = useSelector(paceCrawlerSelect.activePoolPriceByServCode);
   const progCodes = useSelector(progServSelect.progCodes);
-  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
+  const groups = useSelector(assignmentGroupSelect.groups);
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -23,29 +23,9 @@ export function ActivePoolPanel() {
     });
   }
 
-  // Build a set of all group entries across all employees (keyed by sorted servCodeIds)
-  // so we can show group rows in the pool panel.
-  type GroupEntry = { label: string; servCodeIds: string[]; key: string };
-  const groupsByKey = new Map<string, GroupEntry>();
-
-  for (const plan of assignmentsByEmployeeId.values()) {
-    for (const entry of plan.entries) {
-      if (entry.kind === "group") {
-        const key = [...entry.servCodeIds].sort().join(",");
-        if (!groupsByKey.has(key)) {
-          groupsByKey.set(key, {
-            label: entry.label ?? entry.servCodeIds.join("+"),
-            servCodeIds: entry.servCodeIds,
-            key,
-          });
-        }
-      }
-    }
-  }
-
-  // Build a set of servCodeIds that are members of any group
+  // Build a set of servCodeIds that are members of any shared group
   const groupMemberIds = new Set<string>();
-  for (const group of groupsByKey.values()) {
+  for (const group of groups) {
     for (const id of group.servCodeIds) groupMemberIds.add(id);
   }
 
@@ -64,24 +44,23 @@ export function ActivePoolPanel() {
 
   const displayRows: DisplayRow[] = [];
 
-  // Group rows
-  for (const group of groupsByKey.values()) {
+  // Group rows (from shared AssignmentGroup definitions)
+  for (const group of groups) {
     const combinedPool = group.servCodeIds.reduce((sum, id) => sum + (activePoolMap.get(id) ?? 0), 0);
     if (combinedPool <= 0) continue;
 
-    // Use the progCodeId of the first member with a known progCode
     const firstMeta = servCodeMeta.get(group.servCodeIds[0]);
     displayRows.push({
       kind: "group",
       label: group.label,
-      key: group.key,
+      key: group.groupId,
       servCodeIds: group.servCodeIds,
       combinedPool,
       progCodeId: firstMeta?.progCodeId ?? "—",
     });
 
     // Member rows (shown when expanded)
-    if (expandedGroups.has(group.key)) {
+    if (expandedGroups.has(group.groupId)) {
       for (const servCodeId of group.servCodeIds) {
         const price = activePoolMap.get(servCodeId) ?? 0;
         const meta = servCodeMeta.get(servCodeId);
@@ -91,13 +70,13 @@ export function ActivePoolPanel() {
           progCodeId: meta?.progCodeId ?? "—",
           longName: meta?.longName ?? servCodeId,
           price,
-          groupKey: group.key,
+          groupKey: group.groupId,
         });
       }
     }
   }
 
-  // Standalone single rows (not in any group)
+  // Standalone single rows (not in any shared group)
   const singleRows = progCodes
     .flatMap((progCode) =>
       progCode.servCodes
@@ -202,7 +181,7 @@ export function ActivePoolPanel() {
         </tfoot>
       </table>
       <p className="text-[10px] text-muted-foreground mt-2">
-        {groupsByKey.size} groups, {singleRows.length} standalone servCodes with remaining work
+        {groups.length} groups, {singleRows.length} standalone servCodes with remaining work
       </p>
     </div>
   );

@@ -47,6 +47,7 @@ import { timeCardImportReducer } from "@/app/timeCard/import/timeCardImportSlice
 import { timeCardPayrollReducer } from "@/app/timeCard/payroll/timeCardPayrollSlice";
 import { customerValueFilterReducer } from "@/app/bizPlan/customerValue/customerValueFilterSlice";
 import { productivityReducer } from "@/app/productivity/productivitySlice";
+import { assignmentGroupReducer } from "@/app/assignmentGroup/assignmentGroupSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -97,6 +98,7 @@ const rootReducer = combineReducers({
   timeCardPayroll: timeCardPayrollReducer,
   customerValueFilter: customerValueFilterReducer,
   productivity: productivityReducer,
+  assignmentGroup: assignmentGroupReducer,
 });
 
 export default rootReducer;

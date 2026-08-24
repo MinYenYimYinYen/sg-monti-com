@@ -1,8 +1,12 @@
 // ---------------------------------------------------------------------------
-// Priority entries — single servCode or a group worked together
+// Priority entries — unified group model
+//
+// Every assignment entry is treated as a group in the crawl.
+// Single servCodes are wrapped as single-member groups.
+// This eliminates the single/group code split in dayCrawlSimulation.ts.
 // ---------------------------------------------------------------------------
 
-import {TRange} from "@/lib/primatives/tRange/TRange";
+import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export type CascadeTimelineEvent =
   | { kind: "leave"; date: string; toServCodeId: string }
@@ -12,24 +16,22 @@ export type CascadeTimelineEvent =
    */
   | { kind: "resume"; date: string; fromServCodeId: string | null };
 
-export type DayCrawlSingleEntry = {
-  kind: "single";
-  servCodeId: string;
-};
-
 /**
- * A group of servCodes always worked together on the same day.
- * The crawl drains all member pools simultaneously at the employee's totalAvgDailyPrice.
- * At most one member may be sequential — the group inherits that sequential identity.
+ * A priority entry in an employee's assignment plan.
+ * Always a group — single servCodes are wrapped as single-member groups.
+ * This eliminates the single/group code split in the simulation.
+ *
+ * For shared groups: groupId = AssignmentGroup.groupId, label = AssignmentGroup.label.
+ * For singles: groupId = servCodeId, label = servCodeId.
  */
-export type DayCrawlGroupEntry = {
-  kind: "group";
-  servCodeIds: string[];
-  /** Display label, e.g. "RC1+R01". Defaults to servCodeIds.join("+"). */
+export type DayCrawlPriorityEntry = {
+  /** Stable timeline key. For shared groups: AssignmentGroup.groupId. For singles: servCodeId. */
+  groupId: string;
+  /** Display label. For shared groups: AssignmentGroup.label. For singles: servCodeId. */
   label: string;
+  /** One or more member servCodes. Single entries have exactly one member. */
+  servCodeIds: string[];
 };
-
-export type DayCrawlPriorityEntry = DayCrawlSingleEntry | DayCrawlGroupEntry;
 
 // ---------------------------------------------------------------------------
 // Inputs to the day-crawl simulation
@@ -62,19 +64,19 @@ export type DayCrawlServCodeEntry = {
 export type DayCrawlEmployeeEntry = {
   employeeId: string;
   /**
-   * Priority-ordered list of entries (single servCodes or groups).
+   * Priority-ordered list of entries (all treated as groups — singles have one member).
    * Index 0 = highest priority. Sourced from assignmentPlan.entries.
    */
   priorityEntries: DayCrawlPriorityEntry[];
   /**
    * Per-servCode daily production rate (avg daily price for the servCode's programType).
-   * Used for single entries. Estimated employees receive team average ÷ known-employee count.
+   * Used for urgency-weight computation within groups.
    * Missing entries mean the employee has no rate for that servCode (treated as zero).
    */
   dailyRates: Map<string, number>;
   /**
    * Employee's total avg daily price across all programTypes.
-   * Used as the drain rate for group entries (full daily capacity).
+   * Used as the total drain rate for group entries (full daily capacity).
    */
   totalAvgDailyPrice: number;
   /**
@@ -97,7 +99,7 @@ export type DayCrawlEmployeeEntry = {
 /**
  * A significant transition in an employee's work schedule.
  * Recorded by the simulation when the employee's active entry changes.
- * entryLabel is a servCodeId for singles, or "SC1+SC2" for groups.
+ * entryLabel is a groupId/servCodeId for singles, or the group label for multi-member groups.
  */
 export type EmployeeTimelineEvent =
   /** Employee begins working this entry for the first time. */
@@ -142,9 +144,9 @@ export type CrawlerServCodeResult = {
    */
   optimizedMax: string;
   /**
-   * The group label this servCode was crawled under, if it was part of a group entry.
-   * Null for singles. Used to look up the correct key in servCodeTimeline.
-   * e.g. "CC3+LA3+SE3+SC2" for a member of that group.
+   * The group label this servCode was crawled under.
+   * For singles: the servCodeId itself. For groups: the group's label.
+   * Used to look up the correct key in servCodeTimeline.
    */
   groupLabel: string | null;
 };
@@ -156,7 +158,7 @@ export type CrawlerServCodeResult = {
 /**
  * A significant transition in a servCode/group's crew composition.
  * Recorded by the simulation when an employee starts, leaves, returns, or finishes.
- * entryLabel is a servCodeId for singles, or "SC1+SC2" for groups.
+ * entryLabel is a servCodeId for singles, or the group label for multi-member groups.
  */
 export type ServCodeTimelineEvent = {
   date: string;
@@ -188,7 +190,7 @@ export type CrawlerResult = {
     string,
     { date: string; event: EmployeeTimelineEvent }[]
   >;
-  /** Per-entry (servCode or group label) ordered list of crew transition events. */
+  /** Per-entry (group label) ordered list of crew transition events. */
   servCodeTimeline: Map<string, ServCodeTimelineEvent[]>;
 };
 

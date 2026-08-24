@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
+import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
-import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { ChevronRight } from "lucide-react";
 
 function formatDate(iso: string | null | undefined): string {
@@ -15,14 +15,10 @@ function formatDate(iso: string | null | undefined): string {
 
 export function CrawlerResultPanel() {
   const crawlerResult = useSelector(paceCrawlerSelect.crawlerResult);
-  const activePoolMap = useSelector(
-    paceCrawlerSelect.activePoolPriceByServCode,
-  );
+  const activePoolMap = useSelector(paceCrawlerSelect.activePoolPriceByServCode);
   const progCodes = useSelector(progServSelect.progCodes);
   const today = useSelector(paceCrawlerSelect.mainDate);
-  const assignmentsByEmployeeId = useSelector(
-    assignmentPlanSelect.assignmentsByEmployeeId,
-  );
+  const groups = useSelector(assignmentGroupSelect.groups);
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -35,27 +31,9 @@ export function CrawlerResultPanel() {
     });
   }
 
-  // Build group registry from assignment plans (keyed by sorted servCodeIds)
-  type GroupEntry = { label: string; servCodeIds: string[]; key: string };
-  const groupsByKey = new Map<string, GroupEntry>();
-
-  for (const plan of assignmentsByEmployeeId.values()) {
-    for (const entry of plan.entries) {
-      if (entry.kind === "group") {
-        const key = [...entry.servCodeIds].sort().join(",");
-        if (!groupsByKey.has(key)) {
-          groupsByKey.set(key, {
-            label: entry.label ?? entry.servCodeIds.join("+"),
-            servCodeIds: entry.servCodeIds,
-            key,
-          });
-        }
-      }
-    }
-  }
-
+  // Build a set of servCodeIds that are members of any shared group
   const groupMemberIds = new Set<string>();
-  for (const group of groupsByKey.values()) {
+  for (const group of groups) {
     for (const id of group.servCodeIds) groupMemberIds.add(id);
   }
 
@@ -65,8 +43,8 @@ export function CrawlerResultPanel() {
     {
       progCodeId: string;
       runsInSequence: boolean;
-      scMin: string; // ServCode Min — persisted dateRange.min from RealGreen
-      scMax: string; // ServCode Max — persisted dateRange.max from RealGreen
+      scMin: string;
+      scMax: string;
       pool: number;
     }
   >();
@@ -90,10 +68,10 @@ export function CrawlerResultPanel() {
         servCodeIds: string[];
         progCodeId: string;
         projectedEnd: string | null;
-        scMin: string; // earliest member SC Min
-        optMin: string; // Optimized Min (from crawl)
-        optMax: string; // Optimized Max (from crawl)
-        scMax: string; // latest member SC Max
+        scMin: string;
+        optMin: string;
+        optMax: string;
+        scMax: string;
         combinedPool: number;
         endColor: string;
       }
@@ -126,8 +104,8 @@ export function CrawlerResultPanel() {
 
   const displayRows: DisplayRow[] = [];
 
-  // Group rows
-  for (const group of groupsByKey.values()) {
+  // Group rows (from shared AssignmentGroup definitions)
+  for (const group of groups) {
     const combinedPool = group.servCodeIds.reduce(
       (sum, id) => sum + (activePoolMap.get(id) ?? 0),
       0,
@@ -152,7 +130,6 @@ export function CrawlerResultPanel() {
     const optMax =
       memberOptMaxes.length > 0 ? [...memberOptMaxes].sort().at(-1)! : "—";
 
-    // SC Min = earliest member dateRange.min
     const memberScMins = group.servCodeIds
       .map((id) => servCodeMeta.get(id)?.scMin)
       .filter((d): d is string => d != null && d !== "");
@@ -167,7 +144,7 @@ export function CrawlerResultPanel() {
     displayRows.push({
       kind: "group",
       label: group.label,
-      key: group.key,
+      key: group.groupId,
       servCodeIds: group.servCodeIds,
       progCodeId: firstMeta?.progCodeId ?? "—",
       projectedEnd,
@@ -179,7 +156,7 @@ export function CrawlerResultPanel() {
       endColor,
     });
 
-    if (expandedGroups.has(group.key)) {
+    if (expandedGroups.has(group.groupId)) {
       for (const servCodeId of group.servCodeIds) {
         const result = crawlerResult.byServCode.get(servCodeId);
         const meta = servCodeMeta.get(servCodeId);
@@ -200,7 +177,7 @@ export function CrawlerResultPanel() {
           scMax: memberScMax,
           pool: meta?.pool ?? 0,
           endColor: memberEndColor,
-          groupKey: group.key,
+          groupKey: group.groupId,
         });
       }
     }
@@ -211,7 +188,6 @@ export function CrawlerResultPanel() {
     .flatMap((progCode) =>
       progCode.servCodes
         .filter((sc) => !groupMemberIds.has(sc.servCodeId))
-
         .map((sc) => {
           const result = crawlerResult.byServCode.get(sc.servCodeId);
           const pool = activePoolMap.get(sc.servCodeId) ?? 0;
@@ -434,7 +410,7 @@ export function CrawlerResultPanel() {
       </div>
 
       <p className="text-[10px] text-muted-foreground shrink-0">
-        {groupsByKey.size} groups, {singleRows.length} standalone servCodes —{" "}
+        {groups.length} groups, {singleRows.length} standalone servCodes —{" "}
         {withWork} with work, {withProjection} projected
       </p>
     </div>

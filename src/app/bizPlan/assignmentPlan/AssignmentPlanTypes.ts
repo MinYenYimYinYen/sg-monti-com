@@ -27,17 +27,23 @@ export type AssignmentSingleEntry = {
 };
 
 /**
- * A group of servCodes that are always worked together on the same day.
- * The group is treated as a single priority slot in the crawl simulation.
+ * A group entry in an employee's priority list.
  *
- * Constraints:
- * - At most one sequential servCode per group.
- * - A servCode can belong to at most one group per employee.
+ * Supports two formats:
+ * - Old format (inline): { kind: "group", servCodeIds: string[], label?: string }
+ * - New format (reference): { kind: "group", groupId: string }
+ *
+ * The new format references a shared AssignmentGroup from the assignmentGroup module.
+ * The crawler resolves groupId references via assignmentGroupSelect.groupByServCodeKey.
+ * Old format data is still supported — the crawler falls back to normalized label.
  */
 export type AssignmentGroupEntry = {
   kind: "group";
-  servCodeIds: string[];
-  /** Optional display label, e.g. "Renovation Bundle". Defaults to servCodeIds joined with "+". */
+  /** New format: references AssignmentGroup.groupId in the assignmentGroup collection. */
+  groupId?: string;
+  /** Old format: inline servCode members. */
+  servCodeIds?: string[];
+  /** Old format: optional display label. */
   label?: string;
 };
 
@@ -56,6 +62,6 @@ export type AssignmentPlan = {
 /** Returns all servCodeIds referenced in an AssignmentPlan (flattened, order-preserving). */
 export function flattenEntries(entries: AssignmentEntry[]): string[] {
   return entries.flatMap((entry) =>
-    entry.kind === "single" ? [entry.servCodeId] : entry.servCodeIds,
+    entry.kind === "single" ? [entry.servCodeId] : (entry.servCodeIds ?? []),
   );
 }

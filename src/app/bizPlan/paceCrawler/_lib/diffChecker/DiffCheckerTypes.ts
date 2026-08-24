@@ -52,8 +52,10 @@ export type DiffResult = {
 
 /**
  * One row in an employee's card — a single open servCode with diff data.
+ * Used for single-entry rows (kind = "single").
  */
 export type OpenServCodeRow = {
+  kind: "single";
   servCodeId: string;
   historicalDailyPrice: number;
   requiredDailyPrice: number;
@@ -67,6 +69,50 @@ export type OpenServCodeRow = {
 };
 
 /**
+ * One member servCode within an expanded group row.
+ * Shows per-member pool, required rate, and individual deadline.
+ */
+export type OpenGroupMemberRow = {
+  servCodeId: string;
+  poolRemaining: number;
+  /** pool / weekdays_to_member_scMax — this member's urgency rate */
+  requiredDailyPrice: number;
+  remainingWeekdays: number;
+  /** This member's dateRange.max */
+  scMax: string;
+  isOverdue: boolean;
+};
+
+/**
+ * A group entry on an employee's card — header + expandable members.
+ * The header shows the sum of per-member required rates vs totalAvgDailyPrice.
+ */
+export type OpenGroupRow = {
+  kind: "group";
+  groupId: string;
+  label: string;
+  servCodeIds: string[];
+  combinedPool: number;
+  /**
+   * Sum of per-member required rates (each member: pool / weekdays_to_member_scMax).
+   * This is the total "how much do I need to route today" for this group.
+   */
+  requiredDailyPrice: number;
+  /** Employee's totalAvgDailyPrice — the actual drain rate for this group */
+  historicalDailyPrice: number;
+  diffPrice: number;
+  diffPercent: number | null;
+  /** Latest member dateRange.max — shown on the header as the group's window */
+  latestScMax: string;
+  latestRemainingWeekdays: number;
+  /** True if ANY member is overdue */
+  isOverdue: boolean;
+  isAhead: boolean;
+  isBehind: boolean;
+  members: OpenGroupMemberRow[];
+};
+
+/**
  * All display data for one employee's card.
  */
 export type EmployeeCardData = {
@@ -77,8 +123,8 @@ export type EmployeeCardData = {
   isOnLeave: boolean;
   /** True when a company holiday covers mainDate (applies to all employees). */
   isHoliday: boolean;
-  /** Priority-ordered open servCodes for this employee on mainDate (pool > 0, date in range). */
-  openServCodes: OpenServCodeRow[];
+  /** Priority-ordered open entries for this employee on mainDate (pool > 0, date in range). */
+  openEntries: (OpenServCodeRow | OpenGroupRow)[];
   /** All servCodeIds in the employee's assignment plan (for context). */
   assignedServCodeIds: string[];
 };

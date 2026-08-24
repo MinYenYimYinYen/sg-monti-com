@@ -2,6 +2,7 @@
 
 import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
+import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
@@ -17,6 +18,7 @@ import {
   GanttBarDetail,
   type GanttSegment,
 } from "@/app/bizPlan/paceCrawler/devComponents/GanttBarDetail";
+import { AssignmentGroup } from "@/app/assignmentGroup/AssignmentGroupTypes";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -28,8 +30,6 @@ const GROUP_GAP = 2; // px gap between progCode rows
 const HEADER_HEIGHT = 40; // px — week header
 
 // Palette for group color accents — cycles if more groups than colors.
-// Applied per-bar (left border stripe), not per-row, since a single progCode row
-// can contain servCodes from multiple different groups.
 const GROUP_BAR_COLORS = [
   "border-l-[3px] border-l-primary",
   "border-l-[3px] border-l-secondary",
@@ -81,36 +81,25 @@ function getMondaysInRange(start: string, end: string): string[] {
 type ProgGroup = {
   progCodeId: string;
   rows: SeasonOptimizedRange[];
-  /**
-   * The group label of the first grouped servCode in this row, used only for
-   * sort ordering (so rows from the same group cluster together).
-   * Null if all servCodes in this row are ungrouped singles.
-   */
   primaryGroupLabel: string | null;
 };
 
 // ---------------------------------------------------------------------------
-// Build servCodeId → groupLabel map from assignment plans
+// Build servCodeId → groupLabel map from shared AssignmentGroup definitions.
 //
-// When different employees have different groupings for the same servCode,
-// we use the first grouping encountered (most common in practice).
+// Uses the scenario-level groups from assignmentGroupSelect — all employees
+// who work the same group share the same groupId, so the Gantt correctly
+// renders one color per group regardless of how many employees work it.
 // ---------------------------------------------------------------------------
 
 function buildServCodeGroupMap(
-  assignmentsByEmployeeId: ReturnType<typeof assignmentPlanSelect.assignmentsByEmployeeId>,
+  groups: AssignmentGroup[],
 ): Map<string, string> {
   const result = new Map<string, string>();
-  for (const plan of assignmentsByEmployeeId.values()) {
-    for (const entry of plan.entries) {
-      if (entry.kind === "group") {
-        // Normalize label by sorting servCodeIds — matches the normalization in paceCrawlerSelect
-        // so employees with the same group members in different orders share the same color/sort key.
-        const label = entry.label ?? [...entry.servCodeIds].sort().join("+");
-        for (const servCodeId of entry.servCodeIds) {
-          if (!result.has(servCodeId)) {
-            result.set(servCodeId, label);
-          }
-        }
+  for (const group of groups) {
+    for (const servCodeId of group.servCodeIds) {
+      if (!result.has(servCodeId)) {
+        result.set(servCodeId, group.groupId);
       }
     }
   }
@@ -140,7 +129,6 @@ function SegmentedBar({
   barStart: string;
   barEnd: string;
   barColor: string;
-  /** Per-servCode group color class (left border stripe). Null for ungrouped singles. */
   groupBarColor: string | null;
 }) {
   const startDay = dayOffset(chartStart, barStart);
@@ -330,25 +318,39 @@ function GanttProgRow({
 export function GanttChartPanel() {
   const seasonResult = useSelector(paceCrawlerSelect.seasonOptimizerResult);
   const today = useSelector(paceCrawlerSelect.mainDate);
+  const groups = useSelector(assignmentGroupSelect.groups);
+  const groupMap = useSelector(assignmentGroupSelect.groupMap);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
   const crawlerResult = useSelector(paceCrawlerSelect.crawlerResult);
   const servCodeTimelineMap = useSelector(paceCrawlerSelect.servCodeTimelineMap);
-  // Read unsaved changes so the button can reflect pending state (unused directly but
-  // ensures the component re-renders when changes are staged/cleared).
   useSelector(progServSelect.unsavedServCodeChanges);
   const servCodeDocMap = useSelector(progServSelect.servCodeDocMap);
   const { updateServCode, saveServCodeChanges } = useProgServ({});
 
-  // Build set of servCodeIds that have at least one assigned employee
+  // Build set of servCodeIds that have at least one assigned employee.
+  // Covers three sources:
+  // 1. Shared groups (new-format group entries reference these by groupId)
+  // 2. Single entries in assignment plans
+  // 3. Old-format inline group entries (servCodeIds directly on the entry)
   const assignedServCodeIds = new Set<string>();
-  for (const plan of assignmentsByEmployeeId.values()) {
+  for (const group of groups) {
+    for (const id of group.servCodeIds) {
+      assignedServCodeIds.add(id);
+    }
+  }
+  for (const [, plan] of assignmentsByEmployeeId) {
     for (const entry of plan.entries) {
       if (entry.kind === "single") {
         assignedServCodeIds.add(entry.servCodeId);
-      } else {
-        for (const id of entry.servCodeIds) {
-          assignedServCodeIds.add(id);
+      } else if (entry.groupId) {
+        // New-format: resolve via groupMap
+        const resolvedGroup = groupMap.get(entry.groupId);
+        if (resolvedGroup) {
+          for (const id of resolvedGroup.servCodeIds) assignedServCodeIds.add(id);
         }
+      } else if (entry.servCodeIds) {
+        // Old-format: inline servCodeIds
+        for (const id of entry.servCodeIds) assignedServCodeIds.add(id);
       }
     }
   }
@@ -357,7 +359,6 @@ export function GanttChartPanel() {
   const filteredResult = seasonResult.filter((r) => assignedServCodeIds.has(r.servCodeId));
 
   // ServCodes where hasWork === true and optimized range differs from the current RG range.
-  // Only these are candidates for "Apply Optimized Ranges".
   const changedRanges = filteredResult.filter(
     (r) =>
       r.hasWork &&
@@ -396,7 +397,6 @@ export function GanttChartPanel() {
       ];
     });
 
-    // Optimistically update Redux state so the Gantt re-renders immediately.
     for (const row of changedRanges) {
       updateServCode({
         servCodeId: row.servCodeId,
@@ -404,7 +404,6 @@ export function GanttChartPanel() {
       });
     }
 
-    // Persist to DB — loading/error feedback handled globally by uiSlice.
     void saveServCodeChanges(unsavedChanges);
   }
 
@@ -416,7 +415,6 @@ export function GanttChartPanel() {
     );
   }
 
-  // Build chart bounds from valid dates only — include servCodeRange bounds too
   const validRows = filteredResult.filter(
     (r) => isValidDate(r.optimizedMin) && isValidDate(r.optimizedMax),
   );
@@ -433,7 +431,6 @@ export function GanttChartPanel() {
   for (const row of validRows) {
     if (row.optimizedMin < chartStart) chartStart = row.optimizedMin;
     if (row.optimizedMax > chartEnd) chartEnd = row.optimizedMax;
-    // Also include servCodeRange bounds
     if (isValidDate(row.servCodeRange?.min) && row.servCodeRange.min < chartStart) {
       chartStart = row.servCodeRange.min;
     }
@@ -446,13 +443,11 @@ export function GanttChartPanel() {
   const totalDays = Math.max(dayOffset(chartStart, chartEnd), 1);
 
   // ---------------------------------------------------------------------------
-  // Build servCodeId → groupLabel map and assign color indices per group label.
-  // Color is applied per-bar (not per-row) so each servCode gets the correct
-  // group color even when a progCode row contains servCodes from multiple groups.
+  // Build servCodeId → groupLabel map from shared AssignmentGroup definitions.
+  // Assign a stable color index to each unique group label.
   // ---------------------------------------------------------------------------
-  const servCodeGroupMap = buildServCodeGroupMap(assignmentsByEmployeeId);
+  const servCodeGroupMap = buildServCodeGroupMap(groups);
 
-  // Assign a stable color index to each unique group label (in order of first appearance)
   const groupColorIndex = new Map<string, number>();
   let nextColorIndex = 0;
   for (const row of filteredResult) {
@@ -464,22 +459,14 @@ export function GanttChartPanel() {
 
   // ---------------------------------------------------------------------------
   // Group rows by progCode, then sort so grouped servCodes appear adjacent.
-  //
-  // Sort order:
-  // 1. Rows that belong to a group are sorted by their primary group label (alphabetically),
-  //    so all members of the same group cluster together.
-  // 2. Within a group, sequential servCodes are sorted by optimizedMin.
-  // 3. Ungrouped rows sort by progCodeId.
   // ---------------------------------------------------------------------------
-  const groupMap = new Map<string, SeasonOptimizedRange[]>();
+  const progCodeRowMap = new Map<string, SeasonOptimizedRange[]>();
   for (const row of filteredResult) {
-    const existing = groupMap.get(row.progCodeId) ?? [];
+    const existing = progCodeRowMap.get(row.progCodeId) ?? [];
     existing.push(row);
-    groupMap.set(row.progCodeId, existing);
+    progCodeRowMap.set(row.progCodeId, existing);
   }
 
-  // Determine the primary group label for a progCode row (the group label of its first member,
-  // or null if all members are ungrouped singles). Used only for sort ordering.
   function getPrimaryGroupLabel(rows: SeasonOptimizedRange[]): string | null {
     for (const row of rows) {
       const label = servCodeGroupMap.get(row.servCodeId);
@@ -489,7 +476,7 @@ export function GanttChartPanel() {
   }
 
   const rawGroups: ProgGroup[] = [];
-  for (const [progCodeId, rows] of groupMap) {
+  for (const [progCodeId, rows] of progCodeRowMap) {
     const isSequential = rows.some((r) => r.runsInSequence);
     const sorted = isSequential
       ? [...rows].sort((a, b) => a.optimizedMin.localeCompare(b.optimizedMin))
@@ -498,8 +485,7 @@ export function GanttChartPanel() {
     rawGroups.push({ progCodeId, rows: sorted, primaryGroupLabel });
   }
 
-  // Sort: grouped rows first (by primary group label), then ungrouped (by progCodeId)
-  const groups = [...rawGroups].sort((a, b) => {
+  const progGroups = [...rawGroups].sort((a, b) => {
     if (a.primaryGroupLabel !== null && b.primaryGroupLabel !== null) {
       return a.primaryGroupLabel.localeCompare(b.primaryGroupLabel);
     }
@@ -550,7 +536,7 @@ export function GanttChartPanel() {
             {/* Header spacer */}
             <div style={{ height: HEADER_HEIGHT }} className="border-b border-border bg-card" />
 
-            {groups.map((group) => (
+            {progGroups.map((group) => (
               <div
                 key={group.progCodeId}
                 className="flex items-center px-2 border-b border-border/50 bg-card"
@@ -612,7 +598,7 @@ export function GanttChartPanel() {
               )}
 
               {/* One row per progCode */}
-              {groups.map((group) => (
+              {progGroups.map((group) => (
                 <GanttProgRow
                   key={group.progCodeId}
                   group={group}

@@ -10,6 +10,7 @@ import { useDiscount } from "@/app/realGreen/discount/useDiscount";
 import { usePriorityService } from "@/app/priorityService/usePriorityService";
 import { usePlannedTimeOff } from "@/app/plannedTimeOff/usePlannedTimeOff";
 import { useHoliday } from "@/app/holiday/useHoliday";
+import { useAssignmentGroup } from "@/app/assignmentGroup/useAssignmentGroup";
 
 const PACE_CRAWLER_CONTEXTS: CustomerContextMode[] = ["active"];
 
@@ -25,4 +26,5 @@ export function usePaceCrawlerDeps() {
   usePriorityService({ autoLoad: true });
   usePlannedTimeOff({ autoLoad: true });
   useHoliday({ autoLoad: true });
+  useAssignmentGroup({ autoLoad: true });
 }

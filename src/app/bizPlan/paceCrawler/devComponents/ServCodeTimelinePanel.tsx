@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
-import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { ServCodeTimelineEvent } from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
 
 function formatDate(iso: string): string {
@@ -40,7 +39,6 @@ export { ServCodeTimelinePanel as ServCodeTimeLine };
 export function ServCodeTimelinePanel() {
   const servCodeTimelineMap = useSelector(paceCrawlerSelect.servCodeTimelineMap);
   const employeeMap = useSelector(employeeSelect.employeeMap);
-  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
 
   const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
 

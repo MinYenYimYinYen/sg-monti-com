@@ -10,9 +10,11 @@ const AssignmentEntrySchema = new Schema(
     kind: { type: String, enum: ["single", "group"], required: true },
     // single entry
     servCodeId: { type: String },
-    // group entry
+    // group entry — old format (inline servCodeIds)
     servCodeIds: { type: [String] },
     label: { type: String },
+    // group entry — new format (reference to shared AssignmentGroup)
+    groupId: { type: String },
   },
   { _id: false },
 );

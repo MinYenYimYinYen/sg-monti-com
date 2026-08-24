@@ -2,15 +2,14 @@ import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
 import { deepSelect } from "@/app/realGreen/deepSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
-import { flattenEntries } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
+import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { paceCrawlerLookbackSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerLookbackSelect";
 import { runDayCrawlSimulation } from "@/app/bizPlan/paceCrawler/_lib/dayCrawlSimulation";
 import {
-  DayCrawlServCodeEntry,
-  DayCrawlEmployeeEntry,
   DayCrawlPriorityEntry,
+  DayCrawlEmployeeEntry,
   CrawlerResult,
   ProgCodeProjectedCompletion,
   ServCodePaceDelta,
@@ -101,14 +100,14 @@ const selectNextDateByEmployee = createSelector(
     // Seed from printed services — only for employees with assignments.
     for (const [employeeId, latestDate] of latestPrintedByEmployee) {
       const plan = assignmentsByEmployeeId.get(employeeId);
-      if (plan && flattenEntries(plan.entries).length > 0) {
+      if (plan && plan.entries.length > 0) {
         result.set(employeeId, dateStrings.nextWeekdayAfter(latestDate));
       }
     }
 
     // Ensure all assigned employees appear — those with no printed services get the crawl start.
     for (const [employeeId, plan] of assignmentsByEmployeeId) {
-      if (flattenEntries(plan.entries).length > 0 && !result.has(employeeId)) {
+      if (plan.entries.length > 0 && !result.has(employeeId)) {
         result.set(employeeId, crawlStart);
       }
     }
@@ -409,8 +408,10 @@ const selectActivePoolPriceByServCode = createSelector(
  * Assembles DayCrawlServCodeEntry[] and DayCrawlEmployeeEntry[] from layers 1–4,
  * then calls runDayCrawlSimulation.
  *
- * Employee entries use priorityEntries (from assignmentPlan.entries) instead of flat servCodeIds,
- * so group entries are passed through to the simulation correctly.
+ * All assignment entries are converted to unified DayCrawlPriorityEntry (always a group).
+ * Singles are wrapped as single-member groups.
+ * Multi-member groups are resolved against assignmentGroupSelect.groupByServCodeKey
+ * to get the stable shared groupId and label.
  *
  * timeOffDates per employee = personal PTO dates ∪ global holiday dates.
  */
@@ -424,6 +425,7 @@ const selectCrawlerResult = createSelector(
     selectTeamAvgTotalDailyPrice,
     employeeSelect.employeeMap,
     assignmentPlanSelect.assignmentsByEmployeeId,
+    assignmentGroupSelect.groupByServCodeKey,
     progServSelect.progCodes,
     selectMainDate,
     selectCrawlStart,
@@ -438,13 +440,14 @@ const selectCrawlerResult = createSelector(
     teamAvgTotalDailyPrice,
     employeeMap,
     assignmentsByEmployeeId,
+    groupByServCodeKey,
     progCodes,
     today,
     crawlStart,
     holidayDates,
   ): CrawlerResult => {
     // Build servCode entries
-    const servCodeEntries: DayCrawlServCodeEntry[] = [];
+    const servCodeEntries = [];
     for (const progCode of progCodes) {
       for (const servCode of progCode.servCodes) {
         const floor = openDateFloorMap.get(servCode.servCodeId);
@@ -466,7 +469,7 @@ const selectCrawlerResult = createSelector(
       }
     }
 
-    // Build employee entries — use assignmentPlan.entries to preserve group structure
+    // Build employee entries — convert all assignment entries to unified DayCrawlPriorityEntry
     const employeeEntries: DayCrawlEmployeeEntry[] = [];
     for (const [employeeId, plan] of assignmentsByEmployeeId) {
       if (plan.entries.length === 0) continue;
@@ -474,23 +477,39 @@ const selectCrawlerResult = createSelector(
       const employee = employeeMap.get(employeeId);
       if (!employee) continue;
 
-      // Build DayCrawlPriorityEntry[] from AssignmentEntry[]
-      const priorityEntries: DayCrawlPriorityEntry[] = plan.entries.map(
-        (entry) => {
-          if (entry.kind === "single") {
-            return { kind: "single", servCodeId: entry.servCodeId };
-          } else {
-            // Normalize the label by sorting servCodeIds so employees with the same
-            // group members (in different priority orders) share the same timeline key.
-            const normalizedLabel = entry.label ?? [...entry.servCodeIds].sort().join("+");
+      // Convert all entries to unified DayCrawlPriorityEntry (always a group)
+      const priorityEntries: DayCrawlPriorityEntry[] = plan.entries.map((entry) => {
+        if (entry.kind === "single") {
+          // Wrap single as a single-member group
+          return {
+            groupId: entry.servCodeId,
+            label: entry.servCodeId,
+            servCodeIds: [entry.servCodeId],
+          };
+        } else {
+          // Support both new format (groupId reference) and old format (inline servCodeIds)
+          if (entry.groupId) {
+            // New format: look up the shared group by groupId
+            const sharedGroup = groupByServCodeKey.get(entry.groupId) ?? null;
+            const resolvedServCodeIds: string[] = sharedGroup?.servCodeIds ?? [];
             return {
-              kind: "group",
-              servCodeIds: entry.servCodeIds,
-              label: normalizedLabel,
+              groupId: entry.groupId,
+              label: sharedGroup?.label ?? entry.groupId,
+              servCodeIds: resolvedServCodeIds,
+            };
+          } else {
+            // Old format: resolve by sorted servCodeIds key
+            const servCodeIds: string[] = entry.servCodeIds ?? [];
+            const sortedKey = [...servCodeIds].sort().join("+");
+            const sharedGroup = groupByServCodeKey.get(sortedKey);
+            return {
+              groupId: sharedGroup?.groupId ?? sortedKey,
+              label: sharedGroup?.label ?? sortedKey,
+              servCodeIds,
             };
           }
-        },
-      );
+        }
+      });
 
       const dailyRates =
         dailyRateMap.get(employeeId) ?? new Map<string, number>();

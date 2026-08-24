@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
+import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
-import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { ChevronRight } from "lucide-react";
 
 const ON_PACE_THRESHOLD = 2;
@@ -30,7 +30,7 @@ export function DeltaMapPanel() {
   const completionMap = useSelector(paceCrawlerSelect.progCodeProjectedCompletionMap);
   const activePoolMap = useSelector(paceCrawlerSelect.activePoolPriceByServCode);
   const progCodes = useSelector(progServSelect.progCodes);
-  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
+  const groups = useSelector(assignmentGroupSelect.groups);
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -43,27 +43,9 @@ export function DeltaMapPanel() {
     });
   }
 
-  // Build group registry from assignment plans
-  type GroupEntry = { label: string; servCodeIds: string[]; key: string };
-  const groupsByKey = new Map<string, GroupEntry>();
-
-  for (const plan of assignmentsByEmployeeId.values()) {
-    for (const entry of plan.entries) {
-      if (entry.kind === "group") {
-        const key = [...entry.servCodeIds].sort().join(",");
-        if (!groupsByKey.has(key)) {
-          groupsByKey.set(key, {
-            label: entry.label ?? entry.servCodeIds.join("+"),
-            servCodeIds: entry.servCodeIds,
-            key,
-          });
-        }
-      }
-    }
-  }
-
+  // Build a set of servCodeIds that are members of any shared group
   const groupMemberIds = new Set<string>();
-  for (const group of groupsByKey.values()) {
+  for (const group of groups) {
     for (const id of group.servCodeIds) groupMemberIds.add(id);
   }
 
@@ -109,15 +91,14 @@ export function DeltaMapPanel() {
 
   const displayRows: DisplayRow[] = [];
 
-  // Group rows — only show groups with at least one member that has a delta or pool
-  for (const group of groupsByKey.values()) {
+  // Group rows (from shared AssignmentGroup definitions)
+  for (const group of groups) {
     const memberDeltas = group.servCodeIds.map((id) => deltaMap.get(id));
     const hasAnyData = memberDeltas.some((d) => d?.deltaDays != null || (activePoolMap.get(group.servCodeIds[0]) ?? 0) > 0);
     if (!hasAnyData) continue;
 
     const firstMeta = servCodeMeta.get(group.servCodeIds[0]);
 
-    // Group delta = latest projectedEnd vs latest currentMax
     const memberEndDates = group.servCodeIds
       .map((id) => deltaMap.get(id)?.projectedEndDate)
       .filter((d): d is string => d != null);
@@ -128,14 +109,13 @@ export function DeltaMapPanel() {
       .filter((d): d is string => d != null);
     const currentMax = memberCurrentMaxes.length > 0 ? [...memberCurrentMaxes].sort().at(-1)! : null;
 
-    // Use the delta from the member with the latest projectedEnd (the bottleneck)
     const bottleneckDelta = memberDeltas.find((d) => d?.projectedEndDate === projectedEnd);
     const deltaDays = bottleneckDelta?.deltaDays ?? null;
 
     displayRows.push({
       kind: "group",
       label: group.label,
-      key: group.key,
+      key: group.groupId,
       servCodeIds: group.servCodeIds,
       progCodeId: firstMeta?.progCodeId ?? "—",
       projectedEnd,
@@ -143,8 +123,7 @@ export function DeltaMapPanel() {
       deltaDays,
     });
 
-    // Member rows (shown when expanded)
-    if (expandedGroups.has(group.key)) {
+    if (expandedGroups.has(group.groupId)) {
       for (const servCodeId of group.servCodeIds) {
         const delta = deltaMap.get(servCodeId);
         const meta = servCodeMeta.get(servCodeId);
@@ -155,7 +134,7 @@ export function DeltaMapPanel() {
           projectedEnd: delta?.projectedEndDate ?? null,
           currentMax: meta?.currentMax ?? null,
           deltaDays: delta?.deltaDays ?? null,
-          groupKey: group.key,
+          groupKey: group.groupId,
         });
       }
     }
@@ -176,7 +155,7 @@ export function DeltaMapPanel() {
           deltaDays: delta?.deltaDays ?? null,
         };
       })
-      .filter((row) => row.deltaDays != null), // hide null-delta rows
+      .filter((row) => row.deltaDays != null),
   ).sort((a, b) => {
     const dateA = a.currentMax ?? "";
     const dateB = b.currentMax ?? "";
@@ -289,7 +268,7 @@ export function DeltaMapPanel() {
         </tbody>
       </table>
       <p className="text-[10px] text-muted-foreground mt-2">
-        {groupsByKey.size} groups, {singleRows.length} standalone — {behind} behind, {onPace} on pace, {ahead} ahead
+        {groups.length} groups, {singleRows.length} standalone — {behind} behind, {onPace} on pace, {ahead} ahead
       </p>
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { employeeCardSelect } from "@/app/bizPlan/paceCrawler/employeeCardSelect";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
@@ -7,7 +8,13 @@ import { paceCrawlerActions } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { DatePicker } from "@/components/DatePicker";
 import { cn } from "@/style/utils";
-import type { EmployeeCardData, OpenServCodeRow } from "@/app/bizPlan/paceCrawler/employeeCardSelect";
+import { ChevronRight } from "lucide-react";
+import type {
+  EmployeeCardData,
+  OpenServCodeRow,
+  OpenGroupRow,
+  OpenGroupMemberRow,
+} from "@/app/bizPlan/paceCrawler/employeeCardSelect";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -24,11 +31,17 @@ function formatPercent(n: number | null): string {
   return `${sign}${(n * 100).toFixed(0)}%`;
 }
 
+function formatDate(iso: string): string {
+  if (!iso) return "—";
+  const [, month, day] = iso.split("-");
+  return `${parseInt(month)}/${parseInt(day)}`;
+}
+
 // ---------------------------------------------------------------------------
-// ServCodeRow — one row per open servCode on the card
+// SingleServCodeRow — one row per open single servCode on the card
 // ---------------------------------------------------------------------------
 
-function ServCodeRow({ row }: { row: OpenServCodeRow }) {
+function SingleServCodeRow({ row }: { row: OpenServCodeRow }) {
   const diffColor = row.isOverdue
     ? "text-destructive"
     : row.isAhead
@@ -37,9 +50,7 @@ function ServCodeRow({ row }: { row: OpenServCodeRow }) {
         ? "text-secondary"
         : "text-muted-foreground";
 
-  const rateColor = row.isOverdue
-    ? "text-destructive"
-    : "text-primary";
+  const rateColor = row.isOverdue ? "text-destructive" : "text-primary";
 
   return (
     <div className="flex items-start gap-2 py-1.5 border-b border-border/40 last:border-0">
@@ -93,11 +104,131 @@ function ServCodeRow({ row }: { row: OpenServCodeRow }) {
 }
 
 // ---------------------------------------------------------------------------
+// GroupMemberRow — one sub-row per member in an expanded group
+// ---------------------------------------------------------------------------
+
+function GroupMemberRow({ member }: { member: OpenGroupMemberRow }) {
+  return (
+    <div className="flex items-center gap-2 py-1 pl-4 border-b border-border/20 last:border-0">
+      <span className="font-mono text-[10px] text-muted-foreground w-12 shrink-0">
+        ↳ {member.servCodeId}
+      </span>
+      <div className="flex-1 min-w-0">
+        <span className={`font-mono text-[10px] font-semibold ${member.isOverdue ? "text-destructive" : "text-primary"}`}>
+          {formatDollars(member.requiredDailyPrice)}/day
+        </span>
+        {member.isOverdue && (
+          <span className="ml-1 text-[9px] text-destructive bg-destructive/10 rounded px-1">overdue</span>
+        )}
+      </div>
+      <div className="text-right shrink-0">
+        <div className="font-mono text-[10px] text-muted-foreground">
+          {formatDollars(member.poolRemaining)} left
+        </div>
+        <div className="font-mono text-[10px] text-muted-foreground">
+          {member.isOverdue ? "—" : `${formatDate(member.scMax)} (${member.remainingWeekdays}d)`}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GroupEntryRow — group header + expandable member sub-rows
+// ---------------------------------------------------------------------------
+
+function GroupEntryRow({ row }: { row: OpenGroupRow }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const diffColor = row.isOverdue
+    ? "text-destructive"
+    : row.isAhead
+      ? "text-accent"
+      : row.isBehind
+        ? "text-secondary"
+        : "text-muted-foreground";
+
+  const rateColor = row.isOverdue ? "text-destructive" : "text-primary";
+
+  return (
+    <div className="border-b border-border/40 last:border-0">
+      {/* Group header row */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-start gap-2 py-1.5 text-left hover:bg-accent/5 transition-colors"
+      >
+        {/* Expand chevron + label */}
+        <div className="w-14 shrink-0 pt-0.5 flex flex-col gap-0.5">
+          <span className="flex items-center gap-0.5">
+            <ChevronRight
+              className={`w-3 h-3 text-primary shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
+            />
+            <span className="font-mono text-[10px] text-primary font-semibold truncate">
+              {row.label}
+            </span>
+          </span>
+          <span className="text-[9px] text-primary bg-primary/10 rounded px-1 leading-tight w-fit">
+            group
+          </span>
+          {row.isOverdue && (
+            <span className="text-[9px] text-destructive bg-destructive/10 rounded px-1 leading-tight w-fit">
+              overdue
+            </span>
+          )}
+          {!row.isOverdue && row.isBehind && (
+            <span className="text-[9px] text-secondary bg-secondary/10 rounded px-1 leading-tight w-fit">
+              behind
+            </span>
+          )}
+        </div>
+
+        {/* Required $/day (sum of member rates) */}
+        <div className="flex-1 min-w-0">
+          <div className={`font-mono text-xs font-semibold ${rateColor}`}>
+            {formatDollars(row.requiredDailyPrice)}/day
+          </div>
+          <div className={`font-mono text-[10px] ${diffColor}`}>
+            hist: {formatDollars(row.historicalDailyPrice)}
+            {row.diffPrice !== 0 && isFinite(row.diffPrice) && (
+              <span className="ml-1">
+                ({row.diffPrice > 0 ? "+" : ""}{formatDollars(row.diffPrice)}
+                {row.diffPercent !== null && ` / ${formatPercent(row.diffPercent)}`})
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Combined pool + group window */}
+        <div className="text-right shrink-0">
+          <div className="font-mono text-[10px] text-muted-foreground">
+            {formatDollars(row.combinedPool)} left
+          </div>
+          {row.latestScMax && (
+            <div className="font-mono text-[10px] text-muted-foreground">
+              ends {formatDate(row.latestScMax)}
+            </div>
+          )}
+        </div>
+      </button>
+
+      {/* Member sub-rows (shown when expanded) */}
+      {expanded && (
+        <div className="bg-accent/5">
+          {row.members.map((member) => (
+            <GroupMemberRow key={member.servCodeId} member={member} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // EmployeeCard
 // ---------------------------------------------------------------------------
 
 function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
-  const { employee, isAlreadyRouted, openServCodes } = cardData;
+  const { employee, isAlreadyRouted, openEntries } = cardData;
 
   // Header: neutral unless already routed today
   const headerBg = isAlreadyRouted ? "bg-destructive/10" : "bg-accent/10";
@@ -116,16 +247,20 @@ function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
         )}
       </div>
 
-      {/* ServCode rows */}
+      {/* Entry rows */}
       <div className="flex-1 px-3 py-1">
-        {openServCodes.length === 0 ? (
+        {openEntries.length === 0 ? (
           <p className="text-xs text-muted-foreground italic py-2">
             No open servCodes on this date
           </p>
         ) : (
-          openServCodes.map((row) => (
-            <ServCodeRow key={row.servCodeId} row={row} />
-          ))
+          openEntries.map((entry) => {
+            if (entry.kind === "single") {
+              return <SingleServCodeRow key={entry.servCodeId} row={entry} />;
+            } else {
+              return <GroupEntryRow key={entry.groupId} row={entry} />;
+            }
+          })
         )}
       </div>
     </div>
@@ -141,12 +276,12 @@ export function DiffD5EmployeeCardPanel() {
   const mainDate = useSelector(paceCrawlerSelect.mainDate);
   const cardData = useSelector(employeeCardSelect.employeeCardData);
 
-  const withOpen = cardData.filter((c) => c.openServCodes.length > 0).length;
+  const withOpen = cardData.filter((c) => c.openEntries.length > 0).length;
   const withOverdue = cardData.filter((c) =>
-    c.openServCodes.some((r) => r.isOverdue),
+    c.openEntries.some((r) => r.isOverdue),
   ).length;
   const withBehind = cardData.filter((c) =>
-    c.openServCodes.some((r) => r.isBehind && !r.isOverdue),
+    c.openEntries.some((r) => r.isBehind && !r.isOverdue),
   ).length;
 
   return (
@@ -175,6 +310,7 @@ export function DiffD5EmployeeCardPanel() {
         <span className="text-accent">green = ahead</span>
         <span className="text-secondary">orange = behind</span>
         <span className="text-destructive">red = overdue</span>
+        <span>Groups: click ▶ to expand members</span>
       </div>
 
       {/* Card grid */}

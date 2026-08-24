@@ -1,4 +1,4 @@
-import { dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { dateStrings, dateRanges } from "@/lib/primatives/dates/dateStrings";
 import {
   CrawlerResult,
   CrawlerServCodeResult,
@@ -16,12 +16,16 @@ import {
  * Runs the day-crawl simulation.
  *
  * Walks forward one weekday at a time from `today`. On each day, each employee
- * works their highest-priority eligible entry (single servCode or group).
+ * works their highest-priority eligible entry (a group — singles are single-member groups).
  * Sequential progCodes are handled by locking N+1 until N drains.
- * Group entries drain all member pools simultaneously at the employee's totalAvgDailyPrice.
  *
- * Returns projected end dates, optimized date ranges, per-employee timeline events,
- * and per-entry (servCode/group) crew transition events with pool snapshots.
+ * Drain model: urgency-weighted by (pool / remainingWeekdays) per member.
+ * Members with tighter deadlines receive a larger share of the employee's daily capacity.
+ * This ensures front-loaded members (e.g., SE3 ending 9/1) drain faster than
+ * members with distant deadlines (e.g., CC3 ending 9/30) within the same group.
+ *
+ * Returns projected end dates (per member), optimized date ranges, per-employee timeline events,
+ * and per-entry (group) crew transition events with pool snapshots.
  */
 export function runDayCrawlSimulation(
   servCodeEntries: DayCrawlServCodeEntry[],
@@ -102,26 +106,13 @@ export function runDayCrawlSimulation(
   const activeEmployeesByEntry = new Map<string, Set<string>>();
   const servCodeTimeline = new Map<string, ServCodeTimelineEvent[]>();
 
-  // Helper: get the current pool for an entry label (sum for groups, direct for singles)
-  function getEntryPool(entryLabel: string): number {
-    const directPool = pools.get(entryLabel);
-    if (directPool !== undefined) return directPool;
-    // It's a group — find members by scanning employee entries
-    for (const employee of employeeEntries) {
-      for (const pe of employee.priorityEntries) {
-        if (pe.kind === "group" && pe.label === entryLabel) {
-          return pe.servCodeIds.reduce((sum, id) => sum + (pools.get(id) ?? 0), 0);
-        }
-      }
-    }
-    return 0;
+  // Helper: get the current pool for an entry label (sum across all members)
+  function getEntryPool(entryLabel: string, servCodeIds: string[]): number {
+    return servCodeIds.reduce((sum, id) => sum + (pools.get(id) ?? 0), 0);
   }
 
-  // Helper: get an employee's daily rate for an entry label
-  function getEmployeeRateForEntry(employee: DayCrawlEmployeeEntry, entryLabel: string): number {
-    const directRate = employee.dailyRates.get(entryLabel);
-    if (directRate !== undefined) return directRate;
-    // It's a group — use totalAvgDailyPrice
+  // Helper: get an employee's daily rate for an entry (totalAvgDailyPrice for all entries)
+  function getEmployeeRateForEntry(employee: DayCrawlEmployeeEntry): number {
     return employee.totalAvgDailyPrice;
   }
 
@@ -132,7 +123,7 @@ export function runDayCrawlSimulation(
     let total = 0;
     for (const empId of active) {
       const emp = employeeEntries.find((e) => e.employeeId === empId);
-      if (emp) total += getEmployeeRateForEntry(emp, entryLabel);
+      if (emp) total += getEmployeeRateForEntry(emp);
     }
     return total;
   }
@@ -140,6 +131,7 @@ export function runDayCrawlSimulation(
   // Helper: record a ServCodeTimelineEvent
   function recordServCodeEvent(
     entryLabel: string,
+    servCodeIds: string[],
     date: string,
     employeeId: string,
     kind: ServCodeTimelineEvent["kind"],
@@ -147,9 +139,9 @@ export function runDayCrawlSimulation(
     fromServCode?: string,
   ) {
     const emp = employeeEntries.find((e) => e.employeeId === employeeId);
-    const employeeDailyRate = emp ? getEmployeeRateForEntry(emp, entryLabel) : 0;
+    const employeeDailyRate = emp ? getEmployeeRateForEntry(emp) : 0;
     const teamDailyRate = computeTeamRate(entryLabel);
-    const poolRemaining = getEntryPool(entryLabel);
+    const poolRemaining = getEntryPool(entryLabel, servCodeIds);
 
     const events = servCodeTimeline.get(entryLabel) ?? [];
     events.push({
@@ -172,10 +164,6 @@ export function runDayCrawlSimulation(
   // it will never drain during the crawl — its pool would stay locked forever.
   // Instead, carry its remaining pool forward to the next sequential servCode and
   // unlock the successor immediately. Cascade through the chain as needed.
-  //
-  // This handles the real-world case where a sequential round (e.g. LR1) is past its
-  // season end date but still has remaining work. The work carries over to the next
-  // round (LR2), which opens immediately. LR1 will appear as "LATE" in the Urgent card.
   // ---------------------------------------------------------------------------
   for (const group of sequentialGroups.values()) {
     const sorted = [...group].sort((a, b) => a.servCodeRangeMin.localeCompare(b.servCodeRangeMin));
@@ -190,11 +178,6 @@ export function runDayCrawlSimulation(
         const successorPool = pools.get(successor.servCodeId) ?? 0;
         pools.set(successor.servCodeId, successorPool + currentPool);
         pools.set(current.servCodeId, 0);
-        // Unlock the successor. Use the predecessor's servCodeRangeMax as the floor
-        // so the Gantt shows LR2 starting where LR1 ended (sequential continuity).
-        // The effective open date for employees is max(personalOpenDate, floor), so
-        // employees won't actually start before they're available — this only affects
-        // the optimizedMin display and the "Apply Optimized Ranges" output.
         sequentialLocks.set(successor.servCodeId, false);
         resolvedServCodeRangeMin.set(successor.servCodeId, current.servCodeRangeMax);
       } else if (isPastDue && currentPool <= 0) {
@@ -202,7 +185,6 @@ export function runDayCrawlSimulation(
         sequentialLocks.set(successor.servCodeId, false);
         resolvedServCodeRangeMin.set(successor.servCodeId, current.servCodeRangeMax);
       }
-      // If not past due, leave the lock as-is (handled during the crawl)
     }
   }
 
@@ -233,176 +215,135 @@ export function runDayCrawlSimulation(
       let workedEntryLabel: string | null = null;
 
       for (const priorityEntry of employee.priorityEntries) {
-        if (priorityEntry.kind === "single") {
-          const { servCodeId } = priorityEntry;
+        const { groupId, label, servCodeIds } = priorityEntry;
 
-          if (sequentialLocks.get(servCodeId) === true) continue;
+        // Build the set of eligible (unlocked) members for this day.
+        // Locked sequential members are skipped — they are waiting for their predecessor
+        // to drain. The group proceeds with whatever unlocked members have pool remaining.
+        let groupFloor: string | null = null;
+        let groupHasPool = false;
+
+        const eligibleMemberIds: string[] = [];
+
+        for (const servCodeId of servCodeIds) {
+          if (sequentialLocks.get(servCodeId) === true) continue; // locked — skip
           const floor = resolvedServCodeRangeMin.get(servCodeId);
-          if (!floor) continue;
-          const effectiveOpenDate = personalOpenDate > floor ? personalOpenDate : floor;
-          if (day < effectiveOpenDate) continue;
           const pool = pools.get(servCodeId) ?? 0;
-          if (pool <= 0) continue;
-          const rate = employee.dailyRates.get(servCodeId) ?? 0;
-          if (rate <= 0) continue;
-
-          const drain = Math.min(rate, pool);
-          const newPool = pool - drain;
-          pools.set(servCodeId, newPool);
-          workedEntryLabel = servCodeId;
-
-          // Employee timeline
-          if (prevEntryLabel === null) {
-            timeline.push({ date: day, event: { kind: "starts", entryLabel: servCodeId, fromEntryLabel: null } });
-          } else if (prevEntryLabel !== servCodeId) {
-            timeline.push({ date: day, event: { kind: "switches", fromEntryLabel: prevEntryLabel, toEntryLabel: servCodeId } });
-            timeline.push({ date: day, event: { kind: "starts", entryLabel: servCodeId, fromEntryLabel: prevEntryLabel } });
-          }
-          inDowntime.set(employee.employeeId, false);
-
-          // ServCode timeline — handle entry/exit transitions
-          if (prevEntryLabel !== servCodeId) {
-            if (prevEntryLabel !== null) {
-              const prevActive = activeEmployeesByEntry.get(prevEntryLabel);
-              if (prevActive) prevActive.delete(employee.employeeId);
-              recordServCodeEvent(prevEntryLabel, day, employee.employeeId, "leaves", servCodeId);
+          if (pool > 0) {
+            groupHasPool = true;
+            eligibleMemberIds.push(servCodeId);
+            if (floor != null) {
+              if (groupFloor === null) { groupFloor = floor; }
+              else if (floor.localeCompare(groupFloor) < 0) { groupFloor = floor; }
             }
-            if (!activeEmployeesByEntry.has(servCodeId)) activeEmployeesByEntry.set(servCodeId, new Set());
-            activeEmployeesByEntry.get(servCodeId)!.add(employee.employeeId);
-            const kind = prevEntryLabel === null ? "starts" : "returns";
-            recordServCodeEvent(servCodeId, day, employee.employeeId, kind, undefined, prevEntryLabel ?? undefined);
           }
+        }
 
-            // Check if pool just drained
-          if (newPool <= 0 && projectedEndDate.get(servCodeId) === null) {
-            projectedEndDate.set(servCodeId, day);
-            timeline.push({ date: day, event: { kind: "finishes", entryLabel: servCodeId } });
-            activeEmployeesByEntry.get(servCodeId)?.delete(employee.employeeId);
-            recordServCodeEvent(servCodeId, day, employee.employeeId, "finishes");
+        if (!groupHasPool) continue;
+        if (!groupFloor) continue;
 
+        const effectiveOpenDate = personalOpenDate > groupFloor ? personalOpenDate : groupFloor;
+        if (day < effectiveOpenDate) continue;
+
+        const rate = employee.totalAvgDailyPrice;
+        if (rate <= 0) continue;
+
+        const memberPools = eligibleMemberIds.map((id) => pools.get(id) ?? 0);
+        const totalPool = memberPools.reduce((sum, p) => sum + p, 0);
+        if (totalPool <= 0) continue;
+
+        const actualDrain = Math.min(rate, totalPool);
+
+        // ---------------------------------------------------------------------------
+        // Urgency-weighted drain: distribute actualDrain by (pool / remainingWeekdays)
+        // per member. Members with tighter deadlines get a larger share.
+        // ---------------------------------------------------------------------------
+        const memberWeights: number[] = eligibleMemberIds.map((servCodeId) => {
+          const pool = pools.get(servCodeId) ?? 0;
+          const entry = servCodeEntries.find((e) => e.servCodeId === servCodeId);
+          const scMax = entry?.servCodeRangeMax ?? day;
+          const remainingWeekdays = Math.max(1, dateRanges.weekdaysBetween(day, scMax));
+          return pool / remainingWeekdays;
+        });
+
+        const totalWeight = memberWeights.reduce((sum, w) => sum + w, 0);
+
+        let anyMemberDrained = false;
+
+        for (let i = 0; i < eligibleMemberIds.length; i++) {
+          const servCodeId = eligibleMemberIds[i];
+          const memberPool = memberPools[i];
+          if (memberPool <= 0) continue;
+
+          const weight = totalWeight > 0
+            ? memberWeights[i] / totalWeight
+            : 1 / eligibleMemberIds.length; // equal split if all weights are zero
+
+          const memberDrain = Math.min(memberPool, actualDrain * weight);
+          const newPool = memberPool - memberDrain;
+          pools.set(servCodeId, newPool);
+          anyMemberDrained = true;
+
+          // Sequential successor unlock — handled per-member so the successor opens
+          // as soon as this member's pool drains (even if other group members haven't).
+          if (newPool <= 0) {
+            if (projectedEndDate.get(servCodeId) === null) {
+              projectedEndDate.set(servCodeId, day);
+            }
             const successor = sequentialSuccessor.get(servCodeId);
             if (successor) {
               sequentialLocks.set(successor, false);
-              // Use `day` (not nextWeekdayAfter) so the successor opens immediately —
-              // the employee already used today for the predecessor, so they'll pick up
-              // the successor on the very next day with no gap.
               resolvedServCodeRangeMin.set(successor, day);
             }
           }
-
-          break;
-
-        } else {
-          const { servCodeIds, label } = priorityEntry;
-
-          // Build the set of eligible (unlocked) members for this day.
-          // Locked sequential members are skipped — they are waiting for their predecessor
-          // to drain. The group proceeds with whatever unlocked members have pool remaining.
-          // This prevents a deadlock where N+1 locked members permanently block the group
-          // from working the unlocked N member.
-          let groupFloor: string | null = null;
-          let groupHasPool = false;
-
-          const eligibleMemberIds: string[] = [];
-
-          for (const servCodeId of servCodeIds) {
-            if (sequentialLocks.get(servCodeId) === true) continue; // locked — skip, not a deadlock
-            const floor = resolvedServCodeRangeMin.get(servCodeId);
-            const pool = pools.get(servCodeId) ?? 0;
-            if (pool > 0) {
-              groupHasPool = true;
-              eligibleMemberIds.push(servCodeId);
-              if (floor != null) {
-                if (groupFloor === null) { groupFloor = floor; }
-                else if (floor.localeCompare(groupFloor) < 0) { groupFloor = floor; }
-              }
-            }
-          }
-
-          if (!groupHasPool) continue;
-          if (!groupFloor) continue;
-
-          const effectiveOpenDate = personalOpenDate > groupFloor ? personalOpenDate : groupFloor;
-          if (day < effectiveOpenDate) continue;
-
-          const rate = employee.totalAvgDailyPrice;
-          if (rate <= 0) continue;
-
-          const memberPools = eligibleMemberIds.map((id) => pools.get(id) ?? 0);
-          const totalPool = memberPools.reduce((sum, p) => sum + p, 0);
-          if (totalPool <= 0) continue;
-
-          const actualDrain = Math.min(rate, totalPool);
-          let anyMemberDrained = false;
-
-          for (let i = 0; i < eligibleMemberIds.length; i++) {
-            const servCodeId = eligibleMemberIds[i];
-            const memberPool = memberPools[i];
-            if (memberPool <= 0) continue;
-
-            const memberDrain = Math.min(memberPool, actualDrain * (memberPool / totalPool));
-            const newPool = memberPool - memberDrain;
-            pools.set(servCodeId, newPool);
-            anyMemberDrained = true;
-
-            // Sequential successor unlock — handled per-member so the successor opens
-            // as soon as this member's pool drains (even if other group members haven't).
-            if (newPool <= 0) {
-              const successor = sequentialSuccessor.get(servCodeId);
-              if (successor) {
-                sequentialLocks.set(successor, false);
-                // Use `day` (not nextWeekdayAfter) so the successor opens immediately —
-                // the employee already used today for the predecessor, so they'll pick up
-                // the successor on the very next day with no gap.
-                resolvedServCodeRangeMin.set(successor, day);
-              }
-            }
-          }
-
-          if (!anyMemberDrained) continue;
-
-          workedEntryLabel = label;
-
-          // Employee timeline
-          if (prevEntryLabel === null) {
-            timeline.push({ date: day, event: { kind: "starts", entryLabel: label, fromEntryLabel: null } });
-          } else if (prevEntryLabel !== label) {
-            timeline.push({ date: day, event: { kind: "switches", fromEntryLabel: prevEntryLabel, toEntryLabel: label } });
-            timeline.push({ date: day, event: { kind: "starts", entryLabel: label, fromEntryLabel: prevEntryLabel } });
-          }
-          inDowntime.set(employee.employeeId, false);
-
-          // ServCode timeline — handle entry/exit transitions for group
-          if (prevEntryLabel !== label) {
-            if (prevEntryLabel !== null) {
-              const prevActive = activeEmployeesByEntry.get(prevEntryLabel);
-              if (prevActive) prevActive.delete(employee.employeeId);
-              recordServCodeEvent(prevEntryLabel, day, employee.employeeId, "leaves", label);
-            }
-            if (!activeEmployeesByEntry.has(label)) activeEmployeesByEntry.set(label, new Set());
-            activeEmployeesByEntry.get(label)!.add(employee.employeeId);
-            const kind = prevEntryLabel === null ? "starts" : "returns";
-            recordServCodeEvent(label, day, employee.employeeId, kind, undefined, prevEntryLabel ?? undefined);
-          }
-
-          // Check if all member pools drained — record group finishes and set a shared
-          // projectedEndDate for all members. Using the allDrained moment (rather than
-          // per-member drain) guarantees every member gets the same optimizedMax, which
-          // is the correct model: grouped servCodes are worked simultaneously and finish together.
-          const allDrained = servCodeIds.every((id) => (pools.get(id) ?? 0) <= 0);
-          if (allDrained) {
-            for (const servCodeId of servCodeIds) {
-              if (projectedEndDate.get(servCodeId) === null) {
-                projectedEndDate.set(servCodeId, day);
-              }
-            }
-            timeline.push({ date: day, event: { kind: "finishes", entryLabel: label } });
-            activeEmployeesByEntry.get(label)?.delete(employee.employeeId);
-            recordServCodeEvent(label, day, employee.employeeId, "finishes");
-          }
-
-          break;
         }
+
+        if (!anyMemberDrained) continue;
+
+        workedEntryLabel = label;
+
+        // Employee timeline
+        if (prevEntryLabel === null) {
+          timeline.push({ date: day, event: { kind: "starts", entryLabel: label, fromEntryLabel: null } });
+        } else if (prevEntryLabel !== label) {
+          timeline.push({ date: day, event: { kind: "switches", fromEntryLabel: prevEntryLabel, toEntryLabel: label } });
+          timeline.push({ date: day, event: { kind: "starts", entryLabel: label, fromEntryLabel: prevEntryLabel } });
+        }
+        inDowntime.set(employee.employeeId, false);
+
+        // ServCode timeline — handle entry/exit transitions for group
+        if (prevEntryLabel !== label) {
+          if (prevEntryLabel !== null) {
+            const prevActive = activeEmployeesByEntry.get(prevEntryLabel);
+            if (prevActive) prevActive.delete(employee.employeeId);
+            // Find the servCodeIds for the previous entry to pass to recordServCodeEvent
+            const prevEntry = employee.priorityEntries.find((pe) => pe.label === prevEntryLabel);
+            recordServCodeEvent(prevEntryLabel, prevEntry?.servCodeIds ?? [], day, employee.employeeId, "leaves", label);
+          }
+          if (!activeEmployeesByEntry.has(label)) activeEmployeesByEntry.set(label, new Set());
+          activeEmployeesByEntry.get(label)!.add(employee.employeeId);
+          const kind = prevEntryLabel === null ? "starts" : "returns";
+          recordServCodeEvent(label, servCodeIds, day, employee.employeeId, kind, undefined, prevEntryLabel ?? undefined);
+        }
+
+        // Check if all member pools drained — record group finishes event.
+        // The group finishes when the LAST member drains (not each individual member).
+        // Individual member projectedEndDates are set above when each member drains.
+        const allDrained = servCodeIds.every((id) => (pools.get(id) ?? 0) <= 0);
+        if (allDrained) {
+          // Set projectedEndDate for any members that haven't been set yet
+          // (shouldn't happen with urgency-weighted drain, but guard anyway)
+          for (const servCodeId of servCodeIds) {
+            if (projectedEndDate.get(servCodeId) === null) {
+              projectedEndDate.set(servCodeId, day);
+            }
+          }
+          timeline.push({ date: day, event: { kind: "finishes", entryLabel: label } });
+          activeEmployeesByEntry.get(label)?.delete(employee.employeeId);
+          recordServCodeEvent(label, servCodeIds, day, employee.employeeId, "finishes");
+        }
+
+        break;
       }
 
       // Record downtime
@@ -428,14 +369,15 @@ export function runDayCrawlSimulation(
   // ---------------------------------------------------------------------------
 
   // Build servCodeId → groupLabel map from employee priority entries.
-  // The label is already normalized (sorted) by the caller (paceCrawlerSelect),
-  // but we guard here too in case the simulation is called directly.
+  // For singles: groupLabel = servCodeId (the label is the servCodeId itself).
+  // For multi-member groups: groupLabel = the group's label.
   const servCodeGroupLabelMap = new Map<string, string>();
   for (const employee of employeeEntries) {
     for (const pe of employee.priorityEntries) {
-      if (pe.kind === "group") {
-        for (const servCodeId of pe.servCodeIds) {
-          if (!servCodeGroupLabelMap.has(servCodeId)) {
+      for (const servCodeId of pe.servCodeIds) {
+        if (!servCodeGroupLabelMap.has(servCodeId)) {
+          // For single-member entries, the label equals the servCodeId — don't record as a "group"
+          if (pe.servCodeIds.length > 1) {
             servCodeGroupLabelMap.set(servCodeId, pe.label);
           }
         }
@@ -461,9 +403,8 @@ export function runDayCrawlSimulation(
   }
 
   // Align group members' optimizedMin so all members share the same start date.
-  // Rule: if a group contains a sequential servCode, its optimizedMin is authoritative
-  // (it reflects the dynamically resolved unlock date from the crawl). For groups with
-  // no sequential member, use the minimum optimizedMin across all members.
+  // Rule: if a group contains a sequential servCode, its optimizedMin is authoritative.
+  // For groups with no sequential member, use the minimum optimizedMin across all members.
   const sequentialServCodeIds = new Set<string>();
   for (const entry of servCodeEntries) {
     if (entry.runsInSequence) sequentialServCodeIds.add(entry.servCodeId);

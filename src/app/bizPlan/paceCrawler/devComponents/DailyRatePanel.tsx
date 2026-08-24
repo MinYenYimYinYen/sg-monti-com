@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
+import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 
 export function DailyRatePanel() {
   const dailyRateMap = useSelector(paceCrawlerSelect.dailyRateByEmployeeByServCode);
@@ -12,6 +13,7 @@ export function DailyRatePanel() {
   const programTypeMap = useSelector(paceCrawlerSelect.servCodeProgramTypeMap);
   const employeeMap = useSelector(employeeSelect.employeeMap);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
+  const groupMap = useSelector(assignmentGroupSelect.groupMap);
 
   type Row = {
     employeeId: string;
@@ -49,7 +51,11 @@ export function DailyRatePanel() {
         });
       } else {
         // Group entry — uses totalAvgDailyPrice
-        const label = entry.label ?? entry.servCodeIds.join("+");
+        // Support both old format (inline servCodeIds) and new format (groupId reference)
+        const groupEntry = entry as { kind: "group"; groupId?: string; servCodeIds?: string[]; label?: string };
+        const resolvedGroup = groupEntry.groupId ? groupMap.get(groupEntry.groupId) : null;
+        const servCodeIds = resolvedGroup?.servCodeIds ?? groupEntry.servCodeIds ?? [];
+        const label = resolvedGroup?.label ?? groupEntry.label ?? groupEntry.groupId ?? servCodeIds.join("+");
         const rate = totalAvgDailyPrice ?? 0;
         const hasRate = rate > 0;
 
@@ -60,7 +66,7 @@ export function DailyRatePanel() {
           rate,
           isEstimated: !hasRate,
           isGroup: true,
-          groupMembers: entry.servCodeIds,
+          groupMembers: servCodeIds,
         });
       }
     }
