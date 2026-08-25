@@ -218,6 +218,10 @@ export function useSchedPromise() {
     - **File Naming**: Use `camelCase` for directories and files (e.g., `src/app/auth/changePassword/page.tsx`), except for Next.js special files (`page.tsx`, `layout.tsx`) and React Components (`Button.tsx`).
     - **Comments**: Comments describe *why*, not *what*. Only add a comment when there is genuine potential for confusion. Type-level JSDoc on the type itself is appropriate when the type's purpose is non-obvious; per-property comments are noise unless a property has a non-obvious constraint or invariant.
     - **Inline function variable names**: In one-liner callbacks, abbreviation is acceptable (`customers.map(c => c.id)`). When a callback uses a block body (`{}`), use full descriptive names — `customers.map((customer) => { ... })`, not `customers.map((c) => { ... })`.
+    - **Naming — describe the data, not the structure**: Property and variable names must describe what the data *is*, not its structural role in a container. Generic placeholder words like `entry`, `item`, `record`, `element`, or `node` are not acceptable as property names or standalone type names. If Dr. Bob wouldn't know what it holds from the name alone, rename it.
+      - **DON'T ✗**: `entries: AssignmentPlanEntry[]`, `items: MenuItem[]`, `records: LogRecord[]`
+      - **DO ✓**: `groupAssignments: GroupAssignment[]`, `menuItems: MenuItem[]`, `logs: Log[]`
+      - Type names may use structural suffixes (`Doc`, `Props`, etc.) per the type naming conventions above — but the *property* holding a collection of those types must name the collection semantically, not generically.
 
 ## Key Dependencies
 - `eslint`: For linting
