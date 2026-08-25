@@ -2,7 +2,7 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
-import { flattenEntries } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
+import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 
 const selectAssignmentPlans = (state: AppState) =>
   state.assignmentPlan.assignmentPlans;
@@ -14,32 +14,36 @@ const selectScenarioMap = createSelector(
   (scenarios) => new Grouper(scenarios).toUniqueMap((s) => s.name),
 );
 
-// Map of employeeId → AssignmentPlan — only employees with at least one entry.
+// Map of employeeId → AssignmentPlan — only employees with at least one groupId.
 // Employees with empty plans are excluded so they don't appear in cards, the crawler, or
 // any downstream selector that iterates this map.
 const selectAssignmentsByEmployeeId = createSelector(
   [selectAssignmentPlans],
   (assignmentPlans) =>
-    new Grouper(assignmentPlans.filter((ap) => ap.entries.length > 0)).toUniqueMap(
+    new Grouper(assignmentPlans.filter((ap) => ap.groupIds.length > 0)).toUniqueMap(
       (ap) => ap.employeeId,
     ),
 );
 
-// Inverted map: servCodeId → Employee[] ordered by each employee's priority for that servCode.
-// Built by iterating each employee's entries and recording their position (priority index).
-// Consumers (e.g. hydrateAssignedTo) receive employees in priority order for a given servCode.
+// Inverted map: servCodeId → employeeId[] ordered by each employee's priority for that servCode.
+// Built by iterating each employee's groupIds, resolving each groupId to its member servCodeIds
+// via groupMap, and recording the employee's priority index for each servCode.
+// Consumers (e.g. D2 team rate) receive employees in priority order for a given servCode.
 const selectAssignmentsByServCodeId = createSelector(
-  [selectAssignmentPlans],
-  (assignmentPlans) => {
+  [selectAssignmentPlans, assignmentGroupSelect.groupMap],
+  (assignmentPlans, groupMap) => {
     const map = new Map<string, { employeeId: string; priority: number }[]>();
 
     for (const plan of assignmentPlans) {
-      // Flatten entries to get all servCodeIds in priority order
-      const allServCodeIds = flattenEntries(plan.entries);
-      allServCodeIds.forEach((servCodeId, priority) => {
-        const existing = map.get(servCodeId) ?? [];
-        existing.push({ employeeId: plan.employeeId, priority });
-        map.set(servCodeId, existing);
+      plan.groupIds.forEach((groupId, priority) => {
+        const group = groupMap.get(groupId);
+        // Fall back to parsing groupId as sorted servCodeIds joined with "+"
+        const servCodeIds = group?.servCodeIds ?? groupId.split("+");
+        for (const servCodeId of servCodeIds) {
+          const existing = map.get(servCodeId) ?? [];
+          existing.push({ employeeId: plan.employeeId, priority });
+          map.set(servCodeId, existing);
+        }
       });
     }
 

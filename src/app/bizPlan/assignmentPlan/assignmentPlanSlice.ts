@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { AssignmentPlanContract } from "@/app/bizPlan/assignmentPlan/api/AssignmentPlanContract";
-import { AssignmentEntry, AssignmentPlan, Scenario } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
+import { AssignmentPlan, Scenario } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 
 
 type AssignmentPlanState = {
@@ -15,22 +15,22 @@ const assignmentPlanSlice = createSlice({
   name: "assignmentPlans",
   initialState,
   reducers: {
-    reorderEntries: (
+    reorderGroupIds: (
       state,
-      action: PayloadAction<{ employeeId: string; entries: AssignmentEntry[] }>,
+      action: PayloadAction<{ employeeId: string; groupIds: string[] }>,
     ) => {
-      const { employeeId, entries } = action.payload;
+      const { employeeId, groupIds } = action.payload;
       const idx = state.assignmentPlans.findIndex(
         (ap) => ap.employeeId === employeeId,
       );
       if (idx !== -1) {
         state.assignmentPlans[idx] = {
           ...state.assignmentPlans[idx],
-          entries,
+          groupIds,
         };
       } else {
         // Create a new plan if one doesn't exist yet
-        state.assignmentPlans.push({ employeeId, entries });
+        state.assignmentPlans.push({ employeeId, groupIds });
       }
     },
   },

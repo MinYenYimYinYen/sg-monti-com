@@ -9,7 +9,6 @@ import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
-import { AssignmentEntry } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import {
   RequiredDailyEntry,
   DiffResult,
@@ -28,8 +27,8 @@ export type { OpenServCodeRow, OpenGroupRow, OpenGroupMemberRow, EmployeeCardDat
 
 export type OpenServCodesForEmployee = {
   employee: Employee;
-  openServCodes: ServCodeDeep[];        // flat, for D1/D2/D3 (unchanged)
-  openEntries: AssignmentEntry[];       // group-aware, for D5 card assembly
+  openServCodes: ServCodeDeep[];  // flat, for D1/D2/D3
+  openGroupIds: string[];         // group-aware, for D5 card assembly
 };
 
 const selectMainDate = (state: AppState): string => state.paceCrawler.mainDate;
@@ -42,18 +41,17 @@ const selectMainDate = (state: AppState): string => state.paceCrawler.mainDate;
  * "Which servCodes are open for each assigned employee on mainDate?"
  *
  * A servCode is open when ALL of the following are true:
- * 1. It is in the employee's assignment plan (single or group member).
- * 2. It has at least one active or asap service on an active program (status "9").
+ * 1. It is in the employee's assignment plan (as a member of an assigned group).
+ * 2. It has at least one actionable service (status "Y" or "*").
  * 3. mainDate is within servCode.dateRange OR servCode.alwaysAsap === true.
  *
- * openServCodes: flat list for D1/D2/D3 (unchanged).
- * openEntries: group-aware list for D5 card assembly — preserves group structure,
- *   filtered to entries with at least one open member.
+ * openServCodes: flat list for D1/D2/D3.
+ * openGroupIds: group-aware list for D5 card assembly — preserves group structure,
+ *   filtered to groups with at least one open member.
  */
 const selectOpenServCodesForEmployees = createSelector(
   [
     assignmentPlanSelect.assignmentsByEmployeeId,
-    assignmentGroupSelect.groupByServCodeKey,
     assignmentGroupSelect.groupMap,
     employeeSelect.employeeMap,
     deepSelect.servCodeMap,
@@ -61,7 +59,6 @@ const selectOpenServCodesForEmployees = createSelector(
   ],
   (
     assignmentsByEmployeeId,
-    groupByServCodeKey,
     groupMap,
     employeeMap,
     servCodeDeepMap,
@@ -73,16 +70,18 @@ const selectOpenServCodesForEmployees = createSelector(
       const employee = employeeMap.get(employeeId);
       if (!employee) continue;
 
-      // Build flat open servCodes list (for D1/D2/D3)
       const openServCodes: ServCodeDeep[] = [];
       const openServCodeIds = new Set<string>();
+      const openGroupIds: string[] = [];
 
-      // Build group-aware open entries list (for D5)
-      const openEntries: AssignmentEntry[] = [];
+      for (const groupId of plan.groupIds) {
+        const group = groupMap.get(groupId);
+        // Fall back to splitting groupId on "+" if group not yet loaded
+        const servCodeIds = group?.servCodeIds ?? groupId.split("+");
 
-      for (const entry of plan.entries) {
-        if (entry.kind === "single") {
-          const servCode = servCodeDeepMap.get(entry.servCodeId);
+        let anyMemberOpen = false;
+        for (const servCodeId of servCodeIds) {
+          const servCode = servCodeDeepMap.get(servCodeId);
           if (!servCode) continue;
 
           const hasWorkRemaining = servCode.services.some((s) => s.x.isActionable);
@@ -94,47 +93,19 @@ const selectOpenServCodesForEmployees = createSelector(
               dateStrings.isInRange(mainDate, servCode.dateRange));
           if (!isOpen) continue;
 
-          if (!openServCodeIds.has(entry.servCodeId)) {
+          anyMemberOpen = true;
+          if (!openServCodeIds.has(servCodeId)) {
             openServCodes.push(servCode);
-            openServCodeIds.add(entry.servCodeId);
+            openServCodeIds.add(servCodeId);
           }
-          openEntries.push(entry);
-        } else {
-          // Group entry — include if ANY member is open.
-          // Resolve servCodeIds from groupMap for new-format entries (groupId reference),
-          // or fall back to inline servCodeIds for old-format entries.
-          const resolvedServCodeIds: string[] =
-            entry.groupId
-              ? (groupMap.get(entry.groupId)?.servCodeIds ?? [])
-              : (entry.servCodeIds ?? []);
+        }
 
-          let anyMemberOpen = false;
-          for (const servCodeId of resolvedServCodeIds) {
-            const servCode = servCodeDeepMap.get(servCodeId);
-            if (!servCode) continue;
-
-            const hasWorkRemaining = servCode.services.some((s) => s.x.isActionable);
-            if (!hasWorkRemaining) continue;
-
-            const isOpen =
-              servCode.alwaysAsap ||
-              (dateRanges.isValidDateRange(servCode.dateRange) &&
-                dateStrings.isInRange(mainDate, servCode.dateRange));
-            if (!isOpen) continue;
-
-            anyMemberOpen = true;
-            if (!openServCodeIds.has(servCodeId)) {
-              openServCodes.push(servCode);
-              openServCodeIds.add(servCodeId);
-            }
-          }
-          if (anyMemberOpen) {
-            openEntries.push(entry);
-          }
+        if (anyMemberOpen) {
+          openGroupIds.push(groupId);
         }
       }
 
-      result.push({ employee, openServCodes, openEntries });
+      result.push({ employee, openServCodes, openGroupIds });
     }
 
     return result;
@@ -367,9 +338,8 @@ const selectDiffResultByEmployeeByServCode = createSelector(
 /**
  * "One card per assigned employee with all display data assembled."
  *
- * openEntries: D0's group-aware entries, enriched with DiffChecker data.
- * - Single entries → OpenServCodeRow (unchanged logic)
- * - Group entries → OpenGroupRow with per-member required rates and combined header
+ * openEntries: D0's group-aware groupIds, enriched with DiffChecker data.
+ * Each groupId is resolved to an OpenGroupRow with per-member required rates and combined header.
  *
  * Group header required rate = sum of per-member required rates (each: pool / weekdays_to_scMax).
  * Group historical rate = employee's totalAvgDailyPrice.
@@ -391,7 +361,7 @@ const selectEmployeeCardData = createSelector(
     progServSelect.servCodeMap,
     selectMainDate,
     holidaySelect.holidayDates,
-    assignmentGroupSelect.groupByServCodeKey,
+    assignmentGroupSelect.groupMap,
   ],
   (
     openServCodesForEmployees,
@@ -403,7 +373,7 @@ const selectEmployeeCardData = createSelector(
     servCodeMap,
     mainDate,
     holidayDates,
-    groupByServCodeKey,
+    groupMap,
   ): EmployeeCardData[] => {
     // Build already-routed set: employees with a printed service on mainDate
     const alreadyRoutedEmployeeIds = new Set<string>();
@@ -423,7 +393,7 @@ const selectEmployeeCardData = createSelector(
 
     const cards: EmployeeCardData[] = [];
 
-    for (const { employee, openServCodes, openEntries } of openServCodesForEmployees) {
+    for (const { employee, openServCodes, openGroupIds } of openServCodesForEmployees) {
       const employeeId = employee.employeeId;
       const diffByServCode = diffResultMap.get(employeeId);
       const assignedServCodeIds = openServCodes.map((sc) => sc.servCodeId);
@@ -435,116 +405,98 @@ const selectEmployeeCardData = createSelector(
       const totalAvgDailyPrice =
         totalAvgDailyPriceMap.get(employeeId) ?? teamAvgTotalDailyPrice;
 
-      // Build open entry rows — D0 already filtered by dateRange and services.count
+      // Build open entry rows — one OpenGroupRow per open groupId
       const openEntryRows: (OpenServCodeRow | OpenGroupRow)[] = [];
 
-      for (const entry of openEntries) {
-        if (entry.kind === "single") {
-          const servCodeId = entry.servCodeId;
-          const activePool = activePoolMap.get(servCodeId) ?? 0;
-          if (activePool === 0) continue; // all work scheduled
+      for (const groupId of openGroupIds) {
+        const group = groupMap.get(groupId);
+        const servCodeIds = group?.servCodeIds ?? groupId.split("+");
+        const label = group?.label ?? groupId;
 
-          const diff = diffByServCode?.get(servCodeId);
+        // Build per-member rows (only members with pool > 0)
+        const members: OpenGroupMemberRow[] = [];
+        let combinedPool = 0;
+        let sumRequiredRates = 0;
+        let latestScMax = "";
+        let anyOverdue = false;
+
+        for (const servCodeId of servCodeIds) {
+          const memberPool = activePoolMap.get(servCodeId) ?? 0;
+          if (memberPool <= 0) continue;
+
           const servCode = servCodeMap.get(servCodeId);
-          const remainingWeekdays = servCode && !servCode.alwaysAsap && dateRanges.isValidDateRange(servCode.dateRange)
-            ? Math.max(0, dateRanges.weekdaysBetween(mainDate, servCode.dateRange.max))
+          const scMax = servCode?.dateRange.max ?? "";
+          const remainingWeekdays = scMax
+            ? Math.max(0, dateRanges.weekdaysBetween(mainDate, scMax))
             : 0;
+          const isOverdue = remainingWeekdays <= 0;
+          const memberRequired = isOverdue || remainingWeekdays === 0
+            ? 0
+            : memberPool / remainingWeekdays;
 
+          combinedPool += memberPool;
+          sumRequiredRates += memberRequired;
+          if (!latestScMax || scMax > latestScMax) latestScMax = scMax;
+          if (isOverdue) anyOverdue = true;
+
+          members.push({
+            servCodeId,
+            poolRemaining: memberPool,
+            requiredDailyPrice: memberRequired,
+            remainingWeekdays,
+            scMax,
+            isOverdue,
+          });
+        }
+
+        if (combinedPool === 0) continue; // all members done
+
+        // If the group has exactly one member, render as a single row for cleaner display
+        if (members.length === 1) {
+          const member = members[0];
+          const diff = diffByServCode?.get(member.servCodeId);
           openEntryRows.push({
             kind: "single",
-            servCodeId,
+            servCodeId: member.servCodeId,
             historicalDailyPrice: diff?.historicalDailyPrice ?? 0,
-            requiredDailyPrice: diff?.requiredDailyPrice ?? 0,
+            requiredDailyPrice: diff?.requiredDailyPrice ?? member.requiredDailyPrice,
             diffPrice: diff?.diffPrice ?? 0,
             diffPercent: diff?.diffPercent ?? null,
-            poolRemaining: activePool,
-            remainingWeekdays,
-            isOverdue: diff?.isOverdue ?? false,
+            poolRemaining: member.poolRemaining,
+            remainingWeekdays: member.remainingWeekdays,
+            isOverdue: member.isOverdue,
             isAhead: diff?.isAhead ?? false,
             isBehind: diff?.isBehind ?? false,
           });
-        } else {
-          // Group entry — build OpenGroupRow.
-          // New format: resolve servCodeIds from groupByServCodeKey via groupId.
-          // Old format: use inline servCodeIds, then try to resolve to a shared group.
-          const isNewFormat = !!entry.groupId && !entry.servCodeIds;
-          const entryServCodeIds: string[] = isNewFormat
-            ? (groupByServCodeKey.get(entry.groupId!)?.servCodeIds ?? [])
-            : (entry.servCodeIds ?? []);
-          const sortedKey = [...entryServCodeIds].sort().join("+");
-          const sharedGroup = isNewFormat
-            ? groupByServCodeKey.get(entry.groupId!)
-            : groupByServCodeKey.get(sortedKey);
-          const groupId = sharedGroup?.groupId ?? entry.groupId ?? sortedKey;
-          const label = sharedGroup?.label ?? entry.label ?? entry.groupId ?? sortedKey;
-
-          // Build per-member rows (only members with pool > 0)
-          const members: OpenGroupMemberRow[] = [];
-          let combinedPool = 0;
-          let sumRequiredRates = 0;
-          let latestScMax = "";
-          let anyOverdue = false;
-
-          for (const servCodeId of entryServCodeIds) {
-            const memberPool = activePoolMap.get(servCodeId) ?? 0;
-            if (memberPool <= 0) continue;
-
-            const servCode = servCodeMap.get(servCodeId);
-            const scMax = servCode?.dateRange.max ?? "";
-            const remainingWeekdays = scMax
-              ? Math.max(0, dateRanges.weekdaysBetween(mainDate, scMax))
-              : 0;
-            const isOverdue = remainingWeekdays <= 0;
-            const memberRequired = isOverdue
-              ? 0
-              : remainingWeekdays > 0
-                ? memberPool / remainingWeekdays
-                : 0;
-
-            combinedPool += memberPool;
-            sumRequiredRates += memberRequired;
-            if (!latestScMax || scMax > latestScMax) latestScMax = scMax;
-            if (isOverdue) anyOverdue = true;
-
-            members.push({
-              servCodeId,
-              poolRemaining: memberPool,
-              requiredDailyPrice: memberRequired,
-              remainingWeekdays,
-              scMax,
-              isOverdue,
-            });
-          }
-
-          if (combinedPool === 0) continue; // all members done
-
-          const latestRemainingWeekdays = latestScMax
-            ? Math.max(0, dateRanges.weekdaysBetween(mainDate, latestScMax))
-            : 0;
-
-          const diffPrice = sumRequiredRates - totalAvgDailyPrice;
-          const diffPercent = totalAvgDailyPrice > 0
-            ? diffPrice / totalAvgDailyPrice
-            : null;
-
-          openEntryRows.push({
-            kind: "group",
-            groupId,
-            label,
-            servCodeIds: entryServCodeIds,
-            combinedPool,
-            requiredDailyPrice: sumRequiredRates,
-            historicalDailyPrice: totalAvgDailyPrice,
-            diffPrice,
-            diffPercent,
-            latestScMax,
-            latestRemainingWeekdays,
-            isOverdue: anyOverdue,
-            isAhead: isFinite(diffPrice) && diffPrice < 0,
-            isBehind: !isFinite(diffPrice) || diffPrice > 0,
-            members,
-          });
+          continue;
         }
+
+        const latestRemainingWeekdays = latestScMax
+          ? Math.max(0, dateRanges.weekdaysBetween(mainDate, latestScMax))
+          : 0;
+
+        const diffPrice = sumRequiredRates - totalAvgDailyPrice;
+        const diffPercent = totalAvgDailyPrice > 0
+          ? diffPrice / totalAvgDailyPrice
+          : null;
+
+        openEntryRows.push({
+          kind: "group",
+          groupId,
+          label,
+          servCodeIds,
+          combinedPool,
+          requiredDailyPrice: sumRequiredRates,
+          historicalDailyPrice: totalAvgDailyPrice,
+          diffPrice,
+          diffPercent,
+          latestScMax,
+          latestRemainingWeekdays,
+          isOverdue: anyOverdue,
+          isAhead: isFinite(diffPrice) && diffPrice < 0,
+          isBehind: !isFinite(diffPrice) || diffPrice > 0,
+          members,
+        });
       }
 
       cards.push({

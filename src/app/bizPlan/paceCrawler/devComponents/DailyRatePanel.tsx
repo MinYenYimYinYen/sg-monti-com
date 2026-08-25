@@ -32,45 +32,25 @@ export function DailyRatePanel() {
     const name = employee?.name ?? employeeId;
     const totalAvgDailyPrice = totalAvgDailyPriceMap.get(employeeId);
 
-    for (const entry of plan.entries) {
-      if (entry.kind === "single") {
-        const { servCodeId } = entry;
-        const rate = dailyRateMap.get(employeeId)?.get(servCodeId) ?? 0;
-        const programType = programTypeMap.get(servCodeId);
-        const hasOwnRate =
-          programType != null &&
-          (lookbackPriceMap.get(employeeId)?.get(programType) ?? 0) > 0;
+    for (const groupId of plan.groupIds) {
+      const group = groupMap.get(groupId);
+      const servCodeIds = group?.servCodeIds ?? groupId.split("+");
+      const label = group?.label ?? groupId;
+      const rate = totalAvgDailyPrice ?? 0;
+      const hasRate = rate > 0;
 
-        rows.push({
-          employeeId,
-          name,
-          entryLabel: servCodeId,
-          rate,
-          isEstimated: !hasOwnRate,
-          isGroup: false,
-        });
-      } else {
-        // Group entry — uses totalAvgDailyPrice
-        // Support both old format (inline servCodeIds) and new format (groupId reference)
-        const groupEntry = entry as { kind: "group"; groupId?: string; servCodeIds?: string[]; label?: string };
-        const resolvedGroup = groupEntry.groupId ? groupMap.get(groupEntry.groupId) : null;
-        const servCodeIds = resolvedGroup?.servCodeIds ?? groupEntry.servCodeIds ?? [];
-        const label = resolvedGroup?.label ?? groupEntry.label ?? groupEntry.groupId ?? servCodeIds.join("+");
-        const rate = totalAvgDailyPrice ?? 0;
-        const hasRate = rate > 0;
-
-        rows.push({
-          employeeId,
-          name,
-          entryLabel: label,
-          rate,
-          isEstimated: !hasRate,
-          isGroup: true,
-          groupMembers: servCodeIds,
-        });
-      }
+      rows.push({
+        employeeId,
+        name,
+        entryLabel: label,
+        rate,
+        isEstimated: !hasRate,
+        isGroup: true,
+        groupMembers: servCodeIds,
+      });
     }
   }
+
 
   rows.sort((a, b) => {
     const nameCompare = a.name.localeCompare(b.name);

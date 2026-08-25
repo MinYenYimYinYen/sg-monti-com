@@ -328,32 +328,16 @@ export function GanttChartPanel() {
   const { updateServCode, saveServCodeChanges } = useProgServ({});
 
   // Build set of servCodeIds that have at least one assigned employee.
-  // Covers three sources:
-  // 1. Shared groups (new-format group entries reference these by groupId)
-  // 2. Single entries in assignment plans
-  // 3. Old-format inline group entries (servCodeIds directly on the entry)
+  // Resolve each groupId to its member servCodeIds via groupMap.
   const assignedServCodeIds = new Set<string>();
-  for (const group of groups) {
-    for (const id of group.servCodeIds) {
-      assignedServCodeIds.add(id);
-    }
-  }
   for (const [, plan] of assignmentsByEmployeeId) {
-    for (const entry of plan.entries) {
-      if (entry.kind === "single") {
-        assignedServCodeIds.add(entry.servCodeId);
-      } else if (entry.groupId) {
-        // New-format: resolve via groupMap
-        const resolvedGroup = groupMap.get(entry.groupId);
-        if (resolvedGroup) {
-          for (const id of resolvedGroup.servCodeIds) assignedServCodeIds.add(id);
-        }
-      } else if (entry.servCodeIds) {
-        // Old-format: inline servCodeIds
-        for (const id of entry.servCodeIds) assignedServCodeIds.add(id);
-      }
+    for (const groupId of plan.groupIds) {
+      const group = groupMap.get(groupId);
+      const servCodeIds = group?.servCodeIds ?? groupId.split("+");
+      for (const id of servCodeIds) assignedServCodeIds.add(id);
     }
   }
+
 
   // Filter to only servCodes with assigned employees
   const filteredResult = seasonResult.filter((r) => assignedServCodeIds.has(r.servCodeId));

@@ -6,7 +6,6 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { assignmentPlanActions } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
-import { AssignmentEntry } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
@@ -27,7 +26,7 @@ function fmtDate(iso: string | null | undefined): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// AddEntrySection — picker for adding singles or groups to an employee
+// AddEntrySection — picker for adding groups to an employee
 // ---------------------------------------------------------------------------
 
 type AddEntrySectionProps = {
@@ -89,75 +88,61 @@ function AddEntrySection({
 
 type EmployeeAssignmentCardProps = {
   employeeName: string;
-  entries: AssignmentEntry[];
-  onReorder: (entries: AssignmentEntry[]) => void;
+  groupIds: string[];
+  onReorder: (groupIds: string[]) => void;
 };
 
 function EmployeeAssignmentCard({
   employeeName,
-  entries,
+  groupIds,
   onReorder,
 }: EmployeeAssignmentCardProps) {
   const servCodeMap = useSelector(progServSelect.servCodeMap);
   const groupMap = useSelector(assignmentGroupSelect.groupMap);
   const [openAdd, setOpenAdd] = useState(false);
 
-  const existingGroupIds = new Set(
-    entries.filter((e) => e.kind === "group").map((e) => (e as { kind: "group"; groupId: string }).groupId),
-  );
+  const existingGroupIds = new Set(groupIds);
 
-  function getEntryLabel(entry: AssignmentEntry): string {
-    if (entry.kind === "single") return entry.servCodeId;
-    const group = groupMap.get((entry as { kind: "group"; groupId: string }).groupId);
-    return group?.label ?? (entry as { kind: "group"; groupId: string }).groupId;
+  function getGroupLabel(groupId: string): string {
+    return groupMap.get(groupId)?.label ?? groupId;
   }
 
-  function getEntryDateRange(entry: AssignmentEntry): string | null {
-    if (entry.kind === "single") {
-      const sc = servCodeMap.get(entry.servCodeId);
-      if (!sc) return null;
-      const min = fmtDate(sc.dateRange.min);
-      const max = fmtDate(sc.dateRange.max);
-      if (min && max) return `${min}–${max}`;
-      return min ?? max ?? null;
-    } else {
-      const groupEntry = entry as { kind: "group"; groupId: string };
-      const group = groupMap.get(groupEntry.groupId);
-      if (!group) return null;
-      const mins: string[] = [];
-      const maxes: string[] = [];
-      for (const id of group.servCodeIds) {
-        const sc = servCodeMap.get(id);
-        if (sc?.dateRange.min) mins.push(sc.dateRange.min);
-        if (sc?.dateRange.max) maxes.push(sc.dateRange.max);
-      }
-      const minDate = mins.length > 0 ? fmtDate([...mins].sort()[0]) : null;
-      const maxDate = maxes.length > 0 ? fmtDate([...maxes].sort().at(-1)) : null;
-      if (minDate && maxDate) return `${minDate}–${maxDate}`;
-      return minDate ?? maxDate ?? null;
+  function getGroupDateRange(groupId: string): string | null {
+    const group = groupMap.get(groupId);
+    if (!group) return null;
+    const mins: string[] = [];
+    const maxes: string[] = [];
+    for (const id of group.servCodeIds) {
+      const sc = servCodeMap.get(id);
+      if (sc?.dateRange.min) mins.push(sc.dateRange.min);
+      if (sc?.dateRange.max) maxes.push(sc.dateRange.max);
     }
+    const minDate = mins.length > 0 ? fmtDate([...mins].sort()[0]) : null;
+    const maxDate = maxes.length > 0 ? fmtDate([...maxes].sort().at(-1)) : null;
+    if (minDate && maxDate) return `${minDate}–${maxDate}`;
+    return minDate ?? maxDate ?? null;
   }
 
   function moveUp(index: number) {
     if (index === 0) return;
-    const next = [...entries];
+    const next = [...groupIds];
     [next[index - 1], next[index]] = [next[index], next[index - 1]];
     onReorder(next);
   }
 
   function moveDown(index: number) {
-    if (index === entries.length - 1) return;
-    const next = [...entries];
+    if (index === groupIds.length - 1) return;
+    const next = [...groupIds];
     [next[index], next[index + 1]] = [next[index + 1], next[index]];
     onReorder(next);
   }
 
   function remove(index: number) {
-    onReorder(entries.filter((_, i) => i !== index));
+    onReorder(groupIds.filter((_, i) => i !== index));
   }
 
   function addGroup(groupId: string) {
-    onReorder([...entries, { kind: "group", groupId } as AssignmentEntry]);
+    onReorder([...groupIds, groupId]);
     setOpenAdd(false);
   }
 
@@ -167,29 +152,27 @@ function EmployeeAssignmentCard({
       <>
         {/* Priority list */}
         <div className="divide-y divide-border/50">
-          {entries.length === 0 && (
-            <p className="px-3 py-2 text-[10px] text-muted-foreground">No entries assigned.</p>
+          {groupIds.length === 0 && (
+            <p className="px-3 py-2 text-[10px] text-muted-foreground">No groups assigned.</p>
           )}
-          {entries.map((entry, index) => {
-            const label = getEntryLabel(entry);
-            const dateRange = getEntryDateRange(entry);
-            const isGroup = entry.kind === "group";
-            const groupEntry = isGroup ? (entry as { kind: "group"; groupId: string }) : null;
-            const group = groupEntry ? groupMap.get(groupEntry.groupId) : null;
+          {groupIds.map((groupId, index) => {
+            const label = getGroupLabel(groupId);
+            const dateRange = getGroupDateRange(groupId);
+            const group = groupMap.get(groupId);
 
             return (
               <div
                 key={index}
-                className={`flex items-center gap-1.5 px-2 py-1.5 text-xs ${isGroup ? "bg-primary/3" : "hover:bg-accent/5"}`}
+                className="flex items-center gap-1.5 px-2 py-1.5 text-xs bg-primary/3"
               >
                 <span className="text-[10px] text-muted-foreground w-4 text-right shrink-0">{index + 1}</span>
                 <div className="flex items-center gap-0 shrink-0">
                   <button onClick={() => moveUp(index)} disabled={index === 0} className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move up"><ChevronUp className="w-3 h-3" /></button>
-                  <button onClick={() => moveDown(index)} disabled={index === entries.length - 1} className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move down"><ChevronDown className="w-3 h-3" /></button>
+                  <button onClick={() => moveDown(index)} disabled={index === groupIds.length - 1} className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move down"><ChevronDown className="w-3 h-3" /></button>
                 </div>
-                <span className={`font-mono ${isGroup ? "text-primary font-semibold" : "text-foreground"}`}>{label}</span>
-                {isGroup && <span className="text-[9px] text-primary bg-primary/10 rounded px-1 shrink-0">group</span>}
-                {isGroup && group && (
+                <span className="font-mono text-primary font-semibold">{label}</span>
+                <span className="text-[9px] text-primary bg-primary/10 rounded px-1 shrink-0">group</span>
+                {group && (
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className="text-[9px] text-muted-foreground hover:text-foreground shrink-0" onClick={(e) => e.stopPropagation()}>({group.servCodeIds.join(", ")})</button>
@@ -211,7 +194,7 @@ function EmployeeAssignmentCard({
                     </PopoverContent>
                   </Popover>
                 )}
-                {!isGroup && dateRange && <span className="text-[10px] text-muted-foreground font-mono shrink-0">({dateRange})</span>}
+                {dateRange && <span className="text-[10px] text-muted-foreground font-mono shrink-0">({dateRange})</span>}
                 <span className="flex-1" />
                 <button onClick={() => remove(index)} className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors shrink-0" title="Remove"><X className="w-3 h-3" /></button>
               </div>
@@ -228,25 +211,23 @@ function EmployeeAssignmentCard({
       {/* Card header */}
       <div className="px-3 py-2 bg-accent/10 border-b border-border">
         <p className="text-xs font-semibold text-foreground">{employeeName}</p>
-        <p className="text-[10px] text-muted-foreground">{entries.length} entries</p>
+        <p className="text-[10px] text-muted-foreground">{groupIds.length} groups</p>
       </div>
 
       {/* Priority list */}
       <div className="divide-y divide-border/50">
-        {entries.length === 0 && (
-          <p className="px-3 py-2 text-[10px] text-muted-foreground">No entries assigned.</p>
+        {groupIds.length === 0 && (
+          <p className="px-3 py-2 text-[10px] text-muted-foreground">No groups assigned.</p>
         )}
-        {entries.map((entry, index) => {
-          const label = getEntryLabel(entry);
-          const dateRange = getEntryDateRange(entry);
-          const isGroup = entry.kind === "group";
-          const groupEntry = isGroup ? (entry as { kind: "group"; groupId: string }) : null;
-          const group = groupEntry ? groupMap.get(groupEntry.groupId) : null;
+        {groupIds.map((groupId, index) => {
+          const label = getGroupLabel(groupId);
+          const dateRange = getGroupDateRange(groupId);
+          const group = groupMap.get(groupId);
 
           return (
             <div
               key={index}
-              className={`flex items-center gap-1.5 px-2 py-1.5 text-xs ${isGroup ? "bg-primary/3" : "hover:bg-accent/5"}`}
+              className="flex items-center gap-1.5 px-2 py-1.5 text-xs bg-primary/3"
             >
               {/* Position number */}
               <span className="text-[10px] text-muted-foreground w-4 text-right shrink-0">
@@ -265,7 +246,7 @@ function EmployeeAssignmentCard({
                 </button>
                 <button
                   onClick={() => moveDown(index)}
-                  disabled={index === entries.length - 1}
+                  disabled={index === groupIds.length - 1}
                   className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                   title="Move down"
                 >
@@ -273,14 +254,12 @@ function EmployeeAssignmentCard({
                 </button>
               </div>
 
-              {/* Label + date range */}
-              <span className={`font-mono ${isGroup ? "text-primary font-semibold" : "text-foreground"}`}>
+              {/* Label + group badge */}
+              <span className="font-mono text-primary font-semibold">
                 {label}
               </span>
-              {isGroup && (
-                <span className="text-[9px] text-primary bg-primary/10 rounded px-1 shrink-0">group</span>
-              )}
-              {isGroup && group && (
+              <span className="text-[9px] text-primary bg-primary/10 rounded px-1 shrink-0">group</span>
+              {group && (
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
@@ -311,7 +290,7 @@ function EmployeeAssignmentCard({
                   </PopoverContent>
                 </Popover>
               )}
-              {!isGroup && dateRange && (
+              {dateRange && (
                 <span className="text-[10px] text-muted-foreground font-mono shrink-0">
                   ({dateRange})
                 </span>
@@ -333,7 +312,7 @@ function EmployeeAssignmentCard({
         })}
       </div>
 
-      {/* Add entry section */}
+      {/* Add group section */}
       <AddEntrySection
         isOpen={openAdd}
         onToggleOpen={() => setOpenAdd((v) => !v)}
@@ -360,8 +339,8 @@ export function AssignmentEditorPanel() {
   const selectedEmployeeIdsArr = useSelector(paceCrawlerSelect.assignmentEditorSelectedEmployeeIds);
   const selectedEmployeeIds = new Set(selectedEmployeeIdsArr);
 
-  // Clipboard: stores a copied entry list for pasting to other employees
-  const [clipboard, setClipboard] = useState<{ entries: AssignmentEntry[]; sourceEmployeeId: string } | null>(null);
+  // Clipboard: stores a copied groupIds list for pasting to other employees
+  const [clipboard, setClipboard] = useState<{ groupIds: string[]; sourceEmployeeId: string } | null>(null);
   const [pendingPasteEmployeeId, setPendingPasteEmployeeId] = useState<string | null>(null);
 
   function toggleEmployee(employeeId: string) {
@@ -375,7 +354,7 @@ export function AssignmentEditorPanel() {
     const assignedIds = activeEmployees
       .filter((e) => {
         const plan = assignmentsByEmployeeId.get(e.employeeId);
-        return (plan?.entries.length ?? 0) > 0;
+        return (plan?.groupIds.length ?? 0) > 0;
       })
       .map((e) => e.employeeId);
     dispatch(paceCrawlerActions.setAssignmentEditorSelectedEmployeeIds(assignedIds));
@@ -385,34 +364,27 @@ export function AssignmentEditorPanel() {
     dispatch(paceCrawlerActions.setAssignmentEditorSelectedEmployeeIds([]));
   }
 
-  function handleReorder(employeeId: string, entries: AssignmentEntry[]) {
-    dispatch(assignmentPlanActions.reorderEntries({ employeeId, entries }));
+  function handleReorder(employeeId: string, groupIds: string[]) {
+    dispatch(assignmentPlanActions.reorderGroupIds({ employeeId, groupIds }));
   }
 
-  function handleCopy(employeeId: string, entries: AssignmentEntry[]) {
-    setClipboard({ entries: [...entries], sourceEmployeeId: employeeId });
+  function handleCopy(employeeId: string, groupIds: string[]) {
+    setClipboard({ groupIds: [...groupIds], sourceEmployeeId: employeeId });
     setPendingPasteEmployeeId(null);
   }
 
   function handlePasteOverwrite(targetEmployeeId: string) {
     if (!clipboard) return;
-    handleReorder(targetEmployeeId, [...clipboard.entries]);
+    handleReorder(targetEmployeeId, [...clipboard.groupIds]);
     setClipboard(null);
     setPendingPasteEmployeeId(null);
   }
 
-  function handlePasteAppend(targetEmployeeId: string, currentEntries: AssignmentEntry[]) {
+  function handlePasteAppend(targetEmployeeId: string, currentGroupIds: string[]) {
     if (!clipboard) return;
-    // Append only entries not already present (by groupId)
-    const existingGroupIds = new Set(
-      currentEntries.filter((e) => e.kind === "group").map((e) => (e as { kind: "group"; groupId: string }).groupId),
-    );
-    const toAppend = clipboard.entries.filter((entry) => {
-      if (entry.kind !== "group") return false;
-      const groupId = (entry as { kind: "group"; groupId: string }).groupId;
-      return !existingGroupIds.has(groupId);
-    });
-    handleReorder(targetEmployeeId, [...currentEntries, ...toAppend]);
+    const existingGroupIds = new Set(currentGroupIds);
+    const toAppend = clipboard.groupIds.filter((groupId) => !existingGroupIds.has(groupId));
+    handleReorder(targetEmployeeId, [...currentGroupIds, ...toAppend]);
     setClipboard(null);
     setPendingPasteEmployeeId(null);
   }
@@ -441,7 +413,7 @@ export function AssignmentEditorPanel() {
         <div className="flex-1 overflow-y-auto py-1">
           {activeEmployees.map((employee) => {
             const plan = assignmentsByEmployeeId.get(employee.employeeId);
-            const assignedCount = plan?.entries.length ?? 0;
+            const assignedCount = plan?.groupIds.length ?? 0;
             return (
               <label
                 key={employee.employeeId}
@@ -478,7 +450,7 @@ export function AssignmentEditorPanel() {
           const employee = employeeMap.get(employeeId);
           if (!employee) return null;
           const plan = assignmentsByEmployeeId.get(employeeId);
-          const entries = plan?.entries ?? [];
+          const groupIds = plan?.groupIds ?? [];
           const isSource = clipboard?.sourceEmployeeId === employeeId;
           const isPendingPaste = pendingPasteEmployeeId === employeeId;
 
@@ -489,13 +461,13 @@ export function AssignmentEditorPanel() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-foreground">{employee.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{entries.length} entries</p>
+                    <p className="text-[10px] text-muted-foreground">{groupIds.length} groups</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {/* Copy button */}
                     <button
-                      onClick={() => handleCopy(employeeId, entries)}
-                      disabled={entries.length === 0}
+                      onClick={() => handleCopy(employeeId, groupIds)}
+                      disabled={groupIds.length === 0}
                       className={`p-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
                         isSource
                           ? "text-accent bg-accent/10"
@@ -530,7 +502,7 @@ export function AssignmentEditorPanel() {
                       Overwrite
                     </button>
                     <button
-                      onClick={() => handlePasteAppend(employeeId, entries)}
+                      onClick={() => handlePasteAppend(employeeId, groupIds)}
                       className="text-primary font-semibold hover:underline shrink-0"
                     >
                       Append new
@@ -548,8 +520,8 @@ export function AssignmentEditorPanel() {
               {/* Priority list + add group */}
               <EmployeeAssignmentCard
                 employeeName=""
-                entries={entries}
-                onReorder={(newEntries: AssignmentEntry[]) => handleReorder(employeeId, newEntries)}
+                groupIds={groupIds}
+                onReorder={(newGroupIds: string[]) => handleReorder(employeeId, newGroupIds)}
               />
             </div>
           );
