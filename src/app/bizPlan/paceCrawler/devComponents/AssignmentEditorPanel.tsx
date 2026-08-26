@@ -11,6 +11,7 @@ import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServ
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { paceCrawlerActions } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
 import { AssignmentGroupManager } from "@/app/assignmentGroup/_components/AssignmentGroupManager";
+import { GroupAssignment } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import { ChevronUp, ChevronDown, X, Plus, Copy, ClipboardPaste } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 
@@ -23,6 +24,11 @@ function fmtDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const [, month, day] = iso.split("-");
   return `${month}/${day}`;
+}
+
+function formatGoal(goal: number | null): string {
+  if (goal === null) return "";
+  return String(Math.round(goal));
 }
 
 // ---------------------------------------------------------------------------
@@ -88,20 +94,22 @@ function AddEntrySection({
 
 type EmployeeAssignmentCardProps = {
   employeeName: string;
-  groupIds: string[];
-  onReorder: (groupIds: string[]) => void;
+  groupAssignments: GroupAssignment[];
+  onReorder: (groupAssignments: GroupAssignment[]) => void;
+  onSetGoal: (groupId: string, goal: number | null) => void;
 };
 
 function EmployeeAssignmentCard({
   employeeName,
-  groupIds,
+  groupAssignments,
   onReorder,
+  onSetGoal,
 }: EmployeeAssignmentCardProps) {
   const servCodeMap = useSelector(progServSelect.servCodeMap);
   const groupMap = useSelector(assignmentGroupSelect.groupMap);
   const [openAdd, setOpenAdd] = useState(false);
 
-  const existingGroupIds = new Set(groupIds);
+  const existingGroupIds = new Set(groupAssignments.map((ga) => ga.groupId));
 
   function getGroupLabel(groupId: string): string {
     return groupMap.get(groupId)?.label ?? groupId;
@@ -125,101 +133,46 @@ function EmployeeAssignmentCard({
 
   function moveUp(index: number) {
     if (index === 0) return;
-    const next = [...groupIds];
+    const next = [...groupAssignments];
     [next[index - 1], next[index]] = [next[index], next[index - 1]];
     onReorder(next);
   }
 
   function moveDown(index: number) {
-    if (index === groupIds.length - 1) return;
-    const next = [...groupIds];
+    if (index === groupAssignments.length - 1) return;
+    const next = [...groupAssignments];
     [next[index], next[index + 1]] = [next[index + 1], next[index]];
     onReorder(next);
   }
 
   function remove(index: number) {
-    onReorder(groupIds.filter((_, i) => i !== index));
+    onReorder(groupAssignments.filter((_, i) => i !== index));
   }
 
   function addGroup(groupId: string) {
-    onReorder([...groupIds, groupId]);
+    onReorder([...groupAssignments, { groupId, dailyRevenueGoal: null }]);
     setOpenAdd(false);
   }
 
-  // Only render the body (header is handled by the parent when copy/paste is active)
-  if (!employeeName) {
-    return (
-      <>
-        {/* Priority list */}
-        <div className="divide-y divide-border/50">
-          {groupIds.length === 0 && (
-            <p className="px-3 py-2 text-[10px] text-muted-foreground">No groups assigned.</p>
-          )}
-          {groupIds.map((groupId, index) => {
-            const label = getGroupLabel(groupId);
-            const dateRange = getGroupDateRange(groupId);
-            const group = groupMap.get(groupId);
-
-            return (
-              <div
-                key={index}
-                className="flex items-center gap-1.5 px-2 py-1.5 text-xs bg-primary/3"
-              >
-                <span className="text-[10px] text-muted-foreground w-4 text-right shrink-0">{index + 1}</span>
-                <div className="flex items-center gap-0 shrink-0">
-                  <button onClick={() => moveUp(index)} disabled={index === 0} className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move up"><ChevronUp className="w-3 h-3" /></button>
-                  <button onClick={() => moveDown(index)} disabled={index === groupIds.length - 1} className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move down"><ChevronDown className="w-3 h-3" /></button>
-                </div>
-                <span className="font-mono text-primary font-semibold">{label}</span>
-                <span className="text-[9px] text-primary bg-primary/10 rounded px-1 shrink-0">group</span>
-                {group && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="text-[9px] text-muted-foreground hover:text-foreground shrink-0" onClick={(e) => e.stopPropagation()}>({group.servCodeIds.join(", ")})</button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48 p-2" align="start">
-                      <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Members</p>
-                      <div className="space-y-0.5">
-                        {group.servCodeIds.map((servCodeId) => {
-                          const sc = servCodeMap.get(servCodeId);
-                          const range = sc ? fmtDate(sc.dateRange.min) && fmtDate(sc.dateRange.max) ? `${fmtDate(sc.dateRange.min)}–${fmtDate(sc.dateRange.max)}` : null : null;
-                          return (
-                            <div key={servCodeId} className="flex items-center gap-1 text-[10px]">
-                              <span className="font-mono text-foreground flex-1">{servCodeId}</span>
-                              <span className="font-mono text-muted-foreground">{range ?? "—"}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                )}
-                {dateRange && <span className="text-[10px] text-muted-foreground font-mono shrink-0">({dateRange})</span>}
-                <span className="flex-1" />
-                <button onClick={() => remove(index)} className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors shrink-0" title="Remove"><X className="w-3 h-3" /></button>
-              </div>
-            );
-          })}
-        </div>
-        <AddEntrySection isOpen={openAdd} onToggleOpen={() => setOpenAdd((v) => !v)} existingGroupIds={existingGroupIds} onAddGroup={addGroup} />
-      </>
-    );
+  function handleGoalChange(groupId: string, raw: string) {
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+      onSetGoal(groupId, null);
+      return;
+    }
+    const parsed = parseFloat(trimmed);
+    if (!isNaN(parsed) && parsed >= 0) {
+      onSetGoal(groupId, parsed);
+    }
   }
 
-  return (
-    <div className="border border-border rounded overflow-hidden">
-      {/* Card header */}
-      <div className="px-3 py-2 bg-accent/10 border-b border-border">
-        <p className="text-xs font-semibold text-foreground">{employeeName}</p>
-        <p className="text-[10px] text-muted-foreground">{groupIds.length} groups</p>
-      </div>
-
-      {/* Priority list */}
+  const renderRows = (compact: boolean) => (
+    <>
       <div className="divide-y divide-border/50">
-        {groupIds.length === 0 && (
+        {groupAssignments.length === 0 && (
           <p className="px-3 py-2 text-[10px] text-muted-foreground">No groups assigned.</p>
         )}
-        {groupIds.map((groupId, index) => {
+        {groupAssignments.map(({ groupId, dailyRevenueGoal }, index) => {
           const label = getGroupLabel(groupId);
           const dateRange = getGroupDateRange(groupId);
           const group = groupMap.get(groupId);
@@ -229,56 +182,24 @@ function EmployeeAssignmentCard({
               key={index}
               className="flex items-center gap-1.5 px-2 py-1.5 text-xs bg-primary/3"
             >
-              {/* Position number */}
-              <span className="text-[10px] text-muted-foreground w-4 text-right shrink-0">
-                {index + 1}
-              </span>
-
-              {/* ↑↓ buttons */}
+              <span className="text-[10px] text-muted-foreground w-4 text-right shrink-0">{index + 1}</span>
               <div className="flex items-center gap-0 shrink-0">
-                <button
-                  onClick={() => moveUp(index)}
-                  disabled={index === 0}
-                  className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                  title="Move up"
-                >
-                  <ChevronUp className="w-3 h-3" />
-                </button>
-                <button
-                  onClick={() => moveDown(index)}
-                  disabled={index === groupIds.length - 1}
-                  className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                  title="Move down"
-                >
-                  <ChevronDown className="w-3 h-3" />
-                </button>
+                <button onClick={() => moveUp(index)} disabled={index === 0} className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move up"><ChevronUp className="w-3 h-3" /></button>
+                <button onClick={() => moveDown(index)} disabled={index === groupAssignments.length - 1} className="p-0.5 rounded hover:bg-accent/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move down"><ChevronDown className="w-3 h-3" /></button>
               </div>
-
-              {/* Label + group badge */}
-              <span className="font-mono text-primary font-semibold">
-                {label}
-              </span>
+              <span className="font-mono text-primary font-semibold">{label}</span>
               <span className="text-[9px] text-primary bg-primary/10 rounded px-1 shrink-0">group</span>
               {group && (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button
-                      className="text-[9px] text-muted-foreground hover:text-foreground shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      ({group.servCodeIds.join(", ")})
-                    </button>
+                    <button className="text-[9px] text-muted-foreground hover:text-foreground shrink-0" onClick={(e) => e.stopPropagation()}>({group.servCodeIds.join(", ")})</button>
                   </PopoverTrigger>
                   <PopoverContent className="w-48 p-2" align="start">
-                    <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
-                      Members
-                    </p>
+                    <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Members</p>
                     <div className="space-y-0.5">
                       {group.servCodeIds.map((servCodeId) => {
                         const sc = servCodeMap.get(servCodeId);
-                        const range = sc ? fmtDate(sc.dateRange.min) && fmtDate(sc.dateRange.max)
-                          ? `${fmtDate(sc.dateRange.min)}–${fmtDate(sc.dateRange.max)}`
-                          : null : null;
+                        const range = sc ? fmtDate(sc.dateRange.min) && fmtDate(sc.dateRange.max) ? `${fmtDate(sc.dateRange.min)}–${fmtDate(sc.dateRange.max)}` : null : null;
                         return (
                           <div key={servCodeId} className="flex items-center gap-1 text-[10px]">
                             <span className="font-mono text-foreground flex-1">{servCodeId}</span>
@@ -290,35 +211,46 @@ function EmployeeAssignmentCard({
                   </PopoverContent>
                 </Popover>
               )}
-              {dateRange && (
-                <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                  ({dateRange})
-                </span>
-              )}
+              {dateRange && <span className="text-[10px] text-muted-foreground font-mono shrink-0">({dateRange})</span>}
 
-              {/* Spacer */}
-              <span className="flex-1" />
+              {/* Goal input */}
+              <div className="flex items-center gap-0.5 shrink-0 ml-auto">
+                <span className="text-[9px] text-muted-foreground">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={formatGoal(dailyRevenueGoal)}
+                  onChange={(e) => handleGoalChange(groupId, e.target.value)}
+                  placeholder="goal"
+                  className="w-16 h-5 text-[10px] px-1 rounded border border-border bg-card text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                  title="Daily revenue goal ($/day)"
+                />
+                <span className="text-[9px] text-muted-foreground">/day</span>
+              </div>
 
-              {/* Remove button */}
-              <button
-                onClick={() => remove(index)}
-                className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors shrink-0"
-                title="Remove"
-              >
-                <X className="w-3 h-3" />
-              </button>
+              <button onClick={() => remove(index)} className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors shrink-0" title="Remove"><X className="w-3 h-3" /></button>
             </div>
           );
         })}
       </div>
+      <AddEntrySection isOpen={openAdd} onToggleOpen={() => setOpenAdd((v) => !v)} existingGroupIds={existingGroupIds} onAddGroup={addGroup} />
+    </>
+  );
 
-      {/* Add group section */}
-      <AddEntrySection
-        isOpen={openAdd}
-        onToggleOpen={() => setOpenAdd((v) => !v)}
-        existingGroupIds={existingGroupIds}
-        onAddGroup={addGroup}
-      />
+  // Only render the body (header is handled by the parent when copy/paste is active)
+  if (!employeeName) {
+    return renderRows(true);
+  }
+
+  return (
+    <div className="border border-border rounded overflow-hidden">
+      {/* Card header */}
+      <div className="px-3 py-2 bg-accent/10 border-b border-border">
+        <p className="text-xs font-semibold text-foreground">{employeeName}</p>
+        <p className="text-[10px] text-muted-foreground">{groupAssignments.length} groups</p>
+      </div>
+      {renderRows(false)}
     </div>
   );
 }
@@ -339,8 +271,8 @@ export function AssignmentEditorPanel() {
   const selectedEmployeeIdsArr = useSelector(paceCrawlerSelect.assignmentEditorSelectedEmployeeIds);
   const selectedEmployeeIds = new Set(selectedEmployeeIdsArr);
 
-  // Clipboard: stores a copied groupIds list for pasting to other employees
-  const [clipboard, setClipboard] = useState<{ groupIds: string[]; sourceEmployeeId: string } | null>(null);
+  // Clipboard: stores a copied groupAssignments list for pasting to other employees
+  const [clipboard, setClipboard] = useState<{ groupAssignments: GroupAssignment[]; sourceEmployeeId: string } | null>(null);
   const [pendingPasteEmployeeId, setPendingPasteEmployeeId] = useState<string | null>(null);
 
   function toggleEmployee(employeeId: string) {
@@ -354,7 +286,7 @@ export function AssignmentEditorPanel() {
     const assignedIds = activeEmployees
       .filter((e) => {
         const plan = assignmentsByEmployeeId.get(e.employeeId);
-        return (plan?.groupIds.length ?? 0) > 0;
+        return (plan?.groupAssignments.length ?? 0) > 0;
       })
       .map((e) => e.employeeId);
     dispatch(paceCrawlerActions.setAssignmentEditorSelectedEmployeeIds(assignedIds));
@@ -364,27 +296,31 @@ export function AssignmentEditorPanel() {
     dispatch(paceCrawlerActions.setAssignmentEditorSelectedEmployeeIds([]));
   }
 
-  function handleReorder(employeeId: string, groupIds: string[]) {
-    dispatch(assignmentPlanActions.reorderGroupIds({ employeeId, groupIds }));
+  function handleReorder(employeeId: string, groupAssignments: GroupAssignment[]) {
+    dispatch(assignmentPlanActions.reorderGroupIds({ employeeId, groupAssignments }));
   }
 
-  function handleCopy(employeeId: string, groupIds: string[]) {
-    setClipboard({ groupIds: [...groupIds], sourceEmployeeId: employeeId });
+  function handleSetGoal(employeeId: string, groupId: string, dailyRevenueGoal: number | null) {
+    dispatch(assignmentPlanActions.setGoal({ employeeId, groupId, dailyRevenueGoal }));
+  }
+
+  function handleCopy(employeeId: string, groupAssignments: GroupAssignment[]) {
+    setClipboard({ groupAssignments: [...groupAssignments], sourceEmployeeId: employeeId });
     setPendingPasteEmployeeId(null);
   }
 
   function handlePasteOverwrite(targetEmployeeId: string) {
     if (!clipboard) return;
-    handleReorder(targetEmployeeId, [...clipboard.groupIds]);
+    handleReorder(targetEmployeeId, [...clipboard.groupAssignments]);
     setClipboard(null);
     setPendingPasteEmployeeId(null);
   }
 
-  function handlePasteAppend(targetEmployeeId: string, currentGroupIds: string[]) {
+  function handlePasteAppend(targetEmployeeId: string, currentGroupAssignments: GroupAssignment[]) {
     if (!clipboard) return;
-    const existingGroupIds = new Set(currentGroupIds);
-    const toAppend = clipboard.groupIds.filter((groupId) => !existingGroupIds.has(groupId));
-    handleReorder(targetEmployeeId, [...currentGroupIds, ...toAppend]);
+    const existingGroupIds = new Set(currentGroupAssignments.map((ga) => ga.groupId));
+    const toAppend = clipboard.groupAssignments.filter((ga) => !existingGroupIds.has(ga.groupId));
+    handleReorder(targetEmployeeId, [...currentGroupAssignments, ...toAppend]);
     setClipboard(null);
     setPendingPasteEmployeeId(null);
   }
@@ -413,7 +349,7 @@ export function AssignmentEditorPanel() {
         <div className="flex-1 overflow-y-auto py-1">
           {activeEmployees.map((employee) => {
             const plan = assignmentsByEmployeeId.get(employee.employeeId);
-            const assignedCount = plan?.groupIds.length ?? 0;
+            const assignedCount = plan?.groupAssignments.length ?? 0;
             return (
               <label
                 key={employee.employeeId}
@@ -450,7 +386,7 @@ export function AssignmentEditorPanel() {
           const employee = employeeMap.get(employeeId);
           if (!employee) return null;
           const plan = assignmentsByEmployeeId.get(employeeId);
-          const groupIds = plan?.groupIds ?? [];
+          const groupAssignments = plan?.groupAssignments ?? [];
           const isSource = clipboard?.sourceEmployeeId === employeeId;
           const isPendingPaste = pendingPasteEmployeeId === employeeId;
 
@@ -461,13 +397,13 @@ export function AssignmentEditorPanel() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-foreground">{employee.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{groupIds.length} groups</p>
+                    <p className="text-[10px] text-muted-foreground">{groupAssignments.length} groups</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {/* Copy button */}
                     <button
-                      onClick={() => handleCopy(employeeId, groupIds)}
-                      disabled={groupIds.length === 0}
+                      onClick={() => handleCopy(employeeId, groupAssignments)}
+                      disabled={groupAssignments.length === 0}
                       className={`p-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
                         isSource
                           ? "text-accent bg-accent/10"
@@ -502,7 +438,7 @@ export function AssignmentEditorPanel() {
                       Overwrite
                     </button>
                     <button
-                      onClick={() => handlePasteAppend(employeeId, groupIds)}
+                      onClick={() => handlePasteAppend(employeeId, groupAssignments)}
                       className="text-primary font-semibold hover:underline shrink-0"
                     >
                       Append new
@@ -520,8 +456,9 @@ export function AssignmentEditorPanel() {
               {/* Priority list + add group */}
               <EmployeeAssignmentCard
                 employeeName=""
-                groupIds={groupIds}
-                onReorder={(newGroupIds: string[]) => handleReorder(employeeId, newGroupIds)}
+                groupAssignments={groupAssignments}
+                onReorder={(newGroupAssignments) => handleReorder(employeeId, newGroupAssignments)}
+                onSetGoal={(groupId, goal) => handleSetGoal(employeeId, groupId, goal)}
               />
             </div>
           );

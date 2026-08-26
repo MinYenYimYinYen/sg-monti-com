@@ -56,6 +56,19 @@ export type DayCrawlServCodeEntry = {
   pool: number;
   /** servCode.dateRange.max from RealGreen — used as fallback optimizedMax when no lookback data. */
   servCodeRangeMax: string;
+  /**
+   * Total pool at the time the simulation was assembled (completed + remaining).
+   * Used to compute completionPct for cascade unlock.
+   * completionPct = 1 - (pool / totalPool)
+   */
+  totalPool: number;
+  /**
+   * The planned end date from the active SeasonPlan, if one exists.
+   * Used as an OR condition for cascade unlock:
+   *   unlock when completionPct >= cascadeThreshold OR today > plannedEnd
+   * Null when no SeasonPlan is active or this servCode has no schedule entry.
+   */
+  plannedEnd: string | null;
 };
 
 /**
@@ -211,6 +224,8 @@ export type SeasonOptimizedRange = {
   isStarted: boolean;
   /** True when there's unscheduled work and a projected end date exists */
   hasWork: boolean;
+  /** The planned end date from the active SeasonPlan, if one exists. */
+  plannedEnd: string | null;
 };
 
 export type ServCodePaceDelta = {

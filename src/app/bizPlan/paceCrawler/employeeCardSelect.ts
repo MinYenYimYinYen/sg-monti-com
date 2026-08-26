@@ -37,18 +37,6 @@ const selectMainDate = (state: AppState): string => state.paceCrawler.mainDate;
 // Step D0 — Open ServCodes per Employee
 // ---------------------------------------------------------------------------
 
-/**
- * "Which servCodes are open for each assigned employee on mainDate?"
- *
- * A servCode is open when ALL of the following are true:
- * 1. It is in the employee's assignment plan (as a member of an assigned group).
- * 2. It has at least one actionable service (status "Y" or "*").
- * 3. mainDate is within servCode.dateRange OR servCode.alwaysAsap === true.
- *
- * openServCodes: flat list for D1/D2/D3.
- * openGroupIds: group-aware list for D5 card assembly — preserves group structure,
- *   filtered to groups with at least one open member.
- */
 const selectOpenServCodesForEmployees = createSelector(
   [
     assignmentPlanSelect.assignmentsByEmployeeId,
@@ -74,9 +62,8 @@ const selectOpenServCodesForEmployees = createSelector(
       const openServCodeIds = new Set<string>();
       const openGroupIds: string[] = [];
 
-      for (const groupId of plan.groupIds) {
+      for (const { groupId } of plan.groupAssignments) {
         const group = groupMap.get(groupId);
-        // Fall back to splitting groupId on "+" if group not yet loaded
         const servCodeIds = group?.servCodeIds ?? groupId.split("+");
 
         let anyMemberOpen = false;
@@ -112,15 +99,12 @@ const selectOpenServCodesForEmployees = createSelector(
   },
 );
 
-/**
- * Map form of D0 — keyed by employeeId for O(1) lookups in downstream selectors.
- */
 const selectOpenServCodesForEmployeeMap = createSelector(
   [selectOpenServCodesForEmployees],
-  (entries): Map<string, OpenServCodesForEmployee> => {
+  (openServCodesForEmployees): Map<string, OpenServCodesForEmployee> => {
     const result = new Map<string, OpenServCodesForEmployee>();
-    for (const entry of entries) {
-      result.set(entry.employee.employeeId, entry);
+    for (const openServCodesForEmployee of openServCodesForEmployees) {
+      result.set(openServCodesForEmployee.employee.employeeId, openServCodesForEmployee);
     }
     return result;
   },
@@ -130,15 +114,6 @@ const selectOpenServCodesForEmployeeMap = createSelector(
 // Step D1 — Remaining Weekdays per ServCode
 // ---------------------------------------------------------------------------
 
-/**
- * "How many weekdays remain in each servCode's committed window from mainDate?"
- *
- * = weekdaysBetween(mainDate, servCode.dateRange.max) for each non-alwaysAsap servCode.
- * Includes overdue servCodes (value <= 0) so the DiffChecker can flag them.
- * Excludes alwaysAsap servCodes — they have no committed window.
- *
- * Map<servCodeId, number>
- */
 const selectRemainingWeekdaysByServCode = createSelector(
   [progServSelect.servCodeMap, selectMainDate],
   (servCodeMap, mainDate): Map<string, number> => {
@@ -157,17 +132,6 @@ const selectRemainingWeekdaysByServCode = createSelector(
 // Step D2 — Team Daily Rate per ServCode
 // ---------------------------------------------------------------------------
 
-/**
- * "What is the combined daily rate of all assigned employees for each servCode?"
- *
- * = sum of dailyRateByEmployeeByServCode[employeeId][servCodeId] across all employees
- *   assigned to that servCode (from assignmentsByServCodeId).
- *
- * This is the denominator for computing each employee's proportional share.
- * A zero team rate means no assigned employees have lookback data for this servCode.
- *
- * Map<servCodeId, number>
- */
 const selectTeamDailyRateByServCode = createSelector(
   [
     paceCrawlerSelect.dailyRateByEmployeeByServCode,
@@ -191,18 +155,6 @@ const selectTeamDailyRateByServCode = createSelector(
 // Step D3 — Required Daily Price per Employee per ServCode
 // ---------------------------------------------------------------------------
 
-/**
- * "How much price/day does each employee need to produce on each servCode to finish on time?"
- *
- * Iterates D0's open servCodes per employee (already filtered by services.count and dateRange).
- * Skips alwaysAsap servCodes (no committed window) and servCodes with zero active pool.
- *
- * For each employee × servCode:
- * - employeeShare = activePool × (employeeRate / teamRate)
- * - requiredDailyPrice = employeeShare / remainingWeekdays
- *
- * Map<employeeId, Map<servCodeId, RequiredDailyEntry>>
- */
 const selectRequiredDailyPriceByEmployeeByServCode = createSelector(
   [
     selectOpenServCodesForEmployees,
@@ -227,11 +179,10 @@ const selectRequiredDailyPriceByEmployeeByServCode = createSelector(
       for (const servCode of openServCodes) {
         const servCodeId = servCode.servCodeId;
 
-        // DiffChecker requires a committed window — skip alwaysAsap
         if (servCode.alwaysAsap) continue;
 
         const activePool = activePoolMap.get(servCodeId) ?? 0;
-        if (activePool === 0) continue; // done
+        if (activePool === 0) continue;
 
         const remainingWeekdays = remainingWeekdaysMap.get(servCodeId) ?? 0;
         const isOverdue = remainingWeekdays <= 0;
@@ -239,7 +190,6 @@ const selectRequiredDailyPriceByEmployeeByServCode = createSelector(
         const employeeRate = dailyRateMap.get(employeeId)?.get(servCodeId) ?? 0;
         const teamRate = teamDailyRateMap.get(servCodeId) ?? 0;
 
-        // Proportional share: if team has no rate data, employee gets the full pool
         const employeeShare =
           teamRate > 0 ? activePool * (employeeRate / teamRate) : activePool;
 
@@ -270,14 +220,6 @@ const selectRequiredDailyPriceByEmployeeByServCode = createSelector(
 // Step D4 — Diff Result per Employee per ServCode
 // ---------------------------------------------------------------------------
 
-/**
- * "Is the employee ahead or behind their historical average for each servCode?"
- *
- * Compares requiredDailyPrice (from D3) against historicalDailyPrice (simulator baseline).
- * diffPrice > 0 = behind (needs to do more), diffPrice < 0 = ahead.
- *
- * Map<employeeId, Map<servCodeId, DiffResult>>
- */
 const selectDiffResultByEmployeeByServCode = createSelector(
   [
     selectRequiredDailyPriceByEmployeeByServCode,
@@ -296,7 +238,6 @@ const selectDiffResultByEmployeeByServCode = createSelector(
         const historicalDailyPrice =
           dailyRateMap.get(employeeId)?.get(servCodeId) ?? 0;
 
-        // For overdue servCodes, cap required at the employee's daily capacity (historical avg).
         const effectiveRequiredDailyPrice = entry.isOverdue
           ? Math.min(historicalDailyPrice, entry.employeeShare)
           : entry.requiredDailyPrice;
@@ -338,17 +279,10 @@ const selectDiffResultByEmployeeByServCode = createSelector(
 /**
  * "One card per assigned employee with all display data assembled."
  *
- * openEntries: D0's group-aware groupIds, enriched with DiffChecker data.
- * Each groupId is resolved to an OpenGroupRow with per-member required rates and combined header.
- *
- * Group header required rate = sum of per-member required rates (each: pool / weekdays_to_scMax).
- * Group historical rate = employee's totalAvgDailyPrice.
- *
- * isAlreadyRouted: employee has any printed service (status "$") with schedDate === mainDate.
- * isOnLeave: employee has personal planned time off covering mainDate.
- * isHoliday: a company holiday covers mainDate (same for all employees).
- *
- * Sorted: employees with open entries first (by name), then employees with no open entries.
+ * Each group row shows three values:
+ * - Goal: employee's dailyRevenueGoal for this group ($/day)
+ * - Actual: employee's totalAvgDailyPrice (lookback avg)
+ * - Required: pool / remainingWeekdays
  */
 const selectEmployeeCardData = createSelector(
   [
@@ -362,6 +296,7 @@ const selectEmployeeCardData = createSelector(
     selectMainDate,
     holidaySelect.holidayDates,
     assignmentGroupSelect.groupMap,
+    assignmentPlanSelect.goalByEmployeeByGroup,
   ],
   (
     openServCodesForEmployees,
@@ -374,6 +309,7 @@ const selectEmployeeCardData = createSelector(
     mainDate,
     holidayDates,
     groupMap,
+    goalByEmployeeByGroup,
   ): EmployeeCardData[] => {
     // Build already-routed set: employees with a printed service on mainDate
     const alreadyRoutedEmployeeIds = new Set<string>();
@@ -397,6 +333,7 @@ const selectEmployeeCardData = createSelector(
       const employeeId = employee.employeeId;
       const diffByServCode = diffResultMap.get(employeeId);
       const assignedServCodeIds = openServCodes.map((sc) => sc.servCodeId);
+      const goalByGroup = goalByEmployeeByGroup.get(employeeId);
 
       const isOnLeave = employee.plannedTimeOff.some(
         (pto) => mainDate >= pto.dateRange.min && mainDate <= pto.dateRange.max,
@@ -412,6 +349,7 @@ const selectEmployeeCardData = createSelector(
         const group = groupMap.get(groupId);
         const servCodeIds = group?.servCodeIds ?? groupId.split("+");
         const label = group?.label ?? groupId;
+        const goalDailyPrice = goalByGroup?.get(groupId) ?? null;
 
         // Build per-member rows (only members with pool > 0)
         const members: OpenGroupMemberRow[] = [];
@@ -458,6 +396,7 @@ const selectEmployeeCardData = createSelector(
           openEntryRows.push({
             kind: "single",
             servCodeId: member.servCodeId,
+            goalDailyPrice,
             historicalDailyPrice: diff?.historicalDailyPrice ?? 0,
             requiredDailyPrice: diff?.requiredDailyPrice ?? member.requiredDailyPrice,
             diffPrice: diff?.diffPrice ?? 0,
@@ -481,12 +420,13 @@ const selectEmployeeCardData = createSelector(
           : null;
 
         openEntryRows.push({
-          kind: "group",
+          kind: "group" as const,
           groupId,
           label,
           servCodeIds,
           combinedPool,
           requiredDailyPrice: sumRequiredRates,
+          goalDailyPrice,
           historicalDailyPrice: totalAvgDailyPrice,
           diffPrice,
           diffPercent,

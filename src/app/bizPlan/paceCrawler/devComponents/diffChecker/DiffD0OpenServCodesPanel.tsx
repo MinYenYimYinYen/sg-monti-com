@@ -50,7 +50,7 @@ export function DiffD0OpenServCodesPanel() {
 
   const employeeCount = openServCodesForEmployees.length;
   const withOpenCount = openServCodesForEmployees.filter(
-    (e) => e.openServCodes.length > 0 || e.openEntries.length > 0,
+    (e) => e.openServCodes.length > 0,
   ).length;
   const asapCount = rows.filter((r) => r.alwaysAsap).length;
 

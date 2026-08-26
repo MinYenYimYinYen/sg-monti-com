@@ -5,10 +5,18 @@ import { createModel } from "@/lib/mongoose/createModel";
 // Scenario Model
 // ---------------------------------------------------------------------------
 
+const GroupAssignmentSchema = new Schema(
+  {
+    groupId: { type: String, required: true },
+    dailyRevenueGoal: { type: Number, default: null },
+  },
+  { _id: false },
+);
+
 const AssignmentPlanSchema = new Schema(
   {
     employeeId: { type: String, required: true },
-    groupIds: { type: [String], required: true, default: [] },
+    groupAssignments: { type: [GroupAssignmentSchema], required: true, default: [] },
   },
   { _id: false },
 );

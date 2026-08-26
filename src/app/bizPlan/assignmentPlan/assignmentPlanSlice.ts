@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { AssignmentPlanContract } from "@/app/bizPlan/assignmentPlan/api/AssignmentPlanContract";
-import { AssignmentPlan, Scenario } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
+import { AssignmentPlan, GroupAssignment, Scenario } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 
 
 type AssignmentPlanState = {
@@ -17,21 +17,31 @@ const assignmentPlanSlice = createSlice({
   reducers: {
     reorderGroupIds: (
       state,
-      action: PayloadAction<{ employeeId: string; groupIds: string[] }>,
+      action: PayloadAction<{ employeeId: string; groupAssignments: GroupAssignment[] }>,
     ) => {
-      const { employeeId, groupIds } = action.payload;
+      const { employeeId, groupAssignments } = action.payload;
       const idx = state.assignmentPlans.findIndex(
         (ap) => ap.employeeId === employeeId,
       );
       if (idx !== -1) {
         state.assignmentPlans[idx] = {
           ...state.assignmentPlans[idx],
-          groupIds,
+          groupAssignments,
         };
       } else {
         // Create a new plan if one doesn't exist yet
-        state.assignmentPlans.push({ employeeId, groupIds });
+        state.assignmentPlans.push({ employeeId, groupAssignments });
       }
+    },
+    setGoal: (
+      state,
+      action: PayloadAction<{ employeeId: string; groupId: string; dailyRevenueGoal: number | null }>,
+    ) => {
+      const { employeeId, groupId, dailyRevenueGoal } = action.payload;
+      const plan = state.assignmentPlans.find((ap) => ap.employeeId === employeeId);
+      if (!plan) return;
+      const ga = plan.groupAssignments.find((g) => g.groupId === groupId);
+      if (ga) ga.dailyRevenueGoal = dailyRevenueGoal;
     },
   },
   extraReducers: (builder) => {

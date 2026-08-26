@@ -6,6 +6,7 @@ import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSele
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { paceCrawlerLookbackSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerLookbackSelect";
+import { seasonPlanSelect } from "@/app/bizPlan/seasonPlan/seasonPlanSelect";
 import { runDayCrawlSimulation } from "@/app/bizPlan/paceCrawler/_lib/dayCrawlSimulation";
 import {
   DayCrawlPriorityEntry,
@@ -100,14 +101,14 @@ const selectNextDateByEmployee = createSelector(
     // Seed from printed services — only for employees with assignments.
     for (const [employeeId, latestDate] of latestPrintedByEmployee) {
       const plan = assignmentsByEmployeeId.get(employeeId);
-      if (plan && plan.groupIds.length > 0) {
+      if (plan && plan.groupAssignments.length > 0) {
         result.set(employeeId, dateStrings.nextWeekdayAfter(latestDate));
       }
     }
 
     // Ensure all assigned employees appear — those with no printed services get the crawl start.
     for (const [employeeId, plan] of assignmentsByEmployeeId) {
-      if (plan.groupIds.length > 0 && !result.has(employeeId)) {
+      if (plan.groupAssignments.length > 0 && !result.has(employeeId)) {
         result.set(employeeId, crawlStart);
       }
     }
@@ -374,13 +375,13 @@ const selectDailyRateByEmployeeByServCode = createSelector(
 );
 
 // ---------------------------------------------------------------------------
-// Layer 4 — Active Pool Price by ServCode
+// Layer 4 — Active Pool Price by ServCode + Total Pool by ServCode
 // ---------------------------------------------------------------------------
 
 /**
  * "How much unscheduled price remains per servCode?"
  *
- * = activeAsapCSP.price from paceCrawlerRawSelect (active + asap services, excludes printed)
+ * = sum of price for actionable services (active + asap, excludes printed)
  * Map<servCodeId, number>
  */
 const selectActivePoolPriceByServCode = createSelector(
@@ -398,6 +399,32 @@ const selectActivePoolPriceByServCode = createSelector(
   },
 );
 
+/**
+ * "What is the total pool (completed + remaining) per servCode?"
+ *
+ * = sum of price for all services where status !== "N" (never)
+ * Used to compute completionPct for cascade unlock.
+ * completionPct = 1 - (activePool / totalPool)
+ * Map<servCodeId, number>
+ */
+const selectTotalPoolPriceByServCode = createSelector(
+  [deepSelect.servCodes],
+  (servCodes): Map<string, number> => {
+    const result = new Map<string, number>();
+    for (const servCode of servCodes) {
+      // Include completed (S), active (Y), asap (*), printed ($) — exclude never (N) and skips
+      const totalServices = servCode.services.filter(
+        (s) => s.status !== "N" && !s.status.match(/^[A-Z]$/) || s.status === "S" || s.status === "Y" || s.status === "*" || s.status === "$",
+      );
+      result.set(
+        servCode.servCodeId,
+        totalServices.reduce((total, service) => total + service.price, 0),
+      );
+    }
+    return result;
+  },
+);
+
 // ---------------------------------------------------------------------------
 // Layer 5 — Crawler Result
 // ---------------------------------------------------------------------------
@@ -408,8 +435,10 @@ const selectActivePoolPriceByServCode = createSelector(
  * Assembles DayCrawlServCodeEntry[] and DayCrawlEmployeeEntry[] from layers 1–4,
  * then calls runDayCrawlSimulation.
  *
- * Each employee's groupIds are resolved to DayCrawlPriorityEntry[] via groupMap.
+ * Each employee's groupAssignments are resolved to DayCrawlPriorityEntry[] via groupMap.
  * Falls back to splitting groupId on "+" if the group isn't in groupMap yet.
+ *
+ * Cascade unlock uses completionPct >= cascadeThreshold OR today > plannedEnd.
  *
  * timeOffDates per employee = personal PTO dates ∪ global holiday dates.
  */
@@ -419,6 +448,7 @@ const selectCrawlerResult = createSelector(
     selectServCodeOpenDateFloor,
     selectDailyRateByEmployeeByServCode,
     selectActivePoolPriceByServCode,
+    selectTotalPoolPriceByServCode,
     selectTotalAvgDailyPriceByEmployee,
     selectTeamAvgTotalDailyPrice,
     employeeSelect.employeeMap,
@@ -428,12 +458,15 @@ const selectCrawlerResult = createSelector(
     selectMainDate,
     selectCrawlStart,
     holidaySelect.holidayDates,
+    seasonPlanSelect.servCodeScheduleMap,
+    seasonPlanSelect.cascadeThreshold,
   ],
   (
     nextDateByEmployee,
     openDateFloorMap,
     dailyRateMap,
     activePoolMap,
+    totalPoolMap,
     totalAvgDailyPriceMap,
     teamAvgTotalDailyPrice,
     employeeMap,
@@ -443,6 +476,8 @@ const selectCrawlerResult = createSelector(
     today,
     crawlStart,
     holidayDates,
+    servCodeScheduleMap,
+    cascadeThreshold,
   ): CrawlerResult => {
     // Build servCode entries
     const servCodeEntries = [];
@@ -452,9 +487,11 @@ const selectCrawlerResult = createSelector(
         if (!floor) continue; // excluded (no valid dateRange)
 
         const pool = activePoolMap.get(servCode.servCodeId) ?? 0;
+        const totalPool = totalPoolMap.get(servCode.servCodeId) ?? pool;
         const servCodeRangeMax = servCode.alwaysAsap
           ? today
           : (servCode.dateRange.max ?? today);
+        const schedule = servCodeScheduleMap.get(servCode.servCodeId);
 
         servCodeEntries.push({
           servCodeId: servCode.servCodeId,
@@ -462,20 +499,22 @@ const selectCrawlerResult = createSelector(
           runsInSequence: progCode.runsInSequence,
           servCodeRangeMin: floor,
           pool,
+          totalPool,
           servCodeRangeMax,
+          plannedEnd: schedule?.plannedEnd ?? null,
         });
       }
     }
 
-    // Build employee entries — resolve each groupId to a DayCrawlPriorityEntry
+    // Build employee entries — resolve each groupAssignment to a DayCrawlPriorityEntry
     const employeeEntries: DayCrawlEmployeeEntry[] = [];
     for (const [employeeId, plan] of assignmentsByEmployeeId) {
-      if (plan.groupIds.length === 0) continue;
+      if (plan.groupAssignments.length === 0) continue;
 
       const employee = employeeMap.get(employeeId);
       if (!employee) continue;
 
-      const priorityEntries: DayCrawlPriorityEntry[] = plan.groupIds.map((groupId) => {
+      const priorityEntries: DayCrawlPriorityEntry[] = plan.groupAssignments.map(({ groupId }) => {
         const group = groupMap.get(groupId);
         // Fall back to splitting groupId on "+" if group not yet loaded
         const servCodeIds = group?.servCodeIds ?? groupId.split("+");
@@ -488,9 +527,14 @@ const selectCrawlerResult = createSelector(
 
       const dailyRates =
         dailyRateMap.get(employeeId) ?? new Map<string, number>();
-      // Fall back to team average for new employees with no lookback history.
+
+      // Drain rate: use the employee's goal for this group if set, otherwise fall back to lookback avg.
+      // Use the first group's goal as the employee's total drain rate.
+      const firstGroupGoal = plan.groupAssignments[0]?.dailyRevenueGoal ?? null;
       const totalAvgDailyPrice =
-        totalAvgDailyPriceMap.get(employeeId) ?? teamAvgTotalDailyPrice;
+        firstGroupGoal !== null
+          ? firstGroupGoal
+          : (totalAvgDailyPriceMap.get(employeeId) ?? teamAvgTotalDailyPrice);
       const nextAvailableDate =
         nextDateByEmployee.get(employeeId) ?? crawlStart;
 
@@ -514,7 +558,7 @@ const selectCrawlerResult = createSelector(
       });
     }
 
-    return runDayCrawlSimulation(servCodeEntries, employeeEntries, crawlStart);
+    return runDayCrawlSimulation(servCodeEntries, employeeEntries, crawlStart, cascadeThreshold);
   },
 );
 
@@ -601,6 +645,7 @@ const selectProgCodeProjectedCompletionMap = createSelector(
  * "What should the date ranges be, given current throughput and work pools?"
  *
  * One SeasonOptimizedRange per servCode, built from crawlerResult.
+ * Includes plannedEnd from the active SeasonPlan for Gantt rendering.
  */
 const selectSeasonOptimizerResult = createSelector(
   [
@@ -608,8 +653,9 @@ const selectSeasonOptimizerResult = createSelector(
     selectActivePoolPriceByServCode,
     progServSelect.progCodes,
     selectMainDate,
+    seasonPlanSelect.servCodeScheduleMap,
   ],
-  (crawlerResult, activePoolMap, progCodes, today): SeasonOptimizedRange[] => {
+  (crawlerResult, activePoolMap, progCodes, today, servCodeScheduleMap): SeasonOptimizedRange[] => {
     const results: SeasonOptimizedRange[] = [];
 
     for (const progCode of progCodes) {
@@ -618,6 +664,7 @@ const selectSeasonOptimizerResult = createSelector(
         const crawled = crawlerResult.byServCode.get(servCodeId);
         const pool = activePoolMap.get(servCodeId) ?? 0;
         const hasWork = pool > 0;
+        const schedule = servCodeScheduleMap.get(servCodeId);
 
         const resolvedMin =
           crawled?.optimizedMin ?? servCode.dateRange.min ?? today;
@@ -636,6 +683,7 @@ const selectSeasonOptimizerResult = createSelector(
           runsInSequence: progCode.runsInSequence,
           isStarted,
           hasWork,
+          plannedEnd: schedule?.plannedEnd ?? null,
         } satisfies SeasonOptimizedRange);
       }
     }
@@ -699,6 +747,7 @@ export const paceCrawlerSelect = {
   dailyRateByEmployeeByServCode: selectDailyRateByEmployeeByServCode,
   // Layer 4
   activePoolPriceByServCode: selectActivePoolPriceByServCode,
+  totalPoolPriceByServCode: selectTotalPoolPriceByServCode,
   // Layer 5
   crawlerResult: selectCrawlerResult,
   // Layer 6

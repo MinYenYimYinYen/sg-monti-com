@@ -168,8 +168,11 @@ function CoverSheetsPDF({
               <View id={"SERV_CODE_PRODUCTS"} style={tw("text-sm")}>
                 {servCodesByRule.map((group, index) => {
                   const { idWithRule, services: groupServices } = group;
-                  const { count, size, price } =
-                    getServCodeCounts(groupServices)[0];
+                  const servCodeCountResult = getServCodeCounts(groupServices);
+                  if (!servCodeCountResult[0]) {
+                    console.log("[CoverSheetsPDF] getServCodeCounts returned empty for group:", idWithRule, "groupServices:", groupServices);
+                  }
+                  const { count, size, price } = servCodeCountResult[0] ?? { count: 0, size: 0, price: 0 };
                   const split = idWithRule.split("-");
                   const servCodeId = split[0];
                   const ruleDesc = split[1] ?? "";

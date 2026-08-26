@@ -19,10 +19,15 @@ import {
  * works their highest-priority eligible entry (a group — singles are single-member groups).
  * Sequential progCodes are handled by locking N+1 until N drains.
  *
+ * Cascade unlock condition (OR):
+ *   completionPct >= cascadeThreshold  (e.g. 95% of total pool completed)
+ *   OR today > plannedEnd              (from the active SeasonPlan)
+ *
+ * Where completionPct = 1 - (currentPool / totalPool).
+ * This prevents a handful of stragglers from blocking the successor servCode.
+ *
  * Drain model: urgency-weighted by (pool / remainingWeekdays) per member.
  * Members with tighter deadlines receive a larger share of the employee's daily capacity.
- * This ensures front-loaded members (e.g., SE3 ending 9/1) drain faster than
- * members with distant deadlines (e.g., CC3 ending 9/30) within the same group.
  *
  * Returns projected end dates (per member), optimized date ranges, per-employee timeline events,
  * and per-entry (group) crew transition events with pool snapshots.
@@ -32,6 +37,8 @@ export function runDayCrawlSimulation(
   employeeEntries: DayCrawlEmployeeEntry[],
   /** The first day to simulate. Computed by selectCrawlStart in paceCrawlerSelect. */
   crawlStart: string,
+  /** Fraction of total pool that must be completed before unlocking the successor. Default 0.95. */
+  cascadeThreshold: number = 0.95,
 ): CrawlerResult {
   // `today` is used as the internal loop variable name for clarity within the simulation.
   const today = crawlStart;
@@ -74,6 +81,37 @@ export function runDayCrawlSimulation(
         sequentialSuccessor.set(current.servCodeId, sorted[i + 1].servCodeId);
       }
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helper: check if a sequential servCode should unlock its successor.
+  //
+  // Unlock when EITHER:
+  //   completionPct >= cascadeThreshold  (e.g. 95% done)
+  //   OR today > plannedEnd              (from SeasonPlan)
+  //
+  // completionPct = 1 - (currentPool / totalPool)
+  // When totalPool is 0 (no services sold), treat as fully complete.
+  // ---------------------------------------------------------------------------
+  function shouldUnlockSuccessor(servCodeId: string, currentDay: string): boolean {
+    const entry = servCodeEntries.find((e) => e.servCodeId === servCodeId);
+    if (!entry) return false;
+
+    const currentPool = pools.get(servCodeId) ?? 0;
+
+    // Pool fully drained — always unlock
+    if (currentPool <= 0) return true;
+
+    // Completion percentage check
+    if (entry.totalPool > 0) {
+      const completionPct = 1 - currentPool / entry.totalPool;
+      if (completionPct >= cascadeThreshold) return true;
+    }
+
+    // Planned end date check
+    if (entry.plannedEnd && currentDay > entry.plannedEnd) return true;
+
+    return false;
   }
 
   // ---------------------------------------------------------------------------
@@ -160,10 +198,9 @@ export function runDayCrawlSimulation(
   // ---------------------------------------------------------------------------
   // 3b. Pre-crawl sequential cascade for past-due servCodes.
   //
-  // If a sequential servCode's window has already closed (crawlStart > servCodeRangeMax),
-  // it will never drain during the crawl — its pool would stay locked forever.
-  // Instead, carry its remaining pool forward to the next sequential servCode and
-  // unlock the successor immediately. Cascade through the chain as needed.
+  // If a sequential servCode should unlock its successor before the crawl starts
+  // (either past its planned end or above the cascade threshold), carry its
+  // remaining pool forward and unlock the successor immediately.
   // ---------------------------------------------------------------------------
   for (const group of sequentialGroups.values()) {
     const sorted = [...group].sort((a, b) => a.servCodeRangeMin.localeCompare(b.servCodeRangeMin));
@@ -172,16 +209,17 @@ export function runDayCrawlSimulation(
       const successor = sorted[i + 1];
       const currentPool = pools.get(current.servCodeId) ?? 0;
       const isPastDue = today > current.servCodeRangeMax;
+      const shouldUnlock = isPastDue || shouldUnlockSuccessor(current.servCodeId, today);
 
-      if (isPastDue && currentPool > 0) {
+      if (shouldUnlock && currentPool > 0) {
         // Carry remaining pool forward to the successor
         const successorPool = pools.get(successor.servCodeId) ?? 0;
         pools.set(successor.servCodeId, successorPool + currentPool);
         pools.set(current.servCodeId, 0);
         sequentialLocks.set(successor.servCodeId, false);
         resolvedServCodeRangeMin.set(successor.servCodeId, current.servCodeRangeMax);
-      } else if (isPastDue && currentPool <= 0) {
-        // Already drained and past due — just unlock the successor
+      } else if (shouldUnlock && currentPool <= 0) {
+        // Already drained — just unlock the successor
         sequentialLocks.set(successor.servCodeId, false);
         resolvedServCodeRangeMin.set(successor.servCodeId, current.servCodeRangeMax);
       }
@@ -200,6 +238,27 @@ export function runDayCrawlSimulation(
       if (pool > 0) { anyRemaining = true; break; }
     }
     if (!anyRemaining) break;
+
+    // Check cascade unlock conditions on each day (for threshold-based unlocks mid-crawl)
+    for (const group of sequentialGroups.values()) {
+      const sorted = [...group].sort((a, b) => a.servCodeRangeMin.localeCompare(b.servCodeRangeMin));
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const current = sorted[i];
+        const successor = sorted[i + 1];
+        if (sequentialLocks.get(successor.servCodeId) !== true) continue; // already unlocked
+
+        if (shouldUnlockSuccessor(current.servCodeId, day)) {
+          const currentPool = pools.get(current.servCodeId) ?? 0;
+          if (currentPool > 0) {
+            const successorPool = pools.get(successor.servCodeId) ?? 0;
+            pools.set(successor.servCodeId, successorPool + currentPool);
+            pools.set(current.servCodeId, 0);
+          }
+          sequentialLocks.set(successor.servCodeId, false);
+          resolvedServCodeRangeMin.set(successor.servCodeId, day);
+        }
+      }
+    }
 
     for (const employee of employeeEntries) {
       // Skip this employee entirely if they are on leave or a holiday today

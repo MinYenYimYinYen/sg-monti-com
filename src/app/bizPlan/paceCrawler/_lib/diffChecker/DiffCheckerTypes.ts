@@ -57,6 +57,8 @@ export type DiffResult = {
 export type OpenServCodeRow = {
   kind: "single";
   servCodeId: string;
+  /** The employee's daily revenue goal for this group ($/day). Null when not set. */
+  goalDailyPrice: number | null;
   historicalDailyPrice: number;
   requiredDailyPrice: number;
   diffPrice: number;
@@ -98,6 +100,8 @@ export type OpenGroupRow = {
    * This is the total "how much do I need to route today" for this group.
    */
   requiredDailyPrice: number;
+  /** Employee's daily revenue goal for this group ($/day). Null when not set. */
+  goalDailyPrice: number | null;
   /** Employee's totalAvgDailyPrice — the actual drain rate for this group */
   historicalDailyPrice: number;
   diffPrice: number;

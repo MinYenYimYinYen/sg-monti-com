@@ -20,7 +20,8 @@ import type {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatDollars(n: number): string {
+function formatDollars(n: number | null): string {
+  if (n === null) return "—";
   if (!isFinite(n)) return "∞";
   return `$${Math.round(n).toLocaleString()}`;
 }
@@ -38,11 +39,50 @@ function formatDate(iso: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// SingleServCodeRow — one row per open single servCode on the card
+// ThreeValueRow — shows Goal / Actual / Required for a group or single
+// ---------------------------------------------------------------------------
+
+function ThreeValueRow({
+  goalDailyPrice,
+  historicalDailyPrice,
+  requiredDailyPrice,
+  isOverdue,
+}: {
+  goalDailyPrice: number | null;
+  historicalDailyPrice: number;
+  requiredDailyPrice: number;
+  isOverdue: boolean;
+}) {
+  const requiredColor = isOverdue ? "text-destructive" : "text-primary";
+
+  return (
+    <div className="flex flex-col gap-0.5 text-[10px] font-mono">
+      {goalDailyPrice !== null && (
+        <div className="flex items-center gap-1">
+          <span className="text-muted-foreground w-14 shrink-0">Goal:</span>
+          <span className="text-accent font-semibold">{formatDollars(goalDailyPrice)}/day</span>
+        </div>
+      )}
+      <div className="flex items-center gap-1">
+        <span className="text-muted-foreground w-14 shrink-0">Actual:</span>
+        <span className="text-foreground">{formatDollars(historicalDailyPrice)}/day</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-muted-foreground w-14 shrink-0">Required:</span>
+        <span className={`font-semibold ${requiredColor}`}>
+          {isOverdue ? "∞" : formatDollars(requiredDailyPrice)}/day
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SingleServCodeRow
 // ---------------------------------------------------------------------------
 
 function SingleServCodeRow({ row }: { row: OpenServCodeRow }) {
-  const diffColor = row.isOverdue
+  const statusColor = row.isOverdue
     ? "text-destructive"
     : row.isAhead
       ? "text-accent"
@@ -50,11 +90,9 @@ function SingleServCodeRow({ row }: { row: OpenServCodeRow }) {
         ? "text-secondary"
         : "text-muted-foreground";
 
-  const rateColor = row.isOverdue ? "text-destructive" : "text-primary";
-
   return (
     <div className="flex items-start gap-2 py-1.5 border-b border-border/40 last:border-0">
-      {/* ServCode ID + per-row status badge */}
+      {/* ServCode ID + status badge */}
       <div className="w-14 shrink-0 pt-0.5 flex flex-col gap-0.5">
         <span className="font-mono text-xs text-foreground truncate">
           {row.servCodeId}
@@ -69,23 +107,21 @@ function SingleServCodeRow({ row }: { row: OpenServCodeRow }) {
             behind
           </span>
         )}
+        {!row.isOverdue && row.isAhead && (
+          <span className="text-[9px] text-accent bg-accent/10 rounded px-1 leading-tight w-fit">
+            ahead
+          </span>
+        )}
       </div>
 
-      {/* Required $/day — the primary number */}
+      {/* Three-value display */}
       <div className="flex-1 min-w-0">
-        <div className={`font-mono text-xs font-semibold ${rateColor}`}>
-          {formatDollars(row.requiredDailyPrice)}/day
-        </div>
-        {/* Historical vs diff — secondary context */}
-        <div className={`font-mono text-[10px] ${diffColor}`}>
-          hist: {formatDollars(row.historicalDailyPrice)}
-          {row.diffPrice !== 0 && isFinite(row.diffPrice) && (
-            <span className="ml-1">
-              ({row.diffPrice > 0 ? "+" : ""}{formatDollars(row.diffPrice)}
-              {row.diffPercent !== null && ` / ${formatPercent(row.diffPercent)}`})
-            </span>
-          )}
-        </div>
+        <ThreeValueRow
+          goalDailyPrice={row.goalDailyPrice}
+          historicalDailyPrice={row.historicalDailyPrice}
+          requiredDailyPrice={row.requiredDailyPrice}
+          isOverdue={row.isOverdue}
+        />
       </div>
 
       {/* Pool remaining + days left */}
@@ -104,7 +140,7 @@ function SingleServCodeRow({ row }: { row: OpenServCodeRow }) {
 }
 
 // ---------------------------------------------------------------------------
-// GroupMemberRow — one sub-row per member in an expanded group
+// GroupMemberRow
 // ---------------------------------------------------------------------------
 
 function GroupMemberRow({ member }: { member: OpenGroupMemberRow }) {
@@ -115,7 +151,7 @@ function GroupMemberRow({ member }: { member: OpenGroupMemberRow }) {
       </span>
       <div className="flex-1 min-w-0">
         <span className={`font-mono text-[10px] font-semibold ${member.isOverdue ? "text-destructive" : "text-primary"}`}>
-          {formatDollars(member.requiredDailyPrice)}/day
+          {formatDollars(member.requiredDailyPrice)}/day required
         </span>
         {member.isOverdue && (
           <span className="ml-1 text-[9px] text-destructive bg-destructive/10 rounded px-1">overdue</span>
@@ -134,21 +170,11 @@ function GroupMemberRow({ member }: { member: OpenGroupMemberRow }) {
 }
 
 // ---------------------------------------------------------------------------
-// GroupEntryRow — group header + expandable member sub-rows
+// GroupEntryRow
 // ---------------------------------------------------------------------------
 
 function GroupEntryRow({ row }: { row: OpenGroupRow }) {
   const [expanded, setExpanded] = useState(false);
-
-  const diffColor = row.isOverdue
-    ? "text-destructive"
-    : row.isAhead
-      ? "text-accent"
-      : row.isBehind
-        ? "text-secondary"
-        : "text-muted-foreground";
-
-  const rateColor = row.isOverdue ? "text-destructive" : "text-primary";
 
   return (
     <div className="border-b border-border/40 last:border-0">
@@ -180,22 +206,21 @@ function GroupEntryRow({ row }: { row: OpenGroupRow }) {
               behind
             </span>
           )}
+          {!row.isOverdue && row.isAhead && (
+            <span className="text-[9px] text-accent bg-accent/10 rounded px-1 leading-tight w-fit">
+              ahead
+            </span>
+          )}
         </div>
 
-        {/* Required $/day (sum of member rates) */}
+        {/* Three-value display */}
         <div className="flex-1 min-w-0">
-          <div className={`font-mono text-xs font-semibold ${rateColor}`}>
-            {formatDollars(row.requiredDailyPrice)}/day
-          </div>
-          <div className={`font-mono text-[10px] ${diffColor}`}>
-            hist: {formatDollars(row.historicalDailyPrice)}
-            {row.diffPrice !== 0 && isFinite(row.diffPrice) && (
-              <span className="ml-1">
-                ({row.diffPrice > 0 ? "+" : ""}{formatDollars(row.diffPrice)}
-                {row.diffPercent !== null && ` / ${formatPercent(row.diffPercent)}`})
-              </span>
-            )}
-          </div>
+          <ThreeValueRow
+            goalDailyPrice={row.goalDailyPrice}
+            historicalDailyPrice={row.historicalDailyPrice}
+            requiredDailyPrice={row.requiredDailyPrice}
+            isOverdue={row.isOverdue}
+          />
         </div>
 
         {/* Combined pool + group window */}
@@ -230,12 +255,11 @@ function GroupEntryRow({ row }: { row: OpenGroupRow }) {
 function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
   const { employee, isAlreadyRouted, openEntries } = cardData;
 
-  // Header: neutral unless already routed today
   const headerBg = isAlreadyRouted ? "bg-destructive/10" : "bg-accent/10";
 
   return (
     <div className="border rounded-lg bg-card w-72 flex flex-col">
-      {/* Header — employee name + routed badge only */}
+      {/* Header */}
       <div className={cn("flex items-center justify-between px-3 py-2 border-b rounded-t-lg", headerBg)}>
         <span className="text-sm font-semibold text-foreground truncate">
           {employee.name}
@@ -305,11 +329,9 @@ export function DiffD5EmployeeCardPanel() {
 
       {/* Legend */}
       <div className="shrink-0 px-3 py-1.5 border-b border-border/40 bg-card/50 flex items-center gap-4 text-[10px] text-muted-foreground">
-        <span><strong className="text-primary">Required $/day</strong> = what you need to route today to stay on track</span>
-        <span><strong className="text-foreground">hist:</strong> historical avg (simulator baseline)</span>
-        <span className="text-accent">green = ahead</span>
-        <span className="text-secondary">orange = behind</span>
-        <span className="text-destructive">red = overdue</span>
+        <span><strong className="text-accent">Goal</strong> = daily revenue target ($/day)</span>
+        <span><strong className="text-foreground">Actual</strong> = lookback avg (what's happening)</span>
+        <span><strong className="text-primary">Required</strong> = what's needed to finish on time</span>
         <span>Groups: click ▶ to expand members</span>
       </div>
 

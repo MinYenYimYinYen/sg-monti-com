@@ -48,13 +48,13 @@ export type ServiceRaw = {
   // isReversed: boolean;
   // manHourRate?: number;
   // manHoursVariance?: number;
-  nextPrice: number;
-  nextSize: number;
+  nextPrice: number | null;
+  nextSize: number | null;
   // postedDate?: string;
   // prepayAmount?: number;
   // prepayId?: number;
   // prepaymentDiscountAmount: number;
-  price: number;
+  price: number | null;
   // productionValue?: number;
   productsUsed?: AppProductRaw[];
   // programCodeAndDescription?: string;
@@ -68,7 +68,7 @@ export type ServiceRaw = {
   // serviceHistoryBillType?: string;
   serviceStatus: string;
   serviceYear: number;
-  size: number;
+  size: number | null;
   // soldBy1?: string;
   // soldBy2?: string;
   // soldDate?: string;

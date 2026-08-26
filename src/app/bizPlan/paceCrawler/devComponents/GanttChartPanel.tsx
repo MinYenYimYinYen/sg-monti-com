@@ -5,20 +5,18 @@ import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
-import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
-import { UnsavedServCodeChanges } from "@/app/realGreen/progServ/_lib/types/ProgServState";
+import { seasonPlanSelect } from "@/app/bizPlan/seasonPlan/seasonPlanSelect";
+import { useSeasonPlan } from "@/app/bizPlan/seasonPlan/useSeasonPlan";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { getWeekNumber } from "@/lib/primatives/dates/getWeek";
 import { SeasonOptimizedRange } from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
-import { Button } from "@/style/components/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
-import { Zap } from "lucide-react";
 import {
   buildSegmentsFromTimeline,
   GanttBarDetail,
   type GanttSegment,
 } from "@/app/bizPlan/paceCrawler/devComponents/GanttBarDetail";
 import { AssignmentGroup } from "@/app/assignmentGroup/AssignmentGroupTypes";
+import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -86,10 +84,6 @@ type ProgGroup = {
 
 // ---------------------------------------------------------------------------
 // Build servCodeId → groupLabel map from shared AssignmentGroup definitions.
-//
-// Uses the scenario-level groups from assignmentGroupSelect — all employees
-// who work the same group share the same groupId, so the Gantt correctly
-// renders one color per group regardless of how many employees work it.
 // ---------------------------------------------------------------------------
 
 function buildServCodeGroupMap(
@@ -243,22 +237,33 @@ function GanttProgRow({
       style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
     >
       {group.rows.map((row) => {
-        // --- servCodeRange bar (RealGreen-assigned range) ---
-        const scRangeMin = row.servCodeRange?.min;
-        const scRangeMax = row.servCodeRange?.max;
-        const hasServCodeRange = isValidDate(scRangeMin) && isValidDate(scRangeMax);
+        // --- Plan band (SeasonPlan plannedStart → plannedEnd) ---
+        const plannedEnd = row.plannedEnd;
+        // We use optimizedMin as the plan start (the crawler's resolved start)
+        // and plannedEnd from the SeasonPlan as the plan end.
+        const hasPlanBand = isValidDate(row.optimizedMin) && plannedEnd && isValidDate(plannedEnd);
 
-        const scStartDay = hasServCodeRange ? dayOffset(chartStart, scRangeMin) : 0;
-        const scWidthDays = hasServCodeRange
-          ? Math.max(dayOffset(scRangeMin, scRangeMax), 1)
+        const planStartDay = hasPlanBand ? dayOffset(chartStart, row.optimizedMin) : 0;
+        const planWidthDays = hasPlanBand
+          ? Math.max(dayOffset(row.optimizedMin, plannedEnd!), 1)
           : 0;
-        const scLeftPct = hasServCodeRange ? (scStartDay / totalDays) * 100 : 0;
-        const scWidthPct = hasServCodeRange ? (scWidthDays / totalDays) * 100 : 0;
+        const planLeftPct = hasPlanBand ? (planStartDay / totalDays) * 100 : 0;
+        const planWidthPct = hasPlanBand ? (planWidthDays / totalDays) * 100 : 0;
 
-        // --- optimizedRange bar (crawler result) ---
+        // --- Projected bar (crawler result) ---
         if (!isValidDate(row.optimizedMin) || !isValidDate(row.optimizedMax)) return null;
 
-        const barColor = row.hasWork ? "bg-primary/30" : "bg-muted-foreground/20";
+        // Color based on whether projected end is before or after planned end
+        let barColor = "bg-primary/30";
+        if (row.hasWork && plannedEnd && row.projectedEndDate) {
+          if (row.projectedEndDate <= plannedEnd) {
+            barColor = "bg-accent/40"; // green — on track
+          } else {
+            barColor = "bg-destructive/30"; // red — behind
+          }
+        } else if (!row.hasWork) {
+          barColor = "bg-muted-foreground/20";
+        }
 
         // Per-servCode group color — look up this specific servCode's group label
         const servCodeGroupLabel = servCodeGroupMap.get(row.servCodeId) ?? null;
@@ -278,21 +283,21 @@ function GanttProgRow({
 
         return (
           <div key={row.servCodeId}>
-            {/* servCodeRange bar — top, thin, muted */}
-            {hasServCodeRange && scWidthPct > 0 && (
+            {/* Plan band — muted background showing the committed plan window */}
+            {hasPlanBand && planWidthPct > 0 && (
               <div
                 className="absolute rounded-full bg-muted-foreground/15"
                 style={{
-                  left: `${scLeftPct}%`,
-                  width: `${scWidthPct}%`,
+                  left: `${planLeftPct}%`,
+                  width: `${planWidthPct}%`,
                   height: 8,
                   top: 4,
                 }}
-                title={`${row.servCodeId} RG range: ${scRangeMin} → ${scRangeMax}`}
+                title={`${row.servCodeId} planned: ${row.optimizedMin} → ${plannedEnd}`}
               />
             )}
 
-            {/* Segmented optimizedRange bar */}
+            {/* Segmented projected bar */}
             <SegmentedBar
               servCodeId={row.servCodeId}
               groupLabel={crawledResult?.groupLabel ?? null}
@@ -323,73 +328,21 @@ export function GanttChartPanel() {
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
   const crawlerResult = useSelector(paceCrawlerSelect.crawlerResult);
   const servCodeTimelineMap = useSelector(paceCrawlerSelect.servCodeTimelineMap);
-  useSelector(progServSelect.unsavedServCodeChanges);
-  const servCodeDocMap = useSelector(progServSelect.servCodeDocMap);
-  const { updateServCode, saveServCodeChanges } = useProgServ({});
+  const snowDeadline = useSelector(seasonPlanSelect.snowDeadline);
+  const activeSeasonPlan = useSelector(seasonPlanSelect.activeSeasonPlan);
 
   // Build set of servCodeIds that have at least one assigned employee.
-  // Resolve each groupId to its member servCodeIds via groupMap.
   const assignedServCodeIds = new Set<string>();
   for (const [, plan] of assignmentsByEmployeeId) {
-    for (const groupId of plan.groupIds) {
+    for (const { groupId } of plan.groupAssignments) {
       const group = groupMap.get(groupId);
       const servCodeIds = group?.servCodeIds ?? groupId.split("+");
       for (const id of servCodeIds) assignedServCodeIds.add(id);
     }
   }
 
-
   // Filter to only servCodes with assigned employees
   const filteredResult = seasonResult.filter((r) => assignedServCodeIds.has(r.servCodeId));
-
-  // ServCodes where hasWork === true and optimized range differs from the current RG range.
-  const changedRanges = filteredResult.filter(
-    (r) =>
-      r.hasWork &&
-      isValidDate(r.optimizedMin) &&
-      isValidDate(r.optimizedMax) &&
-      (r.optimizedMin !== r.servCodeRange.min || r.optimizedMax !== r.servCodeRange.max),
-  );
-
-  function handleApplyOptimizedRanges() {
-    const unsavedChanges: UnsavedServCodeChanges[] = changedRanges.flatMap((row) => {
-      const doc = servCodeDocMap.get(row.servCodeId);
-      if (!doc) return [];
-      return [
-        {
-          original: {
-            servCodeId: doc.servCodeId,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt,
-            dateRange: doc.dateRange,
-            alwaysAsap: doc.alwaysAsap,
-            productRuleDocs: doc.productRuleDocs,
-            callAheadTag: doc.callAheadTag ?? null,
-            paddingDays: doc.paddingDays,
-          },
-          updated: {
-            servCodeId: doc.servCodeId,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt,
-            dateRange: { min: row.optimizedMin, max: row.optimizedMax },
-            alwaysAsap: doc.alwaysAsap,
-            productRuleDocs: doc.productRuleDocs,
-            callAheadTag: doc.callAheadTag ?? null,
-            paddingDays: doc.paddingDays,
-          },
-        },
-      ];
-    });
-
-    for (const row of changedRanges) {
-      updateServCode({
-        servCodeId: row.servCodeId,
-        dateRange: { min: row.optimizedMin, max: row.optimizedMax },
-      });
-    }
-
-    void saveServCodeChanges(unsavedChanges);
-  }
 
   if (filteredResult.length === 0) {
     return (
@@ -421,15 +374,18 @@ export function GanttChartPanel() {
     if (isValidDate(row.servCodeRange?.max) && row.servCodeRange.max > chartEnd) {
       chartEnd = row.servCodeRange.max;
     }
+    if (row.plannedEnd && isValidDate(row.plannedEnd) && row.plannedEnd > chartEnd) {
+      chartEnd = row.plannedEnd;
+    }
+  }
+  if (snowDeadline && isValidDate(snowDeadline) && snowDeadline > chartEnd) {
+    chartEnd = snowDeadline;
   }
   chartEnd = dateStrings.addDays(chartEnd, 3);
 
   const totalDays = Math.max(dayOffset(chartStart, chartEnd), 1);
 
-  // ---------------------------------------------------------------------------
-  // Build servCodeId → groupLabel map from shared AssignmentGroup definitions.
-  // Assign a stable color index to each unique group label.
-  // ---------------------------------------------------------------------------
+  // Build servCodeId → groupLabel map and assign stable color indices.
   const servCodeGroupMap = buildServCodeGroupMap(groups);
 
   const groupColorIndex = new Map<string, number>();
@@ -441,9 +397,7 @@ export function GanttChartPanel() {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Group rows by progCode, then sort so grouped servCodes appear adjacent.
-  // ---------------------------------------------------------------------------
   const progCodeRowMap = new Map<string, SeasonOptimizedRange[]>();
   for (const row of filteredResult) {
     const existing = progCodeRowMap.get(row.progCodeId) ?? [];
@@ -485,30 +439,32 @@ export function GanttChartPanel() {
       ? (dayOffset(chartStart, today) / totalDays) * 100
       : null;
 
+  const snowDeadlinePct =
+    snowDeadline && isValidDate(snowDeadline) && snowDeadline >= chartStart && snowDeadline <= chartEnd
+      ? (dayOffset(chartStart, snowDeadline) / totalDays) * 100
+      : null;
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Toolbar — Apply Optimized Ranges button */}
+      {/* Toolbar — Season Plan info */}
       <div className="shrink-0 flex items-center gap-3 px-3 py-2 border-b border-border bg-card">
-        <Button
-          size="sm"
-          variant="primary"
-          intensity="solid"
-          disabled={changedRanges.length === 0}
-          onClick={handleApplyOptimizedRanges}
-        >
-          <Zap className="w-3.5 h-3.5" />
-          Apply Optimized Ranges
-          {changedRanges.length > 0 && (
-            <span className="ml-1 bg-primary-foreground/20 rounded px-1 text-[10px] font-mono">
-              {changedRanges.length}
+        {activeSeasonPlan ? (
+          <span className="text-[10px] text-foreground font-semibold">
+            Plan: <span className="text-primary">{activeSeasonPlan.name}</span>
+            <span className="text-muted-foreground ml-2">
+              ({activeSeasonPlan.year} · cascade {Math.round(activeSeasonPlan.cascadeThreshold * 100)}%)
             </span>
-          )}
-        </Button>
-        <span className="text-[10px] text-muted-foreground">
-          {changedRanges.length === 0
-            ? "All optimized ranges match RealGreen — nothing to apply."
-            : `${changedRanges.length} servCode${changedRanges.length === 1 ? "" : "s"} with changed ranges (has-work only).`}
-        </span>
+          </span>
+        ) : (
+          <span className="text-[10px] text-muted-foreground italic">
+            No active season plan — go to Season Plans to create one.
+          </span>
+        )}
+        {snowDeadline && (
+          <span className="text-[10px] text-destructive font-semibold">
+            ❄ Snow deadline: {snowDeadline}
+          </span>
+        )}
       </div>
 
       {/* Scrollable chart area */}
@@ -576,8 +532,17 @@ export function GanttChartPanel() {
               {/* Today line */}
               {todayPct !== null && (
                 <div
-                  className="absolute top-0 bottom-0 border-l-2 border-destructive/70 z-20"
+                  className="absolute top-0 bottom-0 border-l-2 border-primary/70 z-20"
                   style={{ left: `${todayPct}%` }}
+                />
+              )}
+
+              {/* Snow deadline line */}
+              {snowDeadlinePct !== null && (
+                <div
+                  className="absolute top-0 bottom-0 border-l-2 border-destructive z-20"
+                  style={{ left: `${snowDeadlinePct}%` }}
+                  title={`Snow deadline: ${snowDeadline}`}
                 />
               )}
 
@@ -603,26 +568,34 @@ export function GanttChartPanel() {
       <div className="shrink-0 border-t border-border px-3 py-1.5 flex items-center gap-4 bg-card text-[10px] text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <div className="w-4 h-2 rounded-full bg-muted-foreground/15" />
-          <span>RG date range</span>
+          <span>Plan window</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-3 rounded-full bg-primary/30" />
-          <span>Optimized range (has work)</span>
+          <div className="w-4 h-3 rounded-full bg-accent/40" />
+          <span>On track (ends before plan)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-4 h-3 rounded-full bg-destructive/30" />
+          <span>Behind (ends after plan)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-4 h-3 rounded-full bg-muted-foreground/20" />
-          <span>Optimized range (no data)</span>
+          <span>No data</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-0 h-3 border-l-2 border-destructive/70" />
+          <div className="w-0 h-3 border-l-2 border-primary/70" />
           <span>Today</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-1 h-3 bg-primary/30 border-l-[3px] border-l-primary rounded-sm" />
-          <span>Grouped servCodes (left stripe = same group)</span>
+          <div className="w-0 h-3 border-l-2 border-destructive" />
+          <span>Snow deadline</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-primary/30 border-l border-border/40" />
+          <div className="w-1 h-3 bg-accent/40 border-l-[3px] border-l-primary rounded-sm" />
+          <span>Grouped servCodes</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-accent/40 border-l border-border/40" />
           <span>Click segment for crew detail</span>
         </div>
       </div>

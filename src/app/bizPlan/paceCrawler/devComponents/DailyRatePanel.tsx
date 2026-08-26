@@ -32,7 +32,7 @@ export function DailyRatePanel() {
     const name = employee?.name ?? employeeId;
     const totalAvgDailyPrice = totalAvgDailyPriceMap.get(employeeId);
 
-    for (const groupId of plan.groupIds) {
+    for (const { groupId } of plan.groupAssignments ?? []) {
       const group = groupMap.get(groupId);
       const servCodeIds = group?.servCodeIds ?? groupId.split("+");
       const label = group?.label ?? groupId;

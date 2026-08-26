@@ -2,7 +2,7 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { AssignmentPlanContract } from "@/app/bizPlan/assignmentPlan/api/AssignmentPlanContract";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { ScenarioModel } from "@/app/bizPlan/assignmentPlan/api/AssignmentPlanModel";
-import { AssignmentPlan, Scenario } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
+import { AssignmentPlan, GroupAssignment, Scenario } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
 import {
   cleanMongoArray,
   cleanMongoObject,
@@ -10,29 +10,49 @@ import {
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 
 // ---------------------------------------------------------------------------
-// Migration helper — transforms old-format plans (entries[]) to new format (groupIds[]).
+// Migration helper — transforms old-format plans to new format.
 //
-// Old format: plan.entries = [{ kind: "group", groupId: "P01+R01", servCodeIds: [], ... }]
-// New format: plan.groupIds = ["P01+R01", ...]
+// Old format (v1): plan.groupIds = ["P01+R01", ...]
+// Old format (v2): plan.entries = [{ kind: "group", groupId: "P01+R01", ... }]
+// New format (v3): plan.groupAssignments = [{ groupId: "P01+R01", dailyRevenueGoal: null }]
 //
-// Only entries with a groupId are migrated — old single entries (servCodeId only, no groupId)
-// are dropped since singles no longer exist in the unified group model.
 // This runs on read; the DB document is unchanged until the user saves.
+//
+// TODO: Remove migratePlan() and migrateScenario() once all documents in MongoDB
+// have been updated to the new groupAssignments format. Verify with:
+//   db.assignmentscenarios.find({ "plans.groupIds": { $exists: true } })
+//   db.assignmentscenarios.find({ "plans.entries": { $exists: true } })
 // ---------------------------------------------------------------------------
 function migratePlan(rawPlan: Record<string, unknown>): AssignmentPlan {
-  if (Array.isArray(rawPlan.groupIds)) {
-    // Already new format
+  // Already new format
+  if (Array.isArray(rawPlan.groupAssignments)) {
     return {
       employeeId: rawPlan.employeeId as string,
-      groupIds: rawPlan.groupIds as string[],
+      groupAssignments: (rawPlan.groupAssignments as Array<Record<string, unknown>>).map(
+        (ga): GroupAssignment => ({
+          groupId: ga.groupId as string,
+          dailyRevenueGoal: (ga.dailyRevenueGoal as number | null) ?? null,
+        }),
+      ),
     };
   }
-  // Old format: extract groupId from each entry that has one
+
+  // Old format v1: groupIds[]
+  if (Array.isArray(rawPlan["groupIds"])) {
+    return {
+      employeeId: rawPlan.employeeId as string,
+      groupAssignments: (rawPlan["groupIds"] as string[]).map(
+        (groupId): GroupAssignment => ({ groupId, dailyRevenueGoal: null }),
+      ),
+    };
+  }
+
+  // Old format v2: entries[] with groupId
   const entries = (rawPlan.entries as Array<Record<string, unknown>>) ?? [];
-  const groupIds = entries
+  const groupAssignments = entries
     .filter((e) => typeof e.groupId === "string" && e.groupId.length > 0)
-    .map((e) => e.groupId as string);
-  return { employeeId: rawPlan.employeeId as string, groupIds };
+    .map((e): GroupAssignment => ({ groupId: e.groupId as string, dailyRevenueGoal: null }));
+  return { employeeId: rawPlan.employeeId as string, groupAssignments };
 }
 
 function migrateScenario(raw: Record<string, unknown>): Scenario {
