@@ -1,0 +1,1 @@
+Please use the ide_project_status tool from the webstorm-index MCP server to tell me the current indexing status of my project.

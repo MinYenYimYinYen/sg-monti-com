@@ -46,6 +46,15 @@ const selectCascadeThreshold = createSelector(
 );
 
 /**
+ * The snow melt date from the active SeasonPlan.
+ * Null when no plan is active or no snow melt date is set.
+ */
+const selectSnowMelt = createSelector(
+  [selectActiveSeasonPlan],
+  (activeSeasonPlan): string | null => activeSeasonPlan?.snowMelt ?? null,
+);
+
+/**
  * The snow deadline from the active SeasonPlan.
  * Null when no plan is active or no deadline is set.
  */
@@ -61,5 +70,6 @@ export const seasonPlanSelect = {
   seasonPlanMap: selectSeasonPlanMap,
   servCodeScheduleMap: selectServCodeScheduleMap,
   cascadeThreshold: selectCascadeThreshold,
+  snowMelt: selectSnowMelt,
   snowDeadline: selectSnowDeadline,
 };

@@ -39,6 +39,9 @@ export type SeasonPlan = CreatedUpdated & {
   name: string;
   year: number;
   cascadeThreshold: number;
+  /** Optional season start boundary (e.g. expected snow melt date). Drives the slider min. */
+  snowMelt: string | null;
+  /** Optional season end boundary (e.g. expected first snow date). Drives the slider max. */
   snowDeadline: string | null;
   servCodeSchedules: ServCodeSchedule[];
   isActive: boolean;

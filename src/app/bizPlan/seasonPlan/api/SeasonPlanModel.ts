@@ -16,6 +16,7 @@ const SeasonPlanSchema = new Schema<SeasonPlan>(
     name: { type: String, required: true, unique: true },
     year: { type: Number, required: true },
     cascadeThreshold: { type: Number, required: true, default: 0.95 },
+    snowMelt: { type: String, default: null },
     snowDeadline: { type: String, default: null },
     servCodeSchedules: { type: [ServCodeScheduleSchema], required: true, default: [] },
     isActive: { type: Boolean, required: true, default: false },
