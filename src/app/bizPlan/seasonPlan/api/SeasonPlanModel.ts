@@ -1,10 +1,10 @@
-import mongoose, { Schema } from "mongoose";
+import { Schema } from "mongoose";
 import { createModel } from "@/lib/mongoose/createModel";
 import { SeasonPlan } from "@/app/bizPlan/seasonPlan/SeasonPlanTypes";
 
-const ServCodeScheduleSchema = new Schema(
+const GroupScheduleSchema = new Schema(
   {
-    servCodeId: { type: String, required: true },
+    groupId: { type: String, required: true },
     plannedStart: { type: String, required: true },
     plannedEnd: { type: String, required: true },
   },
@@ -18,7 +18,7 @@ const SeasonPlanSchema = new Schema<SeasonPlan>(
     cascadeThreshold: { type: Number, required: true, default: 0.95 },
     snowMelt: { type: String, default: null },
     snowDeadline: { type: String, default: null },
-    servCodeSchedules: { type: [ServCodeScheduleSchema], required: true, default: [] },
+    groupSchedules: { type: [GroupScheduleSchema], required: true, default: [] },
     isActive: { type: Boolean, required: true, default: false },
   },
   { timestamps: true },

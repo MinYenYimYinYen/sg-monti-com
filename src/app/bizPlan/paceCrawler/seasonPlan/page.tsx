@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { seasonPlanSelect } from "@/app/bizPlan/seasonPlan/seasonPlanSelect";
 import { useSeasonPlan } from "@/app/bizPlan/seasonPlan/useSeasonPlan";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
-import { SeasonPlan, ServCodeSchedule } from "@/app/bizPlan/seasonPlan/SeasonPlanTypes";
-import { Plus, Trash2, Check, ChevronDown, ChevronRight } from "lucide-react";
+import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
+import { SeasonPlan, GroupSchedule } from "@/app/bizPlan/seasonPlan/SeasonPlanTypes";
+import { Plus, Trash2, Check } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Week / date helpers
@@ -67,19 +67,14 @@ const CURRENT_YEAR = new Date().getFullYear();
 // ---------------------------------------------------------------------------
 
 type WeekRangeSliderProps = {
-  /** ISO date string for the slider's leftmost position */
   sliderMin: string;
-  /** ISO date string for the slider's rightmost position */
   sliderMax: string;
-  /** ISO date string for the selected start (left handle) */
   start: string;
-  /** ISO date string for the selected end (right handle) */
   end: string;
-  /** Called when either handle changes */
   onChange: (start: string, end: string) => void;
-  /** Optional: RealGreen dateRange to show as a reference band */
-  rgMin?: string;
-  rgMax?: string;
+  /** Optional: reference band to show on the track (e.g. RealGreen dateRange) */
+  refMin?: string;
+  refMax?: string;
 };
 
 function WeekRangeSlider({
@@ -88,15 +83,14 @@ function WeekRangeSlider({
   start,
   end,
   onChange,
-  rgMin,
-  rgMax,
+  refMin,
+  refMax,
 }: WeekRangeSliderProps) {
   const startMonday = mondayOf(sliderMin);
   const endMonday = mondayOf(sliderMax);
   const mondays = buildWeekMondays(startMonday, endMonday);
   const totalWeeks = mondays.length - 1;
 
-  // Find closest index for a given ISO date
   function closestIdx(iso: string): number {
     if (!iso || totalWeeks <= 0) return 0;
     const target = toISO(mondayOf(iso));
@@ -116,24 +110,21 @@ function WeekRangeSlider({
 
   if (totalWeeks <= 0) return null;
 
-  // RealGreen band positions
-  const rgMinIdx = rgMin ? closestIdx(rgMin) : null;
-  const rgMaxIdx = rgMax ? closestIdx(rgMax) : null;
-  const rgLeftPct = rgMinIdx !== null ? (rgMinIdx / totalWeeks) * 100 : null;
-  const rgWidthPct = rgMinIdx !== null && rgMaxIdx !== null
-    ? ((rgMaxIdx - rgMinIdx) / totalWeeks) * 100
+  const refMinIdx = refMin ? closestIdx(refMin) : null;
+  const refMaxIdx = refMax ? closestIdx(refMax) : null;
+  const refLeftPct = refMinIdx !== null ? (refMinIdx / totalWeeks) * 100 : null;
+  const refWidthPct = refMinIdx !== null && refMaxIdx !== null
+    ? ((refMaxIdx - refMinIdx) / totalWeeks) * 100
     : null;
 
   const startPct = (startIdxResolved / totalWeeks) * 100;
   const endPct = (endIdxResolved / totalWeeks) * 100;
 
-  // Pointer-based drag — determines which handle to move based on proximity
   function handleTrackPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const clickedIdx = Math.round(pct * totalWeeks);
 
-    // Determine which handle is closer
     const distToStart = Math.abs(clickedIdx - startIdxResolved);
     const distToEnd = Math.abs(clickedIdx - endIdxResolved);
     const draggingStart = distToStart <= distToEnd;
@@ -144,11 +135,9 @@ function WeekRangeSlider({
       const movePct = Math.max(0, Math.min(1, (moveEvent.clientX - rect.left) / rect.width));
       const newIdx = Math.round(movePct * totalWeeks);
       if (draggingStart) {
-        const clampedIdx = Math.min(newIdx, endIdxResolved);
-        onChange(mondays[clampedIdx], mondays[endIdxResolved]);
+        onChange(mondays[Math.min(newIdx, endIdxResolved)], mondays[endIdxResolved]);
       } else {
-        const clampedIdx = Math.max(newIdx, startIdxResolved);
-        onChange(mondays[startIdxResolved], mondays[clampedIdx]);
+        onChange(mondays[startIdxResolved], mondays[Math.max(newIdx, startIdxResolved)]);
       }
     }
 
@@ -163,39 +152,31 @@ function WeekRangeSlider({
 
   const startLabel = `${fmtWeek(mondays[startIdxResolved])} (${fmtDate(mondays[startIdxResolved])})`;
   const endLabel = `${fmtWeek(mondays[endIdxResolved])} (${fmtDate(mondays[endIdxResolved])})`;
-  const centerLabel = `${startLabel} → ${endLabel}`;
 
   return (
     <div className="flex flex-col gap-0.5 w-full select-none">
-      {/* Centered range readout */}
       <div className="text-center text-[9px] font-mono text-primary font-semibold leading-tight">
-        {centerLabel}
+        {startLabel} → {endLabel}
       </div>
 
-      {/* Track + handles */}
       <div
         className="relative h-5 flex items-center cursor-pointer"
         onPointerDown={handleTrackPointerDown}
       >
-        {/* Base track */}
         <div className="absolute inset-x-0 h-1.5 rounded-full bg-border" />
 
-        {/* RealGreen reference band */}
-        {rgLeftPct !== null && rgWidthPct !== null && (
+        {refLeftPct !== null && refWidthPct !== null && (
           <div
             className="absolute h-1.5 rounded-full bg-accent/30"
-            style={{ left: `${rgLeftPct}%`, width: `${rgWidthPct}%` }}
-            title={`RealGreen: ${fmtDate(rgMin)}–${fmtDate(rgMax)}`}
+            style={{ left: `${refLeftPct}%`, width: `${refWidthPct}%` }}
           />
         )}
 
-        {/* Selected range fill */}
         <div
           className="absolute h-1.5 rounded-full bg-primary/50"
           style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
         />
 
-        {/* Visual handle dots */}
         <div
           className="absolute w-3.5 h-3.5 rounded-full bg-primary border-2 border-card shadow-sm"
           style={{ left: `calc(${startPct}% - 7px)`, zIndex: 2 }}
@@ -206,7 +187,6 @@ function WeekRangeSlider({
         />
       </div>
 
-      {/* Tick labels — every 4 weeks, two lines: week number + date */}
       <div className="relative h-7">
         {mondays.map((monday, idx) => {
           if (idx % 4 !== 0 && idx !== totalWeeks) return null;
@@ -241,7 +221,7 @@ type FormState = {
   cascadeThreshold: number;
   snowMelt: string;
   snowDeadline: string;
-  servCodeSchedules: ServCodeSchedule[];
+  groupSchedules: GroupSchedule[];
 };
 
 function emptyForm(): FormState {
@@ -251,7 +231,7 @@ function emptyForm(): FormState {
     cascadeThreshold: DEFAULT_CASCADE_THRESHOLD,
     snowMelt: "",
     snowDeadline: "",
-    servCodeSchedules: [],
+    groupSchedules: [],
   };
 }
 
@@ -262,7 +242,7 @@ function planToForm(plan: SeasonPlan): FormState {
     cascadeThreshold: plan.cascadeThreshold,
     snowMelt: plan.snowMelt ?? "",
     snowDeadline: plan.snowDeadline ?? "",
-    servCodeSchedules: [...plan.servCodeSchedules],
+    groupSchedules: [...plan.groupSchedules],
   };
 }
 
@@ -275,40 +255,29 @@ type SeasonPlanFormProps = {
 
 function SeasonPlanForm({ initialForm, isEditing, onSave, onCancel }: SeasonPlanFormProps) {
   const [form, setForm] = useState<FormState>(initialForm);
-  const progCodes = useSelector(progServSelect.progCodes);
-  const [expandedProgCodes, setExpandedProgCodes] = useState<Set<string>>(new Set());
+  const groups = useSelector(assignmentGroupSelect.groups);
 
-  // Compute slider season window from snowMelt / snowDeadline / year
   const sliderMin = form.snowMelt || `${form.year}-01-01`;
   const sliderMax = form.snowDeadline || `${form.year}-11-30`;
 
-  function toggleProgCode(progCodeId: string) {
-    setExpandedProgCodes((prev) => {
-      const next = new Set(prev);
-      if (next.has(progCodeId)) next.delete(progCodeId);
-      else next.add(progCodeId);
-      return next;
-    });
+  function getGroupSchedule(groupId: string): GroupSchedule | undefined {
+    return form.groupSchedules.find((s) => s.groupId === groupId);
   }
 
-  function getSchedule(servCodeId: string): ServCodeSchedule | undefined {
-    return form.servCodeSchedules.find((s) => s.servCodeId === servCodeId);
-  }
-
-  function setSchedule(servCodeId: string, plannedStart: string, plannedEnd: string) {
+  function setGroupSchedule(groupId: string, plannedStart: string, plannedEnd: string) {
     setForm((prev) => {
-      const existing = prev.servCodeSchedules.find((s) => s.servCodeId === servCodeId);
+      const existing = prev.groupSchedules.find((s) => s.groupId === groupId);
       if (existing) {
         return {
           ...prev,
-          servCodeSchedules: prev.servCodeSchedules.map((s) =>
-            s.servCodeId === servCodeId ? { ...s, plannedStart, plannedEnd } : s,
+          groupSchedules: prev.groupSchedules.map((s) =>
+            s.groupId === groupId ? { ...s, plannedStart, plannedEnd } : s,
           ),
         };
       } else {
         return {
           ...prev,
-          servCodeSchedules: [...prev.servCodeSchedules, { servCodeId, plannedStart, plannedEnd }],
+          groupSchedules: [...prev.groupSchedules, { groupId, plannedStart, plannedEnd }],
         };
       }
     });
@@ -317,11 +286,13 @@ function SeasonPlanForm({ initialForm, isEditing, onSave, onCancel }: SeasonPlan
   function handleSubmit() {
     const trimmedName = form.name.trim();
     if (!trimmedName) return;
-    const validSchedules = form.servCodeSchedules.filter(
+    const validSchedules = form.groupSchedules.filter(
       (s) => s.plannedStart && s.plannedEnd,
     );
-    onSave({ ...form, name: trimmedName, servCodeSchedules: validSchedules });
+    onSave({ ...form, name: trimmedName, groupSchedules: validSchedules });
   }
+
+  const scheduledCount = form.groupSchedules.filter((s) => s.plannedStart && s.plannedEnd).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -398,90 +369,57 @@ function SeasonPlanForm({ initialForm, isEditing, onSave, onCancel }: SeasonPlan
         </div>
       </div>
 
-      {/* ServCode schedules — grouped by progCode */}
+      {/* Group schedules */}
       <div>
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-          ServCode Planned Dates
-        </p>
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+            Group Planned Dates
+          </p>
+          <span className="text-[10px] text-muted-foreground">
+            {scheduledCount}/{groups.length} scheduled
+          </span>
+        </div>
         <p className="text-[10px] text-muted-foreground mb-3">
-          Drag the handles to set planned start and end weeks per servCode.
-          The green band shows the current RealGreen date range for reference.
-          Click a progCode to expand.
+          Drag the handles to set planned start and end weeks per assignment group.
+          One slider per group — the crawler applies the group's dates to all its member servCodes.
         </p>
 
-        <div className="border border-border rounded overflow-hidden">
-          {progCodes.map((progCode) => {
-            const schedulableServCodes = progCode.servCodes.filter((sc) => !sc.alwaysAsap);
-            if (schedulableServCodes.length === 0) return null;
-
-            const isExpanded = expandedProgCodes.has(progCode.progCodeId);
-            const scheduledCount = schedulableServCodes.filter(
-              (sc) => getSchedule(sc.servCodeId)?.plannedStart && getSchedule(sc.servCodeId)?.plannedEnd,
-            ).length;
+        <div className="border border-border rounded overflow-hidden divide-y divide-border/50">
+          {groups.length === 0 && (
+            <p className="px-4 py-3 text-[10px] text-muted-foreground italic">
+              No assignment groups found. Create groups in the Assignments tab first.
+            </p>
+          )}
+          {groups.map((group) => {
+            const schedule = getGroupSchedule(group.groupId);
+            const currentStart = schedule?.plannedStart || sliderMin;
+            const currentEnd = schedule?.plannedEnd || sliderMax;
 
             return (
-              <div key={progCode.progCodeId} className="border-b border-border last:border-0">
-                {/* ProgCode header */}
-                <button
-                  onClick={() => toggleProgCode(progCode.progCodeId)}
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-accent/5 hover:bg-accent/10 transition-colors text-left"
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  )}
-                  <span className="font-mono text-xs font-semibold text-foreground">
-                    {progCode.progCodeId}
+              <div
+                key={group.groupId}
+                className="flex items-center gap-3 px-4 py-3 bg-card hover:bg-accent/5"
+              >
+                {/* Group label */}
+                <div className="w-28 shrink-0">
+                  <span className="font-mono text-[10px] text-primary font-semibold block">
+                    {group.label}
                   </span>
-                  {progCode.runsInSequence && (
-                    <span className="text-[9px] text-primary bg-primary/10 rounded px-1">seq</span>
-                  )}
-                  <span className="text-[10px] text-muted-foreground ml-auto">
-                    {scheduledCount}/{schedulableServCodes.length} scheduled
+                  <span className="text-[9px] text-muted-foreground block truncate">
+                    {group.servCodeIds.join(", ")}
                   </span>
-                </button>
+                </div>
 
-                {/* ServCode rows */}
-                {isExpanded && (
-                  <div className="divide-y divide-border/50">
-                    {schedulableServCodes.map((servCode) => {
-                      const schedule = getSchedule(servCode.servCodeId);
-                      const currentStart = schedule?.plannedStart || sliderMin;
-                      const currentEnd = schedule?.plannedEnd || sliderMax;
-
-                      return (
-                        <div
-                          key={servCode.servCodeId}
-                          className="flex items-center gap-3 px-4 py-3 bg-card hover:bg-accent/5"
-                        >
-                          {/* ServCode label */}
-                          <div className="w-20 shrink-0">
-                            <span className="font-mono text-[10px] text-foreground font-semibold block">
-                              {servCode.servCodeId}
-                            </span>
-                            <span className="text-[9px] text-muted-foreground block truncate">
-                              {servCode.longName}
-                            </span>
-                          </div>
-
-                          {/* Slider */}
-                          <div className="flex-1 min-w-0 px-2">
-                            <WeekRangeSlider
-                              sliderMin={sliderMin}
-                              sliderMax={sliderMax}
-                              start={currentStart}
-                              end={currentEnd}
-                              onChange={(start, end) => setSchedule(servCode.servCodeId, start, end)}
-                              rgMin={servCode.dateRange.min}
-                              rgMax={servCode.dateRange.max}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                {/* Slider */}
+                <div className="flex-1 min-w-0 px-2">
+                  <WeekRangeSlider
+                    sliderMin={sliderMin}
+                    sliderMax={sliderMax}
+                    start={currentStart}
+                    end={currentEnd}
+                    onChange={(start, end) => setGroupSchedule(group.groupId, start, end)}
+                  />
+                </div>
               </div>
             );
           })}
@@ -538,7 +476,7 @@ export default function SeasonPlanPage() {
       cascadeThreshold: form.cascadeThreshold,
       snowMelt: form.snowMelt || null,
       snowDeadline: form.snowDeadline || null,
-      servCodeSchedules: form.servCodeSchedules,
+      groupSchedules: form.groupSchedules,
       isActive: editingPlan?.isActive ?? false,
       createdAt: editingPlan?.createdAt ?? timestamp,
       updatedAt: timestamp,
@@ -591,7 +529,7 @@ export default function SeasonPlanPage() {
         <div>
           <h2 className="text-sm font-semibold text-foreground">Season Plans</h2>
           <p className="text-[10px] text-muted-foreground mt-0.5">
-            Committed planned dates per servCode. One plan is active at a time.
+            Committed planned dates per assignment group. One plan is active at a time.
           </p>
         </div>
         <button
@@ -609,7 +547,7 @@ export default function SeasonPlanPage() {
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-center">
             <p className="text-sm text-muted-foreground">No season plans yet.</p>
             <p className="text-[11px] text-muted-foreground max-w-sm">
-              Create a season plan to set committed planned dates for each servCode.
+              Create a season plan to set committed planned dates for each assignment group.
               The active plan drives the Gantt chart and cascade unlock logic.
             </p>
             <button
@@ -625,7 +563,7 @@ export default function SeasonPlanPage() {
         <div className="space-y-3">
           {seasonPlans.map((plan) => {
             const isActive = plan.isActive;
-            const scheduledCount = plan.servCodeSchedules.length;
+            const scheduledCount = plan.groupSchedules.length;
 
             return (
               <div
@@ -651,7 +589,7 @@ export default function SeasonPlanPage() {
                       <span>Cascade: {Math.round(plan.cascadeThreshold * 100)}%</span>
                       {plan.snowMelt && <span>🌱 Melt: {fmtDate(plan.snowMelt)}</span>}
                       {plan.snowDeadline && <span>❄ Snow: {fmtDate(plan.snowDeadline)}</span>}
-                      <span>{scheduledCount} servCode{scheduledCount !== 1 ? "s" : ""} scheduled</span>
+                      <span>{scheduledCount} group{scheduledCount !== 1 ? "s" : ""} scheduled</span>
                     </div>
                     <div className="text-[9px] text-muted-foreground/60 mt-0.5">
                       Updated {new Date(plan.updatedAt).toLocaleDateString()}
@@ -705,9 +643,9 @@ export default function SeasonPlanPage() {
                 {scheduledCount > 0 && (
                   <div className="px-4 py-2 border-t border-border/50">
                     <div className="flex flex-wrap gap-x-4 gap-y-0.5">
-                      {plan.servCodeSchedules.slice(0, 8).map((schedule) => (
-                        <span key={schedule.servCodeId} className="text-[10px] font-mono text-muted-foreground">
-                          {schedule.servCodeId}: {fmtDate(schedule.plannedStart)}–{fmtDate(schedule.plannedEnd)}
+                      {plan.groupSchedules.slice(0, 8).map((schedule) => (
+                        <span key={schedule.groupId} className="text-[10px] font-mono text-muted-foreground">
+                          {schedule.groupId}: {fmtDate(schedule.plannedStart)}–{fmtDate(schedule.plannedEnd)}
                         </span>
                       ))}
                       {scheduledCount > 8 && (
@@ -727,3 +665,15 @@ export default function SeasonPlanPage() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// FormState type (used by SeasonPlanPage.handleSave)
+// ---------------------------------------------------------------------------
+
+type FormState = {
+  name: string;
+  year: number;
+  cascadeThreshold: number;
+  snowMelt: string;
+  snowDeadline: string;
+  groupSchedules: GroupSchedule[];
+};

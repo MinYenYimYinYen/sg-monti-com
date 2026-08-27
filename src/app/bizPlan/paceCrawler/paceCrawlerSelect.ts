@@ -458,7 +458,7 @@ const selectCrawlerResult = createSelector(
     selectMainDate,
     selectCrawlStart,
     holidaySelect.holidayDates,
-    seasonPlanSelect.servCodeScheduleMap,
+    seasonPlanSelect.groupScheduleMap,
     seasonPlanSelect.cascadeThreshold,
   ],
   (
@@ -476,9 +476,12 @@ const selectCrawlerResult = createSelector(
     today,
     crawlStart,
     holidayDates,
-    servCodeScheduleMap,
+    groupScheduleMap,
     cascadeThreshold,
   ): CrawlerResult => {
+    // Resolve groupScheduleMap → servCodeId-keyed map for cascade unlock lookup
+    const servCodeScheduleMap = seasonPlanSelect.buildServCodeScheduleMap(groupScheduleMap, groupMap);
+
     // Build servCode entries
     const servCodeEntries = [];
     for (const progCode of progCodes) {
@@ -514,7 +517,7 @@ const selectCrawlerResult = createSelector(
       const employee = employeeMap.get(employeeId);
       if (!employee) continue;
 
-      const priorityEntries: DayCrawlPriorityEntry[] = plan.groupAssignments.map(({ groupId }) => {
+      const priorityEntries: DayCrawlPriorityEntry[] = plan.groupAssignments.map(({ groupId }: { groupId: string }) => {
         const group = groupMap.get(groupId);
         // Fall back to splitting groupId on "+" if group not yet loaded
         const servCodeIds = group?.servCodeIds ?? groupId.split("+");
@@ -653,9 +656,11 @@ const selectSeasonOptimizerResult = createSelector(
     selectActivePoolPriceByServCode,
     progServSelect.progCodes,
     selectMainDate,
-    seasonPlanSelect.servCodeScheduleMap,
+    seasonPlanSelect.groupScheduleMap,
+    assignmentGroupSelect.groupMap,
   ],
-  (crawlerResult, activePoolMap, progCodes, today, servCodeScheduleMap): SeasonOptimizedRange[] => {
+  (crawlerResult, activePoolMap, progCodes, today, groupScheduleMap, groupMap): SeasonOptimizedRange[] => {
+    const servCodeScheduleMap = seasonPlanSelect.buildServCodeScheduleMap(groupScheduleMap, groupMap);
     const results: SeasonOptimizedRange[] = [];
 
     for (const progCode of progCodes) {
