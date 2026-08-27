@@ -381,7 +381,7 @@ function SeasonPlanForm({ initialForm, isEditing, onSave, onCancel }: SeasonPlan
         </div>
         <p className="text-[10px] text-muted-foreground mb-3">
           Drag the handles to set planned start and end weeks per assignment group.
-          One slider per group — the crawler applies the group's dates to all its member servCodes.
+          One slider per group — the crawler applies the group&#39;s dates to all its member servCodes.
         </p>
 
         <div className="border border-border rounded overflow-hidden divide-y divide-border/50">
@@ -665,15 +665,4 @@ export default function SeasonPlanPage() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// FormState type (used by SeasonPlanPage.handleSave)
-// ---------------------------------------------------------------------------
 
-type FormState = {
-  name: string;
-  year: number;
-  cascadeThreshold: number;
-  snowMelt: string;
-  snowDeadline: string;
-  groupSchedules: GroupSchedule[];
-};

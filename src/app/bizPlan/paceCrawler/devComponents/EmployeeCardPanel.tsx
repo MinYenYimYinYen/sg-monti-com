@@ -21,16 +21,66 @@ function formatDollars(n: number): string {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
-function formatPercent(n: number | null): string {
-  if (n === null || !isFinite(n)) return "";
-  const sign = n > 0 ? "+" : "";
-  return `${sign}${(n * 100).toFixed(0)}%`;
-}
-
 function formatDate(iso: string): string {
   if (!iso) return "—";
   const [, month, day] = iso.split("-");
   return `${parseInt(month)}/${parseInt(day)}`;
+}
+
+/**
+ * Compute days late (+) or early (-) for the whole group at a given team rate.
+ *
+ * Formula: round(combinedPool / teamRate) - planDeadlineWeekdays
+ *
+ * Positive = days past the plan deadline (late).
+ * Negative = days before the plan deadline (early).
+ * Null when teamRate is 0 or planDeadlineWeekdays is 0.
+ */
+function computeDaysLate(combinedPool: number, teamRate: number, planDeadlineWeekdays: number): number | null {
+  if (teamRate <= 0 || planDeadlineWeekdays <= 0) return null;
+  const projectedDays = combinedPool / teamRate;
+  return Math.round(projectedDays - planDeadlineWeekdays);
+}
+
+function DaysAheadBadge({ days }: { days: number | null }) {
+  if (days === null) return <span className="font-mono text-[10px] text-muted-foreground">—</span>;
+  if (days === 0) return <span className="font-mono text-[10px] text-muted-foreground">0d</span>;
+  const isLate = days > 0;
+  return (
+    <span className={`font-mono text-[10px] font-semibold ${isLate ? "text-destructive" : "text-accent"}`}>
+      {isLate ? "+" : ""}{days}d
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RateTable — mini 3-row table: label | $/day | days ahead/behind
+// ---------------------------------------------------------------------------
+
+type RateRow = {
+  label: string;
+  rate: number | null;
+  daysAhead: number | null;
+  labelColor?: string;
+  rateColor?: string;
+};
+
+function RateTable({ rows }: { rows: RateRow[] }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      {rows.map((row) => (
+        <div key={row.label} className="flex items-center gap-1.5">
+          <span className={`text-[10px] w-8 shrink-0 ${row.labelColor ?? "text-muted-foreground"}`}>
+            {row.label}
+          </span>
+          <span className={`font-mono text-[10px] flex-1 ${row.rateColor ?? "text-foreground"}`}>
+            {row.rate !== null ? `${formatDollars(row.rate)}/day` : "—"}
+          </span>
+          <DaysAheadBadge days={row.daysAhead} />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -38,22 +88,40 @@ function formatDate(iso: string): string {
 // ---------------------------------------------------------------------------
 
 function SingleServCodeRow({ row, isPriority }: { row: OpenServCodeRow; isPriority: boolean }) {
-  const diffColor = row.isOverdue
-    ? "text-destructive"
-    : row.isAhead
-      ? "text-accent"
-      : row.isBehind
-        ? "text-secondary"
-        : "text-muted-foreground";
+  const rateRows: RateRow[] = [];
 
-  const rateColor = row.isOverdue ? "text-destructive" : "text-primary";
+  if (row.goalDailyPrice !== null) {
+    rateRows.push({
+      label: "goal",
+      rate: row.goalDailyPrice,
+      daysAhead: computeDaysLate(row.poolRemaining, row.goalDailyPrice, row.remainingWeekdays),
+      labelColor: "text-muted-foreground",
+      rateColor: "text-accent",
+    });
+  }
+
+  rateRows.push({
+    label: "avg",
+    rate: row.historicalDailyPrice,
+    daysAhead: computeDaysLate(row.poolRemaining, row.historicalDailyPrice, row.remainingWeekdays),
+    labelColor: "text-muted-foreground",
+    rateColor: "text-foreground",
+  });
+
+  rateRows.push({
+    label: "req",
+    rate: row.isOverdue ? null : row.requiredDailyPrice,
+    daysAhead: 0,
+    labelColor: "text-muted-foreground",
+    rateColor: row.isOverdue ? "text-destructive" : "text-primary",
+  });
 
   return (
     <div className={cn(
       "flex items-start gap-2 py-1.5 border-b border-border/40 last:border-0",
       !isPriority && "opacity-40",
     )}>
-      {/* ServCode ID + per-row status badge */}
+      {/* ServCode ID + status badge */}
       <div className="w-14 shrink-0 pt-0.5 flex flex-col gap-0.5">
         <span className="font-mono text-xs text-foreground truncate">
           {row.servCodeId}
@@ -75,23 +143,9 @@ function SingleServCodeRow({ row, isPriority }: { row: OpenServCodeRow; isPriori
         )}
       </div>
 
-      {/* Required $/day */}
+      {/* Rate table */}
       <div className="flex-1 min-w-0">
-        <div className={`font-mono text-xs font-semibold ${rateColor}`}>
-          {formatDollars(row.requiredDailyPrice)}/day
-        </div>
-        <div className={`font-mono text-[10px] ${diffColor}`}>
-          hist: {formatDollars(row.historicalDailyPrice)}
-          {row.diffPrice !== 0 && isFinite(row.diffPrice) && (
-            <span className="ml-1">
-              ({row.diffPrice > 0 ? "+" : ""}
-              {formatDollars(row.diffPrice)}
-              {row.diffPercent !== null &&
-                ` / ${formatPercent(row.diffPercent)}`}
-              )
-            </span>
-          )}
-        </div>
+        <RateTable rows={rateRows} />
       </div>
 
       {/* Pool remaining + days left */}
@@ -146,15 +200,40 @@ function GroupMemberRow({ member }: { member: OpenGroupMemberRow }) {
 function GroupEntryRow({ row, isPriority }: { row: OpenGroupRow; isPriority: boolean }) {
   const [expanded, setExpanded] = useState(false);
 
-  const diffColor = row.isOverdue
-    ? "text-destructive"
-    : row.isAhead
-      ? "text-accent"
-      : row.isBehind
-        ? "text-secondary"
-        : "text-muted-foreground";
+  const rateRows: RateRow[] = [];
 
-  const rateColor = row.isOverdue ? "text-destructive" : "text-primary";
+  if (row.goalDailyPrice !== null) {
+    rateRows.push({
+      label: "goal",
+      rate: row.goalDailyPrice,
+      daysAhead: computeDaysLate(row.combinedPool, row.sumGoals, row.planDeadlineWeekdays),
+      labelColor: "text-muted-foreground",
+      rateColor: "text-accent",
+    });
+  }
+
+  rateRows.push({
+    label: "avg",
+    rate: row.historicalDailyPrice,
+    // For avg: scale employee's avg to team total using the same share ratio as goals
+    daysAhead: computeDaysLate(
+      row.combinedPool,
+      row.sumGoals > 0 && row.goalDailyPrice !== null
+        ? row.historicalDailyPrice / row.goalDailyPrice * row.sumGoals
+        : row.historicalDailyPrice,
+      row.planDeadlineWeekdays,
+    ),
+    labelColor: "text-muted-foreground",
+    rateColor: "text-foreground",
+  });
+
+  rateRows.push({
+    label: "req",
+    rate: row.isOverdue ? null : row.requiredDailyPrice,
+    daysAhead: row.isOverdue ? null : 0,
+    labelColor: "text-muted-foreground",
+    rateColor: row.isOverdue ? "text-destructive" : "text-primary",
+  });
 
   return (
     <div className={cn(
@@ -166,7 +245,7 @@ function GroupEntryRow({ row, isPriority }: { row: OpenGroupRow; isPriority: boo
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-start gap-2 py-1.5 text-left hover:bg-accent/5 transition-colors"
       >
-        {/* Expand chevron + label */}
+        {/* Expand chevron + label + status badges */}
         <div className="w-14 shrink-0 pt-0.5 flex flex-col gap-0.5">
           <span className="flex items-center gap-0.5">
             <ChevronRight
@@ -175,9 +254,6 @@ function GroupEntryRow({ row, isPriority }: { row: OpenGroupRow; isPriority: boo
             <span className="font-mono text-[10px] text-primary font-semibold truncate">
               {row.label}
             </span>
-          </span>
-          <span className="text-[9px] text-primary bg-primary/10 rounded px-1 leading-tight w-fit">
-            group
           </span>
           {isPriority && row.isOverdue && (
             <span className="text-[9px] text-destructive bg-destructive/10 rounded px-1 leading-tight w-fit">
@@ -196,33 +272,19 @@ function GroupEntryRow({ row, isPriority }: { row: OpenGroupRow; isPriority: boo
           )}
         </div>
 
-        {/* Required $/day (sum of member rates) */}
+        {/* Rate table: goal / avg / req */}
         <div className="flex-1 min-w-0">
-          <div className={`font-mono text-xs font-semibold ${rateColor}`}>
-            {formatDollars(row.requiredDailyPrice)}/day
-          </div>
-          <div className={`font-mono text-[10px] ${diffColor}`}>
-            hist: {formatDollars(row.historicalDailyPrice)}
-            {row.diffPrice !== 0 && isFinite(row.diffPrice) && (
-              <span className="ml-1">
-                ({row.diffPrice > 0 ? "+" : ""}
-                {formatDollars(row.diffPrice)}
-                {row.diffPercent !== null &&
-                  ` / ${formatPercent(row.diffPercent)}`}
-                )
-              </span>
-            )}
-          </div>
+          <RateTable rows={rateRows} />
         </div>
 
-        {/* Combined pool + group window */}
+        {/* Combined pool + plan deadline */}
         <div className="text-right shrink-0">
           <div className="font-mono text-[10px] text-muted-foreground">
             {formatDollars(row.combinedPool)} left
           </div>
-          {row.latestScMax && (
+          {row.planDeadline && (
             <div className="font-mono text-[10px] text-muted-foreground">
-              ends {formatDate(row.latestScMax)}
+              plan {formatDate(row.planDeadline)}
             </div>
           )}
         </div>

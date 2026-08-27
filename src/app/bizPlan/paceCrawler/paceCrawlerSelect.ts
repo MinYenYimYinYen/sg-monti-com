@@ -647,7 +647,8 @@ const selectProgCodeProjectedCompletionMap = createSelector(
 /**
  * "What should the date ranges be, given current throughput and work pools?"
  *
- * One SeasonOptimizedRange per servCode, built from crawlerResult.
+ * One SeasonOptimizedRange per group (or solo servCode), built from crawlerResult.
+ * Groups are collapsed so the Gantt renders one bar per group, not one per servCode.
  * Includes plannedEnd from the active SeasonPlan for Gantt rendering.
  */
 const selectSeasonOptimizerResult = createSelector(
@@ -661,7 +662,25 @@ const selectSeasonOptimizerResult = createSelector(
   ],
   (crawlerResult, activePoolMap, progCodes, today, groupScheduleMap, groupMap): SeasonOptimizedRange[] => {
     const servCodeScheduleMap = seasonPlanSelect.buildServCodeScheduleMap(groupScheduleMap, groupMap);
-    const results: SeasonOptimizedRange[] = [];
+
+    // Build per-servCode data first, then collapse by groupLabel.
+    // groupLabel is the key into servCodeTimeline (set by the simulation).
+    type PerServCodeData = {
+      servCodeId: string;
+      progCodeId: string;
+      progCodeName: string;
+      servCodeName: string;
+      servCodeRange: ReturnType<typeof progServSelect.progCodes>[number]["servCodes"][number]["dateRange"];
+      optimizedMin: string;
+      optimizedMax: string;
+      projectedEndDate: string | null;
+      runsInSequence: boolean;
+      hasWork: boolean;
+      plannedEnd: string | null;
+      groupLabel: string;
+    };
+
+    const perServCode: PerServCodeData[] = [];
 
     for (const progCode of progCodes) {
       for (const servCode of progCode.servCodes) {
@@ -671,29 +690,78 @@ const selectSeasonOptimizerResult = createSelector(
         const hasWork = pool > 0;
         const schedule = servCodeScheduleMap.get(servCodeId);
 
-        const resolvedMin =
-          crawled?.optimizedMin ?? servCode.dateRange.min ?? today;
-        const isStarted = resolvedMin <= today;
+        // groupLabel: use the simulation's resolved label (which is the group's label for
+        // multi-member groups, or the servCodeId for singles). Fall back to servCodeId.
+        const groupLabel = crawled?.groupLabel ?? servCodeId;
 
-        results.push({
+        perServCode.push({
           servCodeId,
           progCodeId: progCode.progCodeId,
+          progCodeName: progCode.progCodeId,
           servCodeName: servCode.longName,
           servCodeRange: servCode.dateRange,
-          optimizedMin:
-            crawled?.optimizedMin ?? servCode.dateRange.min ?? today,
-          optimizedMax:
-            crawled?.optimizedMax ?? servCode.dateRange.max ?? today,
+          optimizedMin: crawled?.optimizedMin ?? servCode.dateRange.min ?? today,
+          optimizedMax: crawled?.optimizedMax ?? servCode.dateRange.max ?? today,
           projectedEndDate: crawled?.projectedEndDate ?? null,
           runsInSequence: progCode.runsInSequence,
-          isStarted,
           hasWork,
           plannedEnd: schedule?.plannedEnd ?? null,
-        } satisfies SeasonOptimizedRange);
+          groupLabel,
+        });
       }
     }
 
-    return results;
+    // Collapse by groupLabel — one row per group across all progCodes.
+    // A group spanning multiple progCodes (e.g. CC1+LA1+SE1) produces exactly one row.
+    const collapsed = new Map<string, SeasonOptimizedRange>();
+
+    for (const sc of perServCode) {
+      const key = sc.groupLabel;
+      const existing = collapsed.get(key);
+
+      if (!existing) {
+        const isStarted = sc.optimizedMin <= today;
+        collapsed.set(key, {
+          groupLabel: sc.groupLabel,
+          memberServCodeIds: [sc.servCodeId],
+          progCodeId: sc.progCodeId,
+          servCodeName: sc.servCodeName,
+          servCodeRange: sc.servCodeRange,
+          optimizedMin: sc.optimizedMin,
+          optimizedMax: sc.optimizedMax,
+          projectedEndDate: sc.projectedEndDate,
+          runsInSequence: sc.runsInSequence,
+          isStarted,
+          hasWork: sc.hasWork,
+          plannedEnd: sc.plannedEnd,
+        });
+      } else {
+        // Merge: earliest min, latest max, latest projectedEndDate, latest plannedEnd
+        const mergedMin = sc.optimizedMin < existing.optimizedMin ? sc.optimizedMin : existing.optimizedMin;
+        const mergedMax = sc.optimizedMax > existing.optimizedMax ? sc.optimizedMax : existing.optimizedMax;
+        const mergedProjectedEnd =
+          sc.projectedEndDate !== null && existing.projectedEndDate !== null
+            ? sc.projectedEndDate > existing.projectedEndDate ? sc.projectedEndDate : existing.projectedEndDate
+            : sc.projectedEndDate ?? existing.projectedEndDate;
+        const mergedPlannedEnd =
+          sc.plannedEnd !== null && existing.plannedEnd !== null
+            ? sc.plannedEnd > existing.plannedEnd ? sc.plannedEnd : existing.plannedEnd
+            : sc.plannedEnd ?? existing.plannedEnd;
+
+        collapsed.set(key, {
+          ...existing,
+          memberServCodeIds: [...existing.memberServCodeIds, sc.servCodeId],
+          optimizedMin: mergedMin,
+          optimizedMax: mergedMax,
+          projectedEndDate: mergedProjectedEnd,
+          plannedEnd: mergedPlannedEnd,
+          isStarted: mergedMin <= today,
+          hasWork: existing.hasWork || sc.hasWork,
+        });
+      }
+    }
+
+    return Array.from(collapsed.values());
   },
 );
 

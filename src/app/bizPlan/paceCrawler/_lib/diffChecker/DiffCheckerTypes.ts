@@ -87,7 +87,7 @@ export type OpenGroupMemberRow = {
 
 /**
  * A group entry on an employee's card — header + expandable members.
- * The header shows the sum of per-member required rates vs totalAvgDailyPrice.
+ * The header shows goal / avg / required rates with days-ahead/behind per row.
  */
 export type OpenGroupRow = {
   kind: "group";
@@ -95,21 +95,40 @@ export type OpenGroupRow = {
   label: string;
   servCodeIds: string[];
   combinedPool: number;
-  /**
-   * Sum of per-member required rates (each member: pool / weekdays_to_member_scMax).
-   * This is the total "how much do I need to route today" for this group.
-   */
+  /** Employee's proportional share of (groupPool / planDeadlineWeekdays). */
   requiredDailyPrice: number;
   /** Employee's daily revenue goal for this group ($/day). Null when not set. */
   goalDailyPrice: number | null;
-  /** Employee's totalAvgDailyPrice — the actual drain rate for this group */
+  /** Employee's totalAvgDailyPrice — the lookback average drain rate. */
   historicalDailyPrice: number;
   diffPrice: number;
   diffPercent: number | null;
-  /** Latest member dateRange.max — shown on the header as the group's window */
+  /** Latest member dateRange.max — shown on the header as the group's window. */
   latestScMax: string;
   latestRemainingWeekdays: number;
-  /** True if ANY member is overdue */
+  /**
+   * Weekdays remaining to the plan deadline (plannedEnd ?? latestScMax).
+   * Used to compute days-late for goal and avg rows.
+   * 0 when the plan deadline has passed (isOverdue).
+   */
+  planDeadlineWeekdays: number;
+  /**
+   * The whole-group required rate: combinedPool / planDeadlineWeekdays.
+   * Used to compute days-late: round(combinedPool / teamRate) - planDeadlineWeekdays.
+   * 0 when planDeadlineWeekdays is 0 (overdue).
+   */
+  groupRequiredRate: number;
+  /**
+   * Sum of all employees' goals (or avg fallback) for this group.
+   * Used as the team's total goal rate for days-late computation.
+   */
+  sumGoals: number;
+  /**
+   * The plan deadline date string (season plan plannedEnd, or null if no season plan).
+   * Shown in the card header as the authoritative "ends" date.
+   */
+  planDeadline: string | null;
+  /** True if ANY member is overdue OR the plan deadline has passed. */
   isOverdue: boolean;
   isAhead: boolean;
   isBehind: boolean;

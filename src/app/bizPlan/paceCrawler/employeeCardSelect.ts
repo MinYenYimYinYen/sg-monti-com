@@ -6,6 +6,7 @@ import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
+import { seasonPlanSelect } from "@/app/bizPlan/seasonPlan/seasonPlanSelect";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
@@ -282,7 +283,11 @@ const selectDiffResultByEmployeeByServCode = createSelector(
  * Each group row shows three values:
  * - Goal: employee's dailyRevenueGoal for this group ($/day)
  * - Actual: employee's totalAvgDailyPrice (lookback avg)
- * - Required: pool / remainingWeekdays
+ * - Required: employee's proportional share of (groupPool / remainingWeekdays)
+ *
+ * The employee's share is weighted by their goal relative to the sum of all
+ * employees' goals for the same group. When no goal is set, totalAvgDailyPrice
+ * is used as the fallback weight.
  */
 const selectEmployeeCardData = createSelector(
   [
@@ -297,6 +302,8 @@ const selectEmployeeCardData = createSelector(
     holidaySelect.holidayDates,
     assignmentGroupSelect.groupMap,
     assignmentPlanSelect.goalByEmployeeByGroup,
+    assignmentPlanSelect.assignmentsByEmployeeId,
+    seasonPlanSelect.groupScheduleMap,
   ],
   (
     openServCodesForEmployees,
@@ -310,6 +317,8 @@ const selectEmployeeCardData = createSelector(
     holidayDates,
     groupMap,
     goalByEmployeeByGroup,
+    assignmentsByEmployeeId,
+    groupScheduleMap,
   ): EmployeeCardData[] => {
     // Build already-routed set: employees with a printed service on mainDate
     const alreadyRoutedEmployeeIds = new Set<string>();
@@ -326,6 +335,18 @@ const selectEmployeeCardData = createSelector(
     }
 
     const isHoliday = holidayDates.has(mainDate);
+
+    // Pre-compute sum of goals per groupId across all employees.
+    // Used to compute each employee's proportional share of the group's required rate.
+    // Falls back to totalAvgDailyPrice when no goal is set for an employee.
+    const sumGoalsByGroup = new Map<string, number>();
+    for (const [employeeId, plan] of assignmentsByEmployeeId) {
+      const employeeAvg = totalAvgDailyPriceMap.get(employeeId) ?? teamAvgTotalDailyPrice;
+      for (const { groupId, dailyRevenueGoal } of plan.groupAssignments) {
+        const contribution = dailyRevenueGoal ?? employeeAvg;
+        sumGoalsByGroup.set(groupId, (sumGoalsByGroup.get(groupId) ?? 0) + contribution);
+      }
+    }
 
     const cards: EmployeeCardData[] = [];
 
@@ -351,10 +372,13 @@ const selectEmployeeCardData = createSelector(
         const label = group?.label ?? groupId;
         const goalDailyPrice = goalByGroup?.get(groupId) ?? null;
 
+        // The season plan's planned end for this group (used as the deadline for required rate)
+        const groupSchedule = groupScheduleMap.get(groupId);
+        const plannedEnd = groupSchedule?.plannedEnd ?? null;
+
         // Build per-member rows (only members with pool > 0)
         const members: OpenGroupMemberRow[] = [];
         let combinedPool = 0;
-        let sumRequiredRates = 0;
         let latestScMax = "";
         let anyOverdue = false;
 
@@ -373,7 +397,6 @@ const selectEmployeeCardData = createSelector(
             : memberPool / remainingWeekdays;
 
           combinedPool += memberPool;
-          sumRequiredRates += memberRequired;
           if (!latestScMax || scMax > latestScMax) latestScMax = scMax;
           if (isOverdue) anyOverdue = true;
 
@@ -414,7 +437,24 @@ const selectEmployeeCardData = createSelector(
           ? Math.max(0, dateRanges.weekdaysBetween(mainDate, latestScMax))
           : 0;
 
-        const diffPrice = sumRequiredRates - totalAvgDailyPrice;
+        // Compute the group's total required rate using the season plan's plannedEnd as the
+        // deadline (preferred), falling back to the latest member scMax.
+        const deadlineDate = plannedEnd ?? latestScMax;
+        const deadlineWeekdays = deadlineDate
+          ? Math.max(0, dateRanges.weekdaysBetween(mainDate, deadlineDate))
+          : 0;
+        const groupRequiredRate = deadlineWeekdays > 0
+          ? combinedPool / deadlineWeekdays
+          : 0;
+
+        // Employee's proportional share of the group's required rate.
+        // Weight = this employee's goal (or totalAvgDailyPrice fallback) / sum of all goals for this group.
+        const employeeWeight = goalDailyPrice ?? totalAvgDailyPrice;
+        const sumGoals = sumGoalsByGroup.get(groupId) ?? employeeWeight;
+        const shareRatio = sumGoals > 0 ? employeeWeight / sumGoals : 1;
+        const employeeRequiredRate = groupRequiredRate * shareRatio;
+
+        const diffPrice = employeeRequiredRate - totalAvgDailyPrice;
         const diffPercent = totalAvgDailyPrice > 0
           ? diffPrice / totalAvgDailyPrice
           : null;
@@ -425,13 +465,17 @@ const selectEmployeeCardData = createSelector(
           label,
           servCodeIds,
           combinedPool,
-          requiredDailyPrice: sumRequiredRates,
+          requiredDailyPrice: employeeRequiredRate,
           goalDailyPrice,
           historicalDailyPrice: totalAvgDailyPrice,
           diffPrice,
           diffPercent,
           latestScMax,
           latestRemainingWeekdays,
+          planDeadlineWeekdays: deadlineWeekdays,
+          groupRequiredRate,
+          sumGoals,
+          planDeadline: plannedEnd,
           isOverdue: anyOverdue,
           isAhead: isFinite(diffPrice) && diffPrice < 0,
           isBehind: !isFinite(diffPrice) || diffPrice > 0,

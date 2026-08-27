@@ -2,11 +2,9 @@
 
 import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
-import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
-import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
+import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { seasonPlanSelect } from "@/app/bizPlan/seasonPlan/seasonPlanSelect";
-import { useSeasonPlan } from "@/app/bizPlan/seasonPlan/useSeasonPlan";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { getWeekNumber } from "@/lib/primatives/dates/getWeek";
 import { SeasonOptimizedRange } from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
@@ -15,16 +13,15 @@ import {
   GanttBarDetail,
   type GanttSegment,
 } from "@/app/bizPlan/paceCrawler/devComponents/GanttBarDetail";
-import { AssignmentGroup } from "@/app/assignmentGroup/AssignmentGroupTypes";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const LABEL_WIDTH = 120; // px — fixed left column (progCode label only)
-const ROW_HEIGHT = 36; // px per progCode row (tall enough for two stacked bars)
-const GROUP_GAP = 2; // px gap between progCode rows
+const LABEL_WIDTH = 160; // px — fixed left column (group label)
+const ROW_HEIGHT = 36; // px per row
+const GROUP_GAP = 2; // px gap between rows
 const HEADER_HEIGHT = 40; // px — week header
 
 // Palette for group color accents — cycles if more groups than colors.
@@ -73,40 +70,12 @@ function getMondaysInRange(start: string, end: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type ProgGroup = {
-  progCodeId: string;
-  rows: SeasonOptimizedRange[];
-  primaryGroupLabel: string | null;
-};
-
-// ---------------------------------------------------------------------------
-// Build servCodeId → groupLabel map from shared AssignmentGroup definitions.
-// ---------------------------------------------------------------------------
-
-function buildServCodeGroupMap(
-  groups: AssignmentGroup[],
-): Map<string, string> {
-  const result = new Map<string, string>();
-  for (const group of groups) {
-    for (const servCodeId of group.servCodeIds) {
-      if (!result.has(servCodeId)) {
-        result.set(servCodeId, group.groupId);
-      }
-    }
-  }
-  return result;
-}
-
-// ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
 function SegmentedBar({
-  servCodeId,
   groupLabel,
+  memberServCodeIds,
   segments,
   totalDays,
   chartStart,
@@ -115,8 +84,8 @@ function SegmentedBar({
   barColor,
   groupBarColor,
 }: {
-  servCodeId: string;
-  groupLabel: string | null;
+  groupLabel: string;
+  memberServCodeIds: string[];
   segments: GanttSegment[];
   totalDays: number;
   chartStart: string;
@@ -129,6 +98,8 @@ function SegmentedBar({
   const widthDays = Math.max(dayOffset(barStart, barEnd), 1);
   const leftPct = (startDay / totalDays) * 100;
   const widthPct = (widthDays / totalDays) * 100;
+
+  const isGroup = memberServCodeIds.length > 1;
 
   // No segments — render a plain unsegmented bar
   if (segments.length === 0) {
@@ -143,7 +114,7 @@ function SegmentedBar({
         }}
       >
         <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-mono truncate leading-none pointer-events-none">
-          {servCodeId}
+          {groupLabel}
         </span>
       </div>
     );
@@ -160,9 +131,12 @@ function SegmentedBar({
         transform: "translateY(10%)",
       }}
     >
-      {/* ServCode label — absolutely positioned over the full bar */}
+      {/* Label — absolutely positioned over the full bar */}
       <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-mono truncate leading-none pointer-events-none z-10">
-        {servCodeId}
+        {groupLabel}
+        {isGroup && (
+          <span className="ml-1 text-[8px] opacity-60">[{memberServCodeIds.length}]</span>
+        )}
       </span>
 
       {segments.map((segment, idx) => {
@@ -202,8 +176,8 @@ function SegmentedBar({
               sideOffset={6}
             >
               <GanttBarDetail
-                servCodeId={servCodeId}
                 groupLabel={groupLabel}
+                memberServCodeIds={memberServCodeIds}
                 segment={segment}
               />
             </PopoverContent>
@@ -214,104 +188,90 @@ function SegmentedBar({
   );
 }
 
-function GanttProgRow({
-  group,
+function GanttGroupRow({
+  row,
   totalDays,
   chartStart,
   servCodeTimelineMap,
-  crawlerResult,
-  servCodeGroupMap,
   groupColorIndex,
 }: {
-  group: ProgGroup;
+  row: SeasonOptimizedRange;
   totalDays: number;
   chartStart: string;
   servCodeTimelineMap: ReturnType<typeof paceCrawlerSelect.servCodeTimelineMap>;
-  crawlerResult: ReturnType<typeof paceCrawlerSelect.crawlerResult>;
-  servCodeGroupMap: Map<string, string>;
   groupColorIndex: Map<string, number>;
 }) {
+  // --- Plan band (SeasonPlan plannedStart → plannedEnd) ---
+  const plannedEnd = row.plannedEnd;
+  const hasPlanBand = isValidDate(row.optimizedMin) && plannedEnd && isValidDate(plannedEnd);
+
+  const planStartDay = hasPlanBand ? dayOffset(chartStart, row.optimizedMin) : 0;
+  const planWidthDays = hasPlanBand
+    ? Math.max(dayOffset(row.optimizedMin, plannedEnd!), 1)
+    : 0;
+  const planLeftPct = hasPlanBand ? (planStartDay / totalDays) * 100 : 0;
+  const planWidthPct = hasPlanBand ? (planWidthDays / totalDays) * 100 : 0;
+
+  if (!isValidDate(row.optimizedMin) || !isValidDate(row.optimizedMax)) return null;
+
+  // Color based on whether projected end is before or after planned end
+  let barColor = "bg-primary/30";
+  if (row.hasWork && plannedEnd && row.projectedEndDate) {
+    if (row.projectedEndDate <= plannedEnd) {
+      barColor = "bg-accent/40"; // green — on track
+    } else {
+      barColor = "bg-destructive/30"; // red — behind
+    }
+  } else if (!row.hasWork) {
+    barColor = "bg-muted-foreground/20";
+  }
+
+  // Group color accent — keyed by groupLabel
+  const colorIdx = groupColorIndex.get(row.groupLabel) ?? null;
+  const groupBarColor = colorIdx !== null
+    ? (GROUP_BAR_COLORS[colorIdx % GROUP_BAR_COLORS.length] ?? null)
+    : null;
+
+  // Timeline key is the groupLabel directly (set by the simulation)
+  const timelineEvents = servCodeTimelineMap.get(row.groupLabel) ?? [];
+
+  const segments = buildSegmentsFromTimeline(
+    timelineEvents,
+    row.optimizedMin,
+    row.optimizedMax,
+  );
+
   return (
     <div
       className="relative border-b border-border/50 bg-card"
       style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
     >
-      {group.rows.map((row) => {
-        // --- Plan band (SeasonPlan plannedStart → plannedEnd) ---
-        const plannedEnd = row.plannedEnd;
-        // We use optimizedMin as the plan start (the crawler's resolved start)
-        // and plannedEnd from the SeasonPlan as the plan end.
-        const hasPlanBand = isValidDate(row.optimizedMin) && plannedEnd && isValidDate(plannedEnd);
+      {/* Plan band — muted background showing the committed plan window */}
+      {hasPlanBand && planWidthPct > 0 && (
+        <div
+          className="absolute rounded-full bg-muted-foreground/15"
+          style={{
+            left: `${planLeftPct}%`,
+            width: `${planWidthPct}%`,
+            height: 8,
+            top: 4,
+          }}
+          title={`${row.groupLabel} planned: ${row.optimizedMin} → ${plannedEnd}`}
+        />
+      )}
 
-        const planStartDay = hasPlanBand ? dayOffset(chartStart, row.optimizedMin) : 0;
-        const planWidthDays = hasPlanBand
-          ? Math.max(dayOffset(row.optimizedMin, plannedEnd!), 1)
-          : 0;
-        const planLeftPct = hasPlanBand ? (planStartDay / totalDays) * 100 : 0;
-        const planWidthPct = hasPlanBand ? (planWidthDays / totalDays) * 100 : 0;
-
-        // --- Projected bar (crawler result) ---
-        if (!isValidDate(row.optimizedMin) || !isValidDate(row.optimizedMax)) return null;
-
-        // Color based on whether projected end is before or after planned end
-        let barColor = "bg-primary/30";
-        if (row.hasWork && plannedEnd && row.projectedEndDate) {
-          if (row.projectedEndDate <= plannedEnd) {
-            barColor = "bg-accent/40"; // green — on track
-          } else {
-            barColor = "bg-destructive/30"; // red — behind
-          }
-        } else if (!row.hasWork) {
-          barColor = "bg-muted-foreground/20";
-        }
-
-        // Per-servCode group color — look up this specific servCode's group label
-        const servCodeGroupLabel = servCodeGroupMap.get(row.servCodeId) ?? null;
-        const colorIdx = servCodeGroupLabel !== null ? (groupColorIndex.get(servCodeGroupLabel) ?? null) : null;
-        const groupBarColor = colorIdx !== null ? (GROUP_BAR_COLORS[colorIdx % GROUP_BAR_COLORS.length] ?? null) : null;
-
-        // Determine the timeline key: group label if grouped, servCodeId if single
-        const crawledResult = crawlerResult.byServCode.get(row.servCodeId);
-        const timelineKey = crawledResult?.groupLabel ?? row.servCodeId;
-        const timelineEvents = servCodeTimelineMap.get(timelineKey) ?? [];
-
-        const segments = buildSegmentsFromTimeline(
-          timelineEvents,
-          row.optimizedMin,
-          row.optimizedMax,
-        );
-
-        return (
-          <div key={row.servCodeId}>
-            {/* Plan band — muted background showing the committed plan window */}
-            {hasPlanBand && planWidthPct > 0 && (
-              <div
-                className="absolute rounded-full bg-muted-foreground/15"
-                style={{
-                  left: `${planLeftPct}%`,
-                  width: `${planWidthPct}%`,
-                  height: 8,
-                  top: 4,
-                }}
-                title={`${row.servCodeId} planned: ${row.optimizedMin} → ${plannedEnd}`}
-              />
-            )}
-
-            {/* Segmented projected bar */}
-            <SegmentedBar
-              servCodeId={row.servCodeId}
-              groupLabel={crawledResult?.groupLabel ?? null}
-              segments={segments}
-              totalDays={totalDays}
-              chartStart={chartStart}
-              barStart={row.optimizedMin}
-              barEnd={row.optimizedMax}
-              barColor={barColor}
-              groupBarColor={groupBarColor}
-            />
-          </div>
-        );
-      })}
+      {/* Segmented projected bar */}
+      <SegmentedBar
+        groupLabel={row.groupLabel}
+        memberServCodeIds={row.memberServCodeIds}
+        segments={segments}
+        totalDays={totalDays}
+        chartStart={chartStart}
+        barStart={row.optimizedMin}
+        barEnd={row.optimizedMax}
+        barColor={barColor}
+        groupBarColor={groupBarColor}
+      />
     </div>
   );
 }
@@ -323,10 +283,8 @@ function GanttProgRow({
 export function GanttChartPanel() {
   const seasonResult = useSelector(paceCrawlerSelect.seasonOptimizerResult);
   const today = useSelector(paceCrawlerSelect.mainDate);
-  const groups = useSelector(assignmentGroupSelect.groups);
   const groupMap = useSelector(assignmentGroupSelect.groupMap);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
-  const crawlerResult = useSelector(paceCrawlerSelect.crawlerResult);
   const servCodeTimelineMap = useSelector(paceCrawlerSelect.servCodeTimelineMap);
   const snowDeadline = useSelector(seasonPlanSelect.snowDeadline);
   const activeSeasonPlan = useSelector(seasonPlanSelect.activeSeasonPlan);
@@ -341,8 +299,10 @@ export function GanttChartPanel() {
     }
   }
 
-  // Filter to only servCodes with assigned employees
-  const filteredResult = seasonResult.filter((r) => assignedServCodeIds.has(r.servCodeId));
+  // Filter to only groups where at least one member servCode has an assigned employee
+  const filteredResult = seasonResult.filter((r) =>
+    r.memberServCodeIds.some((id) => assignedServCodeIds.has(id)),
+  );
 
   if (filteredResult.length === 0) {
     return (
@@ -385,52 +345,19 @@ export function GanttChartPanel() {
 
   const totalDays = Math.max(dayOffset(chartStart, chartEnd), 1);
 
-  // Build servCodeId → groupLabel map and assign stable color indices.
-  const servCodeGroupMap = buildServCodeGroupMap(groups);
-
+  // Assign stable color indices per groupLabel
   const groupColorIndex = new Map<string, number>();
   let nextColorIndex = 0;
   for (const row of filteredResult) {
-    const groupLabel = servCodeGroupMap.get(row.servCodeId) ?? null;
-    if (groupLabel !== null && !groupColorIndex.has(groupLabel)) {
-      groupColorIndex.set(groupLabel, nextColorIndex++);
+    if (!groupColorIndex.has(row.groupLabel)) {
+      groupColorIndex.set(row.groupLabel, nextColorIndex++);
     }
   }
 
-  // Group rows by progCode, then sort so grouped servCodes appear adjacent.
-  const progCodeRowMap = new Map<string, SeasonOptimizedRange[]>();
-  for (const row of filteredResult) {
-    const existing = progCodeRowMap.get(row.progCodeId) ?? [];
-    existing.push(row);
-    progCodeRowMap.set(row.progCodeId, existing);
-  }
-
-  function getPrimaryGroupLabel(rows: SeasonOptimizedRange[]): string | null {
-    for (const row of rows) {
-      const label = servCodeGroupMap.get(row.servCodeId);
-      if (label) return label;
-    }
-    return null;
-  }
-
-  const rawGroups: ProgGroup[] = [];
-  for (const [progCodeId, rows] of progCodeRowMap) {
-    const isSequential = rows.some((r) => r.runsInSequence);
-    const sorted = isSequential
-      ? [...rows].sort((a, b) => a.optimizedMin.localeCompare(b.optimizedMin))
-      : rows;
-    const primaryGroupLabel = getPrimaryGroupLabel(sorted);
-    rawGroups.push({ progCodeId, rows: sorted, primaryGroupLabel });
-  }
-
-  const progGroups = [...rawGroups].sort((a, b) => {
-    if (a.primaryGroupLabel !== null && b.primaryGroupLabel !== null) {
-      return a.primaryGroupLabel.localeCompare(b.primaryGroupLabel);
-    }
-    if (a.primaryGroupLabel !== null) return -1;
-    if (b.primaryGroupLabel !== null) return 1;
-    return a.progCodeId.localeCompare(b.progCodeId);
-  });
+  // Sort rows alphabetically by groupLabel
+  const sortedRows = [...filteredResult].sort((a, b) =>
+    a.groupLabel.localeCompare(b.groupLabel),
+  );
 
   const mondays = getMondaysInRange(chartStart, chartEnd);
 
@@ -471,22 +398,22 @@ export function GanttChartPanel() {
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="flex w-full">
 
-          {/* Left label column — one row per progCode */}
+          {/* Left label column — one row per group */}
           <div className="shrink-0 flex flex-col" style={{ width: LABEL_WIDTH }}>
             {/* Header spacer */}
             <div style={{ height: HEADER_HEIGHT }} className="border-b border-border bg-card" />
 
-            {progGroups.map((group) => (
+            {sortedRows.map((row) => (
               <div
-                key={group.progCodeId}
+                key={row.groupLabel}
                 className="flex items-center px-2 border-b border-border/50 bg-card"
                 style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
               >
                 <span
                   className="text-xs font-semibold text-foreground truncate font-mono"
-                  title={group.progCodeId}
+                  title={row.memberServCodeIds.join(", ")}
                 >
-                  {group.progCodeId}
+                  {row.groupLabel}
                 </span>
               </div>
             ))}
@@ -546,16 +473,14 @@ export function GanttChartPanel() {
                 />
               )}
 
-              {/* One row per progCode */}
-              {progGroups.map((group) => (
-                <GanttProgRow
-                  key={group.progCodeId}
-                  group={group}
+              {/* One row per group */}
+              {sortedRows.map((row) => (
+                <GanttGroupRow
+                  key={row.groupLabel}
+                  row={row}
                   totalDays={totalDays}
                   chartStart={chartStart}
                   servCodeTimelineMap={servCodeTimelineMap}
-                  crawlerResult={crawlerResult}
-                  servCodeGroupMap={servCodeGroupMap}
                   groupColorIndex={groupColorIndex}
                 />
               ))}
@@ -589,10 +514,6 @@ export function GanttChartPanel() {
         <div className="flex items-center gap-1.5">
           <div className="w-0 h-3 border-l-2 border-destructive" />
           <span>Snow deadline</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-1 h-3 bg-accent/40 border-l-[3px] border-l-primary rounded-sm" />
-          <span>Grouped servCodes</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full bg-accent/40 border-l border-border/40" />

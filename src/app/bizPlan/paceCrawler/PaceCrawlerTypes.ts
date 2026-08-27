@@ -207,24 +207,37 @@ export type CrawlerResult = {
   servCodeTimeline: Map<string, ServCodeTimelineEvent[]>;
 };
 
-/** One row of season optimizer output per servCode. */
+/** One row of season optimizer output — one per group (or solo servCode). */
 export type SeasonOptimizedRange = {
-  servCodeId: string;
+  /**
+   * The group label this row represents.
+   * For shared groups: AssignmentGroup.label (e.g. "CC3+LA3+SC2+SE3").
+   * For solo servCodes: the servCodeId itself.
+   * This is also the key into servCodeTimeline.
+   */
+  groupLabel: string;
+  /**
+   * All servCodeIds that belong to this group.
+   * Single-element array for solo servCodes.
+   */
+  memberServCodeIds: string[];
   progCodeId: string;
+  /** Display name — group label for groups, servCode longName for singles. */
   servCodeName: string;
-  /** The existing RealGreen-assigned date range for this servCode. */
+  /** The existing RealGreen-assigned date range (from the first/only member). */
   servCodeRange: TRange<string>;
-  /** Crawler's recommended new start date. */
+  /** Crawler's recommended new start date (earliest across all members). */
   optimizedMin: string;
-  /** Crawler's recommended new end date — projectedEndDate, or servCodeRange.max if no data. */
+  /** Crawler's recommended new end date — latest projectedEndDate across all members, or servCodeRange.max if no data. */
   optimizedMax: string;
+  /** Latest projectedEndDate across all members (null if no member has data). */
   projectedEndDate: string | null;
   runsInSequence: boolean;
-  /** True when the servCode's pool has already started (optimizedMin ≤ today) */
+  /** True when the group's pool has already started (optimizedMin ≤ today) */
   isStarted: boolean;
-  /** True when there's unscheduled work and a projected end date exists */
+  /** True when any member has unscheduled work */
   hasWork: boolean;
-  /** The planned end date from the active SeasonPlan, if one exists. */
+  /** The planned end date from the active SeasonPlan (latest across all members). */
   plannedEnd: string | null;
 };
 

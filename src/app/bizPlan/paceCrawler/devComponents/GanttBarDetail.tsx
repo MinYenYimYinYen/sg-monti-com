@@ -162,9 +162,10 @@ export function buildSegmentsFromTimeline(
 // ---------------------------------------------------------------------------
 
 type GanttBarDetailProps = {
-  servCodeId: string;
-  /** The group label this servCode belongs to (null = single). */
-  groupLabel: string | null;
+  /** The group label (groupId for groups, servCodeId for singles). */
+  groupLabel: string;
+  /** All servCodeIds in this group. Single-element for solo servCodes. */
+  memberServCodeIds: string[];
   segment: GanttSegment;
 };
 
@@ -177,12 +178,11 @@ function formatDollars(n: number): string {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
-export function GanttBarDetail({ servCodeId, groupLabel, segment }: GanttBarDetailProps) {
+export function GanttBarDetail({ groupLabel, memberServCodeIds, segment }: GanttBarDetailProps) {
   const employeeMap = useSelector(employeeSelect.employeeMap);
-  const dailyRateByEmployeeByServCode = useSelector(paceCrawlerSelect.dailyRateByEmployeeByServCode);
   const totalAvgDailyPriceByEmployee = useSelector(paceCrawlerSelect.totalAvgDailyPriceByEmployee);
 
-  const isGroup = groupLabel !== null;
+  const isGroup = memberServCodeIds.length > 1;
 
   // Resolve trigger employee name
   const triggerEmployeeName = segment.trigger
@@ -192,11 +192,18 @@ export function GanttBarDetail({ servCodeId, groupLabel, segment }: GanttBarDeta
   return (
     <div className="flex flex-col gap-2 min-w-[220px]">
       {/* Header */}
-      <div className="flex items-center gap-1.5">
-        <span className="text-xs font-semibold text-foreground font-mono">{servCodeId}</span>
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-foreground font-mono">{groupLabel}</span>
+          {isGroup && (
+            <span className="text-[9px] text-primary bg-primary/10 rounded px-1">
+              group · {memberServCodeIds.length} servCodes
+            </span>
+          )}
+        </div>
         {isGroup && (
-          <span className="text-[9px] text-primary bg-primary/10 rounded px-1">
-            group: {groupLabel}
+          <span className="text-[9px] text-muted-foreground font-mono">
+            {memberServCodeIds.join(" · ")}
           </span>
         )}
       </div>
@@ -249,35 +256,21 @@ export function GanttBarDetail({ servCodeId, groupLabel, segment }: GanttBarDeta
         {segment.employees.map(({ employeeId, employeeDailyRate }) => {
           const employee = employeeMap.get(employeeId);
           const name = employee?.name ?? employeeId;
-
-          // For group entries: memberRate = individual servCode rate, groupRate = totalAvgDailyPrice
-          const memberRate = dailyRateByEmployeeByServCode.get(employeeId)?.get(servCodeId) ?? 0;
-          const groupRate = totalAvgDailyPriceByEmployee.get(employeeId) ?? 0;
-
-          // Share of group drain this servCode gets from this employee
-          const shareOfGroupDrain = isGroup && groupRate > 0
-            ? (memberRate / groupRate) * employeeDailyRate
-            : null;
+          const totalAvg = totalAvgDailyPriceByEmployee.get(employeeId) ?? 0;
 
           return (
-            <div key={employeeId} className="flex flex-col gap-0.5">
-              <div className="flex items-center justify-between text-[10px]">
-                <span className="text-foreground font-medium truncate max-w-[120px]">{name}</span>
-                <span className="font-mono text-muted-foreground shrink-0">
+            <div key={employeeId} className="flex items-center justify-between text-[10px]">
+              <span className="text-foreground font-medium truncate max-w-[140px]">{name}</span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="font-mono text-muted-foreground">
                   {formatDollars(employeeDailyRate)}/day
                 </span>
-              </div>
-              {isGroup && memberRate > 0 && (
-                <div className="flex items-center justify-between text-[9px] text-muted-foreground pl-2">
-                  <span>{servCodeId} rate</span>
-                  <span className="font-mono">
-                    {formatDollars(memberRate)}
-                    {shareOfGroupDrain !== null && (
-                      <span className="text-primary"> → {formatDollars(shareOfGroupDrain)}/day share</span>
-                    )}
+                {totalAvg > 0 && Math.abs(totalAvg - employeeDailyRate) > 1 && (
+                  <span className="text-[9px] text-muted-foreground/60 font-mono">
+                    (avg {formatDollars(totalAvg)})
                   </span>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           );
         })}
