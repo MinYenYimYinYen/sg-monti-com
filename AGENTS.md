@@ -337,6 +337,8 @@ export default function FeatureLayout({ children }: { children: React.ReactNode 
 * **File Structure**: Prefer `camelCase` for route folders (e.g., `changePassword`).
 * **Styling Workflow**: Use semantic colors (`bg-primary`, `bg-accent`, `text-foreground`) with variant + intensity props. Never use hardcoded colors (`bg-blue-500`). See styling rules above.
 * **tsc**: Do not do tsc checks on markdown files.
+* **Type Checking**: After editing files, use `ide_diagnostics` on the modified files for fast feedback — it reads from the IDE's live language server and is much faster than a full compile. Run `tsc --noEmit` only when making type-level changes (modifying shared types, function signatures, or removing exports) that could affect files not directly edited.
+* **Task Completion**: Do not start or launch the development server after completing a task. Do not use `start`, `open`, or `npm run dev` commands as part of `attempt_completion`. Simply report what was done.
 
 # For markdown files on Windows, write with UTF-8 BOM encoding
 (echo -ne '\xEF\xBB\xBF'; cat <<'EOF'
