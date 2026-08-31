@@ -13,14 +13,13 @@ import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes"
 import {
   RequiredDailyEntry,
   DiffResult,
-  OpenServCodeRow,
   OpenGroupRow,
   OpenGroupMemberRow,
   EmployeeCardData,
 } from "@/app/bizPlan/paceCrawler/_lib/diffChecker/DiffCheckerTypes";
 import { holidaySelect } from "@/app/holiday/holidaySelect";
 
-export type { OpenServCodeRow, OpenGroupRow, OpenGroupMemberRow, EmployeeCardData };
+export type { OpenGroupRow, OpenGroupMemberRow, EmployeeCardData };
 
 // ---------------------------------------------------------------------------
 // D0 output type
@@ -340,11 +339,13 @@ const selectEmployeeCardData = createSelector(
     // Used to compute each employee's proportional share of the group's required rate.
     // Falls back to totalAvgDailyPrice when no goal is set for an employee.
     const sumGoalsByGroup = new Map<string, number>();
+    const sumAvgsByGroup = new Map<string, number>();
     for (const [employeeId, plan] of assignmentsByEmployeeId) {
       const employeeAvg = totalAvgDailyPriceMap.get(employeeId) ?? teamAvgTotalDailyPrice;
       for (const { groupId, dailyRevenueGoal } of plan.groupAssignments) {
         const contribution = dailyRevenueGoal ?? employeeAvg;
         sumGoalsByGroup.set(groupId, (sumGoalsByGroup.get(groupId) ?? 0) + contribution);
+        sumAvgsByGroup.set(groupId, (sumAvgsByGroup.get(groupId) ?? 0) + employeeAvg);
       }
     }
 
@@ -364,7 +365,7 @@ const selectEmployeeCardData = createSelector(
         totalAvgDailyPriceMap.get(employeeId) ?? teamAvgTotalDailyPrice;
 
       // Build open entry rows — one OpenGroupRow per open groupId
-      const openEntryRows: (OpenServCodeRow | OpenGroupRow)[] = [];
+      const openEntryRows: OpenGroupRow[] = [];
 
       for (const groupId of openGroupIds) {
         const group = groupMap.get(groupId);
@@ -412,27 +413,6 @@ const selectEmployeeCardData = createSelector(
 
         if (combinedPool === 0) continue; // all members done
 
-        // If the group has exactly one member, render as a single row for cleaner display
-        if (members.length === 1) {
-          const member = members[0];
-          const diff = diffByServCode?.get(member.servCodeId);
-          openEntryRows.push({
-            kind: "single",
-            servCodeId: member.servCodeId,
-            goalDailyPrice,
-            historicalDailyPrice: diff?.historicalDailyPrice ?? 0,
-            requiredDailyPrice: diff?.requiredDailyPrice ?? member.requiredDailyPrice,
-            diffPrice: diff?.diffPrice ?? 0,
-            diffPercent: diff?.diffPercent ?? null,
-            poolRemaining: member.poolRemaining,
-            remainingWeekdays: member.remainingWeekdays,
-            isOverdue: member.isOverdue,
-            isAhead: diff?.isAhead ?? false,
-            isBehind: diff?.isBehind ?? false,
-          });
-          continue;
-        }
-
         const latestRemainingWeekdays = latestScMax
           ? Math.max(0, dateRanges.weekdaysBetween(mainDate, latestScMax))
           : 0;
@@ -440,9 +420,11 @@ const selectEmployeeCardData = createSelector(
         // Compute the group's total required rate using the season plan's plannedEnd as the
         // deadline (preferred), falling back to the latest member scMax.
         const deadlineDate = plannedEnd ?? latestScMax;
+        // Allow negative values — past-deadline groups still need a meaningful delta for goal/avg rows.
         const deadlineWeekdays = deadlineDate
-          ? Math.max(0, dateRanges.weekdaysBetween(mainDate, deadlineDate))
+          ? dateRanges.weekdaysBetween(mainDate, deadlineDate)
           : 0;
+        // Required rate is only meaningful when deadline is in the future.
         const groupRequiredRate = deadlineWeekdays > 0
           ? combinedPool / deadlineWeekdays
           : 0;
@@ -451,6 +433,7 @@ const selectEmployeeCardData = createSelector(
         // Weight = this employee's goal (or totalAvgDailyPrice fallback) / sum of all goals for this group.
         const employeeWeight = goalDailyPrice ?? totalAvgDailyPrice;
         const sumGoals = sumGoalsByGroup.get(groupId) ?? employeeWeight;
+        const sumAvgs = sumAvgsByGroup.get(groupId) ?? totalAvgDailyPrice;
         const shareRatio = sumGoals > 0 ? employeeWeight / sumGoals : 1;
         const employeeRequiredRate = groupRequiredRate * shareRatio;
 
@@ -475,6 +458,7 @@ const selectEmployeeCardData = createSelector(
           planDeadlineWeekdays: deadlineWeekdays,
           groupRequiredRate,
           sumGoals,
+          sumAvgs,
           planDeadline: plannedEnd,
           isOverdue: anyOverdue,
           isAhead: isFinite(diffPrice) && diffPrice < 0,

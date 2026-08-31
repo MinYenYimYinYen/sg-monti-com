@@ -51,26 +51,6 @@ export type DiffResult = {
 // ---------------------------------------------------------------------------
 
 /**
- * One row in an employee's card — a single open servCode with diff data.
- * Used for single-entry rows (kind = "single").
- */
-export type OpenServCodeRow = {
-  kind: "single";
-  servCodeId: string;
-  /** The employee's daily revenue goal for this group ($/day). Null when not set. */
-  goalDailyPrice: number | null;
-  historicalDailyPrice: number;
-  requiredDailyPrice: number;
-  diffPrice: number;
-  diffPercent: number | null;
-  poolRemaining: number;
-  remainingWeekdays: number;
-  isOverdue: boolean;
-  isAhead: boolean;
-  isBehind: boolean;
-};
-
-/**
  * One member servCode within an expanded group row.
  * Shows per-member pool, required rate, and individual deadline.
  */
@@ -109,7 +89,7 @@ export type OpenGroupRow = {
   /**
    * Weekdays remaining to the plan deadline (plannedEnd ?? latestScMax).
    * Used to compute days-late for goal and avg rows.
-   * 0 when the plan deadline has passed (isOverdue).
+   * Negative when the plan deadline has passed — allows meaningful delta computation.
    */
   planDeadlineWeekdays: number;
   /**
@@ -123,6 +103,11 @@ export type OpenGroupRow = {
    * Used as the team's total goal rate for days-late computation.
    */
   sumGoals: number;
+  /**
+   * Sum of all employees' totalAvgDailyPrice for this group.
+   * Used to compute days-late for the avg row: round(combinedPool / sumAvgs) - planDeadlineWeekdays.
+   */
+  sumAvgs: number;
   /**
    * The plan deadline date string (season plan plannedEnd, or null if no season plan).
    * Shown in the card header as the authoritative "ends" date.
@@ -147,7 +132,7 @@ export type EmployeeCardData = {
   /** True when a company holiday covers mainDate (applies to all employees). */
   isHoliday: boolean;
   /** Priority-ordered open entries for this employee on mainDate (pool > 0, date in range). */
-  openEntries: (OpenServCodeRow | OpenGroupRow)[];
+  openEntries: OpenGroupRow[];
   /** All servCodeIds in the employee's assignment plan (for context). */
   assignedServCodeIds: string[];
 };

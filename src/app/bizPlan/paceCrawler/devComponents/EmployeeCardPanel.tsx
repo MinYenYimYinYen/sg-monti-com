@@ -7,10 +7,9 @@ import { cn } from "@/style/utils";
 import { ChevronRight } from "lucide-react";
 import type {
   EmployeeCardData,
-  OpenServCodeRow,
   OpenGroupRow,
   OpenGroupMemberRow,
-} from "@/app/bizPlan/paceCrawler/employeeCardSelect";
+} from "@/app/bizPlan/paceCrawler/_lib/diffChecker/DiffCheckerTypes";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -28,23 +27,41 @@ function formatDate(iso: string): string {
 }
 
 /**
- * Compute days late (+) or early (-) for the whole group at a given team rate.
+ * Compute days late (+) or early (-) relative to the plan deadline.
  *
  * Formula: round(combinedPool / teamRate) - planDeadlineWeekdays
  *
  * Positive = days past the plan deadline (late).
  * Negative = days before the plan deadline (early).
- * Null when teamRate is 0 or planDeadlineWeekdays is 0.
+ * Null when teamRate is 0.
+ * planDeadlineWeekdays may be negative (past deadline) — the math still works.
  */
 function computeDaysLate(combinedPool: number, teamRate: number, planDeadlineWeekdays: number): number | null {
-  if (teamRate <= 0 || planDeadlineWeekdays <= 0) return null;
+  if (teamRate <= 0) return null;
   const projectedDays = combinedPool / teamRate;
   return Math.round(projectedDays - planDeadlineWeekdays);
 }
 
-function DaysAheadBadge({ days }: { days: number | null }) {
+/**
+ * Compute projected days remaining to drain the pool at the given team rate.
+ * Used when past the plan deadline — answers "how many more days to finish?"
+ */
+function computeDaysLeft(combinedPool: number, teamRate: number): number | null {
+  if (teamRate <= 0) return null;
+  return Math.round(combinedPool / teamRate);
+}
+
+function DaysAheadBadge({ days, overdueMode = false }: { days: number | null; overdueMode?: boolean }) {
   if (days === null) return <span className="font-mono text-[10px] text-muted-foreground">—</span>;
-  if (days === 0) return <span className="font-mono text-[10px] text-muted-foreground">0d</span>;
+  if (days === 0 && !overdueMode) return <span className="font-mono text-[10px] text-muted-foreground">0d</span>;
+  if (overdueMode) {
+    // Past deadline: show "+Xd left" to indicate days remaining to finish
+    return (
+      <span className="font-mono text-[10px] font-semibold text-destructive">
+        +{days}d left
+      </span>
+    );
+  }
   const isLate = days > 0;
   return (
     <span className={`font-mono text-[10px] font-semibold ${isLate ? "text-destructive" : "text-accent"}`}>
@@ -61,6 +78,7 @@ type RateRow = {
   label: string;
   rate: number | null;
   daysAhead: number | null;
+  overdueMode?: boolean;
   labelColor?: string;
   rateColor?: string;
 };
@@ -76,89 +94,9 @@ function RateTable({ rows }: { rows: RateRow[] }) {
           <span className={`font-mono text-[10px] flex-1 ${row.rateColor ?? "text-foreground"}`}>
             {row.rate !== null ? `${formatDollars(row.rate)}/day` : "—"}
           </span>
-          <DaysAheadBadge days={row.daysAhead} />
+          <DaysAheadBadge days={row.daysAhead} overdueMode={row.overdueMode} />
         </div>
       ))}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// SingleServCodeRow — one row per open single servCode on the card
-// ---------------------------------------------------------------------------
-
-function SingleServCodeRow({ row, isPriority }: { row: OpenServCodeRow; isPriority: boolean }) {
-  const rateRows: RateRow[] = [];
-
-  if (row.goalDailyPrice !== null) {
-    rateRows.push({
-      label: "goal",
-      rate: row.goalDailyPrice,
-      daysAhead: computeDaysLate(row.poolRemaining, row.goalDailyPrice, row.remainingWeekdays),
-      labelColor: "text-muted-foreground",
-      rateColor: "text-accent",
-    });
-  }
-
-  rateRows.push({
-    label: "avg",
-    rate: row.historicalDailyPrice,
-    daysAhead: computeDaysLate(row.poolRemaining, row.historicalDailyPrice, row.remainingWeekdays),
-    labelColor: "text-muted-foreground",
-    rateColor: "text-foreground",
-  });
-
-  rateRows.push({
-    label: "req",
-    rate: row.isOverdue ? null : row.requiredDailyPrice,
-    daysAhead: 0,
-    labelColor: "text-muted-foreground",
-    rateColor: row.isOverdue ? "text-destructive" : "text-primary",
-  });
-
-  return (
-    <div className={cn(
-      "flex items-start gap-2 py-1.5 border-b border-border/40 last:border-0",
-      !isPriority && "opacity-40",
-    )}>
-      {/* ServCode ID + status badge */}
-      <div className="w-14 shrink-0 pt-0.5 flex flex-col gap-0.5">
-        <span className="font-mono text-xs text-foreground truncate">
-          {row.servCodeId}
-        </span>
-        {isPriority && row.isOverdue && (
-          <span className="text-[9px] text-destructive bg-destructive/10 rounded px-1 leading-tight w-fit">
-            overdue
-          </span>
-        )}
-        {isPriority && !row.isOverdue && row.isBehind && (
-          <span className="text-[9px] text-secondary bg-secondary/10 rounded px-1 leading-tight w-fit">
-            behind
-          </span>
-        )}
-        {!isPriority && (
-          <span className="text-[9px] text-muted-foreground bg-muted/30 rounded px-1 leading-tight w-fit">
-            queued
-          </span>
-        )}
-      </div>
-
-      {/* Rate table */}
-      <div className="flex-1 min-w-0">
-        <RateTable rows={rateRows} />
-      </div>
-
-      {/* Pool remaining + days left */}
-      <div className="text-right shrink-0">
-        <div className="font-mono text-[10px] text-muted-foreground">
-          {formatDollars(row.poolRemaining)} left
-        </div>
-        {!row.isOverdue && row.remainingWeekdays > 0 && (
-          <div className="font-mono text-[10px] text-muted-foreground">
-            {row.remainingWeekdays}d
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -202,11 +140,17 @@ function GroupEntryRow({ row, isPriority }: { row: OpenGroupRow; isPriority: boo
 
   const rateRows: RateRow[] = [];
 
+  const isPastDeadline = row.planDeadlineWeekdays <= 0;
+
   if (row.goalDailyPrice !== null) {
     rateRows.push({
       label: "goal",
       rate: row.goalDailyPrice,
-      daysAhead: computeDaysLate(row.combinedPool, row.sumGoals, row.planDeadlineWeekdays),
+      // Past deadline: show days left to finish at goal rate. Before: show days vs plan end.
+      daysAhead: isPastDeadline
+        ? computeDaysLeft(row.combinedPool, row.sumGoals)
+        : computeDaysLate(row.combinedPool, row.sumGoals, row.planDeadlineWeekdays),
+      overdueMode: isPastDeadline,
       labelColor: "text-muted-foreground",
       rateColor: "text-accent",
     });
@@ -215,24 +159,23 @@ function GroupEntryRow({ row, isPriority }: { row: OpenGroupRow; isPriority: boo
   rateRows.push({
     label: "avg",
     rate: row.historicalDailyPrice,
-    // For avg: scale employee's avg to team total using the same share ratio as goals
-    daysAhead: computeDaysLate(
-      row.combinedPool,
-      row.sumGoals > 0 && row.goalDailyPrice !== null
-        ? row.historicalDailyPrice / row.goalDailyPrice * row.sumGoals
-        : row.historicalDailyPrice,
-      row.planDeadlineWeekdays,
-    ),
+    // Past deadline: show days left to finish at avg rate. Before: show days vs plan end.
+    daysAhead: isPastDeadline
+      ? computeDaysLeft(row.combinedPool, row.sumAvgs)
+      : computeDaysLate(row.combinedPool, row.sumAvgs, row.planDeadlineWeekdays),
+    overdueMode: isPastDeadline,
     labelColor: "text-muted-foreground",
     rateColor: "text-foreground",
   });
 
+  // req row: only meaningful when plan deadline is in the future.
+  // When past the deadline, show strikethrough to signal it's no longer a valid target.
   rateRows.push({
     label: "req",
-    rate: row.isOverdue ? null : row.requiredDailyPrice,
-    daysAhead: row.isOverdue ? null : 0,
-    labelColor: "text-muted-foreground",
-    rateColor: row.isOverdue ? "text-destructive" : "text-primary",
+    rate: isPastDeadline ? null : row.requiredDailyPrice,
+    daysAhead: isPastDeadline ? null : 0,
+    labelColor: isPastDeadline ? "text-muted-foreground/40 line-through" : "text-muted-foreground",
+    rateColor: isPastDeadline ? "text-muted-foreground/40 line-through" : "text-primary",
   });
 
   return (
@@ -282,11 +225,18 @@ function GroupEntryRow({ row, isPriority }: { row: OpenGroupRow; isPriority: boo
           <div className="font-mono text-[10px] text-muted-foreground">
             {formatDollars(row.combinedPool)} left
           </div>
-          {row.planDeadline && (
-            <div className="font-mono text-[10px] text-muted-foreground">
-              plan {formatDate(row.planDeadline)}
-            </div>
-          )}
+          {row.planDeadline && (() => {
+            const isPast = row.planDeadlineWeekdays <= 0;
+            const absDays = Math.abs(row.planDeadlineWeekdays);
+            return (
+              <div className={`font-mono text-[10px] ${isPast ? "text-destructive/70" : "text-muted-foreground"}`}>
+                {formatDate(row.planDeadline)}
+                {isPast
+                  ? ` (${absDays}d past)`
+                  : ` (${absDays}d)`}
+              </div>
+            );
+          })()}
         </div>
       </button>
 
@@ -348,25 +298,13 @@ function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
             No open servCodes on this date
           </p>
         ) : (
-          openEntries.map((entry, index) => {
-            if (entry.kind === "single") {
-              return (
-                <SingleServCodeRow
-                  key={entry.servCodeId}
-                  row={entry}
-                  isPriority={index === 0}
-                />
-              );
-            } else {
-              return (
-                <GroupEntryRow
-                  key={entry.groupId}
-                  row={entry}
-                  isPriority={index === 0}
-                />
-              );
-            }
-          })
+          openEntries.map((entry, index) => (
+            <GroupEntryRow
+              key={entry.groupId}
+              row={entry}
+              isPriority={index === 0}
+            />
+          ))
         )}
       </div>
     </div>

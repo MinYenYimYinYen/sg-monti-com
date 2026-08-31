@@ -11,10 +11,10 @@ import { cn } from "@/style/utils";
 import { ChevronRight } from "lucide-react";
 import type {
   EmployeeCardData,
-  OpenServCodeRow,
   OpenGroupRow,
   OpenGroupMemberRow,
-} from "@/app/bizPlan/paceCrawler/employeeCardSelect";
+} from "@/app/bizPlan/paceCrawler/_lib/diffChecker/DiffCheckerTypes";
+// Note: OpenServCodeRow has been removed — all entries are now OpenGroupRow.
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -26,12 +26,6 @@ function formatDollars(n: number | null): string {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
-function formatPercent(n: number | null): string {
-  if (n === null || !isFinite(n)) return "";
-  const sign = n > 0 ? "+" : "";
-  return `${sign}${(n * 100).toFixed(0)}%`;
-}
-
 function formatDate(iso: string): string {
   if (!iso) return "—";
   const [, month, day] = iso.split("-");
@@ -39,7 +33,7 @@ function formatDate(iso: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// ThreeValueRow — shows Goal / Actual / Required for a group or single
+// ThreeValueRow — shows Goal / Actual / Required for a group
 // ---------------------------------------------------------------------------
 
 function ThreeValueRow({
@@ -72,68 +66,6 @@ function ThreeValueRow({
         <span className={`font-semibold ${requiredColor}`}>
           {isOverdue ? "∞" : formatDollars(requiredDailyPrice)}/day
         </span>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// SingleServCodeRow
-// ---------------------------------------------------------------------------
-
-function SingleServCodeRow({ row }: { row: OpenServCodeRow }) {
-  const statusColor = row.isOverdue
-    ? "text-destructive"
-    : row.isAhead
-      ? "text-accent"
-      : row.isBehind
-        ? "text-secondary"
-        : "text-muted-foreground";
-
-  return (
-    <div className="flex items-start gap-2 py-1.5 border-b border-border/40 last:border-0">
-      {/* ServCode ID + status badge */}
-      <div className="w-14 shrink-0 pt-0.5 flex flex-col gap-0.5">
-        <span className="font-mono text-xs text-foreground truncate">
-          {row.servCodeId}
-        </span>
-        {row.isOverdue && (
-          <span className="text-[9px] text-destructive bg-destructive/10 rounded px-1 leading-tight w-fit">
-            overdue
-          </span>
-        )}
-        {!row.isOverdue && row.isBehind && (
-          <span className="text-[9px] text-secondary bg-secondary/10 rounded px-1 leading-tight w-fit">
-            behind
-          </span>
-        )}
-        {!row.isOverdue && row.isAhead && (
-          <span className="text-[9px] text-accent bg-accent/10 rounded px-1 leading-tight w-fit">
-            ahead
-          </span>
-        )}
-      </div>
-
-      {/* Three-value display */}
-      <div className="flex-1 min-w-0">
-        <ThreeValueRow
-          goalDailyPrice={row.goalDailyPrice}
-          historicalDailyPrice={row.historicalDailyPrice}
-          requiredDailyPrice={row.requiredDailyPrice}
-          isOverdue={row.isOverdue}
-        />
-      </div>
-
-      {/* Pool remaining + days left */}
-      <div className="text-right shrink-0">
-        <div className="font-mono text-[10px] text-muted-foreground">
-          {formatDollars(row.poolRemaining)} left
-        </div>
-        {!row.isOverdue && row.remainingWeekdays > 0 && (
-          <div className="font-mono text-[10px] text-muted-foreground">
-            {row.remainingWeekdays}d
-          </div>
-        )}
       </div>
     </div>
   );
@@ -193,9 +125,6 @@ function GroupEntryRow({ row }: { row: OpenGroupRow }) {
               {row.label}
             </span>
           </span>
-          <span className="text-[9px] text-primary bg-primary/10 rounded px-1 leading-tight w-fit">
-            group
-          </span>
           {row.isOverdue && (
             <span className="text-[9px] text-destructive bg-destructive/10 rounded px-1 leading-tight w-fit">
               overdue
@@ -223,14 +152,14 @@ function GroupEntryRow({ row }: { row: OpenGroupRow }) {
           />
         </div>
 
-        {/* Combined pool + group window */}
+        {/* Combined pool + plan deadline */}
         <div className="text-right shrink-0">
           <div className="font-mono text-[10px] text-muted-foreground">
             {formatDollars(row.combinedPool)} left
           </div>
-          {row.latestScMax && (
+          {row.planDeadline && (
             <div className="font-mono text-[10px] text-muted-foreground">
-              ends {formatDate(row.latestScMax)}
+              plan {formatDate(row.planDeadline)}
             </div>
           )}
         </div>
@@ -278,13 +207,9 @@ function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
             No open servCodes on this date
           </p>
         ) : (
-          openEntries.map((entry) => {
-            if (entry.kind === "single") {
-              return <SingleServCodeRow key={entry.servCodeId} row={entry} />;
-            } else {
-              return <GroupEntryRow key={entry.groupId} row={entry} />;
-            }
-          })
+          openEntries.map((entry) => (
+            <GroupEntryRow key={entry.groupId} row={entry} />
+          ))
         )}
       </div>
     </div>
@@ -330,8 +255,8 @@ export function DiffD5EmployeeCardPanel() {
       {/* Legend */}
       <div className="shrink-0 px-3 py-1.5 border-b border-border/40 bg-card/50 flex items-center gap-4 text-[10px] text-muted-foreground">
         <span><strong className="text-accent">Goal</strong> = daily revenue target ($/day)</span>
-        <span><strong className="text-foreground">Actual</strong> = lookback avg (what's happening)</span>
-        <span><strong className="text-primary">Required</strong> = what's needed to finish on time</span>
+        <span><strong className="text-foreground">Actual</strong> = lookback avg (what&apos;s happening)</span>
+        <span><strong className="text-primary">Required</strong> = what&apos;s needed to finish on time</span>
         <span>Groups: click ▶ to expand members</span>
       </div>
 
