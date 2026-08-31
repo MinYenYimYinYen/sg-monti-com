@@ -3,6 +3,8 @@ import { ServiceQuery } from "@/app/realGreen/customer/_lib/classes/ServiceQuery
 import { ProgramQuery } from "@/app/realGreen/customer/_lib/classes/ProgramQuery";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { FlagRule } from "@/app/flagRule/FlagRuleTypes";
+import { evaluateAllRules, FlagRuleResult } from "@/app/flagRule/flagRuleEngine";
 
 export class CustomerUtils {
   constructor(public readonly customer: Omit<Customer, "x">) {}
@@ -49,6 +51,22 @@ export class CustomerUtils {
   /** True when this customer is active, not on hold, not on credit hold, and eligible for scheduling (status "9"). */
   public get isActionable(): boolean {
     return this.customer.status === "9" && !this.isOnHold && !this.isCreditHold;
+  }
+
+  /**
+   * Evaluates all provided FlagRules against this customer and returns only violations
+   * (rules where status is "missing" or "conflict").
+   *
+   * Builds the flagMap from the customer's already-hydrated flags for present-flag name
+   * resolution. Flags referenced by a rule but not on the customer fall back to flagId.toString()
+   * in the message — pass a broader flagMap from flagSelect.flagDocMap at the call site if
+   * full name resolution for absent flags is needed.
+   */
+  public flagRuleViolations(rules: FlagRule[]): FlagRuleResult[] {
+    const flagMap = new Map(this.customer.flags.map((f) => [f.flagId, f]));
+    return evaluateAllRules(this.customer as Customer, rules, flagMap).filter(
+      (result) => result.status !== "valid",
+    );
   }
 
 }

@@ -49,6 +49,7 @@ import { customerValueFilterReducer } from "@/app/bizPlan/customerValue/customer
 import { productivityReducer } from "@/app/productivity/productivitySlice";
 import { assignmentGroupReducer } from "@/app/assignmentGroup/assignmentGroupSlice";
 import { seasonPlanReducer } from "@/app/bizPlan/seasonPlan/seasonPlanSlice";
+import { flagRuleReducer } from "@/app/flagRule/flagRuleSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -101,6 +102,7 @@ const rootReducer = combineReducers({
   productivity: productivityReducer,
   assignmentGroup: assignmentGroupReducer,
   seasonPlan: seasonPlanReducer,
+  flagRule: flagRuleReducer,
 });
 
 export default rootReducer;

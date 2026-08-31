@@ -112,6 +112,7 @@ const bizPlanSection: NavSection = {
     { title: "Product Forecast", href: "/bizPlan/products", roles: ["admin"] },
     { title: "Monthly Inventory", href: "/inventory", roles: ["admin"] },
     { title: "Productivity", href: "/productivity", roles: ["admin", "office"] },
+    { title: "Customer Sanity Checks", href: "/sanity", roles: ["admin", "office"] },
   ],
 };
 

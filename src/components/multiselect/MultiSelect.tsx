@@ -1,3 +1,12 @@
+/**
+ * @deprecated This custom MultiSelect component is deprecated and should not be used in new code.
+ * It does not follow the shadcn/ui component architecture and has inconsistent behavior.
+ *
+ * For new multi-select UIs, use a Popover + ScrollArea + Checkbox pattern instead.
+ * See `FlagFilterSection.tsx` or `FlagRuleCRUD.tsx` for reference implementations.
+ *
+ * Existing usages are kept for backward compatibility but should be migrated over time.
+ */
 "use client";
 
 import * as React from "react";

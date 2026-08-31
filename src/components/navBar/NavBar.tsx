@@ -10,8 +10,10 @@ import { Button } from "@/style/components/button";
 import NavMenu from "./NavMenu";
 import { GlobalConfigMenu } from "./GlobalConfigMenu";
 import { UserPopover } from "./UserPopover";
+import { useNavBarDeps } from "./useNavBarDeps";
 
 export default function NavBar() {
+  useNavBarDeps();
   const isAuthenticated = useSelector(authSelect.isAuthenticated);
   const isInitialized = useSelector(authSelect.isInitialized);
   const user = useSelector(authSelect.user);
