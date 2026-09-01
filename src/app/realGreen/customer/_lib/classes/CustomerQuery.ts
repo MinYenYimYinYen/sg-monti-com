@@ -9,4 +9,9 @@ export class CustomerQuery extends BaseQuery<Customer> {
   protected createInstance(items: Customer[]): this {
     return new CustomerQuery(items) as this;
   }
+
+  /** Filters to customers that have zero revenue for the given method. Delegates to CustomerUtils.isZeroRevenue. */
+  isZeroRevenue(method: "actual" | "renewal") {
+    return new CustomerQuery(this.items.filter((c) => c.x.isZeroRevenue(method)));
+  }
 }

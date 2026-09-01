@@ -83,4 +83,27 @@ export class ProgramUtils {
     });
     return serviceStatArray.join("");
   }
+
+  /**
+   * True when all eligible services for the given method have zero revenue.
+   *
+   * "renewal": eligible services are those with status !== "N".
+   * "actual":  eligible services are those with active/asap/printed/completed status.
+   *
+   * Returns false when there are no eligible services (a program with no countable services
+   * is not considered zero-revenue — it simply has no revenue to evaluate).
+   */
+  public isZeroRevenue(method: "actual" | "renewal"): boolean {
+    const eligibleServices = this.getEligibleServices(method);
+    if (eligibleServices.length === 0) return false;
+    return eligibleServices.every((s) => s.x.isZeroRevenue(method));
+  }
+
+  private getEligibleServices(method: "actual" | "renewal"): Service[] {
+    if (method === "renewal") {
+      return this.services.filter((s) => s.status !== "N");
+    }
+    const ACTUAL_STATUSES = ["Y", "*", "$", "S"];
+    return this.services.filter((s) => ACTUAL_STATUSES.includes(s.status));
+  }
 }

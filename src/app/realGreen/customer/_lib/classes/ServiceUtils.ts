@@ -180,6 +180,20 @@ export class ServiceUtils {
   }
 
   /**
+   * True when this service has zero revenue for the given method.
+   *
+   * "renewal": service is renewal-eligible (status !== "N") and nextPrice after discounts is 0.
+   * "actual":  service has an active/asap/printed/completed status and price after discounts is 0.
+   */
+  public isZeroRevenue(method: "actual" | "renewal"): boolean {
+    if (method === "renewal") {
+      return this.service.status !== "N" && this.getPriceAfterDiscounts("nextPrice") === 0;
+    }
+    const ACTUAL_STATUSES = ["Y", "*", "$", "S"];
+    return ACTUAL_STATUSES.includes(this.service.status) && this.getPriceAfterDiscounts("price") === 0;
+  }
+
+  /**
    * True when this service has an active or asap status and its program is actionable.
    * This is the single source of truth for "does this service represent schedulable work?"
    */

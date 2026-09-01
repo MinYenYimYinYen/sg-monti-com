@@ -76,6 +76,22 @@ export class CustomerUtils {
   }
 
   /**
+   * True when all programs for the given method have zero revenue.
+   *
+   * "renewal": a program is zero-revenue when all its renewal-eligible services (status !== "N")
+   *            have nextPrice after discounts === 0.
+   * "actual":  a program is zero-revenue when all its active/asap/printed/completed services
+   *            have price after discounts === 0.
+   *
+   * Returns false when the customer has no programs.
+   */
+  public isZeroRevenue(method: "actual" | "renewal"): boolean {
+    const activePrograms = this.programs.filter((p) => p.status === "9");
+    if (activePrograms.length === 0) return false;
+    return activePrograms.every((p) => p.x.isZeroRevenue(method));
+  }
+
+  /**
    * Evaluates all provided FlagRules against this customer and returns only violations
    * (rules where status is "missing" or "conflict").
    *

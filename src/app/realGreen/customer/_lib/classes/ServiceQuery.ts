@@ -50,6 +50,11 @@ export class ServiceQuery extends BaseQuery<Service> {
     );
   }
 
+  /** Filters to services that have zero revenue for the given method. Delegates to ServiceUtils.isZeroRevenue. */
+  isZeroRevenue(method: "actual" | "renewal") {
+    return new ServiceQuery(this.items.filter((s) => s.x.isZeroRevenue(method)));
+  }
+
   protected createInstance(items: Service[]): this {
     return new ServiceQuery(items) as this;
   }

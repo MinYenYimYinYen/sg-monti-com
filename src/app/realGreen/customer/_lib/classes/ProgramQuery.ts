@@ -13,6 +13,11 @@ export class ProgramQuery extends BaseQuery<Program> {
   byStatus(status: string) {
     return new ProgramQuery(
       this.items.filter((p) => p.status === status)
-    )
+    );
+  }
+
+  /** Filters to programs that have zero revenue for the given method. Delegates to ProgramUtils.isZeroRevenue. */
+  isZeroRevenue(method: "actual" | "renewal") {
+    return new ProgramQuery(this.items.filter((p) => p.x.isZeroRevenue(method)));
   }
 }
