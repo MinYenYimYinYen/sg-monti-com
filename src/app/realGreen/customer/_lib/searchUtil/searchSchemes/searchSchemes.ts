@@ -296,6 +296,37 @@ const byServIds = ({ season, schemeParams }: SearchSchemeParams): SearchScheme =
   };
 };
 
+const fullSeasonServices = ({ season }: SearchSchemeParams): SearchScheme => {
+  return {
+    schemeName: "fullSeasonServices",
+    steps: [
+      createPaginationStep({
+        stepName: "customers",
+        searchCriteria: { statuses: ["9"] },
+      }),
+      createBatchSizeStep({
+        stepName: "programs",
+        getIds: (pipelineData) =>
+          (pipelineData as CustomerDoc[]).map((c) => c.custId),
+        getSearchCriteria: (ids) => ({
+          custIds: ids,
+          season: { min: season, max: season },
+          statuses: ["9"],
+        }),
+      }),
+      createBatchSizeStep({
+        stepName: "services",
+        getIds: (pipelineData) =>
+          (pipelineData as ProgramDoc[]).map((p) => p.progId),
+        getSearchCriteria: (ids) => ({
+          progIds: ids,
+          season: { min: season, max: season },
+        }),
+      }),
+    ],
+  };
+};
+
 const multiSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => {
   return {
     schemeName: "multiSeasonProduction",
@@ -333,6 +364,7 @@ const multiSeasonProduction = ({ season }: SearchSchemeParams): SearchScheme => 
 export const searchScheme = {
   activeCustomers,
   byServIds,
+  fullSeasonServices,
   printedCustomers,
   lastSeasonProduction,
   recentProduction,

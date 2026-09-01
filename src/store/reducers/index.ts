@@ -50,6 +50,7 @@ import { productivityReducer } from "@/app/productivity/productivitySlice";
 import { assignmentGroupReducer } from "@/app/assignmentGroup/assignmentGroupSlice";
 import { seasonPlanReducer } from "@/app/bizPlan/seasonPlan/seasonPlanSlice";
 import { flagRuleReducer } from "@/app/flagRule/flagRuleSlice";
+import { sanityReducer } from "@/app/sanity/sanitySlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -103,6 +104,7 @@ const rootReducer = combineReducers({
   assignmentGroup: assignmentGroupReducer,
   seasonPlan: seasonPlanReducer,
   flagRule: flagRuleReducer,
+  sanity: sanityReducer,
 });
 
 export default rootReducer;

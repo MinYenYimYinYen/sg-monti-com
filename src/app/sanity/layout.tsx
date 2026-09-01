@@ -6,6 +6,7 @@ import { useSanityDeps } from "./useSanityDeps";
 
 const TABS = [
   { label: "Overview", href: "/sanity" },
+  { label: "Program Sanity", href: "/sanity/programSanity" },
   { label: "Flag Rules", href: "/sanity/flags" },
 ] as const;
 

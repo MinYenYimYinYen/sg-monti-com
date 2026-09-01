@@ -72,4 +72,15 @@ export class ProgramUtils {
       this.program.customer.x.isActionable
     );
   }
+
+  public getServStats(method: "actual" | "renewal") {
+    const serviceStatArray = this.services.map((serv) => {
+      if (method === "actual") {
+        return serv.status;
+      } else {
+        return serv.status === "N" ? "N" : "Y";
+      }
+    });
+    return serviceStatArray.join("");
+  }
 }

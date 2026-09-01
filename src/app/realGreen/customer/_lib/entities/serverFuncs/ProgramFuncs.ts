@@ -9,7 +9,7 @@ function remapProgram(raw: ProgramRaw): ProgramCore {
     billingType: raw.billingType,
     callAheadId: raw.callAhead || baseNumId,
     custId: raw.customerNumber,
-    dateSold: raw.dateSold,
+    dateSold: raw.dateSold ?? "",
     discountId: raw.discountCodeId,
     progId: raw.id,
     isFullProgram: raw.isFullProgram,

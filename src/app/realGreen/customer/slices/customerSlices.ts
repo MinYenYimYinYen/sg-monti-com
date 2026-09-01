@@ -162,6 +162,17 @@ export const multiSeasonProductionActions = {
 };
 export const multiSeasonProductionReducer = multiSeasonProductionSlice.reducer;
 
+export const fullSeasonServicesSlice = createCustomerSlice("fullSeasonServices");
+export const fullSeasonServicesGetDocs = createGetCustDocsThunk(
+  "fullSeasonServices",
+  fullSeasonServicesSlice,
+);
+export const fullSeasonServicesActions = {
+  ...fullSeasonServicesSlice.actions,
+  getDocs: fullSeasonServicesGetDocs,
+};
+export const fullSeasonServicesReducer = fullSeasonServicesSlice.reducer;
+
 // ---------------------------------------------------------------------------
 // Slice registry — single source of truth for all customer slice instances.
 // The central slice loops over this to register extraReducers, eliminating
@@ -176,6 +187,7 @@ export type CustomerSliceGetDocs = ReturnType<typeof createGetCustDocsThunk>;
 export type CustomerContextMode =
   | "active"
   | "byAssignment"
+  | "fullSeasonServices"
   | "priorityService"
   | "printed"
   | "lastSeasonProduction"
@@ -239,6 +251,12 @@ export const customerSliceRegistry: CustomerSliceRegistryEntry[] = [
     actions: multiSeasonProductionActions,
     getDocs: multiSeasonProductionGetDocs,
     reducer: multiSeasonProductionReducer,
+  },
+  {
+    context: "fullSeasonServices",
+    actions: fullSeasonServicesActions,
+    getDocs: fullSeasonServicesGetDocs,
+    reducer: fullSeasonServicesReducer,
   },
 ];
 
