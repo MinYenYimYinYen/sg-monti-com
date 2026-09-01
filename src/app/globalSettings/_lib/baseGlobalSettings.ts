@@ -17,4 +17,9 @@ export const baseGlobalSettings: GlobalSettings = {
   companyId: 592421,
   genLedgerAccountMap: {} as Record<string, GenLedgerAccountEntry>,
   depositAccountMap: emptyDepositAccountMap,
+  renewalFlagIds: {
+    autoRenew: null,
+    dontAutoRenew: null,
+    confirmed: null,
+  }
 };

@@ -25,12 +25,18 @@ const selectDepositAccountMap = createSelector(
   (settings) => settings?.depositAccountMap ?? emptyDepositAccountMap,
 );
 
+const selectRenewalFlagIds = createSelector(
+  [selectSettings],
+  (settings) => settings.renewalFlagIds,
+);
+
 export const globalSettingsSelect = {
   settings: selectSettings,
   season: selectSeason,
   coverSheetsConfig: selectCoverSheetsConfig,
   genLedgerAccountMap: selectGenLedgerAccountMap,
   depositAccountMap: selectDepositAccountMap,
+  renewalFlagIds: selectRenewalFlagIds,
 };
 
 

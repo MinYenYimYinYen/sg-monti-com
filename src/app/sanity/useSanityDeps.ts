@@ -4,6 +4,7 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useFlag } from "@/app/realGreen/flag/useFlag";
 import { useFlagRule } from "@/app/flagRule/useFlagRule";
 import { useFlagRuleCustFlags } from "@/app/sanity/flags/useFlagRuleCustFlags";
+import { useRenewalFlagIds } from "@/app/globalSettings/_lib/useRenewalFlagIds";
 
 export function useSanityDeps() {
   useCustomerContext({ contexts: ["fullSeasonServices"] });
@@ -12,4 +13,5 @@ export function useSanityDeps() {
   useFlag({ autoLoad: true });
   useFlagRule({ autoLoad: true });
   useFlagRuleCustFlags();
+  useRenewalFlagIds();
 }

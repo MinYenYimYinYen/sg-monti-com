@@ -33,6 +33,7 @@ import { taxCodeSelect } from "../../taxCode/taxCodeSelectors";
 import { serviceEtaSelect } from "@/app/scheduling/eta/serviceEtaSelect";
 import { hydrateEta } from "@/app/realGreen/customer/selectors/hydrateEta";
 import { Aging } from "@/app/realGreen/customer/_lib/classes/Aging";
+import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -131,6 +132,7 @@ export function makeCustomersSelector(
       serviceConditionSelect.serviceConditionsByServId,
       serviceEtaSelect.serviceEtaMap,
       selectPriorityServiceDocMap,
+      globalSettingsSelect.renewalFlagIds,
     ],
     (
       customerDocs,
@@ -149,6 +151,7 @@ export function makeCustomersSelector(
       serviceConditionsByServId,
       serviceEtaMap,
       priorityServiceDocMap,
+      renewalFlagIds,
     ) => {
       // Builder types for type-safe construction without 'x'
       type CustomerBuilder = Omit<Customer, "x">;
@@ -292,7 +295,7 @@ export function makeCustomersSelector(
         customerBuilder.programs = programs;
 
         // Add x after programs are populated - mutate in place to preserve references
-        (customerBuilder as Customer).x = new CustomerUtils(customerBuilder);
+        (customerBuilder as Customer).x = new CustomerUtils(customerBuilder, renewalFlagIds);
 
         return customerBuilder as Customer;
       });

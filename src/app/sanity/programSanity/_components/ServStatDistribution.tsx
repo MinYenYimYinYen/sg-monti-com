@@ -9,7 +9,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/style/components/accordion";
-import { ScrollArea } from "@/style/components/scroll-area";
 
 export function ServStatDistribution() {
   const groups = useSelector(programSanitySelect.servStatDistribution);
@@ -50,14 +49,11 @@ export function ServStatDistribution() {
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-3 pb-3 pt-1">
-            {/* Limit height so sibling groups remain visible */}
-            <ScrollArea className="max-h-[40vh]">
-              <div className="space-y-1 pr-2">
-                {group.programs.map((program) => (
-                  <ProgramRow key={program.progId} program={program} />
-                ))}
-              </div>
-            </ScrollArea>
+            <div className="max-h-[40vh] overflow-y-auto space-y-1 pr-2">
+              {group.programs.map((program) => (
+                <ProgramRow key={program.progId} program={program} />
+              ))}
+            </div>
           </AccordionContent>
         </AccordionItem>
       ))}

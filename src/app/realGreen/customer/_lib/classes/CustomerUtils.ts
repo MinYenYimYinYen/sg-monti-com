@@ -5,9 +5,13 @@ import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { FlagRule } from "@/app/flagRule/FlagRuleTypes";
 import { evaluateAllRules, FlagRuleResult } from "@/app/flagRule/flagRuleEngine";
+import { RenewalFlagIds } from "@/app/globalSettings/_lib/GlobalSettingsTypes";
 
 export class CustomerUtils {
-  constructor(public readonly customer: Omit<Customer, "x">) {}
+  constructor(
+    public readonly customer: Omit<Customer, "x">,
+    public readonly renewalFlagIds: RenewalFlagIds | null = null,
+  ) {}
   public get programs() {
     return this.customer.programs;
   }
@@ -51,6 +55,24 @@ export class CustomerUtils {
   /** True when this customer is active, not on hold, not on credit hold, and eligible for scheduling (status "9"). */
   public get isActionable(): boolean {
     return this.customer.status === "9" && !this.isOnHold && !this.isCreditHold;
+  }
+
+  /** True when the customer has the autoRenew flag and it is configured in globalSettings. */
+  public get isAutoRenew(): boolean {
+    if (this.renewalFlagIds === null || this.renewalFlagIds.autoRenew === null) return false;
+    return this.customer.flags.some((f) => f.flagId === this.renewalFlagIds!.autoRenew);
+  }
+
+  /** True when the customer has the dontAutoRenew flag and it is configured in globalSettings. */
+  public get isDontAutoRenew(): boolean {
+    if (this.renewalFlagIds === null || this.renewalFlagIds.dontAutoRenew === null) return false;
+    return this.customer.flags.some((f) => f.flagId === this.renewalFlagIds!.dontAutoRenew);
+  }
+
+  /** True when the customer has the confirmed renewal flag and it is configured in globalSettings. */
+  public get isConfirmed(): boolean {
+    if (this.renewalFlagIds === null || this.renewalFlagIds.confirmed === null) return false;
+    return this.customer.flags.some((f) => f.flagId === this.renewalFlagIds!.confirmed);
   }
 
   /**

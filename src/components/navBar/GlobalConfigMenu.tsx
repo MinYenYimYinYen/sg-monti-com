@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
+import { authSelect } from "@/app/auth/authSlice";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import { Button } from "@/style/components/button";
 import { Switch } from "@/style/components/switch";
 import { Moon, Settings, Sun } from "lucide-react";
 import { FlagFilterSection } from "./FlagFilterSection";
+import { SetRenewalFlagsSection } from "./SetRenewalFlagsSection";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 
 function getInitialDarkMode(): boolean {
@@ -32,7 +34,9 @@ export function GlobalConfigMenu() {
   const isClient = useIsClient();
   const flagDocs = useSelector(flagSelect.flagDocs);
   const selectedFlagIds = useSelector(custFlagSelect.selectedFlagIds);
+  const role = useSelector(authSelect.role);
   const hasFlagFilters = flagDocs.length > 0;
+  const canConfigureRenewalFlags = role === "admin" || role === "office";
 
   // Initialize from DOM/localStorage directly — avoids setState-in-effect
   const [isDark, setIsDark] = useState(getInitialDarkMode);
@@ -104,6 +108,18 @@ export function GlobalConfigMenu() {
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
                 <FlagFilterSection />
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </>
+        )}
+
+        {canConfigureRenewalFlags && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Set Renewal Flags</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <SetRenewalFlagsSection />
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           </>

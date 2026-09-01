@@ -1,9 +1,18 @@
 import mongoose from "mongoose";
-import { GlobalSettings } from "@/app/globalSettings/_lib/GlobalSettingsTypes";
+import {
+  GlobalSettings,
+  RenewalFlagIds,
+} from "@/app/globalSettings/_lib/GlobalSettingsTypes";
 import { CoverSheetsConfigSchema } from "@/app/scheduling/coverSheets/_lib/config/CoverSheetsConfigSchema";
 import { baseGlobalSettings } from "@/app/globalSettings/_lib/baseGlobalSettings";
 
 interface GlobalSettingsDoc extends mongoose.Document, GlobalSettings {}
+
+const renewalSettingsSchema = new mongoose.Schema<RenewalFlagIds>({
+  autoRenew: { type: Number, required: true },
+  dontAutoRenew: { type: Number, required: true },
+  confirmed: { type: Number, required: true },
+});
 
 const GlobalSettingsSchema = new mongoose.Schema<GlobalSettings>(
   {
@@ -27,6 +36,11 @@ const GlobalSettingsSchema = new mongoose.Schema<GlobalSettings>(
       type: Object,
       required: true,
       default: {},
+    },
+    renewalFlagIds: {
+      type: renewalSettingsSchema,
+      required: true,
+      default: baseGlobalSettings.renewalFlagIds,
     },
   },
   { timestamps: true },
