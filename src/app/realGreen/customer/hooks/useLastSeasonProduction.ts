@@ -1,7 +1,9 @@
 import { useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   lastSeasonProductionGetDocs,
+  lastSeasonProductionRefresh,
+  lastSeasonProductionActions,
 } from "@/app/realGreen/customer/slices/customerSlices";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
@@ -12,6 +14,7 @@ export function useLastSeasonProduction({ autoLoad = false }: { autoLoad?: boole
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
+  const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!autoLoad || !season) return;
@@ -43,5 +46,33 @@ export function useLastSeasonProduction({ autoLoad = false }: { autoLoad?: boole
     );
   };
 
-  return { refresh, canRefresh: !!season };
+  const refreshCustomer = async (custId: number) => {
+    if (!season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
+    setRefreshingCustIds((prev) => new Set(prev).add(custId));
+    try {
+      const result = await dispatch(
+        lastSeasonProductionRefresh({
+          params: { schemeName: "lastSeasonProduction", season, custId },
+          config: { showLoading: false },
+        }),
+      );
+      if (lastSeasonProductionRefresh.fulfilled.match(result)) {
+        if (result.payload.customerDocs.length === 0) {
+          dispatch(lastSeasonProductionActions.removeCustomer(custId));
+        } else {
+          dispatch(lastSeasonProductionActions.replaceCustomer(result.payload));
+        }
+      }
+    } finally {
+      setRefreshingCustIds((prev) => {
+        const next = new Set(prev);
+        next.delete(custId);
+        return next;
+      });
+    }
+  };
+
+  const isRefreshingCustomer = (custId: number) => refreshingCustIds.has(custId);
+
+  return { refresh, refreshCustomer, isRefreshingCustomer, canRefresh: !!season };
 }

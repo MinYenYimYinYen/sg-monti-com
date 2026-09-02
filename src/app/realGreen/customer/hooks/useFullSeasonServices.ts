@@ -1,15 +1,20 @@
 import { useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
-import { fullSeasonServicesGetDocs } from "@/app/realGreen/customer/slices/customerSlices";
+import {
+  fullSeasonServicesGetDocs,
+  fullSeasonServicesRefresh,
+  fullSeasonServicesActions,
+} from "@/app/realGreen/customer/slices/customerSlices";
 
 export function useFullSeasonServices({ autoLoad = false }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
+  const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!autoLoad || !season) return;
@@ -41,5 +46,33 @@ export function useFullSeasonServices({ autoLoad = false }: { autoLoad?: boolean
     );
   };
 
-  return { refresh, canRefresh: !!season };
+  const refreshCustomer = async (custId: number) => {
+    if (!season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
+    setRefreshingCustIds((prev) => new Set(prev).add(custId));
+    try {
+      const result = await dispatch(
+        fullSeasonServicesRefresh({
+          params: { schemeName: "fullSeasonServices", season, custId },
+          config: { showLoading: false },
+        }),
+      );
+      if (fullSeasonServicesRefresh.fulfilled.match(result)) {
+        if (result.payload.customerDocs.length === 0) {
+          dispatch(fullSeasonServicesActions.removeCustomer(custId));
+        } else {
+          dispatch(fullSeasonServicesActions.replaceCustomer(result.payload));
+        }
+      }
+    } finally {
+      setRefreshingCustIds((prev) => {
+        const next = new Set(prev);
+        next.delete(custId);
+        return next;
+      });
+    }
+  };
+
+  const isRefreshingCustomer = (custId: number) => refreshingCustIds.has(custId);
+
+  return { refresh, refreshCustomer, isRefreshingCustomer, canRefresh: !!season };
 }

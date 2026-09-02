@@ -89,6 +89,49 @@ export const centralCustomerSlice = createSlice({
         removedProgIds.forEach((progId) => state.ProgDocMap.delete(progId));
         state.CustDocMap.delete(custId);
       });
+
+      // receiveBulk: mirror the refreshed docs into the central Maps.
+      builder.addCase(entry.actions.receiveBulk, (state, action) => {
+        if (!state.activeContexts.includes(entry.context)) return;
+        const { customerDocs, programDocs, serviceDocs } = action.payload;
+        if (customerDocs) {
+          customerDocs.forEach((doc) => state.CustDocMap.set(doc.custId, doc));
+        }
+        if (programDocs) {
+          programDocs.forEach((doc) => state.ProgDocMap.set(doc.progId, doc));
+        }
+        if (serviceDocs) {
+          serviceDocs.forEach((doc) => state.ServDocMap.set(doc.servId, doc));
+        }
+      });
+
+      // replaceCustomer: atomically replace a customer's docs in the central Maps.
+      // Uses Map.set() which overwrites in-place, preserving insertion order (position).
+      builder.addCase(entry.actions.replaceCustomer, (state, action) => {
+        if (!state.activeContexts.includes(entry.context)) return;
+        const { customerDocs, programDocs, serviceDocs } = action.payload;
+        if (customerDocs.length === 0) return;
+        const custId = customerDocs[0].custId;
+
+        // Collect old progIds so we can remove their services
+        const oldProgIds: number[] = [];
+        state.ProgDocMap.forEach((prog, progId) => {
+          if (prog.custId === custId) oldProgIds.push(progId);
+        });
+
+        // Remove old programs and services
+        oldProgIds.forEach((progId) => {
+          state.ProgDocMap.delete(progId);
+          state.ServDocMap.forEach((serv, servId) => {
+            if (serv.progId === progId) state.ServDocMap.delete(servId);
+          });
+        });
+
+        // Overwrite customer doc (Map.set preserves insertion order for existing keys)
+        customerDocs.forEach((doc) => state.CustDocMap.set(doc.custId, doc));
+        programDocs.forEach((doc) => state.ProgDocMap.set(doc.progId, doc));
+        serviceDocs.forEach((doc) => state.ServDocMap.set(doc.servId, doc));
+      });
     }
   },
 });

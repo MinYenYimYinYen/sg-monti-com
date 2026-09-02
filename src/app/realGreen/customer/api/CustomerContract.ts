@@ -36,4 +36,12 @@ export interface CustomerContract extends ApiContract {
     };
     result: DataResponse<StreamChunk[]>; // In streaming, this represents the chunk structure
   };
+  refreshCustomer: {
+    params: {
+      schemeName: keyof typeof searchScheme;
+      season: number;
+      custId: number;
+    };
+    result: DataResponse<StreamChunkData>;
+  };
 }

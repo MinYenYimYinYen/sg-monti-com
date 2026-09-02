@@ -14,4 +14,8 @@ export class CustomerQuery extends BaseQuery<Customer> {
   isZeroRevenue(method: "actual" | "renewal") {
     return new CustomerQuery(this.items.filter((c) => c.x.isZeroRevenue(method)));
   }
+
+  isActive(){
+    return new CustomerQuery(this.items.filter((c) => c.status === "9"));
+  }
 }

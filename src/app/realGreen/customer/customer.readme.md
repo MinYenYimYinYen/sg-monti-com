@@ -312,3 +312,44 @@ See TODO comment in `binaryIdSearch.ts:71-74`.
 ✅ All valid data is fetched and displayed to the user
 ✅ The application remains functional despite data quality issues in the RealGreen API
 ✅ Developers can identify and report problematic records to RealGreen support
+
+---
+
+## Refreshing a Single Customer
+
+### When to Use
+
+After a user corrects a data issue in RealGreen (e.g., fixes a zero-revenue service price), they need to see the updated data without reloading the entire dataset. The refresh mechanism re-fetches one customer's data using the **same search scheme** that originally loaded the dataset, ensuring the refreshed data is congruent with the rest of the central Maps.
+
+### Why Not Use the `singleCustomer` Scheme?
+
+The `singleCustomer` scheme fetches all programs and all services with no status or season filters. If the active context is `fullSeasonServices` (which filters to active programs and specific service statuses), using `singleCustomer` would inject inconsistent data into the central Maps — programs and services that shouldn't be there.
+
+### How It Works
+
+The refresh uses a dedicated non-streaming API operation (`refreshCustomer`) that:
+
+1. Runs the **same scheme** as the original load (e.g., `fullSeasonServices`), preserving all status filters and season constraints.
+2. **Injects `custId` into every step's search criteria** — regardless of scheme step order. This works because all three RealGreen entity types (customers, programs, services) support `custIds` as a filter.
+3. Uses **fixed optimizer values** (1 page, large batch size) instead of reading from the optimizer DB. The tiny result set from a single customer must not corrupt the learned optimization values for the next full load.
+4. Returns all docs in a **single JSON response** (not streamed) — the data volume is always small.
+
+### Client-Side Pattern
+
+Each customer slice has a `refreshCustomer` thunk baked with its scheme name. The `useRefreshCustomer` hook orchestrates the three-step sequence:
+
+1. `removeCustomer(custId)` — evicts the stale data from the source slice and central Maps
+2. `refreshCustomer({ schemeName, season, custId })` — fetches fresh data from the API
+3. `receiveBulk(result)` — merges the new docs into the source slice (central Maps update automatically via `extraReducers`)
+
+```typescript
+// Usage in a component:
+const { refresh } = useRefreshCustomer(fullSeasonServicesActions);
+
+// On button click after user fixes data in RealGreen:
+await refresh(customer.custId);
+```
+
+### Implementation Reference
+
+See `refreshCustomerImplementationPlan.md` in this directory for the full technical specification, including all files to create/modify and the key invariants that must be preserved.

@@ -1,6 +1,6 @@
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import * as console from "node:console";
-import { CustomerContract, StreamChunk } from "./CustomerContract";
+import { CustomerContract, StreamChunk, StreamChunkData } from "./CustomerContract";
 import { searchScheme } from "../_lib/searchUtil/searchSchemes/searchSchemes";
 import {
   PipelineData,
@@ -11,12 +11,89 @@ import { getSearchOptimizer } from "@/app/realGreen/customer/_lib/searchUtil/sea
 import { SearchOptimizerModel } from "@/app/realGreen/customer/_lib/models/SearchOptimizerModel";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 
+// Fixed optimizer values used for single-customer refresh — never read from or written to DB.
+const REFRESH_PAGINATION_OPTIMIZER = { type: "pagination" as const, initialPageCount: 1, scheme: "", step: "", usageHistory: [], createdAt: "", updatedAt: "" };
+const REFRESH_BATCH_OPTIMIZER = { type: "batchSize" as const, batchSize: 500, lastMaxResponseSize: 0, scheme: "", step: "", usageHistory: [], createdAt: "", updatedAt: "" };
+
 /**
  * 1. DEFINE HANDLERS
  * Enforces strict typing: You MUST define 'roles' and 'handler'
  * for every operation in CustomerContract.
  */
 const handlers: HandlerMap<CustomerContract> = {
+  refreshCustomer: {
+    roles: ["admin", "office", "tech"],
+    handler: async (params) => {
+      await connectToMongoDB();
+      const { schemeName, season, custId } = params;
+
+      const schemeFactory = searchScheme[schemeName as keyof typeof searchScheme];
+      const scheme = schemeFactory({ season });
+      const { steps } = scheme;
+
+      const result: StreamChunkData = {
+        customerDocs: [],
+        programDocs: [],
+        serviceDocs: [],
+      };
+
+      let pipelineData: PipelineData | null = null;
+
+      for (const step of steps) {
+        const { stepName, run, optimizationStrategy } = step;
+
+        // Use fixed optimizer values — never read from or write to the optimizer DB.
+        const optimizer =
+          optimizationStrategy === "pagination"
+            ? REFRESH_PAGINATION_OPTIMIZER
+            : REFRESH_BATCH_OPTIMIZER;
+
+        const stepContext: StepContext = {
+          pipelineData: pipelineData || [],
+          optimizer,
+        };
+
+        const generator = run(stepContext);
+        const nextStepInput: PipelineData = [] as unknown as PipelineData;
+
+        for await (const stepResult of generator) {
+          if (!stepResult.data || stepResult.data.length === 0) continue;
+
+          // Inject custId filter: discard any docs not belonging to this customer.
+          // This is the universal safety net regardless of scheme step order.
+          let filtered: typeof stepResult.data;
+          if (stepName === "customers") {
+            const custDocs = (stepResult.data as StreamChunkData["customerDocs"]).filter(
+              (d) => d.custId === custId,
+            );
+            result.customerDocs.push(...custDocs);
+            filtered = custDocs as typeof stepResult.data;
+          } else if (stepName === "programs") {
+            const progDocs = (stepResult.data as StreamChunkData["programDocs"]).filter(
+              (d) => d.custId === custId,
+            );
+            result.programDocs.push(...progDocs);
+            filtered = progDocs as typeof stepResult.data;
+          } else if (stepName === "services") {
+            const progIds = new Set(result.programDocs.map((p) => p.progId));
+            const servDocs = (stepResult.data as StreamChunkData["serviceDocs"]).filter(
+              (d) => progIds.has(d.progId),
+            );
+            result.serviceDocs.push(...servDocs);
+            filtered = servDocs as typeof stepResult.data;
+          } else {
+            filtered = stepResult.data;
+          }
+
+          (nextStepInput as unknown[]).push(...(filtered as unknown[]));
+        }
+
+        pipelineData = nextStepInput;
+      }
+
+      return { success: true, payload: result };
+    },
+  },
   runSearchScheme: {
     roles: ["admin", "office", "tech"],
     handler: async (params) => {
