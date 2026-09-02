@@ -1,3 +1,10 @@
+/**
+ * @deprecated Use Popover from `@/style/components/popover` instead.
+ * Modal is a legacy GSAP-animated portal component. New UI should use
+ * Radix-based Popover (or Sheet for larger content) which integrates
+ * cleanly with the shadcn component system and requires no manual
+ * animation management.
+ */
 "use client";
 
 import * as React from "react";
