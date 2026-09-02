@@ -11,6 +11,7 @@ const TABS = [
   { label: "Program Sanity", href: "/sanity/programSanity" },
   { label: "Customer Sanity", href: "/sanity/customerSanity" },
   { label: "Zero Revenue", href: "/sanity/zeroRevenue" },
+  { label: "Prenotification", href: "/sanity/prenotification" },
   { label: "Flag Rules", href: "/sanity/flags" },
 ] as const;
 

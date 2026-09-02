@@ -5,6 +5,7 @@ import { useFlag } from "@/app/realGreen/flag/useFlag";
 import { useFlagRule } from "@/app/flagRule/useFlagRule";
 import { useFlagRuleCustFlags } from "@/app/sanity/flags/useFlagRuleCustFlags";
 import { useRenewalFlagIds } from "@/app/globalSettings/_lib/useRenewalFlagIds";
+import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 
 export function useSanityDeps() {
   useCustomerContext({ contexts: ["fullSeasonServices"] });
@@ -14,4 +15,5 @@ export function useSanityDeps() {
   useFlagRule({ autoLoad: true });
   useFlagRuleCustFlags();
   useRenewalFlagIds();
+  useCallAhead({autoLoad: true})
 }
