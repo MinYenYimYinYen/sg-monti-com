@@ -1,30 +1,28 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
+import { sanitySelect } from "@/app/sanity/sanitySelect";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { CustomerSanitySortMode, CustomerSanitySortDirection } from "@/app/sanity/sanitySlice";
 
-const selectExcludedProgCodeIds = (state: AppState) =>
-  state.sanity.customerSanity.excludedProgCodeIds;
-
-const selectSortMode = (state: AppState): CustomerSanitySortMode =>
-  state.sanity.customerSanity.sortMode;
-
-const selectSortDirection = (state: AppState): CustomerSanitySortDirection =>
-  state.sanity.customerSanity.sortDirection;
-
-/** Sorted, pipe-joined progCodeId string for a customer's active (status "9") programs, excluding any excluded IDs. */
-function buildComboKey(customer: Customer, excludedIds: string[]): string {
+// Programs are already filtered by excludedProgCodeIds and active status in sanitySelect.
+// buildComboKey simply joins all program IDs — no further filtering needed here.
+function buildComboKey(customer: Customer): string {
   const ids = customer.programs
-    .filter((p) => p.status === "9")
     .map((p) => p.progCode.progCodeId)
-    .filter((id) => !excludedIds.includes(id))
     .sort();
   return ids.join("|");
 }
 
-/** All unique progCodeIds from active (status "9") programs across all customers, sorted alphabetically. */
+const selectSortMode = (state: AppState): CustomerSanitySortMode =>
+  state.sanity.customerSanityPage.sortMode;
+
+const selectSortDirection = (state: AppState): CustomerSanitySortDirection =>
+  state.sanity.customerSanityPage.sortDirection;
+
+// Uses centralSelect (unfiltered) so excluded prog codes remain visible in the
+// filter UI and can be toggled back on. The grouping uses sanitySelect (filtered).
 const selectAllProgCodeIds = createSelector(
   [centralSelect.customers],
   (customers): string[] => {
@@ -39,9 +37,9 @@ const selectAllProgCodeIds = createSelector(
 );
 
 const selectCustomerGroupMap = createSelector(
-  [centralSelect.customers, selectExcludedProgCodeIds],
-  (customers, excludedIds) =>
-    new Grouper(customers).groupBy((c) => buildComboKey(c, excludedIds)).toMap(),
+  [sanitySelect.customers],
+  (customers) =>
+    new Grouper(customers).groupBy((c) => buildComboKey(c)).toMap(),
 );
 
 export type CustomerComboGroup = {
@@ -83,7 +81,7 @@ const selectVisibleGroups = createSelector(
 );
 
 export const customerSanitySelect = {
-  excludedProgCodeIds: selectExcludedProgCodeIds,
+  excludedProgCodeIds: sanitySelect.excludedProgCodeIds,
   sortMode: selectSortMode,
   sortDirection: selectSortDirection,
   allProgCodeIds: selectAllProgCodeIds,

@@ -3,74 +3,103 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 export type CustomerSanitySortMode = "byCustomerCount" | "byProgCodeCount";
 export type CustomerSanitySortDirection = "asc" | "desc";
 
-const EXCLUDED_PROG_CODE_IDS_KEY = "customerSanity.excludedProgCodeIds";
+const SANITY_PREFS_KEY = "sanity.uiPrefs";
 
-function getStoredExcludedProgCodeIds(): string[] {
-  if (typeof window === "undefined") return [];
+// ---------------------------------------------------------------------------
+// SanityUiPrefs — user preferences for the sanity section.
+// All fields are UI config only (no domain data). Persisted to localStorage
+// on every change so user preferences survive page reloads.
+// ---------------------------------------------------------------------------
+
+type SanityUiPrefs = {
+  /** Preferences shared across all sanity pages. */
+  allPages: {
+    /** Prog code IDs excluded from combo-key grouping in all sanity views. */
+    excludedProgCodeIds: string[];
+  };
+  /** Preferences specific to the Customer Sanity page. */
+  customerSanityPage: {
+    sortMode: CustomerSanitySortMode;
+    sortDirection: CustomerSanitySortDirection;
+  };
+  /** Preferences specific to the Program Sanity page. */
+  programSanityPage: {
+    selectedProgCodeId: string | null;
+  };
+};
+
+const defaultPrefs: SanityUiPrefs = {
+  allPages: {
+    excludedProgCodeIds: [],
+  },
+  customerSanityPage: {
+    sortMode: "byCustomerCount",
+    sortDirection: "asc",
+  },
+  programSanityPage: {
+    selectedProgCodeId: null,
+  },
+};
+
+function getStoredSanityPrefs(): SanityUiPrefs {
+  if (typeof window === "undefined") return defaultPrefs;
   try {
-    const stored = localStorage.getItem(EXCLUDED_PROG_CODE_IDS_KEY);
-    return stored ? (JSON.parse(stored) as string[]) : [];
+    const stored = localStorage.getItem(SANITY_PREFS_KEY);
+    if (!stored) return defaultPrefs;
+    const parsed = JSON.parse(stored) as Partial<SanityUiPrefs>;
+    // Deep merge stored values over defaults so new fields get their defaults
+    return {
+      allPages: { ...defaultPrefs.allPages, ...parsed.allPages },
+      customerSanityPage: { ...defaultPrefs.customerSanityPage, ...parsed.customerSanityPage },
+      programSanityPage: { ...defaultPrefs.programSanityPage, ...parsed.programSanityPage },
+    };
   } catch {
-    return [];
+    return defaultPrefs;
   }
 }
 
-export function persistExcludedProgCodeIds(ids: string[]): void {
+function persistSanityPrefs(state: SanityUiPrefs): void {
   try {
-    localStorage.setItem(EXCLUDED_PROG_CODE_IDS_KEY, JSON.stringify(ids));
+    localStorage.setItem(SANITY_PREFS_KEY, JSON.stringify(state));
   } catch {
     // localStorage unavailable — silently ignore
   }
 }
 
-type SanityState = {
-  programSanity: {
-    selectedProgCodeId: string | null;
-  };
-  customerSanity: {
-    excludedProgCodeIds: string[];
-    sortMode: CustomerSanitySortMode;
-    sortDirection: CustomerSanitySortDirection;
-  };
-};
-
-const initialState: SanityState = {
-  programSanity: {
-    selectedProgCodeId: null,
-  },
-  customerSanity: {
-    excludedProgCodeIds: getStoredExcludedProgCodeIds(),
-    sortMode: "byCustomerCount",
-    sortDirection: "asc",
-  },
-};
-
 const sanitySlice = createSlice({
   name: "sanity",
-  initialState,
+  initialState: getStoredSanityPrefs(),
   reducers: {
-    setSelectedProgCodeId(state, action: PayloadAction<string | null>) {
-      state.programSanity.selectedProgCodeId = action.payload;
-    },
+    // --- allPages ---
     toggleExcludedProgCodeId(state, action: PayloadAction<string>) {
       const id = action.payload;
-      const idx = state.customerSanity.excludedProgCodeIds.indexOf(id);
+      const idx = state.allPages.excludedProgCodeIds.indexOf(id);
       if (idx === -1) {
-        state.customerSanity.excludedProgCodeIds.push(id);
+        state.allPages.excludedProgCodeIds.push(id);
       } else {
-        state.customerSanity.excludedProgCodeIds.splice(idx, 1);
+        state.allPages.excludedProgCodeIds.splice(idx, 1);
       }
-      persistExcludedProgCodeIds(state.customerSanity.excludedProgCodeIds);
+      persistSanityPrefs(state);
     },
     clearExcludedProgCodeIds(state) {
-      state.customerSanity.excludedProgCodeIds = [];
-      persistExcludedProgCodeIds([]);
+      state.allPages.excludedProgCodeIds = [];
+      persistSanityPrefs(state);
     },
+
+    // --- customerSanityPage ---
     setSortMode(state, action: PayloadAction<CustomerSanitySortMode>) {
-      state.customerSanity.sortMode = action.payload;
+      state.customerSanityPage.sortMode = action.payload;
+      persistSanityPrefs(state);
     },
     setSortDirection(state, action: PayloadAction<CustomerSanitySortDirection>) {
-      state.customerSanity.sortDirection = action.payload;
+      state.customerSanityPage.sortDirection = action.payload;
+      persistSanityPrefs(state);
+    },
+
+    // --- programSanityPage ---
+    setSelectedProgCodeId(state, action: PayloadAction<string | null>) {
+      state.programSanityPage.selectedProgCodeId = action.payload;
+      persistSanityPrefs(state);
     },
   },
 });

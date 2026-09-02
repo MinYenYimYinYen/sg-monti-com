@@ -89,7 +89,6 @@ export class CustomerUtils {
     // Inactive customers are never considered zero-revenue — they're not active accounts. TODO - Delete these two lines - this logic does not belong here.
     // if (this.customer.status !== "9") return false;
     const activePrograms = this.programs.filter((p) => p.status === "9");
-    if (activePrograms.length === 0) return false;
     return activePrograms.every((p) => p.x.isZeroRevenue(method));
   }
 

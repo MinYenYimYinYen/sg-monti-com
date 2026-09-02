@@ -345,3 +345,16 @@ export default function FeatureLayout({ children }: { children: React.ReactNode 
 [content here]
 EOF
 ) > "path/to/file.md"
+
+**Project Architecture & Context Boundaries** This project strictly separates concerns. When planning or executing tasks, deduce the required context based on the layers involved. DO NOT read files outside the immediate scope of the target layer. Rely on the WebStorm IDE Index MCP server to peek at TypeScript interfaces instead of opening full files. Use tools like `ide_find_class` or `ide_find_references` to gather precise structural data without reading hundreds of lines of irrelevant code.
+
+|**Layer**|**Responsibility**|**Permitted Context Bounds**|
+|---|---|---|
+|**Components**|Display data and manage local UI state.|Target component, immediate Hooks used, local UI types.|
+|**Selectors**|Read and compute derived data from state.|Target selector, Slice state interfaces (via MCP index only).|
+|**Hooks**|Dispatch thunk calls and orchestrate actions.|Target hook, Thunk function signatures (via MCP index only).|
+|**Slices**|Define the shape of the state data.|Target slice, related state types.|
+|**Thunks**|Call API methods and request data.|Target thunk, API function signatures (via MCP index only).|
+|**API**|Fetch raw data from external endpoints.|Target API file, DTO (Data Transfer Object) types.|
+
+**Execution Rule:** You MUST exhaust your efforts using the MCP server to gather the required context. If you cannot find the necessary information, you MUST stop and ask me if you should proceed with a generic file search.

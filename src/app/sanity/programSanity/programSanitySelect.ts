@@ -2,14 +2,14 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
-import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
+import { sanitySelect } from "@/app/sanity/sanitySelect";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 
 const selectSelectedProgCodeId = (state: AppState) =>
-  state.sanity.programSanity.selectedProgCodeId;
+  state.sanity.programSanityPage.selectedProgCodeId;
 
 const selectProgramsByProgCode = createSelector(
-  [centralSelect.programs],
+  [sanitySelect.programs],
   (programs) => {
     const map = new Grouper(programs).groupBy((p) => p.progCode.progCodeId).toMap();
     // Exclude single-service progCodes — not meaningful for renewal sanity

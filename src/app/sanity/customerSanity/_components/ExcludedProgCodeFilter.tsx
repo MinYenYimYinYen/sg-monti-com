@@ -3,13 +3,14 @@
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { customerSanitySelect } from "@/app/sanity/customerSanity/customerSanitySelect";
+import { sanitySelect } from "@/app/sanity/sanitySelect";
 import { sanityActions } from "@/app/sanity/sanitySlice";
 import { cn } from "@/style/utils";
 
 export function ExcludedProgCodeFilter() {
   const dispatch = useAppDispatch();
   const allProgCodeIds = useSelector(customerSanitySelect.allProgCodeIds);
-  const excludedIds = useSelector(customerSanitySelect.excludedProgCodeIds);
+  const excludedIds = useSelector(sanitySelect.excludedProgCodeIds);
 
   if (allProgCodeIds.length === 0) {
     return (
