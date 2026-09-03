@@ -6,78 +6,42 @@ import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTyp
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 
 // ---------------------------------------------------------------------------
-// Promise Sanity — two directions of parity checking:
+// Promise Sanity — four tabs:
 //
-// Tab 1 (Missing Notes): service.isPromised === true but no valid promise
-//   notation (p[...] or p{...}) found in service, program, or customer techNote.
-//
-// Tab 2 (Orphaned Notes): a valid promise notation exists in a techNote but
+// Tab 1 (Orphaned Notes): a p[...] or p{...} pattern exists in a techNote but
 //   not all services at that scope are marked isPromised.
-//   - Customer note: any active service not isPromised → flag customer
-//   - Program note: any service in that program not isPromised → flag program
-//   - Service note: service.isPromised === false → flag service
+//
+// Tab 2 (Invalid Promise Note): service.isPromised === true but no p[...] or
+//   p{...} pattern found in service, program, or customer techNote.
+//
+// Tab 3 (Invalid Values): service.isPromised === true, a p[...] pattern exists,
+//   but the parser returned issues on strict fields (date, time, days).
+//
+// Tab 4 (Valid Promises): see validPromisesSelect.ts
 //
 // Only renewal-eligible services (status !== "N") are evaluated.
 // ---------------------------------------------------------------------------
 
-function hasValidPromiseNote(techNote: string): boolean {
+/** Returns true if the tech note contains a p[...] or p{...} pattern. */
+function hasPromisePattern(techNote: string): boolean {
   if (!techNote) return false;
-  return (
-    parsePromiseString({ techNote, entityType: "customer", entityId: 0 }).promise !== null
-  );
+  return /p[\[{][^\]}]*[\]}]/.test(techNote);
+}
+
+/** Returns the first tech note in the hierarchy that contains a promise pattern. */
+function effectivePromiseNote(
+  serviceTechNote: string,
+  programTechNote: string,
+  customerTechNote: string,
+): string | null {
+  if (hasPromisePattern(serviceTechNote)) return serviceTechNote;
+  if (hasPromisePattern(programTechNote)) return programTechNote;
+  if (hasPromisePattern(customerTechNote)) return customerTechNote;
+  return null;
 }
 
 // ---------------------------------------------------------------------------
-// Tab 1 — Missing Notes
-// ---------------------------------------------------------------------------
-
-export type MissingNotesCustomer = {
-  customer: Customer;
-  services: Service[];
-};
-
-const selectMissingNotesCustomers = createSelector(
-  [sanitySelect.customers],
-  (customers): MissingNotesCustomer[] => {
-    const result: MissingNotesCustomer[] = [];
-
-    for (const customer of customers) {
-      const activePrograms = customer.programs.filter((p) => p.status === "9");
-      const missingServices: Service[] = [];
-
-      for (const program of activePrograms) {
-        const renewalServices = program.services.filter((s) => s.status !== "N");
-        for (const service of renewalServices) {
-          if (!service.isPromised) continue;
-          // isPromised but no promise note at any level
-          const hasNote =
-            hasValidPromiseNote(service.techNote) ||
-            hasValidPromiseNote(program.techNote) ||
-            hasValidPromiseNote(customer.techNote);
-          if (!hasNote) {
-            missingServices.push(service);
-          }
-        }
-      }
-
-      if (missingServices.length > 0) {
-        result.push({ customer, services: missingServices });
-      }
-    }
-
-    return result.sort((a, b) =>
-      a.customer.displayName.localeCompare(b.customer.displayName),
-    );
-  },
-);
-
-const selectMissingNotesCount = createSelector(
-  [selectMissingNotesCustomers],
-  (customers) => customers.reduce((sum, c) => sum + c.services.length, 0),
-);
-
-// ---------------------------------------------------------------------------
-// Tab 2 — Orphaned Notes
+// Tab 1 — Orphaned Notes
 // ---------------------------------------------------------------------------
 
 export type OrphanedNoteLevel = "customer" | "program" | "service";
@@ -101,15 +65,11 @@ const selectOrphanedNotes = createSelector(
         p.services.filter((s) => s.status !== "N"),
       );
 
-      // Customer-level: promise note on customer but any service not isPromised
-      if (hasValidPromiseNote(customer.techNote)) {
+      // Customer-level: promise note on customer but any renewal service not isPromised
+      if (hasPromisePattern(customer.techNote)) {
         const anyNotPromised = allRenewalServices.some((s) => !s.isPromised);
         if (anyNotPromised) {
-          result.push({
-            level: "customer",
-            customer,
-            noteText: customer.techNote,
-          });
+          result.push({ level: "customer", customer, noteText: customer.techNote });
         }
       }
 
@@ -117,40 +77,23 @@ const selectOrphanedNotes = createSelector(
         const renewalServices = program.services.filter((s) => s.status !== "N");
 
         // Program-level: promise note on program but any service in program not isPromised
-        if (hasValidPromiseNote(program.techNote)) {
+        if (hasPromisePattern(program.techNote)) {
           const anyNotPromised = renewalServices.some((s) => !s.isPromised);
           if (anyNotPromised) {
-            result.push({
-              level: "program",
-              customer,
-              program,
-              noteText: program.techNote,
-            });
+            result.push({ level: "program", customer, program, noteText: program.techNote });
           }
         }
 
         // Service-level: promise note on service but service not isPromised
         for (const service of renewalServices) {
-          if (hasValidPromiseNote(service.techNote) && !service.isPromised) {
-            result.push({
-              level: "service",
-              customer,
-              program,
-              service,
-              noteText: service.techNote,
-            });
+          if (hasPromisePattern(service.techNote) && !service.isPromised) {
+            result.push({ level: "service", customer, program, service, noteText: service.techNote });
           }
         }
       }
     }
 
-    // Sort: customer level first, then program, then service; within each level by customer name
-    const levelOrder: Record<OrphanedNoteLevel, number> = {
-      customer: 0,
-      program: 1,
-      service: 2,
-    };
-
+    const levelOrder: Record<OrphanedNoteLevel, number> = { customer: 0, program: 1, service: 2 };
     return result.sort(
       (a, b) =>
         levelOrder[a.level] - levelOrder[b.level] ||
@@ -165,35 +108,37 @@ const selectOrphanedNotesCount = createSelector(
 );
 
 // ---------------------------------------------------------------------------
-// Tab 3 — Valid Cases
+// Tab 2 — Invalid Promise Note
+// (isPromised === true but no p[...] pattern found at any level)
 // ---------------------------------------------------------------------------
 
-const selectValidCasesCustomers = createSelector(
+export type InvalidPromiseNoteCustomer = {
+  customer: Customer;
+  services: Service[];
+};
+
+const selectInvalidPromiseNoteCustomers = createSelector(
   [sanitySelect.customers],
-  (customers): MissingNotesCustomer[] => {
-    const result: MissingNotesCustomer[] = [];
+  (customers): InvalidPromiseNoteCustomer[] => {
+    const result: InvalidPromiseNoteCustomer[] = [];
 
     for (const customer of customers) {
       const activePrograms = customer.programs.filter((p) => p.status === "9");
-      const validServices: Service[] = [];
+      const invalidServices: Service[] = [];
 
       for (const program of activePrograms) {
         const renewalServices = program.services.filter((s) => s.status !== "N");
         for (const service of renewalServices) {
           if (!service.isPromised) continue;
-          // isPromised AND a valid promise note exists at some level
-          const hasNote =
-            hasValidPromiseNote(service.techNote) ||
-            hasValidPromiseNote(program.techNote) ||
-            hasValidPromiseNote(customer.techNote);
-          if (hasNote) {
-            validServices.push(service);
+          const note = effectivePromiseNote(service.techNote, program.techNote, customer.techNote);
+          if (!note) {
+            invalidServices.push(service);
           }
         }
       }
 
-      if (validServices.length > 0) {
-        result.push({ customer, services: validServices });
+      if (invalidServices.length > 0) {
+        result.push({ customer, services: invalidServices });
       }
     }
 
@@ -203,16 +148,76 @@ const selectValidCasesCustomers = createSelector(
   },
 );
 
-const selectValidCasesCount = createSelector(
-  [selectValidCasesCustomers],
+const selectInvalidPromiseNoteCount = createSelector(
+  [selectInvalidPromiseNoteCustomers],
   (customers) => customers.reduce((sum, c) => sum + c.services.length, 0),
 );
 
+// ---------------------------------------------------------------------------
+// Tab 3 — Invalid Values
+// (isPromised === true, p[...] found, but strict fields have parse issues)
+// ---------------------------------------------------------------------------
+
+export type InvalidValuesService = {
+  service: Service;
+  program: Program;
+  noteText: string;
+  issues: string[];
+};
+
+export type InvalidValuesCustomer = {
+  customer: Customer;
+  invalidServices: InvalidValuesService[];
+};
+
+const selectInvalidValuesCustomers = createSelector(
+  [sanitySelect.customers],
+  (customers): InvalidValuesCustomer[] => {
+    const result: InvalidValuesCustomer[] = [];
+
+    for (const customer of customers) {
+      const activePrograms = customer.programs.filter((p) => p.status === "9");
+      const invalidServices: InvalidValuesService[] = [];
+
+      for (const program of activePrograms) {
+        const renewalServices = program.services.filter((s) => s.status !== "N");
+        for (const service of renewalServices) {
+          if (!service.isPromised) continue;
+          const note = effectivePromiseNote(service.techNote, program.techNote, customer.techNote);
+          if (!note) continue; // No pattern — handled by Tab 2
+
+          const { issues } = parsePromiseString({ techNote: note });
+          if (issues.length > 0) {
+            invalidServices.push({ service, program, noteText: note, issues });
+          }
+        }
+      }
+
+      if (invalidServices.length > 0) {
+        result.push({ customer, invalidServices });
+      }
+    }
+
+    return result.sort((a, b) =>
+      a.customer.displayName.localeCompare(b.customer.displayName),
+    );
+  },
+);
+
+const selectInvalidValuesCount = createSelector(
+  [selectInvalidValuesCustomers],
+  (customers) => customers.reduce((sum, c) => sum + c.invalidServices.length, 0),
+);
+
+// ---------------------------------------------------------------------------
+// Exports
+// ---------------------------------------------------------------------------
+
 export const promiseSanitySelect = {
-  missingNotesCustomers: selectMissingNotesCustomers,
-  missingNotesCount: selectMissingNotesCount,
   orphanedNotes: selectOrphanedNotes,
   orphanedNotesCount: selectOrphanedNotesCount,
-  validCasesCustomers: selectValidCasesCustomers,
-  validCasesCount: selectValidCasesCount,
+  invalidPromiseNoteCustomers: selectInvalidPromiseNoteCustomers,
+  invalidPromiseNoteCount: selectInvalidPromiseNoteCount,
+  invalidValuesCustomers: selectInvalidValuesCustomers,
+  invalidValuesCount: selectInvalidValuesCount,
 };

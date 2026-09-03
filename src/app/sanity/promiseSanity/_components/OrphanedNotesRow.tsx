@@ -4,6 +4,7 @@ import { OrphanedNote, OrphanedNoteLevel } from "@/app/sanity/promiseSanity/prom
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { ProgramLink } from "@/app/realGreen/customer/components/ProgramLink";
 import { useFullSeasonServices } from "@/app/realGreen/customer/hooks/useFullSeasonServices";
+import { ParsedPromiseBadge } from "@/app/sanity/promiseSanity/_components/ParsedPromiseBadge";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/style/components/button";
 
@@ -68,7 +69,10 @@ export function OrphanedNotesRow({ orphanedNote }: OrphanedNotesRowProps) {
           </span>
         )}
       </div>
-      <p className="text-xs text-muted-foreground italic pl-8">{noteText}</p>
+      <div className="pl-8 space-y-1">
+        <p className="text-xs text-muted-foreground italic">{noteText}</p>
+        <ParsedPromiseBadge techNote={noteText} />
+      </div>
     </div>
   );
 }

@@ -187,10 +187,16 @@ export class ServiceUtils {
    */
   public isZeroRevenue(method: "actual" | "renewal"): boolean {
     if (method === "renewal") {
-      return this.service.status !== "N" && this.getPriceAfterDiscounts("nextPrice") === 0;
+      return (
+        this.service.status !== "N" &&
+        this.getPriceAfterDiscounts("nextPrice") === 0
+      );
     }
     const ACTUAL_STATUSES = ["Y", "*", "$", "S"];
-    return ACTUAL_STATUSES.includes(this.service.status) && this.getPriceAfterDiscounts("price") === 0;
+    return (
+      ACTUAL_STATUSES.includes(this.service.status) &&
+      this.getPriceAfterDiscounts("price") === 0
+    );
   }
 
   /**
@@ -199,7 +205,10 @@ export class ServiceUtils {
    */
   public get isActionable(): boolean {
     const ACTIVE_ASAP = ["Y", "*"];
-    return ACTIVE_ASAP.includes(this.service.status) && this.service.program.x.isActionable;
+    return (
+      ACTIVE_ASAP.includes(this.service.status) &&
+      this.service.program.x.isActionable
+    );
   }
 
   /**
@@ -222,7 +231,8 @@ export class ServiceUtils {
     if (this.service.status !== "$") return null;
     const la = this.service.lastAssigned;
     if (!la.schedDate) return null;
-    const hasAssignment = la.employeeId !== baseStrId && la.employeeId.length > 0;
+    const hasAssignment =
+      la.employeeId !== baseStrId && la.employeeId.length > 0;
     return {
       schedDate: la.schedDate,
       employeeId: la.employeeId,
@@ -231,4 +241,8 @@ export class ServiceUtils {
     };
   }
 
+  public get tempSeq(): number | null {
+    if (this.service.status !== "$") return null;
+    return this.service.program.tempSeq;
+  }
 }

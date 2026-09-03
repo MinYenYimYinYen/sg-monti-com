@@ -3,23 +3,26 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { promiseSanitySelect } from "@/app/sanity/promiseSanity/promiseSanitySelect";
-import { MissingNotesList } from "@/app/sanity/promiseSanity/_components/MissingNotesList";
+import { validPromisesSelect } from "@/app/sanity/promiseSanity/validPromisesSelect";
 import { OrphanedNotesList } from "@/app/sanity/promiseSanity/_components/OrphanedNotesList";
-import { ValidCasesList } from "@/app/sanity/promiseSanity/_components/ValidCasesList";
+import { InvalidPromiseNoteList } from "@/app/sanity/promiseSanity/_components/InvalidPromiseNoteList";
+import { InvalidValuesList } from "@/app/sanity/promiseSanity/_components/InvalidValuesList";
+import { ValidPromisesList } from "@/app/sanity/promiseSanity/_components/ValidPromisesList";
 import { Tabs, TabsList, TabsTrigger } from "@/style/components/tabs";
 import { useFullSeasonServices } from "@/app/realGreen/customer/hooks/useFullSeasonServices";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/style/components/button";
 
-type PromiseSanityTab = "missingNotes" | "orphanedNotes" | "validCases";
+type PromiseSanityTab = "orphanedNotes" | "invalidNote" | "invalidValues" | "validPromises";
 
 export function PromiseSanityPanel() {
-  const [activeTab, setActiveTab] = useState<PromiseSanityTab>("missingNotes");
+  const [activeTab, setActiveTab] = useState<PromiseSanityTab>("invalidNote");
   const { refresh, canRefresh } = useFullSeasonServices();
 
-  const missingNotesCount = useSelector(promiseSanitySelect.missingNotesCount);
-  const orphanedNotesCount = useSelector(promiseSanitySelect.orphanedNotesCount);
-  const validCasesCount = useSelector(promiseSanitySelect.validCasesCount);
+  const orphanedCount = useSelector(promiseSanitySelect.orphanedNotesCount);
+  const invalidNoteCount = useSelector(promiseSanitySelect.invalidPromiseNoteCount);
+  const invalidValuesCount = useSelector(promiseSanitySelect.invalidValuesCount);
+  const validCount = useSelector(validPromisesSelect.count);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -31,14 +34,17 @@ export function PromiseSanityPanel() {
           className="flex-1"
         >
           <TabsList variant="primary">
-            <TabsTrigger value="missingNotes" variant="primary">
-              Missing Notes{missingNotesCount > 0 ? ` (${missingNotesCount})` : ""}
-            </TabsTrigger>
             <TabsTrigger value="orphanedNotes" variant="primary">
-              Orphaned Notes{orphanedNotesCount > 0 ? ` (${orphanedNotesCount})` : ""}
+              Orphaned Notes{orphanedCount > 0 ? ` (${orphanedCount})` : ""}
             </TabsTrigger>
-            <TabsTrigger value="validCases" variant="primary">
-              Valid Cases{validCasesCount > 0 ? ` (${validCasesCount})` : ""}
+            <TabsTrigger value="invalidNote" variant="primary">
+              Invalid Promise Note{invalidNoteCount > 0 ? ` (${invalidNoteCount})` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="invalidValues" variant="primary">
+              Invalid Values{invalidValuesCount > 0 ? ` (${invalidValuesCount})` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="validPromises" variant="primary">
+              Valid Promises{validCount > 0 ? ` (${validCount})` : ""}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -58,9 +64,10 @@ export function PromiseSanityPanel() {
       {/* Scrollable content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="p-4 space-y-2">
-          {activeTab === "missingNotes" && <MissingNotesList />}
           {activeTab === "orphanedNotes" && <OrphanedNotesList />}
-          {activeTab === "validCases" && <ValidCasesList />}
+          {activeTab === "invalidNote" && <InvalidPromiseNoteList />}
+          {activeTab === "invalidValues" && <InvalidValuesList />}
+          {activeTab === "validPromises" && <ValidPromisesList />}
         </div>
       </div>
     </div>

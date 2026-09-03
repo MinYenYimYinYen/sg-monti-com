@@ -90,17 +90,20 @@ const SANITY_SECTIONS = [
     href: "/sanity/promiseSanity",
     description:
       "Checks parity between the Promised checkbox on services and the presence of promise notation " +
-      "p[...] or p{...} in tech notes at the service, program, or customer level. " +
-      "Catches two classes of mismatch: services marked promised with no supporting note, " +
-      "and notes that exist but whose services aren't marked promised.",
+      "p[...] (permanent) or p{...} (seasonal) in tech notes at the service, program, or customer level. " +
+      "Promise notes use comma-separated key: value pairs — for example p[time: after 10am, days: MWF]. " +
+      "The parser validates strict fields (date, time, days) and reports any formatting issues.",
     howToUse:
-      "Missing Notes — services marked promised but no promise note exists anywhere in the hierarchy. " +
-      "These need a note added or the promised check removed. " +
-      "Orphaned Notes — a promise notation exists in a tech note but the corresponding services aren't marked promised. " +
-      "These need the promised checked or the note removed. " +
-      "Valid Cases shows correctly matched promised services for reference. " +
-      "WARNING: Don't run this until we have renewed services and programs for the following year. " +
-      "SA5 will not allow changing isPromised on posted services.",
+      "Orphaned Notes — a p[...] pattern exists in a tech note but the corresponding services aren't marked Promised. " +
+      "Add the Promised flag or remove the note. " +
+      "Invalid Promise Note — services are marked Promised but no p[...] pattern is found at any level " +
+      "(service, program, or customer). Add a promise note using the wand icon, or uncheck Promised. " +
+      "Invalid Values — a p[...] note was found but the parser couldn't interpret a strict field (date, time, or days). " +
+      "Fix the note format — use the Promise Builder to generate a valid string. " +
+      "Valid Promises — correctly matched promised services, grouped by their normalized promise string. " +
+      "Use this to audit what promises are in effect and spot inconsistencies across similar customers. " +
+      "WARNING: Don't run this until renewed services and programs exist for the following year — " +
+      "SA5 does not allow changing the Promised box on posted services.",
   },
 ] as const;
 
