@@ -15,8 +15,6 @@ const PriceIncreaseSettingsSchema = new Schema<PriceIncreaseSettingsDoc>(
     upsellBonusThreshold: { type: Number, required: true },
     upsellBonusPercent: { type: Number, required: true },
     minPriceIncrease: { type: Number, required: true },
-    exemptFlagId: { type: Number, default: null },
-    manualFlagId: { type: Number, default: null },
     manualAttentionThreshold: { type: Number, required: true },
     flagRounding: { type: String, enum: ["round", "ceil", "floor"], required: true },
   },

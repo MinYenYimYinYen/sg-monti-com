@@ -4,6 +4,12 @@
 
 **Prerequisite:** Phase 1 complete. `PriceIncreaseTypes.ts` exists and exports `SeasonIncrease`.
 
+**Key design decisions (post-implementation):**
+- `SeasonIncreasesDoc` has **no `isActive` field**. The active plan is determined by `PriceIncreaseSettings.seasonIncreasesId`.
+- `seasonIncreasesId` is a **UUID generated client-side** via `crypto.randomUUID()`. Users only enter a label.
+- The API has **no `setActive` operation** — activation is implicit via the settings reference.
+- `seasonIncreasesSelect.activeDoc` is derived by joining `priceIncreaseSettingsSelect.activeDoc.seasonIncreasesId` with the docs array.
+
 ---
 
 ## Required Reading (this phase only)
@@ -30,7 +36,6 @@ import { SeasonIncrease } from "@/app/priceIncrease/_lib/PriceIncreaseTypes";
 export type SeasonIncreasesDoc = CreatedUpdated & {
   seasonIncreasesId: string;
   label: string;
-  isActive: boolean;
   seasonIncreases: SeasonIncrease[];
 };
 ```
@@ -56,9 +61,8 @@ const SeasonIncreaseSchema = new Schema(
 
 const SeasonIncreasesSchema = new Schema<SeasonIncreasesDoc>(
   {
-    seasonIncreasesId: { type: String, required: true, unique: true, maxlength: 32 },
+    seasonIncreasesId: { type: String, required: true, unique: true },
     label: { type: String, required: true },
-    isActive: { type: Boolean, required: true, default: false },
     seasonIncreases: { type: [SeasonIncreaseSchema], required: true, default: [] },
   },
   { timestamps: true },
@@ -90,10 +94,6 @@ export interface SeasonIncreasesContract extends ApiContract {
     params: Omit<SeasonIncreasesDoc, "createdAt" | "updatedAt">;
     result: DataResponse<SeasonIncreasesDoc>;
   };
-  setActive: {
-    params: { seasonIncreasesId: string };
-    result: DataResponse<boolean>;
-  };
   remove: {
     params: { seasonIncreasesId: string };
     result: DataResponse<boolean>;
@@ -124,7 +124,6 @@ const handlers: HandlerMap<SeasonIncreasesContract> = {
       return { success: true, payload: cleanMongoArray(docs) };
     },
   },
-
   upsert: {
     roles: ["admin"],
     handler: async (params) => {
@@ -138,21 +137,6 @@ const handlers: HandlerMap<SeasonIncreasesContract> = {
       return { success: true, payload: cleanMongoObject(doc!) };
     },
   },
-
-  setActive: {
-    roles: ["admin"],
-    handler: async ({ seasonIncreasesId }) => {
-      await connectToMongoDB();
-      // Deactivate all, then activate the target
-      await SeasonIncreasesModel.updateMany({}, { $set: { isActive: false } });
-      await SeasonIncreasesModel.updateOne(
-        { seasonIncreasesId },
-        { $set: { isActive: true } },
-      );
-      return { success: true, payload: true };
-    },
-  },
-
   remove: {
     roles: ["admin"],
     handler: async ({ seasonIncreasesId }) => {
@@ -182,9 +166,7 @@ type SeasonIncreasesState = {
   docs: SeasonIncreasesDoc[];
 };
 
-const initialState: SeasonIncreasesState = {
-  docs: [],
-};
+const initialState: SeasonIncreasesState = { docs: [] };
 
 export const getAllSeasonIncreases = createStandardThunk<SeasonIncreasesContract, "getAll">({
   typePrefix: "seasonIncreases/getAll",
@@ -196,12 +178,6 @@ export const upsertSeasonIncreases = createStandardThunk<SeasonIncreasesContract
   typePrefix: "seasonIncreases/upsert",
   apiPath: "/priceIncrease/seasonIncreases/api",
   opName: "upsert",
-});
-
-export const setActiveSeasonIncreases = createStandardThunk<SeasonIncreasesContract, "setActive">({
-  typePrefix: "seasonIncreases/setActive",
-  apiPath: "/priceIncrease/seasonIncreases/api",
-  opName: "setActive",
 });
 
 export const removeSeasonIncreases = createStandardThunk<SeasonIncreasesContract, "remove">({
@@ -227,16 +203,7 @@ const seasonIncreasesSlice = createSlice({
         state.docs.push(updated);
       }
     });
-    builder.addCase(setActiveSeasonIncreases.fulfilled, (state, action) => {
-      // Re-fetch is triggered by the hook after setActive; optimistic update:
-      // read the id from the original action arg
-      const id = (action.meta.arg as { params: { seasonIncreasesId: string } }).params.seasonIncreasesId;
-      state.docs = state.docs.map((d) => ({ ...d, isActive: d.seasonIncreasesId === id }));
-    });
-    builder.addCase(removeSeasonIncreases.fulfilled, (state, action) => {
-      const id = (action.meta.arg as { params: { seasonIncreasesId: string } }).params.seasonIncreasesId;
-      state.docs = state.docs.filter((d) => d.seasonIncreasesId !== id);
-    });
+    // remove: no optimistic update needed; UI re-fetches or filters locally
   },
 });
 
@@ -244,7 +211,6 @@ export const seasonIncreasesActions = {
   ...seasonIncreasesSlice.actions,
   getAllSeasonIncreases,
   upsertSeasonIncreases,
-  setActiveSeasonIncreases,
   removeSeasonIncreases,
 };
 
@@ -260,11 +226,20 @@ export default seasonIncreasesSlice.reducer;
 ```typescript
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
+import { priceIncreaseSettingsSelect } from "@/app/priceIncrease/settings/settingsSelect";
 
 const selectDocs = (state: AppState) => state.seasonIncreases.docs;
 
-const selectActiveDoc = createSelector([selectDocs], (docs) =>
-  docs.find((d) => d.isActive) ?? null,
+/**
+ * The active season increases doc is determined by the active PriceIncreaseSettings'
+ * seasonIncreasesId — not by an isActive flag on the doc itself.
+ */
+const selectActiveDoc = createSelector(
+  [selectDocs, priceIncreaseSettingsSelect.activeDoc],
+  (docs, activeSettings) => {
+    if (!activeSettings) return null;
+    return docs.find((d) => d.seasonIncreasesId === activeSettings.seasonIncreasesId) ?? null;
+  },
 );
 
 export const seasonIncreasesSelect = {
@@ -304,32 +279,14 @@ export function useSeasonIncreases() {
 
 **File:** `src/store/reducers/index.ts`
 
-Add the import:
-
 ```typescript
 import seasonIncreasesReducer from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSlice";
-```
-
-Add to `combineReducers`:
-
-```typescript
+// ...
 seasonIncreases: seasonIncreasesReducer,
 ```
-
-Also add the `AppState` type extension — the `AppState` type is inferred from the root reducer, so registering the reducer is sufficient.
 
 ---
 
 ## Verification
 
-Run `ide_diagnostics` on:
-- `src/app/priceIncrease/seasonIncreases/SeasonIncreasesTypes.ts`
-- `src/app/priceIncrease/seasonIncreases/SeasonIncreasesModel.ts`
-- `src/app/priceIncrease/seasonIncreases/api/SeasonIncreasesContract.ts`
-- `src/app/priceIncrease/seasonIncreases/api/route.ts`
-- `src/app/priceIncrease/seasonIncreases/seasonIncreasesSlice.ts`
-- `src/app/priceIncrease/seasonIncreases/seasonIncreasesSelect.ts`
-- `src/app/priceIncrease/seasonIncreases/useSeasonIncreases.ts`
-- `src/store/reducers/index.ts`
-
-Confirm no type errors before proceeding to Phase 2B.
+Run `ide_diagnostics` on all new files. Confirm no type errors before proceeding to Phase 2B.

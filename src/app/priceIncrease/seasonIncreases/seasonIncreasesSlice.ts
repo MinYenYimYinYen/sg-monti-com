@@ -23,12 +23,6 @@ export const upsertSeasonIncreases = createStandardThunk<SeasonIncreasesContract
   opName: "upsert",
 });
 
-export const setActiveSeasonIncreases = createStandardThunk<SeasonIncreasesContract, "setActive">({
-  typePrefix: "seasonIncreases/setActive",
-  apiPath: "/priceIncrease/seasonIncreases/api",
-  opName: "setActive",
-});
-
 export const removeSeasonIncreases = createStandardThunk<SeasonIncreasesContract, "remove">({
   typePrefix: "seasonIncreases/remove",
   apiPath: "/priceIncrease/seasonIncreases/api",
@@ -52,13 +46,8 @@ const seasonIncreasesSlice = createSlice({
         state.docs.push(updated);
       }
     });
-    builder.addCase(setActiveSeasonIncreases.fulfilled, (state, action) => {
-      const id = (action.meta.arg as { params: { seasonIncreasesId: string } }).params.seasonIncreasesId;
-      state.docs = state.docs.map((d) => ({ ...d, isActive: d.seasonIncreasesId === id }));
-    });
-    builder.addCase(removeSeasonIncreases.fulfilled, (state, action) => {
-      const id = (action.meta.arg as { params: { seasonIncreasesId: string } }).params.seasonIncreasesId;
-      state.docs = state.docs.filter((d) => d.seasonIncreasesId !== id);
+    builder.addCase(removeSeasonIncreases.fulfilled, (_state, _action) => {
+      // Optimistic removal is handled by re-fetching; or handled in the UI via dispatch of getAll
     });
   },
 });
@@ -67,7 +56,6 @@ export const seasonIncreasesActions = {
   ...seasonIncreasesSlice.actions,
   getAllSeasonIncreases,
   upsertSeasonIncreases,
-  setActiveSeasonIncreases,
   removeSeasonIncreases,
 };
 

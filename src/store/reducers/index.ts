@@ -53,6 +53,7 @@ import { flagRuleReducer } from "@/app/flagRule/flagRuleSlice";
 import { sanityReducer } from "@/app/sanity/sanitySlice";
 import seasonIncreasesReducer from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSlice";
 import priceIncreaseSettingsReducer from "@/app/priceIncrease/settings/settingsSlice";
+import priceIncreaseConfigReducer from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -109,6 +110,7 @@ const rootReducer = combineReducers({
   sanity: sanityReducer,
   seasonIncreases: seasonIncreasesReducer,
   priceIncreaseSettings: priceIncreaseSettingsReducer,
+  priceIncreaseConfig: priceIncreaseConfigReducer,
 });
 
 export default rootReducer;

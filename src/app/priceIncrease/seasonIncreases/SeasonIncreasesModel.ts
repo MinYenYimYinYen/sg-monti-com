@@ -12,9 +12,8 @@ const SeasonIncreaseSchema = new Schema(
 
 const SeasonIncreasesSchema = new Schema<SeasonIncreasesDoc>(
   {
-    seasonIncreasesId: { type: String, required: true, unique: true, maxlength: 32 },
+    seasonIncreasesId: { type: String, required: true, unique: true },
     label: { type: String, required: true },
-    isActive: { type: Boolean, required: true, default: false },
     seasonIncreases: { type: [SeasonIncreaseSchema], required: true, default: [] },
   },
   { timestamps: true },

@@ -29,20 +29,6 @@ const handlers: HandlerMap<SeasonIncreasesContract> = {
     },
   },
 
-  setActive: {
-    roles: ["admin"],
-    handler: async ({ seasonIncreasesId }) => {
-      await connectToMongoDB();
-      // Deactivate all, then activate the target
-      await SeasonIncreasesModel.updateMany({}, { $set: { isActive: false } });
-      await SeasonIncreasesModel.updateOne(
-        { seasonIncreasesId },
-        { $set: { isActive: true } },
-      );
-      return { success: true, payload: true };
-    },
-  },
-
   remove: {
     roles: ["admin"],
     handler: async ({ seasonIncreasesId }) => {

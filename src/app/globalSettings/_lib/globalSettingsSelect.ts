@@ -35,6 +35,16 @@ const selectIncreaseFlagMappings = createSelector(
   (settings) => settings.increaseFlagMappings,
 );
 
+const selectPriceIncreaseExemptFlagId = createSelector(
+  [selectSettings],
+  (settings) => settings.priceIncreaseExemptFlagId,
+);
+
+const selectPriceIncreaseManualFlagId = createSelector(
+  [selectSettings],
+  (settings) => settings.priceIncreaseManualFlagId,
+);
+
 export const globalSettingsSelect = {
   settings: selectSettings,
   season: selectSeason,
@@ -43,6 +53,8 @@ export const globalSettingsSelect = {
   depositAccountMap: selectDepositAccountMap,
   renewalFlagIds: selectRenewalFlagIds,
   increaseFlagMappings: selectIncreaseFlagMappings,
+  priceIncreaseExemptFlagId: selectPriceIncreaseExemptFlagId,
+  priceIncreaseManualFlagId: selectPriceIncreaseManualFlagId,
 };
 
 

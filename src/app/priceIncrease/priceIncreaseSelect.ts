@@ -46,8 +46,10 @@ const selectResults = createSelector(
     seasonIncreasesSelect.activeDoc,
     selectIncreaseFlags,
     globalSettingsSelect.season,
+    globalSettingsSelect.priceIncreaseExemptFlagId,
+    globalSettingsSelect.priceIncreaseManualFlagId,
   ],
-  (customers, settings, seasonIncreasesDoc, increaseFlags, currentSeason): Map<number, PriceIncreaseResult> => {
+  (customers, settings, seasonIncreasesDoc, increaseFlags, currentSeason, exemptFlagId, manualFlagId): Map<number, PriceIncreaseResult> => {
     const results = new Map<number, PriceIncreaseResult>();
 
     if (!settings || !seasonIncreasesDoc) return results;
@@ -59,15 +61,15 @@ const selectResults = createSelector(
       );
       if (!targetProgram) continue;
 
-      // Exempt check
+      // Exempt check — reads from GlobalSettings
       const isExempt =
-        settings.exemptFlagId !== null &&
-        customer.flags.some((f) => f.flagId === settings.exemptFlagId);
+        exemptFlagId !== null &&
+        customer.flags.some((f) => f.flagId === exemptFlagId);
 
-      // Manual check
+      // Manual check — reads from GlobalSettings
       const isManual =
-        settings.manualFlagId !== null &&
-        customer.flags.some((f) => f.flagId === settings.manualFlagId);
+        manualFlagId !== null &&
+        customer.flags.some((f) => f.flagId === manualFlagId);
 
       if (isExempt) {
         results.set(customer.custId, {

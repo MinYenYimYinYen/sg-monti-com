@@ -14,8 +14,6 @@ export type PriceIncreaseSettingsDoc = CreatedUpdated & {
   upsellBonusThreshold: number;
   upsellBonusPercent: number;
   minPriceIncrease: number;
-  exemptFlagId: number | null;
-  manualFlagId: number | null;
   manualAttentionThreshold: number;
   flagRounding: FlagRounding;
 };

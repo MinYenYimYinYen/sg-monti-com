@@ -11,10 +11,6 @@ export interface SeasonIncreasesContract extends ApiContract {
     params: Omit<SeasonIncreasesDoc, "createdAt" | "updatedAt">;
     result: DataResponse<SeasonIncreasesDoc>;
   };
-  setActive: {
-    params: { seasonIncreasesId: string };
-    result: DataResponse<boolean>;
-  };
   remove: {
     params: { seasonIncreasesId: string };
     result: DataResponse<boolean>;
