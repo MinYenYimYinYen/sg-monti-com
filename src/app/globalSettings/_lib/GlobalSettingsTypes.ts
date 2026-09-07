@@ -3,6 +3,7 @@ import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { NotificationType } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { ContactType } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 import { DepositAccountMap, GenLedgerAccountEntry } from "@/app/javelin/JavelinTypes";
+import { IncreaseFlagMapping } from "@/app/priceIncrease/_lib/PriceIncreaseTypes";
 
 export type RenewalFlagIds = {
   autoRenew: number | null;
@@ -18,4 +19,5 @@ export type GlobalSettings = CreatedUpdated & {
   genLedgerAccountMap: Record<string, GenLedgerAccountEntry>;
   depositAccountMap: DepositAccountMap;
   renewalFlagIds: RenewalFlagIds;
+  increaseFlagMappings: IncreaseFlagMapping[];
 };

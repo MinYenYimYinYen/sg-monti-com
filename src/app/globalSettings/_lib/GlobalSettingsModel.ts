@@ -42,6 +42,19 @@ const GlobalSettingsSchema = new mongoose.Schema<GlobalSettings>(
       required: true,
       default: baseGlobalSettings.renewalFlagIds,
     },
+    increaseFlagMappings: {
+      type: [
+        new mongoose.Schema(
+          {
+            flagId: { type: Number, required: true },
+            increasePercent: { type: Number, required: true },
+          },
+          { _id: false },
+        ),
+      ],
+      required: true,
+      default: [],
+    },
   },
   { timestamps: true },
 );

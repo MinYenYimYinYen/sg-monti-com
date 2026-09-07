@@ -21,5 +21,6 @@ export const baseGlobalSettings: GlobalSettings = {
     autoRenew: null,
     dontAutoRenew: null,
     confirmed: null,
-  }
+  },
+  increaseFlagMappings: [],
 };

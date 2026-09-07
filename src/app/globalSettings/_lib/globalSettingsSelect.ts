@@ -30,6 +30,11 @@ const selectRenewalFlagIds = createSelector(
   (settings) => settings.renewalFlagIds,
 );
 
+const selectIncreaseFlagMappings = createSelector(
+  [selectSettings],
+  (settings) => settings.increaseFlagMappings,
+);
+
 export const globalSettingsSelect = {
   settings: selectSettings,
   season: selectSeason,
@@ -37,6 +42,7 @@ export const globalSettingsSelect = {
   genLedgerAccountMap: selectGenLedgerAccountMap,
   depositAccountMap: selectDepositAccountMap,
   renewalFlagIds: selectRenewalFlagIds,
+  increaseFlagMappings: selectIncreaseFlagMappings,
 };
 
 

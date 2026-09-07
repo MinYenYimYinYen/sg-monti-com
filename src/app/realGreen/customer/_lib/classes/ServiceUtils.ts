@@ -7,7 +7,7 @@ import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 import { Discount } from "@/app/realGreen/discount/DiscountTypes";
-import { applyDiscounts } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
+import { applyDiscounts, getPriceChartPrice } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export type ProductRuleCompliance = "pass" | "fail" | "no-rule" | null;
@@ -244,5 +244,17 @@ export class ServiceUtils {
   public get tempSeq(): number | null {
     if (this.service.status !== "$") return null;
     return this.service.program.tempSeq;
+  }
+
+  /**
+   * The price table price for this service's nextSize.
+   * This is the theoretical acquisition price — what the service should have
+   * sold for at the time of sale, before any discounts.
+   * Returns null if no price table is configured for this program.
+   */
+  public get acquisitionPrice(): number | null {
+    const priceTable = this.service.program.x.priceTable;
+    if (!priceTable) return null;
+    return getPriceChartPrice({ size: this.service.nextSize, priceTable });
   }
 }

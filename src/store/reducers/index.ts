@@ -51,6 +51,8 @@ import { assignmentGroupReducer } from "@/app/assignmentGroup/assignmentGroupSli
 import { seasonPlanReducer } from "@/app/bizPlan/seasonPlan/seasonPlanSlice";
 import { flagRuleReducer } from "@/app/flagRule/flagRuleSlice";
 import { sanityReducer } from "@/app/sanity/sanitySlice";
+import seasonIncreasesReducer from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSlice";
+import priceIncreaseSettingsReducer from "@/app/priceIncrease/settings/settingsSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -105,6 +107,8 @@ const rootReducer = combineReducers({
   seasonPlan: seasonPlanReducer,
   flagRule: flagRuleReducer,
   sanity: sanityReducer,
+  seasonIncreases: seasonIncreasesReducer,
+  priceIncreaseSettings: priceIncreaseSettingsReducer,
 });
 
 export default rootReducer;
