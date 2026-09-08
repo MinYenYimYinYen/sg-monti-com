@@ -4,6 +4,7 @@ import React from "react";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, TabNavItem } from "@/components/PageLayout/TabNav";
 import { usePriceIncreaseDeps } from "@/app/priceIncrease/usePriceIncreaseDeps";
+import { DataIssuesPopover } from "@/app/priceIncrease/results/_components/DataIssuesPopover";
 
 const TABS: readonly TabNavItem[] = [
   { label: "Config", href: "/priceIncrease/config" },
@@ -16,7 +17,10 @@ export default function PriceIncreaseLayout({ children }: { children: React.Reac
 
   return (
     <PageLayout>
-      <PageLayout.Header right={<TabNav items={TABS} rootHref="/priceIncrease/config" />} />
+      <PageLayout.Header
+        left={<DataIssuesPopover />}
+        right={<TabNav items={TABS} rootHref="/priceIncrease/config" />}
+      />
       <PageLayout.Body>{children}</PageLayout.Body>
     </PageLayout>
   );

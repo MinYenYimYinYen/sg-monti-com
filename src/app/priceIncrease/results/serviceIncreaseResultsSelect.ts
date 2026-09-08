@@ -5,7 +5,10 @@ import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelecto
 import { priceIncreaseConfigSelect } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSelect";
 import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
-import { ServiceIncreaseResult } from "@/app/priceIncrease/results/increaseResultsTypes";
+import {
+  IncreaseDataIssue,
+  ServiceIncreaseResult,
+} from "@/app/priceIncrease/results/increaseResultsTypes";
 import { makeServiceIncreaseResult } from "@/app/priceIncrease/results/makeServiceIncreaseResult";
 
 // ---------------------------------------------------------------------------
@@ -60,54 +63,115 @@ const selectUnmatchedCustomers = createSelector(
 );
 
 // ---------------------------------------------------------------------------
-// Service-level results
+// Service-level results + data issues
 // ---------------------------------------------------------------------------
 
+type ServiceIncreaseOutcomes = {
+  serviceIncreaseResultMap: Map<number, ServiceIncreaseResult[]>;
+  dataIssues: IncreaseDataIssue[];
+};
+
 /**
- * For each matched customer's target program, computes a ServiceIncreaseResult
- * for every service that has a valid acquisition price.
+ * For each matched customer's target program, computes a ServiceIncreaseOutcome
+ * per service using makeServiceIncreaseResult.
  *
- * Returns a Map<custId, ServiceIncreaseResult[]> for efficient downstream lookup.
- * Services without an acquisition price (no price table) are excluded.
+ * Successful outcomes are collected into serviceIncreaseResultMap (Map<custId, ServiceIncreaseResult[]>).
+ * Failed outcomes (missing acqPrice or dateSold) are collected into dataIssues for UI display.
+ *
+ * Customers with no successful service results are excluded from the map.
  */
-const selectServiceIncreaseResultMap = createSelector(
+const selectServiceIncreaseOutcomes = createSelector(
   [
     selectMatchedCustomers,
     priceIncreaseConfigSelect.settings,
     seasonIncreasesSelect.activeDoc,
     globalSettingsSelect.season,
   ],
-  (matchedCustomers, settings, seasonIncreasesDoc, currentSeason): Map<number, ServiceIncreaseResult[]> => {
-    const resultMap = new Map<number, ServiceIncreaseResult[]>();
+  (matchedCustomers, settings, seasonIncreasesDoc, currentSeason): ServiceIncreaseOutcomes => {
+    const serviceIncreaseResultMap = new Map<number, ServiceIncreaseResult[]>();
+    const dataIssues: IncreaseDataIssue[] = [];
 
-    if (!settings || !seasonIncreasesDoc) return resultMap;
+    // DEBUG [PI] — remove when results are confirmed working
+    console.log("[PI] settings:", settings ? { progCodeId: settings.progCodeId, ongoingIncrease: settings.ongoingIncrease } : null);
+    console.log("[PI] seasonIncreasesDoc:", seasonIncreasesDoc ? { id: seasonIncreasesDoc.seasonIncreasesId, count: seasonIncreasesDoc.seasonIncreases.length } : null);
+    console.log("[PI] currentSeason:", currentSeason);
+    console.log("[PI] matched customers:", matchedCustomers.length);
+
+    if (!settings || !seasonIncreasesDoc) {
+      console.log("[PI] early return — missing settings or seasonIncreasesDoc");
+      return { serviceIncreaseResultMap, dataIssues };
+    }
 
     for (const { customer, targetProgram } of matchedCustomers) {
       const serviceResults: ServiceIncreaseResult[] = [];
+
+      console.log(`[PI] customer ${customer.custId}: targetProgram ${targetProgram.progId} services count: ${targetProgram.services.length}`);
+
+      // Guard dateSold at the program level — emit one issue for the whole
+      // program rather than one per service.
+      if (!targetProgram.dateSold) {
+        dataIssues.push({
+          custId: customer.custId,
+          progId: targetProgram.progId,
+          missingField: "dateSold",
+          message: `Customer ${customer.custId}, program ${targetProgram.progCode.progCodeId}: sold date is missing.`,
+        });
+        continue;
+      }
+
       for (const service of targetProgram.services) {
-        const result = makeServiceIncreaseResult({
+        const outcome = makeServiceIncreaseResult({
           service,
           dateSold: targetProgram.dateSold,
           currentSeason,
           seasonIncreases: seasonIncreasesDoc.seasonIncreases,
           ongoingIncrease: settings.ongoingIncrease,
         });
-        if (result !== null) serviceResults.push(result);
+
+        console.log(`[PI]   service ${service.servCode.servCodeId} (${service.servId}): ${outcome.ok ? "ok" : `FAIL(${outcome.issue.missingField})`}`);
+
+        if (outcome.ok) {
+          serviceResults.push(outcome.result);
+        } else {
+          dataIssues.push(outcome.issue);
+        }
       }
 
       // Only include customers who have at least one priceable service
       if (serviceResults.length > 0) {
-        resultMap.set(customer.custId, serviceResults);
+        serviceIncreaseResultMap.set(customer.custId, serviceResults);
       }
     }
 
-    return resultMap;
+    console.log("[PI] final resultMap size:", serviceIncreaseResultMap.size, "dataIssues:", dataIssues.length);
+
+    return { serviceIncreaseResultMap, dataIssues };
   },
+);
+
+const selectServiceIncreaseResultMap = createSelector(
+  [selectServiceIncreaseOutcomes],
+  (outcomes) => outcomes.serviceIncreaseResultMap,
 );
 
 const selectServiceIncreaseResultsArray = createSelector(
   [selectServiceIncreaseResultMap],
   (resultMap): ServiceIncreaseResult[] => Array.from(resultMap.values()).flat(),
+);
+
+const selectDataIssues = createSelector(
+  [selectServiceIncreaseOutcomes],
+  (outcomes) => outcomes.dataIssues,
+);
+
+/**
+ * Map<custId, ServiceIncreaseResult[]> — same as serviceIncreaseResultMap but
+ * named to reflect that each entry represents one customer's service results.
+ * The customer reference is available on each result via result.customer.
+ */
+const selectByCustomer = createSelector(
+  [selectServiceIncreaseResultMap],
+  (resultMap) => resultMap,
 );
 
 // ---------------------------------------------------------------------------
@@ -120,4 +184,6 @@ export const serviceIncreaseResultsSelect = {
   unmatchedCustomers: selectUnmatchedCustomers,
   serviceIncreaseResultMap: selectServiceIncreaseResultMap,
   serviceIncreaseResultsArray: selectServiceIncreaseResultsArray,
+  byCustomer: selectByCustomer,
+  dataIssues: selectDataIssues,
 };

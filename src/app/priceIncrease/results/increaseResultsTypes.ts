@@ -1,3 +1,4 @@
+import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 
 // ---------------------------------------------------------------------------
@@ -16,6 +17,8 @@ import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTyp
  * object reference is safe.
  */
 export type ServiceIncreaseResult = {
+  /** Full hydrated customer — convenience reference, same as service.program.customer */
+  customer: Customer;
   /** Full hydrated service — source of truth for nextPrice, servId, size, etc. */
   service: Service;
   /** calcPlannedIncreasePercent result — compounded increase from acquisition price */
@@ -29,3 +32,36 @@ export type ServiceIncreaseResult = {
   /** (planDiff / service.nextPrice) * 100 — raw % increase to reach plan price */
   planDiffPercent: number;
 };
+
+// ---------------------------------------------------------------------------
+// IncreaseDataIssue — incomplete data that prevents result computation
+// ---------------------------------------------------------------------------
+
+/** Identifies which required field was missing or invalid for a given service. */
+export type IncreaseDataIssueMissingField = "acqPrice" | "dateSold";
+
+/**
+ * Reported when a service or program cannot be computed due to missing data.
+ *
+ * - `dateSold` issues are program-level: one issue per program, no servId.
+ * - `acqPrice` issues are service-level: one issue per service, servId is set.
+ *
+ * Collected by serviceIncreaseResultsSelect and surfaced via the `dataIssues`
+ * selector for display in an info popover.
+ */
+export type IncreaseDataIssue = {
+  custId: number;
+  progId: number;
+  /** Present for service-level issues (acqPrice). Absent for program-level issues (dateSold). */
+  servId?: number;
+  missingField: IncreaseDataIssueMissingField;
+  message: string;
+};
+
+// ---------------------------------------------------------------------------
+// ServiceIncreaseOutcome — discriminated union returned by makeServiceIncreaseResult
+// ---------------------------------------------------------------------------
+
+export type ServiceIncreaseOutcome =
+  | { ok: true; result: ServiceIncreaseResult }
+  | { ok: false; issue: IncreaseDataIssue };

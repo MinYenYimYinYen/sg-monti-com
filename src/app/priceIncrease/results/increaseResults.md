@@ -30,6 +30,9 @@ Before working in this folder, read **only** the files listed below. Do **not** 
 - `src/app/realGreen/customer/_lib/classes/ServiceUtils.ts` — `acquisitionPrice` getter (reads from `service.program.x.priceTable`)
 - `src/app/realGreen/customer/selectors/centralSelectors.ts` — `centralSelect.customers` (fully hydrated `Customer[]`)
 
+**Data loading — critical**
+- `src/app/priceIncrease/usePriceIncreaseDeps.ts` — must call `useCustomerContext({ contexts: ["active"] })` to load customers into the active context. Without this, `centralSelect.customers` returns an empty array and all selectors produce no results.
+
 ---
 
 ## Architecture Intent
@@ -62,12 +65,13 @@ Settings caps (`maxIncreaseNow`, `maxIncreaseEver`) and the upsell bonus (`calcU
 
 ## File 1: `increaseResultsTypes.ts` — Shared Types
 
-Defines `ServiceIncreaseResult` and any other types shared across files in this folder.
+Defines `ServiceIncreaseResult`, `IncreaseDataIssue`, and `ServiceIncreaseOutcome`.
 
 ### `ServiceIncreaseResult`
 
 ```typescript
 type ServiceIncreaseResult = {
+  customer: Customer;      // convenience reference — same as service.program.customer
   service: Service;        // full hydrated service — source of truth for nextPrice, servId, size, etc.
   plannedPercent: number;  // calcPlannedIncreasePercent result — compounded increase from acqPrice
   acqPrice: number;        // service.x.acquisitionPrice — theoretical price-table starting price
@@ -78,17 +82,46 @@ type ServiceIncreaseResult = {
 ```
 
 **Design notes:**
-- `service` is carried by reference for downstream convenience. Safe because this type is only used in selector output, never stored in Redux.
+- `customer` and `service` are carried by reference for downstream convenience. Safe because this type is only used in selector output, never stored in Redux.
 - `nextPrice` is not duplicated — use `service.nextPrice` directly.
 - Caps, upsell bonus, and flag resolution are **not** applied here. Those belong in the customer-level aggregation layer.
+
+### `IncreaseDataIssue`
+
+```typescript
+type IncreaseDataIssue = {
+  custId: number;
+  progId: number;
+  servId?: number;  // present for service-level issues (acqPrice); absent for program-level (dateSold)
+  missingField: "acqPrice" | "dateSold";
+  message: string;
+};
+```
+
+- `dateSold` issues are **program-level**: one issue per program, no `servId`. The guard fires in the selector's program loop before iterating services.
+- `acqPrice` issues are **service-level**: one issue per service, `servId` is set.
+
+Collected by `serviceIncreaseResultsSelect.dataIssues` for display in the `DataIssuesPopover`.
+
+### `ServiceIncreaseOutcome`
+
+```typescript
+type ServiceIncreaseOutcome =
+  | { ok: true; result: ServiceIncreaseResult }
+  | { ok: false; issue: IncreaseDataIssue };
+```
+
+Discriminated union returned by `makeServiceIncreaseResult`. Callers split on `ok` to route results vs. issues.
 
 ---
 
 ## File 2: `makeServiceIncreaseResult.ts` — Pure Computation Function
 
-**Single source of truth** for how a `ServiceIncreaseResult` is produced from a single service.
+**Single source of truth** for how a `ServiceIncreaseOutcome` is produced from a single service.
 
-Returns `null` when the service has no acquisition price (no price table configured for its program).
+Returns `{ ok: false, issue }` (never bare `null`) when required data is missing:
+- `dateSold` empty/invalid → `missingField: "dateSold"` — this is a safety net; the primary guard is in the selector's program loop (see File 3)
+- no price table → `missingField: "acqPrice"` — this is the primary per-service guard
 
 **Inputs:**
 - `service: Service`
@@ -103,7 +136,10 @@ Returns `null` when the service has no acquisition price (no price table configu
 
 **Status: Implemented.**
 
-**Responsibility:** Splits customers into matched/unmatched buckets, then for each matched customer's target program computes a `ServiceIncreaseResult[]` using `makeServiceIncreaseResult`.
+**Responsibility:** Splits customers into matched/unmatched buckets, then for each matched customer's target program:
+1. Guards `dateSold` at the program level — emits one `IncreaseDataIssue` and skips the program if missing
+2. Iterates services and calls `makeServiceIncreaseResult` for each
+3. Routes outcomes: successes → `serviceIncreaseResultMap`, failures → `dataIssues`
 
 ### Exported selectors
 
@@ -114,6 +150,8 @@ Returns `null` when the service has no acquisition price (no price table configu
 | `unmatchedCustomers` | `Customer[]` |
 | `serviceIncreaseResultMap` | `Map<custId, ServiceIncreaseResult[]>` — only customers with ≥1 priceable service |
 | `serviceIncreaseResultsArray` | `ServiceIncreaseResult[]` — all results flattened |
+| `byCustomer` | `Map<custId, ServiceIncreaseResult[]>` — semantic alias for `serviceIncreaseResultMap` |
+| `dataIssues` | `IncreaseDataIssue[]` — program-level and service-level issues for UI display |
 
 ---
 
@@ -133,13 +171,40 @@ Do not implement `customerIncreaseResultsSelect.ts` without first resolving thes
 
 ---
 
+## UI Components (`_components/`)
+
+Temporary display components for the `results/temp/` page. These will evolve as the design matures.
+
+### `DataIssuesPopover.tsx`
+Renders in the `priceIncrease` layout header (left slot). Reads `serviceIncreaseResultsSelect.dataIssues`.
+- No issues → grayed out, non-interactive
+- Has issues → destructive border/text with count; opens a popover with an `Accordion` grouped by `missingField`
+- Each accordion item shows the count and a scrollable list of messages (`max-h-48 overflow-y-auto`)
+
+### `CustomerIncreaseCard.tsx`
+Receives `ServiceIncreaseResult[]` for one customer. Displays:
+- Customer header: `custId`, `displayName`, program code badges (target progCodeId highlighted in primary, others muted; keyed by `program.progId`)
+- Column headers + a `ServiceIncreaseRow` per result
+
+### `ServiceIncreaseRow.tsx`
+Receives a single `ServiceIncreaseResult`. Displays a 6-column grid:
+`servCodeId | acqPrice | nextPrice | planPrice | planDiff$ | planDiffPercent (plannedPercent plan)`
+
+---
+
 ## File Structure
 
 ```
 src/app/priceIncrease/results/
   increaseResults.md                  ← this file
-  increaseResultsTypes.ts             ← ServiceIncreaseResult and related types
+  increaseResultsTypes.ts             ← ServiceIncreaseResult, IncreaseDataIssue, ServiceIncreaseOutcome
   makeServiceIncreaseResult.ts        ← pure function: single source of truth for service result computation
-  serviceIncreaseResultsSelect.ts     ← customer bucketing + service-level results
+  serviceIncreaseResultsSelect.ts     ← customer bucketing + service-level results + data issues
   customerIncreaseResultsSelect.ts    ← customer-level aggregation (deferred, TBD)
+  _components/
+    DataIssuesPopover.tsx             ← layout header popover for data issue reporting
+    CustomerIncreaseCard.tsx          ← customer-level display card
+    ServiceIncreaseRow.tsx            ← per-service result row
+  temp/
+    page.tsx                          ← temporary debug page at /priceIncrease/results/temp
 ```

@@ -4,7 +4,7 @@ import {
   calcSeasonCount,
   calcPlannedIncreasePercent,
 } from "@/app/priceIncrease/_lib/priceIncreaseFuncs";
-import { ServiceIncreaseResult } from "@/app/priceIncrease/results/increaseResultsTypes";
+import { ServiceIncreaseOutcome } from "@/app/priceIncrease/results/increaseResultsTypes";
 
 type MakeServiceIncreaseResultParams = {
   service: Service;
@@ -16,14 +16,16 @@ type MakeServiceIncreaseResultParams = {
 };
 
 /**
- * Computes a ServiceIncreaseResult for a single service.
+ * Computes a ServiceIncreaseOutcome for a single service.
  *
- * Returns null when the service has no acquisition price (no price table
- * configured for its program), since there is no meaningful baseline to
- * compute an increase against.
+ * Returns `{ ok: false, issue }` (rather than null) when required data is
+ * missing, so callers can surface the specific problem to the user:
+ *   - "acqPrice": no price table configured for this program
+ *   - "dateSold":  program sold date is empty or invalid
  *
- * This is the single source of truth for how per-service increase results
- * are produced. Caps, upsell bonus, and flag resolution are NOT applied here —
+ * Returns `{ ok: true, result }` on success.
+ *
+ * Caps, upsell bonus, and flag resolution are NOT applied here —
  * those belong in the customer-level aggregation layer.
  */
 export function makeServiceIncreaseResult({
@@ -32,9 +34,41 @@ export function makeServiceIncreaseResult({
   currentSeason,
   seasonIncreases,
   ongoingIncrease,
-}: MakeServiceIncreaseResultParams): ServiceIncreaseResult | null {
+}: MakeServiceIncreaseResultParams): ServiceIncreaseOutcome {
+  const custId = service.program.customer.custId;
+  const progId = service.program.progId;
+  const servId = service.servId;
+  const servCodeId = service.servCode.servCodeId;
+  const progCodeId = service.program.progCode.progCodeId;
+
+  // dateSold is a program-level field — callers should guard this before the
+  // service loop and emit one issue per program. This guard is a safety net
+  // for direct callers that don't pre-check.
+  if (!dateSold) {
+    return {
+      ok: false,
+      issue: {
+        custId,
+        progId,
+        missingField: "dateSold",
+        message: `Customer ${custId}, program ${progCodeId}: sold date is missing.`,
+      },
+    };
+  }
+
   const acqPrice = service.x.acquisitionPrice;
-  if (acqPrice === null) return null;
+  if (acqPrice === null) {
+    return {
+      ok: false,
+      issue: {
+        custId,
+        progId,
+        servId,
+        missingField: "acqPrice",
+        message: `Customer ${custId}, service ${servCodeId}: no price table configured — acquisition price unavailable.`,
+      },
+    };
+  }
 
   const seasonCount = calcSeasonCount({ dateSold, currentSeason });
 
@@ -51,11 +85,15 @@ export function makeServiceIncreaseResult({
     : 0;
 
   return {
-    service,
-    plannedPercent,
-    acqPrice,
-    planPrice,
-    planDiff,
-    planDiffPercent,
+    ok: true,
+    result: {
+      customer: service.program.customer,
+      service,
+      plannedPercent,
+      acqPrice,
+      planPrice,
+      planDiff,
+      planDiffPercent,
+    },
   };
 }
