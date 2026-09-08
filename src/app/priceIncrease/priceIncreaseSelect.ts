@@ -3,7 +3,7 @@ import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelecto
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSelect";
-import { priceIncreaseSettingsSelect } from "@/app/priceIncrease/settings/settingsSelect";
+import { priceIncreaseConfigSelect } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSelect";
 import {
   IncreaseFlag,
   PriceIncreaseResult,
@@ -42,7 +42,7 @@ const selectIncreaseFlags = createSelector(
 const selectResults = createSelector(
   [
     centralSelect.customers,
-    priceIncreaseSettingsSelect.activeDoc,
+    priceIncreaseConfigSelect.settings,
     seasonIncreasesSelect.activeDoc,
     selectIncreaseFlags,
     globalSettingsSelect.season,
@@ -57,19 +57,19 @@ const selectResults = createSelector(
     for (const customer of customers) {
       // Find the program matching the configured progCodeId
       const targetProgram = customer.programs.find(
-        (p) => p.progCode.progCodeId === settings.progCodeId,
+        (program) => program.progCode.progCodeId === settings.progCodeId,
       );
       if (!targetProgram) continue;
 
       // Exempt check — reads from GlobalSettings
       const isExempt =
         exemptFlagId !== null &&
-        customer.flags.some((f) => f.flagId === exemptFlagId);
+        customer.flags.some((flag) => flag.flagId === exemptFlagId);
 
       // Manual check — reads from GlobalSettings
       const isManual =
         manualFlagId !== null &&
-        customer.flags.some((f) => f.flagId === manualFlagId);
+        customer.flags.some((flag) => flag.flagId === manualFlagId);
 
       if (isExempt) {
         results.set(customer.custId, {
@@ -94,7 +94,7 @@ const selectResults = createSelector(
 
       // Other active programs (for upsell bonus)
       const otherProgramCount = customer.programs.filter(
-        (p) => p.progId !== targetProgram.progId && p.status === "9",
+        (program) => program.progId !== targetProgram.progId && program.status === "9",
       ).length;
 
       // Per-service breakdown

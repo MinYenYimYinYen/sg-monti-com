@@ -5,6 +5,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { Plus } from "lucide-react";
 import { Button } from "@/style/components/button";
 import { priceIncreaseSettingsSelect } from "@/app/priceIncrease/settings/settingsSelect";
+import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSelect";
 import { priceIncreaseConfigSelect } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSelect";
 import { priceIncreaseConfigActions } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
 import { priceIncreaseSettingsActions } from "@/app/priceIncrease/settings/settingsSlice";
@@ -13,7 +14,8 @@ import { SettingsSheet } from "@/app/priceIncrease/config/_components/SettingsSh
 
 export function SettingsSection() {
   const dispatch = useAppDispatch();
-  const docs = useSelector(priceIncreaseSettingsSelect.docs);
+  const storedSettings = useSelector(priceIncreaseSettingsSelect.storedSettings);
+  const seasonDocs = useSelector(seasonIncreasesSelect.docs);
   const deleteConfirmId = useSelector(priceIncreaseConfigSelect.settingsDeleteConfirmId);
 
   const handleNew = () => {
@@ -79,10 +81,10 @@ export function SettingsSection() {
       </div>
 
       <div className="space-y-2">
-        {docs.length === 0 && (
+        {storedSettings.length === 0 && (
           <p className="text-xs text-muted-foreground">No settings configured yet.</p>
         )}
-        {docs.map((doc) => (
+        {storedSettings.map((doc) => (
           <div
             key={doc.settingsId}
             className={`rounded-lg border p-3 flex items-start justify-between gap-3 ${
@@ -103,6 +105,7 @@ export function SettingsSection() {
                 <span>Max now: {doc.maxIncreaseNow}%</span>
                 <span>Max ever: {doc.maxIncreaseEver}%</span>
                 <span>Rounding: {doc.flagRounding}</span>
+                <span>Plan: {seasonDocs.find((s) => s.seasonIncreasesId === doc.seasonIncreasesId)?.label || "—"}</span>
               </div>
             </div>
 

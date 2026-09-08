@@ -10,9 +10,9 @@
 
 **[Screen: App home / dashboard — not yet on Price Increase]**
 
-> "Hey everyone. In this video I'm going to walk you through how to set up the Price Increase module from scratch. This is the tool we use to calculate how much each customer's lawn care price should go up each season, and then communicate that back to RealGreen by assigning a flag to the customer.
+> "Hey everyone. In this video I'm going to walk you through how to set up the Price Increase module from scratch. This is the tool we use to calculate how much each customer's lawn care price should go up each season, and then communicate that back to SA5 by assigning a flag to the customer.
 >
-> There are three things you need to configure before the module can run: your increase flag mappings, your season increase plan, and your price increase settings. We'll go through each one in order.
+> There are three things you need to configure before the module can run: your increase flag mappings, your season increase plan, and your price increase settings. We'll go through each one.
 >
 > Let's get started."
 

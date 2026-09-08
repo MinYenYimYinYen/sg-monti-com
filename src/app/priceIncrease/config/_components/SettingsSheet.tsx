@@ -16,6 +16,7 @@ import { Label } from "@/style/components/label";
 import { priceIncreaseConfigSelect } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSelect";
 import { priceIncreaseConfigActions } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
 import { priceIncreaseSettingsActions } from "@/app/priceIncrease/settings/settingsSlice";
+import { Trash2 } from "lucide-react";
 import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { FlagRounding } from "@/app/priceIncrease/settings/PriceIncreaseSettingsTypes";
@@ -25,6 +26,7 @@ export function SettingsSheet() {
   const dispatch = useAppDispatch();
   const draft = useSelector(priceIncreaseConfigSelect.settingsDraft);
   const isOpen = useSelector(priceIncreaseConfigSelect.settingsSheetOpen);
+  const isDirty = useSelector(priceIncreaseConfigSelect.settingsIsDirty);
   const isNew = draft?.createdAt === "";
   const progCodes = useSelector(progServSelect.progCodes);
   const seasonDocs = useSelector(seasonIncreasesSelect.docs);
@@ -37,6 +39,10 @@ export function SettingsSheet() {
     dispatch(priceIncreaseConfigActions.closeSettingsSheet());
   };
 
+  const handleDiscard = () => {
+    dispatch(priceIncreaseConfigActions.discardSettingsDraft());
+  };
+
   const handleSave = () => {
     if (!draft) return;
     dispatch(
@@ -45,7 +51,7 @@ export function SettingsSheet() {
         config: { loadingMsg: isNew ? "Creating settings..." : "Saving settings..." },
       }),
     );
-    dispatch(priceIncreaseConfigActions.closeSettingsSheet());
+    dispatch(priceIncreaseConfigActions.discardSettingsDraft());
   };
 
   const update = (partial: Parameters<typeof priceIncreaseConfigActions.updateSettingsDraft>[0]) => {
@@ -262,8 +268,17 @@ export function SettingsSheet() {
         </div>
 
         <SheetFooter className="mt-6 flex gap-2 justify-end">
+          <Button
+            variant="destructive"
+            intensity="ghost"
+            onClick={handleDiscard}
+            disabled={!isDirty}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Discard Changes
+          </Button>
           <Button variant="outline" intensity="ghost" onClick={handleClose}>
-            Cancel
+            Close
           </Button>
           <Button
             variant="primary"

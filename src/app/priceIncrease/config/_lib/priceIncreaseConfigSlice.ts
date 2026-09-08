@@ -14,7 +14,11 @@ type InlinePlanMode =
 
 type PriceIncreaseConfigState = {
   // Section 1: PriceIncreaseSettings sheet
+  // settingsDraft persists independently of whether the sheet is open, so the
+  // user can close the sheet, navigate to the Summary tab to preview results,
+  // then return to continue editing. Use discardSettingsDraft to clear it.
   settingsDraft: PriceIncreaseSettingsDoc | null;
+  settingsSheetOpen: boolean;
   settingsDeleteConfirmId: string | null;
 
   // Inline season plan editor (inside SettingsSheet)
@@ -28,6 +32,7 @@ type PriceIncreaseConfigState = {
 
 const initialState: PriceIncreaseConfigState = {
   settingsDraft: null,
+  settingsSheetOpen: false,
   settingsDeleteConfirmId: null,
   inlinePlanMode: { type: "closed" },
   inlinePlanDraft: null,
@@ -42,14 +47,23 @@ const priceIncreaseConfigSlice = createSlice({
     // ---------------------------------------------------------------------------
     // Section 1: Settings
     // ---------------------------------------------------------------------------
-    openSettingsSheet: (state, action: PayloadAction<PriceIncreaseSettingsDoc | null>) => {
+    openSettingsSheet: (state, action: PayloadAction<PriceIncreaseSettingsDoc>) => {
       state.settingsDraft = action.payload;
+      state.settingsSheetOpen = true;
       // Close any open inline plan editor when opening a new settings sheet
       state.inlinePlanMode = { type: "closed" };
       state.inlinePlanDraft = null;
     },
     closeSettingsSheet: (state) => {
+      // Closes the sheet UI only — draft is preserved so the user can navigate
+      // away to preview results and return to continue editing.
+      state.settingsSheetOpen = false;
+      state.inlinePlanMode = { type: "closed" };
+      state.inlinePlanDraft = null;
+    },
+    discardSettingsDraft: (state) => {
       state.settingsDraft = null;
+      state.settingsSheetOpen = false;
       state.inlinePlanMode = { type: "closed" };
       state.inlinePlanDraft = null;
     },

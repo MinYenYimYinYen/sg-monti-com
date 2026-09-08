@@ -3,6 +3,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSelect";
+import { priceIncreaseSettingsSelect } from "@/app/priceIncrease/settings/settingsSelect";
 import { SeasonIncrease, IncreaseFlag } from "@/app/priceIncrease/_lib/PriceIncreaseTypes";
 import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
 
@@ -11,6 +12,7 @@ import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
 // ---------------------------------------------------------------------------
 
 const selectSettingsDraft = (state: AppState) => state.priceIncreaseConfig.settingsDraft;
+const selectSettingsSheetOpen = (state: AppState) => state.priceIncreaseConfig.settingsSheetOpen;
 const selectSettingsDeleteConfirmId = (state: AppState) =>
   state.priceIncreaseConfig.settingsDeleteConfirmId;
 
@@ -25,9 +27,29 @@ const selectFlagPickerSelectedId = (state: AppState) =>
 // Section 1: Settings
 // ---------------------------------------------------------------------------
 
-const selectSettingsSheetOpen = createSelector(
-  [selectSettingsDraft],
-  (draft) => draft !== null,
+/**
+ * Source of truth for downstream selectors (priceIncreaseSelect) responsible
+ * for returning customer/service data. Returns the live draft if one exists,
+ * otherwise falls back to the active stored settings.
+ */
+const selectSettings = createSelector(
+  [selectSettingsDraft, priceIncreaseSettingsSelect.activeSettings],
+  (draft, activeSettings) => draft ?? activeSettings,
+);
+
+/**
+ * True when the draft differs from the stored doc it was opened from,
+ * or always true when the draft is a new (unsaved) settings doc.
+ */
+const selectSettingsIsDirty = createSelector(
+  [selectSettingsDraft, priceIncreaseSettingsSelect.storedSettings],
+  (draft, storedSettings) => {
+    if (!draft) return false;
+    const stored = storedSettings.find((d) => d.settingsId === draft.settingsId);
+    // No stored match means this is a new doc
+    if (!stored) return true;
+    return !deepEqual(draft, stored);
+  },
 );
 
 // ---------------------------------------------------------------------------
@@ -162,6 +184,8 @@ export const priceIncreaseConfigSelect = {
   settingsDraft: selectSettingsDraft,
   settingsSheetOpen: selectSettingsSheetOpen,
   settingsDeleteConfirmId: selectSettingsDeleteConfirmId,
+  settingsIsDirty: selectSettingsIsDirty,
+  settings: selectSettings,
 
   // Inline plan editor
   inlinePlanMode: selectInlinePlanMode,

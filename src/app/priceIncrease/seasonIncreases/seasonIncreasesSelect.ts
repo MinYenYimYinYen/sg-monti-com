@@ -9,10 +9,10 @@ const selectDocs = (state: AppState) => state.seasonIncreases.docs;
  * seasonIncreasesId — not by an isActive flag on the doc itself.
  */
 const selectActiveDoc = createSelector(
-  [selectDocs, priceIncreaseSettingsSelect.activeDoc],
+  [selectDocs, priceIncreaseSettingsSelect.activeSettings],
   (docs, activeSettings) => {
     if (!activeSettings) return null;
-    return docs.find((d) => d.seasonIncreasesId === activeSettings.seasonIncreasesId) ?? null;
+    return docs.find((doc) => doc.seasonIncreasesId === activeSettings.seasonIncreasesId) ?? null;
   },
 );
 
