@@ -86,10 +86,20 @@ export class CustomerUtils {
    * Returns false when the customer has no programs.
    */
   public isZeroRevenue(method: "actual" | "renewal"): boolean {
-    // Inactive customers are never considered zero-revenue — they're not active accounts. TODO - Delete these two lines - this logic does not belong here.
-    // if (this.customer.status !== "9") return false;
     const activePrograms = this.programs.filter((p) => p.status === "9");
     return activePrograms.every((p) => p.x.isZeroRevenue(method));
+  }
+
+  /**
+   * Total renewal or actual revenue across all active programs.
+   *
+   * "renewal": sum of each active program's renewal revenue (nextPrice, status !== "N")
+   * "actual":  sum of each active program's actual revenue (price, active/asap/printed/completed)
+   */
+  public revenue(method: "actual" | "renewal"): number {
+    return this.programs
+      .filter((p) => p.status === "9")
+      .reduce((sum, program) => sum + program.x.revenue(method), 0);
   }
 
   /**

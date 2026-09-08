@@ -28,6 +28,14 @@ type PriceIncreaseConfigState = {
   // Section 3: IncreaseFlag Mappings
   flagMappingsDraft: IncreaseFlagMapping[];
   flagPickerSelectedId: number | null;
+
+  // Target season override — NOT a configurable settings field.
+  // Managed by localStorage (key: "priceIncrease.targetSeason") with a 6-month
+  // expiry. The layout reads from localStorage on mount and dispatches here.
+  // Falls back to globalSettings.season when null.
+  // Use case: planning for next season while still running the current season
+  // (e.g. global settings season = 2026, but planning for 2027).
+  targetSeasonOverride: number | null;
 };
 
 const initialState: PriceIncreaseConfigState = {
@@ -38,6 +46,7 @@ const initialState: PriceIncreaseConfigState = {
   inlinePlanDraft: null,
   flagMappingsDraft: [],
   flagPickerSelectedId: null,
+  targetSeasonOverride: null,
 };
 
 const priceIncreaseConfigSlice = createSlice({
@@ -154,6 +163,16 @@ const priceIncreaseConfigSlice = createSlice({
     },
     setFlagPickerSelected: (state, action: PayloadAction<number | null>) => {
       state.flagPickerSelectedId = action.payload;
+    },
+
+    // ---------------------------------------------------------------------------
+    // Target season override
+    // ---------------------------------------------------------------------------
+    setTargetSeasonOverride: (state, action: PayloadAction<number>) => {
+      state.targetSeasonOverride = action.payload;
+    },
+    clearTargetSeasonOverride: (state) => {
+      state.targetSeasonOverride = null;
     },
   },
 });

@@ -99,6 +99,18 @@ export class ProgramUtils {
     return eligibleServices.every((s) => s.x.isZeroRevenue(method));
   }
 
+  /**
+   * Total revenue for this program under the given method.
+   *
+   * "renewal": sum of nextPrice for all services with status !== "N"
+   * "actual":  sum of price for services with active/asap/printed/completed status
+   */
+  public revenue(method: "actual" | "renewal"): number {
+    return this.getEligibleServices(method).reduce((sum, service) => {
+      return sum + (method === "renewal" ? service.nextPrice : service.price);
+    }, 0);
+  }
+
   private getEligibleServices(method: "actual" | "renewal"): Service[] {
     if (method === "renewal") {
       return this.services.filter((s) => s.status !== "N");

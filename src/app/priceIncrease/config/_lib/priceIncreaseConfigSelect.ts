@@ -23,6 +23,9 @@ const selectFlagMappingsDraft = (state: AppState) => state.priceIncreaseConfig.f
 const selectFlagPickerSelectedId = (state: AppState) =>
   state.priceIncreaseConfig.flagPickerSelectedId;
 
+const selectTargetSeasonOverride = (state: AppState) =>
+  state.priceIncreaseConfig.targetSeasonOverride;
+
 // ---------------------------------------------------------------------------
 // Section 1: Settings
 // ---------------------------------------------------------------------------
@@ -176,6 +179,21 @@ const selectFlagMappingsIsDirty = createSelector(
 );
 
 // ---------------------------------------------------------------------------
+// Target season
+// ---------------------------------------------------------------------------
+
+/**
+ * The effective season used for all price increase calculations.
+ * Returns the localStorage-backed override when set, otherwise falls back to
+ * globalSettings.season. Use this instead of globalSettingsSelect.season
+ * anywhere in the price increase module.
+ */
+const selectTargetSeason = createSelector(
+  [selectTargetSeasonOverride, globalSettingsSelect.season],
+  (override, globalSeason) => override ?? globalSeason,
+);
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -204,4 +222,8 @@ export const priceIncreaseConfigSelect = {
   flagPickerSelectedId: selectFlagPickerSelectedId,
   flagMappingsIsValid: selectFlagMappingsIsValid,
   flagMappingsIsDirty: selectFlagMappingsIsDirty,
+
+  // Target season
+  targetSeasonOverride: selectTargetSeasonOverride,
+  targetSeason: selectTargetSeason,
 };

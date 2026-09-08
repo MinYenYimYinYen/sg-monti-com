@@ -17,8 +17,8 @@ Before working in this folder, read **only** the files listed below. Do **not** 
 - `src/app/priceIncrease/_lib/PriceIncreaseTypes.ts` — `SeasonIncrease`, `IncreaseFlag`, `PriceIncreaseResult`, `ServiceIncreaseBreakdown`
 - `src/app/priceIncrease/_lib/priceIncreaseFuncs.ts` — pure math functions: `calcSeasonCount`, `calcPlannedIncreasePercent`, `calcUpsellAdjustment`
 
-**Entry point (settings + season plan)**
-- `src/app/priceIncrease/config/_lib/priceIncreaseConfigSelect.ts` — `settings` selector (the source of truth for active settings, draft-aware)
+**Entry point (settings + season plan + target season)**
+- `src/app/priceIncrease/config/_lib/priceIncreaseConfigSelect.ts` — `settings` selector (the source of truth for active settings, draft-aware); also `targetSeason` (the effective planning season — override-aware, falls back to `globalSettings.season`)
 - `src/app/priceIncrease/seasonIncreases/seasonIncreasesSelect.ts` — `activeDoc` (the active season increases plan)
 - `src/app/priceIncrease/settings/PriceIncreaseSettingsTypes.ts` — `PriceIncreaseSettingsDoc` shape
 - `src/app/priceIncrease/seasonIncreases/SeasonIncreasesTypes.ts` — `SeasonIncreasesDoc` shape
@@ -27,7 +27,9 @@ Before working in this folder, read **only** the files listed below. Do **not** 
 - `src/app/realGreen/customer/_lib/entities/types/CustomerTypes.ts` — `Customer` shape
 - `src/app/realGreen/customer/_lib/entities/types/ProgramTypes.ts` — `Program` shape (key fields: `progCode.progCodeId`, `dateSold`, `status`)
 - `src/app/realGreen/customer/_lib/entities/types/ServiceTypes.ts` — `Service` shape (key fields: `nextSize`, `nextPrice`)
-- `src/app/realGreen/customer/_lib/classes/ServiceUtils.ts` — `acquisitionPrice` getter (reads from `service.program.x.priceTable`)
+- `src/app/realGreen/customer/_lib/classes/ServiceUtils.ts` — `acquisitionPrice` getter (reads from `service.program.x.priceTable`, which is already econ/pref-aware via `ProgramUtils.isEcon`)
+- `src/app/realGreen/customer/_lib/classes/ProgramUtils.ts` — `isEcon`, `priceTable`, `revenue(method)` getters
+- `src/app/realGreen/customer/_lib/classes/CustomerUtils.ts` — `revenue(method)` method (sums active programs)
 - `src/app/realGreen/customer/selectors/centralSelectors.ts` — `centralSelect.customers` (fully hydrated `Customer[]`)
 
 **Data loading — critical**
@@ -43,6 +45,14 @@ Before working in this folder, read **only** the files listed below. Do **not** 
 
 `seasonIncreasesSelect.activeDoc` provides the `SeasonIncreasesDoc` referenced by the active settings.
 
+### Target Season
+
+`priceIncreaseConfigSelect.targetSeason` is the effective planning season used for all `calcSeasonCount` calls. It is **not** a settings field — it is managed via `localStorage` (key: `"priceIncrease.targetSeason"`, 6-month TTL) and synced to `priceIncreaseConfigSlice.targetSeasonOverride` by the layout on mount. Falls back to `globalSettings.season` when no override is set.
+
+**Do not use `globalSettingsSelect.season` directly** anywhere in this module. Always use `priceIncreaseConfigSelect.targetSeason`.
+
+Use case: when running 2026 production but planning for 2027, the user sets the target season to 2027 via the `TargetSeasonControl` in the layout header. This corrects season counts for all customers without modifying stored settings.
+
 ### Customer Bucketing
 
 Because settings only allow a single `progCodeId`, customers fall into two buckets:
@@ -51,6 +61,10 @@ Because settings only allow a single `progCodeId`, customers fall into two bucke
 - **Unmatched**: no program with a matching `progCodeId`
 
 Only matched customers participate in price increase calculations. The matched/unmatched split lives in `serviceIncreaseResultsSelect.ts` since it is a prerequisite for service-level computation.
+
+### Econ vs Preferred Pricing
+
+`ServiceUtils.acquisitionPrice` calls `service.program.x.priceTable`, which is `ProgramUtils.priceTable`. That getter already routes to the economy price table when `ProgramUtils.isEcon` is true and an econ table is configured. The econ/pref determination is therefore **already correct** for acquisition price — no additional logic is needed in this layer.
 
 ### Pipeline Order
 
@@ -74,7 +88,7 @@ type ServiceIncreaseResult = {
   customer: Customer;      // convenience reference — same as service.program.customer
   service: Service;        // full hydrated service — source of truth for nextPrice, servId, size, etc.
   plannedPercent: number;  // calcPlannedIncreasePercent result — compounded increase from acqPrice
-  acqPrice: number;        // service.x.acquisitionPrice — theoretical price-table starting price
+  acqPrice: number;        // service.x.acquisitionPrice — theoretical price-table starting price (econ/pref-aware)
   planPrice: number;       // acqPrice * (1 + plannedPercent / 100)
   planDiff: number;        // planPrice - service.nextPrice (positive = increase needed)
   planDiffPercent: number; // (planDiff / service.nextPrice) * 100 — raw % increase to reach plan price
@@ -126,7 +140,7 @@ Returns `{ ok: false, issue }` (never bare `null`) when required data is missing
 **Inputs:**
 - `service: Service`
 - `dateSold: string` — from `program.dateSold`
-- `currentSeason: number` — from `globalSettingsSelect.season`
+- `currentSeason: number` — from `priceIncreaseConfigSelect.targetSeason` (not `globalSettingsSelect.season`)
 - `seasonIncreases: SeasonIncrease[]` — from `seasonIncreasesSelect.activeDoc`
 - `ongoingIncrease: number` — from `settings.ongoingIncrease`
 
@@ -140,6 +154,8 @@ Returns `{ ok: false, issue }` (never bare `null`) when required data is missing
 1. Guards `dateSold` at the program level — emits one `IncreaseDataIssue` and skips the program if missing
 2. Iterates services and calls `makeServiceIncreaseResult` for each
 3. Routes outcomes: successes → `serviceIncreaseResultMap`, failures → `dataIssues`
+
+Uses `priceIncreaseConfigSelect.targetSeason` (not `globalSettingsSelect.season`) for the `currentSeason` input.
 
 ### Exported selectors
 
@@ -176,15 +192,17 @@ Do not implement `customerIncreaseResultsSelect.ts` without first resolving thes
 Temporary display components for the `results/temp/` page. These will evolve as the design matures.
 
 ### `DataIssuesPopover.tsx`
-Renders in the `priceIncrease` layout header (left slot). Reads `serviceIncreaseResultsSelect.dataIssues`.
+Renders in the `priceIncrease` layout header (left slot, alongside `TargetSeasonControl`). Reads `serviceIncreaseResultsSelect.dataIssues`.
 - No issues → grayed out, non-interactive
 - Has issues → destructive border/text with count; opens a popover with an `Accordion` grouped by `missingField`
 - Each accordion item shows the count and a scrollable list of messages (`max-h-48 overflow-y-auto`)
 
 ### `CustomerIncreaseCard.tsx`
 Receives `ServiceIncreaseResult[]` for one customer. Displays:
-- Customer header: `custId`, `displayName`, program code badges (target progCodeId highlighted in primary, others muted; keyed by `program.progId`)
-- Column headers + a `ServiceIncreaseRow` per result
+- **Customer header**: `custId`, `displayName`, increase-module flag badges (flags in `globalSettings.increaseFlagMappings`), customer renewal revenue (`customer.x.revenue("renewal")`), program code badges (target highlighted in primary)
+- **Renewal flags row** (conditional): badges for any renewal flags the customer has (`autoRenew`, `dontAutoRenew`, `confirmed` from `globalSettings.renewalFlagIds`)
+- **Program metadata row**: Econ/Pref badge (`targetProgram.x.isEcon`), sold date (formatted via `prettyDate`), season count (via `calcSeasonCount`), program renewal revenue (`targetProgram.x.revenue("renewal")`)
+- **Column headers** + a `ServiceIncreaseRow` per result
 
 ### `ServiceIncreaseRow.tsx`
 Receives a single `ServiceIncreaseResult`. Displays a 6-column grid:
@@ -203,8 +221,11 @@ src/app/priceIncrease/results/
   customerIncreaseResultsSelect.ts    ← customer-level aggregation (deferred, TBD)
   _components/
     DataIssuesPopover.tsx             ← layout header popover for data issue reporting
-    CustomerIncreaseCard.tsx          ← customer-level display card
+    CustomerIncreaseCard.tsx          ← customer-level display card (revenue, flags, program metadata, service rows)
     ServiceIncreaseRow.tsx            ← per-service result row
   temp/
     page.tsx                          ← temporary debug page at /priceIncrease/results/temp
+
+src/app/priceIncrease/_components/
+  TargetSeasonControl.tsx             ← layout header season picker (popover with +/− arrows, localStorage-backed)
 ```

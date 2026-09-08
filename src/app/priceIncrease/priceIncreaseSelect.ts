@@ -45,11 +45,19 @@ const selectResults = createSelector(
     priceIncreaseConfigSelect.settings,
     seasonIncreasesSelect.activeDoc,
     selectIncreaseFlags,
-    globalSettingsSelect.season,
+    priceIncreaseConfigSelect.targetSeason,
     globalSettingsSelect.priceIncreaseExemptFlagId,
     globalSettingsSelect.priceIncreaseManualFlagId,
   ],
-  (customers, settings, seasonIncreasesDoc, increaseFlags, currentSeason, exemptFlagId, manualFlagId): Map<number, PriceIncreaseResult> => {
+  (
+    customers,
+    settings,
+    seasonIncreasesDoc,
+    increaseFlags,
+    currentSeason,
+    exemptFlagId,
+    manualFlagId,
+  ): Map<number, PriceIncreaseResult> => {
     const results = new Map<number, PriceIncreaseResult>();
 
     if (!settings || !seasonIncreasesDoc) return results;
@@ -94,7 +102,8 @@ const selectResults = createSelector(
 
       // Other active programs (for upsell bonus)
       const otherProgramCount = customer.programs.filter(
-        (program) => program.progId !== targetProgram.progId && program.status === "9",
+        (program) =>
+          program.progId !== targetProgram.progId && program.status === "9",
       ).length;
 
       // Per-service breakdown
@@ -157,7 +166,8 @@ const selectResults = createSelector(
 
       // Manual attention: calculated exceeds maxIncreaseNow by more than threshold
       const needsManualAttention =
-        calculatedPercent > settings.maxIncreaseNow + settings.manualAttentionThreshold;
+        calculatedPercent >
+        settings.maxIncreaseNow + settings.manualAttentionThreshold;
 
       results.set(customer.custId, {
         custId: customer.custId,

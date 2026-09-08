@@ -4,7 +4,6 @@ import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTyp
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { priceIncreaseConfigSelect } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSelect";
 import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSelect";
-import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import {
   IncreaseDataIssue,
   ServiceIncreaseResult,
@@ -85,27 +84,18 @@ const selectServiceIncreaseOutcomes = createSelector(
     selectMatchedCustomers,
     priceIncreaseConfigSelect.settings,
     seasonIncreasesSelect.activeDoc,
-    globalSettingsSelect.season,
+    priceIncreaseConfigSelect.targetSeason,
   ],
   (matchedCustomers, settings, seasonIncreasesDoc, currentSeason): ServiceIncreaseOutcomes => {
     const serviceIncreaseResultMap = new Map<number, ServiceIncreaseResult[]>();
     const dataIssues: IncreaseDataIssue[] = [];
 
-    // DEBUG [PI] — remove when results are confirmed working
-    console.log("[PI] settings:", settings ? { progCodeId: settings.progCodeId, ongoingIncrease: settings.ongoingIncrease } : null);
-    console.log("[PI] seasonIncreasesDoc:", seasonIncreasesDoc ? { id: seasonIncreasesDoc.seasonIncreasesId, count: seasonIncreasesDoc.seasonIncreases.length } : null);
-    console.log("[PI] currentSeason:", currentSeason);
-    console.log("[PI] matched customers:", matchedCustomers.length);
-
     if (!settings || !seasonIncreasesDoc) {
-      console.log("[PI] early return — missing settings or seasonIncreasesDoc");
       return { serviceIncreaseResultMap, dataIssues };
     }
 
     for (const { customer, targetProgram } of matchedCustomers) {
       const serviceResults: ServiceIncreaseResult[] = [];
-
-      console.log(`[PI] customer ${customer.custId}: targetProgram ${targetProgram.progId} services count: ${targetProgram.services.length}`);
 
       // Guard dateSold at the program level — emit one issue for the whole
       // program rather than one per service.
@@ -128,8 +118,6 @@ const selectServiceIncreaseOutcomes = createSelector(
           ongoingIncrease: settings.ongoingIncrease,
         });
 
-        console.log(`[PI]   service ${service.servCode.servCodeId} (${service.servId}): ${outcome.ok ? "ok" : `FAIL(${outcome.issue.missingField})`}`);
-
         if (outcome.ok) {
           serviceResults.push(outcome.result);
         } else {
@@ -142,8 +130,6 @@ const selectServiceIncreaseOutcomes = createSelector(
         serviceIncreaseResultMap.set(customer.custId, serviceResults);
       }
     }
-
-    console.log("[PI] final resultMap size:", serviceIncreaseResultMap.size, "dataIssues:", dataIssues.length);
 
     return { serviceIncreaseResultMap, dataIssues };
   },
