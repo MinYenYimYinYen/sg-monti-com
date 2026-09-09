@@ -26,6 +26,8 @@ const selectFlagPickerSelectedId = (state: AppState) =>
 const selectTargetSeasonOverride = (state: AppState) =>
   state.priceIncreaseConfig.targetSeasonOverride;
 
+const selectViewConfig = (state: AppState) => state.priceIncreaseConfig.viewConfig;
+
 // ---------------------------------------------------------------------------
 // Section 1: Settings
 // ---------------------------------------------------------------------------
@@ -226,4 +228,7 @@ export const priceIncreaseConfigSelect = {
   // Target season
   targetSeasonOverride: selectTargetSeasonOverride,
   targetSeason: selectTargetSeason,
+
+  // View config
+  viewConfig: selectViewConfig,
 };

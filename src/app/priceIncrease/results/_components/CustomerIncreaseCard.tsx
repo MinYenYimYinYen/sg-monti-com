@@ -1,41 +1,25 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { ServiceIncreaseResult } from "@/app/priceIncrease/results/increaseResultsTypes";
+import { CustomerIncreaseResult } from "@/app/priceIncrease/results/customerIncreaseResultsTypes";
 import { priceIncreaseConfigSelect } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { ServiceIncreaseRow } from "@/app/priceIncrease/results/_components/ServiceIncreaseRow";
-import { calcSeasonCount } from "@/app/priceIncrease/_lib/priceIncreaseFuncs";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 
 type CustomerIncreaseCardProps = {
-  serviceResults: ServiceIncreaseResult[];
+  result: CustomerIncreaseResult;
 };
 
-export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardProps) {
+export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
   const settings = useSelector(priceIncreaseConfigSelect.settings);
   const increaseFlagMappings = useSelector(globalSettingsSelect.increaseFlagMappings);
   const renewalFlagIds = useSelector(globalSettingsSelect.renewalFlagIds);
-  const currentSeason = useSelector(priceIncreaseConfigSelect.targetSeason);
+
+  const { customer, targetProgram, serviceResults, cappedPercent, resolvedFlag, sortable, groupable } = result;
 
   const targetProgCodeId = settings?.progCodeId ?? null;
-
-  // All results share the same customer and target program
-  const customer = serviceResults[0]?.customer;
-  const targetProgram = serviceResults[0]?.service.program;
-  if (!customer || !targetProgram) return null;
-
-  // Customer-level renewal revenue across all active programs
-  const customerRevenue = customer.x.revenue("renewal");
-
-  // Program-level renewal revenue
-  const programRevenue = targetProgram.x.revenue("renewal");
-
-  // Season count for the target program
-  const seasonCount = targetProgram.dateSold
-    ? calcSeasonCount({ dateSold: targetProgram.dateSold, currentSeason })
-    : null;
 
   // Increase-module flags this customer has
   const increaseFlagIds = new Set(increaseFlagMappings.map((m) => m.flagId));
@@ -74,11 +58,35 @@ export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardPro
           </div>
         )}
 
+        {/* Status badges */}
+        {groupable.isExempt && (
+          <span className="px-1.5 py-0 rounded text-xs bg-destructive/20 text-destructive border border-destructive/30">
+            Exempt
+          </span>
+        )}
+        {groupable.needsManualAttention && (
+          <span className="px-1.5 py-0 rounded text-xs bg-destructive text-destructive-foreground">
+            Review
+          </span>
+        )}
+
         <div className="flex items-center gap-2 ml-auto">
+          {/* Resolved flag */}
+          {resolvedFlag && (
+            <span className="text-xs text-foreground/60 font-medium">
+              {resolvedFlag.desc}
+            </span>
+          )}
+
+          {/* Capped percent */}
+          <span className={`text-xs font-medium tabular-nums ${groupable.isOverpriced ? "text-destructive" : "text-foreground/70"}`}>
+            {cappedPercent.toFixed(1)}%
+          </span>
+
           {/* Customer renewal revenue */}
           <span className="text-xs text-foreground/60">
             <span className="text-foreground/40 mr-0.5">Rev</span>
-            ${customerRevenue.toFixed(2)}
+            ${sortable.customerRevenue.toFixed(2)}
           </span>
 
           {/* Program code badges */}
@@ -134,33 +142,33 @@ export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardPro
           </span>
         )}
 
-        {seasonCount !== null && (
-          <span>
-            <span className="text-foreground/40">Season </span>
-            {seasonCount}
-          </span>
-        )}
+        <span>
+          <span className="text-foreground/40">Season </span>
+          {sortable.seasonCount}
+        </span>
 
         <span className="ml-auto">
           <span className="text-foreground/40">Program </span>
-          ${programRevenue.toFixed(2)}
+          ${sortable.programRevenue.toFixed(2)}
         </span>
       </div>
 
-      {/* Column headers */}
-      <div className="grid grid-cols-6 gap-2 px-2 py-0.5 text-xs text-foreground/40 border-b border-border bg-card">
-        <span>Service</span>
-        <span className="text-right">Acq Price</span>
-        <span className="text-right">Current</span>
-        <span className="text-right">Plan Price</span>
-        <span className="text-right">Diff $</span>
-        <span className="text-right">Diff %</span>
-      </div>
-
-      {/* Service rows */}
-      {serviceResults.map((result) => (
-        <ServiceIncreaseRow key={result.service.servId} result={result} />
-      ))}
+      {/* Service rows — only shown for non-exempt customers */}
+      {serviceResults.length > 0 && (
+        <>
+          <div className="grid grid-cols-6 gap-2 px-2 py-0.5 text-xs text-foreground/40 border-b border-border bg-card">
+            <span>Service</span>
+            <span className="text-right">Acq Price</span>
+            <span className="text-right">Current</span>
+            <span className="text-right">Plan Price</span>
+            <span className="text-right">Diff $</span>
+            <span className="text-right">Diff %</span>
+          </div>
+          {serviceResults.map((serviceResult) => (
+            <ServiceIncreaseRow key={serviceResult.service.servId} result={serviceResult} />
+          ))}
+        </>
+      )}
     </div>
   );
 }

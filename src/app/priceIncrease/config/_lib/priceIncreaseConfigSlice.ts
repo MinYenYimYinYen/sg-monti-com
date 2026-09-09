@@ -2,6 +2,8 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { PriceIncreaseSettingsDoc } from "@/app/priceIncrease/settings/PriceIncreaseSettingsTypes";
 import { SeasonIncreasesDoc } from "@/app/priceIncrease/seasonIncreases/SeasonIncreasesTypes";
 import { IncreaseFlagMapping, SeasonIncrease } from "@/app/priceIncrease/_lib/PriceIncreaseTypes";
+import { CustomerIncreaseSortKey } from "@/app/priceIncrease/results/customerIncreaseSortFns";
+import { CustomerIncreaseGroupKey } from "@/app/priceIncrease/results/customerIncreaseGroupFns";
 
 // ---------------------------------------------------------------------------
 // Inline plan editor mode
@@ -36,6 +38,30 @@ type PriceIncreaseConfigState = {
   // Use case: planning for next season while still running the current season
   // (e.g. global settings season = 2026, but planning for 2027).
   targetSeasonOverride: number | null;
+
+  // View configuration — sort and group state for the results views.
+  // Persisted in Redux so the user's configuration survives tab navigation.
+  // Use console.log(store.getState().priceIncreaseConfig.viewConfig) to capture
+  // a configuration worth making permanent.
+  viewConfig: IncreaseViewConfig;
+};
+
+/**
+ * Sort/group configuration for the price increase results views.
+ * sortKeys is an ordered list — primary sort first, tiebreakers after.
+ * groupKey partitions results into labeled groups (rendered as tabs).
+ * activeGroup tracks which group tab is currently selected.
+ */
+export type IncreaseViewConfig = {
+  sortKeys: CustomerIncreaseSortKey[];
+  groupKey: CustomerIncreaseGroupKey | null;
+  activeGroup: string | null;
+};
+
+const defaultViewConfig: IncreaseViewConfig = {
+  sortKeys: ["increasePercent"],
+  groupKey: null,
+  activeGroup: null,
 };
 
 const initialState: PriceIncreaseConfigState = {
@@ -47,6 +73,7 @@ const initialState: PriceIncreaseConfigState = {
   flagMappingsDraft: [],
   flagPickerSelectedId: null,
   targetSeasonOverride: null,
+  viewConfig: defaultViewConfig,
 };
 
 const priceIncreaseConfigSlice = createSlice({
@@ -173,6 +200,33 @@ const priceIncreaseConfigSlice = createSlice({
     },
     clearTargetSeasonOverride: (state) => {
       state.targetSeasonOverride = null;
+    },
+
+    // ---------------------------------------------------------------------------
+    // View configuration (sort / group)
+    // ---------------------------------------------------------------------------
+    setViewSortKeys: (state, action: PayloadAction<CustomerIncreaseSortKey[]>) => {
+      state.viewConfig.sortKeys = action.payload;
+      // Reset active group when sort changes — page position is no longer meaningful
+      state.viewConfig.activeGroup = null;
+    },
+    addViewSortKey: (state, action: PayloadAction<CustomerIncreaseSortKey>) => {
+      if (!state.viewConfig.sortKeys.includes(action.payload)) {
+        state.viewConfig.sortKeys = [...state.viewConfig.sortKeys, action.payload];
+      }
+    },
+    removeViewSortKey: (state, action: PayloadAction<CustomerIncreaseSortKey>) => {
+      state.viewConfig.sortKeys = state.viewConfig.sortKeys.filter((k) => k !== action.payload);
+    },
+    setViewGroupKey: (state, action: PayloadAction<CustomerIncreaseGroupKey | null>) => {
+      state.viewConfig.groupKey = action.payload;
+      state.viewConfig.activeGroup = null; // reset active tab when group changes
+    },
+    setViewActiveGroup: (state, action: PayloadAction<string | null>) => {
+      state.viewConfig.activeGroup = action.payload;
+    },
+    resetViewConfig: (state) => {
+      state.viewConfig = defaultViewConfig;
     },
   },
 });
