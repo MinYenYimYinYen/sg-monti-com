@@ -11,6 +11,7 @@ import {
 import { createStandardThunk, createStreamThunk } from "@/store/reduxUtil/thunkFactories";
 import { uiActions } from "@/store/reduxUtil/uiSlice";
 import { searchScheme } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/searchSchemes";
+import { toast } from "react-toastify";
 
 export const createCustomerSlice = (sliceName: string) =>
   createSlice({
@@ -101,6 +102,13 @@ export const createGetCustDocsThunk = (
     apiPath: "/realGreen/customer/api",
     opName: "runSearchScheme",
     onChunk: (dispatch, chunk) => {
+      // Detect streaming error chunk — server sends { success: false, message: "..." }
+      // when an unhandled exception occurs mid-stream. Surface it as a toast.
+      const maybeError = chunk as unknown as { success?: boolean; message?: string };
+      if (maybeError.success === false) {
+        toast.error(`Data load error: ${maybeError.message ?? "Unknown error"}. Some records may be missing.`);
+        return;
+      }
       dispatch(slice.actions.receiveChunk(chunk));
       if (chunk.metrics?.cumulativeRecords) {
         dispatch(

@@ -42,6 +42,7 @@ export function runDayCrawlSimulation(
 ): CrawlerResult {
   // `today` is used as the internal loop variable name for clarity within the simulation.
   const today = crawlStart;
+
   // ---------------------------------------------------------------------------
   // 1. Initialize pools (mutable clones — never mutate inputs)
   // ---------------------------------------------------------------------------

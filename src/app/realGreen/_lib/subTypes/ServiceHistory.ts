@@ -69,8 +69,9 @@ export function remapServiceHistory(
     startInt = endInt;
   }
 
-  // Slice to yyyy-MM-dd only — date may already contain a T time component
-  const dateOnly = date.slice(0, 10);
+  // Slice to yyyy-MM-dd only — date may already contain a T time component.
+  // Guard against null: some completed services from RealGreen have a null doneDate.
+  const dateOnly = date ? date.slice(0, 10) : "";
 
   const timeRange: TRange<string> = {
     min: dateOnly + "T" + (startInt !== undefined ? timeIntToMilitaryString(startInt) : "00:00:00"),

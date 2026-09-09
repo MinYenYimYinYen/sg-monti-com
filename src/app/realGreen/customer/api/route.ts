@@ -115,22 +115,17 @@ const handlers: HandlerMap<CustomerContract> = {
               const { stepName, run, optimizationStrategy, optimizerKey } =
                 step;
 
-              console.log('[route.ts] Processing step:', stepName, 'optimizer key:', optimizerKey);
-
               const optimizer = await getSearchOptimizer({
                 optimizationStrategy: optimizationStrategy,
                 stepName: optimizerKey ?? stepName,
                 schemeName: schemeName,
               });
 
-              console.log('[route.ts] Optimizer loaded:', optimizer);
-
               const stepContext: StepContext = {
                 pipelineData: pipelineData || [],
                 optimizer,
               };
 
-              console.log('[route.ts] Starting step generator for:', stepName);
               const generator = run(stepContext);
 
               const nextStepInput: any[] = [];

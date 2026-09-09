@@ -130,8 +130,8 @@ async function* fetchOverflow<TRawData extends RawData>(
 
       if (isCorruptedDataError) {
         // Hit corrupted data. Use binary search to isolate and skip only the corrupted record
-        console.error(`[stepFactories] fetchOverflow - Corrupted data error at offset ${currentOffset}. Using binary search to isolate corrupted record.`);
-        console.error('[stepFactories] fetchOverflow - Error details:', error);
+        // console.error(`[stepFactories] fetchOverflow - Corrupted data error at offset ${currentOffset}. Using binary search to isolate corrupted record.`);
+        // console.error('[stepFactories] fetchOverflow - Error details:', error);
 
         // Use binary search to recover all valid records, skipping only the corrupted one
         yield* binarySearchCorruptedRecord<TRawData>(
@@ -142,7 +142,7 @@ async function* fetchOverflow<TRawData extends RawData>(
 
         // Move to next batch after recovery
         currentOffset += realGreenConst.CustProgServRecordsMax;
-        console.log(`[stepFactories] fetchOverflow - Binary search complete, moving to offset ${currentOffset}`);
+        // console.log(`[stepFactories] fetchOverflow - Binary search complete, moving to offset ${currentOffset}`);
       } else {
         // Different error - rethrow
         throw error;
@@ -413,8 +413,8 @@ export function createBatchSizeStep<TRawData extends RawData>(
             error.message === "Nullable object must have a value.";
 
           if (isCorruptedDataError) {
-            console.error(`[createBatchSizeStep] Corrupted data error in batch with ${batchIds.length} IDs. Using binary search to isolate corrupted ID.`);
-            console.error('[createBatchSizeStep] Error details:', error);
+            // console.error(`[createBatchSizeStep] Corrupted data error in batch with ${batchIds.length} IDs. Using binary search to isolate corrupted ID.`);
+            // console.error('[createBatchSizeStep] Error details:', error);
 
             // Use binary search on IDs to isolate and skip only the corrupted ID
             for await (const { items: rawItems, duration } of binarySearchCorruptedId<TRawData>(
