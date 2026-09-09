@@ -7,6 +7,7 @@ import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSe
 import { ServiceIncreaseRow } from "@/app/priceIncrease/results/_components/ServiceIncreaseRow";
 import { calcSeasonCount } from "@/app/priceIncrease/_lib/priceIncreaseFuncs";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
+import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 
 type CustomerIncreaseCardProps = {
   serviceResults: ServiceIncreaseResult[];
@@ -16,7 +17,7 @@ export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardPro
   const settings = useSelector(priceIncreaseConfigSelect.settings);
   const increaseFlagMappings = useSelector(globalSettingsSelect.increaseFlagMappings);
   const renewalFlagIds = useSelector(globalSettingsSelect.renewalFlagIds);
-  const currentSeason = useSelector(globalSettingsSelect.season);
+  const currentSeason = useSelector(priceIncreaseConfigSelect.targetSeason);
 
   const targetProgCodeId = settings?.progCodeId ?? null;
 
@@ -51,11 +52,13 @@ export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardPro
   const isEcon = targetProgram.x.isEcon;
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
+    <div className="rounded border border-border bg-card overflow-hidden">
       {/* Customer header */}
-      <div className="flex items-center gap-3 px-3 py-2 bg-accent/10 border-b border-border">
-        <span className="text-sm font-mono text-foreground/50">{customer.custId}</span>
-        <span className="text-sm font-medium text-foreground">{customer.displayName}</span>
+      <div className="flex items-center gap-2 px-2 py-1 bg-accent/10 border-b border-border">
+        <CustomerLink customerId={customer.custId} customerTab="customer" className="flex items-center gap-1.5 hover:underline">
+          <span className="text-xs font-mono text-foreground/50">{customer.custId}</span>
+          <span className="text-sm font-medium text-foreground">{customer.displayName}</span>
+        </CustomerLink>
 
         {/* Increase-module flag badges */}
         {customerIncreaseFlags.length > 0 && (
@@ -63,7 +66,7 @@ export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardPro
             {customerIncreaseFlags.map((flag) => (
               <span
                 key={flag.flagId}
-                className="px-2 py-0.5 rounded text-xs bg-secondary/20 text-secondary-foreground border border-secondary/30"
+                className="px-1.5 py-0 rounded text-xs bg-secondary/20 text-secondary-foreground border border-secondary/30"
               >
                 {flag.desc}
               </span>
@@ -71,10 +74,10 @@ export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardPro
           </div>
         )}
 
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex items-center gap-2 ml-auto">
           {/* Customer renewal revenue */}
-          <span className="text-sm text-foreground/60">
-            <span className="text-foreground/40 text-xs mr-1">Revenue</span>
+          <span className="text-xs text-foreground/60">
+            <span className="text-foreground/40 mr-0.5">Rev</span>
             ${customerRevenue.toFixed(2)}
           </span>
 
@@ -83,7 +86,7 @@ export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardPro
             {customer.programs.map((program) => (
               <span
                 key={program.progId}
-                className={`px-2 py-0.5 rounded text-xs font-mono ${
+                className={`px-1.5 py-0 rounded text-xs font-mono ${
                   program.progCode.progCodeId === targetProgCodeId
                     ? "bg-primary text-primary-foreground"
                     : "bg-accent/20 text-foreground/50"
@@ -98,12 +101,12 @@ export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardPro
 
       {/* Renewal flags section */}
       {customerRenewalFlags.length > 0 && (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-accent/5 border-b border-border">
+        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-accent/5 border-b border-border">
           <span className="text-xs text-foreground/40">Renewal</span>
           {customerRenewalFlags.map((flag) => (
             <span
               key={flag.flagId}
-              className="px-2 py-0.5 rounded text-xs bg-accent/20 text-foreground/70 border border-accent/30"
+              className="px-1.5 py-0 rounded text-xs bg-accent/20 text-foreground/70 border border-accent/30"
             >
               {flag.desc}
             </span>
@@ -112,10 +115,10 @@ export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardPro
       )}
 
       {/* Program metadata */}
-      <div className="flex items-center gap-4 px-3 py-1.5 bg-card border-b border-border text-xs text-foreground/60">
+      <div className="flex items-center gap-3 px-2 py-0.5 bg-card border-b border-border text-xs text-foreground/60">
         {/* Econ/Pref badge */}
         <span
-          className={`px-2 py-0.5 rounded font-medium ${
+          className={`px-1.5 py-0 rounded font-medium ${
             isEcon
               ? "bg-secondary text-secondary-foreground"
               : "bg-primary/20 text-primary"
@@ -145,7 +148,7 @@ export function CustomerIncreaseCard({ serviceResults }: CustomerIncreaseCardPro
       </div>
 
       {/* Column headers */}
-      <div className="grid grid-cols-6 gap-2 px-3 py-1 text-xs text-foreground/40 border-b border-border bg-card">
+      <div className="grid grid-cols-6 gap-2 px-2 py-0.5 text-xs text-foreground/40 border-b border-border bg-card">
         <span>Service</span>
         <span className="text-right">Acq Price</span>
         <span className="text-right">Current</span>

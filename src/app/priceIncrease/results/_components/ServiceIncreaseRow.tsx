@@ -8,7 +8,7 @@ export function ServiceIncreaseRow({ result }: ServiceIncreaseRowProps) {
   const { service, acqPrice, planPrice, planDiff, planDiffPercent, plannedPercent } = result;
 
   return (
-    <div className="grid grid-cols-6 gap-2 px-3 py-1.5 text-sm border-b border-border last:border-0">
+    <div className="grid grid-cols-6 gap-2 px-2 py-0.5 text-xs border-b border-border last:border-0">
       <span className="font-mono text-foreground/70">{service.servCode.servCodeId}</span>
       <span className="text-right text-foreground/60">${acqPrice.toFixed(2)}</span>
       <span className="text-right text-foreground/60">${service.nextPrice.toFixed(2)}</span>
