@@ -9,8 +9,33 @@ import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 import { Discount } from "@/app/realGreen/discount/DiscountTypes";
 import { applyDiscounts, getPriceChartPrice } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
+import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 
 export type ProductRuleCompliance = "pass" | "fail" | "no-rule" | null;
+
+/**
+ * Describes how a completed service relates to its planned assignment.
+ * Only meaningful when the service has been completed (status === "S").
+ */
+export type AssignmentOutcome = {
+  /** The most recent assignment for this service, if any. */
+  assignment: AssignmentDoc | null;
+  /**
+   * Whether the service was completed by the assigned employee.
+   * True when any doneBy.employeeId matches assignment.employeeId.
+   */
+  completedByAssignedEmployee: boolean;
+  /**
+   * Whether the service was completed on the scheduled date.
+   * True when production.doneDate === assignment.schedDate.
+   */
+  completedOnScheduledDate: boolean;
+  /**
+   * True when the service was completed by the assigned employee on the scheduled date.
+   * The "clean" case — assignment fully satisfied as planned.
+   */
+  isFullySatisfied: boolean;
+};
 
 export class ServiceUtils {
   constructor(private readonly service: Omit<Service, "x">) {}
@@ -260,5 +285,44 @@ export class ServiceUtils {
     const priceTable = this.service.program.x.priceTable;
     if (!priceTable) return null;
     return getPriceChartPrice({ size: this.service.nextSize, priceTable });
+  }
+
+  /**
+   * Describes how this completed service relates to its planned assignment.
+   *
+   * Uses the most recent assignment in service.assignments (last element).
+   * Checks whether the assigned employee completed it and whether it was done
+   * on the scheduled date — the two axes of assignment satisfaction.
+   *
+   * Returns all-false when no assignment exists or the service is not completed.
+   */
+  public get assignmentOutcome(): AssignmentOutcome {
+    const assignments = this.service.assignments;
+    const assignment = assignments.length > 0 ? assignments[assignments.length - 1]! : null;
+
+    if (!assignment || this.service.status !== "S") {
+      return {
+        assignment,
+        completedByAssignedEmployee: false,
+        completedOnScheduledDate: false,
+        isFullySatisfied: false,
+      };
+    }
+
+    const doneBys = this.service.production?.doneBys ?? [];
+    const doneDate = this.service.production?.doneDate ?? "";
+
+    const completedByAssignedEmployee = doneBys.some(
+      (doneBy) => doneBy.employeeId === assignment.employeeId,
+    );
+    const completedOnScheduledDate = doneDate !== "" && doneDate === assignment.schedDate;
+    const isFullySatisfied = completedByAssignedEmployee && completedOnScheduledDate;
+
+    return {
+      assignment,
+      completedByAssignedEmployee,
+      completedOnScheduledDate,
+      isFullySatisfied,
+    };
   }
 }

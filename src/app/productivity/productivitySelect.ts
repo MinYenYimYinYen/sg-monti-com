@@ -183,16 +183,13 @@ const selectAssignmentCompletionByEmployee = createSelector(
   (completedServices, assignmentsByEmployee): Map<string, { assigned: number; completed: number; pct: number }> => {
     const map = new Map<string, { assigned: number; completed: number; pct: number }>();
 
-    // Build a set of (employeeId, doneDate) → servIds completed by that employee on that date
-    const completedByEmployeeDate = new Map<string, Set<number>>();
+    // Build a set of servIds that were fully satisfied (assigned employee, assigned date).
+    // Uses service.x.assignmentOutcome as the single source of truth for assignment matching,
+    // which correctly handles doneDate ≠ schedDate and reassignment cases.
+    const satisfiedServIds = new Set<number>();
     for (const service of completedServices) {
-      const doneDate = service.x.doneDate ?? "";
-      const doneBys = service.production?.doneBys ?? [];
-      for (const doneBy of doneBys) {
-        const key = `${doneBy.employeeId}|${doneDate}`;
-        const existing = completedByEmployeeDate.get(key) ?? new Set<number>();
-        existing.add(service.servId);
-        completedByEmployeeDate.set(key, existing);
+      if (service.x.assignmentOutcome.isFullySatisfied) {
+        satisfiedServIds.add(service.servId);
       }
     }
 
@@ -202,9 +199,7 @@ const selectAssignmentCompletionByEmployee = createSelector(
       let completed = 0;
       for (const assignment of assignments) {
         assigned++;
-        const key = `${employeeId}|${assignment.schedDate}`;
-        const completedServIds = completedByEmployeeDate.get(key);
-        if (completedServIds?.has(assignment.servId)) {
+        if (satisfiedServIds.has(assignment.servId)) {
           completed++;
         }
       }
