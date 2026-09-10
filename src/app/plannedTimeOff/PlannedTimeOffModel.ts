@@ -14,7 +14,9 @@ const PlannedTimeOffSchema = new mongoose.Schema<PlannedTimeOff>(
   {
     plannedTimeOffId: { type: String, required: true },
     employeeId: { type: String, required: true },
+    requestType: { type: String, required: true, default: "plannedDates" },
     dateRange: { type: TRangeSchema, required: true },
+    timeRange: { type: TRangeSchema, default: null },
     note: { type: String, required: true, default: "" },
   },
   { timestamps: true },

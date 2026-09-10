@@ -79,7 +79,9 @@ export function PlannedTimeOffSheet({
     const doc: PlannedTimeOff = {
       plannedTimeOffId: existingDoc?.plannedTimeOffId ?? crypto.randomUUID(),
       employeeId: selectedEmployeeId,
+      requestType: existingDoc?.requestType ?? "plannedDates",
       dateRange,
+      timeRange: existingDoc?.timeRange ?? null,
       note,
       createdAt: existingDoc?.createdAt ?? "",
       updatedAt: existingDoc?.updatedAt ?? "",

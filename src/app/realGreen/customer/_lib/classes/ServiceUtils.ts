@@ -77,6 +77,10 @@ export class ServiceUtils {
     return callAheads;
   }
 
+  public get hasCallAhead(): boolean {
+    return this.callAheads.length > 0;
+  }
+
   public get isPest(): boolean {
     return this.service.program.progCode.programType === "H";
   }

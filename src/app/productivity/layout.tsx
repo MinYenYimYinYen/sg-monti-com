@@ -13,6 +13,7 @@ import { PunchImportWidget } from "@/components/timeCardImport/PunchImportWidget
 const TABS: TabNavItem[] = [
   { label: "By Employee", href: "/productivity/byEmployee" },
   { label: "By Date", href: "/productivity/byDate" },
+  { label: "Reliability", href: "/productivity/reliability" },
 ];
 
 export default function ProductivityLayout({ children }: { children: React.ReactNode }) {

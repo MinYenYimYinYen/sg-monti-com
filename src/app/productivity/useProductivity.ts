@@ -10,11 +10,13 @@ import { assignmentActions } from "@/app/assignment/assignmentSlice";
 import { productivitySelect } from "@/app/productivity/productivitySelect";
 import { dateRanges } from "@/lib/primatives/dates/dateStrings";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
+import { usePlannedTimeOff } from "@/app/plannedTimeOff/usePlannedTimeOff";
 
 export function useProductivity() {
   useActiveCustomers({ autoLoad: true });
   useCustomerContext({ contexts: ["active"] });
-  useProgServ({autoLoad: true})
+  useProgServ({ autoLoad: true });
+  usePlannedTimeOff({ autoLoad: true });
 
   const dispatch = useAppDispatch();
   const doneDateRange = useSelector(productivitySelect.doneDateRange);
