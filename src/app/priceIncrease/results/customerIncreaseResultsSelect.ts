@@ -196,9 +196,14 @@ const selectCustomerIncreaseResults = createSelector(
             ? preExistingIncreaseFlags[0]         // override or matching: pre-existing wins
             : null;                               // conflict: unresolvable, no effective flag
 
+      // Conflict: multiple increase flags, OR an increase flag alongside exempt/manual status.
+      // Any of these cases must be resolved manually before automated flag assignment.
+      const hasIncreaseAndExemptOrManual =
+        preExistingIncreaseFlags.length >= 1 && (isExempt || isManual);
+
       const preExistingFlagStatus: PreExistingFlagStatus =
-        preExistingIncreaseFlags.length === 0 ? "none"
-        : preExistingIncreaseFlags.length > 1 ? "conflict"
+        preExistingIncreaseFlags.length > 1 || hasIncreaseAndExemptOrManual ? "conflict"
+        : preExistingIncreaseFlags.length === 0 ? "none"
         : preExistingIncreaseFlags[0].flagId === resolvedFlag?.flagId ? "matching"
         : "override";
 

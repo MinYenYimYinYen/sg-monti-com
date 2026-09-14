@@ -1,13 +1,14 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { LandPlot } from "lucide-react";
+import { LandPlot, RefreshCw } from "lucide-react";
 import { CustomerIncreaseResult } from "@/app/priceIncrease/results/customerIncreaseResultsTypes";
 import { priceIncreaseConfigSelect } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { ServiceIncreaseRow } from "@/app/priceIncrease/results/_components/ServiceIncreaseRow";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
+import { useActiveCustomers } from "@/app/realGreen/customer/hooks/useActiveCustomers";
 
 // ---------------------------------------------------------------------------
 // FormulaStep — 2-row badge: label on top (muted), value on bottom (prominent)
@@ -45,6 +46,9 @@ type CustomerIncreaseCardProps = {
 export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
   const settings = useSelector(priceIncreaseConfigSelect.settings);
   const renewalFlagIds = useSelector(globalSettingsSelect.renewalFlagIds);
+  const exemptFlagId = useSelector(globalSettingsSelect.priceIncreaseExemptFlagId);
+  const manualFlagId = useSelector(globalSettingsSelect.priceIncreaseManualFlagId);
+  const { refreshCustomer, isRefreshingCustomer } = useActiveCustomers();
 
   const {
     customer,
@@ -73,6 +77,12 @@ export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
 
   const isEcon = targetProgram.x.isEcon;
 
+  // Exempt and manual flags on this customer (shown with destructive styling)
+  const exemptManualFlagIds = new Set(
+    [exemptFlagId, manualFlagId].filter((id): id is number => id !== null),
+  );
+  const customerExemptManualFlags = customer.flags.filter((f) => exemptManualFlagIds.has(f.flagId));
+
   // Pre-existing flag badge styling based on status
   const preExistingBadgeBase = "px-1.5 py-0 rounded text-xs border";
   const preExistingBadgeStyle =
@@ -92,6 +102,20 @@ export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
           <span className="text-sm font-medium text-foreground">{customer.displayName}</span>
         </CustomerLink>
 
+        {/* Exempt / manual flag badges — shown with destructive styling */}
+        {customerExemptManualFlags.length > 0 && (
+          <div className="flex gap-1">
+            {customerExemptManualFlags.map((flag) => (
+              <span
+                key={flag.flagId}
+                className="px-1.5 py-0 rounded text-xs bg-destructive/20 text-destructive border border-destructive/30"
+              >
+                {flag.desc}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Pre-existing increase flag badges */}
         {preExistingIncreaseFlags.length > 0 && (
           <div className="flex gap-1">
@@ -101,13 +125,6 @@ export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
               </span>
             ))}
           </div>
-        )}
-
-        {/* Status badges */}
-        {groupable.isExempt && (
-          <span className="px-1.5 py-0 rounded text-xs bg-destructive/20 text-destructive border border-destructive/30">
-            Exempt
-          </span>
         )}
 
         {/* Customer size */}
@@ -186,8 +203,8 @@ export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
           </div>
         )}
 
-        {/* Right: non-target program code badges */}
-        <div className="flex gap-1">
+        {/* Right: non-target program code badges + refresh button */}
+        <div className="flex items-center gap-1">
           {customer.programs
             .filter((program) => program.progCode.progCodeId !== targetProgCodeId)
             .map((program) => (
@@ -198,6 +215,16 @@ export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
                 {program.progCode.progCodeId}
               </span>
             ))}
+          <button
+            onClick={() => refreshCustomer(customer.custId)}
+            disabled={isRefreshingCustomer(customer.custId)}
+            title="Refresh customer data"
+            className="ml-1 flex items-center text-foreground/30 hover:text-foreground/60 transition-colors disabled:opacity-40"
+          >
+            <RefreshCw
+              className={`h-3 w-3 ${isRefreshingCustomer(customer.custId) ? "animate-spin" : ""}`}
+            />
+          </button>
         </div>
       </div>
 

@@ -6,7 +6,7 @@ const preExistingFlagStatusLabels: Record<PreExistingFlagStatus, string> = {
   none: "No Existing Flag",
   matching: "Matching Flag",
   override: "Override",
-  conflict: "Multiple Flags — Conflict",
+  conflict: "Conflict — Resolve Required",
 };
 
 /** Human-readable labels for each group key, used in the group picker UI. */

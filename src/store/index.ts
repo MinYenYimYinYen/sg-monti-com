@@ -6,6 +6,7 @@ import {
 } from "@reduxjs/toolkit";
 import { enableMapSet } from "immer";
 import rootReducer from "./reducers";
+import { custFlagListenerMiddleware } from "@/app/realGreen/custFlag/_lib/custFlagListeners";
 // import debounceMiddleware from "@/store/middleware/debounce";
 
 // Enable Immer's MapSet plugin for Map/Set support in Redux state
@@ -18,7 +19,7 @@ export const makeStore = () =>
       getDefaultMiddleware({
         immutableCheck: false, // set to false for better performance
         serializableCheck: false, // set to false for better performance
-      }), //.concat(debounceMiddleware),
+      }).concat(custFlagListenerMiddleware.middleware), //.concat(debounceMiddleware),
 
     devTools: {
       actionSanitizer: (action) => {

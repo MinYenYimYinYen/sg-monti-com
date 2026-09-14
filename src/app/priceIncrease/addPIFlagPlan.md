@@ -14,17 +14,26 @@ Flag assignment can happen:
 
 ---
 
-## Data Model: `preExistingIncreaseFlags` and `effectiveFlag`
+## Data Model: `preExistingIncreaseFlags`, `effectiveFlag`, and `preExistingFlagStatus`
 
-Each `CustomerIncreaseResult` now carries:
+Each `CustomerIncreaseResult` carries:
 
 - `resolvedFlag: IncreaseFlag | null` — the flag the module computed
 - `preExistingIncreaseFlags: IncreaseFlag[]` — recognized increase flags already on the customer
 - `effectiveFlag: IncreaseFlag | null` — the flag that will actually be used:
   - `preExistingIncreaseFlags.length === 0` → `effectiveFlag = resolvedFlag` (normal)
   - `preExistingIncreaseFlags.length === 1` → `effectiveFlag = preExistingIncreaseFlags[0]` (pre-existing wins, whether matching or override)
-  - `preExistingIncreaseFlags.length > 1` → `effectiveFlag = null` (conflict — unresolvable)
+  - conflict cases → `effectiveFlag = null` (unresolvable)
 - `groupable.preExistingFlagStatus: "none" | "matching" | "override" | "conflict"`
+
+### Conflict Definition
+
+A customer is in `"conflict"` state if **any** of the following are true:
+1. `preExistingIncreaseFlags.length > 1` — multiple recognized increase flags
+2. `preExistingIncreaseFlags.length >= 1 && isExempt` — has an increase flag AND is exempt
+3. `preExistingIncreaseFlags.length >= 1 && isManual` — has an increase flag AND is manual
+
+All three cases represent inconsistent flag state that must be resolved manually in RealGreen before any automated flag assignment.
 
 ---
 
@@ -34,7 +43,10 @@ All of the following must be satisfied before any flag assignment (individual or
 
 ### 1. No Conflicts in Batch
 
-Any customer with `preExistingFlagStatus === "conflict"` (multiple recognized increase flags) **must be resolved manually in RealGreen** before they can be included in any flag assignment operation.
+Any customer with `preExistingFlagStatus === "conflict"` **must be resolved manually in RealGreen** before they can be included in any flag assignment operation. Conflicts include:
+- Multiple recognized increase flags on the customer
+- An increase flag alongside an exempt flag
+- An increase flag alongside a manual flag
 
 - **Individual**: block assignment for that specific customer; show a clear error message.
 - **En masse**: the presence of any conflict customer in the batch must block the entire operation. The user must resolve all conflicts first.
@@ -59,12 +71,12 @@ If `effectiveFlag === null` (conflict case, or no `resolvedFlag` and no pre-exis
 
 **Logic**:
 1. Check `preExistingFlagStatus`:
-   - `"conflict"` → block, show error: "Customer has multiple increase flags. Resolve in RealGreen first."
+   - `"conflict"` → block, show error: "Customer has conflicting flags. Resolve in RealGreen first."
    - `"matching"` → skip (already correct); optionally show "Already assigned" confirmation.
    - `"override"` → the pre-existing flag is already the effective flag. No assignment needed unless the user explicitly wants to re-assign the module's `resolvedFlag`. This case needs UX design.
    - `"none"` → assign `resolvedFlag` to the customer.
 2. Call the RealGreen API to add the flag.
-3. On success: reload custFlag data for the assigned `flagId` via `useCustFlag`'s `reloadFlagId(flagId)`.
+3. On success: call `refreshCustomer(custId)` — the RTK listener in `custFlagListeners.ts` automatically fires `refreshCustFlags` which reconciles `custFlag` state. The selector chain recomputes reactively.
 
 ---
 
@@ -87,7 +99,7 @@ If `effectiveFlag === null` (conflict case, or no `resolvedFlag` and no pre-exis
 - Group by `flagId` to minimize API calls (one call per flag, with a list of custIds).
 
 **On success**:
-- Reload custFlag data for all assigned `flagId`s via `reloadFlagIds()`.
+- Call `refreshCustomer(custId)` for each assigned customer — the RTK listener handles `custFlag` reconciliation automatically.
 - Show a summary toast: "X flags assigned, Y skipped (already correct), Z skipped (override)."
 
 ---
@@ -107,13 +119,15 @@ The RealGreen API endpoint for adding a flag to a customer needs to be identifie
 
 ---
 
-## Optimistic Update Strategy
+## Post-Assignment State Update
 
-After a successful flag assignment:
-1. Call `reloadFlagId(flagId)` (individual) or `reloadFlagIds()` (en masse) from `useCustFlag`.
-2. This re-fetches `custFlag.flagIdCustIds` for the affected flag IDs.
-3. `centralSelectors` re-hydrates `customer.flags` from the updated `custIdFlagIds` map.
-4. `customerIncreaseResultsSelect` recomputes `preExistingIncreaseFlags`, `effectiveFlag`, and `preExistingFlagStatus` automatically.
+After a successful flag assignment, call `refreshCustomer(custId)` from `useActiveCustomers`. The RTK listener in `custFlagListeners.ts` automatically fires `custFlagActions.refreshCustFlags` after any `refreshCustomer.fulfilled` action, which:
+
+1. Calls `GET /Customer/{custId}/Flags` via the `refreshCustFlags` route
+2. Filters the result to only the `flagIdsInState` already loaded
+3. Updates `custFlag.flagIdCustIds` by adding/removing the custId from each entry
+4. `centralSelectors` re-hydrates `customer.flags` from the updated map
+5. `customerIncreaseResultsSelect` recomputes `preExistingIncreaseFlags`, `effectiveFlag`, and `preExistingFlagStatus` automatically
 
 No manual state mutation is needed — the selector chain handles the update reactively.
 
@@ -129,10 +143,14 @@ If a customer has a pre-existing increase flag that differs from the new flag to
 
 ---
 
-## UI Requirements (Not Yet Implemented)
+## UI Requirements
 
+- [x] Conflict warning badge on cards with `preExistingFlagStatus === "conflict"` (formula strip shows "Conflict → Resolve flags")
+- [x] Override indicator on cards with `preExistingFlagStatus === "override"` (formula strip shows "Override → [flag desc]")
+- [x] Exempt/manual flag descriptions shown as destructive badges in card header
+- [x] Pre-existing increase flag descriptions shown as primary badges in card header
+- [x] Refresh button on each `CustomerIncreaseCard` (triggers `refreshCustomer` + automatic `custFlag` reconciliation)
 - [ ] "Assign Flag" button on `CustomerIncreaseCard` (individual)
-- [ ] Conflict warning badge/tooltip on cards with `preExistingFlagStatus === "conflict"`
 - [ ] "Assign All" button in the By Customer view header
 - [ ] Pre-flight conflict gate UI (list of customers that must be resolved before en masse)
 - [ ] Progress indicator during en masse assignment
@@ -151,3 +169,14 @@ If a customer has a pre-existing increase flag that differs from the new flag to
 | `src/app/priceIncrease/assignFlag/useAssignFlag.ts` | Hook exposing individual and en masse assignment actions |
 | `src/app/priceIncrease/results/_components/AssignFlagButton.tsx` | Individual assignment button for `CustomerIncreaseCard` |
 | `src/app/priceIncrease/results/_components/AssignAllButton.tsx` | En masse assignment button + pre-flight gate UI |
+
+## Files Already Created (custFlag Infrastructure)
+
+| File | Purpose |
+|---|---|
+| `src/app/realGreen/custFlag/_lib/CustFlagTypes.ts` | Added `CustFlagRefreshResult` type |
+| `src/app/realGreen/custFlag/api/CustFlagContract.ts` | Added `refreshCustFlags` operation |
+| `src/app/realGreen/custFlag/api/route.ts` | Added `refreshCustFlags` handler (calls `GET /Customer/{custId}/Flags`) |
+| `src/app/realGreen/custFlag/_lib/custFlagSlice.ts` | Added `refreshCustFlags` thunk + reducer case |
+| `src/app/realGreen/custFlag/_lib/custFlagListeners.ts` | RTK listener: fires `refreshCustFlags` after any `refreshCustomer.fulfilled` |
+| `src/store/index.ts` | Registered `custFlagListenerMiddleware` |
