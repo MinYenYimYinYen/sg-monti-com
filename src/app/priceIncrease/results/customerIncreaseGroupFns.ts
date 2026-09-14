@@ -1,15 +1,24 @@
-import { CustomerIncreaseResult, GroupableIncreaseProperties } from "@/app/priceIncrease/results/customerIncreaseResultsTypes";
+import { CustomerIncreaseResult, GroupableIncreaseProperties, PreExistingFlagStatus } from "@/app/priceIncrease/results/customerIncreaseResultsTypes";
 
 type GroupFn = (result: CustomerIncreaseResult) => string;
+
+const preExistingFlagStatusLabels: Record<PreExistingFlagStatus, string> = {
+  none: "No Existing Flag",
+  matching: "Matching Flag",
+  override: "Override",
+  conflict: "Multiple Flags — Conflict",
+};
 
 /** Human-readable labels for each group key, used in the group picker UI. */
 export const customerIncreaseGroupLabels: Record<keyof GroupableIncreaseProperties, string> = {
   isExempt: "Exempt Status",
-  isManual: "Manual Override",
+  isManual: "Manual Price Increase",
   needsManualAttention: "Manual Attention",
   hasIncreaseFlag: "Increase Flag",
   isOverpriced: "Overpriced",
   isBelowAcquisition: "Below Acquisition",
+  resolvedFlagDesc: "Resolved Flag",
+  preExistingFlagStatus: "Pre-existing Flag Status",
 };
 
 /**
@@ -21,12 +30,14 @@ export const customerIncreaseGroupLabels: Record<keyof GroupableIncreaseProperti
  */
 export const customerIncreaseGroupFns: Record<keyof GroupableIncreaseProperties, GroupFn> = {
   isExempt: (r) => (r.groupable.isExempt ? "Exempt" : "Active"),
-  isManual: (r) => (r.groupable.isManual ? "Manual Override" : "Standard"),
+  isManual: (r) => (r.groupable.isManual ? "Manual Price Increase" : "Standard"),
   needsManualAttention: (r) => (r.groupable.needsManualAttention ? "Needs Review" : "Normal"),
   hasIncreaseFlag: (r) => (r.groupable.hasIncreaseFlag ? "Has Increase Flag" : "No Flag"),
   isOverpriced: (r) => (r.groupable.isOverpriced ? "Already Overpriced" : "Needs Increase"),
   isBelowAcquisition: (r) =>
     r.groupable.isBelowAcquisition ? "Below Acquisition Price" : "At/Above Acquisition",
+  resolvedFlagDesc: (r) => r.groupable.resolvedFlagDesc,
+  preExistingFlagStatus: (r) => preExistingFlagStatusLabels[r.groupable.preExistingFlagStatus],
 };
 
 export type CustomerIncreaseGroupKey = keyof GroupableIncreaseProperties;

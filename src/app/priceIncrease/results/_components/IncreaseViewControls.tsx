@@ -32,11 +32,16 @@ export function IncreaseViewControls() {
   const { sortKeys, groupKey } = viewConfig;
 
   function handleToggleSortKey(key: CustomerIncreaseSortKey) {
-    if (sortKeys.includes(key)) {
+    const isActive = sortKeys.some((e) => e.key === key);
+    if (isActive) {
       dispatch(priceIncreaseConfigActions.removeViewSortKey(key));
     } else {
       dispatch(priceIncreaseConfigActions.addViewSortKey(key));
     }
+  }
+
+  function handleToggleDirection(key: CustomerIncreaseSortKey) {
+    dispatch(priceIncreaseConfigActions.toggleViewSortDirection(key));
   }
 
   function handleSetGroupKey(key: CustomerIncreaseGroupKey | null) {
@@ -54,21 +59,49 @@ export function IncreaseViewControls() {
               <span className="text-foreground/40">None</span>
             ) : (
               <div className="flex items-center gap-1">
-                {sortKeys.map((key) => (
+                {sortKeys.map((entry) => (
                   <span
-                    key={key}
+                    key={entry.key}
                     className="flex items-center gap-0.5 px-1.5 py-0 rounded bg-primary/20 text-primary text-xs"
                   >
-                    {customerIncreaseSortLabels[key]}
-                    <button
+                    {customerIncreaseSortLabels[entry.key]}
+                    {/* Direction toggle */}
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      title={entry.direction === "desc" ? "Descending — click to sort ascending" : "Ascending — click to sort descending"}
                       onClick={(e) => {
                         e.stopPropagation();
-                        dispatch(priceIncreaseConfigActions.removeViewSortKey(key));
+                        handleToggleDirection(entry.key);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.stopPropagation();
+                          handleToggleDirection(entry.key);
+                        }
+                      }}
+                      className="hover:text-primary-foreground transition-colors"
+                    >
+                      {entry.direction === "desc" ? "▼" : "▲"}
+                    </span>
+                    {/* Remove */}
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        dispatch(priceIncreaseConfigActions.removeViewSortKey(entry.key));
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.stopPropagation();
+                          dispatch(priceIncreaseConfigActions.removeViewSortKey(entry.key));
+                        }
                       }}
                       className="hover:text-destructive"
                     >
                       <X className="h-2.5 w-2.5" />
-                    </button>
+                    </span>
                   </span>
                 ))}
               </div>
@@ -80,8 +113,9 @@ export function IncreaseViewControls() {
           <p className="text-xs text-foreground/40 mb-1.5 px-1">Sort by (priority order)</p>
           <div className="space-y-0.5">
             {ALL_SORT_KEYS.map((key) => {
-              const isActive = sortKeys.includes(key);
-              const priority = sortKeys.indexOf(key);
+              const activeEntry = sortKeys.find((e) => e.key === key);
+              const isActive = activeEntry !== undefined;
+              const priority = sortKeys.findIndex((e) => e.key === key);
               return (
                 <button
                   key={key}
@@ -93,8 +127,29 @@ export function IncreaseViewControls() {
                   }`}
                 >
                   <span>{customerIncreaseSortLabels[key]}</span>
-                  {isActive && (
-                    <span className="text-primary/60 font-mono">#{priority + 1}</span>
+                  {isActive && activeEntry && (
+                    <div className="flex items-center gap-1.5">
+                      {/* Direction toggle inside popover */}
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        title={activeEntry.direction === "desc" ? "Descending" : "Ascending"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleDirection(key);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.stopPropagation();
+                            handleToggleDirection(key);
+                          }
+                        }}
+                        className="text-primary/80 hover:text-primary transition-colors"
+                      >
+                        {activeEntry.direction === "desc" ? "▼" : "▲"}
+                      </span>
+                      <span className="text-primary/60 font-mono">#{priority + 1}</span>
+                    </div>
                   )}
                 </button>
               );
@@ -111,15 +166,23 @@ export function IncreaseViewControls() {
             {groupKey ? (
               <span className="flex items-center gap-0.5 px-1.5 py-0 rounded bg-accent/20 text-foreground/70 text-xs">
                 {customerIncreaseGroupLabels[groupKey]}
-                <button
+                <span
+                  role="button"
+                  tabIndex={0}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleSetGroupKey(null);
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.stopPropagation();
+                      handleSetGroupKey(null);
+                    }
+                  }}
                   className="hover:text-destructive"
                 >
                   <X className="h-2.5 w-2.5" />
-                </button>
+                </span>
               </span>
             ) : (
               <span className="text-foreground/40">None</span>

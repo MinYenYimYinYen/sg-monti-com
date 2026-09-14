@@ -13,6 +13,7 @@ import {
 import {
   CustomerIncreaseResult,
   GroupableIncreaseProperties,
+  PreExistingFlagStatus,
   SortableIncreaseProperties,
 } from "@/app/priceIncrease/results/customerIncreaseResultsTypes";
 
@@ -90,6 +91,12 @@ const selectCustomerIncreaseResults = createSelector(
       const customerRevenue = customer.x.revenue("renewal");
       const programRevenue = targetProgram.x.revenue("renewal");
 
+      // Pre-existing increase flags — recognized increase flags already on the customer
+      const preExistingIncreaseFlags = customer.flags.flatMap((f) => {
+        const inc = increaseFlags.find((inc) => inc.flagId === f.flagId);
+        return inc ? [inc] : [];
+      });
+
       if (isExempt) {
         const sortable: SortableIncreaseProperties = {
           increaseDollar: 0,
@@ -106,6 +113,10 @@ const selectCustomerIncreaseResults = createSelector(
           hasIncreaseFlag,
           isOverpriced: false,
           isBelowAcquisition: false,
+          resolvedFlagDesc: "No Flag",
+          preExistingFlagStatus: preExistingIncreaseFlags.length === 0 ? "none"
+            : preExistingIncreaseFlags.length > 1 ? "conflict"
+            : "matching", // exempt customers have no resolvedFlag to compare against
         };
         results.push({
           customer,
@@ -115,6 +126,8 @@ const selectCustomerIncreaseResults = createSelector(
           calculatedPercent: 0,
           cappedPercent: 0,
           resolvedFlag: null,
+          preExistingIncreaseFlags,
+          effectiveFlag: null,
           sortable,
           groupable,
         });
@@ -162,26 +175,48 @@ const selectCustomerIncreaseResults = createSelector(
       });
 
       // ---------------------------------------------------------------------------
-      // Step 4: resolvedFlag
+      // Step 4: resolvedFlag — resolved against calculatedPercent (post-bonus,
+      // pre-cap). The flag represents the increase the customer will actually
+      // receive after the upsell bonus is applied; rounding picks the nearest
+      // flag to that adjusted value.
       // ---------------------------------------------------------------------------
       const resolvedFlag = resolveIncreaseFlag({
-        calculatedPercent: cappedPercent,
+        calculatedPercent,
         increaseFlags,
         rounding: settings.flagRounding,
       });
+
+      // ---------------------------------------------------------------------------
+      // Effective flag — pre-existing flag overrides resolvedFlag when present
+      // ---------------------------------------------------------------------------
+      const effectiveFlag: IncreaseFlag | null =
+        preExistingIncreaseFlags.length === 0
+          ? resolvedFlag                          // normal: use module's resolved flag
+          : preExistingIncreaseFlags.length === 1
+            ? preExistingIncreaseFlags[0]         // override or matching: pre-existing wins
+            : null;                               // conflict: unresolvable, no effective flag
+
+      const preExistingFlagStatus: PreExistingFlagStatus =
+        preExistingIncreaseFlags.length === 0 ? "none"
+        : preExistingIncreaseFlags.length > 1 ? "conflict"
+        : preExistingIncreaseFlags[0].flagId === resolvedFlag?.flagId ? "matching"
+        : "override";
 
       // ---------------------------------------------------------------------------
       // Pre-computed sortable / groupable properties
       // ---------------------------------------------------------------------------
       const increaseDollar = serviceResults.reduce((sum, r) => sum + r.planDiff, 0);
       const isBelowAcquisition = serviceResults.some((r) => r.service.nextPrice < r.acqPrice);
-      const isOverpriced = cappedPercent < 0;
+      // isOverpriced uses rawPercent (pre-bonus, pre-cap) — the true signal that
+      // current prices already exceed the plan price, independent of adjustments.
+      const isOverpriced = rawPercent < 0;
       const needsManualAttention =
         rawPercent > settings.maxIncreaseNow + settings.manualAttentionThreshold;
 
       const sortable: SortableIncreaseProperties = {
         increaseDollar,
-        increasePercent: cappedPercent,
+        // Use effectiveFlag percent when available — reflects the actual outcome
+        increasePercent: effectiveFlag?.increasePercent ?? cappedPercent,
         rawPercent,
         customerRevenue,
         programRevenue,
@@ -195,6 +230,8 @@ const selectCustomerIncreaseResults = createSelector(
         hasIncreaseFlag,
         isOverpriced,
         isBelowAcquisition,
+        resolvedFlagDesc: effectiveFlag?.desc ?? "No Flag",
+        preExistingFlagStatus,
       };
 
       results.push({
@@ -205,9 +242,11 @@ const selectCustomerIncreaseResults = createSelector(
         calculatedPercent,
         cappedPercent,
         resolvedFlag,
+        preExistingIncreaseFlags,
+        effectiveFlag,
         sortable,
         groupable,
-      });
+      } satisfies CustomerIncreaseResult);
     }
 
     return results;

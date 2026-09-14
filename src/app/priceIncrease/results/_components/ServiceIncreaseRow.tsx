@@ -1,3 +1,4 @@
+import { LandPlot } from "lucide-react";
 import { ServiceIncreaseResult } from "@/app/priceIncrease/results/increaseResultsTypes";
 
 type ServiceIncreaseRowProps = {
@@ -8,8 +9,12 @@ export function ServiceIncreaseRow({ result }: ServiceIncreaseRowProps) {
   const { service, acqPrice, planPrice, planDiff, planDiffPercent, plannedPercent } = result;
 
   return (
-    <div className="grid grid-cols-6 gap-2 px-2 py-0.5 text-xs border-b border-border last:border-0">
+    <div className="grid grid-cols-7 gap-2 px-2 py-0.5 text-xs border-b border-border last:border-0">
       <span className="font-mono text-foreground/70">{service.servCode.servCodeId}</span>
+      <span className="flex items-center gap-0.5 text-foreground/60">
+        <LandPlot className="h-3 w-3 shrink-0" />
+        {service.nextSize ?? "—"}
+      </span>
       <span className="text-right text-foreground/60">${acqPrice.toFixed(2)}</span>
       <span className="text-right text-foreground/60">${service.nextPrice.toFixed(2)}</span>
       <span className="text-right text-foreground/60">${planPrice.toFixed(2)}</span>

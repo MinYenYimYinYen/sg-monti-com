@@ -150,10 +150,10 @@ const selectAvailableFlags = createSelector(
   },
 );
 
-/** True when all mapped flags have a non-zero increasePercent */
+/** True when all mapped flags have a defined increasePercent (zero is valid — PI 0 flag) */
 const selectFlagMappingsAllHaveValues = createSelector(
   [selectFlagMappingsDraft],
-  (mappings) => mappings.length > 0 && mappings.every((m) => m.increasePercent > 0),
+  (mappings) => mappings.length > 0 && mappings.every((m) => m.increasePercent >= 0),
 );
 
 /** True when any two mappings share the same increasePercent */
