@@ -66,7 +66,34 @@ export type GroupableIncreaseProperties = {
    * - "conflict" — multiple pre-existing increase flags (must be resolved manually)
    */
   preExistingFlagStatus: PreExistingFlagStatus;
+  /**
+   * Bucketed season count label for grouping.
+   * Individual labels for seasons up to configSeasonCount, then 5-year ranges beyond.
+   * Mirrors sortable.seasonCount but as a display-ready string bucket.
+   */
+  seasonCountBucket: string;
 };
+
+// ---------------------------------------------------------------------------
+// AssignFlagBlockReason — pure utility for individual flag assignment gating
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns a human-readable reason why flag assignment is blocked for this customer,
+ * or null if assignment is allowed. Used by AssignFlagButton for disabled state and tooltip.
+ *
+ * Order matters: exempt/manual are checked before flag status so the most
+ * actionable reason is surfaced first.
+ */
+export function getAssignFlagBlockReason(result: CustomerIncreaseResult): string | null {
+  if (result.groupable.isExempt) return "Exempt customers cannot be assigned a flag";
+  if (result.groupable.isManual) return "Manual customers cannot be assigned a flag";
+  if (result.groupable.preExistingFlagStatus === "conflict") return "Conflicting flags — resolve in RealGreen first";
+  if (result.groupable.preExistingFlagStatus === "matching") return "Flag already assigned";
+  if (result.groupable.preExistingFlagStatus === "override") return "Pre-existing flag overrides — resolve in RealGreen first";
+  if (!result.resolvedFlag) return "No flag to assign";
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // CustomerIncreaseResult

@@ -28,6 +28,10 @@ const selectTargetSeasonOverride = (state: AppState) =>
 
 const selectViewConfig = (state: AppState) => state.priceIncreaseConfig.viewConfig;
 
+const selectSummaryGroupKey = (state: AppState) => state.priceIncreaseConfig.summaryGroupKey;
+const selectSummaryFlagPerspective = (state: AppState) => state.priceIncreaseConfig.summaryFlagPerspective;
+const selectSettingsPanelOpen = (state: AppState) => state.priceIncreaseConfig.settingsPanelOpen;
+
 // ---------------------------------------------------------------------------
 // Section 1: Settings
 // ---------------------------------------------------------------------------
@@ -231,4 +235,11 @@ export const priceIncreaseConfigSelect = {
 
   // View config
   viewConfig: selectViewConfig,
+
+  // Summary config
+  summaryGroupKey: selectSummaryGroupKey,
+  summaryFlagPerspective: selectSummaryFlagPerspective,
+
+  // Settings panel
+  settingsPanelOpen: selectSettingsPanelOpen,
 };

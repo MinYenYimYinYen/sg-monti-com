@@ -86,4 +86,12 @@ export interface AuthContract extends ApiContract {
     };
     result: DataResponse<null>;
   };
+
+  // 12. Confirm Password (Re-authentication for sensitive operations)
+  confirmPassword: {
+    params: {
+      password: string;
+    };
+    result: DataResponse<boolean>;
+  };
 }

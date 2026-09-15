@@ -112,6 +112,21 @@ export const useAuth = () => {
     dispatch(authActions.resetPasswordResetStatus());
   };
 
+  /**
+   * Re-authenticates the current user by verifying their password server-side.
+   * Returns a boolean payload — true if the password matches, false if not.
+   * Does not mutate global auth state or show toasts on mismatch.
+   * Use for gating sensitive operations (e.g., en masse flag assignment).
+   */
+  const confirmPassword = (params: AuthContract["confirmPassword"]["params"]) => {
+    return dispatch(
+      authActions.confirmPassword({
+        params,
+        config: { showLoading: false, silentError: true },
+      }),
+    );
+  };
+
   return {
     login,
     logout,
@@ -126,5 +141,6 @@ export const useAuth = () => {
     resetEligibility,
     setInvalidCredentials,
     resetPasswordResetStatus,
+    confirmPassword,
   };
 };

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { custFlagActions } from "@/app/realGreen/custFlag/_lib/custFlagSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useSelector } from "react-redux";
+import { CustFlagAdd } from "@/app/realGreen/custFlag/_lib/CustFlagTypes";
 
 export function useCustFlag({
   flagIds,
@@ -74,5 +75,37 @@ export function useCustFlag({
     );
   };
 
-  return { reloadFlagIds, reloadFlagId };
+  /**
+   * Adds a flag to a single customer.
+   * State is updated optimistically via addCustFlag.fulfilled in custFlagSlice.
+   */
+  const addFlag = (params: CustFlagAdd) => {
+    return dispatch(
+      custFlagActions.addCustFlag({
+        params,
+        config: { loadingMsg: "Assigning flag..." },
+      }),
+    );
+  };
+
+  /**
+   * Adds flags to multiple customers, grouped by flagId.
+   * Each CustFlagAdd entry represents one flagId with its list of custIds.
+   * Dispatches one addCustFlag call per flagId with showLoading: false to
+   * avoid multiple global spinner activations.
+   */
+  const addFlags = (assignments: CustFlagAdd[]) => {
+    return Promise.all(
+      assignments.map((params) =>
+        dispatch(
+          custFlagActions.addCustFlag({
+            params,
+            config: { showLoading: false },
+          }),
+        ),
+      ),
+    );
+  };
+
+  return { reloadFlagIds, reloadFlagId, addFlag, addFlags };
 }

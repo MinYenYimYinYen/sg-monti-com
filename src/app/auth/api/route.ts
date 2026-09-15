@@ -388,6 +388,41 @@ const handlers: HandlerMap<AuthContract> = {
       return { success: true, payload: null };
     },
   },
+  confirmPassword: {
+    // Allow any authenticated role to confirm their password
+    roles: [...ROLES, "applied"],
+    handler: async ({ password }) => {
+      const cookieStore = await cookies();
+      const token = cookieStore.get(AUTH_CONST.COOKIE.ACCESS_TOKEN);
+
+      if (!token) {
+        throw new AppError({
+          message: "No token",
+          type: "AUTH_ERROR",
+          statusCode: 401,
+        });
+      }
+
+      const payload = verifyAccessToken(token.value);
+
+      await connectToMongoDB();
+      const user = await UserModel.findOne({ saId: payload.saId }).lean();
+
+      if (!user) {
+        throw new AppError({
+          message: "User not found",
+          type: "AUTH_ERROR",
+          statusCode: 401,
+        });
+      }
+
+      // Compare provided password against stored hash.
+      // Returns false (not an error) on mismatch — caller shows inline error.
+      const isMatch = await bcrypt.compare(password, user.password);
+
+      return { success: true, payload: isMatch };
+    },
+  },
   changePassword: {
     // Allow any authenticated role to change their password
     roles: [...ROLES, "applied"],

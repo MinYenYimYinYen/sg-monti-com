@@ -5,6 +5,8 @@ import { IncreaseFlagMapping, SeasonIncrease } from "@/app/priceIncrease/_lib/Pr
 import { CustomerIncreaseSortKey, SortEntry } from "@/app/priceIncrease/results/customerIncreaseSortFns";
 import { CustomerIncreaseGroupKey } from "@/app/priceIncrease/results/customerIncreaseGroupFns";
 
+export type SummaryFlagPerspective = "effective" | "actual" | "queued";
+
 // ---------------------------------------------------------------------------
 // Inline plan editor mode
 // ---------------------------------------------------------------------------
@@ -44,6 +46,14 @@ type PriceIncreaseConfigState = {
   // Use console.log(store.getState().priceIncreaseConfig.viewConfig) to capture
   // a configuration worth making permanent.
   viewConfig: IncreaseViewConfig;
+
+  // Summary page configuration — independent from the By Customer view config.
+  summaryGroupKey: CustomerIncreaseGroupKey | null;
+  summaryFlagPerspective: SummaryFlagPerspective;
+
+  // Settings panel — collapsible left panel shown on Summary and By Customer pages.
+  // Hidden automatically on the Config page (which has its own full settings UI).
+  settingsPanelOpen: boolean;
 };
 
 /**
@@ -75,6 +85,9 @@ const initialState: PriceIncreaseConfigState = {
   flagPickerSelectedId: null,
   targetSeasonOverride: null,
   viewConfig: defaultViewConfig,
+  summaryGroupKey: null,
+  summaryFlagPerspective: "effective",
+  settingsPanelOpen: false,
 };
 
 const priceIncreaseConfigSlice = createSlice({
@@ -244,6 +257,26 @@ const priceIncreaseConfigSlice = createSlice({
     },
     resetViewConfig: (state) => {
       state.viewConfig = defaultViewConfig;
+    },
+
+    // ---------------------------------------------------------------------------
+    // Summary configuration
+    // ---------------------------------------------------------------------------
+    setSummaryGroupKey: (state, action: PayloadAction<CustomerIncreaseGroupKey | null>) => {
+      state.summaryGroupKey = action.payload;
+    },
+    setSummaryFlagPerspective: (state, action: PayloadAction<SummaryFlagPerspective>) => {
+      state.summaryFlagPerspective = action.payload;
+    },
+
+    // ---------------------------------------------------------------------------
+    // Settings panel
+    // ---------------------------------------------------------------------------
+    toggleSettingsPanel: (state) => {
+      state.settingsPanelOpen = !state.settingsPanelOpen;
+    },
+    setSettingsPanelOpen: (state, action: PayloadAction<boolean>) => {
+      state.settingsPanelOpen = action.payload;
     },
   },
 });
