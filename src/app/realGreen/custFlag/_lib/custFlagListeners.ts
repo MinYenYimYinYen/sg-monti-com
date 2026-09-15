@@ -1,4 +1,4 @@
-import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit";
+import { createListenerMiddleware, isAnyOf, type PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch, AppState } from "@/store";
 import { custFlagActions } from "@/app/realGreen/custFlag/_lib/custFlagSlice";
 import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
@@ -49,8 +49,8 @@ custFlagListenerMiddleware.startListening({
     // No-op: no flags loaded yet — nothing to reconcile
     if (flagIdsInState.length === 0) return;
 
-    const payload = action.payload as StreamChunkData;
-    const meta = action.meta as { arg: WithConfig<{ custId: number }> };
+    type RefreshAction = PayloadAction<StreamChunkData, string, { arg: WithConfig<{ custId: number }> }>;
+    const { payload, meta } = action as RefreshAction;
     const params = meta.arg.params;
 
     // custId from the refreshed customer docs, or from the thunk params when
