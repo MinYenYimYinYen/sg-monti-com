@@ -179,6 +179,13 @@ type ResolveIncreaseFlagParams = {
 /**
  * Finds the best matching IncreaseFlag for a calculated increase percent.
  *
+ * Special case — zero or negative percent:
+ *   When calculatedPercent <= 0 (customer is overpriced, or bonus + min floor
+ *   results in no increase), only a flag mapped to exactly 0% is valid.
+ *   If no 0% flag exists, returns null. This prevents assigning a positive
+ *   increase flag to a customer who should receive no increase.
+ *
+ * Normal case (calculatedPercent > 0):
  * - "round" → nearest flag by absolute distance (ties go to the higher flag)
  * - "ceil"  → next flag at or above the calculated percent
  * - "floor" → next flag at or below the calculated percent
@@ -195,16 +202,23 @@ export function resolveIncreaseFlag({
   // Sort ascending by increasePercent for consistent traversal
   const sorted = [...increaseFlags].sort((a, b) => a.increasePercent - b.increasePercent);
 
+  // Zero/negative: only a 0% flag is valid
+  if (calculatedPercent <= 0) {
+    return sorted.find((f) => f.increasePercent === 0) ?? null;
+  }
+
   if (rounding === "floor") {
-    // Largest flag whose increasePercent <= calculatedPercent
+    // Largest flag whose increasePercent <= calculatedPercent.
+    // If calculatedPercent is below all flags, fall back to the lowest available flag.
     const candidates = sorted.filter((f) => f.increasePercent <= calculatedPercent);
-    return candidates.length > 0 ? candidates[candidates.length - 1] : null;
+    return candidates.length > 0 ? candidates[candidates.length - 1] : sorted[0];
   }
 
   if (rounding === "ceil") {
-    // Smallest flag whose increasePercent >= calculatedPercent
+    // Smallest flag whose increasePercent >= calculatedPercent.
+    // If calculatedPercent is above all flags, fall back to the highest available flag.
     const candidates = sorted.filter((f) => f.increasePercent >= calculatedPercent);
-    return candidates.length > 0 ? candidates[0] : null;
+    return candidates.length > 0 ? candidates[0] : sorted[sorted.length - 1];
   }
 
   // "round" — nearest by absolute distance

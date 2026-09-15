@@ -1,5 +1,5 @@
 import { rgHttp } from "@/app/realGreen/_lib/api/rgHttp";
-import {CustomerSearchRaw} from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/types/CustSearch";
+import { CustomerSearchRaw } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/types/CustSearch";
 import { ProgramSearchRaw } from "../../customer/_lib/searchUtil/searchCriteria/types/ProgSearch";
 import { CustFlagIdsSearch } from "@/app/realGreen/custFlag/api/route";
 // import { CustFlagIdsSearch } from "@/realGreen/types/CustFlagIdsSearch";
@@ -30,11 +30,11 @@ export type RgApiPath =
       method: "POST";
       body: CustFlagIdsSearch;
     }
-  // | {
-  //     path: "/Customer/Flags/Add";
-  //     method: "POST";
-  //     body: AddFlagToCustomersPOST;
-  //   }
+  | {
+      path: "/Customer/Flags/Add";
+      method: "POST";
+      body: { customerNumbers: number[]; flag: number };
+    }
   | { path: "/DiscountCode"; method: "GET"; body?: undefined }
   | { path: "/Employee"; method: "GET"; body?: undefined }
   | { path: `/Employee/${string}`; method: "GET"; body?: undefined }

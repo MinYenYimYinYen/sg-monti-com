@@ -1,5 +1,8 @@
 import { CustomerIncreaseResult } from "@/app/priceIncrease/results/customerIncreaseResultsTypes";
-import { customerIncreaseSortFns } from "@/app/priceIncrease/results/customerIncreaseSortFns";
+import {
+  applySortDirection,
+  customerIncreaseSortFns,
+} from "@/app/priceIncrease/results/customerIncreaseSortFns";
 import {
   customerIncreaseGroupFns,
   CustomerIncreaseGroupKey,
@@ -33,10 +36,10 @@ export function applyIncreaseView(
 ): AppliedIncreaseView {
   const { sortKeys, groupKey, activeGroup } = viewConfig;
 
-  // Apply multi-sort
+  // Apply multi-sort — each entry carries a key and direction
   const sorted = [...results].sort((a, b) => {
-    for (const key of sortKeys) {
-      const cmp = customerIncreaseSortFns[key](a, b);
+    for (const entry of sortKeys) {
+      const cmp = applySortDirection(customerIncreaseSortFns[entry.key](a, b), entry.direction);
       if (cmp !== 0) return cmp;
     }
     return 0;

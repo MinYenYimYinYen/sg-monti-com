@@ -5,6 +5,7 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useActiveCustomers } from "@/app/realGreen/customer/hooks/useActiveCustomers";
 import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
+import { usePriceIncreaseCustFlags } from "@/app/priceIncrease/usePriceIncreaseCustFlags";
 
 export function usePriceIncreaseDeps() {
   useCustomerContext({contexts: ["active"]});
@@ -14,4 +15,5 @@ export function usePriceIncreaseDeps() {
   useSeasonIncreases();
   usePriceIncreaseSettings();
   usePriceTable({ autoLoad: true});
+  usePriceIncreaseCustFlags();
 }

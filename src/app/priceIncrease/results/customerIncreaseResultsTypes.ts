@@ -40,6 +40,9 @@ export type SortableIncreaseProperties = {
  * customerIncreaseGroupFns.ts — TypeScript enforces this via the
  * Record<keyof GroupableIncreaseProperties, GroupFn> constraint.
  */
+/** Status of any pre-existing increase flags on the customer. */
+export type PreExistingFlagStatus = "none" | "matching" | "override" | "conflict";
+
 export type GroupableIncreaseProperties = {
   /** Customer has the priceIncreaseExemptFlagId flag */
   isExempt: boolean;
@@ -53,6 +56,16 @@ export type GroupableIncreaseProperties = {
   isOverpriced: boolean;
   /** Any service where nextPrice < acqPrice — customer is priced below acquisition */
   isBelowAcquisition: boolean;
+  /** effectiveFlag?.desc — the flag that will actually be applied, or "No Flag" */
+  resolvedFlagDesc: string;
+  /**
+   * Pre-existing increase flag state:
+   * - "none"     — no recognized increase flag on the customer (normal)
+   * - "matching" — one pre-existing flag that matches the module's resolvedFlag
+   * - "override" — one pre-existing flag that differs from resolvedFlag (pre-existing wins)
+   * - "conflict" — multiple pre-existing increase flags (must be resolved manually)
+   */
+  preExistingFlagStatus: PreExistingFlagStatus;
 };
 
 // ---------------------------------------------------------------------------
@@ -91,8 +104,24 @@ export type CustomerIncreaseResult = {
 
   resolvedFlag: IncreaseFlag | null;
 
+  /**
+   * Recognized increase flags already on the customer in the CRM.
+   * Normally empty (length 0). Length 1 = has a pre-existing flag (matching or override).
+   * Length 2+ = conflict that must be resolved manually before flag assignment.
+   */
+  preExistingIncreaseFlags: IncreaseFlag[];
+
+  /**
+   * The flag that will actually be used for this customer.
+   * - Normally equals resolvedFlag (no pre-existing flag).
+   * - When preExistingIncreaseFlags.length === 1 and it differs from resolvedFlag,
+   *   the pre-existing flag overrides (effectiveFlag = preExistingIncreaseFlags[0]).
+   * - When preExistingIncreaseFlags.length > 1, effectiveFlag is null — conflict.
+   */
+  effectiveFlag: IncreaseFlag | null;
+
   /** Pre-computed numeric properties for sorting */
   sortable: SortableIncreaseProperties;
-  /** Pre-computed boolean properties for grouping */
+  /** Pre-computed boolean/categorical properties for grouping */
   groupable: GroupableIncreaseProperties;
 };

@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { PriceIncreaseSettingsDoc } from "@/app/priceIncrease/settings/PriceIncreaseSettingsTypes";
 import { SeasonIncreasesDoc } from "@/app/priceIncrease/seasonIncreases/SeasonIncreasesTypes";
 import { IncreaseFlagMapping, SeasonIncrease } from "@/app/priceIncrease/_lib/PriceIncreaseTypes";
-import { CustomerIncreaseSortKey } from "@/app/priceIncrease/results/customerIncreaseSortFns";
+import { CustomerIncreaseSortKey, SortEntry } from "@/app/priceIncrease/results/customerIncreaseSortFns";
 import { CustomerIncreaseGroupKey } from "@/app/priceIncrease/results/customerIncreaseGroupFns";
 
 // ---------------------------------------------------------------------------
@@ -48,18 +48,19 @@ type PriceIncreaseConfigState = {
 
 /**
  * Sort/group configuration for the price increase results views.
- * sortKeys is an ordered list — primary sort first, tiebreakers after.
+ * sortKeys is an ordered list of SortEntry — primary sort first, tiebreakers after.
+ * Each entry carries the key and direction ("asc" | "desc").
  * groupKey partitions results into labeled groups (rendered as tabs).
  * activeGroup tracks which group tab is currently selected.
  */
 export type IncreaseViewConfig = {
-  sortKeys: CustomerIncreaseSortKey[];
+  sortKeys: SortEntry[];
   groupKey: CustomerIncreaseGroupKey | null;
   activeGroup: string | null;
 };
 
 const defaultViewConfig: IncreaseViewConfig = {
-  sortKeys: ["increasePercent"],
+  sortKeys: [{ key: "increasePercent", direction: "desc" }],
   groupKey: null,
   activeGroup: null,
 };
@@ -89,6 +90,10 @@ const priceIncreaseConfigSlice = createSlice({
       // Close any open inline plan editor when opening a new settings sheet
       state.inlinePlanMode = { type: "closed" };
       state.inlinePlanDraft = null;
+    },
+    /** Seeds the draft without opening the sheet UI — for inline panel use. */
+    seedSettingsDraft: (state, action: PayloadAction<PriceIncreaseSettingsDoc>) => {
+      state.settingsDraft = action.payload;
     },
     closeSettingsSheet: (state) => {
       // Closes the sheet UI only — draft is preserved so the user can navigate
@@ -205,18 +210,30 @@ const priceIncreaseConfigSlice = createSlice({
     // ---------------------------------------------------------------------------
     // View configuration (sort / group)
     // ---------------------------------------------------------------------------
-    setViewSortKeys: (state, action: PayloadAction<CustomerIncreaseSortKey[]>) => {
+    setViewSortKeys: (state, action: PayloadAction<SortEntry[]>) => {
       state.viewConfig.sortKeys = action.payload;
       // Reset active group when sort changes — page position is no longer meaningful
       state.viewConfig.activeGroup = null;
     },
     addViewSortKey: (state, action: PayloadAction<CustomerIncreaseSortKey>) => {
-      if (!state.viewConfig.sortKeys.includes(action.payload)) {
-        state.viewConfig.sortKeys = [...state.viewConfig.sortKeys, action.payload];
+      const alreadyPresent = state.viewConfig.sortKeys.some((e) => e.key === action.payload);
+      if (!alreadyPresent) {
+        state.viewConfig.sortKeys = [
+          ...state.viewConfig.sortKeys,
+          { key: action.payload, direction: "desc" },
+        ];
       }
     },
     removeViewSortKey: (state, action: PayloadAction<CustomerIncreaseSortKey>) => {
-      state.viewConfig.sortKeys = state.viewConfig.sortKeys.filter((k) => k !== action.payload);
+      state.viewConfig.sortKeys = state.viewConfig.sortKeys.filter((e) => e.key !== action.payload);
+    },
+    /** Flips the direction of an existing sort entry between "asc" and "desc". */
+    toggleViewSortDirection: (state, action: PayloadAction<CustomerIncreaseSortKey>) => {
+      state.viewConfig.sortKeys = state.viewConfig.sortKeys.map((e) =>
+        e.key === action.payload
+          ? { ...e, direction: e.direction === "desc" ? "asc" : "desc" }
+          : e,
+      );
     },
     setViewGroupKey: (state, action: PayloadAction<CustomerIncreaseGroupKey | null>) => {
       state.viewConfig.groupKey = action.payload;
