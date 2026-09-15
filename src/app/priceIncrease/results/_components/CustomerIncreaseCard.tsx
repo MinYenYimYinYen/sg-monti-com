@@ -9,6 +9,7 @@ import { ServiceIncreaseRow } from "@/app/priceIncrease/results/_components/Serv
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { useActiveCustomers } from "@/app/realGreen/customer/hooks/useActiveCustomers";
+import { AssignFlagButton } from "@/app/priceIncrease/results/_components/AssignFlagButton";
 
 // ---------------------------------------------------------------------------
 // FormulaStep — 2-row badge: label on top (muted), value on bottom (prominent)
@@ -145,63 +146,69 @@ export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
           ${sortable.customerRevenue.toFixed(2)}
         </span>
 
-        {/* Center: formula strip — Raw → Bonus → Adjusted → [Cap →] Flag [→ Override] */}
-        {!groupable.isExempt && (
-          <div className="flex items-center gap-1 mx-auto">
-            {/* Step 1: Raw percent */}
-            <FormulaStep label="Raw" value={`${rawPercent.toFixed(1)}%`} />
+        {/* Center: formula strip — Raw → Bonus → Adjusted → [Cap →] Flag [→ Override | Exempt] */}
+        <div className="flex items-center gap-1 mx-auto">
+          {/* Step 1: Raw percent */}
+          <FormulaStep label="Raw" value={`${rawPercent.toFixed(1)}%`} />
 
-            {/* Step 2: Upsell bonus (only shown when bonus actually applied) */}
-            {calculatedPercent !== rawPercent && (
-              <>
-                <span className="text-foreground/30 text-xs">−</span>
-                <FormulaStep
-                  label="Bonus"
-                  value={`${(rawPercent - calculatedPercent).toFixed(1)}%`}
-                  muted
-                />
-                <span className="text-foreground/30 text-xs">=</span>
-                <FormulaStep label="Adjusted" value={`${calculatedPercent.toFixed(1)}%`} />
-              </>
-            )}
+          {/* Step 2: Upsell bonus (only shown when bonus actually applied) */}
+          {calculatedPercent !== rawPercent && (
+            <>
+              <span className="text-foreground/30 text-xs">−</span>
+              <FormulaStep
+                label="Bonus"
+                value={`${(rawPercent - calculatedPercent).toFixed(1)}%`}
+                muted
+              />
+              <span className="text-foreground/30 text-xs">=</span>
+              <FormulaStep label="Adjusted" value={`${calculatedPercent.toFixed(1)}%`} />
+            </>
+          )}
 
-            {/* Step 3: Cap (only shown when cap actually reduced the value) */}
-            {cappedPercent !== calculatedPercent && (
-              <>
-                <span className="text-foreground/30 text-xs">→</span>
-                <FormulaStep
-                  label="Capped"
-                  value={`${cappedPercent.toFixed(1)}%`}
-                  highlight="destructive"
-                />
-              </>
-            )}
+          {/* Step 3: Cap (only shown when cap actually reduced the value) */}
+          {cappedPercent !== calculatedPercent && (
+            <>
+              <span className="text-foreground/30 text-xs">→</span>
+              <FormulaStep
+                label="Capped"
+                value={`${cappedPercent.toFixed(1)}%`}
+                highlight="destructive"
+              />
+            </>
+          )}
 
-            {/* Step 4: Resolved flag (module's computed flag) */}
-            {resolvedFlag && (
-              <>
-                <span className="text-foreground/30 text-xs">→</span>
-                <FormulaStep label="Flag" value={resolvedFlag.desc} highlight="primary" />
-              </>
-            )}
+          {/* Exempt customers — show exempt badge instead of flag steps */}
+          {groupable.isExempt && (
+            <>
+              <span className="text-foreground/30 text-xs">→</span>
+              <FormulaStep label="Status" value="Exempt" highlight="destructive" />
+            </>
+          )}
 
-            {/* Step 5: Effective flag override — shown when pre-existing flag differs */}
-            {preExistingFlagStatus === "override" && effectiveFlag && (
-              <>
-                <span className="text-destructive text-xs">→</span>
-                <FormulaStep label="Override" value={effectiveFlag.desc} highlight="destructive" />
-              </>
-            )}
+          {/* Step 4: Resolved flag (module's computed flag) — non-exempt only */}
+          {!groupable.isExempt && resolvedFlag && (
+            <>
+              <span className="text-foreground/30 text-xs">→</span>
+              <FormulaStep label="Flag" value={resolvedFlag.desc} highlight="primary" />
+            </>
+          )}
 
-            {/* Conflict indicator — no effective flag can be determined */}
-            {preExistingFlagStatus === "conflict" && (
-              <>
-                <span className="text-destructive text-xs">→</span>
-                <FormulaStep label="Conflict" value="Resolve flags" highlight="destructive" />
-              </>
-            )}
-          </div>
-        )}
+          {/* Step 5: Effective flag override — shown when pre-existing flag differs */}
+          {!groupable.isExempt && preExistingFlagStatus === "override" && effectiveFlag && (
+            <>
+              <span className="text-destructive text-xs">→</span>
+              <FormulaStep label="Override" value={effectiveFlag.desc} highlight="destructive" />
+            </>
+          )}
+
+          {/* Conflict indicator — no effective flag can be determined */}
+          {!groupable.isExempt && preExistingFlagStatus === "conflict" && (
+            <>
+              <span className="text-destructive text-xs">→</span>
+              <FormulaStep label="Conflict" value="Resolve flags" highlight="destructive" />
+            </>
+          )}
+        </div>
 
         {/* Right: non-target program code badges + refresh button */}
         <div className="flex items-center gap-1">
@@ -215,6 +222,7 @@ export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
                 {program.progCode.progCodeId}
               </span>
             ))}
+          <AssignFlagButton result={result} />
           <button
             onClick={() => refreshCustomer(customer.custId)}
             disabled={isRefreshingCustomer(customer.custId)}

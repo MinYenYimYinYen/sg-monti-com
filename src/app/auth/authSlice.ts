@@ -132,6 +132,13 @@ const changePassword = createStandardThunk<AuthContract, "changePassword">({
   opName: "changePassword",
 });
 
+// K. Confirm Password (Re-authentication for sensitive operations)
+const confirmPassword = createStandardThunk<AuthContract, "confirmPassword">({
+  typePrefix: "auth/confirmPassword",
+  apiPath: "/auth/api",
+  opName: "confirmPassword",
+});
+
 // 3. SLICE
 const authSlice = createSlice({
   name: "auth",
@@ -277,6 +284,7 @@ export const authActions = {
   approveUser,
   resolvePasswordReset,
   changePassword,
+  confirmPassword,
 };
 export const authSelect = { ...authSlice.selectors };
 export default authSlice.reducer;

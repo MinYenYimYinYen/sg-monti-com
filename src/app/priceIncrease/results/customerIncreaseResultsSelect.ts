@@ -16,6 +16,8 @@ import {
   PreExistingFlagStatus,
   SortableIncreaseProperties,
 } from "@/app/priceIncrease/results/customerIncreaseResultsTypes";
+import { getSeasonCountBucket } from "@/app/priceIncrease/results/customerIncreaseGroupFns";
+import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSelect";
 
 // ---------------------------------------------------------------------------
 // Hydrated IncreaseFlag list
@@ -40,12 +42,18 @@ const selectIncreaseFlags = createSelector(
  * CustomerIncreaseResult. Applies upsell bonus and caps after aggregation.
  *
  * Pipeline per customer:
- *   1. rawPercent    — size-weighted average of planDiffPercent across services
+ *   1. rawPercent        — size-weighted average of planDiffPercent across services
  *   2. calculatedPercent — after upsell bonus
- *   3. cappedPercent — after maxIncreaseNow / maxIncreaseEver caps
- *   4. resolvedFlag  — resolved against cappedPercent
+ *   3. cappedPercent     — after maxIncreaseNow / maxIncreaseEver caps
+ *   4. resolvedFlag      — flag resolved against cappedPercent
  *
- * Exempt customers are included with zeroed percents and isExempt: true.
+ * Exempt customers run the full pipeline so their service breakdown and
+ * computed percents are available for display and opportunity-cost analysis.
+ * Their resolvedFlag and effectiveFlag are forced to null — they will never
+ * receive an automated flag assignment.
+ *
+ * Manual customers are excluded entirely.
+ *
  * Unmatched customers (no target program) are excluded — they live in
  * serviceIncreaseResultsSelect.unmatchedCustomers.
  */
@@ -58,6 +66,7 @@ const selectCustomerIncreaseResults = createSelector(
     selectIncreaseFlags,
     globalSettingsSelect.priceIncreaseExemptFlagId,
     globalSettingsSelect.priceIncreaseManualFlagId,
+    seasonIncreasesSelect.activeDoc,
   ],
   (
     matchedCustomers,
@@ -67,8 +76,13 @@ const selectCustomerIncreaseResults = createSelector(
     increaseFlags,
     exemptFlagId,
     manualFlagId,
+    activeSeasonDoc,
   ): CustomerIncreaseResult[] => {
     if (!settings) return [];
+
+    // configSeasonCount = number of explicitly defined seasons in the active plan.
+    // Season 1 is the sale season (no entry), so configSeasonCount = seasonIncreases.length + 1.
+    const configSeasonCount = activeSeasonDoc ? activeSeasonDoc.seasonIncreases.length + 1 : 0;
 
     const increaseFlagIds = new Set(increaseFlags.map((f) => f.flagId));
     const results: CustomerIncreaseResult[] = [];
@@ -81,6 +95,10 @@ const selectCustomerIncreaseResults = createSelector(
       const isManual =
         manualFlagId !== null &&
         customer.flags.some((f) => f.flagId === manualFlagId);
+
+      // Manual customers are excluded from price increase processing entirely.
+      // They are managed separately and should not receive automated flag assignments.
+      if (isManual) continue;
 
       const hasIncreaseFlag = customer.flags.some((f) => increaseFlagIds.has(f.flagId));
 
@@ -96,43 +114,6 @@ const selectCustomerIncreaseResults = createSelector(
         const inc = increaseFlags.find((inc) => inc.flagId === f.flagId);
         return inc ? [inc] : [];
       });
-
-      if (isExempt) {
-        const sortable: SortableIncreaseProperties = {
-          increaseDollar: 0,
-          increasePercent: 0,
-          rawPercent: 0,
-          customerRevenue,
-          programRevenue,
-          seasonCount,
-        };
-        const groupable: GroupableIncreaseProperties = {
-          isExempt: true,
-          isManual,
-          needsManualAttention: false,
-          hasIncreaseFlag,
-          isOverpriced: false,
-          isBelowAcquisition: false,
-          resolvedFlagDesc: "No Flag",
-          preExistingFlagStatus: preExistingIncreaseFlags.length === 0 ? "none"
-            : preExistingIncreaseFlags.length > 1 ? "conflict"
-            : "matching", // exempt customers have no resolvedFlag to compare against
-        };
-        results.push({
-          customer,
-          targetProgram,
-          serviceResults: [],
-          rawPercent: 0,
-          calculatedPercent: 0,
-          cappedPercent: 0,
-          resolvedFlag: null,
-          preExistingIncreaseFlags,
-          effectiveFlag: null,
-          sortable,
-          groupable,
-        });
-        continue;
-      }
 
       const serviceResults = serviceResultMap.get(customer.custId) ?? [];
 
@@ -175,37 +156,38 @@ const selectCustomerIncreaseResults = createSelector(
       });
 
       // ---------------------------------------------------------------------------
-      // Step 4: resolvedFlag — resolved against calculatedPercent (post-bonus,
-      // pre-cap). The flag represents the increase the customer will actually
-      // receive after the upsell bonus is applied; rounding picks the nearest
-      // flag to that adjusted value.
+      // Step 4: resolvedFlag / effectiveFlag
+      // Exempt customers run the full pipeline for display purposes, but their
+      // flags are forced to null — they never receive automated flag assignment.
       // ---------------------------------------------------------------------------
-      const resolvedFlag = resolveIncreaseFlag({
-        calculatedPercent,
-        increaseFlags,
-        rounding: settings.flagRounding,
-      });
+      const resolvedFlag: IncreaseFlag | null = isExempt
+        ? null
+        : resolveIncreaseFlag({
+            calculatedPercent,
+            increaseFlags,
+            rounding: settings.flagRounding,
+          });
 
-      // ---------------------------------------------------------------------------
-      // Effective flag — pre-existing flag overrides resolvedFlag when present
-      // ---------------------------------------------------------------------------
-      const effectiveFlag: IncreaseFlag | null =
-        preExistingIncreaseFlags.length === 0
+      const effectiveFlag: IncreaseFlag | null = isExempt
+        ? null
+        : preExistingIncreaseFlags.length === 0
           ? resolvedFlag                          // normal: use module's resolved flag
           : preExistingIncreaseFlags.length === 1
             ? preExistingIncreaseFlags[0]         // override or matching: pre-existing wins
             : null;                               // conflict: unresolvable, no effective flag
 
       // Conflict: multiple increase flags, OR an increase flag alongside exempt/manual status.
-      // Any of these cases must be resolved manually before automated flag assignment.
       const hasIncreaseAndExemptOrManual =
         preExistingIncreaseFlags.length >= 1 && (isExempt || isManual);
 
-      const preExistingFlagStatus: PreExistingFlagStatus =
-        preExistingIncreaseFlags.length > 1 || hasIncreaseAndExemptOrManual ? "conflict"
-        : preExistingIncreaseFlags.length === 0 ? "none"
-        : preExistingIncreaseFlags[0].flagId === resolvedFlag?.flagId ? "matching"
-        : "override";
+      const preExistingFlagStatus: PreExistingFlagStatus = isExempt
+        ? preExistingIncreaseFlags.length === 0 ? "none"
+          : preExistingIncreaseFlags.length > 1 ? "conflict"
+          : "matching" // exempt customers have no resolvedFlag to compare against
+        : preExistingIncreaseFlags.length > 1 || hasIncreaseAndExemptOrManual ? "conflict"
+          : preExistingIncreaseFlags.length === 0 ? "none"
+          : preExistingIncreaseFlags[0].flagId === resolvedFlag?.flagId ? "matching"
+          : "override";
 
       // ---------------------------------------------------------------------------
       // Pre-computed sortable / groupable properties
@@ -215,13 +197,15 @@ const selectCustomerIncreaseResults = createSelector(
       // isOverpriced uses rawPercent (pre-bonus, pre-cap) — the true signal that
       // current prices already exceed the plan price, independent of adjustments.
       const isOverpriced = rawPercent < 0;
+      // Exempt customers are never flagged for manual attention — they won't get a flag.
       const needsManualAttention =
-        rawPercent > settings.maxIncreaseNow + settings.manualAttentionThreshold;
+        !isExempt && rawPercent > settings.maxIncreaseNow + settings.manualAttentionThreshold;
 
       const sortable: SortableIncreaseProperties = {
         increaseDollar,
-        // Use effectiveFlag percent when available — reflects the actual outcome
-        increasePercent: effectiveFlag?.increasePercent ?? cappedPercent,
+        // Use effectiveFlag percent when available — reflects the actual outcome.
+        // For exempt customers, cappedPercent is used as the hypothetical increase.
+        increasePercent: isExempt ? cappedPercent : (effectiveFlag?.increasePercent ?? cappedPercent),
         rawPercent,
         customerRevenue,
         programRevenue,
@@ -229,14 +213,16 @@ const selectCustomerIncreaseResults = createSelector(
       };
 
       const groupable: GroupableIncreaseProperties = {
-        isExempt: false,
+        isExempt,
         isManual,
         needsManualAttention,
         hasIncreaseFlag,
         isOverpriced,
         isBelowAcquisition,
-        resolvedFlagDesc: effectiveFlag?.desc ?? "No Flag",
+        // Exempt customers show "Exempt" as their resolved flag description.
+        resolvedFlagDesc: isExempt ? "Exempt" : (effectiveFlag?.desc ?? "No Flag"),
         preExistingFlagStatus,
+        seasonCountBucket: getSeasonCountBucket(seasonCount, configSeasonCount),
       };
 
       results.push({
