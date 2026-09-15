@@ -3,6 +3,12 @@ export type FlagIdCustIds = {
   custIds: number[];
 };
 
+/** Params and result shape for adding a flag to one or more customers. */
+export type CustFlagAdd = {
+  flagId: number;
+  custIds: number[];
+};
+
 export type CustFlagMap = Map<number, number[]>;
 
 /**

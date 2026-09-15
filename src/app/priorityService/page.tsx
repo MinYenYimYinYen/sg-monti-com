@@ -122,7 +122,7 @@ export default function PriorityServicePage() {
         </div>
 
         {/* ── Right panel: form ── */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-y-auto">
           {selected === null && (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
               Select an entry to edit, or click &#34;New Entry&#34; to add one.

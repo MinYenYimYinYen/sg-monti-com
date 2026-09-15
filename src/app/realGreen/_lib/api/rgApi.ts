@@ -30,11 +30,11 @@ export type RgApiPath =
       method: "POST";
       body: CustFlagIdsSearch;
     }
-  // | {
-  //     path: "/Customer/Flags/Add";
-  //     method: "POST";
-  //     body: { customerNumbers: number[]; flag: number };
-  //   }
+  | {
+      path: "/Customer/Flags/Add";
+      method: "POST";
+      body: { customerNumbers: number[]; flag: number };
+    }
   | { path: "/DiscountCode"; method: "GET"; body?: undefined }
   | { path: "/Employee"; method: "GET"; body?: undefined }
   | { path: `/Employee/${string}`; method: "GET"; body?: undefined }
