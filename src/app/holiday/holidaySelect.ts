@@ -26,7 +26,29 @@ const selectHolidayDates = createSelector(
   },
 );
 
+/**
+ * Expands weather-day holiday dateRanges into individual weekday date strings.
+ * Used by reliabilitySelect and productivitySelect to exclude these dates
+ * from completion % denominators and suspicious-zero-day detection.
+ */
+const selectWeatherDayDates = createSelector(
+  [selectDocs],
+  (docs): Set<string> => {
+    const result = new Set<string>();
+    for (const holiday of docs) {
+      if (!holiday.isWeatherDay) continue;
+      let day = holiday.dateRange.min;
+      while (day <= holiday.dateRange.max) {
+        if (dateStrings.isWeekDay(day)) result.add(day);
+        day = dateStrings.addDays(day, 1);
+      }
+    }
+    return result;
+  },
+);
+
 export const holidaySelect = {
   all: selectAll,
   holidayDates: selectHolidayDates,
+  weatherDayDates: selectWeatherDayDates,
 };

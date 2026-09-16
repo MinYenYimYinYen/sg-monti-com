@@ -7,6 +7,7 @@
 // ---------------------------------------------------------------------------
 
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { EmployeeAvailability } from "@/app/employeeAvailability/EmployeeAvailabilityTypes";
 
 export type CascadeTimelineEvent =
   | { kind: "leave"; date: string; toServCodeId: string }
@@ -103,6 +104,12 @@ export type DayCrawlEmployeeEntry = {
    * The crawler skips these days silently (no drain, no timeline event).
    */
   timeOffDates: Set<string>;
+  /**
+   * Employee availability constraints — startDate/endDate block the crawler from working those days.
+   * The simulation checks these directly rather than pre-populating timeOffDates,
+   * to avoid allocating large Sets for future hires with months of blocked dates.
+   */
+  availability: EmployeeAvailability;
 };
 
 // ---------------------------------------------------------------------------

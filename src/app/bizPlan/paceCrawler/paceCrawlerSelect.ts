@@ -558,7 +558,8 @@ const selectCrawlerResult = createSelector(
         totalAvgDailyPrice,
         nextAvailableDate,
         timeOffDates,
-      });
+        availability: employee.availability,
+      } satisfies DayCrawlEmployeeEntry);
     }
 
     return runDayCrawlSimulation(servCodeEntries, employeeEntries, crawlStart, cascadeThreshold);

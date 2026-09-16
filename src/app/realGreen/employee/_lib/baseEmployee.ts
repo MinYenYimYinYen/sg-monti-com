@@ -6,6 +6,7 @@ import {
 } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
+import { EmployeeAvailability } from "@/app/employeeAvailability/EmployeeAvailabilityTypes";
 
 export const baseEmployeeDocProps: EmployeeDocProps = {
   employeeId: baseStrId,
@@ -24,6 +25,7 @@ export const baseEmployeeDoc: EmployeeDoc = {
 const baseEmployeeProps: EmployeeProps = {
   servCodeIds: [],
   plannedTimeOff: [] as PlannedTimeOff[],
+  availability: { employeeId: baseStrId },
 };
 
 export const baseEmployee: Employee = {

@@ -15,6 +15,7 @@ const HolidaySchema = new mongoose.Schema<Holiday>(
     holidayId: { type: String, required: true },
     description: { type: String, required: true },
     dateRange: { type: TRangeSchema, required: true },
+    isWeatherDay: { type: Boolean, required: true, default: false },
   },
   { timestamps: true },
 );

@@ -1,10 +1,12 @@
 "use client";
 
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { SizeSanityCustomer, SizeSanityReason } from "@/app/sanity/sizeSanity/sizeSanitySelect";
+import { sanityActions } from "@/app/sanity/sanitySlice";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { ProgramLink } from "@/app/realGreen/customer/components/ProgramLink";
 import { useFullSeasonServices } from "@/app/realGreen/customer/hooks/useFullSeasonServices";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, CheckCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/style/components/button";
 
 const REASON_LABELS: Record<SizeSanityReason, string> = {
@@ -21,12 +23,26 @@ const REASON_CLASSES: Record<SizeSanityReason, string> = {
 
 type SizeSanityCustomerRowProps = {
   sizeSanityCustomer: SizeSanityCustomer;
+  /**
+   * "active" — shown in the main list; displays a "Mark Finished" button.
+   * "finished" — shown in the finished popover; displays an "Unmark" button.
+   */
+  mode: "active" | "finished";
 };
 
-export function SizeSanityCustomerRow({ sizeSanityCustomer }: SizeSanityCustomerRowProps) {
+export function SizeSanityCustomerRow({ sizeSanityCustomer, mode }: SizeSanityCustomerRowProps) {
   const { customer, flaggedPrograms } = sizeSanityCustomer;
+  const dispatch = useAppDispatch();
   const { refreshCustomer, isRefreshingCustomer } = useFullSeasonServices();
   const isRefreshing = isRefreshingCustomer(customer.custId);
+
+  const handleMarkFinished = () => {
+    dispatch(sanityActions.markSizeSanityCustomerFinished(customer.custId));
+  };
+
+  const handleUnmark = () => {
+    dispatch(sanityActions.unmarkSizeSanityCustomerFinished(customer.custId));
+  };
 
   return (
     <div className="rounded-md border border-border bg-card overflow-hidden">
@@ -54,6 +70,31 @@ export function SizeSanityCustomerRow({ sizeSanityCustomer }: SizeSanityCustomer
           <span className="text-xs text-muted-foreground font-mono shrink-0">
             size: {customer.size.toLocaleString()}
           </span>
+          {/* Push mark/unmark button to the far right to avoid accidental clicks */}
+          <div className="flex-1" />
+          {mode === "active" ? (
+            <Button
+              variant="accent"
+              intensity="ghost"
+              size="icon"
+              className="h-6 w-6 shrink-0"
+              onClick={handleMarkFinished}
+              title="Mark as finished — removes from active list"
+            >
+              <CheckCircle className="h-3.5 w-3.5" />
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              intensity="ghost"
+              size="icon"
+              className="h-6 w-6 shrink-0"
+              onClick={handleUnmark}
+              title="Unmark — restore to active list"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
         {customer.techNote && (
           <p className="mt-1 text-xs text-muted-foreground italic pl-8">

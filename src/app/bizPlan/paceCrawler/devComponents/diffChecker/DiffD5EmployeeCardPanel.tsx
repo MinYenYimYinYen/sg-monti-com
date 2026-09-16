@@ -9,12 +9,39 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { DatePicker } from "@/components/DatePicker";
 import { cn } from "@/style/utils";
 import { ChevronRight } from "lucide-react";
+import { dateRanges } from "@/lib/primatives/dates/dateStrings";
+import { EmployeeAvailability } from "@/app/employeeAvailability/EmployeeAvailabilityTypes";
 import type {
   EmployeeCardData,
   OpenGroupRow,
   OpenGroupMemberRow,
 } from "@/app/bizPlan/paceCrawler/_lib/diffChecker/DiffCheckerTypes";
-// Note: OpenServCodeRow has been removed — all entries are now OpenGroupRow.
+
+// ---------------------------------------------------------------------------
+// Availability Status
+// ---------------------------------------------------------------------------
+
+type AvailabilityStatus =
+  | { kind: "available" }
+  | { kind: "not_started"; startDate: string; daysUntilStart: number }
+  | { kind: "ended"; endDate: string };
+
+function getAvailabilityStatus(
+  availability: EmployeeAvailability,
+  mainDate: string,
+): AvailabilityStatus {
+  if (availability.startDate && mainDate < availability.startDate) {
+    return {
+      kind: "not_started",
+      startDate: availability.startDate,
+      daysUntilStart: dateRanges.weekdaysBetween(mainDate, availability.startDate),
+    };
+  }
+  if (availability.endDate && mainDate > availability.endDate) {
+    return { kind: "ended", endDate: availability.endDate };
+  }
+  return { kind: "available" };
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -181,35 +208,95 @@ function GroupEntryRow({ row }: { row: OpenGroupRow }) {
 // EmployeeCard
 // ---------------------------------------------------------------------------
 
-function EmployeeCard({ cardData }: { cardData: EmployeeCardData }) {
-  const { employee, isAlreadyRouted, openEntries } = cardData;
+function EmployeeCard({ cardData, mainDate }: { cardData: EmployeeCardData; mainDate: string }) {
+  const { employee, isAlreadyRouted, isOnLeave, holidayDescription, isWeatherDay, openEntries } = cardData;
+  const availStatus = getAvailabilityStatus(employee.availability, mainDate);
+  const isUnavailable = availStatus.kind !== "available";
 
-  const headerBg = isAlreadyRouted ? "bg-destructive/10" : "bg-accent/10";
+  const headerBg = isUnavailable
+    ? "bg-primary/10"
+    : isAlreadyRouted
+      ? "bg-destructive/10"
+      : "bg-accent/10";
 
   return (
     <div className="border rounded-lg bg-card w-72 flex flex-col">
       {/* Header */}
       <div className={cn("flex items-center justify-between px-3 py-2 border-b rounded-t-lg", headerBg)}>
-        <span className="text-sm font-semibold text-foreground truncate">
+        <span className={cn(
+          "text-sm font-semibold truncate",
+          isUnavailable ? "text-primary/60" : "text-foreground",
+        )}>
           {employee.name}
         </span>
-        {isAlreadyRouted && (
-          <span className="text-destructive text-xs font-medium shrink-0 ml-2">
-            ⚠ Routed
-          </span>
-        )}
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          {availStatus.kind === "not_started" && (
+            <span className="text-primary/70 text-xs font-medium">🚫 Not Started</span>
+          )}
+          {availStatus.kind === "ended" && (
+            <span className="text-primary/70 text-xs font-medium">🚫 Ended</span>
+          )}
+          {availStatus.kind === "available" && (
+            <>
+              {isAlreadyRouted && (
+                <span className="text-destructive text-xs font-medium">⚠ Routed</span>
+              )}
+              {isOnLeave && (
+                <span className="text-destructive text-xs font-medium">🏖 On Leave</span>
+              )}
+              {holidayDescription && (
+                <span className="text-destructive text-xs font-medium">
+                  {isWeatherDay ? "🌧" : "🎉"} {holidayDescription}
+                </span>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Entry rows */}
-      <div className="flex-1 px-3 py-1">
-        {openEntries.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic py-2">
-            No open servCodes on this date
-          </p>
-        ) : (
-          openEntries.map((entry) => (
-            <GroupEntryRow key={entry.groupId} row={entry} />
-          ))
+      {/* Body */}
+      <div className="flex-1 px-3 py-2">
+        {availStatus.kind === "not_started" && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-primary/70">Not yet available</p>
+            <p className="text-xs text-muted-foreground">
+              Starts <span className="font-mono text-foreground">{availStatus.startDate}</span>
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              {availStatus.daysUntilStart} weekday{availStatus.daysUntilStart !== 1 ? "s" : ""} from today
+            </p>
+            <p className="text-[10px] text-muted-foreground/60 mt-2 leading-relaxed">
+              This employee is in the plan but their workable days have not yet begun.
+              The crawler will not assign work before their start date.
+            </p>
+          </div>
+        )}
+
+        {availStatus.kind === "ended" && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-primary/70">Availability ended</p>
+            <p className="text-xs text-muted-foreground">
+              Last day <span className="font-mono text-foreground">{availStatus.endDate}</span>
+            </p>
+            <p className="text-[10px] text-muted-foreground/60 mt-2 leading-relaxed">
+              This employee is in the plan but their availability window has closed.
+              The crawler will not assign work after their end date.
+            </p>
+          </div>
+        )}
+
+        {availStatus.kind === "available" && (
+          openEntries.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic py-2">
+              No open servCodes on this date
+            </p>
+          ) : (
+            <div className="py-1">
+              {openEntries.map((entry) => (
+                <GroupEntryRow key={entry.groupId} row={entry} />
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>
@@ -264,7 +351,7 @@ export function DiffD5EmployeeCardPanel() {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="flex flex-row flex-wrap gap-4 content-start">
           {cardData.map((card) => (
-            <EmployeeCard key={card.employee.employeeId} cardData={card} />
+            <EmployeeCard key={card.employee.employeeId} cardData={card} mainDate={mainDate} />
           ))}
           {cardData.length === 0 && (
             <p className="text-xs text-muted-foreground italic">

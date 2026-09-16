@@ -5,6 +5,9 @@ import { useSelector } from "react-redux";
 import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { EmployeeTimelineEvent } from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
+import { EmployeeAvailabilitySheet } from "@/app/employeeAvailability/_components/EmployeeAvailabilitySheet";
+import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
+import { CalendarClock } from "lucide-react";
 
 function formatDate(iso: string): string {
   const [, month, day] = iso.split("-");
@@ -45,6 +48,7 @@ export function EmployeeTimelinePanel() {
   const employeeMap = useSelector(employeeSelect.employeeMap);
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [availabilitySheetEmployee, setAvailabilitySheetEmployee] = useState<Employee | null>(null);
 
   // Only show employees that have timeline data
   const employeesWithTimeline = [...timelineMap.entries()]
@@ -59,6 +63,8 @@ export function EmployeeTimelinePanel() {
     ? (timelineMap.get(selectedEmployeeId) ?? [])
     : [];
 
+  const selectedEmployee = selectedEmployeeId ? employeeMap.get(selectedEmployeeId) ?? null : null;
+
   return (
     <div className="flex h-full overflow-hidden">
       {/* Left panel — employee selector */}
@@ -67,19 +73,37 @@ export function EmployeeTimelinePanel() {
           <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Employees</span>
         </div>
         <div className="flex-1 overflow-y-auto py-1">
-          {employeesWithTimeline.map(({ employeeId, name }) => (
-            <button
-              key={employeeId}
-              onClick={() => setSelectedEmployeeId(employeeId)}
-              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                selectedEmployeeId === employeeId
-                  ? "bg-primary/10 text-primary font-semibold"
-                  : "text-foreground hover:bg-accent/10"
-              }`}
-            >
-              {name}
-            </button>
-          ))}
+          {employeesWithTimeline.map(({ employeeId, name }) => {
+            const emp = employeeMap.get(employeeId);
+            const hasAvailability = !!(emp?.availability.startDate || emp?.availability.endDate);
+            return (
+              <div key={employeeId} className="flex items-center group">
+                <button
+                  onClick={() => setSelectedEmployeeId(employeeId)}
+                  className={`flex-1 text-left px-3 py-1.5 text-xs transition-colors ${
+                    selectedEmployeeId === employeeId
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "text-foreground hover:bg-accent/10"
+                  }`}
+                >
+                  {name}
+                </button>
+                {emp && (
+                  <button
+                    onClick={() => setAvailabilitySheetEmployee(emp)}
+                    className={`p-1 mr-1 rounded transition-colors opacity-0 group-hover:opacity-100 ${
+                      hasAvailability
+                        ? "text-primary opacity-100"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Edit availability"
+                  >
+                    <CalendarClock className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
         <div className="px-3 py-2 border-t text-[10px] text-muted-foreground">
           {employeesWithTimeline.length} employees
@@ -139,6 +163,14 @@ export function EmployeeTimelinePanel() {
           </>
         )}
       </div>
+
+      {/* Employee Availability Sheet */}
+      {availabilitySheetEmployee && (
+        <EmployeeAvailabilitySheet
+          employee={availabilitySheetEmployee}
+          onClose={() => setAvailabilitySheetEmployee(null)}
+        />
+      )}
     </div>
   );
 }

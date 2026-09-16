@@ -18,6 +18,7 @@ import {
   EmployeeCardData,
 } from "@/app/bizPlan/paceCrawler/_lib/diffChecker/DiffCheckerTypes";
 import { holidaySelect } from "@/app/holiday/holidaySelect";
+import { Holiday } from "@/app/holiday/holidayTypes";
 
 export type { OpenGroupRow, OpenGroupMemberRow, EmployeeCardData };
 
@@ -298,7 +299,7 @@ const selectEmployeeCardData = createSelector(
     deepSelect.servCodes,
     progServSelect.servCodeMap,
     selectMainDate,
-    holidaySelect.holidayDates,
+    holidaySelect.all,
     assignmentGroupSelect.groupMap,
     assignmentPlanSelect.goalByEmployeeByGroup,
     assignmentPlanSelect.assignmentsByEmployeeId,
@@ -313,7 +314,7 @@ const selectEmployeeCardData = createSelector(
     servCodes,
     servCodeMap,
     mainDate,
-    holidayDates,
+    holidays,
     groupMap,
     goalByEmployeeByGroup,
     assignmentsByEmployeeId,
@@ -333,7 +334,12 @@ const selectEmployeeCardData = createSelector(
       }
     }
 
-    const isHoliday = holidayDates.has(mainDate);
+    // Find the matching holiday for mainDate (if any) — used for badge display
+    const matchingHoliday = holidays.find(
+      (h) => mainDate >= h.dateRange.min && mainDate <= h.dateRange.max,
+    ) ?? null;
+    const holidayDescription = matchingHoliday?.description ?? null;
+    const isWeatherDay = matchingHoliday?.isWeatherDay ?? false;
 
     // Pre-compute sum of goals per groupId across all employees.
     // Used to compute each employee's proportional share of the group's required rate.
@@ -471,14 +477,23 @@ const selectEmployeeCardData = createSelector(
         employee,
         isAlreadyRouted: alreadyRoutedEmployeeIds.has(employeeId),
         isOnLeave,
-        isHoliday,
+        holidayDescription,
+        isWeatherDay,
         openEntries: openEntryRows,
         assignedServCodeIds,
       });
     }
 
-    // Sort: employees with open entries first (by name), then no-open (by name)
+    // Sort: available employees with open entries first, then available with no open, then unavailable last.
+    // Unavailable = startDate in the future or endDate in the past relative to mainDate.
     cards.sort((a, b) => {
+      const aUnavailable =
+        !!(a.employee.availability.startDate && mainDate < a.employee.availability.startDate) ||
+        !!(a.employee.availability.endDate && mainDate > a.employee.availability.endDate);
+      const bUnavailable =
+        !!(b.employee.availability.startDate && mainDate < b.employee.availability.startDate) ||
+        !!(b.employee.availability.endDate && mainDate > b.employee.availability.endDate);
+      if (aUnavailable !== bUnavailable) return aUnavailable ? 1 : -1;
       const aHasOpen = a.openEntries.length > 0;
       const bHasOpen = b.openEntries.length > 0;
       if (aHasOpen !== bHasOpen) return aHasOpen ? -1 : 1;

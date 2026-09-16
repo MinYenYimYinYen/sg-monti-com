@@ -1,5 +1,6 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
+import { EmployeeAvailability } from "@/app/employeeAvailability/EmployeeAvailabilityTypes";
 
 export type EmployeeRaw = {
   id: string;
@@ -36,6 +37,11 @@ export type EmployeeProps = {
   servCodeIds: string[];
   /** Planned time off entries for this employee, hydrated from plannedTimeOffSelect */
   plannedTimeOff: PlannedTimeOff[];
+  /**
+   * Availability constraints for this employee, hydrated from employeeAvailabilitySelect.
+   * Always present — employees with no record get { employeeId } (no restrictions).
+   */
+  availability: EmployeeAvailability;
 };
 
 export type Employee = EmployeeProps & EmployeeDoc;

@@ -4,12 +4,14 @@ import { Info } from "lucide-react";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
+import { useFullSeasonServices } from "@/app/realGreen/customer/hooks/useFullSeasonServices";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/style/components/popover";
 import { Button } from "@/style/components/button";
+import { RefreshCw } from "lucide-react";
 
 type ProgramRowProps = {
   program: Program;
@@ -17,6 +19,9 @@ type ProgramRowProps = {
 
 export function ProgramRow({ program }: ProgramRowProps) {
   const { customer } = program;
+  const { refreshCustomer, isRefreshingCustomer } = useFullSeasonServices();
+  const isRefreshing = isRefreshingCustomer(customer.custId);
+
   const soldBy = program.soldBy.join(", ");
   const techNotes = program.x.serviceQuery.results
     .map((s) => s.x.techNotes)
@@ -111,6 +116,18 @@ export function ProgramRow({ program }: ProgramRowProps) {
           </PopoverContent>
         </Popover>
       )}
+
+      <Button
+        variant="primary"
+        intensity="ghost"
+        size="icon"
+        className="h-6 w-6 shrink-0"
+        onClick={() => refreshCustomer(customer.custId)}
+        disabled={isRefreshing}
+        title="Refresh customer data"
+      >
+        <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+      </Button>
     </div>
   );
 }

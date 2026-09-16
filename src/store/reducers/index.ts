@@ -50,6 +50,7 @@ import { productivityReducer } from "@/app/productivity/productivitySlice";
 import { assignmentGroupReducer } from "@/app/assignmentGroup/assignmentGroupSlice";
 import { seasonPlanReducer } from "@/app/bizPlan/seasonPlan/seasonPlanSlice";
 import { flagRuleReducer } from "@/app/flagRule/flagRuleSlice";
+import { employeeAvailabilityReducer } from "@/app/employeeAvailability/employeeAvailabilitySlice";
 import { sanityReducer } from "@/app/sanity/sanitySlice";
 import seasonIncreasesReducer from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSlice";
 import priceIncreaseSettingsReducer from "@/app/priceIncrease/settings/settingsSlice";
@@ -107,6 +108,7 @@ const rootReducer = combineReducers({
   assignmentGroup: assignmentGroupReducer,
   seasonPlan: seasonPlanReducer,
   flagRule: flagRuleReducer,
+  employeeAvailability: employeeAvailabilityReducer,
   sanity: sanityReducer,
   seasonIncreases: seasonIncreasesReducer,
   priceIncreaseSettings: priceIncreaseSettingsReducer,

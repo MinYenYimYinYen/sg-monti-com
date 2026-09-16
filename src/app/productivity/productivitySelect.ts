@@ -2,6 +2,7 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { assignmentSelect } from "@/app/assignment/assignmentSelect";
+import { holidaySelect } from "@/app/holiday/holidaySelect";
 import { TimeCard } from "@/app/timeCard/TimeCard";
 import { dateRanges } from "@/lib/primatives/dates/dateStrings";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
@@ -179,8 +180,8 @@ const selectByDateByEmployee = createSelector(
 // ---------------------------------------------------------------------------
 
 const selectAssignmentCompletionByEmployee = createSelector(
-  [selectCompletedServices, assignmentSelect.assignmentsByEmployeeForRange],
-  (completedServices, assignmentsByEmployee): Map<string, { assigned: number; completed: number; pct: number }> => {
+  [selectCompletedServices, assignmentSelect.assignmentsByEmployeeForRange, holidaySelect.weatherDayDates],
+  (completedServices, assignmentsByEmployee, weatherDayDates): Map<string, { assigned: number; completed: number; pct: number }> => {
     const map = new Map<string, { assigned: number; completed: number; pct: number }>();
 
     // Build a set of servIds that were fully satisfied (assigned employee, assigned date).
@@ -193,11 +194,14 @@ const selectAssignmentCompletionByEmployee = createSelector(
       }
     }
 
-    // For each employee in the assignment range, count assigned vs completed
+    // For each employee in the assignment range, count assigned vs completed.
+    // Weather days are excluded from the denominator — they are company-wide excuses.
     for (const [employeeId, assignments] of assignmentsByEmployee) {
       let assigned = 0;
       let completed = 0;
       for (const assignment of assignments) {
+        // Exclude assignments on weather days from the denominator
+        if (weatherDayDates.has(assignment.schedDate)) continue;
         assigned++;
         if (satisfiedServIds.has(assignment.servId)) {
           completed++;

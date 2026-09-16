@@ -5,6 +5,7 @@ import { productivitySelect } from "@/app/productivity/productivitySelect";
 import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
+import { holidaySelect } from "@/app/holiday/holidaySelect";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { dateRanges } from "@/lib/primatives/dates/dateStrings";
 
@@ -136,6 +137,7 @@ const selectReliabilityByEmployee = createSelector(
     selectServiceByServId,
     productivitySelect.completedServices,
     selectDatesWithAnyCompletion,
+    holidaySelect.weatherDayDates,
   ],
   (
     unplannedAbsencesByEmployee,
@@ -144,6 +146,7 @@ const selectReliabilityByEmployee = createSelector(
     serviceByServId,
     completedServices,
     datesWithAnyCompletion,
+    weatherDayDates,
   ): Map<string, ReliabilityMetrics> => {
     // Build a set of (employeeId|date) → servIds completed by that employee on that date
     const completedByEmployeeDate = new Map<string, Set<number>>();
@@ -193,6 +196,8 @@ const selectReliabilityByEmployee = createSelector(
       for (const [date, assignments] of assignmentsByDate) {
         // Skip days already recorded as an absence
         if (absenceDates.has(date)) continue;
+        // Skip weather days — company-wide excuse, not suspicious
+        if (weatherDayDates.has(date)) continue;
         // Skip days where nobody else worked (rain day / company closure)
         if (!datesWithAnyCompletion.has(date)) continue;
         // Check if this employee completed anything on this date

@@ -4,12 +4,18 @@ import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { plannedTimeOffSelect } from "@/app/plannedTimeOff/plannedTimeOffSelect";
+import { employeeAvailabilitySelect } from "@/app/employeeAvailability/employeeAvailabilitySelect";
 
 const selectEmployeeDocs = (state: AppState) => state.employee.employeeDocs;
 
 const selectEmployees = createSelector(
-  [selectEmployeeDocs, assignmentPlanSelect.assignmentsByServCodeId, plannedTimeOffSelect.byEmployeeId],
-  (employeeDocs, assignmentsByServCodeId, ptoByEmployeeId): Employee[] => {
+  [
+    selectEmployeeDocs,
+    assignmentPlanSelect.assignmentsByServCodeId,
+    plannedTimeOffSelect.byEmployeeId,
+    employeeAvailabilitySelect.byEmployeeId,
+  ],
+  (employeeDocs, assignmentsByServCodeId, ptoByEmployeeId, availabilityByEmployeeId): Employee[] => {
     // Build a map of employeeId → servCodeIds from the inverted servCode map
     const servCodeIdsByEmployee = new Map<string, string[]>();
     for (const [servCodeId, employeeIds] of assignmentsByServCodeId) {
@@ -23,7 +29,9 @@ const selectEmployees = createSelector(
     return employeeDocs.map((doc): Employee => {
       const servCodeIds = servCodeIdsByEmployee.get(doc.employeeId) ?? [];
       const plannedTimeOff = ptoByEmployeeId.get(doc.employeeId) ?? [];
-      return { ...doc, servCodeIds, plannedTimeOff };
+      // Employees with no availability record get { employeeId } — no restrictions.
+      const availability = availabilityByEmployeeId.get(doc.employeeId) ?? { employeeId: doc.employeeId };
+      return { ...doc, servCodeIds, plannedTimeOff, availability };
     });
   },
 );

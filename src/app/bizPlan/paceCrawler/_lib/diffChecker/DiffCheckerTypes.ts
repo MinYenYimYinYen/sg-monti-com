@@ -129,8 +129,16 @@ export type EmployeeCardData = {
   isAlreadyRouted: boolean;
   /** True when the employee has personal planned time off covering mainDate. */
   isOnLeave: boolean;
-  /** True when a company holiday covers mainDate (applies to all employees). */
-  isHoliday: boolean;
+  /**
+   * The description of the holiday covering mainDate, or null if no holiday.
+   * Replaces the old `isHoliday: boolean` — carries both the presence signal and the display text.
+   */
+  holidayDescription: string | null;
+  /**
+   * True when the holiday covering mainDate is a weather day (isWeatherDay === true).
+   * Drives the icon choice (🌧 vs 🎉) in the badge.
+   */
+  isWeatherDay: boolean;
   /** Priority-ordered open entries for this employee on mainDate (pool > 0, date in range). */
   openEntries: OpenGroupRow[];
   /** All servCodeIds in the employee's assignment plan (for context). */

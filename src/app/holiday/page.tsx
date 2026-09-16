@@ -14,6 +14,7 @@ import { Separator } from "@/style/components/separator";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { FormGroup } from "@/components/FormGroup";
+import { Checkbox } from "@/style/components/checkbox";
 import { useHoliday } from "@/app/holiday/useHoliday";
 import { holidaySelect } from "@/app/holiday/holidaySelect";
 import { holidayActions } from "@/app/holiday/holidaySlice";
@@ -64,6 +65,11 @@ function HolidayListItem({
       <div className="flex items-center gap-1.5 mb-0.5">
         <CalendarDays className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
         <span className="font-medium truncate">{holiday.description}</span>
+        {holiday.isWeatherDay && (
+          <span className="ml-auto text-[9px] bg-destructive/10 text-destructive rounded px-1 shrink-0">
+            🌧 Weather
+          </span>
+        )}
       </div>
       <div className="text-xs text-muted-foreground pl-5">
         {formatDateRange(holiday.dateRange)}
@@ -89,6 +95,7 @@ function HolidayForm({
   const [dateRange, setDateRange] = useState<TRange<string>>(
     existingDoc?.dateRange ?? { min: "", max: "" },
   );
+  const [isWeatherDay, setIsWeatherDay] = useState(existingDoc?.isWeatherDay ?? false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -107,8 +114,9 @@ function HolidayForm({
       holidayId: existingDoc?.holidayId ?? crypto.randomUUID(),
       description: description.trim(),
       dateRange,
-      createdAt: existingDoc?.createdAt ?? "",
-      updatedAt: existingDoc?.updatedAt ?? "",
+      isWeatherDay,
+      createdAt: existingDoc?.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     setSaveStatus("saving");
@@ -140,7 +148,7 @@ function HolidayForm({
         <FormGroup>
           <Label>Description</Label>
           <Input
-            placeholder="e.g. Thanksgiving, Christmas…"
+            placeholder="e.g. Thanksgiving, Christmas, Rain Day…"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
@@ -151,6 +159,22 @@ function HolidayForm({
           <DateRangePicker value={dateRange} onChange={setDateRange} />
           <p className="text-[10px] text-muted-foreground">
             For a single day, set both dates to the same value.
+          </p>
+        </FormGroup>
+
+        <FormGroup>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="isWeatherDay"
+              checked={isWeatherDay}
+              onCheckedChange={(checked) => setIsWeatherDay(!!checked)}
+            />
+            <Label htmlFor="isWeatherDay" className="cursor-pointer">
+              🌧 Weather Day
+            </Label>
+          </div>
+          <p className="text-[10px] text-muted-foreground pl-6">
+            Weather days are excluded from productivity completion % and suspicious-absence detection.
           </p>
         </FormGroup>
 
@@ -279,7 +303,7 @@ export default function HolidayPage() {
               <CardHeader>
                 <CardTitle>Add Holiday</CardTitle>
                 <CardDescription>
-                  Create a company-wide holiday that applies to all employees.
+                  Create a company-wide holiday or weather day that applies to all employees.
                 </CardDescription>
               </CardHeader>
               <HolidayForm key="new" onDone={handleDone} />
@@ -292,6 +316,9 @@ export default function HolidayPage() {
                 <CardTitle>{selectedHoliday.description}</CardTitle>
                 <CardDescription>
                   {formatDateRange(selectedHoliday.dateRange)}
+                  {selectedHoliday.isWeatherDay && (
+                    <span className="ml-2 text-destructive">🌧 Weather Day</span>
+                  )}
                 </CardDescription>
               </CardHeader>
               <HolidayForm

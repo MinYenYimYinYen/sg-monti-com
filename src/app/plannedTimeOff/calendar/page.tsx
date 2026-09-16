@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, parseISO, getDay, addDays } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, getDay, addDays } from "date-fns";
+import { AlertTriangle, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Container } from "@/components/Containers";
 import { Button } from "@/style/components/button";
 import { usePlannedTimeOff } from "@/app/plannedTimeOff/usePlannedTimeOff";
@@ -13,7 +13,9 @@ import { plannedTimeOffSelect } from "@/app/plannedTimeOff/plannedTimeOffSelect"
 import { holidaySelect } from "@/app/holiday/holidaySelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { PlannedTimeOffSheet } from "@/app/plannedTimeOff/calendar/PlannedTimeOffSheet";
+import { UnplannedAbsenceSheet } from "@/app/plannedTimeOff/calendar/UnplannedAbsenceSheet";
 import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
+import { Holiday } from "@/app/holiday/holidayTypes";
 import { cn } from "@/style/utils";
 
 // ---------------------------------------------------------------------------
@@ -61,11 +63,16 @@ function buildCalendarDays(viewMonth: Date): string[] {
 // CalendarCell
 // ---------------------------------------------------------------------------
 
+type HolidayInfo = {
+  description: string;
+  isWeatherDay: boolean;
+};
+
 type CalendarCellProps = {
   date: string;
   isCurrentMonth: boolean;
   ptoEntries: PlannedTimeOff[];
-  holidayLabel: string | null;
+  holidayInfo: HolidayInfo | null;
   employeeNameMap: Map<string, string>;
   onAdd: (date: string) => void;
   onEdit: (pto: PlannedTimeOff) => void;
@@ -75,7 +82,7 @@ function CalendarCell({
   date,
   isCurrentMonth,
   ptoEntries,
-  holidayLabel,
+  holidayInfo,
   employeeNameMap,
   onAdd,
   onEdit,
@@ -87,42 +94,66 @@ function CalendarCell({
   return (
     <div
       className={cn(
-        "border border-border/40 min-h-[80px] p-1 flex flex-col gap-0.5",
-        !isCurrentMonth && "bg-muted/10 opacity-60",
+        "border border-border/40 h-full p-1 flex flex-col gap-0.5",
+        holidayInfo
+          ? holidayInfo.isWeatherDay
+            ? "bg-primary/15"
+            : "bg-primary/10"
+          : !isCurrentMonth
+            ? "bg-muted/10 opacity-60"
+            : "",
       )}
     >
-      {/* Date header */}
-      <div className="flex items-center justify-between">
-        <span className={cn("text-[10px] font-mono text-muted-foreground", !isCurrentMonth && "opacity-50")}>
-          {displayMonth}/{displayDay}
-        </span>
+      {/* Date header — symbol + description inline when holiday/weather */}
+      <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1 min-w-0">
+          {holidayInfo && (
+            <span className="text-[9px] shrink-0">
+              {holidayInfo.isWeatherDay ? "🌧" : "🎉"}
+            </span>
+          )}
+          <span
+            className={cn(
+              "text-[10px] font-mono truncate",
+              holidayInfo
+                ? "text-primary font-semibold"
+                : "text-muted-foreground",
+              !isCurrentMonth && "opacity-50",
+            )}
+            title={holidayInfo ? holidayInfo.description : undefined}
+          >
+            {displayMonth}/{displayDay}
+            {holidayInfo && (
+              <span className="ml-1 text-[9px] font-normal">{holidayInfo.description}</span>
+            )}
+          </span>
+        </div>
         <button
           onClick={() => onAdd(date)}
-          className="p-0.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-          title="Add time off"
+          className="p-0.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors shrink-0"
+          title="Add planned time off"
         >
           <Plus className="w-3 h-3" />
         </button>
       </div>
 
-      {/* Holiday label */}
-      {holidayLabel && (
-        <div className="text-[9px] bg-secondary/20 text-secondary rounded px-1 py-0.5 truncate font-medium">
-          🎉 {holidayLabel}
-        </div>
-      )}
-
-      {/* PTO chips */}
+      {/* PTO chips — planned and unplanned */}
       {ptoEntries.map((pto) => {
         const name = employeeNameMap.get(pto.employeeId) ?? pto.employeeId;
+        const isUnplanned = pto.requestType === "unplannedAbsence";
         return (
           <button
             key={pto.plannedTimeOffId}
             onClick={() => onEdit(pto)}
-            className="text-[9px] bg-accent/20 text-accent rounded px-1 py-0.5 truncate text-left hover:bg-accent/30 transition-colors"
+            className={cn(
+              "text-[9px] rounded px-1 py-0.5 truncate text-left transition-colors",
+              isUnplanned
+                ? "bg-destructive/20 text-destructive hover:bg-destructive/30"
+                : "bg-accent/20 text-accent hover:bg-accent/30",
+            )}
             title={`${name}${pto.note ? ` — ${pto.note}` : ""}`}
           >
-            🏖 {name}
+            {isUnplanned ? "⚠" : "🏖"} {name}
           </button>
         );
       })}
@@ -145,6 +176,7 @@ export default function TimeOffCalendarPage() {
 
   const [viewMonth, setViewMonth] = useState<Date>(() => new Date());
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [unplannedSheetOpen, setUnplannedSheetOpen] = useState(false);
   const [sheetDefaultDate, setSheetDefaultDate] = useState<string>("");
   const [editingPto, setEditingPto] = useState<PlannedTimeOff | undefined>(undefined);
 
@@ -165,13 +197,16 @@ export default function TimeOffCalendarPage() {
     }
   }
 
-  // Build a map: date → holiday description (first matching holiday)
-  const holidayByDate = new Map<string, string>();
+  // Build a map: date → HolidayInfo (first matching holiday)
+  const holidayByDate = new Map<string, HolidayInfo>();
   for (const holiday of holidays) {
     for (const day of calendarDays) {
       if (day >= holiday.dateRange.min && day <= holiday.dateRange.max) {
         if (!holidayByDate.has(day)) {
-          holidayByDate.set(day, holiday.description);
+          holidayByDate.set(day, {
+            description: holiday.description,
+            isWeatherDay: holiday.isWeatherDay,
+          });
         }
       }
     }
@@ -194,6 +229,10 @@ export default function TimeOffCalendarPage() {
     setEditingPto(undefined);
   };
 
+  const handleUnplannedClose = () => {
+    setUnplannedSheetOpen(false);
+  };
+
   // Group days into rows of 5 (Mon–Fri)
   const weeks: string[][] = [];
   for (let i = 0; i < calendarDays.length; i += 5) {
@@ -201,9 +240,9 @@ export default function TimeOffCalendarPage() {
   }
 
   return (
-    <Container variant="scroll-shell" title="Time Off Calendar">
-      {/* Month navigation */}
-      <div className="shrink-0 flex items-center gap-3 mb-4">
+    <Container variant="scroll-shell">
+      {/* Month navigation + unplanned absence trigger */}
+      <div className="shrink-0 flex items-center gap-3 mb-3">
         <Button
           variant="outline"
           size="icon"
@@ -229,12 +268,29 @@ export default function TimeOffCalendarPage() {
         >
           Today
         </Button>
+
+        {/* Unplanned absence trigger */}
+        <div className="ml-auto">
+          <Button
+            variant="destructive"
+            intensity="soft"
+            size="sm"
+            onClick={() => {
+              setSheetDefaultDate(format(new Date(), "yyyy-MM-dd"));
+              setUnplannedSheetOpen(true);
+            }}
+            className="flex items-center gap-1.5"
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Record Unplanned Absence
+          </Button>
+        </div>
       </div>
 
-      {/* Calendar grid */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Calendar grid — fills remaining vertical space */}
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Day headers */}
-        <div className="grid grid-cols-5 mb-1">
+        <div className="grid grid-cols-5 shrink-0 mb-0.5">
           {["Mon", "Tue", "Wed", "Thu", "Fri"].map((d) => (
             <div key={d} className="text-center text-xs font-semibold text-muted-foreground py-1">
               {d}
@@ -242,35 +298,46 @@ export default function TimeOffCalendarPage() {
           ))}
         </div>
 
-        {/* Weeks */}
-        {weeks.map((week, weekIdx) => (
-          <div key={weekIdx} className="grid grid-cols-5">
-            {week.map((date) => {
-              const isCurrentMonth = date.startsWith(currentMonthStr);
-              return (
-                <CalendarCell
-                  key={date}
-                  date={date}
-                  isCurrentMonth={isCurrentMonth}
-                  ptoEntries={ptoByDate.get(date) ?? []}
-                  holidayLabel={holidayByDate.get(date) ?? null}
-                  employeeNameMap={employeeNameMap}
-                  onAdd={handleAdd}
-                  onEdit={handleEdit}
-                />
-              );
-            })}
-          </div>
-        ))}
+        {/* Weeks — each row grows equally to fill available height */}
+        <div className="flex-1 flex flex-col min-h-0">
+          {weeks.map((week, weekIdx) => (
+            <div key={weekIdx} className="grid grid-cols-5 flex-1 min-h-0">
+              {week.map((date) => {
+                const isCurrentMonth = date.startsWith(currentMonthStr);
+                return (
+                  <CalendarCell
+                    key={date}
+                    date={date}
+                    isCurrentMonth={isCurrentMonth}
+                    ptoEntries={ptoByDate.get(date) ?? []}
+                    holidayInfo={holidayByDate.get(date) ?? null}
+                    employeeNameMap={employeeNameMap}
+                    onAdd={handleAdd}
+                    onEdit={handleEdit}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Add/Edit Sheet */}
+      {/* Planned Time Off Add/Edit Sheet */}
       {sheetOpen && (
         <PlannedTimeOffSheet
           defaultDate={sheetDefaultDate}
           existingDoc={editingPto}
           employees={employees}
           onClose={handleClose}
+        />
+      )}
+
+      {/* Unplanned Absence Sheet */}
+      {unplannedSheetOpen && (
+        <UnplannedAbsenceSheet
+          defaultDate={sheetDefaultDate}
+          employees={employees}
+          onClose={handleUnplannedClose}
         />
       )}
     </Container>

@@ -3,6 +3,11 @@ export type TRange<T> = {
   max: T;
 };
 
+export type NullableTRange<T> = {
+  min: T | null;
+  max: T | null;
+}
+
 export function isTRangeOfString(obj: unknown): obj is TRange<string> {
   return (
     typeof obj === "object" &&
