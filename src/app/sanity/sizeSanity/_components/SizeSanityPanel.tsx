@@ -3,13 +3,14 @@
 import { useSelector } from "react-redux";
 import { sizeSanitySelect } from "@/app/sanity/sizeSanity/sizeSanitySelect";
 import { SizeSanityCustomerList } from "@/app/sanity/sizeSanity/_components/SizeSanityCustomerList";
+import { SizeSanityFinishedPopover } from "@/app/sanity/sizeSanity/_components/SizeSanityFinishedPopover";
 import { useFullSeasonServices } from "@/app/realGreen/customer/hooks/useFullSeasonServices";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/style/components/button";
 
 export function SizeSanityPanel() {
   const { refresh, canRefresh } = useFullSeasonServices();
-  const customerCount = useSelector(sizeSanitySelect.customerCount);
+  const customerCount = useSelector(sizeSanitySelect.activeCustomerCount);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -20,6 +21,7 @@ export function SizeSanityPanel() {
             ? `${customerCount} customer${customerCount !== 1 ? "s" : ""} with size or price discrepancies`
             : "No discrepancies found"}
         </span>
+        <SizeSanityFinishedPopover />
         <Button
           variant="primary"
           intensity="ghost"

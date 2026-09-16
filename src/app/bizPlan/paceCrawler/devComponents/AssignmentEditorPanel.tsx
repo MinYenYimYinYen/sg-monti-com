@@ -12,8 +12,10 @@ import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
 import { paceCrawlerActions } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
 import { AssignmentGroupManager } from "@/app/assignmentGroup/_components/AssignmentGroupManager";
 import { GroupAssignment } from "@/app/bizPlan/assignmentPlan/AssignmentPlanTypes";
-import { ChevronUp, ChevronDown, X, Plus, Copy, ClipboardPaste } from "lucide-react";
+import { ChevronUp, ChevronDown, X, Plus, Copy, ClipboardPaste, CalendarClock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
+import { EmployeeAvailabilitySheet } from "@/app/employeeAvailability/_components/EmployeeAvailabilitySheet";
+import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -275,6 +277,9 @@ export function AssignmentEditorPanel() {
   const [clipboard, setClipboard] = useState<{ groupAssignments: GroupAssignment[]; sourceEmployeeId: string } | null>(null);
   const [pendingPasteEmployeeId, setPendingPasteEmployeeId] = useState<string | null>(null);
 
+  // Availability sheet state
+  const [availabilitySheetEmployee, setAvailabilitySheetEmployee] = useState<Employee | null>(null);
+
   function toggleEmployee(employeeId: string) {
     const next = new Set(selectedEmployeeIds);
     if (next.has(employeeId)) next.delete(employeeId);
@@ -389,6 +394,7 @@ export function AssignmentEditorPanel() {
           const groupAssignments = plan?.groupAssignments ?? [];
           const isSource = clipboard?.sourceEmployeeId === employeeId;
           const isPendingPaste = pendingPasteEmployeeId === employeeId;
+          const hasAvailability = !!(employee.availability.startDate || employee.availability.endDate);
 
           return (
             <div key={employeeId} className="border border-border rounded overflow-hidden">
@@ -397,9 +403,30 @@ export function AssignmentEditorPanel() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-foreground">{employee.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{groupAssignments.length} groups</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {groupAssignments.length} groups
+                      {hasAvailability && (
+                        <span className="ml-2 text-primary">
+                          {employee.availability.startDate && `from ${employee.availability.startDate}`}
+                          {employee.availability.startDate && employee.availability.endDate && " · "}
+                          {employee.availability.endDate && `until ${employee.availability.endDate}`}
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
+                    {/* Availability button */}
+                    <button
+                      onClick={() => setAvailabilitySheetEmployee(employee)}
+                      className={`p-1 rounded transition-colors ${
+                        hasAvailability
+                          ? "text-primary bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
+                      }`}
+                      title="Edit availability constraints"
+                    >
+                      <CalendarClock className="w-3 h-3" />
+                    </button>
                     {/* Copy button */}
                     <button
                       onClick={() => handleCopy(employeeId, groupAssignments)}
@@ -464,6 +491,14 @@ export function AssignmentEditorPanel() {
           );
         })}
       </div>
+
+      {/* Employee Availability Sheet */}
+      {availabilitySheetEmployee && (
+        <EmployeeAvailabilitySheet
+          employee={availabilitySheetEmployee}
+          onClose={() => setAvailabilitySheetEmployee(null)}
+        />
+      )}
     </div>
   );
 }

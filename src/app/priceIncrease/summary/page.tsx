@@ -101,12 +101,12 @@ function GrandTotalCard({
             </span>
           )}
           {needsManualAttentionCount > 0 && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-destructive/10 text-destructive">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-accent/10 text-foreground/60">
               <AlertTriangle className="h-3 w-3" /> {needsManualAttentionCount} needs review
             </span>
           )}
           {belowAcquisitionCount > 0 && (
-            <span className="px-2 py-0.5 rounded text-xs bg-secondary/10 text-secondary-foreground">
+            <span className="px-2 py-0.5 rounded text-xs bg-accent/10 text-foreground/60">
               {belowAcquisitionCount} below acq.
             </span>
           )}

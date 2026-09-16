@@ -262,11 +262,17 @@ export function runDayCrawlSimulation(
     }
 
     for (const employee of employeeEntries) {
-      // Skip this employee entirely if they are on leave or a holiday today
+      // Skip this employee entirely if they are on leave or holiday today
       if (employee.timeOffDates.has(day)) {
         lastWorkedEntryLabel.set(employee.employeeId, null);
         continue;
       }
+
+      // Skip if outside employee's availability window (startDate/endDate constraints).
+      // Checked directly here rather than pre-populating timeOffDates to avoid
+      // allocating large Sets for future hires with months of blocked dates.
+      if (employee.availability.startDate && day < employee.availability.startDate) continue;
+      if (employee.availability.endDate && day > employee.availability.endDate) continue;
 
       const personalOpenDate = employee.nextAvailableDate;
       const timeline = employeeTimeline.get(employee.employeeId)!;

@@ -10,6 +10,7 @@ import { usePlannedTimeOff } from "@/app/plannedTimeOff/usePlannedTimeOff";
 import { useHoliday } from "@/app/holiday/useHoliday";
 import { useAssignmentGroup } from "@/app/assignmentGroup/useAssignmentGroup";
 import { useSeasonPlan } from "@/app/bizPlan/seasonPlan/useSeasonPlan";
+import { useEmployeeAvailability } from "@/app/employeeAvailability/useEmployeeAvailability";
 
 const PACE_CRAWLER_CONTEXTS: CustomerContextMode[] = ["active"];
 
@@ -25,4 +26,5 @@ export function usePaceCrawlerDeps() {
   useHoliday({ autoLoad: true });
   useAssignmentGroup({ autoLoad: true });
   useSeasonPlan({ autoLoad: true });
+  useEmployeeAvailability({ autoLoad: true });
 }

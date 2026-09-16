@@ -5,7 +5,7 @@ import { sizeSanitySelect } from "@/app/sanity/sizeSanity/sizeSanitySelect";
 import { SizeSanityCustomerRow } from "@/app/sanity/sizeSanity/_components/SizeSanityCustomerRow";
 
 export function SizeSanityCustomerList() {
-  const sizeSanityCustomers = useSelector(sizeSanitySelect.sizeSanityCustomers);
+  const sizeSanityCustomers = useSelector(sizeSanitySelect.activeSizeSanityCustomers);
 
   if (sizeSanityCustomers.length === 0) {
     return (
@@ -21,6 +21,7 @@ export function SizeSanityCustomerList() {
         <SizeSanityCustomerRow
           key={sizeSanityCustomer.customer.custId}
           sizeSanityCustomer={sizeSanityCustomer}
+          mode="active"
         />
       ))}
     </div>

@@ -1,4 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
+import { AppState } from "@/store";
 import { sanitySelect } from "@/app/sanity/sanitySelect";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
@@ -53,7 +54,10 @@ function classifyProgram(
   return null;
 }
 
-const selectSizeSanityCustomers = createSelector(
+const selectFinishedCustIds = (state: AppState) =>
+  state.sanity.sizeSanityPage.finishedCustIds;
+
+const selectAllSizeSanityCustomers = createSelector(
   [sanitySelect.customers],
   (customers): SizeSanityCustomer[] => {
     const result: SizeSanityCustomer[] = [];
@@ -82,12 +86,47 @@ const selectSizeSanityCustomers = createSelector(
   },
 );
 
-const selectSizeSanityCustomerCount = createSelector(
-  [selectSizeSanityCustomers],
+/** Customers not yet marked finished — the main working list. */
+const selectActiveSizeSanityCustomers = createSelector(
+  [selectAllSizeSanityCustomers, selectFinishedCustIds],
+  (customers, finishedIds): SizeSanityCustomer[] => {
+    if (finishedIds.length === 0) return customers;
+    return customers.filter((c) => !finishedIds.includes(c.customer.custId));
+  },
+);
+
+/** Customers the user has marked as finished — shown in the popover. */
+const selectFinishedSizeSanityCustomers = createSelector(
+  [selectAllSizeSanityCustomers, selectFinishedCustIds],
+  (customers, finishedIds): SizeSanityCustomer[] => {
+    if (finishedIds.length === 0) return [];
+    return customers.filter((c) => finishedIds.includes(c.customer.custId));
+  },
+);
+
+const selectActiveCustomerCount = createSelector(
+  [selectActiveSizeSanityCustomers],
   (customers) => customers.length,
 );
 
+const selectFinishedCustomerCount = createSelector(
+  [selectFinishedCustIds],
+  (ids) => ids.length,
+);
+
 export const sizeSanitySelect = {
-  sizeSanityCustomers: selectSizeSanityCustomers,
-  customerCount: selectSizeSanityCustomerCount,
+  /** All flagged customers regardless of finished state. */
+  sizeSanityCustomers: selectAllSizeSanityCustomers,
+  /** Flagged customers not yet marked finished — drives the main list. */
+  activeSizeSanityCustomers: selectActiveSizeSanityCustomers,
+  /** Flagged customers the user has marked finished — drives the popover. */
+  finishedSizeSanityCustomers: selectFinishedSizeSanityCustomers,
+  /** IDs of finished customers from Redux state. */
+  finishedCustIds: selectFinishedCustIds,
+  /** Count of active (non-finished) flagged customers. */
+  activeCustomerCount: selectActiveCustomerCount,
+  /** Count of finished customers. */
+  finishedCustomerCount: selectFinishedCustomerCount,
+  /** @deprecated Use activeCustomerCount instead. */
+  customerCount: selectActiveCustomerCount,
 };
