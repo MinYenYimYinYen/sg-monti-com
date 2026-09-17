@@ -108,13 +108,13 @@ function CalendarCell({
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-1 min-w-0">
           {holidayInfo && (
-            <span className="text-[9px] shrink-0">
+            <span className="text-[12px] shrink-0">
               {holidayInfo.isWeatherDay ? "🌧" : "🎉"}
             </span>
           )}
           <span
             className={cn(
-              "text-[10px] font-mono truncate",
+              "text-[14px] font-mono truncate",
               holidayInfo
                 ? "text-primary font-semibold"
                 : "text-muted-foreground",
@@ -124,7 +124,7 @@ function CalendarCell({
           >
             {displayMonth}/{displayDay}
             {holidayInfo && (
-              <span className="ml-1 text-[9px] font-normal">{holidayInfo.description}</span>
+              <span className="ml-1 text-[14px] font-normal">{holidayInfo.description}</span>
             )}
           </span>
         </div>
