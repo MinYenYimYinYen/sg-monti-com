@@ -10,6 +10,7 @@ import { Discount } from "@/app/realGreen/discount/DiscountTypes";
 import { applyDiscounts, getPriceChartPrice } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
+import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 
 export type ProductRuleCompliance = "pass" | "fail" | "no-rule" | null;
 
@@ -298,7 +299,7 @@ export class ServiceUtils {
    */
   public get assignmentOutcome(): AssignmentOutcome {
     const assignments = this.service.assignments;
-    const assignment = assignments.length > 0 ? assignments[assignments.length - 1]! : null;
+    const assignment = new AssignmentUtils(assignments).mostRecent;
 
     if (!assignment || this.service.status !== "S") {
       return {

@@ -1,6 +1,7 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
+import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 
 const selectByEmployeeIdAndSchedDate = (state: AppState) =>
   state.assignment.byEmployeeIdAndSchedDate;
@@ -28,7 +29,10 @@ const selectServIdsByEmployee = createSelector(
 
 const selectAssignmentsByEmployeeForRange = createSelector(
   [selectBySchedDateRange],
-  (assignments) => new Grouper(assignments).groupBy((a) => a.employeeId).toMap(),
+  (assignments) => {
+    const canonical = new AssignmentUtils(assignments).canonical;
+    return new Grouper(canonical).groupBy((a) => a.employeeId).toMap();
+  },
 );
 
 export const assignmentSelect = {

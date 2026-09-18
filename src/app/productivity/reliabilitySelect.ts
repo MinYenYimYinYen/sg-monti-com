@@ -138,6 +138,7 @@ const selectReliabilityByEmployee = createSelector(
     productivitySelect.completedServices,
     selectDatesWithAnyCompletion,
     holidaySelect.weatherDayDates,
+    plannedTimeOffSelect.byEmployeeId,
   ],
   (
     unplannedAbsencesByEmployee,
@@ -147,6 +148,7 @@ const selectReliabilityByEmployee = createSelector(
     completedServices,
     datesWithAnyCompletion,
     weatherDayDates,
+    plannedTimeOffByEmployee,
   ): Map<string, ReliabilityMetrics> => {
     // Build a set of (employeeId|date) → servIds completed by that employee on that date
     const completedByEmployeeDate = new Map<string, Set<number>>();
@@ -191,11 +193,30 @@ const selectReliabilityByEmployee = createSelector(
         assignmentsByDate.set(assignment.schedDate, existing);
       }
 
+      // Build a set of dates covered by any planned time off for this employee
+      // (plannedDates, plannedTime — not unplannedAbsence, which is already in absenceDates).
+      // Services scheduled on planned-off days are a scheduling mistake, not a suspicious absence.
+      const plannedOffDates = new Set<string>();
+      for (const pto of plannedTimeOffByEmployee.get(employeeId) ?? []) {
+        if (pto.requestType === "unplannedAbsence") continue;
+        let day = pto.dateRange.min;
+        while (day <= pto.dateRange.max) {
+          plannedOffDates.add(day);
+          // Advance by one day (ISO string arithmetic)
+          const d = new Date(day + "T12:00:00");
+          d.setDate(d.getDate() + 1);
+          day = d.toISOString().slice(0, 10);
+        }
+      }
+
       // Detect suspicious zero-completion days
       const suspiciousZeroDays: SuspiciousZeroDay[] = [];
       for (const [date, assignments] of assignmentsByDate) {
         // Skip days already recorded as an absence
         if (absenceDates.has(date)) continue;
+        // Skip days covered by planned time off — scheduling on a PTO day is a scheduling mistake,
+        // not an unrecorded absence. The employee was legitimately off.
+        if (plannedOffDates.has(date)) continue;
         // Skip weather days — company-wide excuse, not suspicious
         if (weatherDayDates.has(date)) continue;
         // Skip days where nobody else worked (rain day / company closure)

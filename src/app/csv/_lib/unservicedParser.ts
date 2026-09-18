@@ -4,13 +4,16 @@ import { ParseConfig } from "./ParserTypes";
 import { createCSVParser } from "@/app/csv/_lib/parserFactory";
 import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 
+// createdAt is set server-side at write time. The CSV parser produces an empty string
+// as a placeholder that gets overwritten in csv/api/route.ts before the document is persisted.
 const ServiceUnservicedSchema = z.object({
   servId: z.number().positive("Service ID must be a positive number"),
   employeeId: z.string().min(1, "Employee ID cannot be empty"),
   schedDate: z.string().min(1, "Scheduled date cannot be empty"),
   status: z.string().min(1, "Status cannot be empty"),
   sequence: z.number().nonnegative("Sequence must be a non-negative number"),
-});
+  createdAt: z.string().default(""),
+}) satisfies z.ZodType<AssignmentDoc>;
 
 const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {
   columnMappings: {

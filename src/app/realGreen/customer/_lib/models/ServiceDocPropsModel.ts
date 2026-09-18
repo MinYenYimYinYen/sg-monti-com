@@ -10,6 +10,7 @@ const assignmentSchema = new mongoose.Schema<AssignmentDoc>(
     schedDate: { type: String, required: true },
     status: { type: String, required: true },
     sequence: { type: Number, required: true, default: 0 },
+    createdAt: { type: String, required: true, default: "" },
   },
   {
     _id: false,

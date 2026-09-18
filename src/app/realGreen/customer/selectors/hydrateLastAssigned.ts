@@ -7,6 +7,7 @@ import { ProgramDoc } from "@/app/realGreen/customer/_lib/entities/types/Program
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { baseEmployee } from "@/app/realGreen/employee/_lib/baseEmployee";
 import { Assignment, AssignmentDoc } from "@/app/assignment/AssignmentTypes";
+import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 
 export function hydrateLastAssigned(
   serviceDoc: ServiceDoc,
@@ -17,10 +18,7 @@ export function hydrateLastAssigned(
   let lastAssignedFromDoc: AssignmentDoc | null = null;
 
   if (serviceDoc.assignments.length > 0) {
-    lastAssignedFromDoc = [...serviceDoc.assignments].sort(
-      (a, b) =>
-        new Date(b.schedDate).getTime() - new Date(a.schedDate).getTime(),
-    )[0];
+    lastAssignedFromDoc = new AssignmentUtils(serviceDoc.assignments).mostRecent;
   }
 
   const lastAssignedFromNew =

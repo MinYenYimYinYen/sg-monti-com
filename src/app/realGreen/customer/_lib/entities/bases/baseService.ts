@@ -54,6 +54,7 @@ export const baseAssignmentDoc: AssignmentDoc = {
   schedDate: "",
   status: "",
   sequence: 0,
+  createdAt: "",
 };
 
 export const baseAssignmentProps: AssignmentProps = {

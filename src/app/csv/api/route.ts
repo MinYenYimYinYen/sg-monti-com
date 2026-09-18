@@ -8,6 +8,7 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { ServiceDocProps } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { baseServiceDocProps } from "@/app/realGreen/customer/_lib/entities/bases/baseService";
 import { WriteError } from "mongodb";
+import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 
 const handlers: HandlerMap<CSVContract> = {
   saveAssignments: {
@@ -25,26 +26,15 @@ const handlers: HandlerMap<CSVContract> = {
         (doc) => doc.servId,
       );
 
+      const now = new Date().toISOString();
+
       const newServDocProps = assignments.map((a) => {
         const servDocProps = docPropsMap.get(a.servId) ?? baseServiceDocProps;
+        const utils = new AssignmentUtils(servDocProps.assignments);
 
-        const existingAssignment = servDocProps.assignments.find(
-          (existing) => existing.servId === a.servId,
-        );
-
-        // Detect meaningful schedule changes to decide whether to replace or preserve the existing assignment.
-        const scheduleChanged =
-          !existingAssignment ||
-          existingAssignment.employeeId !== a.employeeId ||
-          existingAssignment.schedDate !== a.schedDate ||
-          existingAssignment.sequence !== a.sequence;
-
-        const newAssignments = scheduleChanged
-          ? [
-              ...servDocProps.assignments.filter((e) => e.servId !== a.servId),
-              a,
-            ]
-          : servDocProps.assignments;
+        const newAssignments = utils.isDuplicate(a)
+          ? servDocProps.assignments
+          : [...servDocProps.assignments, { ...a, createdAt: now }];
 
         return {
           ...servDocProps,
