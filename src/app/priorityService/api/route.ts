@@ -30,9 +30,15 @@ const handlers: HandlerMap<PriorityServiceContract> = {
     roles: ["admin", "office"],
     handler: async ({ doc }) => {
       await connectToMongoDB();
+      // Explicitly unset the inactive date field so switching between "single date"
+      // and "date range" doesn't leave a stale value in the document.
+      // $set alone only adds/updates fields — it does not remove absent ones.
+      const unsetFields: Record<string, 1> = doc.date !== undefined
+        ? { dateRange: 1 }
+        : { date: 1 };
       const saved = await PriorityServiceModel.findOneAndUpdate(
         { servId: doc.servId },
-        { $set: doc },
+        { $set: doc, $unset: unsetFields },
         { upsert: true, new: true },
       ).lean();
       return {
