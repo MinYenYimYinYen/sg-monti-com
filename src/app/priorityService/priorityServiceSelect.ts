@@ -3,9 +3,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { PriorityService } from "@/app/priorityService/PriorityServiceTypes";
-import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
-
-const ELIGIBLE_STATUSES = getServiceStatuses(["active", "asap", "printed"]);
+const PRIORITY_ELIGIBLE_STATUSES = new Set(["Y", "*"]);
 
 const selectDocs = (state: AppState) => state.priorityService.docs;
 
@@ -16,8 +14,14 @@ const selectPriorityServices = createSelector(
 
     for (const service of services) {
       if (!service.priorityService) continue;
-      // Only include services with schedulable statuses
-      if (!ELIGIBLE_STATUSES.includes(service.status)) continue;
+      // Service must be active (Y) or asap (*) — printed and completed are excluded.
+      if (!PRIORITY_ELIGIBLE_STATUSES.has(service.status)) continue;
+      // Program must be active (status "9") and not on hold.
+      // Credit hold is intentionally NOT checked here — a priority flag is a manual
+      // override signal and we want credit-hold customers to remain visible so the
+      // production manager can decide whether to schedule them anyway.
+      if (service.program.status !== "9") continue;
+      if (service.program.x.isOnHold) continue;
 
       hydrated.push({ ...service.priorityService, service });
     }
