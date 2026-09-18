@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { format, parseISO, isValid } from "date-fns";
-import { urgentServCodesSelect } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentServCodesSelect";
+import {
+  urgentServCodesSelect,
+  UrgentServCode,
+  UrgentReason,
+} from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentServCodesSelect";
 import { urgentActions } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentSlice";
 import { AppDispatch } from "@/store";
-import { ServCodeDeep } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { Number } from "@/components/Number";
-import { AlertTriangle, Clock, Info, ClipboardList, LandPlot } from "lucide-react";
+import { AlertTriangle, CalendarX, CircleHelp, ClipboardList, Info, LandPlot, Zap } from "lucide-react";
 import { cn } from "@/style/utils";
 import {
   Popover,
@@ -30,6 +33,44 @@ import {
   AccordionTrigger,
 } from "@/style/components/accordion";
 import { Checkbox } from "@/style/components/checkbox";
+
+// ---------------------------------------------------------------------------
+// Reason badge helpers
+// ---------------------------------------------------------------------------
+
+function formatDeadline(isoDate: string): string {
+  try {
+    const d = parseISO(isoDate);
+    return isValid(d) ? format(d, "M/d") : isoDate;
+  } catch {
+    return isoDate;
+  }
+}
+
+function ReasonBadge({ reason }: { reason: UrgentReason }) {
+  if (reason.kind === "alwaysAsap") {
+    return (
+      <span className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 bg-destructive/20 text-destructive font-medium leading-none text-[9px] shrink-0">
+        <Zap className="w-2.5 h-2.5" />
+        Always ASAP
+      </span>
+    );
+  }
+  if (reason.kind === "overdue") {
+    return (
+      <span className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 bg-destructive/10 text-destructive font-medium leading-none text-[9px] shrink-0">
+        <CalendarX className="w-2.5 h-2.5" />
+        Past plan end {formatDeadline(reason.deadline)}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 bg-secondary/20 text-secondary font-medium leading-none text-[9px] shrink-0">
+      <CircleHelp className="w-2.5 h-2.5" />
+      Unplanned
+    </span>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // ChecklistServiceRow
@@ -156,16 +197,13 @@ function ChecklistServiceRow({
 // ---------------------------------------------------------------------------
 
 export function UrgentChecklistContent({
-  asapServCodes,
-  overdueServCodes,
+  urgentServCodes,
 }: {
-  asapServCodes: ServCodeDeep[];
-  overdueServCodes: ServCodeDeep[];
+  urgentServCodes: UrgentServCode[];
 }) {
-  const visibleServCodes = [...asapServCodes, ...overdueServCodes];
-  const allServCodeIds = visibleServCodes
-    .filter((sc) => sc.services.some((s) => s.x.isActionable))
-    .map((sc) => sc.servCodeId);
+  const allServCodeIds = urgentServCodes
+    .filter((entry) => entry.servCode.services.some((s) => s.x.isActionable))
+    .map((entry) => entry.servCode.servCodeId);
 
   return (
     <Accordion
@@ -173,7 +211,8 @@ export function UrgentChecklistContent({
       defaultValue={allServCodeIds}
       className="w-full"
     >
-      {visibleServCodes.map((servCode) => {
+      {urgentServCodes.map((entry) => {
+        const { servCode, reason } = entry;
         const unfinished = servCode.services.filter((s) => s.x.isActionable);
         if (unfinished.length === 0) return null;
 
@@ -188,6 +227,7 @@ export function UrgentChecklistContent({
                 <span className="font-semibold text-foreground truncate">
                   {servCode.servCodeId}
                 </span>
+                <ReasonBadge reason={reason} />
                 <span className="text-muted-foreground shrink-0">
                   {unfinished.length} service{unfinished.length !== 1 ? "s" : ""}
                 </span>
@@ -216,15 +256,12 @@ export function UrgentChecklistContent({
 // ---------------------------------------------------------------------------
 
 function ChecklistPopover({
-  asapServCodes,
-  overdueServCodes,
+  urgentServCodes,
 }: {
-  asapServCodes: ServCodeDeep[];
-  overdueServCodes: ServCodeDeep[];
+  urgentServCodes: UrgentServCode[];
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const expandedServCodeIds = useSelector(urgentServCodesSelect.expandedServCodeIds);
-  const visibleServCodes = [...asapServCodes, ...overdueServCodes];
 
   return (
     <Accordion
@@ -238,7 +275,8 @@ function ChecklistPopover({
       }}
       className="w-full"
     >
-      {visibleServCodes.map((servCode) => {
+      {urgentServCodes.map((entry) => {
+        const { servCode, reason } = entry;
         const unfinished = servCode.services.filter((s) => s.x.isActionable);
         if (unfinished.length === 0) return null;
 
@@ -253,6 +291,7 @@ function ChecklistPopover({
                 <span className="font-semibold text-foreground truncate">
                   {servCode.servCodeId}
                 </span>
+                <ReasonBadge reason={reason} />
                 <span className="text-muted-foreground shrink-0">
                   {unfinished.length} service{unfinished.length !== 1 ? "s" : ""}
                 </span>
@@ -277,26 +316,36 @@ function ChecklistPopover({
 }
 
 // ---------------------------------------------------------------------------
-// UrgentServCodeRow
+// UrgentServCodeRow — compact summary row in the card widget
 // ---------------------------------------------------------------------------
 
-function UrgentServCodeRow({
-  servCode,
-  isAsap,
-}: {
-  servCode: ServCodeDeep;
-  isAsap: boolean;
-}) {
+function UrgentServCodeRow({ entry }: { entry: UrgentServCode }) {
+  const { servCode, reason } = entry;
   const unprintedCount = servCode.services.filter((service) => service.x.isActionable).length;
   if (unprintedCount === 0) return null;
 
+  const icon =
+    reason.kind === "alwaysAsap" ? (
+      <Zap className="w-3 h-3 text-destructive shrink-0" />
+    ) : reason.kind === "overdue" ? (
+      <CalendarX className="w-3 h-3 text-destructive shrink-0" />
+    ) : (
+      <CircleHelp className="w-3 h-3 text-secondary shrink-0" />
+    );
+
+  const badgeLabel =
+    reason.kind === "alwaysAsap" ? "ASAP" : reason.kind === "overdue" ? "LATE" : "?";
+
+  const badgeClass =
+    reason.kind === "alwaysAsap"
+      ? "bg-destructive/20 text-destructive"
+      : reason.kind === "overdue"
+        ? "bg-destructive/10 text-destructive"
+        : "bg-secondary/20 text-secondary";
+
   return (
     <div className="w-full py-1.5 flex items-center gap-2 px-1">
-      {isAsap ? (
-        <AlertTriangle className="w-3 h-3 text-destructive shrink-0" />
-      ) : (
-        <Clock className="w-3 h-3 text-destructive shrink-0" />
-      )}
+      {icon}
 
       <span className="font-mono text-xs text-foreground flex-1 truncate">
         {servCode.servCodeId}
@@ -305,12 +354,10 @@ function UrgentServCodeRow({
       <span
         className={cn(
           "text-[9px] font-semibold uppercase tracking-wide px-1 rounded shrink-0",
-          isAsap
-            ? "bg-destructive/20 text-destructive"
-            : "bg-destructive/10 text-destructive",
+          badgeClass,
         )}
       >
-        {isAsap ? "ASAP" : "LATE"}
+        {badgeLabel}
       </span>
 
       <span className="text-xs font-mono text-muted-foreground shrink-0">
@@ -325,11 +372,10 @@ function UrgentServCodeRow({
 // ---------------------------------------------------------------------------
 
 export function UrgentServCodeCard() {
-  const asapServCodes = useSelector(urgentServCodesSelect.alwaysAsapServCodes);
-  const overdueServCodes = useSelector(urgentServCodesSelect.overdueServCodes);
+  const urgentServCodes = useSelector(urgentServCodesSelect.urgentServCodes);
   const [checklistOpen, setChecklistOpen] = useState(false);
 
-  if (asapServCodes.length === 0 && overdueServCodes.length === 0) return null;
+  if (urgentServCodes.length === 0) return null;
 
   return (
     <div className="border rounded-lg bg-card w-72 flex flex-col">
@@ -358,10 +404,7 @@ export function UrgentServCodeCard() {
                 </p>
               </div>
               <div className="max-h-[624px] overflow-y-auto">
-                <ChecklistPopover
-                  asapServCodes={asapServCodes}
-                  overdueServCodes={overdueServCodes}
-                />
+                <ChecklistPopover urgentServCodes={urgentServCodes} />
               </div>
             </div>
           </PopoverContent>
@@ -370,11 +413,8 @@ export function UrgentServCodeCard() {
 
       {/* Rows */}
       <div className="flex-1 px-2 py-1 divide-y divide-border/30">
-        {asapServCodes.map((servCode) => (
-          <UrgentServCodeRow key={servCode.servCodeId} servCode={servCode} isAsap={true} />
-        ))}
-        {overdueServCodes.map((servCode) => (
-          <UrgentServCodeRow key={servCode.servCodeId} servCode={servCode} isAsap={false} />
+        {urgentServCodes.map((entry) => (
+          <UrgentServCodeRow key={entry.servCode.servCodeId} entry={entry} />
         ))}
       </div>
     </div>

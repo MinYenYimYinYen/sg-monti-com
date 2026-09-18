@@ -108,6 +108,12 @@ export type ServCodeCore = {
 
 export type ServCodeDocProps = CreatedUpdated & {
   servCodeId: string;
+  /**
+   * @deprecated The SeasonPlan's GroupSchedule.plannedEnd is the authoritative deadline for
+   * scheduling purposes. This field is retained for backward compatibility with existing
+   * consumers (e.g. the pace crawler's open-date floor logic) but should not be used as
+   * a deadline in the urgent list or any new feature. Use the SeasonPlan instead.
+   */
   dateRange: TRange<string>;
   alwaysAsap: boolean;
   productRuleDocs: ProductRuleDoc[];

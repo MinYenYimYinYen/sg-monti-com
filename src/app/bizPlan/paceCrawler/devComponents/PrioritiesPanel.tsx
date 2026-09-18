@@ -13,11 +13,10 @@ import { ScrollArea } from "@/style/components/scroll-area";
 // ---------------------------------------------------------------------------
 
 export function PrioritiesPanel() {
-  const asapServCodes = useSelector(urgentServCodesSelect.alwaysAsapServCodes);
-  const overdueServCodes = useSelector(urgentServCodesSelect.overdueServCodes);
+  const urgentServCodes = useSelector(urgentServCodesSelect.urgentServCodes);
   const priorityServices = useSelector(priorityServiceSelect.priorityServices);
 
-  const hasUrgent = asapServCodes.length > 0 || overdueServCodes.length > 0;
+  const hasUrgent = urgentServCodes.length > 0;
   const hasPriority = priorityServices.length > 0;
 
   return (
@@ -30,7 +29,7 @@ export function PrioritiesPanel() {
           <span className="text-sm font-semibold text-destructive">Urgent</span>
           {hasUrgent && (
             <span className="ml-auto text-[10px] text-destructive/70 tabular-nums">
-              {asapServCodes.length + overdueServCodes.length} servCode{asapServCodes.length + overdueServCodes.length !== 1 ? "s" : ""}
+              {urgentServCodes.length} servCode{urgentServCodes.length !== 1 ? "s" : ""}
             </span>
           )}
         </div>
@@ -38,10 +37,7 @@ export function PrioritiesPanel() {
         {/* Checklist body */}
         <ScrollArea className="flex-1">
           {hasUrgent ? (
-            <UrgentChecklistContent
-              asapServCodes={asapServCodes}
-              overdueServCodes={overdueServCodes}
-            />
+            <UrgentChecklistContent urgentServCodes={urgentServCodes} />
           ) : (
             <div className="flex items-center justify-center h-32 text-sm text-muted-foreground italic">
               No urgent services
