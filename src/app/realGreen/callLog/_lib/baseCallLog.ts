@@ -4,7 +4,7 @@ import {
   CallLogDoc,
   CallLogDocProps,
   CallLogProps,
-} from "@/app/realGreen/callLog/CallLog";
+} from "@/app/realGreen/callLog/CallLogTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
 export const baseCallLogCore: CallLogCore = {
