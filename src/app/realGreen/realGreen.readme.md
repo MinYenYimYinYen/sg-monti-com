@@ -58,3 +58,49 @@ For complex, interconnected entities (like `Customer` -> `Program` -> `Service`)
 *   **Goal**: Allow bidirectional navigation (`service.program.services`) without circular dependencies.
 *   **Pattern**: Build a "Base Tree" (Top-Down), then wrap nodes in "Context Objects" (Bottom-Up) that provide parent pointers.
 *   **Reference**: See `src/app/realGreen/customer/customer.readme.md` for the full Context Tree documentation.
+
+---
+
+## The RealGreen Type Boundary
+
+### The Rule
+
+RealGreen-specific types — `RGStringRange`, `RGNumRange`, `CustStat`, and any type defined in `_lib/subTypes/` that mirrors a RealGreen API shape — are **quarantined**. They are only permitted to exist in two places:
+
+1. **`*Raw` type definitions** — the exact shape of the RealGreen API response or request body
+2. **`remap*` and `remapSearch*` functions** — the translation layer that converts between RealGreen types and our types
+
+Everything downstream — `Core`, `Doc`, hydrated entities, selectors, hooks, components, search criteria types — uses **only our types** (`TRange<string>`, `string[]`, etc.).
+
+If you see a RealGreen-specific type imported in a selector, hook, or component, that is a **bug**.
+
+### The Motivation
+
+RealGreen has changed API shapes before and will again. The remap layer is the **single point of adaptation**. When RealGreen changes a field name, a type shape, or a value encoding, we fix it in one function and all downstream code is unaffected.
+
+This is not just a naming convention — it is a **containment strategy** for external API volatility.
+
+### The Search Criteria Pattern
+
+For every RealGreen search endpoint, we define two types and one function:
+
+| Type / Function | Convention | Example |
+|---|---|---|
+| `*SearchRaw` | Mirrors RealGreen exactly — their field names, their types | `CallLogSearchRaw` with `updated?: RGStringRange` |
+| `*SearchCriteria` | Our conventions — our field names, our types | `CallLogSearchCriteria` with `updated?: TRange<string>` |
+| `remapSearch*` | The only bridge between the two | `remapCallLogSearch(criteria) → raw` |
+
+Consuming code (hooks, slices, API contracts) always uses `*SearchCriteria`. The `remapSearch*` function is called once, immediately before the `rgApi` call, and its output is never stored or passed further.
+
+### The Write-Back Corollary
+
+When writing data back to RealGreen (future), the same rule applies in reverse:
+
+- Our types go in (e.g., a form value, a `TRange<string>`)
+- A `remap*Write` function converts to RealGreen's expected shape at the boundary
+- The RealGreen type is constructed inside the remap function and passed directly to `rgApi`
+- It is never stored in state or passed to other functions
+
+### Enforcement
+
+The `_lib/subTypes/` directory contains all RealGreen-specific primitive types. Treat imports from this directory as a signal: if you see one outside of a `*Raw` type or a `remap*` function, move the conversion into the remap layer.

@@ -32,7 +32,9 @@ export const baseCallLogDoc: CallLogDoc = {
   ...baseCallLogDocProps,
 };
 
-export const baseCallLogProps: CallLogProps = {};
+export const baseCallLogProps: CallLogProps = {
+  notes: [],
+};
 
 export const baseCallLog: CallLog = {
   ...baseCallLogDoc,

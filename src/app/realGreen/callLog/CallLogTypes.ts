@@ -26,9 +26,11 @@ export type CallLogNoteDocProps = CreatedUpdated & {
 
 export type CallLogNoteDoc = CallLogNoteCore & CallLogNoteDocProps;
 
-export type CallLogNoteProps = {};
+export type CallLogNoteProps = {
+  callLogReason: import("@/app/realGreen/callLog/callLogReason/CallLogReasonTypes").CallLogReason | null;
+};
 
-export type CallLogNote = CallLogNoteDoc & CallLogNoteProps;
+export type CallLogNote = CallLogNoteCore & CallLogNoteProps;
 
 function remapCallLogNote(raw: CallLogNoteRaw): CallLogNoteCore {
   return {
@@ -80,7 +82,9 @@ export type CallLogDocProps = CreatedUpdated & {
 
 export type CallLogDoc = CallLogCore & CallLogDocProps;
 
-export type CallLogProps = {};
+export type CallLogProps = {
+  notes: CallLogNote[];
+};
 
 export type CallLog = CallLogDoc & CallLogProps;
 

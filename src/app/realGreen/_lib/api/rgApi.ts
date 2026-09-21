@@ -15,6 +15,11 @@ import { CustFlagIdsSearch } from "@/app/realGreen/custFlag/api/route";
 export type RgApiPath =
   | { path: "/CallAhead"; method: "GET"; body?: undefined }
   | { path: `/CallLog/Customer/${string}`; method: "GET"; body?: undefined }
+  | {
+      path: "/CallLog/CallLogSearch";
+      method: "POST";
+      body: import("@/app/realGreen/callLog/_lib/CallLogSearch").CallLogSearchRaw;
+    }
   | { path: "/Company"; method: "GET"; body?: undefined }
   | { path: `/Company/${string}`; method: "GET"; body?: undefined }
   | { path: "/ConditionCode"; method: "GET"; body?: undefined }

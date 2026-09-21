@@ -13,6 +13,7 @@ import { Flag } from "@/app/realGreen/flag/FlagTypes";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 import { Aging, AgingParams } from "@/app/realGreen/customer/_lib/classes/Aging";
+import { CallLog } from "@/app/realGreen/callLog/CallLogTypes";
 
 export type CustomerRaw = {
   address: Address;
@@ -183,6 +184,7 @@ export type CustomerProps = {
   x: CustomerUtils;
   aging: Aging;
   programs: Program[];
+  callLogs: CallLog[];
   taxCodes: TaxCode[];
   taxRate: number;
   callAhead: CallAhead | null;
