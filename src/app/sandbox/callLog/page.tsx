@@ -2,195 +2,295 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import { useSingleCustomer } from "@/app/realGreen/customer/hooks/useSingleCustomer";
+import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
 import { useCallLog } from "@/app/realGreen/callLog/useCallLog";
 import { callLogSelect } from "@/app/realGreen/callLog/callLogSelect";
+import { useCallLogReason } from "@/app/realGreen/callLog/callLogReason/useCallLogReason";
+import { callLogReasonSelect } from "@/app/realGreen/callLog/callLogReason/callLogReasonSelect";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/style/components/accordion";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/style/components/tabs";
 import { CallLog, CallLogNote } from "@/app/realGreen/callLog/CallLogTypes";
 
-// Replace with a known customer ID from your RealGreen account for testing.
-const DEFAULT_CUST_ID = 4073100;
+export default function CallLogDevPage() {
+  const [inputValue, setInputValue] = useState("");
+  const [custId, setCustId] = useState<number | null>(null);
 
-export default function CallLogSandboxPage() {
-  const [custId, setCustId] = useState<number>(DEFAULT_CUST_ID);
-  const [inputValue, setInputValue] = useState<string>(String(DEFAULT_CUST_ID));
+  const { lookup } = useSingleCustomer();
+  const { refreshForCustomer } = useCallLog({ custId: custId ?? undefined });
+  useCallLogReason();
 
-  const { refreshForCustomer } = useCallLog({ custId });
-
-  const callLogCores = useSelector(callLogSelect.callLogCores);
-  const callLogs = useSelector(callLogSelect.callLogs);
+  const customer = useSelector(singleCustSelect.customer);
   const callLogsByCustId = useSelector(callLogSelect.callLogsByCustId);
+  const callLogReasonDocs = useSelector(callLogReasonSelect.callLogReasonDocs);
 
-  const logsForCust = callLogsByCustId.get(custId) ?? [];
+  const callLogs: CallLog[] = custId !== null ? (callLogsByCustId.get(custId) ?? []) : [];
 
-  const handleFetch = () => {
+  const handleLoad = () => {
     const parsed = parseInt(inputValue, 10);
-    if (!isNaN(parsed)) {
-      setCustId(parsed);
-      refreshForCustomer(parsed);
-    }
+    if (isNaN(parsed) || parsed <= 0) return;
+    setCustId(parsed);
+    lookup(parsed);
+    refreshForCustomer(parsed);
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
-      <h1 className="text-xl font-bold">CallLog Sandbox</h1>
-      <p className="text-sm text-foreground/60">
-        Fetches call logs directly from RealGreen for a given customer ID.
-        Use this page to validate the data shape and answer open questions
-        before designing the sync layer. See <code>callLogSyncPlan.md</code> Section 10.
-      </p>
+    <div className="h-full overflow-y-auto">
+      <div className="p-6 space-y-4 max-w-4xl">
+        <h1 className="text-xl font-bold">CallLog Dev</h1>
+        <p className="text-sm text-foreground/60">
+          Enter a customer ID to load the customer via <code>useSingleCustomer</code> and fetch
+          their call logs from RealGreen. Use this to validate the data shape and confirm customer
+          hydration before building the sync layer.
+        </p>
 
-      {/* Customer ID input */}
-      <div className="flex gap-3 items-end">
-        <div className="space-y-1">
-          <label className="block text-sm font-medium">Customer ID</label>
-          <input
-            type="number"
-            className="border rounded p-2 bg-card text-foreground w-40"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleFetch()}
-          />
+        {/* Input + button — shared above tabs */}
+        <div className="flex gap-3 items-end">
+          <div className="space-y-1">
+            <label className="block text-sm font-medium">Customer ID</label>
+            <input
+              type="number"
+              className="border rounded p-2 bg-card text-foreground w-40"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLoad()}
+              placeholder="e.g. 4073100"
+            />
+          </div>
+          <button
+            className="rounded bg-primary text-primary-foreground py-2 px-4 font-medium"
+            onClick={handleLoad}
+          >
+            Load
+          </button>
         </div>
-        <button
-          className="rounded bg-primary text-white py-2 px-4 font-medium"
-          onClick={handleFetch}
-        >
-          Fetch Call Logs
-        </button>
-      </div>
 
-      {/* Summary */}
-      <div className="space-y-1 text-sm">
-        <div>
-          <span className="font-medium">Total cores in state:</span>{" "}
-          {callLogCores.length}
-        </div>
-        <div>
-          <span className="font-medium">Total hydrated logs in state:</span>{" "}
-          {callLogs.length}
-        </div>
-        <div>
-          <span className="font-medium">
-            Logs for custId {custId}:
-          </span>{" "}
-          {logsForCust.length}
-        </div>
-      </div>
+        <Tabs defaultValue="callLogs">
+          <TabsList>
+            <TabsTrigger value="callLogs">Call Logs</TabsTrigger>
+            <TabsTrigger value="callReasons">
+              Call Reasons ({callLogReasonDocs.length})
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Open questions checklist */}
-      <div className="border rounded p-4 space-y-2 bg-card">
-        <h2 className="font-semibold text-sm">Open Questions to Answer</h2>
-        <ol className="list-decimal list-inside text-sm space-y-1 text-foreground/80">
-          <li>Does the response match <code>CallLogRaw</code>? Check the raw JSON below.</li>
-          <li>Is <code>reason</code> on notes a numeric string like <code>"42"</code> or something else?</li>
-          <li>Are notes always present, or is <code>notes?</code> truly optional?</li>
-          <li>What are the actual <code>status</code> values on <code>CallLog</code>?</li>
-          <li>What is the realistic volume? (logs per customer, total)</li>
-        </ol>
-      </div>
-
-      {/* Per-log display */}
-      {logsForCust.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="font-semibold">
-            Call Logs for Customer {custId} ({logsForCust.length})
-          </h2>
-          {logsForCust.map((log: CallLog) => (
-            <div
-              key={log.callLogId}
-              className="border rounded p-4 space-y-2 bg-card text-sm"
-            >
-              <div className="flex gap-4 flex-wrap">
-                <span>
-                  <span className="font-medium">ID:</span> {log.callLogId}
-                </span>
-                <span>
-                  <span className="font-medium">Status:</span>{" "}
-                  <code>{log.status || "(empty)"}</code>
-                </span>
-                <span>
-                  <span className="font-medium">Entered:</span> {log.enterDate}
-                </span>
-                <span>
-                  <span className="font-medium">Due:</span>{" "}
-                  {log.dueDate || "(none)"}
-                </span>
-                <span>
-                  <span className="font-medium">Resolved:</span>{" "}
-                  {String(log.resolved)}
-                </span>
-                <span>
-                  <span className="font-medium">EnteredBy:</span>{" "}
-                  <code>{log.enteredBy || "(empty)"}</code>
-                </span>
-                <span>
-                  <span className="font-medium">AssignedTo:</span>{" "}
-                  <code>{log.assignedTo || "(empty)"}</code>
-                </span>
+          {/* ── Tab 1: Call Logs ── */}
+          <TabsContent value="callLogs" className="space-y-4 mt-4">
+            {/* Customer summary — confirms useSingleCustomer hydration */}
+            {customer && (
+              <div className="border rounded p-4 bg-card space-y-2 text-sm">
+                <h2 className="font-semibold">Customer (via singleCustSelect)</h2>
+                <div className="flex gap-4 flex-wrap text-foreground/80">
+                  <span><span className="font-medium">custId:</span> {customer.custId}</span>
+                  <span><span className="font-medium">Name:</span> {customer.displayName}</span>
+                  <span><span className="font-medium">Last:</span> {customer.lastName}</span>
+                  <span><span className="font-medium">Status:</span> <code>{customer.status}</code></span>
+                </div>
+                <div className="text-foreground/80">
+                  <span className="font-medium">customer.callLogs.length:</span>{" "}
+                  <span className={customer.callLogs.length > 0 ? "text-accent font-semibold" : "text-foreground/50"}>
+                    {customer.callLogs.length}
+                  </span>
+                  {customer.callLogs.length === 0 && (
+                    <span className="ml-2 text-foreground/40 text-xs">
+                      (0 = call logs not yet loaded into state, or this customer has none)
+                    </span>
+                  )}
+                </div>
               </div>
+            )}
 
-              {/* Notes */}
-              <div>
-                <span className="font-medium">
-                  Notes ({log.notes.length}):
-                </span>
-                {log.notes.length === 0 ? (
-                  <span className="text-foreground/50 ml-2">(none)</span>
-                ) : (
-                  <div className="mt-2 space-y-2 pl-4 border-l-2 border-accent/30">
-                    {(log.notes as CallLogNote[]).map((note: CallLogNote) => (
-                      <div key={note.callLogNoteId} className="space-y-1">
-                        <div className="flex gap-3 flex-wrap text-xs text-foreground/70">
-                          <span>
-                            <span className="font-medium">NoteID:</span>{" "}
-                            {note.callLogNoteId}
-                          </span>
-                          <span>
-                            <span className="font-medium">Date:</span>{" "}
-                            {note.date || "(empty)"}
-                          </span>
-                          <span>
-                            <span className="font-medium">Reason (raw):</span>{" "}
-                            <code>{note.reason || "(empty)"}</code>
-                          </span>
-                          <span>
-                            <span className="font-medium">Reason (resolved):</span>{" "}
-                            <code>
-                              {note.callLogReason
-                                ? `[${note.callLogReason.reasonId}] ${note.callLogReason.reason}`
-                                : "(not resolved — callLogReason not loaded)"}
-                            </code>
-                          </span>
-                          <span>
-                            <span className="font-medium">Employee:</span>{" "}
-                            <code>{note.employeeId || "(empty)"}</code>
-                          </span>
-                        </div>
-                        {note.note && (
-                          <div className="text-xs bg-accent/10 rounded p-2">
-                            {note.note}
-                          </div>
+            {/* Call log count summary */}
+            {custId !== null && (
+              <div className="text-sm text-foreground/70">
+                <span className="font-medium">Call logs from callLogSelect for custId {custId}:</span>{" "}
+                <span className="font-semibold text-foreground">{callLogs.length}</span>
+              </div>
+            )}
+
+            {/* Accordion — one item per call log */}
+            {callLogs.length > 0 && (
+              <Accordion type="multiple" className="space-y-2">
+                {callLogs.map((log: CallLog) => (
+                  <AccordionItem
+                    key={log.callLogId}
+                    value={String(log.callLogId)}
+                    className="border rounded bg-card"
+                  >
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex gap-4 flex-wrap text-sm text-left">
+                        <span><span className="font-medium">ID:</span> {log.callLogId}</span>
+                        <span><span className="font-medium">Entered:</span> {log.enterDate}</span>
+                        <span>
+                          <span className="font-medium">Status:</span>{" "}
+                          <code className="text-xs">{log.status || "(empty)"}</code>
+                        </span>
+                        <span>
+                          <span className="font-medium">By:</span>{" "}
+                          <code className="text-xs">{log.enteredBy || "(empty)"}</code>
+                        </span>
+                        <span>
+                          <span className="font-medium">Assigned:</span>{" "}
+                          <code className="text-xs">{log.assignedTo || "(empty)"}</code>
+                        </span>
+                        <span>
+                          <span className="font-medium">Resolved:</span> {String(log.resolved)}
+                        </span>
+                        <span className="font-semibold text-accent">
+                          {log.notes.length} {log.notes.length === 1 ? "note" : "notes"}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+
+                    <AccordionContent className="px-4 pb-4 space-y-4">
+                      {/* All remaining call log fields */}
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-foreground/80 border-b pb-3">
+                        <div><span className="font-medium">callLogId:</span> {log.callLogId}</div>
+                        <div><span className="font-medium">custId:</span> {log.custId}</div>
+                        <div><span className="font-medium">enterDate:</span> {log.enterDate}</div>
+                        <div><span className="font-medium">dueDate:</span> {log.dueDate || "(empty)"}</div>
+                        <div><span className="font-medium">resolved:</span> {String(log.resolved)}</div>
+                        <div><span className="font-medium">viewed:</span> {String(log.viewed)}</div>
+                        <div><span className="font-medium">alarmSet:</span> {String(log.alarmSet)}</div>
+                        <div><span className="font-medium">status:</span> <code>{log.status || "(empty)"}</code></div>
+                        <div><span className="font-medium">enteredBy:</span> <code>{log.enteredBy || "(empty)"}</code></div>
+                        <div><span className="font-medium">assignedTo:</span> <code>{log.assignedTo || "(empty)"}</code></div>
+                        {"createdAt" in log && (
+                          <div><span className="font-medium">createdAt:</span> {(log as CallLog & { createdAt?: string }).createdAt ?? "(n/a)"}</div>
+                        )}
+                        {"updatedAt" in log && (
+                          <div><span className="font-medium">updatedAt:</span> {(log as CallLog & { updatedAt?: string }).updatedAt ?? "(n/a)"}</div>
                         )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
-      {/* Raw JSON dump for shape validation */}
-      {logsForCust.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="font-semibold text-sm">
-            Raw JSON (first log — for shape validation)
-          </h2>
-          <pre className="text-xs bg-card border rounded p-4 overflow-auto max-h-96">
-            {JSON.stringify(logsForCust[0], null, 2)}
-          </pre>
-        </div>
-      )}
+                      {/* Notes */}
+                      <div className="space-y-3">
+                        <h3 className="text-xs font-semibold text-foreground/60 uppercase tracking-wide">
+                          Notes ({log.notes.length})
+                        </h3>
+                        {log.notes.length === 0 ? (
+                          <p className="text-xs text-foreground/40">(no notes)</p>
+                        ) : (
+                          log.notes.map((note: CallLogNote) => (
+                            <div
+                              key={note.callLogNoteId}
+                              className="border rounded p-3 bg-accent/10 space-y-2 text-xs"
+                            >
+                              <div className="flex gap-4 flex-wrap text-foreground/70">
+                                <span><span className="font-medium">noteId:</span> {note.callLogNoteId}</span>
+                                <span><span className="font-medium">callLogId:</span> {note.callLogId}</span>
+                                <span><span className="font-medium">date:</span> {note.date || "(empty)"}</span>
+                                <span>
+                                  <span className="font-medium">employeeId:</span>{" "}
+                                  <code>{note.employeeId || "(empty)"}</code>
+                                </span>
+                              </div>
+                              <div className="flex gap-4 flex-wrap text-foreground/70">
+                                <span>
+                                  <span className="font-medium">reason (raw):</span>{" "}
+                                  <code>{note.reason || "(empty)"}</code>
+                                </span>
+                                <span>
+                                  <span className="font-medium">callLogReason (resolved):</span>{" "}
+                                  <code>
+                                    {note.callLogReason
+                                      ? `[${note.callLogReason.reasonId}] ${note.callLogReason.reason}`
+                                      : "(not resolved)"}
+                                  </code>
+                                </span>
+                              </div>
+                              {note.note && (
+                                <div className="bg-card rounded p-2 text-foreground/90 whitespace-pre-wrap">
+                                  {note.note}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )}
+
+            {/* Empty state */}
+            {custId !== null && callLogs.length === 0 && (
+              <p className="text-sm text-foreground/40">
+                No call logs loaded yet for custId {custId}. Check that the fetch completed.
+              </p>
+            )}
+
+            {custId === null && (
+              <p className="text-sm text-foreground/40">Enter a customer ID and click Load.</p>
+            )}
+          </TabsContent>
+
+          {/* ── Tab 2: Call Reasons metadata ── */}
+          <TabsContent value="callReasons" className="space-y-4 mt-4">
+            <div className="text-sm text-foreground/70">
+              <span className="font-medium">Total call reasons loaded:</span>{" "}
+              <span className="font-semibold text-foreground">{callLogReasonDocs.length}</span>
+              {callLogReasonDocs.length === 0 && (
+                <span className="ml-2 text-foreground/40 text-xs">
+                  (loading from /CallReason…)
+                </span>
+              )}
+            </div>
+
+            {callLogReasonDocs.length > 0 && (
+              <div className="border rounded overflow-hidden text-xs">
+                <table className="w-full">
+                  <thead className="bg-accent/10 text-foreground/60 uppercase tracking-wide">
+                    <tr>
+                      <th className="text-left px-3 py-2">reasonId</th>
+                      <th className="text-left px-3 py-2">reason</th>
+                      <th className="text-left px-3 py-2">status</th>
+                      <th className="text-left px-3 py-2">contactOrAttempt</th>
+                      <th className="text-left px-3 py-2">sendNote</th>
+                      <th className="text-left px-3 py-2">blockLead</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {callLogReasonDocs.map((reason) => (
+                      <tr
+                        key={reason.reasonId}
+                        className="border-t border-border even:bg-accent/5"
+                      >
+                        <td className="px-3 py-1.5 font-medium">{reason.reasonId}</td>
+                        <td className="px-3 py-1.5">{reason.reason}</td>
+                        <td className="px-3 py-1.5"><code>{reason.status || "(empty)"}</code></td>
+                        <td className="px-3 py-1.5">
+                          <code className={
+                            reason.contactOrAttempt === "C"
+                              ? "text-accent font-semibold"
+                              : reason.contactOrAttempt === "A"
+                              ? "text-secondary font-semibold"
+                              : ""
+                          }>
+                            {reason.contactOrAttempt || "(empty)"}
+                          </code>
+                        </td>
+                        <td className="px-3 py-1.5">{String(reason.sendNote)}</td>
+                        <td className="px-3 py-1.5">{String(reason.blockLead)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

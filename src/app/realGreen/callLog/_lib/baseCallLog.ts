@@ -34,6 +34,7 @@ export const baseCallLogDoc: CallLogDoc = {
 
 export const baseCallLogProps: CallLogProps = {
   notes: [],
+  callLogStatus: null,
 };
 
 export const baseCallLog: CallLog = {

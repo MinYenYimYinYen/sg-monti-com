@@ -84,6 +84,7 @@ export type CallLogDoc = CallLogCore & CallLogDocProps;
 
 export type CallLogProps = {
   notes: CallLogNote[];
+  callLogStatus: import("@/app/realGreen/callLog/callLogStatus/CallLogStatusTypes").CallLogStatus | null;
 };
 
 export type CallLog = CallLogDoc & CallLogProps;

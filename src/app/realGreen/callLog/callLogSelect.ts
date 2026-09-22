@@ -10,6 +10,8 @@ import {
 } from "@/app/realGreen/callLog/CallLogTypes";
 import { callLogReasonSelect } from "@/app/realGreen/callLog/callLogReason/callLogReasonSelect";
 import { CallLogReason } from "@/app/realGreen/callLog/callLogReason/CallLogReasonTypes";
+import { callLogStatusSelect } from "@/app/realGreen/callLog/callLogStatus/callLogStatusSelect";
+import { CallLogStatus } from "@/app/realGreen/callLog/callLogStatus/CallLogStatusTypes";
 
 const selectCallLogCores = (state: AppState) => state.callLog.callLogCores;
 
@@ -32,18 +34,25 @@ function hydrateCallLog(
   core: CallLogCore,
   reasonMap: Map<number, CallLogReason>,
   reasonStringMap: Map<string, CallLogReason>,
+  statusMap: Map<string, CallLogStatus>,
 ): CallLog {
   const notes: CallLogNote[] = core.notes.map((note) =>
     hydrateNote(note, reasonMap, reasonStringMap),
   );
-  const props: CallLogProps = { notes };
+  const callLogStatus: CallLogStatus | null = statusMap.get(core.status) ?? null;
+  const props: CallLogProps = { notes, callLogStatus };
   return { ...core, ...props } as CallLog;
 }
 
 const selectCallLogs = createSelector(
-  [selectCallLogCores, callLogReasonSelect.reasonMap, callLogReasonSelect.reasonStringMap],
-  (cores, reasonMap, reasonStringMap): CallLog[] =>
-    cores.map((core) => hydrateCallLog(core, reasonMap, reasonStringMap)),
+  [
+    selectCallLogCores,
+    callLogReasonSelect.reasonMap,
+    callLogReasonSelect.reasonStringMap,
+    callLogStatusSelect.statusMap,
+  ],
+  (cores, reasonMap, reasonStringMap, statusMap): CallLog[] =>
+    cores.map((core) => hydrateCallLog(core, reasonMap, reasonStringMap, statusMap)),
 );
 
 const selectCallLogMap = createSelector(

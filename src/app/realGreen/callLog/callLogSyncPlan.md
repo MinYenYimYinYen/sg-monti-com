@@ -311,3 +311,28 @@ Once the callLog sync is validated, the framework is proven and can be applied t
 4. Create `sync/route.ts` — sync API route handler
 5. Test via sandbox or direct API call
 6. Wire to Vercel Cron (or equivalent) for automated scheduling
+
+---
+
+## 13. Post-Sync Tasks (Blocked on Sync)
+
+The following features are designed and ready to implement, but require call logs to be synced to MongoDB first.
+
+### 13.1 Status Discovery UI
+
+**See:** `callLogPlan.md` Section 15.4
+
+Once call logs are in Mongo, implement the status discovery workflow in the admin UI at `/realGreen/callLog/callLogStatus`:
+
+1. Query `db.callLogs.distinct("status")` to get all unique status codes seen in the data
+2. Compare against the `callLogStatus` collection (already built)
+3. Surface any unmapped codes — codes that appear in call logs but have no `CallLogStatus` entry
+4. Allow the admin to create `CallLogStatus` entries for unmapped codes inline
+
+**Why blocked:** Querying unique statuses from the live RealGreen API (one customer at a time via `/CallLog/Customer/{id}`) is impractical at scale. After sync, a single Mongo `distinct` query gives the complete picture instantly.
+
+### 13.2 CRUD UI for Call Log Status
+
+**See:** `callLogPlan.md` Section 15.5
+
+The `callLogStatus` module is fully built (types, model, contract with `upsert`/`delete`, slice, selectors, hook). The page at `/realGreen/callLog/callLogStatus` shows the status table but has no add/edit/delete controls yet. Build the CRUD UI after sync is established and the status discovery workflow is in place.

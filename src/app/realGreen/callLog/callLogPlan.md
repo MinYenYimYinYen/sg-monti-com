@@ -1,4 +1,3 @@
-
 # CallLog Module Plan
 
 ## 1. Goals
@@ -18,6 +17,8 @@
 src/app/realGreen/callLog/
   CallLogTypes.ts              ← (exists) Raw → Core → Doc → CallLog type pipeline
   callLogPlan.md               ← (this file)
+  layout.tsx                   ← (exists) PageLayout + TabNav for callLog section
+  page.tsx                     ← (exists) Overview page with section cards
   _lib/
     baseCallLog.ts             ← (exists) base/fallback objects
     callLogServerFunc.ts       ← remap + extend functions (server-side)
@@ -44,6 +45,19 @@ src/app/realGreen/callLog/
     callLogReasonSlice.ts
     callLogReasonSelect.ts
     useCallLogReason.ts
+  callLogStatus/               ← Sub-module (see Section 15)
+    CallLogStatusTypes.ts
+    _lib/
+      baseCallLogStatus.ts
+    api/
+      CallLogStatusContract.ts
+      route.ts
+    models/
+      CallLogStatusModel.ts
+    callLogStatusSlice.ts
+    callLogStatusSelect.ts
+    useCallLogStatus.ts
+    page.tsx
 ```
 
 ---
@@ -52,14 +66,14 @@ src/app/realGreen/callLog/
 
 ### 3.1 CallLogReason (Metadata Lookup)
 
-The `reason` field on `CallLogNoteRaw` is a string ID referencing a RealGreen metadata object. The full shape from the RealGreen API is:
+The `reason` field on `CallLogNoteRaw` is a string referencing a RealGreen metadata object. The full shape from the RealGreen API is:
 
 ```typescript
 type CallLogReasonRaw = {
   actionReasonID: number;
   actionReason: string;
   status: string;
-  contactOrAttempt: string;  // "C" = Contact, "A" = Attempt (likely)
+  contactOrAttempt: string;  // "C" = Contact, "A" = Attempt
   handheld: boolean;
   actionReasonFrench: string;
   actionReasonSpanish: string;
@@ -72,8 +86,8 @@ type CallLogReasonRaw = {
 **Key fields for our use:**
 - `actionReasonID` → natural key (`reasonId`)
 - `actionReason` → display label (`reason`)
-- `status` → may drive UI behavior (e.g., auto-set call log status on note creation)
-- `contactOrAttempt` → distinguishes whether the note represents a successful contact or an attempt
+- `status` → may drive UI behavior
+- `contactOrAttempt` → distinguishes contact vs. attempt
 - `sendNote` / `blockLead` → behavioral flags
 
 **Type pipeline:**
@@ -81,24 +95,16 @@ type CallLogReasonRaw = {
 CallLogReasonRaw → CallLogReasonCore → CallLogReasonDoc → CallLogReason
 ```
 
-`CallLogReasonDocProps` will hold native metadata (e.g., `createdAt`, `updatedAt`, `reasonId`). Since this is a relatively static lookup table, DocProps may be minimal initially — but the full module structure is warranted because `status` and `contactOrAttempt` are likely to drive UI logic.
-
 ### 3.2 CallLogNote (Embedded)
 
 Notes are embedded within their parent `CallLogDoc`. They are not stored in a separate collection.
-
-**Rationale:**
-- RealGreen delivers notes pre-joined with their parent log — no separate API call needed
-- The primary access pattern is always "call logs for a customer, with their notes" — notes have no independent identity in the UI
-- Upsert strategy: on sync, replace the entire `notes` array (RealGreen is the source of truth for note content)
-- `callLogNoteId` is preserved on each note, enabling a future migration to a separate collection if cross-log note querying becomes a requirement
 
 **Type pipeline:**
 ```
 CallLogNoteRaw → CallLogNoteCore → (embedded in CallLogDoc) → CallLogNote (hydrated)
 ```
 
-`CallLogNote` (the hydrated type) will resolve `reason: string` (the ID) → `reason: CallLogReason` (the full object).
+`CallLogNote` (the hydrated type) resolves `reason: string` → `callLogReason: CallLogReason | null`.
 
 ### 3.3 CallLog (Parent)
 
@@ -107,12 +113,9 @@ CallLogNoteRaw → CallLogNoteCore → (embedded in CallLogDoc) → CallLogNote 
 CallLogRaw → CallLogCore → CallLogDoc → CallLog
 ```
 
-`CallLogDocProps` stores native metadata: `callLogId`, `createdAt`, `updatedAt`. The `notes` array is embedded directly in the document.
-
-`CallLog` (hydrated) will have `notes: CallLogNote[]` where each note's `reason` is resolved to a full `CallLogReason` object.
-
-**Current `CallLogTypes.ts` assessment:**
-The existing types are well-structured. The main gap is that `CallLogProps` is empty — it will be populated once we define what hydration means (resolving `CallLogReason` on notes). The `remapCallLogs` and `extendCallLogs` functions are already stubbed correctly.
+`CallLog` (hydrated) has:
+- `notes: CallLogNote[]` — each note's reason resolved to a full `CallLogReason` object
+- `callLogStatus: CallLogStatus | null` — `status` code resolved to a full `CallLogStatus` object
 
 ---
 
@@ -121,63 +124,25 @@ The existing types are well-structured. The main gap is that `CallLogProps` is e
 ### 4.1 The Two RealGreen Endpoints
 
 **Endpoint A: `/CallLog/Customer/{custId}` (GET)**
-- Already registered in `rgApi` as `{ path: \`/CallLog/Customer/${string}\`; method: "GET" }`
 - Returns all call logs for a single customer, with notes embedded
-- Simple, no pagination
 - Use case: on-demand fetch for a single customer detail view
 
 **Endpoint B: `/CallLog/CallLogSearch` (POST)**
-- Not yet registered in `rgApi`
 - Paginated: `records` (max 500) + `offset` fields
-- Supports rich filtering: `customerID[]`, `enterDate`, `dueDate`, `status[]`, `enteredBy[]`, `assignedTo[]`, `created`, `updated`
-- The `created` and `updated` date range fields are the **delta-sync keys**
+- Supports rich filtering including `created` and `updated` date ranges (the **delta-sync keys**)
 - Use case: bulk fetch, sync operations, cross-customer queries
 
 ### 4.2 Search Type Remapping
 
-Following the pattern established by `CustSearch.ts` / `remapCustSearch.ts`, we define two types:
+**`CallLogSearchRaw`** — mirrors the RealGreen API body exactly.
 
-**`CallLogSearchRaw`** — mirrors the RealGreen API body exactly:
-```typescript
-type CallLogSearchRaw = {
-  customerID?: number[];
-  enterDate?: RGStringRange;   // ISO 8601 date strings
-  dueDate?: RGStringRange;
-  phone?: string;
-  status?: string[];
-  enteredBy?: string[];
-  assignedTo?: string[];
-  created?: RGStringRange;
-  updated?: RGStringRange;
-  records?: number;            // max 500
-  offset?: number;
-};
-```
+**`CallLogSearchCriteria`** — our preferred naming and types.
 
-**`CallLogSearchCriteria`** — our preferred naming and types:
-```typescript
-type CallLogSearchCriteria = {
-  custIds?: number[];
-  enterDate?: TRange<string>;
-  dueDate?: TRange<string>;
-  phone?: string;
-  statuses?: string[];
-  enteredBy?: string[];
-  assignedTo?: string[];
-  created?: TRange<string>;
-  updated?: TRange<string>;
-  records?: number;
-  offset?: number;
-};
-```
-
-**`remapCallLogSearch(criteria: CallLogSearchCriteria): CallLogSearchRaw`** — maps our type to the RealGreen type. This is the primary artifact of the current development phase.
+**`remapCallLogSearch(criteria: CallLogSearchCriteria): CallLogSearchRaw`** — maps our type to the RealGreen type.
 
 ### 4.3 Pagination
 
-The `records` field caps at 500. For queries that may return more than 500 records (e.g., a full sync), the caller must implement pagination by incrementing `offset` until fewer than `records` results are returned. This is analogous to the `createPaginationStep` pattern in the customer module.
-
-**Open Question:** Should the API route handle pagination internally (loop until done, return all results) or should the client drive pagination? For the initial implementation, the route should handle it internally — the client passes criteria and gets back all matching logs. This keeps the contract simple.
+The `records` field caps at 500. For queries that may return more than 500 records, the caller must implement pagination. See `callLogSyncPlan.md` for the capped exponential batch fetch algorithm.
 
 ---
 
@@ -185,71 +150,11 @@ The `records` field caps at 500. For queries that may return more than 500 recor
 
 ### 5.1 MongoDB Document Shape
 
-`CallLogDoc` is stored as a single Mongo document per call log, with notes embedded:
+`CallLogDoc` is stored as a single Mongo document per call log, with notes embedded. Natural key: `callLogId`.
 
-```typescript
-// Stored in MongoDB
-type CallLogDoc = {
-  callLogId: number;       // natural key, unique index
-  custId: number;
-  enterDate: string;
-  dueDate: string;
-  resolved: boolean;
-  viewed: boolean;
-  alarmSet: boolean;
-  status: string;
-  enteredBy: string;
-  assignedTo: string;
-  notes: CallLogNoteCore[];  // embedded array
-  createdAt: string;         // from { timestamps: true }
-  updatedAt: string;
-};
-```
+### 5.2 Upsert Strategy
 
-### 5.2 Mongoose Model
-
-`CallLogDocPropsModel` stores the native metadata fields. The `notes` array is part of the schema as an embedded subdocument array.
-
-**Schema design:**
-```typescript
-const CallLogNoteSchema = new mongoose.Schema<CallLogNoteCore>({
-  callLogNoteId: { type: Number, required: true },
-  callLogId: { type: Number, required: true },
-  date: { type: String, default: "" },
-  reason: { type: String, default: "" },  // stores the reasonId string
-  note: { type: String, default: "" },
-  employeeId: { type: String, default: "" },
-}, { _id: false });  // no _id on subdocuments
-
-const CallLogDocPropsSchema = new mongoose.Schema<CallLogDoc>({
-  callLogId: { type: Number, required: true, unique: true },
-  custId: { type: Number, required: true },
-  enterDate: { type: String, required: true },
-  dueDate: { type: String, default: "" },
-  resolved: { type: Boolean, default: false },
-  viewed: { type: Boolean, default: false },
-  alarmSet: { type: Boolean, default: false },
-  status: { type: String, default: "" },
-  enteredBy: { type: String, default: "" },
-  assignedTo: { type: String, default: "" },
-  notes: { type: [CallLogNoteSchema], default: [] },
-}, { timestamps: true });
-```
-
-**Note:** Unlike `callAhead` and `conditionCode` where only `DocProps` is stored (and merged with a `Core` fetched live from RealGreen), `CallLog` stores the **full document** in Mongo. This is because call logs are not a static lookup table — they change over time and we want to sync them.
-
-### 5.3 Upsert Strategy
-
-On each fetch/sync, upsert by `callLogId`:
-```typescript
-await CallLogModel.findOneAndUpdate(
-  { callLogId: doc.callLogId },
-  { $set: doc },
-  { upsert: true, new: true }
-);
-```
-
-The entire `notes` array is replaced on each upsert. Since RealGreen is the source of truth for note content, this is correct — we are syncing, not merging.
+On each fetch/sync, upsert by `callLogId`. The entire `notes` array is replaced on each upsert — RealGreen is the source of truth for note content.
 
 ---
 
@@ -257,22 +162,11 @@ The entire `notes` array is replaced on each upsert. Since RealGreen is the sour
 
 Lives at `src/app/realGreen/callLog/callLogReason/`.
 
-**RealGreen API endpoint:** To be confirmed — likely `/ActionReason` or similar. Needs exploration.
+**RealGreen API endpoint:** `GET /CallReason` (confirmed via Swagger).
 
-**Fetch strategy:** Fetch once, cache with `staleTime` (same pattern as `callAhead`, `conditionCode`). This is a static-ish lookup table.
+**Fetch strategy:** Fetch once, cache with `staleTime`. This is a static-ish lookup table.
 
-**Full module structure:**
-- `CallLogReasonTypes.ts` — Raw → Core → DocProps → Doc → Props → CallLogReason
-- `baseCallLogReason.ts` — fallback objects
-- `callLogReasonServerFunc.ts` — remap + extend
-- `CallLogReasonDocPropsModel.ts` — Mongoose model (minimal DocProps initially)
-- `CallLogReasonContract.ts` — API contract (`getAll`)
-- `route.ts` — API route
-- `callLogReasonSlice.ts` — Redux slice
-- `callLogReasonSelect.ts` — selectors including a `reasonMap: Map<string, CallLogReason>`
-- `useCallLogReason.ts` — hook
-
-**Hydration role:** The `callLogReasonSelect.reasonMap` is consumed by `callLogSelect` to resolve `note.reason` (string ID) → `note.reason` (full `CallLogReason` object) on the hydrated `CallLogNote` type.
+**Hydration role:** `callLogReasonSelect.reasonMap` resolves `note.reason` → `note.callLogReason` on the hydrated `CallLogNote` type.
 
 ---
 
@@ -282,130 +176,36 @@ Lives at `src/app/realGreen/callLog/callLogReason/`.
 
 ```typescript
 type CallLogState = {
-  callLogDocs: CallLogDoc[];
+  callLogCores: CallLogCore[];
 };
 ```
 
-### 7.2 Thunks
-
-- `getCallLogs({ params: { criteria: CallLogSearchCriteria } })` — fetches via `CallLogSearch` POST, stores results
-- `getCallLogsForCustomer({ params: { custId: number } })` — fetches via `/CallLog/Customer/{id}` GET, stores results
-
-### 7.3 Selectors
+### 7.2 Hydrated Types
 
 ```typescript
-const selectCallLogDocs = (state: AppState) => state.callLog.callLogDocs;
-
-// Map by custId for efficient lookup
-const selectCallLogsByCustId = createSelector(
-  [selectCallLogDocs],
-  (docs) => new Grouper(docs).toGroupMap(d => d.custId)
-);
-
-// Hydrated: resolve reason on each note
-const selectCallLogs = createSelector(
-  [selectCallLogDocs, callLogReasonSelect.reasonMap],
-  (docs, reasonMap) => docs.map(doc => hydrateCallLog(doc, reasonMap))
-);
-
-const selectCallLogMap = createSelector(
-  [selectCallLogs],
-  (logs) => new Grouper(logs).toUniqueMap(l => l.callLogId)
-);
-
-const selectCallLogsByCustIdHydrated = createSelector(
-  [selectCallLogs],
-  (logs) => new Grouper(logs).toGroupMap(l => l.custId)
-);
-```
-
-### 7.4 Hydrated Types
-
-```typescript
-// Hydrated note — reason resolved to full object
 type CallLogNoteProps = {
   callLogReason: CallLogReason | null;
-  // Future: enteredByEmployee: Employee | null;
 };
 type CallLogNote = CallLogNoteCore & CallLogNoteProps;
 
-// Hydrated log — notes array uses hydrated note type
 type CallLogProps = {
-  notes: CallLogNote[];  // shadows CallLogDoc.notes with hydrated version
-  // Future: enteredByEmployee: Employee | null;
-  // Future: assignedToEmployee: Employee | null;
+  notes: CallLogNote[];
+  callLogStatus: CallLogStatus | null;
 };
 type CallLog = CallLogDoc & CallLogProps;
-```
-
-**Note:** `CallLogProps.notes` shadows `CallLogDoc.notes` with the hydrated version. This is intentional — the Doc stores raw note cores (with `reason` as a string ID), the hydrated entity exposes fully resolved notes.
-
-Employee hydration onto `CallLog` (i.e., resolving `enteredBy` / `assignedTo` string IDs to full `Employee` objects) is **deferred**. The string IDs remain on the Doc and are available for lookup via `employeeSelect.employeeMap` in any component that needs them. When a concrete UI need arises, `enteredByEmployee` and `assignedToEmployee` can be added to `CallLogProps` following the same pattern as `Service.lastAssigned`.
-
-For employee-centric views (e.g., "all logs assigned to this employee"), provide selector maps in `callLogSelect`:
-
-```typescript
-// Available without any type changes to Employee:
-const selectCallLogsByEnteredBy = createSelector(
-  [selectCallLogs],
-  (logs) => new Grouper(logs).groupBy(l => l.enteredBy).toMap()
-);
-const selectCallLogsByAssignedTo = createSelector(
-  [selectCallLogs],
-  (logs) => new Grouper(logs).groupBy(l => l.assignedTo).toMap()
-);
 ```
 
 ---
 
 ## 8. Customer Integration
 
-### 8.1 `CustomerProps` Update
-
-`callLogs: CallLog[]` is added to `CustomerProps` in `CustomerTypes.ts`:
-
-```typescript
-export type CustomerProps = {
-  x: CustomerUtils;
-  aging: Aging;
-  programs: Program[];
-  callLogs: CallLog[];      // ← added
-  taxCodes: TaxCode[];
-  taxRate: number;
-  callAhead: CallAhead | null;
-  discount: DiscountDoc | null;
-  flags: Flag[];
-  promise: SchedPromise | null;
-  promiseIssues: string[];
-};
-```
-
-### 8.2 `makeCustomersSelector` Update
-
-`callLogSelect.callLogsByCustId` is added as a selector input to `makeCustomersSelector` in `centralSelectors.ts`. The hydration follows the same pattern as `flags`:
-
-```typescript
-// New input:
-callLogSelect.callLogsByCustId,  // Map<number, CallLog[]>
-
-// Inside customerBuilder:
-const customerBuilder: CustomerBuilder = {
-  ...custDoc,
-  programs: [],
-  callLogs: callLogsByCustId.get(custDoc.custId) ?? [],
-  // ... rest of existing props
-};
-```
-
-### 8.3 Load Order Behavior
-
-If call logs are not yet loaded (empty state), `customer.callLogs` will be `[]`. When call logs load later, `makeCustomersSelector` re-runs and customers receive their logs. This is the same lazy-hydration behavior as `flags` and `priorityService` — no special handling required. The consuming hook (`useCallLog`) is responsible for triggering the fetch.
+`callLogs: CallLog[]` is added to `CustomerProps` and wired through `makeCustomersSelector` via `callLogSelect.callLogsByCustId` (already implemented).
 
 ---
 
 ## 9. API Contract
 
-The contract is intentionally minimal — a single pass-through operation for UI use:
+Single pass-through operation for UI use:
 
 ```typescript
 interface CallLogContract extends ApiContract {
@@ -416,64 +216,31 @@ interface CallLogContract extends ApiContract {
 }
 ```
 
-The route handler:
-1. Calls `rgApi` GET `/CallLog/Customer/{custId}`
-2. Remaps raw results via `remapCallLogs` → `CallLogCore[]`
-3. Returns the cores directly — **no Mongo writes**
+The route calls `rgApi` GET `/CallLog/Customer/{custId}`, remaps, and returns cores directly — **no Mongo writes**.
 
-**Why `CallLogCore[]` and not `CallLogDoc[]`?**
-This route is a pass-through from RealGreen. There is no Mongo persistence, so there are no `createdAt`/`updatedAt` timestamps. Returning `CallLogCore[]` is honest about what the data is.
-
-**`getCallLogs` (search-based) is deferred to the sync layer.** See `callLogSyncPlan.md`. The `CallLogSearch` POST endpoint, pagination loop, and bulk upsert belong in a dedicated sync route — not in the UI-facing contract.
+**`getCallLogs` (search-based) is deferred to the sync layer.** See `callLogSyncPlan.md`.
 
 ---
 
 ## 10. `rgApi` Registration
 
-The `CallLogSearch` POST endpoint needs to be added to `RgApiPath` in `rgApi.ts`:
-
-```typescript
-| {
-    path: "/CallLog/CallLogSearch";
-    method: "POST";
-    body: CallLogSearchRaw;
-  }
-```
-
-The `/CallLog/Customer/${string}` GET path is already registered.
+`CallLogSearch` POST and `CallReason` GET are registered in `rgApi.ts`.
 
 ---
 
 ## 11. Root Reducer Registration
 
-`callLogReducer` and `callLogReasonReducer` must be added to `src/store/reducers/index.ts`.
+`callLogReducer`, `callLogReasonReducer`, and `callLogStatusReducer` are registered in `src/store/reducers/index.ts`.
 
 ---
 
 ## 12. Sync Architecture (Future)
 
-> This section sketches the future direction. No implementation is planned in this phase.
+See `callLogSyncPlan.md` for the full delta-sync design.
 
-### The Delta-Sync Pattern
-
-The `CallLogSearch` endpoint supports `updated.minValue` / `updated.maxValue` date range filters. This enables incremental sync:
-
-1. **Initial full load:** Fetch all call logs (paginate through all offsets), store in Mongo
-2. **Periodic delta sync:** Query with `updated.minValue = lastSyncedAt`, fetch only changed records, upsert into Mongo
-3. **API routes read from Mongo:** Instead of calling RealGreen on every request, routes query Mongo directly. RealGreen is only called during sync operations.
-
-### Benefits
-
-- **Speed:** Mongo queries are orders of magnitude faster than RealGreen API calls
-- **Flexibility:** Any Mongo query is possible — no longer limited to RealGreen's search criteria
-- **Offline resilience:** App continues to function if RealGreen API is temporarily unavailable
-- **Framework for Customer/Program/Service:** The same delta-sync pattern applies to the customer module. If we prove it here with call logs (a simpler, lower-stakes entity), we have a validated framework for the major version upgrade of the customer pipeline.
-
-### Key Design Invariants for Sync
-
+**Key invariants:**
 - `callLogId` is the natural key — always use it as the upsert key
-- `updatedAt` on the Mongo document reflects when **we** last synced it, not when RealGreen last updated it
-- The RealGreen `updated` field in the search criteria refers to when RealGreen last updated the record — this is what drives delta queries
+- `updatedAt` on the Mongo document reflects when **we** last synced it
 - Notes are always replaced wholesale on sync — no note-level diffing
 
 ---
@@ -482,59 +249,79 @@ The `CallLogSearch` endpoint supports `updated.minValue` / `updated.maxValue` da
 
 > Not designed in this phase. Flagged for future exploration.
 
-The RealGreen API likely supports POST/PUT to create or update call logs and notes. This would enable storing data from this app in the RealGreen CRM — a potentially powerful integration point. Key questions to explore:
+---
 
-- What is the POST body shape for creating a new call log?
-- Can individual notes be added to an existing log, or must the entire log be replaced?
-- What validation does RealGreen enforce (required fields, valid reason IDs, etc.)?
-- What are the permission requirements?
+## 14. Open Questions (Resolved via Sandbox)
+
+1. **`reason` field on notes:** Arrives as a human-readable string (e.g., `"Account Update - In Process"`), not a numeric ID. The `callLogReasonSelect` handles both numeric and string lookups defensively.
+
+2. **`contactOrAttempt` on `CallLogReason`:** Confirmed values are `"C"` (Contact) and `"A"` (Attempt).
+
+3. **Notes on `/CallLog/Customer/{id}`:** Notes are always embedded in the response.
+
+4. **`status` values on `CallLog`:** Single-character codes (e.g., `"X"`, `"Z"`). No RealGreen API endpoint exists for the status table — see Section 15.
+
+5. **Employee hydration on `CallLog`:** Deferred. Add `enteredByEmployee` and `assignedToEmployee` to `CallLogProps` when a concrete UI need arises.
 
 ---
 
-## 14. Open Questions
+## 15. Call Log Status Sub-Module
 
-1. **`CallLogReason` API endpoint:** What is the actual RealGreen path? Likely `/ActionReason` — needs verification against the RealGreen API docs or Swagger.
+Lives at `src/app/realGreen/callLog/callLogStatus/`.
 
-2. **`reason` field type on `CallLogNoteRaw`:** Currently typed as `string` in `CallLogTypes.ts`. Is this a numeric ID serialized as a string, or a string key? This affects how we key the `reasonMap`.
+### 15.1 The Problem
 
-3. **Pagination limit:** Is 500 the hard cap on `records`, or can it be higher? The search body mockup shows `records: 500` as an example value. Needs testing.
+RealGreen does not expose an API endpoint for call log status configuration. Each company's RealGreen instance has its own set of status codes (single-character strings like `"X"`, `"Z"`, `"2"`) configured in the CRM's "Call Log Status Setup" screen. The `resolved` flag on each status determines whether a call log with that status is considered closed.
 
-4. **`status` values on `CallLog`:** What are the valid status strings? Are they a closed enum (like `CustStat`) or open-ended? This affects whether we define a `CallLogStatus` type.
+### 15.2 Current Solution
 
-5. **`contactOrAttempt` on `CallLogReason`:** What are the valid values? Likely `"C"` and `"A"` — needs confirmation. This field may drive important UI distinctions (e.g., color-coding notes).
+A native data module (`callLogStatus`) stores status configurations in MongoDB. Admins enter status codes manually via the UI at `/realGreen/callLog/callLogStatus`.
 
-6. **Notes on the `/CallLog/Customer/{id}` endpoint:** Does this endpoint always return notes embedded? Or is there a separate notes endpoint? The existing `CallLogRaw` type includes `notes?: CallLogNoteRaw[]` (optional), suggesting notes may not always be present.
+**Type:**
+```typescript
+type CallLogStatus = CreatedUpdated & {
+  code: string;          // natural key — single-char RealGreen status code
+  description: string;   // human-readable label
+  resolved: boolean;     // whether this status counts as resolved
+  isDefault: boolean;    // the CRM default status for new call logs
+};
+```
 
-7. **`CallLogSearch` vs. `/CallLog/Customer/{id}` for single-customer fetch:** For the common case of "load call logs for one customer," which endpoint is more appropriate? The GET endpoint is simpler; the POST search with `customerID: [custId]` is more consistent with the sync pattern.
+**Hydration:** `CallLog.callLogStatus: CallLogStatus | null` is resolved in `callLogSelect` via `callLogStatusSelect.statusMap: Map<string, CallLogStatus>`. If no matching status is configured, `callLogStatus` is `null`.
 
-8. **Employee hydration on `CallLog`:** Deferred. When a concrete UI need arises (e.g., a call log detail view that shows employee names inline), add `enteredByEmployee: Employee | null` and `assignedToEmployee: Employee | null` to `CallLogProps` and wire them through `makeCustomersSelector` or a standalone `callLogSelect` selector.
+### 15.3 Limitations
+
+- **Staleness:** If a CRM admin adds or modifies a status code in RealGreen, the app will not reflect the change until an admin manually updates the `callLogStatus` collection.
+- **Multi-tenancy blocker:** Each RealGreen company has its own status configuration. This module is the correct long-term architecture (per-company CRUD), but the initial data must be entered manually per deployment.
+
+### 15.4 Deferred: Status Discovery UI
+
+**Blocked on:** Call log sync being established (see `callLogSyncPlan.md` Section 13).
+
+Once call logs are synced to MongoDB, the status discovery workflow is:
+1. Query Mongo for all distinct `status` values: `db.callLogs.distinct("status")`
+2. Compare against the `callLogStatus` collection
+3. Surface any unmapped codes in the admin UI at `/realGreen/callLog/callLogStatus`
+4. Allow the admin to create `CallLogStatus` entries for unmapped codes inline
+
+This UI is deferred because querying unique statuses from the live RealGreen API (one customer at a time) is impractical at scale. After sync, a single Mongo query gives the complete picture.
+
+### 15.5 Deferred: CRUD UI
+
+The status table page at `/realGreen/callLog/callLogStatus` currently shows loaded statuses but has no add/edit/delete controls. The `CallLogStatusContract` already defines `upsert` and `delete` operations — the UI just needs to be built.
 
 ---
 
-## 15. Proposed File Creation Order
+## 16. Proposed File Creation Order (Remaining — Sync Phase)
 
-For the current development phase:
-
-1. `callLogReason/CallLogReasonTypes.ts` — define the type pipeline
-2. `callLogReason/_lib/baseCallLogReason.ts` — base objects
-3. `callLogReason/_lib/callLogReasonServerFunc.ts` — remap + extend
-4. `callLogReason/models/CallLogReasonDocPropsModel.ts` — Mongoose model
-5. `callLogReason/api/CallLogReasonContract.ts` — API contract
-6. `callLogReason/api/route.ts` — API route
-7. `callLogReason/callLogReasonSlice.ts` — Redux slice
-8. `callLogReason/callLogReasonSelect.ts` — selectors
-9. `callLogReason/useCallLogReason.ts` — hook
-10. `_lib/CallLogSearch.ts` — search type definitions
-11. `_lib/remapCallLogSearch.ts` — search remap function
-12. `_lib/callLogServerFunc.ts` — remap + extend (update existing stubs)
-13. `models/CallLogModel.ts` — full Mongoose model (not just DocProps)
-14. `api/CallLogContract.ts` — API contract
-15. `api/route.ts` — API route
-16. `callLogSlice.ts` — Redux slice
-17. `callLogSelect.ts` — selectors
-18. `useCallLog.ts` — hook
-19. Update `rgApi.ts` — register `CallLogSearch` POST path
-20. Update `src/store/reducers/index.ts` — register both reducers
-21. Update `CustomerTypes.ts` — add `callLogs: CallLog[]` to `CustomerProps`
-22. Update `centralSelectors.ts` — add `callLogSelect.callLogsByCustId` input to `makeCustomersSelector` and wire `callLogs` into `customerBuilder`
-
+1. `models/CallLogModel.ts` — full Mongoose model (not just DocProps)
+2. `_lib/CallLogSearch.ts` — search type definitions
+3. `_lib/remapCallLogSearch.ts` — search remap function
+4. `sync/SyncMetadataModel.ts` — tracks `lastSyncedAt` per entity type
+5. `sync/callLogSyncFunc.ts` — `fetchCallLogs` (paginated), `bulkUpsertCallLogs`
+6. `sync/CallLogSyncContract.ts` — sync API contract
+7. `sync/route.ts` — sync API route handler
+8. Test via sandbox or direct API call
+9. Wire to Vercel Cron (or equivalent) for automated scheduling
+10. **After sync:** Implement Status Discovery UI (see Section 15.4)
+11. **After sync:** Implement CRUD UI for `callLogStatus` (see Section 15.5)

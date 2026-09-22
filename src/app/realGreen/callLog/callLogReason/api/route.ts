@@ -11,15 +11,10 @@ const handlers: HandlerMap<CallLogReasonContract> = {
   getAll: {
     roles: ["office", "admin"],
     handler: async () => {
-      // TODO: Confirm the correct RealGreen endpoint path for action reasons.
-      // Likely "/ActionReason" — verify against RealGreen API docs or Swagger.
-      // The path below is a placeholder and will cause a type error until confirmed.
-      // Replace "/ActionReason" with the verified path and add it to RgApiPath in rgApi.ts.
       const raw = await rgApi<CallLogReasonRaw[]>({
-        path: "/CallLog/CallLogSearch",  // PLACEHOLDER — replace with actual /ActionReason path
-        method: "POST",
-        body: {},
-      } as any);
+        path: "/CallReason",
+        method: "GET",
+      });
 
       const docs = await fetchAndExtendCallLogReasons(raw);
 

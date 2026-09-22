@@ -23,6 +23,7 @@ import centralDocPropsReducer from "@/app/csv/_lib/centralDocPropsSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
 import { callLogReducer } from "@/app/realGreen/callLog/callLogSlice";
 import { callLogReasonReducer } from "@/app/realGreen/callLog/callLogReason/callLogReasonSlice";
+import { callLogStatusReducer } from "@/app/realGreen/callLog/callLogStatus/callLogStatusSlice";
 import { appMethodReducer } from "@/app/appMethod/appMethodSlice";
 import { equipmentReducer } from "@/app/equipment/equipmentSlice";
 import { equipmentPackageReducer } from "@/app/equipment/equipmentPackage/equipmentPackageSlice";
@@ -72,6 +73,7 @@ const rootReducer = combineReducers({
   company: companyReducer,
   callLog: callLogReducer,
   callLogReason: callLogReasonReducer,
+  callLogStatus: callLogStatusReducer,
   condition: conditionReducer,
   custFlag: custFlagReducer,
   discount: discountReducer,

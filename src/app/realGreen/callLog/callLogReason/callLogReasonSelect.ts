@@ -16,13 +16,13 @@ const selectCallLogReasons = createSelector(
 // Keyed by reasonId (number) for O(1) lookup when resolving note reasons.
 const selectCallLogReasonMap = createSelector(
   [selectCallLogReasons],
-  (reasons) => new Grouper(reasons).toUniqueMap((r) => r.reasonId),
+  (reasons) => new Grouper(reasons.filter((r) => r.reasonId > 0)).toUniqueMap((r) => r.reasonId),
 );
 
 // Keyed by reasonId as string — useful if the raw reason field arrives as a string.
 const selectCallLogReasonStringMap = createSelector(
   [selectCallLogReasons],
-  (reasons) => new Grouper(reasons).toUniqueMap((r) => String(r.reasonId)),
+  (reasons) => new Grouper(reasons.filter((r) => r.reasonId > 0)).toUniqueMap((r) => String(r.reasonId)),
 );
 
 export const callLogReasonSelect = {

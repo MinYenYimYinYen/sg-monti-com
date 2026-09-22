@@ -14,6 +14,7 @@ import { CustFlagIdsSearch } from "@/app/realGreen/custFlag/api/route";
 
 export type RgApiPath =
   | { path: "/CallAhead"; method: "GET"; body?: undefined }
+  | { path: "/CallReason"; method: "GET"; body?: undefined }
   | { path: `/CallLog/Customer/${string}`; method: "GET"; body?: undefined }
   | {
       path: "/CallLog/CallLogSearch";
