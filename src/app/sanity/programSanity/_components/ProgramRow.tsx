@@ -1,6 +1,7 @@
 "use client";
 
-import { Info } from "lucide-react";
+import { useAppDispatch } from "@/lib/hooks/redux";
+import { Info, CheckCircle, RefreshCw, RotateCcw } from "lucide-react";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
@@ -11,13 +12,19 @@ import {
   PopoverTrigger,
 } from "@/style/components/popover";
 import { Button } from "@/style/components/button";
-import { RefreshCw } from "lucide-react";
+import { sanityActions } from "@/app/sanity/sanitySlice";
 
 type ProgramRowProps = {
   program: Program;
+  /**
+   * "active" — shown in the main list; displays a "Mark Finished" button.
+   * "finished" — shown in the finished popover; displays an "Unmark" button.
+   */
+  mode: "active" | "finished";
 };
 
-export function ProgramRow({ program }: ProgramRowProps) {
+export function ProgramRow({ program, mode }: ProgramRowProps) {
+  const dispatch = useAppDispatch();
   const { customer } = program;
   const { refreshCustomer, isRefreshingCustomer } = useFullSeasonServices();
   const isRefreshing = isRefreshingCustomer(customer.custId);
@@ -43,6 +50,14 @@ export function ProgramRow({ program }: ProgramRowProps) {
   const dontAutoRenewFlag = isDontAutoRenew
     ? customer.flags.find((f) => f.flagId === customer.x.renewalFlagIds?.dontAutoRenew)
     : null;
+
+  const handleMarkFinished = () => {
+    dispatch(sanityActions.markProgramSanityFinished(program.progId));
+  };
+
+  const handleUnmark = () => {
+    dispatch(sanityActions.unmarkProgramSanityFinished(program.progId));
+  };
 
   return (
     <div className="flex items-center gap-3 px-3 py-2 rounded-md border border-border bg-card text-sm">
@@ -115,6 +130,30 @@ export function ProgramRow({ program }: ProgramRowProps) {
             )}
           </PopoverContent>
         </Popover>
+      )}
+
+      {mode === "active" ? (
+        <Button
+          variant="accent"
+          intensity="ghost"
+          size="icon"
+          className="h-6 w-6 shrink-0"
+          onClick={handleMarkFinished}
+          title="Mark as finished — removes from active list"
+        >
+          <CheckCircle className="h-3.5 w-3.5" />
+        </Button>
+      ) : (
+        <Button
+          variant="secondary"
+          intensity="ghost"
+          size="icon"
+          className="h-6 w-6 shrink-0"
+          onClick={handleUnmark}
+          title="Unmark — restore to active list"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
       )}
 
       <Button

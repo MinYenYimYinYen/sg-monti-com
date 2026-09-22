@@ -17,7 +17,7 @@ import {
 } from "@/style/components/dropdown-menu";
 import { Button } from "@/style/components/button";
 import { Switch } from "@/style/components/switch";
-import { Moon, Settings, Sun } from "lucide-react";
+import { ListFilter, Moon, Settings, Sun } from "lucide-react";
 import { FlagFilterSection } from "./FlagFilterSection";
 import { SetRenewalFlagsSection } from "./SetRenewalFlagsSection";
 import { useIsClient } from "@/lib/hooks/useIsClient";
@@ -36,6 +36,7 @@ export function GlobalConfigMenu() {
   const selectedFlagIds = useSelector(custFlagSelect.selectedFlagIds);
   const role = useSelector(authSelect.role);
   const hasFlagFilters = flagDocs.length > 0;
+  const hasActiveFilters = selectedFlagIds.length > 0;
   const canConfigureRenewalFlags = role === "admin" || role === "office";
 
   // Initialize from DOM/localStorage directly — avoids setState-in-effect
@@ -65,14 +66,15 @@ export function GlobalConfigMenu() {
 
   if (!isClient) return null;
 
-  const flagBadge = selectedFlagIds.length > 0 ? ` (${selectedFlagIds.length})` : "";
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5">
           <Settings className="h-4 w-4" />
-          Config{flagBadge}
+          Config
+          {hasActiveFilters && (
+            <ListFilter className="h-3.5 w-3.5 text-primary" />
+          )}
         </Button>
       </DropdownMenuTrigger>
 
@@ -100,10 +102,8 @@ export function GlobalConfigMenu() {
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 Flag Filters
-                {selectedFlagIds.length > 0 && (
-                  <span className="ml-auto text-xs text-primary font-semibold">
-                    {selectedFlagIds.length}
-                  </span>
+                {hasActiveFilters && (
+                  <ListFilter className="h-3.5 w-3.5 text-primary ml-1" />
                 )}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>

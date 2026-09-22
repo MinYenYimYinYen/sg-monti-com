@@ -47,8 +47,11 @@ const selectServices = createSelector([selectPrograms], (programs) =>
   programs.flatMap((p) => p.services),
 );
 
+const selectSeasonOverride = (state: AppState) => state.sanity.seasonOverride;
+
 export const sanitySelect = {
   excludedProgCodeIds: selectExcludedProgCodeIds,
+  seasonOverride: selectSeasonOverride,
   customers: selectCustomers,
   programs: selectPrograms,
   services: selectServices,

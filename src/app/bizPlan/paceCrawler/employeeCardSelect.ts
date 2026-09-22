@@ -45,6 +45,7 @@ const selectOpenServCodesForEmployees = createSelector(
     employeeSelect.employeeMap,
     deepSelect.servCodeMap,
     selectMainDate,
+    seasonPlanSelect.groupScheduleMap,
   ],
   (
     assignmentsByEmployeeId,
@@ -52,6 +53,7 @@ const selectOpenServCodesForEmployees = createSelector(
     employeeMap,
     servCodeDeepMap,
     mainDate,
+    groupScheduleMap,
   ): OpenServCodesForEmployee[] => {
     const result: OpenServCodesForEmployee[] = [];
 
@@ -67,6 +69,14 @@ const selectOpenServCodesForEmployees = createSelector(
         const group = groupMap.get(groupId);
         const servCodeIds = group?.servCodeIds ?? groupId.split("+");
 
+        // The seasonPlan's window [plannedStart, plannedEnd] takes precedence over the
+        // stale RealGreen servCode.dateRange when determining if the group is open.
+        const groupSchedule = groupScheduleMap.get(groupId) ?? null;
+        const isOpenBySeasonPlan =
+          groupSchedule !== null &&
+          mainDate >= groupSchedule.plannedStart &&
+          mainDate <= groupSchedule.plannedEnd;
+
         let anyMemberOpen = false;
         for (const servCodeId of servCodeIds) {
           const servCode = servCodeDeepMap.get(servCodeId);
@@ -77,6 +87,7 @@ const selectOpenServCodesForEmployees = createSelector(
 
           const isOpen =
             servCode.alwaysAsap ||
+            isOpenBySeasonPlan ||
             (dateRanges.isValidDateRange(servCode.dateRange) &&
               dateStrings.isInRange(mainDate, servCode.dateRange));
           if (!isOpen) continue;

@@ -3,25 +3,16 @@ import { createSlice } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { CustFlagContract } from "@/app/realGreen/custFlag/api/CustFlagContract";
 import { CustFlagAddContract } from "@/app/realGreen/custFlag/add/CustFlagAddContract";
+import { readLocalStorage, writeLocalStorage } from "@/lib/misc/localStorageUtils";
 
 const STORAGE_KEY = "selectedFlagIds";
 
 function getStoredFlagIds(): number[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as number[]) : [];
-  } catch {
-    return [];
-  }
+  return readLocalStorage<number[]>(STORAGE_KEY, []);
 }
 
 export function persistFlagIds(ids: number[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-  } catch {
-    // localStorage unavailable — silently ignore
-  }
+  writeLocalStorage(STORAGE_KEY, ids);
 }
 
 type CustFlagState = {

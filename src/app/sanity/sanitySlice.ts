@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { readLocalStorage, writeLocalStorage } from "@/lib/misc/localStorageUtils";
 
 export type CustomerSanitySortMode = "byCustomerCount" | "byProgCodeCount";
 export type CustomerSanitySortDirection = "asc" | "desc";
@@ -22,10 +23,26 @@ type SanityUiPrefs = {
   customerSanityPage: {
     sortMode: CustomerSanitySortMode;
     sortDirection: CustomerSanitySortDirection;
+    /**
+     * Customer IDs the user has marked as "finished" (reviewed and considered valid).
+     * Filtered out of the active list so the user can maintain their spot.
+     * Expires after 6 months — these checks are performed once annually.
+     */
+    finishedCustIds: number[];
+    /** ISO timestamp of the last modification to finishedCustIds. Used for expiry. */
+    finishedAt: string | null;
   };
   /** Preferences specific to the Program Sanity page. */
   programSanityPage: {
     selectedProgCodeId: string | null;
+    /**
+     * Program IDs the user has marked as "finished" (reviewed and considered valid).
+     * Filtered out of the active list so the user can maintain their spot.
+     * Expires after 6 months — these checks are performed once annually.
+     */
+    finishedProgIds: number[];
+    /** ISO timestamp of the last modification to finishedProgIds. Used for expiry. */
+    finishedAt: string | null;
   };
   /** Preferences specific to the Size Sanity page. */
   sizeSanityPage: {
@@ -47,9 +64,13 @@ const defaultPrefs: SanityUiPrefs = {
   customerSanityPage: {
     sortMode: "byCustomerCount",
     sortDirection: "asc",
+    finishedCustIds: [],
+    finishedAt: null,
   },
   programSanityPage: {
     selectedProgCodeId: null,
+    finishedProgIds: [],
+    finishedAt: null,
   },
   sizeSanityPage: {
     finishedCustIds: [],
@@ -64,46 +85,59 @@ function isExpired(finishedAt: string | null): boolean {
 }
 
 function getStoredSanityPrefs(): SanityUiPrefs {
-  if (typeof window === "undefined") return defaultPrefs;
-  try {
-    const stored = localStorage.getItem(SANITY_PREFS_KEY);
-    if (!stored) return defaultPrefs;
-    const parsed = JSON.parse(stored) as Partial<SanityUiPrefs>;
-    const sizeSanityStored = parsed.sizeSanityPage ?? {};
-    const mergedSizeSanity: SanityUiPrefs["sizeSanityPage"] = {
-      ...defaultPrefs.sizeSanityPage,
-      ...sizeSanityStored,
-    };
+  const parsed = readLocalStorage<Partial<SanityUiPrefs>>(SANITY_PREFS_KEY, {});
 
-    // Expire finished list if older than 6 months
-    if (isExpired(mergedSizeSanity.finishedAt)) {
-      mergedSizeSanity.finishedCustIds = [];
-      mergedSizeSanity.finishedAt = null;
-    }
-
-    // Deep merge stored values over defaults so new fields get their defaults
-    return {
-      allPages: { ...defaultPrefs.allPages, ...parsed.allPages },
-      customerSanityPage: { ...defaultPrefs.customerSanityPage, ...parsed.customerSanityPage },
-      programSanityPage: { ...defaultPrefs.programSanityPage, ...parsed.programSanityPage },
-      sizeSanityPage: mergedSizeSanity,
-    };
-  } catch {
-    return defaultPrefs;
+  const sizeSanityStored = parsed.sizeSanityPage ?? {};
+  const mergedSizeSanity: SanityUiPrefs["sizeSanityPage"] = {
+    ...defaultPrefs.sizeSanityPage,
+    ...sizeSanityStored,
+  };
+  if (isExpired(mergedSizeSanity.finishedAt)) {
+    mergedSizeSanity.finishedCustIds = [];
+    mergedSizeSanity.finishedAt = null;
   }
+
+  const customerSanityStored = parsed.customerSanityPage ?? {};
+  const mergedCustomerSanity: SanityUiPrefs["customerSanityPage"] = {
+    ...defaultPrefs.customerSanityPage,
+    ...customerSanityStored,
+  };
+  if (isExpired(mergedCustomerSanity.finishedAt)) {
+    mergedCustomerSanity.finishedCustIds = [];
+    mergedCustomerSanity.finishedAt = null;
+  }
+
+  const programSanityStored = parsed.programSanityPage ?? {};
+  const mergedProgramSanity: SanityUiPrefs["programSanityPage"] = {
+    ...defaultPrefs.programSanityPage,
+    ...programSanityStored,
+  };
+  if (isExpired(mergedProgramSanity.finishedAt)) {
+    mergedProgramSanity.finishedProgIds = [];
+    mergedProgramSanity.finishedAt = null;
+  }
+
+  // Deep merge stored values over defaults so new fields get their defaults
+  return {
+    allPages: { ...defaultPrefs.allPages, ...parsed.allPages },
+    customerSanityPage: mergedCustomerSanity,
+    programSanityPage: mergedProgramSanity,
+    sizeSanityPage: mergedSizeSanity,
+  };
 }
 
 function persistSanityPrefs(state: SanityUiPrefs): void {
-  try {
-    localStorage.setItem(SANITY_PREFS_KEY, JSON.stringify(state));
-  } catch {
-    // localStorage unavailable — silently ignore
-  }
+  writeLocalStorage(SANITY_PREFS_KEY, state);
 }
+
+type SanityState = SanityUiPrefs & {
+  /** Session-only season override — not persisted to localStorage. Defaults to globalSettings.season. */
+  seasonOverride: number | null;
+};
 
 const sanitySlice = createSlice({
   name: "sanity",
-  initialState: getStoredSanityPrefs(),
+  initialState: { ...getStoredSanityPrefs(), seasonOverride: null } as SanityState,
   reducers: {
     // --- allPages ---
     toggleExcludedProgCodeId(state, action: PayloadAction<string>) {
@@ -130,10 +164,54 @@ const sanitySlice = createSlice({
       state.customerSanityPage.sortDirection = action.payload;
       persistSanityPrefs(state);
     },
+    markCustomerSanityFinished(state, action: PayloadAction<number>) {
+      const custId = action.payload;
+      if (!state.customerSanityPage.finishedCustIds.includes(custId)) {
+        state.customerSanityPage.finishedCustIds.push(custId);
+        state.customerSanityPage.finishedAt = new Date().toISOString();
+        persistSanityPrefs(state);
+      }
+    },
+    unmarkCustomerSanityFinished(state, action: PayloadAction<number>) {
+      const custId = action.payload;
+      const idx = state.customerSanityPage.finishedCustIds.indexOf(custId);
+      if (idx !== -1) {
+        state.customerSanityPage.finishedCustIds.splice(idx, 1);
+        state.customerSanityPage.finishedAt = new Date().toISOString();
+        persistSanityPrefs(state);
+      }
+    },
+    clearCustomerSanityFinished(state) {
+      state.customerSanityPage.finishedCustIds = [];
+      state.customerSanityPage.finishedAt = null;
+      persistSanityPrefs(state);
+    },
 
     // --- programSanityPage ---
     setSelectedProgCodeId(state, action: PayloadAction<string | null>) {
       state.programSanityPage.selectedProgCodeId = action.payload;
+      persistSanityPrefs(state);
+    },
+    markProgramSanityFinished(state, action: PayloadAction<number>) {
+      const progId = action.payload;
+      if (!state.programSanityPage.finishedProgIds.includes(progId)) {
+        state.programSanityPage.finishedProgIds.push(progId);
+        state.programSanityPage.finishedAt = new Date().toISOString();
+        persistSanityPrefs(state);
+      }
+    },
+    unmarkProgramSanityFinished(state, action: PayloadAction<number>) {
+      const progId = action.payload;
+      const idx = state.programSanityPage.finishedProgIds.indexOf(progId);
+      if (idx !== -1) {
+        state.programSanityPage.finishedProgIds.splice(idx, 1);
+        state.programSanityPage.finishedAt = new Date().toISOString();
+        persistSanityPrefs(state);
+      }
+    },
+    clearProgramSanityFinished(state) {
+      state.programSanityPage.finishedProgIds = [];
+      state.programSanityPage.finishedAt = null;
       persistSanityPrefs(state);
     },
 
@@ -159,6 +237,12 @@ const sanitySlice = createSlice({
       state.sizeSanityPage.finishedCustIds = [];
       state.sizeSanityPage.finishedAt = null;
       persistSanityPrefs(state);
+    },
+
+    // --- session-only ---
+    setSeasonOverride(state, action: PayloadAction<number>) {
+      state.seasonOverride = action.payload;
+      // Not persisted — session only
     },
   },
 });

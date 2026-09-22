@@ -21,6 +21,9 @@ const selectSortMode = (state: AppState): CustomerSanitySortMode =>
 const selectSortDirection = (state: AppState): CustomerSanitySortDirection =>
   state.sanity.customerSanityPage.sortDirection;
 
+const selectFinishedCustIds = (state: AppState): number[] =>
+  state.sanity.customerSanityPage.finishedCustIds;
+
 // Uses centralSelect (unfiltered) so excluded prog codes remain visible in the
 // filter UI and can be toggled back on. The grouping uses sanitySelect (filtered).
 const selectAllProgCodeIds = createSelector(
@@ -49,7 +52,8 @@ export type CustomerComboGroup = {
   progCodeCount: number;
 };
 
-const selectVisibleGroups = createSelector(
+/** All groups regardless of finished state — used to build the finished list. */
+const selectAllGroups = createSelector(
   [selectCustomerGroupMap, selectSortMode, selectSortDirection],
   (map, sortMode, sortDirection): CustomerComboGroup[] => {
     const groups: CustomerComboGroup[] = [...map.entries()].map(([comboKey, customers]) => ({
@@ -80,10 +84,45 @@ const selectVisibleGroups = createSelector(
   },
 );
 
+/** Groups with finished customers filtered out. Groups that become empty are dropped. */
+const selectVisibleGroups = createSelector(
+  [selectAllGroups, selectFinishedCustIds],
+  (groups, finishedIds): CustomerComboGroup[] => {
+    if (finishedIds.length === 0) return groups;
+    const finishedSet = new Set(finishedIds);
+    return groups
+      .map((group) => ({
+        ...group,
+        customers: group.customers.filter((c) => !finishedSet.has(c.custId)),
+      }))
+      .filter((group) => group.customers.length > 0)
+      .map((group) => ({ ...group, count: group.customers.length }));
+  },
+);
+
+/** Finished customers — shown in the finished popover. */
+const selectFinishedCustomers = createSelector(
+  [selectCustomerGroupMap, selectFinishedCustIds],
+  (map, finishedIds): Customer[] => {
+    if (finishedIds.length === 0) return [];
+    const finishedSet = new Set(finishedIds);
+    const all = [...map.values()].flat();
+    return all.filter((c) => finishedSet.has(c.custId));
+  },
+);
+
+const selectFinishedCount = createSelector(
+  [selectFinishedCustIds],
+  (ids) => ids.length,
+);
+
 export const customerSanitySelect = {
   excludedProgCodeIds: sanitySelect.excludedProgCodeIds,
   sortMode: selectSortMode,
   sortDirection: selectSortDirection,
   allProgCodeIds: selectAllProgCodeIds,
   visibleGroups: selectVisibleGroups,
+  finishedCustIds: selectFinishedCustIds,
+  finishedCustomers: selectFinishedCustomers,
+  finishedCount: selectFinishedCount,
 };

@@ -11,48 +11,37 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/style/components/popover";
+import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 
-const LOCAL_STORAGE_KEY = "priceIncrease.targetSeason";
+export const PRICE_INCREASE_SEASON_KEY = "priceIncrease.targetSeason";
 const EXPIRY_MONTHS = 6;
-
-type TargetSeasonStorage = {
-  season: number;
-  expiresAt: string;
-};
-
-function writeToLocalStorage(season: number) {
-  const expiresAt = new Date();
-  expiresAt.setMonth(expiresAt.getMonth() + EXPIRY_MONTHS);
-  const value: TargetSeasonStorage = { season, expiresAt: expiresAt.toISOString() };
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(value));
-}
-
-function clearLocalStorage() {
-  localStorage.removeItem(LOCAL_STORAGE_KEY);
-}
 
 export function TargetSeasonControl() {
   const dispatch = useAppDispatch();
   const targetSeason = useSelector(priceIncreaseConfigSelect.targetSeason);
   const override = useSelector(priceIncreaseConfigSelect.targetSeasonOverride);
   const globalSeason = useSelector(globalSettingsSelect.season);
+  const { setValue: persistSeason, clear: clearSeason } = useLocalStorage<number>(
+    PRICE_INCREASE_SEASON_KEY,
+    { expiryMonths: EXPIRY_MONTHS },
+  );
 
   const isOverridden = override !== null && override !== globalSeason;
 
   function handleIncrement() {
     const newSeason = targetSeason + 1;
     dispatch(priceIncreaseConfigActions.setTargetSeasonOverride(newSeason));
-    writeToLocalStorage(newSeason);
+    persistSeason(newSeason);
   }
 
   function handleDecrement() {
     const newSeason = targetSeason - 1;
     if (newSeason === globalSeason) {
       dispatch(priceIncreaseConfigActions.clearTargetSeasonOverride());
-      clearLocalStorage();
+      clearSeason();
     } else {
       dispatch(priceIncreaseConfigActions.setTargetSeasonOverride(newSeason));
-      writeToLocalStorage(newSeason);
+      persistSeason(newSeason);
     }
   }
 

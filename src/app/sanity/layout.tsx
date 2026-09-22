@@ -5,6 +5,7 @@ import { TabNav } from "@/components/PageLayout/TabNav";
 import { useSanityDeps } from "./useSanityDeps";
 import { SanityOptionsProvider } from "@/app/sanity/_components/SanityOptionsContext";
 import { SanityOptionsSheet } from "@/app/sanity/_components/SanityOptionsSheet";
+import { SanityLoadControls } from "@/app/sanity/_components/SanityLoadControls";
 
 const TABS = [
   { label: "Overview", href: "/sanity" },
@@ -18,12 +19,12 @@ const TABS = [
 ] as const;
 
 export default function SanityLayout({ children }: { children: React.ReactNode }) {
-  useSanityDeps();
+  const { load } = useSanityDeps();
   return (
     <SanityOptionsProvider>
       <PageLayout>
         <PageLayout.Header
-          left={<span className="text-sm font-semibold">Sanity Checks</span>}
+          left={<SanityLoadControls onLoad={load} />}
           right={
             <>
               <TabNav items={TABS} rootHref="/sanity" />

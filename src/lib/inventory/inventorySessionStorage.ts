@@ -1,5 +1,6 @@
 import { InventorySession } from "@/app/inventory/InventoryTypes";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { readLocalStorage, writeLocalStorage, removeLocalStorage } from "@/lib/misc/localStorageUtils";
 
 const STORAGE_KEY = "inventory_session";
 
@@ -14,12 +15,8 @@ type PersistedSession = {
  * and fast for small payloads like this.
  */
 export function saveInventorySession(session: InventorySession): void {
-  try {
-    const payload: PersistedSession = { date: dateStrings.today(), session };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch {
-    // localStorage may be unavailable (SSR, private mode quota exceeded) — fail silently
-  }
+  const payload: PersistedSession = { date: dateStrings.today(), session };
+  writeLocalStorage(STORAGE_KEY, payload);
 }
 
 /**
@@ -30,17 +27,10 @@ export function saveInventorySession(session: InventorySession): void {
  * - The stored data is malformed
  */
 export function loadInventorySession(): InventorySession | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-
-    const parsed: PersistedSession = JSON.parse(raw);
-    if (parsed.date !== dateStrings.today()) return null;
-
-    return parsed.session ?? null;
-  } catch {
-    return null;
-  }
+  const parsed = readLocalStorage<PersistedSession | null>(STORAGE_KEY, null);
+  if (!parsed) return null;
+  if (parsed.date !== dateStrings.today()) return null;
+  return parsed.session ?? null;
 }
 
 /**
@@ -49,9 +39,5 @@ export function loadInventorySession(): InventorySession | null {
  * re-populate after the user has already committed the check.
  */
 export function clearInventorySession(): void {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // fail silently
-  }
+  removeLocalStorage(STORAGE_KEY);
 }
