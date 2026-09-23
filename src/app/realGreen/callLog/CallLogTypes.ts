@@ -26,11 +26,7 @@ export type CallLogNoteDocProps = CreatedUpdated & {
 
 export type CallLogNoteDoc = CallLogNoteCore & CallLogNoteDocProps;
 
-export type CallLogNoteProps = {
-  callLogReason: import("@/app/realGreen/callLog/callLogReason/CallLogReasonTypes").CallLogReason | null;
-};
-
-export type CallLogNote = CallLogNoteCore & CallLogNoteProps;
+export type CallLogNote = CallLogNoteCore;
 
 function remapCallLogNote(raw: CallLogNoteRaw): CallLogNoteCore {
   return {
@@ -84,7 +80,6 @@ export type CallLogDoc = CallLogCore & CallLogDocProps;
 
 export type CallLogProps = {
   notes: CallLogNote[];
-  callLogStatus: import("@/app/realGreen/callLog/callLogStatus/CallLogStatusTypes").CallLogStatus | null;
 };
 
 export type CallLog = CallLogDoc & CallLogProps;
@@ -118,4 +113,49 @@ export async function extendCallLogs(
     idField: "callLogId",
     baseDocProps: {} as CallLogDocProps,
   });
+}
+
+// --- CallLogSearchResultRaw ---
+// Shape returned by POST /CallLog/CallLogSearch.
+// RealGreen uses PascalCase field names on this endpoint, unlike the GET endpoint
+// which uses camelCase. Both endpoints return the same note sub-documents (camelCase).
+// Use remapCallLogSearchResults() to convert to CallLogCore[].
+// Use remapCallLogs() for the GET /CallLog/Customer/{id} endpoint.
+
+export type CallLogSearchResultRaw = {
+  ID: number;
+  CustomerNumber?: number;
+  EnterDate: string;
+  DueDate?: string | null;
+  Resolved: boolean;
+  Viewed: boolean;
+  AlarmSet: boolean;
+  Name?: string;
+  Company?: string;
+  Phone?: string;
+  Status?: string;
+  EnteredBy?: string;
+  AssignedTo?: string;
+  notes?: CallLogNoteRaw[];
+  CallTopic?: unknown[];
+};
+
+function remapCallLogSearchResult(raw: CallLogSearchResultRaw): CallLogCore {
+  return {
+    callLogId: raw.ID,
+    custId: raw.CustomerNumber || 0,
+    enterDate: raw.EnterDate,
+    dueDate: raw.DueDate || "",
+    resolved: raw.Resolved,
+    viewed: raw.Viewed,
+    alarmSet: raw.AlarmSet,
+    status: raw.Status || "",
+    enteredBy: raw.EnteredBy || "",
+    assignedTo: raw.AssignedTo || "",
+    notes: raw.notes ? raw.notes.map(remapCallLogNote) : [],
+  };
+}
+
+export function remapCallLogSearchResults(raw: CallLogSearchResultRaw[]): CallLogCore[] {
+  return raw.map(remapCallLogSearchResult);
 }

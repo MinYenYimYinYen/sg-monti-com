@@ -3,7 +3,6 @@ import {
   CallLogCore,
   CallLogDoc,
   CallLogDocProps,
-  CallLogProps,
 } from "@/app/realGreen/callLog/CallLogTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 
@@ -32,12 +31,7 @@ export const baseCallLogDoc: CallLogDoc = {
   ...baseCallLogDocProps,
 };
 
-export const baseCallLogProps: CallLogProps = {
-  notes: [],
-  callLogStatus: null,
-};
-
 export const baseCallLog: CallLog = {
   ...baseCallLogDoc,
-  ...baseCallLogProps,
+  notes: [],
 };

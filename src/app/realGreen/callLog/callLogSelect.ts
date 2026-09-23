@@ -6,53 +6,24 @@ import {
   CallLogCore,
   CallLogNote,
   CallLogNoteCore,
-  CallLogProps,
 } from "@/app/realGreen/callLog/CallLogTypes";
-import { callLogReasonSelect } from "@/app/realGreen/callLog/callLogReason/callLogReasonSelect";
-import { CallLogReason } from "@/app/realGreen/callLog/callLogReason/CallLogReasonTypes";
-import { callLogStatusSelect } from "@/app/realGreen/callLog/callLogStatus/callLogStatusSelect";
-import { CallLogStatus } from "@/app/realGreen/callLog/callLogStatus/CallLogStatusTypes";
 
 const selectCallLogCores = (state: AppState) => state.callLog.callLogCores;
 
-function hydrateNote(
-  note: CallLogNoteCore,
-  reasonMap: Map<number, CallLogReason>,
-  reasonStringMap: Map<string, CallLogReason>,
-): CallLogNote {
-  // reason field may be a numeric ID or a string representation — try both maps.
-  const reasonId = Number(note.reason);
-  const callLogReason: CallLogReason | null =
-    reasonMap.get(reasonId) ??
-    reasonStringMap.get(note.reason) ??
-    null;
-
-  return { ...note, callLogReason };
+// CallLogNote is now a direct alias for CallLogNoteCore — no hydration needed.
+// The reason field already contains the human-readable string from RealGreen.
+function hydrateNote(note: CallLogNoteCore): CallLogNote {
+  return note;
 }
 
-function hydrateCallLog(
-  core: CallLogCore,
-  reasonMap: Map<number, CallLogReason>,
-  reasonStringMap: Map<string, CallLogReason>,
-  statusMap: Map<string, CallLogStatus>,
-): CallLog {
-  const notes: CallLogNote[] = core.notes.map((note) =>
-    hydrateNote(note, reasonMap, reasonStringMap),
-  );
-  const callLogStatus: CallLogStatus | null = statusMap.get(core.status) ?? null;
-  const props: CallLogProps = { notes, callLogStatus };
-  return { ...core, ...props } as CallLog;
+function hydrateCallLog(core: CallLogCore): CallLog {
+  const notes: CallLogNote[] = core.notes.map(hydrateNote);
+  return { ...core, notes } as CallLog;
 }
 
 const selectCallLogs = createSelector(
-  [
-    selectCallLogCores,
-    callLogReasonSelect.reasonMap,
-    callLogReasonSelect.reasonStringMap,
-    callLogStatusSelect.statusMap,
-  ],
-  (cores, reasonMap, reasonStringMap, statusMap): CallLog[] =>
-    cores.map((core) => hydrateCallLog(core, reasonMap, reasonStringMap, statusMap)),
+  [selectCallLogCores],
+  (cores): CallLog[] => cores.map(hydrateCallLog),
 );
 
 const selectCallLogMap = createSelector(
