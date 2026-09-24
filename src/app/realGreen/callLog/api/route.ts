@@ -1,5 +1,5 @@
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { CallLogContract } from "@/app/realGreen/callLog/api/CallLogContract";
 import { CallLogRaw } from "@/app/realGreen/callLog/CallLogTypes";
@@ -12,6 +12,7 @@ const handlers: HandlerMap<CallLogContract> = {
       const rawLogs = await rgApi<CallLogRaw[]>({
         path: `/CallLog/Customer/${custId}`,
         method: "GET",
+        pathTemplate: "/CallLog/Customer/{custId}",
       });
       const docs = remapCallLogs(rawLogs);
       return { success: true, payload: docs };
@@ -19,4 +20,4 @@ const handlers: HandlerMap<CallLogContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

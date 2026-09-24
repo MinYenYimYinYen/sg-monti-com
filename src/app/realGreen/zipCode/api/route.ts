@@ -3,7 +3,7 @@ import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { ZipCodeContract } from "@/app/realGreen/zipCode/api/ZipCodeContract";
 import { ZipCodeRaw } from "../_lib/ZipCodeTypes";
 import { extendZipCodes, remapZipCodes } from "@/app/realGreen/zipCode/_lib/zipCodeServerFunc";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 
 const handlers: HandlerMap<ZipCodeContract> = {
   getAll: {
@@ -12,6 +12,7 @@ const handlers: HandlerMap<ZipCodeContract> = {
       const rawZipCodes = await rgApi<ZipCodeRaw[]>({
         path: "/ZipCode",
         method: "GET",
+        pathTemplate: "/ZipCode",
       });
 
       const coreZipCodes = remapZipCodes(rawZipCodes);
@@ -22,4 +23,4 @@ const handlers: HandlerMap<ZipCodeContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

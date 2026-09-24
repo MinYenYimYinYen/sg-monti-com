@@ -4,7 +4,7 @@ import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { PrepayDoc, PrepayRaw } from "@/app/realGreen/prepay/PrepayTypes";
 import { extendPrepays, remapPrepays } from "@/app/realGreen/prepay/_lib/prepayServerFunc";
 import { DataResponse } from "@/lib/api/types/responses";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 
 const handlers: HandlerMap<PrepayContract> = {
   getAll: {
@@ -13,6 +13,7 @@ const handlers: HandlerMap<PrepayContract> = {
       const rawPrepays = await rgApi<PrepayRaw[]>({
         path: "/PrepayCodes/Available/true",
         method: "GET",
+        pathTemplate: "/PrepayCodes/Available/true",
       });
 
       const prepayCores = remapPrepays(rawPrepays);
@@ -28,4 +29,4 @@ const handlers: HandlerMap<PrepayContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

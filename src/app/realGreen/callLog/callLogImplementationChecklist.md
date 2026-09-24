@@ -40,38 +40,32 @@ This is a temporary working checklist tracking all outstanding implementation wo
 
 See `src/app/realGreen/_lib/api/realGreenApiLogPlan.md` for full design.
 
-- [ ] **Create `rgApiLog` module**
+- [x] **Create `rgApiLog` module**
   - `src/app/realGreen/rgApiLog/RgApiLogTypes.ts` — `RgApiLog` type
-  - `src/app/realGreen/rgApiLog/RgApiLogModel.ts` — Mongoose model with 30-day TTL index
+  - `src/app/realGreen/rgApiLog/RgApiLogModel.ts` — Mongoose model with 365-day TTL index
   - `src/app/realGreen/rgApiLog/rgApiLogFunc.ts` — `logRgApiOperation()` helper
 
-- [ ] **Instrument `rgHttp.ts`**
+- [x] **Instrument `rgHttp.ts`**
   - Add module-level `_callMap: Record<string, number>`
   - Export `getRgHttpCallMap()` and `resetRgHttpCallMap()`
-  - Accept optional `pathTemplate` param; use as map key (fallback to raw endpoint)
+  - Accept `pathTemplate` param; use as map key (fallback to raw endpoint)
   - Increment map on every call
 
-- [ ] **Refactor `RgApiPath` union in `rgApi.ts`**
-  - Add required `pathTemplate` field to every union member
+- [x] **Refactor `RgApiPath` union in `rgApi.ts`**
+  - Added required `pathTemplate` field to every union member
   - Static paths: `pathTemplate` = same as `path`
   - Dynamic paths: `pathTemplate` = template with `{placeholder}` names (e.g., `"/Customer/{custId}"`)
-  - Update `rgApi()` function to destructure and forward `pathTemplate` to `rgHttp`
+  - Updated `rgApi()` function to destructure and forward `pathTemplate` to `rgHttp`
 
-- [ ] **Update `rgSearchApi.ts`**
+- [x] **Update `rgSearchApi.ts`**
   - Derive `pathTemplate` from `criteria.searchType` (e.g., `"/Customer/Search"`)
   - Pass to `rgHttp`
 
-- [ ] **Fix all `rgApi` call sites**
-  - Run `tsc --noEmit` after the `RgApiPath` type change
-  - Add `pathTemplate` to every flagged call site (~25 locations across route files)
+- [x] **Fix all `rgApi` call sites**
+  - Added `pathTemplate` to all call sites across route files (auth, callLog, callAhead, company, conditionCode, custFlag, discount, employee, flag, prepay, priceTable, product, progServ, serviceCondition, taxCode, zipCode)
+  - Verified with `tsc --noEmit` — zero `pathTemplate` errors remain
 
-- [ ] **Wire `callLog/sync/route.ts` to log**
-  - `resetRgHttpCallMap()` before sync
-  - `logRgApiOperation(...)` after sync with call map + record count + duration
-
-- [ ] **Wire other high-value routes** (optional, as needed)
-  - `getProgServ` — Customer/Program/Service search pipeline
-  - `getPriceTable` — price table fetches
+- [x] **Create `createRealGreenRpcHandler.ts`** — wraps `createRpcHandler`, adds `resetRgHttpCallMap()` before each handler and `logRgApiOperation()` after (awaited). All 16 RealGreen `route.ts` files updated to use it.
 
 ---
 

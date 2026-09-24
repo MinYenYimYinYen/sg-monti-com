@@ -35,6 +35,7 @@ export async function syncProgServ(progDefIds: number[]) {
       const result = await rgApi<RawProgServ[]>({
         path: `/ProgramCode/${id}/Services`,
         method: "GET",
+        pathTemplate: "/ProgramCode/{id}/Services",
       });
       if (Array.isArray(result)) {
         rawProgServs.push(...result);

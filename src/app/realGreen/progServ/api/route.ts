@@ -15,7 +15,7 @@ import {
 import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
 import ServCodeDocPropsModel from "@/app/realGreen/progServ/_lib/models/ServCodeDocPropsModel";
 import { ProgCodeDocPropsModel } from "@/app/realGreen/progServ/_lib/models/ProgCodeDocPropsModel";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 
 const handlers: HandlerMap<ProgServContract> = {
   getProgCodes: {
@@ -24,6 +24,7 @@ const handlers: HandlerMap<ProgServContract> = {
       const rawProgCodes = await rgApi<ProgCodeRaw[]>({
         path: "/ProgramCode",
         method: "GET",
+        pathTemplate: "/ProgramCode",
       });
       const remapped = remapProgCodes(rawProgCodes);
 
@@ -47,6 +48,7 @@ const handlers: HandlerMap<ProgServContract> = {
       const rawServCodes = await rgApi<ServCodeRaw[]>({
         path: "/ServiceCode",
         method: "GET",
+        pathTemplate: "/ServiceCode",
       });
 
       const available = rawServCodes.filter((sc) => sc.available);
@@ -111,4 +113,4 @@ const handlers: HandlerMap<ProgServContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

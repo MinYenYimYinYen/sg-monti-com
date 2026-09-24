@@ -29,7 +29,7 @@ import { ProductMasterDocProps } from "@/app/realGreen/product/_lib/types/Produc
 import { ProductSingleDocProps } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
 import { ProductSubDocProps } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 import { UnitModel } from "@/app/realGreen/product/_lib/models/UnitModel";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { AppMethodModel } from "@/app/appMethod/AppMethodModel";
@@ -42,6 +42,7 @@ const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescri
       const rawProducts = await rgApi<ProductRaw[]>({
         path: "/Products",
         method: "GET",
+        pathTemplate: "/Products",
       });
 
       const { masterCores, singleCores, subCores, productCores } =
@@ -269,4 +270,4 @@ const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescri
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

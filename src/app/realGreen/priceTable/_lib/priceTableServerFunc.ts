@@ -77,6 +77,7 @@ export async function fetchRGPriceTableDocs() {
   const priceTablesRaw = await rgApi<PriceTableRaw[]>({
     path: "/PriceTable",
     method: "GET",
+    pathTemplate: "/PriceTable",
   });
 
   const priceTableCores = remapPriceTables(priceTablesRaw);
@@ -92,6 +93,7 @@ export async function fetchRGPriceTableDocs() {
     const detailed = await rgApi<PriceTableRaw>({
       path: `/PriceTable/${tableId}/Detailed`,
       method: "GET",
+      pathTemplate: "/PriceTable/{tableId}/Detailed",
     });
     priceRangesRaw.push(...(detailed.ranges ?? []));
   }

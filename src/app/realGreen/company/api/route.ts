@@ -3,7 +3,7 @@ import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { CompanyContract } from "@/app/realGreen/company/api/CompanyContract";
 import { CompanyRaw } from "@/app/realGreen/company/_lib/CompanyTypes";
 import { remapCompany } from "@/app/realGreen/company/_lib/serverCompanyFunc";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 
 const handlers: HandlerMap<CompanyContract> = {
   getAll: {
@@ -12,6 +12,7 @@ const handlers: HandlerMap<CompanyContract> = {
       const rawCompanies = await rgApi<CompanyRaw[]>({
         path: "/Company",
         method: "GET",
+        pathTemplate: "/Company",
       });
 
       const companies = rawCompanies.map(remapCompany);
@@ -21,4 +22,4 @@ const handlers: HandlerMap<CompanyContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

@@ -6,7 +6,7 @@ import {
   extendFlags,
   remapFlags,
 } from "@/app/realGreen/flag/_lib/flagServerFunc";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 
 const handlers: HandlerMap<FlagContract> = {
   getAll: {
@@ -15,6 +15,7 @@ const handlers: HandlerMap<FlagContract> = {
       const rawFlags = await rgApi<FlagRaw[]>({
         path: "/Flag",
         method: "GET",
+        pathTemplate: "/Flag",
       });
 
       const flagCores = remapFlags(rawFlags)
@@ -27,4 +28,4 @@ const handlers: HandlerMap<FlagContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

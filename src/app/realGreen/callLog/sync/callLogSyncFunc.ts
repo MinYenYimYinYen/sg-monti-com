@@ -39,6 +39,7 @@ export async function fetchCallLogs(rawSearch: CallLogSearchRaw): Promise<CallLo
           path: "/CallLog/CallLogSearch",
           method: "POST",
           body: { ...rawSearch, records: PAGE_SIZE, offset: batchOffset },
+          pathTemplate: "/CallLog/CallLogSearch",
         }),
       ),
     );

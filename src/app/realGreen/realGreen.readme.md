@@ -104,3 +104,31 @@ When writing data back to RealGreen (future), the same rule applies in reverse:
 ### Enforcement
 
 The `_lib/subTypes/` directory contains all RealGreen-specific primitive types. Treat imports from this directory as a signal: if you see one outside of a `*Raw` type or a `remap*` function, move the conversion into the remap layer.
+
+---
+
+## API Infrastructure
+
+### HTTP Layer (`_lib/api/`)
+
+All RealGreen HTTP calls flow through three files:
+
+| File | Role |
+|---|---|
+| `rgHttp.ts` | Raw fetch wrapper — the single chokepoint for all RealGreen calls. Maintains an in-memory call accumulator (`_callMap`) per serverless invocation. |
+| `rgApi.ts` | Typed endpoint registry (`RgApiPath` union). Every call site must provide `path`, `method`, `body?`, and `pathTemplate`. |
+| `rgSearchApi.ts` | Search-specific wrapper for Customer/Program/Service search pipeline. Derives `pathTemplate` from `searchType`. |
+
+### Route Handler (`_lib/api/createRealGreenRpcHandler.ts`)
+
+All RealGreen `route.ts` files use `createRealGreenRpcHandler` instead of the generic `createRpcHandler`. It wraps every handler with:
+
+1. `resetRgHttpCallMap()` — clears the call accumulator before the handler runs
+2. The handler itself
+3. `await logRgApiOperation(...)` — writes a log document to MongoDB after the handler completes
+
+This is the single source of truth for RealGreen API call logging. Adding a new RealGreen route automatically gets logging for free.
+
+### API Call Logging (`rgApiLog/`)
+
+The `rgApiLog` module stores per-operation call counts in MongoDB with a 365-day TTL. See `_lib/api/realGreenApiLogPlan.md` for the full architecture reference.

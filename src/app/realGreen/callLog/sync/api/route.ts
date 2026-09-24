@@ -1,5 +1,5 @@
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 import { CallLogSyncContract } from "@/app/realGreen/callLog/sync/CallLogSyncContract";
 import { remapCallLogSearch } from "@/app/realGreen/callLog/_lib/remapCallLogSearch";
 import { fetchCallLogs, bulkUpsertCallLogs } from "@/app/realGreen/callLog/sync/callLogSyncFunc";
@@ -43,4 +43,4 @@ const handlers: HandlerMap<CallLogSyncContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

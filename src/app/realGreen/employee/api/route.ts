@@ -6,7 +6,7 @@ import {
   extendEmployees,
   remapEmployees,
 } from "@/app/realGreen/employee/_lib/employeeServerFunc";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 
 const handlers: HandlerMap<EmployeeContract> = {
   getAll: {
@@ -17,6 +17,7 @@ const handlers: HandlerMap<EmployeeContract> = {
       const rawEmployees = await rgApi<EmployeeRaw[]>({
         path: "/Employee/Active/true",
         method: "GET",
+        pathTemplate: "/Employee/Active/true",
       });
 
       const employeeCores = remapEmployees(rawEmployees);
@@ -27,4 +28,4 @@ const handlers: HandlerMap<EmployeeContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

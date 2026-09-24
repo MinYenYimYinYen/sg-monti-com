@@ -1,4 +1,4 @@
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { CustFlagContract } from "@/app/realGreen/custFlag/api/CustFlagContract";
 import { CustFlagRefreshResult, FlagIdCustIds } from "@/app/realGreen/custFlag/_lib/CustFlagTypes";
@@ -31,6 +31,7 @@ const handlers: HandlerMap<CustFlagContract> = {
           path: "/Customer/Flag/IDs",
           method: "POST",
           body: search,
+          pathTemplate: "/Customer/Flag/IDs",
         }).then((custIds) => ({
           flagId: search.flagID,
           custIds,
@@ -50,6 +51,7 @@ const handlers: HandlerMap<CustFlagContract> = {
       const allFlags = await rgApi<RgCustomerFlag[]>({
         path: `/Customer/${custId}/Flags`,
         method: "GET",
+        pathTemplate: "/Customer/{custId}/Flags",
       });
 
       // Filter to only the flagIds we have loaded in state — ignore everything else
@@ -62,4 +64,4 @@ const handlers: HandlerMap<CustFlagContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);
