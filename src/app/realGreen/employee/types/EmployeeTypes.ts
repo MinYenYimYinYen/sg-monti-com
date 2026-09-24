@@ -42,6 +42,7 @@ export type EmployeeProps = {
    * Always present — employees with no record get { employeeId } (no restrictions).
    */
   availability: EmployeeAvailability;
+  nameLastFirst: string;
 };
 
 export type Employee = EmployeeProps & EmployeeDoc;

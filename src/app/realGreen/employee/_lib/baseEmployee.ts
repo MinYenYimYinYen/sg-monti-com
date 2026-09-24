@@ -26,6 +26,7 @@ const baseEmployeeProps: EmployeeProps = {
   servCodeIds: [],
   plannedTimeOff: [] as PlannedTimeOff[],
   availability: { employeeId: baseStrId },
+  nameLastFirst: "",
 };
 
 export const baseEmployee: Employee = {
