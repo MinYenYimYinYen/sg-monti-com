@@ -29,11 +29,13 @@ export type LookbackStats = {
 function buildAssignedServIdsPerDate(services: Service[]): Map<string, Set<number>> {
   const assignedPerDate = new Map<string, Set<number>>();
   for (const service of services) {
-    for (const assignment of service.assignments) {
-      const date = assignment.schedDate;
-      const existing = assignedPerDate.get(date) ?? new Set<number>();
+    // lastAssigned is the single current assignment for this service.
+    // For lookback purposes, we use it to determine which date this service was assigned to.
+    const la = service.lastAssigned;
+    if (la.schedDate) {
+      const existing = assignedPerDate.get(la.schedDate) ?? new Set<number>();
       existing.add(service.servId);
-      assignedPerDate.set(date, existing);
+      assignedPerDate.set(la.schedDate, existing);
     }
   }
   return assignedPerDate;

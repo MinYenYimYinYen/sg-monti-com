@@ -297,8 +297,9 @@ export class ServiceUtils {
    * Returns all-false when no assignment exists or the service is not completed.
    */
   public get assignmentOutcome(): AssignmentOutcome {
-    const assignments = this.service.assignments;
-    const assignment = assignments.length > 0 ? assignments[assignments.length - 1]! : null;
+    // lastAssigned is the single source of truth for the current assignment.
+    // It is hydrated from the assignment Redux store in centralSelectors.
+    const assignment = this.service.lastAssigned.schedDate ? this.service.lastAssigned : null;
 
     if (!assignment || this.service.status !== "S") {
       return {

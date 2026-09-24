@@ -1,23 +1,17 @@
 import { useCallback } from "react";
-import { useAppDispatch } from "@/lib/hooks/redux";
 import { parseAssignmentFromUnservicedReport } from "@/app/csv/_lib/unservicedParser";
-import { centralDocPropsActions } from "@/app/csv/_lib/centralDocPropsSlice";
+import { useAssignments } from "@/app/assignment/useAssignments";
 import { toast } from "react-toastify";
 
 export function useCSV() {
-  const dispatch = useAppDispatch();
+  const { saveAssignments } = useAssignments();
 
   const parseAssignments = useCallback(
     async (file: File) => {
       const result = await parseAssignmentFromUnservicedReport(file);
 
       if (result.success) {
-        dispatch(
-          centralDocPropsActions.saveAssignments({
-            params: { assignments: result.data },
-            config: { force: true, showLoading: false },
-          }),
-        );
+        saveAssignments(result.data);
 
         if (result.warnings && result.warnings.length > 0) {
           const summary =
@@ -38,7 +32,7 @@ export function useCSV() {
         console.error("CSV parse errors:", result.errors);
       }
     },
-    [dispatch],
+    [saveAssignments],
   );
 
   return { parseAssignments };

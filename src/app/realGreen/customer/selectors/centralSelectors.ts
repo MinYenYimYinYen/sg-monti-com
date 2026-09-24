@@ -20,7 +20,7 @@ import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { hydrateFlags } from "@/app/realGreen/customer/selectors/hydrateFlags";
 import { hydrateLastAssigned } from "@/app/realGreen/customer/selectors/hydrateLastAssigned";
-import { centralDocPropsSelect } from "@/app/csv/_lib/centralDocPropsSelect";
+import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
@@ -129,7 +129,7 @@ export function makeCustomersSelector(
       employeeSelect.employeeMap,
       flagSelect.flagDocMap,
       custFlagSelect.custIdFlagIds,
-      centralDocPropsSelect.assignments,
+      assignmentSelect.docs,
       serviceConditionSelect.serviceConditionsByServId,
       serviceEtaSelect.serviceEtaMap,
       selectPriorityServiceDocMap,

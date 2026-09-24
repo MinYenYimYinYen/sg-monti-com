@@ -13,7 +13,7 @@ import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
-import { Assignment, AssignmentDoc } from "@/app/assignment/AssignmentTypes";
+import { Assignment } from "@/app/assignment/AssignmentTypes";
 import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
 
 export type ServiceRaw = {
@@ -110,7 +110,6 @@ export type ServiceCore = {
 
 export type ServiceDocProps = CreatedUpdated & {
   servId: number;
-  assignments: AssignmentDoc[];
 };
 
 export type ServiceDoc = ServiceCore & ServiceDocProps;

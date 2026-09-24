@@ -24,6 +24,8 @@ export function useProductivity() {
   const doneDateRange = useSelector(productivitySelect.doneDateRange);
   const isValidRange = dateRanges.isValidDateRange(doneDateRange);
 
+  // Load assignments for the date range — covers both completion metrics and assignmentOutcome.
+  // Services completed within the date range will have their assignments loaded by this call.
   useEffect(() => {
     if (!isValidRange) return;
     dispatch(

@@ -1,25 +1,14 @@
 import mongoose from "mongoose";
-import { ServiceDocProps } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { createModel } from "@/lib/mongoose/createModel";
-import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
+import { ServiceDocProps } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 
-const assignmentSchema = new mongoose.Schema<AssignmentDoc>(
-  {
-    servId: { type: Number, required: true },
-    employeeId: { type: String, required: true },
-    schedDate: { type: String, required: true },
-    status: { type: String, required: true },
-    sequence: { type: Number, required: true, default: 0 },
-  },
-  {
-    _id: false,
-  },
-);
-
+// ServiceDocProps is now just { servId, createdAt, updatedAt }.
+// The assignments field has been moved to the standalone AssignmentModel.
+// This model is kept for the extendServices pipeline until the full sync
+// architecture replaces it (see customerSyncPlan.md).
 const serviceDocPropsSchema = new mongoose.Schema<ServiceDocProps>(
   {
     servId: { type: Number, required: true, unique: true },
-    assignments: { type: [assignmentSchema], required: true, default: [] },
   },
   {
     timestamps: true,

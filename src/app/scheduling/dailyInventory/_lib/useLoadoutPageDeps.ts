@@ -56,7 +56,7 @@ export function useLoadoutPageDeps({ routeDate }: { routeDate: string | null }) 
   }, [dispatch, routeDate, season]);
 
   // Once we have servIds for the date, fetch the full customer/service data
-  const servIdsForDate = useSelector(assignmentSelect.servIdsForDate);
+  const servIdsForDate = useSelector(assignmentSelect.servIdsForDate(routeDate ?? ""));
   useEffect(() => {
     if (!servIdsForDate.length || !season) return;
     dispatch(

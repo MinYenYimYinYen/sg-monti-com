@@ -1,29 +1,41 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 import { AssignmentContract } from "@/app/assignment/api/AssignmentContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
+import { AppState } from "@/store";
 
 type AssignmentState = {
-  byEmployeeIdAndSchedDate: AssignmentDoc[];
-  bySchedDate: AssignmentDoc[];
+  docs: AssignmentDoc[];
   availableDates: string[];
-  bySchedDateRange: AssignmentDoc[];
 };
 
 const initialState: AssignmentState = {
-  byEmployeeIdAndSchedDate: [],
-  bySchedDate: [],
+  docs: [],
   availableDates: [],
-  bySchedDateRange: [],
 };
 
-const getByEmployeeIdAndSchedDate = createStandardThunk<
-  AssignmentContract,
-  "getByEmployeeIdAndSchedDate"
->({
-  typePrefix: "assignment/getByEmployeeIdAndSchedDate",
+// Merges incoming docs into the existing docs array, upserting by servId.
+function upsertDocs(existing: AssignmentDoc[], incoming: AssignmentDoc[]): AssignmentDoc[] {
+  if (incoming.length === 0) return existing;
+  const map = new Map(existing.map((d) => [d.servId, d]));
+  for (const doc of incoming) {
+    map.set(doc.servId, doc);
+  }
+  return Array.from(map.values());
+}
+
+const getByServIds = createStandardThunk<AssignmentContract, "getByServIds">({
+  typePrefix: "assignment/getByServIds",
   apiPath: "/assignment/api",
-  opName: "getByEmployeeIdAndSchedDate",
+  opName: "getByServIds",
+  // Filter out already-loaded servIds before hashing — prevents duplicate API calls
+  // when streaming servIds arrive incrementally.
+  transformParams: (params, getState) => {
+    const state = getState() as AppState;
+    const loadedServIds = new Set(state.assignment.docs.map((d) => d.servId));
+    const unloaded = params.servIds.filter((id) => !loadedServIds.has(id));
+    return { servIds: unloaded };
+  },
 });
 
 const getBySchedDate = createStandardThunk<AssignmentContract, "getBySchedDate">({
@@ -44,26 +56,31 @@ const getBySchedDateRange = createStandardThunk<AssignmentContract, "getBySchedD
   opName: "getBySchedDateRange",
 });
 
+const saveAssignments = createStandardThunk<AssignmentContract, "saveAssignments">({
+  typePrefix: "assignment/saveAssignments",
+  apiPath: "/assignment/api",
+  opName: "saveAssignments",
+});
+
 const assignmentSlice = createSlice({
   name: "assignment",
   initialState,
-  reducers: {
-    clearByEmployeeIdAndSchedDate: (state) => {
-      state.byEmployeeIdAndSchedDate = [];
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
-    builder.addCase(getByEmployeeIdAndSchedDate.fulfilled, (state, action) => {
-      state.byEmployeeIdAndSchedDate = action.payload;
+    builder.addCase(getByServIds.fulfilled, (state, action) => {
+      state.docs = upsertDocs(state.docs, action.payload);
     });
     builder.addCase(getBySchedDate.fulfilled, (state, action) => {
-      state.bySchedDate = action.payload;
+      state.docs = upsertDocs(state.docs, action.payload);
+    });
+    builder.addCase(getBySchedDateRange.fulfilled, (state, action) => {
+      state.docs = upsertDocs(state.docs, action.payload);
     });
     builder.addCase(getAvailableDates.fulfilled, (state, action) => {
       state.availableDates = action.payload;
     });
-    builder.addCase(getBySchedDateRange.fulfilled, (state, action) => {
-      state.bySchedDateRange = action.payload;
+    builder.addCase(saveAssignments.fulfilled, (state, action) => {
+      state.docs = upsertDocs(state.docs, action.payload.assignments);
     });
   },
 });
@@ -71,8 +88,9 @@ const assignmentSlice = createSlice({
 export default assignmentSlice.reducer;
 export const assignmentActions = {
   ...assignmentSlice.actions,
-  getByEmployeeIdAndSchedDate,
+  getByServIds,
   getBySchedDate,
   getAvailableDates,
   getBySchedDateRange,
+  saveAssignments,
 };

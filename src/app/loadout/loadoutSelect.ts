@@ -55,11 +55,15 @@ const selectLoadoutsByDate = (routeDate: string | null) =>
  */
 const selectStartEmployeeIdsForDate = (routeDate: string | null) =>
   createSelector(
-    [selectLoadoutsByDate(routeDate), assignmentSelect.techsForDate],
-    (loadoutsByDate, techsForDate): string[] => {
+    [selectLoadoutsByDate(routeDate), assignmentSelect.docs],
+    (loadoutsByDate, assignmentDocs): string[] => {
       const ids = new Set<string>();
       loadoutsByDate.forEach((_, employeeId) => ids.add(employeeId));
-      techsForDate.forEach((employeeId) => ids.add(employeeId));
+      if (routeDate) {
+        assignmentDocs
+          .filter((d) => d.schedDate === routeDate)
+          .forEach((d) => ids.add(d.employeeId));
+      }
       return Array.from(ids).sort();
     },
   );
@@ -71,11 +75,15 @@ const selectStartEmployeeIdsForDate = (routeDate: string | null) =>
  */
 const selectFinishEmployeeIdsForDate = (routeDate: string | null) =>
   createSelector(
-    [selectLoadoutsByDate(routeDate), assignmentSelect.techsForDate],
-    (loadoutsByDate, techsForDate): string[] => {
+    [selectLoadoutsByDate(routeDate), assignmentSelect.docs],
+    (loadoutsByDate, assignmentDocs): string[] => {
       const ids = new Set<string>();
       loadoutsByDate.forEach((_, employeeId) => ids.add(employeeId));
-      techsForDate.forEach((employeeId) => ids.add(employeeId));
+      if (routeDate) {
+        assignmentDocs
+          .filter((d) => d.schedDate === routeDate)
+          .forEach((d) => ids.add(d.employeeId));
+      }
       return Array.from(ids).sort();
     },
   );

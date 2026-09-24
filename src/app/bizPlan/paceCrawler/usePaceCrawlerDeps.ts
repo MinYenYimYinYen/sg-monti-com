@@ -11,6 +11,9 @@ import { useHoliday } from "@/app/holiday/useHoliday";
 import { useAssignmentGroup } from "@/app/assignmentGroup/useAssignmentGroup";
 import { useSeasonPlan } from "@/app/bizPlan/seasonPlan/useSeasonPlan";
 import { useEmployeeAvailability } from "@/app/employeeAvailability/useEmployeeAvailability";
+import { useAssignments } from "@/app/assignment/useAssignments";
+import { useSelector } from "react-redux";
+import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 
 const PACE_CRAWLER_CONTEXTS: CustomerContextMode[] = ["active"];
 
@@ -27,4 +30,9 @@ export function usePaceCrawlerDeps() {
   useAssignmentGroup({ autoLoad: true });
   useSeasonPlan({ autoLoad: true });
   useEmployeeAvailability({ autoLoad: true });
+
+  // Load assignments for all active services so employeeLookbackUtils can
+  // build the assigned-per-date map for valid production date detection.
+  const serviceDocs = useSelector(centralSelect.serviceDocs);
+  useAssignments({ servIds: serviceDocs.map((s) => s.servId) });
 }

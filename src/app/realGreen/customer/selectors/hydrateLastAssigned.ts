@@ -14,15 +14,6 @@ export function hydrateLastAssigned(
   programDoc: ProgramDoc,
   employeeMap: Map<string, Employee>,
 ): Assignment {
-  let lastAssignedFromDoc: AssignmentDoc | null = null;
-
-  if (serviceDoc.assignments.length > 0) {
-    lastAssignedFromDoc = [...serviceDoc.assignments].sort(
-      (a, b) =>
-        new Date(b.schedDate).getTime() - new Date(a.schedDate).getTime(),
-    )[0];
-  }
-
   const lastAssignedFromNew =
     newAssignments.find((a) => a.servId === serviceDoc.servId) ?? null;
 
@@ -43,7 +34,6 @@ export function hydrateLastAssigned(
 
   const doc: AssignmentDoc = {
     ...(shouldHaveAssignment() ? modifiedBaseAssignmentDoc : baseAssignment),
-    ...lastAssignedFromDoc,
     ...lastAssignedFromNew,
   };
 

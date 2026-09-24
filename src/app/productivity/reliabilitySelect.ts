@@ -129,11 +129,28 @@ const selectDatesWithAnyCompletion = createSelector(
 // Reliability metrics by employee
 // ---------------------------------------------------------------------------
 
+// Assignments grouped by employee for the productivity date range
+const selectAssignmentsByEmployeeForRange = createSelector(
+  [selectDoneDateRange, assignmentSelect.docs],
+  (doneDateRange, docs) => {
+    const inRange = docs.filter(
+      (d) => d.schedDate >= doneDateRange.min && d.schedDate <= doneDateRange.max,
+    );
+    const map = new Map<string, typeof inRange>();
+    for (const doc of inRange) {
+      const existing = map.get(doc.employeeId) ?? [];
+      existing.push(doc);
+      map.set(doc.employeeId, existing);
+    }
+    return map;
+  },
+);
+
 const selectReliabilityByEmployee = createSelector(
   [
     selectUnplannedAbsencesInRange,
     productivitySelect.assignmentCompletionByEmployee,
-    assignmentSelect.assignmentsByEmployeeForRange,
+    selectAssignmentsByEmployeeForRange,
     selectServiceByServId,
     productivitySelect.completedServices,
     selectDatesWithAnyCompletion,

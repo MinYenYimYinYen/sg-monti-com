@@ -1,12 +1,10 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
-import { AppState } from "@/store";
+import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 
-// This is for the hook to use to dispatch the service search
-const selectAssignedServIds = createSelector(
-  [(state: AppState) => state.assignment.byEmployeeIdAndSchedDate],
-  (assignments) => assignments.map((a) => a.servId),
-);
+// ServIds for the current employee+date — used by the hook to trigger customer data fetch
+const selectAssignedServIds = (employeeId: string, schedDate: string) =>
+  assignmentSelect.servIdsByEmployeeAndSchedDate(employeeId, schedDate);
 
 /**
  * Returns all completed services (status "S") where the given employee appears
@@ -37,16 +35,13 @@ const selectScheduledServicesForTech = (
   employeeId: string,
   routeDate: string,
 ) =>
-  createSelector([centralSelect.services], (services) => {
-    const scheduledServices = services.filter((service) => {
-      const matchingAssignment = service.assignments.find(
-        (assignment) =>
-          assignment.employeeId === employeeId &&
-          assignment.schedDate === routeDate,
-      );
-      return matchingAssignment !== undefined;
-    });
-    return scheduledServices;
+  createSelector([centralSelect.services, assignmentSelect.docs], (services, assignmentDocs) => {
+    const assignedServIds = new Set(
+      assignmentDocs
+        .filter((a) => a.employeeId === employeeId && a.schedDate === routeDate)
+        .map((a) => a.servId),
+    );
+    return services.filter((service) => assignedServIds.has(service.servId));
   });
 
 export const feedbackSelect = {

@@ -1,76 +1,47 @@
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { AssignmentContract } from "@/app/assignment/api/AssignmentContract";
-import { ServiceDocPropsModel } from "@/app/realGreen/customer/_lib/models/ServiceDocPropsModel";
+import { AssignmentModel } from "@/app/assignment/AssignmentModel";
 import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
+import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { WriteError } from "mongodb";
 
 const handlers: HandlerMap<AssignmentContract> = {
-  getByEmployeeIdAndSchedDate: {
-    roles: ["office", "admin"],
-    handler: async ({ employeeId, schedDate }) => {
+  getByServIds: {
+    roles: ["office", "admin", "tech"],
+    handler: async ({ servIds }) => {
       await connectToMongoDB();
-      const docs = await ServiceDocPropsModel.find(
-        {
-          "assignments.employeeId": employeeId,
-          "assignments.schedDate": schedDate,
-        },
-        { assignments: 1, _id: 0 },
-      ).lean();
-
-      const assignments: AssignmentDoc[] = docs.flatMap((doc) =>
-        doc.assignments.filter(
-          (a) => a.employeeId === employeeId && a.schedDate === schedDate,
-        ),
-      );
-
-      return { success: true, payload: assignments };
+      if (!servIds.length) return { success: true, payload: [] };
+      const docs = await AssignmentModel.find({ servId: { $in: servIds } }).lean();
+      return { success: true, payload: cleanMongoArray(docs) };
     },
   },
 
   getBySchedDate: {
-    roles: ["office", "admin"],
+    roles: ["office", "admin", "tech"],
     handler: async ({ schedDate }) => {
       await connectToMongoDB();
-      const docs = await ServiceDocPropsModel.find(
-        { "assignments.schedDate": schedDate },
-        { assignments: 1, _id: 0 },
-      ).lean();
-
-      const assignments: AssignmentDoc[] = docs.flatMap((doc) =>
-        doc.assignments.filter((a) => a.schedDate === schedDate),
-      );
-
-      return { success: true, payload: assignments };
+      const docs = await AssignmentModel.find({ schedDate }).lean();
+      return { success: true, payload: cleanMongoArray(docs) };
     },
   },
 
   getAvailableDates: {
-    roles: ["office", "admin"],
+    roles: ["office", "admin", "tech"],
     handler: async ({ season }) => {
       await connectToMongoDB();
-      // Derive year bounds from season (season = calendar year)
       const minDate = `${season}-01-01`;
       const maxDate = `${season}-12-31`;
-
-      const docs = await ServiceDocPropsModel.find(
-        {
-          "assignments.schedDate": { $gte: minDate, $lte: maxDate },
-        },
-        { "assignments.schedDate": 1, _id: 0 },
+      const docs = await AssignmentModel.find(
+        { schedDate: { $gte: minDate, $lte: maxDate } },
+        { schedDate: 1, _id: 0 },
       ).lean();
-
       const dateSet = new Set<string>();
       for (const doc of docs) {
-        for (const assignment of doc.assignments) {
-          if (assignment.schedDate >= minDate && assignment.schedDate <= maxDate) {
-            dateSet.add(assignment.schedDate);
-          }
-        }
+        dateSet.add(doc.schedDate);
       }
-
-      const dates = Array.from(dateSet).sort();
-      return { success: true, payload: dates };
+      return { success: true, payload: Array.from(dateSet).sort() };
     },
   },
 
@@ -78,20 +49,41 @@ const handlers: HandlerMap<AssignmentContract> = {
     roles: ["office", "admin", "tech"],
     handler: async ({ dateRange }) => {
       await connectToMongoDB();
-      const docs = await ServiceDocPropsModel.find(
-        {
-          "assignments.schedDate": { $gte: dateRange.min, $lte: dateRange.max },
+      const docs = await AssignmentModel.find({
+        schedDate: { $gte: dateRange.min, $lte: dateRange.max },
+      }).lean();
+      return { success: true, payload: cleanMongoArray(docs) };
+    },
+  },
+
+  saveAssignments: {
+    roles: ["admin", "office"],
+    handler: async ({ assignments }) => {
+      await connectToMongoDB();
+
+      const updates = assignments.map((assignment) => ({
+        updateOne: {
+          filter: { servId: assignment.servId },
+          update: { $set: assignment },
+          upsert: true,
         },
-        { assignments: 1, _id: 0 },
-      ).lean();
+      }));
 
-      const assignments: AssignmentDoc[] = docs.flatMap((doc) =>
-        doc.assignments.filter(
-          (a) => a.schedDate >= dateRange.min && a.schedDate <= dateRange.max,
-        ),
-      );
+      const result = await AssignmentModel.bulkWrite(updates);
 
-      return { success: true, payload: assignments };
+      let errors: WriteError[] | null = null;
+      if (result.hasWriteErrors()) {
+        errors = result.getWriteErrors();
+        console.error("Assignment bulk write errors:", { errors });
+      }
+
+      return {
+        success: true,
+        payload: {
+          assignments,
+          errors,
+        },
+      };
     },
   },
 };

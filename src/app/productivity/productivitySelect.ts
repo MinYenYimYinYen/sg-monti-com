@@ -179,8 +179,24 @@ const selectByDateByEmployee = createSelector(
 // Assignment completion by employee
 // ---------------------------------------------------------------------------
 
+const selectAssignmentsByEmployeeForRange = createSelector(
+  [selectDoneDateRange, assignmentSelect.docs],
+  (doneDateRange, docs) => {
+    const inRange = docs.filter(
+      (d) => d.schedDate >= doneDateRange.min && d.schedDate <= doneDateRange.max,
+    );
+    const map = new Map<string, typeof inRange>();
+    for (const doc of inRange) {
+      const existing = map.get(doc.employeeId) ?? [];
+      existing.push(doc);
+      map.set(doc.employeeId, existing);
+    }
+    return map;
+  },
+);
+
 const selectAssignmentCompletionByEmployee = createSelector(
-  [selectCompletedServices, assignmentSelect.assignmentsByEmployeeForRange, holidaySelect.weatherDayDates],
+  [selectCompletedServices, selectAssignmentsByEmployeeForRange, holidaySelect.weatherDayDates],
   (completedServices, assignmentsByEmployee, weatherDayDates): Map<string, { assigned: number; completed: number; pct: number }> => {
     const map = new Map<string, { assigned: number; completed: number; pct: number }>();
 

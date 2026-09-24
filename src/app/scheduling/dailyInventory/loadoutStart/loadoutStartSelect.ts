@@ -35,7 +35,10 @@ const selectServices = createSelector(
  * All techs that have assignments on the currently loaded date.
  * Derived from the assignment slice (no customer data needed).
  */
-const selectAvailableTechs = assignmentSelect.techsForDate;
+const selectAvailableTechs = (state: import("@/store").AppState) => {
+  const routeDate = state.loadoutStart.routeDate;
+  return assignmentSelect.techsForDate(routeDate ?? "")(state);
+};
 
 /**
  * routesByDate is kept for backward compatibility with components that use it.

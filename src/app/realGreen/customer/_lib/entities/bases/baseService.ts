@@ -39,7 +39,6 @@ export const baseServiceCore: ServiceCore = {
 
 export const baseServiceDocProps: ServiceDocProps = {
   servId: baseNumId,
-  assignments: [],
   createdAt: "",
   updatedAt: "",
 };

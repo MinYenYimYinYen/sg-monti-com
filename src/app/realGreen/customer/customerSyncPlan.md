@@ -70,7 +70,7 @@ Read **only** the files listed below before responding. They provide sufficient 
 | Step | Status |
 |---|---|
 | Core type field stubs added (pending name confirmation) | ✅ Done |
-| Assignments refactor | ⬜ Not started |
+| Assignments refactor | ✅ Done |
 | `updated` filter wiring | ⬜ Not started |
 | Sync infrastructure (models, sync funcs, routes) | ⬜ Not started |
 | Sandbox UI for triggering syncs | ⬜ Not started |
