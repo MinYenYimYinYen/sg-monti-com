@@ -55,7 +55,6 @@ export type ServiceSearchRaw = RGSearchBase & {
   // technicianNote?: string;
   // technicianNoteExpiration?: DateTimeRange;
   // totalAmount?: DecimalRange;
-  // // updated?: DateTimeRange;
 };
 
 export type ServiceSearchCriteria = {

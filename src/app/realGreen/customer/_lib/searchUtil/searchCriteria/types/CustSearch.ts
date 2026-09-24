@@ -5,7 +5,6 @@ import {
 } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { RGSearchBase } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/types/RGSearchBase";
-
 export type CustomerSearchRaw = RGSearchBase & {
   searchType: "customer";
   // billingCity?: string;
@@ -23,7 +22,6 @@ export type CustomerSearchRaw = RGSearchBase & {
   // billingType?: string;
   // billingZip?: string;
   // carrierRoute?: string;
-  // created?: DateTimeRange;
   // customerBranchID?: IntRange;
   // customerCallCode?: number;
   // customerCancelBy?: string;
@@ -94,7 +92,6 @@ export type CustomerSearchRaw = RGSearchBase & {
   // offset?: number;
   // records?: number;
   // residentialCommercial?: string;
-  // updated?: DateTimeRange;
   // useBillingInfo?: boolean;
 };
 
@@ -103,4 +100,5 @@ export type CustomerSearchCriteria = RGSearchBase & {
   size?: TRange<number>;
   statuses?: CustStat[];
   zip?: string;
+  updated?: TRange<string>;
 };

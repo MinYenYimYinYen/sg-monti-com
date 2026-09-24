@@ -61,7 +61,7 @@ export type ServiceRaw = {
   programDiscountAmount: number;
   // programDiscountCodeId?: string;
   programID: number;
-  // round?: number;
+  round?: number;
   // scheduledTime?: number;
   serviceCode?: string;
   serviceHistory?: ServiceHistoryRaw;
@@ -105,6 +105,7 @@ export type ServiceCore = {
   season: number;
   techNote: string;
   productionCore: ProductionCore | null;
+  round: number | null;
 };
 
 export type ServiceDocProps = CreatedUpdated & {

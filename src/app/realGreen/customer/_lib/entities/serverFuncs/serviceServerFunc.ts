@@ -87,6 +87,7 @@ function remapService(raw: ServiceRaw): ServiceCore {
       servStatus: raw.serviceStatus,
       doneDate: raw.doneDate,
     }),
+    round: raw.round ?? null,
   };
 }
 

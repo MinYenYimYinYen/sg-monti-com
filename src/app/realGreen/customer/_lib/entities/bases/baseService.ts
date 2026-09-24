@@ -34,6 +34,7 @@ export const baseServiceCore: ServiceCore = {
   status: "",
   techNote: "",
   productionCore: null,
+  round: null,
 };
 
 export const baseServiceDocProps: ServiceDocProps = {
