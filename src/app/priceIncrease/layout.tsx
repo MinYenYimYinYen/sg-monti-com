@@ -1,25 +1,22 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, TabNavItem } from "@/components/PageLayout/TabNav";
 import { usePriceIncreaseDeps } from "@/app/priceIncrease/usePriceIncreaseDeps";
 import { DataIssuesPopover } from "@/app/priceIncrease/results/_components/DataIssuesPopover";
-import { TargetSeasonControl } from "@/app/priceIncrease/_components/TargetSeasonControl";
+import {
+  TargetSeasonControl,
+  PRICE_INCREASE_SEASON_KEY,
+} from "@/app/priceIncrease/_components/TargetSeasonControl";
 import { ActiveSettingsPanel } from "@/app/priceIncrease/results/_components/ActiveSettingsPanel";
 import { priceIncreaseConfigSelect } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSelect";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { priceIncreaseConfigActions } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
 import { SlidersHorizontal } from "lucide-react";
-
-const LOCAL_STORAGE_KEY = "priceIncrease.targetSeason";
-
-type TargetSeasonStorage = {
-  season: number;
-  expiresAt: string;
-};
+import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 
 const TABS: readonly TabNavItem[] = [
   { label: "Config", href: "/priceIncrease/config" },
@@ -34,28 +31,20 @@ export default function PriceIncreaseLayout({ children }: { children: React.Reac
 
   usePriceIncreaseDeps();
 
+  // Restore target season override from localStorage on mount (6-month TTL).
+  const { value: storedSeason } = useLocalStorage<number>(PRICE_INCREASE_SEASON_KEY, {
+    expiryMonths: 6,
+  });
+  React.useEffect(() => {
+    if (storedSeason !== null) {
+      dispatch(priceIncreaseConfigActions.setTargetSeasonOverride(storedSeason));
+    }
+  }, [dispatch, storedSeason]);
+
   // The settings panel is only available on non-config pages.
   // The Config page has its own full settings UI.
   const isConfigPage = pathname.startsWith("/priceIncrease/config");
   const showPanel = settingsPanelOpen && !isConfigPage;
-
-  // Restore target season override from localStorage on mount.
-  // Clears the stored value if it has expired (6-month TTL).
-  useEffect(() => {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) return;
-
-    try {
-      const stored: TargetSeasonStorage = JSON.parse(raw);
-      if (new Date(stored.expiresAt) > new Date()) {
-        dispatch(priceIncreaseConfigActions.setTargetSeasonOverride(stored.season));
-      } else {
-        localStorage.removeItem(LOCAL_STORAGE_KEY);
-      }
-    } catch {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-    }
-  }, [dispatch]);
 
   return (
     <PageLayout>

@@ -6,7 +6,7 @@ import {
   extendServiceConditions,
   remapServiceConditions,
 } from "@/app/realGreen/serviceCondition/_lib/ServiceConditionServerFunc";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 
 const handlers: HandlerMap<ServiceConditionContract> = {
   getServiceConditions: {
@@ -16,6 +16,7 @@ const handlers: HandlerMap<ServiceConditionContract> = {
         path: "/ServiceConditions/Search",
         method: "POST",
         body: { serviceIDs: serviceIds },
+        pathTemplate: "/ServiceConditions/Search",
       });
       const cores = remapServiceConditions(raw);
 
@@ -26,4 +27,4 @@ const handlers: HandlerMap<ServiceConditionContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

@@ -42,6 +42,7 @@ const handlers: HandlerMap<AuthContract> = {
       const rgEmployee = await rgApi<EmployeeRaw | null>({
         path: `/Employee/${saId}`,
         method: "GET",
+        pathTemplate: "/Employee/{employeeId}",
       });
       const isValid =
         !alreadyExists &&
@@ -78,6 +79,7 @@ const handlers: HandlerMap<AuthContract> = {
       const rgEmployee = await rgApi<EmployeeRaw | null>({
         path: `/Employee/${saId}`,
         method: "GET",
+        pathTemplate: "/Employee/{employeeId}",
       });
 
       if (rgEmployee?.id !== saId) {

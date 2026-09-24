@@ -45,6 +45,7 @@ export const baseCustomerNoX: Omit<Customer, "x"> = {
   createdAt: "",
   updatedAt: "",
   programs: [],
+  callLogs: [],
   callAhead: null,
   discount: null,
   flags: [],

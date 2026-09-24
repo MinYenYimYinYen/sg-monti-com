@@ -1,4 +1,4 @@
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { CustFlagAddContract } from "@/app/realGreen/custFlag/add/CustFlagAddContract";
 import { CustFlagAdd } from "@/app/realGreen/custFlag/_lib/CustFlagTypes";
@@ -13,6 +13,7 @@ const handlers: HandlerMap<CustFlagAddContract> = {
         path: "/Customer/Flags/Add",
         method: "POST",
         body: { customerNumbers: custIds, flag: flagId } as { customerNumbers: number[]; flag: number },
+        pathTemplate: "/Customer/Flags/Add",
       });
 
       // RealGreen returns a boolean (always true on success; invalid custIds are silently skipped).
@@ -23,4 +24,4 @@ const handlers: HandlerMap<CustFlagAddContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

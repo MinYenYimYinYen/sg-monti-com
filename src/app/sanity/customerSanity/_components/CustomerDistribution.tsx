@@ -45,7 +45,7 @@ export function CustomerDistribution() {
             <AccordionContent className="px-3 pb-3 pt-1">
               <div className="max-h-[40vh] overflow-y-auto space-y-1 pr-2">
                 {group.customers.map((customer) => (
-                  <CustomerRow key={customer.custId} customer={customer} />
+                  <CustomerRow key={customer.custId} customer={customer} mode="active" />
                 ))}
               </div>
             </AccordionContent>

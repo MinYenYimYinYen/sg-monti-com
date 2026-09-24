@@ -4,7 +4,7 @@ import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { DiscountDoc, DiscountRaw } from "@/app/realGreen/discount/DiscountTypes";
 import { extendDiscounts, remapDiscounts } from "@/app/realGreen/discount/_lib/discountServerFunc";
 import { DataResponse } from "@/lib/api/types/responses";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 
 
 const handlers: HandlerMap<DiscountContract> = {
@@ -14,6 +14,7 @@ const handlers: HandlerMap<DiscountContract> = {
       const rawDiscounts = await rgApi<DiscountRaw[]>({
         path: "/DiscountCode",
         method: "GET",
+        pathTemplate: "/DiscountCode",
       })
 
       const discountCores = remapDiscounts(rawDiscounts);
@@ -29,4 +30,4 @@ const handlers: HandlerMap<DiscountContract> = {
   }
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

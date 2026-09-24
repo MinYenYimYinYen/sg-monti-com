@@ -21,6 +21,7 @@ import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
 import centralDocPropsReducer from "@/app/csv/_lib/centralDocPropsSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
+import { callLogReducer } from "@/app/realGreen/callLog/callLogSlice";
 import { appMethodReducer } from "@/app/appMethod/appMethodSlice";
 import { equipmentReducer } from "@/app/equipment/equipmentSlice";
 import { equipmentPackageReducer } from "@/app/equipment/equipmentPackage/equipmentPackageSlice";
@@ -68,6 +69,7 @@ const rootReducer = combineReducers({
   auth: authReducer,
   callAhead: callAheadReducer,
   company: companyReducer,
+  callLog: callLogReducer,
   condition: conditionReducer,
   custFlag: custFlagReducer,
   discount: discountReducer,

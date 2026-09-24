@@ -3,16 +3,20 @@ import { SearchCriteriaRaw } from "@/app/realGreen/customer/_lib/searchUtil/sear
 
 export async function rgSearch<T>(criteria: SearchCriteriaRaw) {
   let path: string;
+  let pathTemplate: string;
 
   switch (criteria.searchType) {
     case "customer":
       path = "/Customer/Search";
+      pathTemplate = "/Customer/Search";
       break;
     case "program":
       path = "/Program/Search";
+      pathTemplate = "/Program/Search";
       break;
     case "service":
       path = "/Service/Search";
+      pathTemplate = "/Service/Search";
       break;
     default:
       throw new Error(`Unknown search type: ${(criteria as any).searchType}`);
@@ -21,8 +25,12 @@ export async function rgSearch<T>(criteria: SearchCriteriaRaw) {
   // We strip 'searchType' before sending to the API
   const { searchType, ...body } = criteria;
 
-  return rgHttp<T>(path, {
-    method: "POST",
-    body: body as any,
-  });
+  return rgHttp<T>(
+    path,
+    {
+      method: "POST",
+      body: body as any,
+    },
+    pathTemplate,
+  );
 }

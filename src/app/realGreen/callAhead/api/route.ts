@@ -6,7 +6,7 @@ import {
   remapCallAheads,
 } from "@/app/realGreen/callAhead/_lib/callAheadServerFunc";
 import { CallAheadRaw } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { CallAheadKeywordModel } from "@/app/realGreen/callAhead/models/CallAheadKeywordModel";
 import {
@@ -24,6 +24,7 @@ const handlers: HandlerMap<CallAheadContract> = {
       const rawCallAheads = await rgApi<CallAheadRaw[]>({
         path: "/CallAhead",
         method: "GET",
+        pathTemplate: "/CallAhead",
       });
 
       const callAheadCores = remapCallAheads(rawCallAheads);
@@ -97,4 +98,4 @@ const handlers: HandlerMap<CallAheadContract> = {
   },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createRealGreenRpcHandler(handlers);

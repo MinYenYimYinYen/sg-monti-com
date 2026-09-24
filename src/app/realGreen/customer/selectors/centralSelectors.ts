@@ -34,6 +34,7 @@ import { serviceEtaSelect } from "@/app/scheduling/eta/serviceEtaSelect";
 import { hydrateEta } from "@/app/realGreen/customer/selectors/hydrateEta";
 import { Aging } from "@/app/realGreen/customer/_lib/classes/Aging";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
+import { callLogSelect } from "@/app/realGreen/callLog/callLogSelect";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -133,6 +134,7 @@ export function makeCustomersSelector(
       serviceEtaSelect.serviceEtaMap,
       selectPriorityServiceDocMap,
       globalSettingsSelect.renewalFlagIds,
+      callLogSelect.callLogsByCustId,
     ],
     (
       customerDocs,
@@ -152,6 +154,7 @@ export function makeCustomersSelector(
       serviceEtaMap,
       priorityServiceDocMap,
       renewalFlagIds,
+      callLogsByCustId,
     ) => {
       // Builder types for type-safe construction without 'x'
       type CustomerBuilder = Omit<Customer, "x">;
@@ -179,6 +182,7 @@ export function makeCustomersSelector(
         const customerBuilder: CustomerBuilder = {
           ...custDoc,
           programs: [],
+          callLogs: callLogsByCustId.get(custDoc.custId) ?? [],
           taxCodes,
           taxRate,
           callAhead: callAheadDocMap.get(custDoc.callAheadId) ?? null,

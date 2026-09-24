@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { CustomerDistribution } from "@/app/sanity/customerSanity/_components/CustomerDistribution";
 import { CustomerSanitySortControls } from "@/app/sanity/customerSanity/_components/CustomerSanitySortControls";
+import { CustomerSanityFinishedPopover } from "@/app/sanity/customerSanity/_components/CustomerSanityFinishedPopover";
 import { useSanityOptions } from "@/app/sanity/_components/SanityOptionsContext";
 
 export function CustomerSanityPanel() {
@@ -18,6 +19,7 @@ export function CustomerSanityPanel() {
       {/* Header */}
       <div className="shrink-0 border-b border-border bg-card px-4 py-3 flex items-center justify-between">
         <span className="text-sm font-semibold text-foreground">Customer Sanity</span>
+        <CustomerSanityFinishedPopover />
       </div>
 
       {/* Distribution — native scroll */}

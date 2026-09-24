@@ -339,6 +339,10 @@ export default function FeatureLayout({ children }: { children: React.ReactNode 
 * **tsc**: Do not do tsc checks on markdown files.
 * **Type Checking**: After editing files, use `ide_diagnostics` on the modified files for fast feedback — it reads from the IDE's live language server and is much faster than a full compile. Run `tsc --noEmit` only when making type-level changes (modifying shared types, function signatures, or removing exports) that could affect files not directly edited.
 * **Task Completion**: Do not start or launch the development server after completing a task. Do not use `start`, `open`, or `npm run dev` commands as part of `attempt_completion`. Simply report what was done.
+* **Page Scroll Convention**: The root layout clips overflow (`overflow-hidden`) on all page containers. Every page's outermost element **must** establish a scroll context or the content will be silently clipped at the viewport boundary.
+  - **Simple pages** (no sticky header): `<div className="h-full overflow-y-auto"><div className="p-6 ...">...</div></div>` — the outer div fills the clipping container and scrolls; the inner div provides padding/max-width.
+  - **Pages with a sticky header**: Use `PageLayout` + `PageLayout.Body`. `PageLayout.Body` provides `flex-1 min-h-0 overflow-hidden`; the content inside Body still needs `overflow-y-auto h-full` to actually scroll.
+  - **Agent rule**: When creating or reviewing any page or UI component that renders page-level content, check that the outermost element follows this convention. If it doesn't, flag it and propose the fix before completing the task.
 
 # For markdown files on Windows, write with UTF-8 BOM encoding
 (echo -ne '\xEF\xBB\xBF'; cat <<'EOF'

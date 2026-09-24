@@ -9,6 +9,7 @@ import { Button } from "@/style/components/button";
 import { customerValueFilterSelect } from "@/app/bizPlan/customerValue/customerValueFilterSelect";
 import { zipCodeSelect } from "@/app/realGreen/zipCode/zipCodeSelectors";
 import { customerValueFilterActions } from "@/app/bizPlan/customerValue/customerValueFilterSlice";
+import { readLocalStorage, writeLocalStorage } from "@/lib/misc/localStorageUtils";
 
 const STORAGE_KEY = "customerValueFilter.selectedZips";
 
@@ -19,15 +20,10 @@ export function ZipCodeFilter() {
   const customerCountByZip = useSelector(customerValueFilterSelect.customerCountByZip);
   const zipCodeMap = useSelector(zipCodeSelect.zipCodeMap);
 
+  // Check if a saved selection exists (after mount — localStorage unavailable during SSR).
   const [hasSaved, setHasSaved] = useState(false);
-
-  // Check localStorage after mount (localStorage is unavailable during SSR).
   useEffect(() => {
-    try {
-      setHasSaved(localStorage.getItem(STORAGE_KEY) !== null);
-    } catch {
-      // localStorage unavailable
-    }
+    setHasSaved(localStorage.getItem(STORAGE_KEY) !== null);
   }, []);
 
   // Default to all selected on first load (null = uninitialized)
@@ -52,22 +48,14 @@ export function ZipCodeFilter() {
   };
 
   const handleSave = () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedZips ?? []));
-      setHasSaved(true);
-    } catch {
-      // localStorage unavailable — silently ignore
-    }
+    writeLocalStorage(STORAGE_KEY, selectedZips ?? []);
+    setHasSaved(true);
   };
 
   const handleRecall = () => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw) as string[];
+    const saved = readLocalStorage<string[]>(STORAGE_KEY, []);
+    if (saved.length > 0) {
       dispatch(customerValueFilterActions.setSelectedZips(saved));
-    } catch {
-      // Corrupt data — silently ignore
     }
   };
 
