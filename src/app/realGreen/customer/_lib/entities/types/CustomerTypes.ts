@@ -1,4 +1,3 @@
-import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Address } from "@/app/realGreen/_lib/subTypes/Address";
 import {
   ContactPreference,
@@ -201,11 +200,7 @@ export type CustomerCore = {
   title: string;
 };
 
-export type CustomerDocProps = CreatedUpdated & {
-  custId: number;
-};
-
-export type CustomerDoc = CustomerCore & CustomerDocProps;
+export type CustomerDoc = CustomerCore;
 
 export type CustomerProps = {
   x: CustomerUtils;

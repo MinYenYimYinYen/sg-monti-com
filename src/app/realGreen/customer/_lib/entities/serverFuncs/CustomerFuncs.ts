@@ -5,6 +5,7 @@ import {
 } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { CustomerCore, CustomerDoc, CustomerRaw } from "../types/CustomerTypes";
+// CustomerDoc = CustomerCore — no DocProps extension needed
 import { ContactPoint } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 import { AgingParams } from "@/app/realGreen/customer/_lib/classes/Aging";
 
@@ -106,14 +107,6 @@ function remapCustomer(raw: CustomerRaw): CustomerCore {
 export function remapCustomers(raw: CustomerRaw[]) {
   return raw.map((r) => remapCustomer(r));
 }
-export async function extendCustomers(
-  remapped: CustomerCore[],
-): Promise<CustomerDoc[]> {
-  //MOCKED for now
-  const withMongo = remapped.map((cust) => ({
-    ...cust,
-    createdAt: "",
-    updatedAt: "",
-  }));
-  return withMongo;
+export function extendCustomers(remapped: CustomerCore[]): CustomerDoc[] {
+  return remapped;
 }

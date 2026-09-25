@@ -37,8 +37,6 @@ export const baseProgramNoX: Omit<Program, "x"> = {
   difficulty: 0,
   isProgram: false,
   isRenewed: false,
-  createdAt: "",
-  updatedAt: "",
   services: [],
   customer: baseCustomer,
   progCode: baseProgCode,

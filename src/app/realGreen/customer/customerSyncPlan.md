@@ -71,10 +71,15 @@ Read **only** the files listed below before responding. They provide sufficient 
 |---|---|
 | Core type field stubs added (pending name confirmation) | ✅ Done |
 | Assignments refactor (standalone `AssignmentModel`, `AssignmentUtils`, append-only writes) | ✅ Done |
-| `updated` filter wiring | ⬜ Not started |
-| Sync infrastructure (models, sync funcs, routes) | ⬜ Not started |
-| Sandbox UI for triggering syncs | ⬜ Not started |
-| `extendCustomers` / `extendPrograms` unmocked | ⬜ Not started |
+| `updated` filter wiring | ✅ Done (was already complete — `updated` flows from `RGSearchBase` through all three Raw types; remap functions and Criteria types already wired) |
+| DocProps removal (`CustomerDocProps`, `ProgramDocProps`, `ServiceDocProps` eliminated; `Doc = Core`) | ✅ Done |
+| `ServiceDocPropsModel` retired (drop collection + delete file) | ⬜ Deferred — do this immediately before merging to master. Master branch still uses this model; dropping early would break the live pipeline. |
+| `extendCustomers` / `extendPrograms` / `extendServices` simplified to pass-throughs | ✅ Done |
+| Register `customer`, `program`, `service` in `syncEntityTypes.ts` | ✅ Done |
+| Sync infrastructure — `CustomerModel`, `ProgramModel`, `ServiceModel` | ✅ Done |
+| Sync functions — `customerSyncFunc`, `programSyncFunc`, `serviceSyncFunc` | ✅ Done |
+| Sync routes — contracts + route handlers for all 3 entities | ✅ Done |
+| Sandbox UI (`sandbox/customerSync/page.tsx`) | ✅ Done |
 | `dataSource` field + route handler branching | ⬜ Not started |
 | Validation (compare Mongo vs. live pipeline) | ⬜ Not started |
 

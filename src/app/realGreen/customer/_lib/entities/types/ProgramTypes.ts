@@ -1,4 +1,3 @@
-import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Service } from "./ServiceTypes";
 import { Customer } from "./CustomerTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
@@ -124,11 +123,7 @@ export type ProgramCore = {
   isRenewed: boolean;
 };
 
-export type ProgramDocProps = CreatedUpdated & {
-  progId: number;
-};
-
-export type ProgramDoc = ProgramCore & ProgramDocProps;
+export type ProgramDoc = ProgramCore;
 
 export type ProgramProps = {
   x: ProgramUtils;

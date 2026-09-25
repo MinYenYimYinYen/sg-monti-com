@@ -69,8 +69,6 @@ export const baseCustomerNoX: Omit<Customer, "x"> = {
   statementFrequency: 0,
   statementTypeId: 0,
   title: "",
-  createdAt: "",
-  updatedAt: "",
   programs: [],
   callLogs: [],
   callAhead: null,

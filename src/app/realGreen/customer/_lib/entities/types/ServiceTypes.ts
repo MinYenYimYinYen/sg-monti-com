@@ -1,4 +1,3 @@
-import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { AppProductRaw } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { ServiceHistoryRaw } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import { DoneByRaw } from "@/app/realGreen/_lib/subTypes/DoneByCore";
@@ -108,11 +107,7 @@ export type ServiceCore = {
   round: number | null;
 };
 
-export type ServiceDocProps = CreatedUpdated & {
-  servId: number;
-};
-
-export type ServiceDoc = ServiceCore & ServiceDocProps;
+export type ServiceDoc = ServiceCore;
 
 export type ServiceProps = {
   x: ServiceUtils;
