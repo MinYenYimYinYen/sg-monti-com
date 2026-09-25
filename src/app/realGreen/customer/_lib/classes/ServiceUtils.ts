@@ -258,14 +258,14 @@ export class ServiceUtils {
     hasAssignment: boolean;
   } | null {
     if (this.service.status !== "$") return null;
-    const la = this.service.lastAssigned;
-    if (!la.schedDate) return null;
+    const mostRecent = this.service.assignments.mostRecent;
+    if (!mostRecent?.schedDate) return null;
     const hasAssignment =
-      la.employeeId !== baseStrId && la.employeeId.length > 0;
+      mostRecent.employeeId !== baseStrId && mostRecent.employeeId.length > 0;
     return {
-      schedDate: la.schedDate,
-      employeeId: la.employeeId,
-      sequence: la.sequence,
+      schedDate: mostRecent.schedDate.split("T")[0],
+      employeeId: mostRecent.employeeId,
+      sequence: mostRecent.sequence,
       hasAssignment,
     };
   }
@@ -290,16 +290,14 @@ export class ServiceUtils {
   /**
    * Describes how this completed service relates to its planned assignment.
    *
-   * Uses the most recent assignment in service.assignments (last element).
+   * Uses AssignmentUtils.mostRecent to get the current assignment.
    * Checks whether the assigned employee completed it and whether it was done
    * on the scheduled date — the two axes of assignment satisfaction.
    *
    * Returns all-false when no assignment exists or the service is not completed.
    */
   public get assignmentOutcome(): AssignmentOutcome {
-    // lastAssigned is the single source of truth for the current assignment.
-    // It is hydrated from the assignment Redux store in centralSelectors.
-    const assignment = this.service.lastAssigned.schedDate ? this.service.lastAssigned : null;
+    const assignment = this.service.assignments.mostRecent;
 
     if (!assignment || this.service.status !== "S") {
       return {

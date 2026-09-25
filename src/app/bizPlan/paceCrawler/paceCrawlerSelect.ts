@@ -76,21 +76,15 @@ const selectNextDateByEmployee = createSelector(
 
     for (const servCode of servCodes) {
       for (const service of servCode.services) {
-        if (
-          service.status === "$" &&
-          service.lastAssigned.schedDate &&
-          service.lastAssigned.employeeId
-        ) {
-          const schedDate = service.lastAssigned.schedDate;
-          if (schedDate > twoYearsOut) continue; // guard against data errors
-          const existing = latestPrintedByEmployee.get(
-            service.lastAssigned.employeeId,
-          );
-          if (!existing || schedDate > existing) {
-            latestPrintedByEmployee.set(
-              service.lastAssigned.employeeId,
-              schedDate,
-            );
+        if (service.status === "$") {
+          const mostRecent = service.assignments.mostRecent;
+          if (mostRecent?.schedDate && mostRecent?.employeeId) {
+            const schedDate = mostRecent.schedDate;
+            if (schedDate > twoYearsOut) continue; // guard against data errors
+            const existing = latestPrintedByEmployee.get(mostRecent.employeeId);
+            if (!existing || schedDate > existing) {
+              latestPrintedByEmployee.set(mostRecent.employeeId, schedDate);
+            }
           }
         }
       }

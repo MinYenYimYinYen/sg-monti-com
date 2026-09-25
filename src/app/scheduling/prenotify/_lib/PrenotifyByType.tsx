@@ -159,7 +159,7 @@ function PreNotifyManual({ data }: { data: PrenotificationData[] }) {
           textAllowedTypes?.includes(cp.type),
         );
 
-        const formattedDate = prettyDate(services[0].lastAssigned.schedDate, "EEE, MMM d");
+        const formattedDate = prettyDate(services[0]?.x.schedInfo?.schedDate ?? "", "EEE, MMM d");
 
         const emailPN: EmailPreNotifData[] = getMessages[NotificationType.Email](
           formattedDate,

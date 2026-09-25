@@ -35,13 +35,11 @@ const selectScheduledServicesForTech = (
   employeeId: string,
   routeDate: string,
 ) =>
-  createSelector([centralSelect.services, assignmentSelect.docs], (services, assignmentDocs) => {
-    const assignedServIds = new Set(
-      assignmentDocs
-        .filter((a) => a.employeeId === employeeId && a.schedDate === routeDate)
-        .map((a) => a.servId),
-    );
-    return services.filter((service) => assignedServIds.has(service.servId));
+  createSelector([centralSelect.services], (services) => {
+    return services.filter((service) => {
+      const canonical = service.assignments.canonicalForDate(routeDate);
+      return canonical?.employeeId === employeeId;
+    });
   });
 
 export const feedbackSelect = {

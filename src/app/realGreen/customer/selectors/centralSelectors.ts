@@ -19,8 +19,8 @@ import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { hydrateFlags } from "@/app/realGreen/customer/selectors/hydrateFlags";
-import { hydrateLastAssigned } from "@/app/realGreen/customer/selectors/hydrateLastAssigned";
 import { assignmentSelect } from "@/app/assignment/assignmentSelect";
+import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
@@ -129,7 +129,7 @@ export function makeCustomersSelector(
       employeeSelect.employeeMap,
       flagSelect.flagDocMap,
       custFlagSelect.custIdFlagIds,
-      assignmentSelect.docs,
+      assignmentSelect.byServId,
       serviceConditionSelect.serviceConditionsByServId,
       serviceEtaSelect.serviceEtaMap,
       selectPriorityServiceDocMap,
@@ -149,7 +149,7 @@ export function makeCustomersSelector(
       employeeMap,
       flagDocMap,
       custIdFlagIds,
-      newAssignments,
+      assignmentByServId,
       serviceConditionsByServId,
       serviceEtaMap,
       priorityServiceDocMap,
@@ -223,12 +223,9 @@ export function makeCustomersSelector(
           const services = serviceDocs.map((servDoc) => {
             const servCode = servCodeMap.get(servDoc.servCodeId) ?? baseServCode;
 
-            const lastAssigned = hydrateLastAssigned(
-              servDoc,
-              newAssignments,
-              progDoc,
-              employeeMap,
-            );
+            // Hydrate AssignmentUtils from the assignment store
+            const serviceAssignmentDoc = assignmentByServId.get(servDoc.servId);
+            const assignments = new AssignmentUtils(serviceAssignmentDoc?.assignments ?? []);
 
             // Parse service promise inline
             const servPromiseResult = parsePromiseString({
@@ -266,14 +263,14 @@ export function makeCustomersSelector(
                 servCode,
                 callAhead: callAheadDocMap.get(servDoc.callAheadId) ?? null,
                 discount: discountDocMap.get(servDoc.discountId) ?? null,
-                lastAssigned,
+                assignments,
                 promise: null,
                 promiseIssues: [],
                 loadoutInventory: { masters: [], singles: [], subProducts: [] },
                 eta: null,
                 priorityService: null,
               }),
-              lastAssigned,
+              assignments,
               promise: servPromiseResult.promise,
               promiseIssues: servPromiseResult.issues,
               loadoutInventory: hydratePlannedLoadout({ servDoc, servCodeMap }),

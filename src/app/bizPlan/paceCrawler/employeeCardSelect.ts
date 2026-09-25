@@ -335,12 +335,11 @@ const selectEmployeeCardData = createSelector(
     const alreadyRoutedEmployeeIds = new Set<string>();
     for (const servCode of servCodes) {
       for (const service of servCode.services) {
-        if (
-          service.status === "$" &&
-          service.lastAssigned.schedDate === mainDate &&
-          service.lastAssigned.employeeId
-        ) {
-          alreadyRoutedEmployeeIds.add(service.lastAssigned.employeeId);
+        if (service.status === "$") {
+          const mostRecent = service.assignments.mostRecent;
+          if (mostRecent?.schedDate === mainDate && mostRecent?.employeeId) {
+            alreadyRoutedEmployeeIds.add(mostRecent.employeeId);
+          }
         }
       }
     }

@@ -1,11 +1,12 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
+import { createSlice } from "@reduxjs/toolkit";
+import { ServiceAssignmentDoc, AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 import { AssignmentContract } from "@/app/assignment/api/AssignmentContract";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { AppState } from "@/store";
 
 type AssignmentState = {
-  docs: AssignmentDoc[];
+  /** ServiceAssignmentDoc[] — one entry per service, with full assignment history. */
+  docs: ServiceAssignmentDoc[];
   availableDates: string[];
 };
 
@@ -14,8 +15,11 @@ const initialState: AssignmentState = {
   availableDates: [],
 };
 
-// Merges incoming docs into the existing docs array, upserting by servId.
-function upsertDocs(existing: AssignmentDoc[], incoming: AssignmentDoc[]): AssignmentDoc[] {
+// Merges incoming ServiceAssignmentDoc[] into the existing docs array, upserting by servId.
+function upsertDocs(
+  existing: ServiceAssignmentDoc[],
+  incoming: ServiceAssignmentDoc[],
+): ServiceAssignmentDoc[] {
   if (incoming.length === 0) return existing;
   const map = new Map(existing.map((d) => [d.servId, d]));
   for (const doc of incoming) {
@@ -79,9 +83,9 @@ const assignmentSlice = createSlice({
     builder.addCase(getAvailableDates.fulfilled, (state, action) => {
       state.availableDates = action.payload;
     });
-    builder.addCase(saveAssignments.fulfilled, (state, action) => {
-      state.docs = upsertDocs(state.docs, action.payload.assignments);
-    });
+    // saveAssignments returns AssignmentDoc[] (the saved entries), not ServiceAssignmentDoc[].
+    // We don't update docs here — the next getByServIds call will pick up the new state.
+    // The optimistic update for lastAssigned is handled by the CSV upload flow.
   },
 });
 

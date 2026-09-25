@@ -22,13 +22,13 @@ export function PromiseDisplay({ schedDate }: { schedDate?: string }) {
     if (dateCompare !== 0) return dateCompare;
 
     // 2. If dates are equal, sort by Employee ID
-    const empA = a.service.lastAssigned.employeeId;
-    const empB = b.service.lastAssigned.employeeId;
+    const empA = a.service.x.schedInfo?.employeeId ?? "";
+    const empB = b.service.x.schedInfo?.employeeId ?? "";
     const empCompare = empA.toString().localeCompare(empB.toString());
     if (empCompare !== 0) return empCompare;
 
     // 3. If employees are also equal, sort by Sequence
-    return a.service.lastAssigned.sequence - b.service.lastAssigned.sequence;
+    return (a.service.x.schedInfo?.sequence ?? 0) - (b.service.x.schedInfo?.sequence ?? 0);
   });
 
   return (
@@ -39,7 +39,7 @@ export function PromiseDisplay({ schedDate }: { schedDate?: string }) {
         const displayName = service.x.customer.displayName;
         const { servNote, progNote, custNote } = service.x.techNotes;
         const servCodeId = service.servCode.servCodeId;
-        const assignedTo = service.lastAssigned.employeeId;
+        const assignedTo = service.x.schedInfo?.employeeId ?? "";
 
         return (
           <div key={detail.service.servId} className={""}>
@@ -69,8 +69,6 @@ export function PromiseDisplay({ schedDate }: { schedDate?: string }) {
                 </div>
               </CardContent>
               {promiseDetails.map((detail, idx) => {
-                // console.log("detail", detail);
-                // const { } = detail;
                 return (
                   <div key={idx} className={"grid grid-cols-[8rem_1fr]"}></div>
                 );

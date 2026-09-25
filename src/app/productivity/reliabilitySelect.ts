@@ -126,25 +126,44 @@ const selectDatesWithAnyCompletion = createSelector(
 );
 
 // ---------------------------------------------------------------------------
-// Reliability metrics by employee
+// Assignments grouped by employee for the productivity date range (canonical)
 // ---------------------------------------------------------------------------
 
-// Assignments grouped by employee for the productivity date range
+// TODO: The current approach queries assignments by schedDate range, but what reliability
+// really needs is "services that had a valid scheduling attempt" — a different semantic.
+// The schedDate-based query is a reasonable approximation for now. Revisit when the
+// assignment module has a dedicated "scheduled services" query.
+
 const selectAssignmentsByEmployeeForRange = createSelector(
   [selectDoneDateRange, assignmentSelect.docs],
   (doneDateRange, docs) => {
-    const inRange = docs.filter(
-      (d) => d.schedDate >= doneDateRange.min && d.schedDate <= doneDateRange.max,
-    );
-    const map = new Map<string, typeof inRange>();
-    for (const doc of inRange) {
-      const existing = map.get(doc.employeeId) ?? [];
-      existing.push(doc);
-      map.set(doc.employeeId, existing);
+    // Inline canonical-by-range logic — one entry per (servId, schedDate), latest createdAt wins
+    const canonical = docs.flatMap((doc) => {
+      const canonMap = new Map<string, (typeof doc.assignments)[number]>();
+      for (const a of doc.assignments) {
+        const key = `${a.servId}|${a.schedDate}`;
+        const existing = canonMap.get(key);
+        if (!existing || a.createdAt > existing.createdAt) {
+          canonMap.set(key, a);
+        }
+      }
+      return Array.from(canonMap.values()).filter(
+        (a) => a.schedDate >= doneDateRange.min && a.schedDate <= doneDateRange.max,
+      );
+    });
+    const result = new Map<string, typeof canonical>();
+    for (const entry of canonical) {
+      const existing = result.get(entry.employeeId) ?? [];
+      existing.push(entry);
+      result.set(entry.employeeId, existing);
     }
-    return map;
+    return result;
   },
 );
+
+// ---------------------------------------------------------------------------
+// Reliability metrics by employee
+// ---------------------------------------------------------------------------
 
 const selectReliabilityByEmployee = createSelector(
   [
@@ -155,6 +174,7 @@ const selectReliabilityByEmployee = createSelector(
     productivitySelect.completedServices,
     selectDatesWithAnyCompletion,
     holidaySelect.weatherDayDates,
+    plannedTimeOffSelect.byEmployeeId,
   ],
   (
     unplannedAbsencesByEmployee,
@@ -164,6 +184,7 @@ const selectReliabilityByEmployee = createSelector(
     completedServices,
     datesWithAnyCompletion,
     weatherDayDates,
+    plannedTimeOffByEmployee,
   ): Map<string, ReliabilityMetrics> => {
     // Build a set of (employeeId|date) → servIds completed by that employee on that date
     const completedByEmployeeDate = new Map<string, Set<number>>();
@@ -208,11 +229,30 @@ const selectReliabilityByEmployee = createSelector(
         assignmentsByDate.set(assignment.schedDate, existing);
       }
 
+      // Build a set of dates covered by any planned time off for this employee
+      // (planned vacation, etc. — not unplannedAbsence, which is already in absenceDates).
+      // Services scheduled on planned-off days are a scheduling mistake, not a suspicious absence.
+      const plannedOffDates = new Set<string>();
+      for (const pto of plannedTimeOffByEmployee.get(employeeId) ?? []) {
+        if (pto.requestType === "unplannedAbsence") continue;
+        let day = pto.dateRange.min;
+        while (day <= pto.dateRange.max) {
+          plannedOffDates.add(day);
+          // Advance by one day (ISO string arithmetic)
+          const d = new Date(day + "T12:00:00");
+          d.setDate(d.getDate() + 1);
+          day = d.toISOString().slice(0, 10);
+        }
+      }
+
       // Detect suspicious zero-completion days
       const suspiciousZeroDays: SuspiciousZeroDay[] = [];
       for (const [date, assignments] of assignmentsByDate) {
         // Skip days already recorded as an absence
         if (absenceDates.has(date)) continue;
+        // Skip days covered by planned time off — scheduling on a PTO day is a scheduling mistake,
+        // not an unrecorded absence. The employee was legitimately off.
+        if (plannedOffDates.has(date)) continue;
         // Skip weather days — company-wide excuse, not suspicious
         if (weatherDayDates.has(date)) continue;
         // Skip days where nobody else worked (rain day / company closure)

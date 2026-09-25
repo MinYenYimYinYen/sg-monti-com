@@ -2,13 +2,6 @@ import { createSelector } from "@reduxjs/toolkit";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 
-// const validateProgramNextDateMatches = (service: Service) => {
-//   return (
-//     service.lastAssigned.schedDate.split("T")[0] ===
-//     service.program.nextDate.split("T")[0]
-//   );
-// };
-
 const selectPrintedServices = createSelector(
   [centralSelect.services],
   (services): Service[] => {
@@ -22,22 +15,10 @@ const selectServicesByDateAndEmployee = createSelector(
     const tempResult = new Map<string, Map<string, Service[]>>();
 
     printed.forEach((service) => {
-      const date = service.lastAssigned.schedDate;
-
-      if (!date) {
-        console.log("lastAssigned", service.lastAssigned);
-      }
-
-      const employeeId = service.lastAssigned.employeeId;
-
-      // SO YOU KNOW ***
-      // program.nextDate is not reliable.  If later services have a schedule date, it will
-      // use the schedule date for the next service instead.  So, the source of the
-      // schedule date has to be from the unserviced report CSV.
-      // if (!validateProgramNextDateMatches(service)) {
-      //   console.log(service.x.customer.displayName, service.program.nextDate, service.lastAssigned.schedDate, service.servId);
-      //
-      // }
+      // Use schedInfo (which reads from assignments.mostRecent) for schedule display
+      const schedInfo = service.x.schedInfo;
+      const date = schedInfo?.schedDate ?? "";
+      const employeeId = schedInfo?.employeeId ?? "";
 
       if (!date || !employeeId) return;
 
@@ -114,11 +95,10 @@ const selectPromiseDetails = createSelector(
     const promiseDetails = printed
       .filter((service) => service.x.isPromisedOrHasPromise)
       .map((service) => {
-        console.log("service", service.x.customer.displayName);
         return {
           promiseDetails: service.x.promiseDetails,
           service,
-          schedDate: service.lastAssigned.schedDate,
+          schedDate: service.x.schedInfo?.schedDate ?? "",
         };
       });
     return promiseDetails;

@@ -21,12 +21,21 @@ const selectRouteDate = (state: AppState) => state.loadoutStart.routeDate;
  * Filters centralSelect.services by matching assignment records for the current date.
  */
 const selectServices = createSelector(
-  [centralSelect.services, assignmentSelect.servIdsByEmployee, selectTech],
-  (services, servIdsByEmployee, tech) => {
-    if (!tech) return [];
-    const assignmentsForTech = servIdsByEmployee.get(tech);
-    if (!assignmentsForTech || assignmentsForTech.length === 0) return [];
-    const servIdSet = new Set(assignmentsForTech.map((a) => a.servId));
+  [centralSelect.services, assignmentSelect.docs, selectTech, selectRouteDate],
+  (services, assignmentDocs, tech, routeDate) => {
+    if (!tech || !routeDate) return [];
+    // Get canonical servIds for this tech on this date from the assignment store
+    const servIdSet = new Set<number>();
+    for (const doc of assignmentDocs) {
+      // Find the canonical assignment for this date (latest createdAt wins)
+      const forDate = doc.assignments.filter((a: { schedDate: string }) => a.schedDate === routeDate);
+      if (forDate.length === 0) continue;
+      const canonical = forDate.sort((a: { createdAt: string }, b: { createdAt: string }) => b.createdAt.localeCompare(a.createdAt))[0]!;
+      if (canonical.employeeId === tech) {
+        servIdSet.add(doc.servId);
+      }
+    }
+    if (servIdSet.size === 0) return [];
     return services.filter((s) => servIdSet.has(s.servId));
   },
 );

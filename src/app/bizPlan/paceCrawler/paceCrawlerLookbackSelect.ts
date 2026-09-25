@@ -41,8 +41,9 @@ function filterServicesToLookbackWindow(
     if (s.status === "S" && s.production?.doneDate != null) {
       return s.production.doneDate >= lookbackStart;
     }
-    if (s.status === "$" && s.lastAssigned.schedDate != null) {
-      return s.lastAssigned.schedDate >= lookbackStart;
+    if (s.status === "$") {
+      const mostRecent = s.assignments.mostRecent;
+      return mostRecent?.schedDate != null && mostRecent.schedDate >= lookbackStart;
     }
     return false;
   });
@@ -71,11 +72,12 @@ function buildTotalAvgByEmployee(
         const existing = byDate.get(effectiveDate) ?? { ...baseCountSizePrice };
         byDate.set(effectiveDate, CSPOps.sum(existing, contribution));
       }
-    } else if (service.status === "$" && service.lastAssigned.employeeId) {
-      const employeeId = service.lastAssigned.employeeId;
-      if (!totalAccumulator.has(employeeId))
-        totalAccumulator.set(employeeId, new Map());
-      const byDate = totalAccumulator.get(employeeId)!;
+    } else if (service.status === "$") {
+      const mostRecentEmployeeId = service.assignments.mostRecent?.employeeId;
+      if (!mostRecentEmployeeId) continue;
+      if (!totalAccumulator.has(mostRecentEmployeeId))
+        totalAccumulator.set(mostRecentEmployeeId, new Map());
+      const byDate = totalAccumulator.get(mostRecentEmployeeId)!;
       const existing = byDate.get(effectiveDate) ?? { ...baseCountSizePrice };
       byDate.set(effectiveDate, CSPOps.sum(existing, serviceCSP));
     }

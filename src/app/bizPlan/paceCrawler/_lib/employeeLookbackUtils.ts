@@ -26,16 +26,14 @@ export type LookbackStats = {
 // ---------------------------------------------------------------------------
 
 // Builds a map of date → set of distinct servIds that were assigned on that date.
+// Uses AssignmentUtils.canonical to get one entry per (servId, schedDate) pair.
 function buildAssignedServIdsPerDate(services: Service[]): Map<string, Set<number>> {
   const assignedPerDate = new Map<string, Set<number>>();
   for (const service of services) {
-    // lastAssigned is the single current assignment for this service.
-    // For lookback purposes, we use it to determine which date this service was assigned to.
-    const la = service.lastAssigned;
-    if (la.schedDate) {
-      const existing = assignedPerDate.get(la.schedDate) ?? new Set<number>();
+    for (const assignment of service.assignments.canonical) {
+      const existing = assignedPerDate.get(assignment.schedDate) ?? new Set<number>();
       existing.add(service.servId);
-      assignedPerDate.set(la.schedDate, existing);
+      assignedPerDate.set(assignment.schedDate, existing);
     }
   }
   return assignedPerDate;
@@ -48,9 +46,11 @@ function buildEffectiveCompletionCountPerDate(services: Service[]): Map<string, 
     if (COMPLETED_STATUSES.includes(service.status) && service.production?.doneDate) {
       const doneDate = service.production.doneDate;
       effectivePerDate.set(doneDate, (effectivePerDate.get(doneDate) ?? 0) + 1);
-    } else if (PRINTED_STATUSES.includes(service.status) && service.lastAssigned.schedDate) {
-      const schedDate = service.lastAssigned.schedDate;
-      effectivePerDate.set(schedDate, (effectivePerDate.get(schedDate) ?? 0) + 1);
+    } else if (PRINTED_STATUSES.includes(service.status)) {
+      const mostRecent = service.assignments.mostRecent;
+      if (mostRecent?.schedDate) {
+        effectivePerDate.set(mostRecent.schedDate, (effectivePerDate.get(mostRecent.schedDate) ?? 0) + 1);
+      }
     }
   }
   return effectivePerDate;
@@ -98,14 +98,15 @@ export function getValidProductionDates(
 // ---------------------------------------------------------------------------
 
 // Returns the effective production date for a service:
-// completed services use doneDate, printed services use schedDate.
+// completed services use doneDate, printed services use mostRecent assignment schedDate.
 // Returns null if the service has no applicable date.
 export function getServiceEffectiveDate(service: Service): string | null {
   if (COMPLETED_STATUSES.includes(service.status) && service.production?.doneDate) {
     return service.production.doneDate;
   }
-  if (PRINTED_STATUSES.includes(service.status) && service.lastAssigned.schedDate) {
-    return service.lastAssigned.schedDate;
+  if (PRINTED_STATUSES.includes(service.status)) {
+    const mostRecent = service.assignments.mostRecent;
+    return mostRecent?.schedDate ?? null;
   }
   return null;
 }
@@ -165,9 +166,12 @@ export function accumulateDailyProduction(
         const contribution = CSPOps.multiply(serviceCSP, doneBy.percent);
         accumulateContribution(accumulator, employeeId, programTypeKey, effectiveDate, contribution);
       }
-    } else if (PRINTED_STATUSES.includes(service.status) && service.lastAssigned.employeeId) {
-      // Printed: attribute 100% to the assigned employee
-      accumulateContribution(accumulator, service.lastAssigned.employeeId, programTypeKey, effectiveDate, serviceCSP);
+    } else if (PRINTED_STATUSES.includes(service.status)) {
+      // Printed: attribute 100% to the assigned employee (mostRecent)
+      const mostRecent = service.assignments.mostRecent;
+      if (mostRecent?.employeeId) {
+        accumulateContribution(accumulator, mostRecent.employeeId, programTypeKey, effectiveDate, serviceCSP);
+      }
     }
   }
 

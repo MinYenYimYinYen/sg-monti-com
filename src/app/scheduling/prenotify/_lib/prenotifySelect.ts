@@ -53,7 +53,7 @@ const selectPrenotifications = createSelector(
       .forEach((customer) => {
         // Level 1: Group services by scheduleDate
         const servicesByDate = new Grouper(customer.x.printedServices)
-          .groupBy((s) => s.lastAssigned.schedDate)
+          .groupBy((s) => s.x.schedInfo?.schedDate ?? "")
           .toMap();
 
         servicesByDate.forEach((services, scheduleDate) => {

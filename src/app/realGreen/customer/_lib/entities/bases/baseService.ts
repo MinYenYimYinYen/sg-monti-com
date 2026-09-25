@@ -6,14 +6,9 @@ import {
 } from "../types/ServiceTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseProgram } from "./baseProgram";
-import { baseEmployee } from "@/app/realGreen/employee/_lib/baseEmployee";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 import { baseLoadout } from "@/app/loadout/LoadoutTypes";
-import {
-  Assignment,
-  AssignmentDoc,
-  AssignmentProps,
-} from "@/app/assignment/AssignmentTypes";
+import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/baseServCode";
 
 export const baseServiceCore: ServiceCore = {
@@ -48,22 +43,7 @@ export const baseServiceDoc: ServiceDoc = {
   ...baseServiceDocProps,
 };
 
-export const baseAssignmentDoc: AssignmentDoc = {
-  servId: baseNumId,
-  employeeId: "",
-  schedDate: "",
-  status: "",
-  sequence: 0,
-};
-
-export const baseAssignmentProps: AssignmentProps = {
-  employee: baseEmployee,
-};
-
-export const baseAssignment: Assignment = {
-  ...baseAssignmentDoc,
-  ...baseAssignmentProps,
-};
+export const baseAssignmentUtils = new AssignmentUtils([]);
 
 export const baseService: Service = {
   x: new ServiceUtils({
@@ -73,7 +53,7 @@ export const baseService: Service = {
     callAhead: null,
     discount: null,
     production: null,
-    lastAssigned: baseAssignment,
+    assignments: baseAssignmentUtils,
     promise: null,
     promiseIssues: [],
     loadoutInventory: baseLoadout,
@@ -87,7 +67,7 @@ export const baseService: Service = {
   callAhead: null,
   discount: null,
   production: null,
-  lastAssigned: baseAssignment,
+  assignments: baseAssignmentUtils,
   promise: null,
   promiseIssues: [],
   loadoutInventory: baseLoadout,

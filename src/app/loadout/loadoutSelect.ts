@@ -60,9 +60,11 @@ const selectStartEmployeeIdsForDate = (routeDate: string | null) =>
       const ids = new Set<string>();
       loadoutsByDate.forEach((_, employeeId) => ids.add(employeeId));
       if (routeDate) {
-        assignmentDocs
-          .filter((d) => d.schedDate === routeDate)
-          .forEach((d) => ids.add(d.employeeId));
+        // Flatten ServiceAssignmentDoc[] and get canonical assignments for the date
+        assignmentDocs.forEach((doc) => {
+          const canonical = doc.assignments.find((a) => a.schedDate === routeDate);
+          if (canonical) ids.add(canonical.employeeId);
+        });
       }
       return Array.from(ids).sort();
     },
@@ -80,9 +82,10 @@ const selectFinishEmployeeIdsForDate = (routeDate: string | null) =>
       const ids = new Set<string>();
       loadoutsByDate.forEach((_, employeeId) => ids.add(employeeId));
       if (routeDate) {
-        assignmentDocs
-          .filter((d) => d.schedDate === routeDate)
-          .forEach((d) => ids.add(d.employeeId));
+        assignmentDocs.forEach((doc) => {
+          const canonical = doc.assignments.find((a) => a.schedDate === routeDate);
+          if (canonical) ids.add(canonical.employeeId);
+        });
       }
       return Array.from(ids).sort();
     },
