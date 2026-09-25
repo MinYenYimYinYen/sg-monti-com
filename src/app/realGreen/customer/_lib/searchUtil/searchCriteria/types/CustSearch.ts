@@ -95,7 +95,7 @@ export type CustomerSearchRaw = RGSearchBase & {
   // useBillingInfo?: boolean;
 };
 
-export type CustomerSearchCriteria = RGSearchBase & {
+export type CustomerSearchCriteria = Omit<RGSearchBase, "updated"> & {
   custIds?: number[];
   size?: TRange<number>;
   statuses?: CustStat[];

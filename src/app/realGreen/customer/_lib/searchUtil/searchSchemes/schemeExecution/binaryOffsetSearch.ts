@@ -37,6 +37,9 @@ export async function* binarySearchCorruptedRecord<TRawData extends RawData>(
   );
 
   console.log(`[binaryOffsetSearch] Corrupted record isolated at offset: ${corruptedOffset}`);
+  console.warn(
+    `[sync] ⚠ Corrupted record skipped — entity: ${(baseSearchCriteria as any).searchType ?? "unknown"}, offset: ${corruptedOffset}`,
+  );
 
   // Phase 2: Fetch all records before the corrupted record
   if (corruptedOffset > errorOffset) {

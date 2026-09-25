@@ -4,10 +4,12 @@ import { CustomerSearchRaw } from "@/app/realGreen/customer/_lib/searchUtil/sear
 import { remapCustomers } from "@/app/realGreen/customer/_lib/entities/serverFuncs/CustomerFuncs";
 import { CustomerModel } from "@/app/realGreen/customer/models/CustomerModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { binarySearchCorruptedRecord } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/schemeExecution/binaryOffsetSearch";
 
 const PAGE_SIZE = 500;
 const MAX_CONCURRENT = 8;
 const LOG_PREFIX = "[customer sync]";
+const CORRUPTED_ERROR = "Nullable object must have a value.";
 
 // --- Fetch ---
 
@@ -17,6 +19,9 @@ const LOG_PREFIX = "[customer sync]";
  *
  * Starts with 1 concurrent request, doubles each round up to MAX_CONCURRENT.
  * Terminates as soon as any page returns fewer than PAGE_SIZE records.
+ *
+ * Uses binarySearchCorruptedRecord to recover from corrupted records mid-page
+ * rather than aborting the entire fetch.
  */
 export async function fetchCustomers(rawSearch: CustomerSearchRaw): Promise<CustomerRaw[]> {
   const allRaw: CustomerRaw[] = [];
@@ -29,25 +34,44 @@ export async function fetchCustomers(rawSearch: CustomerSearchRaw): Promise<Cust
     const offsets = Array.from({ length: batchCount }, (_, i) => offset + i * PAGE_SIZE);
     console.log(`${LOG_PREFIX} Round ${round} — batchCount: ${batchCount}, offsets: [${offsets.join(", ")}]`);
 
-    const pages = await Promise.all(
-      offsets.map((batchOffset) =>
-        rgSearch<CustomerRaw[]>({ ...rawSearch, records: PAGE_SIZE, offset: batchOffset }),
-      ),
+    // Fetch each page independently so corrupted pages can be recovered without
+    // cancelling sibling requests.
+    const pageResults = await Promise.all(
+      offsets.map(async (batchOffset) => {
+        try {
+          const page = await rgSearch<CustomerRaw[]>({ ...rawSearch, records: PAGE_SIZE, offset: batchOffset });
+          return { records: page, recovered: false };
+        } catch (e) {
+          if (e instanceof Error && e.message === CORRUPTED_ERROR) {
+            console.warn(`${LOG_PREFIX} Corrupted record at offset ${batchOffset} — recovering via binary search`);
+            const recovered: CustomerRaw[] = [];
+            for await (const { items } of binarySearchCorruptedRecord(rawSearch, batchOffset, PAGE_SIZE)) {
+              recovered.push(...(items as CustomerRaw[]));
+            }
+            return { records: recovered, recovered: true };
+          }
+          throw e;
+        }
+      }),
     );
 
-    totalApiCalls += pages.length;
-    const pageLengths = pages.map((p) => p.length);
+    totalApiCalls += pageResults.length;
 
     let done = false;
     let shortPageIndex = -1;
-    for (let i = 0; i < pages.length; i++) {
-      allRaw.push(...pages[i]);
-      if (pages[i].length < PAGE_SIZE) {
+    for (let i = 0; i < pageResults.length; i++) {
+      const { records, recovered } = pageResults[i];
+      allRaw.push(...records);
+      // A recovered page may be shorter than PAGE_SIZE even if more records exist —
+      // treat recovered pages as full to avoid premature termination.
+      if (!recovered && records.length < PAGE_SIZE) {
         done = true;
         shortPageIndex = i;
         break;
       }
     }
+
+    const pageLengths = pageResults.map((r) => r.records.length);
 
     if (done) {
       console.log(

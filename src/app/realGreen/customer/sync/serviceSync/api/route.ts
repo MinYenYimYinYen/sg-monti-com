@@ -7,9 +7,9 @@ import { getLastSyncedAt, setLastSyncedAt } from "@/app/realGreen/syncMetadata/s
 import { SYNC_ENTITY_TYPES } from "@/app/realGreen/syncMetadata/syncEntityTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 
-// For the initial full sync, limit to the last 7 years to control volume.
-// See customerSyncPlan.md for storage estimates.
+// 7-year window in each direction: captures historical data and pre-planned future seasons.
 const SEASON_FLOOR = new Date().getFullYear() - 7;
+const SEASON_CEIL = new Date().getFullYear() + 7;
 
 const handlers: HandlerMap<ServiceSyncContract> = {
   syncServices: {
@@ -25,24 +25,27 @@ const handlers: HandlerMap<ServiceSyncContract> = {
       const criteria = lastSyncedAt
         ? {
             updated: { min: lastSyncedAt, max: new Date().toISOString() },
-            season: { min: SEASON_FLOOR, max: new Date().getFullYear() },
+            season: { min: SEASON_FLOOR, max: SEASON_CEIL },
           }
         : {
-            season: { min: SEASON_FLOOR, max: new Date().getFullYear() },
+            season: { min: SEASON_FLOOR, max: SEASON_CEIL },
           };
 
       const rawSearch = remapServSearch(criteria);
 
+      console.log(`[service sync] Search criteria:`, JSON.stringify(rawSearch, null, 2));
+
       // Paginated fetch from RealGreen using capped exponential batch algorithm.
       const rawServices = await fetchServices(rawSearch);
+
+      // Record the sync timestamp before the bulkWrite so that delta syncs work correctly
+      // even if the HTTP response times out during the upsert phase.
+      const newLastSyncedAt = new Date().toISOString();
+      await setLastSyncedAt(SYNC_ENTITY_TYPES.service, newLastSyncedAt);
 
       // Bulk upsert to MongoDB — single command, keyed by servId.
       // Corrupted production records are skipped and logged (not thrown).
       const synced = await bulkUpsertServices(rawServices);
-
-      // Record the sync completion time.
-      const newLastSyncedAt = new Date().toISOString();
-      await setLastSyncedAt(SYNC_ENTITY_TYPES.service, newLastSyncedAt);
 
       console.log(
         `[service sync] Sync complete — ${synced} record${synced === 1 ? "" : "s"} synced, lastSyncedAt: ${newLastSyncedAt}`,

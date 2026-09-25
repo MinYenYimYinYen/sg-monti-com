@@ -4,11 +4,13 @@ import { ServiceSearchRaw } from "@/app/realGreen/customer/_lib/searchUtil/searc
 import { remapServices } from "@/app/realGreen/customer/_lib/entities/serverFuncs/serviceServerFunc";
 import { ServiceModel } from "@/app/realGreen/customer/models/ServiceModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { binarySearchCorruptedRecord } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/schemeExecution/binaryOffsetSearch";
 import { handleError } from "@/lib/errors/errorHandler";
 
 const PAGE_SIZE = 500;
 const MAX_CONCURRENT = 8;
 const LOG_PREFIX = "[service sync]";
+const CORRUPTED_ERROR = "Nullable object must have a value.";
 
 // --- Fetch ---
 
@@ -18,6 +20,10 @@ const LOG_PREFIX = "[service sync]";
  *
  * Starts with 1 concurrent request, doubles each round up to MAX_CONCURRENT.
  * Terminates as soon as any page returns fewer than PAGE_SIZE records.
+ *
+ * Uses binarySearchCorruptedRecord to recover from corrupted records mid-page
+ * rather than aborting the entire fetch. This is especially important for services
+ * since completed services with missing production data trigger this error.
  */
 export async function fetchServices(rawSearch: ServiceSearchRaw): Promise<ServiceRaw[]> {
   const allRaw: ServiceRaw[] = [];
@@ -30,25 +36,40 @@ export async function fetchServices(rawSearch: ServiceSearchRaw): Promise<Servic
     const offsets = Array.from({ length: batchCount }, (_, i) => offset + i * PAGE_SIZE);
     console.log(`${LOG_PREFIX} Round ${round} — batchCount: ${batchCount}, offsets: [${offsets.join(", ")}]`);
 
-    const pages = await Promise.all(
-      offsets.map((batchOffset) =>
-        rgSearch<ServiceRaw[]>({ ...rawSearch, records: PAGE_SIZE, offset: batchOffset }),
-      ),
+    const pageResults = await Promise.all(
+      offsets.map(async (batchOffset) => {
+        try {
+          const page = await rgSearch<ServiceRaw[]>({ ...rawSearch, records: PAGE_SIZE, offset: batchOffset });
+          return { records: page, recovered: false };
+        } catch (e) {
+          if (e instanceof Error && e.message === CORRUPTED_ERROR) {
+            console.warn(`${LOG_PREFIX} Corrupted record at offset ${batchOffset} — recovering via binary search`);
+            const recovered: ServiceRaw[] = [];
+            for await (const { items } of binarySearchCorruptedRecord(rawSearch, batchOffset, PAGE_SIZE)) {
+              recovered.push(...(items as ServiceRaw[]));
+            }
+            return { records: recovered, recovered: true };
+          }
+          throw e;
+        }
+      }),
     );
 
-    totalApiCalls += pages.length;
-    const pageLengths = pages.map((p) => p.length);
+    totalApiCalls += pageResults.length;
 
     let done = false;
     let shortPageIndex = -1;
-    for (let i = 0; i < pages.length; i++) {
-      allRaw.push(...pages[i]);
-      if (pages[i].length < PAGE_SIZE) {
+    for (let i = 0; i < pageResults.length; i++) {
+      const { records, recovered } = pageResults[i];
+      allRaw.push(...records);
+      if (!recovered && records.length < PAGE_SIZE) {
         done = true;
         shortPageIndex = i;
         break;
       }
     }
+
+    const pageLengths = pageResults.map((r) => r.records.length);
 
     if (done) {
       console.log(
@@ -78,7 +99,8 @@ export async function fetchServices(rawSearch: ServiceSearchRaw): Promise<Servic
  * Each service is matched by its natural key (`servId`) and replaced wholesale.
  *
  * Services with corrupted production data (completed services missing required fields)
- * are logged and skipped rather than aborting the entire batch.
+ * are logged and skipped rather than aborting the entire batch. This handles remap-level
+ * corruption; fetch-level corruption is handled in fetchServices via binarySearchCorruptedRecord.
  */
 export async function bulkUpsertServices(rawServices: ServiceRaw[]): Promise<number> {
   if (rawServices.length === 0) {
