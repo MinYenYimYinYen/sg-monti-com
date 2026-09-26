@@ -1,10 +1,36 @@
 import { SearchCriteriaRaw, RawData } from "../types/SearchScheme";
 import { rgSearch } from "@/app/realGreen/_lib/api/rgSearchApi";
+import { CorruptedContext, CorruptedEntityType } from "@/app/realGreen/customer/sync/corruptedRecords/CorruptedSyncRecordTypes";
 
 type FetchResult<TRawData> = {
   items: TRawData;
   duration: number;
 };
+
+type BinaryOffsetSearchResult<TRawData> = {
+  results: FetchResult<TRawData>[];
+  corruptedContexts: CorruptedContext[];
+};
+
+/**
+ * Extracts the natural key (id field) from the last item in a raw data array.
+ * Returns null if the array is empty or the item has no id.
+ */
+function extractLastId(items: unknown[]): number | null {
+  if (items.length === 0) return null;
+  const last = items[items.length - 1] as Record<string, unknown>;
+  return typeof last["id"] === "number" ? last["id"] : null;
+}
+
+/**
+ * Extracts the natural key (id field) from the first item in a raw data array.
+ * Returns null if the array is empty or the item has no id.
+ */
+function extractFirstId(items: unknown[]): number | null {
+  if (items.length === 0) return null;
+  const first = items[0] as Record<string, unknown>;
+  return typeof first["id"] === "number" ? first["id"] : null;
+}
 
 /**
  * When we hit a corrupted record in a batch, this function uses binary search
@@ -17,17 +43,27 @@ type FetchResult<TRawData> = {
  * 3. Skip the corrupted record (1 record)
  * 4. Fetch all records after the corrupted record in the original batch
  *
+ * Returns all recovered fetch results AND an array of CorruptedContext objects
+ * (one per corrupted record encountered, including recursive calls).
+ *
  * @param baseSearchCriteria - The search criteria without offset/records
  * @param errorOffset - The offset where the error occurred
  * @param batchSize - The batch size that caused the error
- * @returns Generator that yields all valid records, skipping only the corrupted one
+ * @param entityType - The entity type being synced (for CorruptedContext)
+ * @param timestamp - Shared ISO timestamp for all hits in one sync operation
+ * @param accumulatedContexts - Internal accumulator for recursive calls
  */
-export async function* binarySearchCorruptedRecord<TRawData extends RawData>(
+export async function binarySearchCorruptedRecord<TRawData extends RawData>(
   baseSearchCriteria: SearchCriteriaRaw,
   errorOffset: number,
   batchSize: number,
-): AsyncGenerator<FetchResult<TRawData>> {
+  entityType?: CorruptedEntityType,
+  timestamp?: string,
+  accumulatedContexts: CorruptedContext[] = [],
+): Promise<BinaryOffsetSearchResult<TRawData>> {
   console.log(`[binaryOffsetSearch] Starting binary search for corrupted record at offset ${errorOffset} with batch size ${batchSize}`);
+
+  const results: FetchResult<TRawData>[] = [];
 
   // Phase 1: Binary search to isolate the corrupted record
   const corruptedOffset = await findCorruptedOffset(
@@ -40,6 +76,9 @@ export async function* binarySearchCorruptedRecord<TRawData extends RawData>(
   console.warn(
     `[sync] ⚠ Corrupted record skipped — entity: ${(baseSearchCriteria as any).searchType ?? "unknown"}, offset: ${corruptedOffset}`,
   );
+
+  let entityBeforeId: number | null = null;
+  let entityAfterId: number | null = null;
 
   // Phase 2: Fetch all records before the corrupted record
   if (corruptedOffset > errorOffset) {
@@ -60,12 +99,22 @@ export async function* binarySearchCorruptedRecord<TRawData extends RawData>(
 
       if (items && items.length > 0) {
         console.log(`[binaryOffsetSearch] Successfully fetched ${items.length} records before corrupted record`);
-        yield { items: items as TRawData, duration };
+        entityBeforeId = extractLastId(items as unknown[]);
+        results.push({ items: items as TRawData, duration });
       }
     } catch (error) {
       console.error(`[binaryOffsetSearch] Unexpected error fetching records before corrupted record:`, error);
-      // This shouldn't happen, but if it does, we need to recursively handle it
-      yield* binarySearchCorruptedRecord(baseSearchCriteria, errorOffset, recordsBeforeCorrupted);
+      // Recursively handle if there's another corrupted record in the before range
+      const subResult = await binarySearchCorruptedRecord<TRawData>(
+        baseSearchCriteria,
+        errorOffset,
+        recordsBeforeCorrupted,
+        entityType,
+        timestamp,
+        accumulatedContexts,
+      );
+      results.push(...subResult.results);
+      // entityBeforeId stays null — we couldn't cleanly get the last before record
     }
   }
 
@@ -93,16 +142,40 @@ export async function* binarySearchCorruptedRecord<TRawData extends RawData>(
 
       if (items && items.length > 0) {
         console.log(`[binaryOffsetSearch] Successfully fetched ${items.length} records after corrupted record`);
-        yield { items: items as TRawData, duration };
+        entityAfterId = extractFirstId(items as unknown[]);
+        results.push({ items: items as TRawData, duration });
       }
     } catch (error) {
       console.error(`[binaryOffsetSearch] Another corrupted record found after offset ${corruptedOffset}:`, error);
-      // Recursively handle if there's another corrupted record
-      yield* binarySearchCorruptedRecord(baseSearchCriteria, afterOffset, remainingRecords);
+      // Recursively handle if there's another corrupted record in the after range
+      const subResult = await binarySearchCorruptedRecord<TRawData>(
+        baseSearchCriteria,
+        afterOffset,
+        remainingRecords,
+        entityType,
+        timestamp,
+        accumulatedContexts,
+      );
+      results.push(...subResult.results);
+      // entityAfterId stays null — we couldn't cleanly get the first after record
     }
   }
 
+  // Record this corrupted encounter if we have entity type and timestamp context
+  // (only present when called from a sync func, not from the live pipeline)
+  if (entityType && timestamp) {
+    accumulatedContexts.push({
+      corruptedContextId: globalThis.crypto.randomUUID(),
+      entityType,
+      entityBeforeId,
+      entityAfterId,
+      timestamp,
+    });
+  }
+
   console.log(`[binaryOffsetSearch] Completed binary search recovery for offset ${errorOffset}`);
+
+  return { results, corruptedContexts: accumulatedContexts };
 }
 
 /**

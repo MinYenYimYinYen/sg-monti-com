@@ -3,6 +3,7 @@ import centralCustomerReducer from "@/app/realGreen/customer/slices/centralCusto
 import {
   activeCustomerReducer,
   byAssignmentReducer,
+  corruptedRecordsCustomerReducer,
   fullSeasonServicesReducer,
   lastSeasonProductionReducer,
   multiSeasonProductionReducer,
@@ -15,6 +16,7 @@ import {
 export const customerReducer = combineReducers({
   active: activeCustomerReducer,
   byAssignment: byAssignmentReducer,
+  corruptedRecords: corruptedRecordsCustomerReducer,
   fullSeasonServices: fullSeasonServicesReducer,
   lastSeasonProduction: lastSeasonProductionReducer,
   multiSeasonProduction: multiSeasonProductionReducer,

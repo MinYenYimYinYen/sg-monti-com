@@ -6,6 +6,8 @@ import { ServiceModel } from "@/app/realGreen/customer/models/ServiceModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { binarySearchCorruptedRecord } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/schemeExecution/binaryOffsetSearch";
 import { handleError } from "@/lib/errors/errorHandler";
+import { CorruptedContext } from "@/app/realGreen/customer/sync/corruptedRecords/CorruptedSyncRecordTypes";
+import { CorruptedSyncRecordModel } from "@/app/realGreen/customer/sync/corruptedRecords/CorruptedSyncRecordModel";
 
 const PAGE_SIZE = 500;
 const MAX_CONCURRENT = 8;
@@ -24,9 +26,16 @@ const CORRUPTED_ERROR = "Nullable object must have a value.";
  * Uses binarySearchCorruptedRecord to recover from corrupted records mid-page
  * rather than aborting the entire fetch. This is especially important for services
  * since completed services with missing production data trigger this error.
+ *
+ * When corruption is encountered, captures CorruptedContext for each hit and
+ * persists them to MongoDB after the fetch completes.
  */
 export async function fetchServices(rawSearch: ServiceSearchRaw): Promise<ServiceRaw[]> {
   const allRaw: ServiceRaw[] = [];
+  const allCorruptedContexts: CorruptedContext[] = [];
+  // Shared timestamp for all corrupted record hits in this sync operation
+  const syncTimestamp = new Date().toISOString();
+
   let offset = 0;
   let batchCount = 1;
   let round = 0;
@@ -40,15 +49,22 @@ export async function fetchServices(rawSearch: ServiceSearchRaw): Promise<Servic
       offsets.map(async (batchOffset) => {
         try {
           const page = await rgSearch<ServiceRaw[]>({ ...rawSearch, records: PAGE_SIZE, offset: batchOffset });
-          return { records: page, recovered: false };
+          return { records: page, recovered: false, corruptedContexts: [] as CorruptedContext[] };
         } catch (e) {
           if (e instanceof Error && e.message === CORRUPTED_ERROR) {
             console.warn(`${LOG_PREFIX} Corrupted record at offset ${batchOffset} — recovering via binary search`);
+            const { results, corruptedContexts } = await binarySearchCorruptedRecord<ServiceRaw[]>(
+              rawSearch,
+              batchOffset,
+              PAGE_SIZE,
+              "service",
+              syncTimestamp,
+            );
             const recovered: ServiceRaw[] = [];
-            for await (const { items } of binarySearchCorruptedRecord(rawSearch, batchOffset, PAGE_SIZE)) {
-              recovered.push(...(items as ServiceRaw[]));
+            for (const { items } of results) {
+              recovered.push(...items);
             }
-            return { records: recovered, recovered: true };
+            return { records: recovered, recovered: true, corruptedContexts };
           }
           throw e;
         }
@@ -56,6 +72,11 @@ export async function fetchServices(rawSearch: ServiceSearchRaw): Promise<Servic
     );
 
     totalApiCalls += pageResults.length;
+
+    // Collect corrupted contexts from all pages in this round
+    for (const { corruptedContexts } of pageResults) {
+      allCorruptedContexts.push(...corruptedContexts);
+    }
 
     let done = false;
     let shortPageIndex = -1;
@@ -88,6 +109,13 @@ export async function fetchServices(rawSearch: ServiceSearchRaw): Promise<Servic
   console.log(
     `${LOG_PREFIX} Fetch complete — ${totalApiCalls} API call${totalApiCalls === 1 ? "" : "s"}, ${allRaw.length} record${allRaw.length === 1 ? "" : "s"} fetched`,
   );
+
+  // Persist corrupted contexts if any were encountered
+  if (allCorruptedContexts.length > 0) {
+    console.warn(`${LOG_PREFIX} Persisting ${allCorruptedContexts.length} corrupted record context${allCorruptedContexts.length === 1 ? "" : "s"}`);
+    await connectToMongoDB();
+    await CorruptedSyncRecordModel.insertMany(allCorruptedContexts);
+  }
 
   return allRaw;
 }

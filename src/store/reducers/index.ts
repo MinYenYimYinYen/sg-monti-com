@@ -56,6 +56,7 @@ import { sanityReducer } from "@/app/sanity/sanitySlice";
 import seasonIncreasesReducer from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSlice";
 import priceIncreaseSettingsReducer from "@/app/priceIncrease/settings/settingsSlice";
 import priceIncreaseConfigReducer from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
+import { corruptedSyncRecordReducer } from "@/app/realGreen/customer/sync/corruptedRecords/corruptedSyncRecordSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -115,6 +116,7 @@ const rootReducer = combineReducers({
   seasonIncreases: seasonIncreasesReducer,
   priceIncreaseSettings: priceIncreaseSettingsReducer,
   priceIncreaseConfig: priceIncreaseConfigReducer,
+  corruptedSyncRecord: corruptedSyncRecordReducer,
 });
 
 export default rootReducer;

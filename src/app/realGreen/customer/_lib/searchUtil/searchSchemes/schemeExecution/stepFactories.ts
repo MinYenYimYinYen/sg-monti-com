@@ -134,11 +134,14 @@ async function* fetchOverflow<TRawData extends RawData>(
         // console.error('[stepFactories] fetchOverflow - Error details:', error);
 
         // Use binary search to recover all valid records, skipping only the corrupted one
-        yield* binarySearchCorruptedRecord<TRawData>(
+        const { results: recoveredResults } = await binarySearchCorruptedRecord<TRawData>(
           baseSearchCriteria,
           currentOffset,
           realGreenConst.CustProgServRecordsMax,
         );
+        for (const recovered of recoveredResults) {
+          yield recovered;
+        }
 
         // Move to next batch after recovery
         currentOffset += realGreenConst.CustProgServRecordsMax;
@@ -248,11 +251,12 @@ export function createPaginationStep<TRawData extends RawData>(
               // Collect all recovered batches from the async generator into an array
               // so we can return them from this regular async function.
               const batches: Array<{ data: TRawData; duration: number }> = [];
-              for await (const { items, duration } of binarySearchCorruptedRecord<TRawData>(
+              const { results: recoveredResults } = await binarySearchCorruptedRecord<TRawData>(
                 rawCriteria,
                 offset,
                 PAGE_SIZE,
-              )) {
+              );
+              for (const { items, duration } of recoveredResults) {
                 batches.push({ data: items as TRawData, duration });
               }
               return { batches };
@@ -417,11 +421,12 @@ export function createBatchSizeStep<TRawData extends RawData>(
             // console.error('[createBatchSizeStep] Error details:', error);
 
             // Use binary search on IDs to isolate and skip only the corrupted ID
-            for await (const { items: rawItems, duration } of binarySearchCorruptedId<TRawData>(
+            const { results: recoveredIdResults } = await binarySearchCorruptedId<TRawData>(
               batchIds,
               config.getSearchCriteria,
               (criteria) => mapCriteria(config.stepName, criteria),
-            )) {
+            );
+            for (const { items: rawItems, duration } of recoveredIdResults) {
               batchTotalRecords += rawItems.length;
 
               const remapped = remapFn(rawItems as TRawData);

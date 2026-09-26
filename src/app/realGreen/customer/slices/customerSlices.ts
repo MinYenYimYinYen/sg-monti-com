@@ -8,7 +8,10 @@ import {
   StreamChunk,
   StreamChunkData,
 } from "@/app/realGreen/customer/api/CustomerContract";
+import { CustomerMirrorContract } from "@/app/realGreen/customer/mirror/CustomerMirrorContract";
 import { createStandardThunk, createStreamThunk } from "@/store/reduxUtil/thunkFactories";
+import { AsyncThunk } from "@reduxjs/toolkit";
+import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { uiActions } from "@/store/reduxUtil/uiSlice";
 import { searchScheme } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/searchSchemes";
 import { toast } from "react-toastify";
@@ -139,6 +142,30 @@ export const createRefreshCustomerThunk = (
     opName: "refreshCustomer",
   });
 
+/**
+ * Creates a streaming thunk that fetches customer, program, and service docs
+ * from our synced MongoDB mirror collections.
+ *
+ * Uses the same streaming infrastructure as createGetCustDocsThunk but points
+ * to the mirror API route instead of the RealGreen search scheme route.
+ * The typePrefix uses the same `${sliceName}/getCustDocs` convention so the
+ * slice's `pending` extraReducer fires and clears state on each new fetch.
+ *
+ * Params are not yet implemented — see CustomerMirrorContract.ts for the TODO.
+ */
+export const createGetCustDocsMirrorThunk = (
+  sliceName: string,
+  slice: ReturnType<typeof createCustomerSlice>,
+) =>
+  createStreamThunk<CustomerMirrorContract, "getMirrorCustomers">({
+    typePrefix: `${sliceName}/getCustDocs`,
+    apiPath: "/realGreen/customer/mirror/api",
+    opName: "getMirrorCustomers",
+    onChunk: (dispatch, chunk) => {
+      dispatch(slice.actions.receiveChunk(chunk));
+    },
+  });
+
 export const activeCustomersSlice = createCustomerSlice("activeCustomers");
 export const activeCustomersGetDocs = createGetCustDocsThunk("activeCustomers", activeCustomersSlice);
 export const activeCustomersRefresh = createRefreshCustomerThunk("activeCustomers", "activeCustomers");
@@ -229,6 +256,17 @@ export const fullSeasonServicesActions = {
 };
 export const fullSeasonServicesReducer = fullSeasonServicesSlice.reducer;
 
+// Mirror-backed slice for the corrupted records investigation UI.
+// Uses createGetCustDocsMirrorThunk (reads from synced MongoDB) instead of
+// createGetCustDocsThunk (reads from RealGreen API via search schemes).
+export const corruptedRecordsCustomerSlice = createCustomerSlice("corruptedRecordsCustomer");
+export const corruptedRecordsGetMirrorDocs = createGetCustDocsMirrorThunk("corruptedRecordsCustomer", corruptedRecordsCustomerSlice);
+export const corruptedRecordsCustomerActions = {
+  ...corruptedRecordsCustomerSlice.actions,
+  getDocs: corruptedRecordsGetMirrorDocs,
+};
+export const corruptedRecordsCustomerReducer = corruptedRecordsCustomerSlice.reducer;
+
 // ---------------------------------------------------------------------------
 // Slice registry — single source of truth for all customer slice instances.
 // The central slice loops over this to register extraReducers, eliminating
@@ -238,11 +276,36 @@ export const fullSeasonServicesReducer = fullSeasonServicesSlice.reducer;
 export type CustomerSliceActions = ReturnType<
   typeof createCustomerSlice
 >["actions"];
-export type CustomerSliceGetDocs = ReturnType<typeof createGetCustDocsThunk>;
+
+/**
+ * The common structural type for all getDocs thunks across both the RealGreen
+ * pipeline (createGetCustDocsThunk) and the mirror pipeline
+ * (createGetCustDocsMirrorThunk). Both return AsyncThunk<void, ...> so the
+ * registry can hold either without type conflicts.
+ *
+ * The third type parameter is typed as `any` to accommodate the variance in
+ * the `rejected` action creator's `rejectValue` type across different thunk
+ * configurations. This is safe because the registry only uses the thunk for
+ * dispatching and for `pending` action matching — neither of which depends on
+ * the exact `rejectValue` type.
+ */
+// The registry only uses getDocs for dispatching and pending-action matching.
+// Neither use case depends on the exact ThunkApiConfig shape, so we use a
+// permissive structural type that all concrete thunk variants satisfy.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CustomerSliceGetDocs = {
+  pending: { type: string; match: (action: unknown) => boolean };
+  rejected: { type: string; match: (action: unknown) => boolean };
+  fulfilled: { type: string; match: (action: unknown) => boolean };
+  typePrefix: string;
+  // Allow dispatching with any argument shape
+  (arg: WithConfig<any>): any;
+};
 
 export type CustomerContextMode =
   | "active"
   | "byAssignment"
+  | "corruptedRecords"
   | "fullSeasonServices"
   | "priorityService"
   | "printed"
@@ -313,6 +376,12 @@ export const customerSliceRegistry: CustomerSliceRegistryEntry[] = [
     actions: fullSeasonServicesActions,
     getDocs: fullSeasonServicesGetDocs,
     reducer: fullSeasonServicesReducer,
+  },
+  {
+    context: "corruptedRecords",
+    actions: corruptedRecordsCustomerActions,
+    getDocs: corruptedRecordsGetMirrorDocs,
+    reducer: corruptedRecordsCustomerReducer,
   },
 ];
 
