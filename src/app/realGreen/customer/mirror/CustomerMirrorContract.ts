@@ -1,23 +1,31 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { DataResponse } from "@/lib/api/types/responses";
 import { StreamChunk } from "@/app/realGreen/customer/api/CustomerContract";
+import { MirrorQueryPlan } from "@/app/realGreen/customer/mirror/MirrorTypes";
 
 export interface CustomerMirrorContract extends ApiContract {
   /**
-   * Fetches customer, program, and service docs from our synced MongoDB collections
-   * (the "mirror" of RealGreen data) and streams them back as NDJSON chunks.
+   * Executes a MirrorQueryPlan against our synced MongoDB collections
+   * (the "mirror" of RealGreen data) and streams results back as NDJSON chunks.
    *
-   * Streams three chunks in order: customers → programs → services.
-   * Each chunk uses the same StreamChunk shape as the existing RealGreen pipeline,
-   * so the receiving slice's receiveChunk reducer works unchanged.
+   * The plan is a serializable array of query steps built client-side via
+   * QueryBuilder. Each step specifies:
+   * - Which model to query (customer, program, service)
+   * - How to filter (any field on the Core type, with AND/OR support)
+   * - Whether to receive join values from a previous step
+   * - Whether to expose join values to subsequent steps
+   * - Whether to include results in the streaming payload
    *
-   * Params are not yet implemented — query shape will be designed when the
-   * corrupted records investigation UI is built.
+   * Steps with `"entity"` in their roles emit a StreamChunk using the same
+   * shape as the existing RealGreen pipeline, so the receiving slice's
+   * receiveChunk reducer works unchanged.
    *
-   * TODO: Define params (e.g., custIds, season filter)
+   * See MirrorQueryPlan.md for full documentation and examples.
    */
   getMirrorCustomers: {
-    params: Record<string, never>;
+    params: {
+      plan: MirrorQueryPlan;
+    };
     result: DataResponse<StreamChunk[]>;
   };
 }

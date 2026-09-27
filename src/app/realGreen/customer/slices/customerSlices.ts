@@ -21,6 +21,11 @@ export const createCustomerSlice = (sliceName: string) =>
     name: sliceName,
     initialState: { ...baseInitialState } as BaseCustomerState,
     reducers: {
+      clearDocs(state) {
+        state.customerDocs = [];
+        state.programDocs = [];
+        state.serviceDocs = [];
+      },
       receiveChunk(state, action: PayloadAction<StreamChunk>) {
         const { stepName, data } = action.payload;
         if (stepName === "customers" && data.customerDocs) {
@@ -162,6 +167,7 @@ export const createGetCustDocsMirrorThunk = (
     apiPath: "/realGreen/customer/mirror/api",
     opName: "getMirrorCustomers",
     onChunk: (dispatch, chunk) => {
+      console.log("[corruptedRecords] onChunk received:", chunk);
       dispatch(slice.actions.receiveChunk(chunk));
     },
   });
@@ -267,6 +273,17 @@ export const corruptedRecordsCustomerActions = {
 };
 export const corruptedRecordsCustomerReducer = corruptedRecordsCustomerSlice.reducer;
 
+// General-purpose mirror query slice — not tied to a specific feature context.
+// Use useMirrorQuery() to dispatch ad-hoc QueryBuilder plans against the mirror API.
+// Registered as "mirrorQuery" context so it flows through centralCustomerSlice.
+export const mirrorQuerySlice = createCustomerSlice("mirrorQuery");
+export const mirrorQueryGetDocs = createGetCustDocsMirrorThunk("mirrorQuery", mirrorQuerySlice);
+export const mirrorQueryCustomerActions = {
+  ...mirrorQuerySlice.actions,
+  getDocs: mirrorQueryGetDocs,
+};
+export const mirrorQueryCustomerReducer = mirrorQuerySlice.reducer;
+
 // ---------------------------------------------------------------------------
 // Slice registry — single source of truth for all customer slice instances.
 // The central slice loops over this to register extraReducers, eliminating
@@ -307,6 +324,7 @@ export type CustomerContextMode =
   | "byAssignment"
   | "corruptedRecords"
   | "fullSeasonServices"
+  | "mirrorQuery"
   | "priorityService"
   | "printed"
   | "lastSeasonProduction"
@@ -382,6 +400,12 @@ export const customerSliceRegistry: CustomerSliceRegistryEntry[] = [
     actions: corruptedRecordsCustomerActions,
     getDocs: corruptedRecordsGetMirrorDocs,
     reducer: corruptedRecordsCustomerReducer,
+  },
+  {
+    context: "mirrorQuery",
+    actions: mirrorQueryCustomerActions,
+    getDocs: mirrorQueryGetDocs,
+    reducer: mirrorQueryCustomerReducer,
   },
 ];
 

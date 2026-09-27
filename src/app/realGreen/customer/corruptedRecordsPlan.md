@@ -140,13 +140,24 @@ The word "mirror" accurately describes the relationship: our MongoDB collections
 
 **New route:** `src/app/realGreen/customer/mirror/api/route.ts`
 - Uses `createRpcHandler` (not `createRealGreenRpcHandler` — no RealGreen API calls)
-- Streams NDJSON chunks: one for customers, one for programs, one for services
-- Params: **not yet implemented** — to be designed when the corrupted records UI is built
+- Accepts a `MirrorQueryPlan` as params — a serializable array of query steps
+- Executes the plan sequentially against MongoDB, streaming results as NDJSON chunks
+- See `MirrorQueryPlan.md` for the full query plan design
 
 **New contract:** `CustomerMirrorContract.ts`
 - `getMirrorCustomers` op
-- Params: TBD (stub for now)
+- Params: `{ plan: MirrorQueryPlan }` — a serializable query plan built client-side via `QueryBuilder`
 - Result: `DataResponse<StreamChunk[]>` — same `StreamChunk` shape as the existing pipeline
+
+**New types:** `MirrorTypes.ts`
+- `MirrorQueryPlan`, `MirrorStep`, `FilterNode`, `FilterCondition`, `FilterGroup`, `FiltersInput`
+- Full type safety: `filters` is typed against `keyof CustomerCore` / `keyof ProgramCore` / `keyof ServiceCore`
+- See `MirrorQueryPlan.md` for the complete type reference
+
+**New builder:** `QueryBuilder.ts`
+- Fluent dot-chain API: `.addServiceStep()`, `.addCustomerStep()`, `.addProgramStep()`, `.build()`
+- Enforces model-specific field types at each step
+- Produces a serializable `MirrorQueryPlan` array
 
 **New thunk factory:** `createGetCustDocsMirrorThunk`
 - Sibling to `createGetCustDocsThunk`
@@ -160,13 +171,45 @@ The word "mirror" accurately describes the relationship: our MongoDB collections
 - Registered in `customerSliceRegistry` as `context: "corruptedRecords"`
 - Registered in `customerReducers.ts` as `corruptedRecords: corruptedRecordsCustomerReducer`
 
-**Type change:** `CustomerSliceGetDocs` widened from `ReturnType<typeof createGetCustDocsThunk>` to `AsyncThunk<void, WithConfig<any>, any>` — the structural type both factories satisfy.
+**Type change:** `CustomerSliceGetDocs` widened from `ReturnType<typeof createGetCustDocsThunk>` to a structural type that both factories satisfy.
 
 **`CustomerContextMode`:** Add `"corruptedRecords"` to the union.
 
 #### Streaming Strategy
 
-The mirror route streams three NDJSON chunks (customers → programs → services). This matches the existing `receiveChunk` reducer exactly and leaves the door open for future pagination if needed. Load time without pagination will be measured once the route is implemented to decide whether streaming multiple chunks adds value.
+The mirror route streams entity chunks as each step completes. Steps with `"entity"` in their roles emit a chunk. The `receiveChunk` reducer handles these identically to search scheme results. Load time without pagination will be measured once the route is implemented to decide whether streaming adds value over a single JSON response.
+
+#### Query Plan for Corrupted Records UI
+
+When the UI selects a timestamp group, it dispatches the mirror thunk with a plan that:
+1. Fetches services by `servId` (from `entityBeforeId` / `entityAfterId` of the corrupted records)
+2. Uses `service.custId` to fetch the surrounding customers
+3. Uses `service.progId` to fetch the surrounding programs
+
+```typescript
+const plan = new QueryBuilder()
+  .addServiceStep(["entity", "provider"], {
+    stepName: "neighborServices",
+    source: "values",
+    filters: [{ field: "servId", operator: "in", value: neighborServIds }],
+    provides: { custId: true, progId: true },
+  })
+  .addCustomerStep(["entity"], {
+    stepName: "neighborCustomers",
+    source: "step",
+    fromStep: "neighborServices",
+    joinKey: "custId",
+    filters: [],
+  })
+  .addProgramStep(["entity"], {
+    stepName: "neighborPrograms",
+    source: "step",
+    fromStep: "neighborServices",
+    joinKey: "progId",
+    filters: [],
+  })
+  .build();
+```
 
 ---
 
@@ -187,13 +230,17 @@ A sandbox page at `src/app/sandbox/corruptedRecords/page.tsx` that:
 | Background understanding + plan doc | ✅ Done |
 | Resolve open questions (data model, deduplication, key strategy) | ✅ Done |
 | Update plan doc with resolved decisions | ✅ Done |
-| Modify `binarySearchCorruptedRecord` to accumulate CorruptedContext[] | ⬜ Not started |
-| Modify `binarySearchCorruptedId` to accumulate CorruptedContext[] | ⬜ Not started |
-| Create `corruptedRecords/` data module (types, model, contract, slice, selectors, hook, api stub) | ⬜ Not started |
-| Persist corrupted context in sync funcs (service, program, customer) | ⬜ Not started |
-| Create `CustomerMirrorContract.ts` + `mirror/api/route.ts` stub | ⬜ Not started |
-| Add `createGetCustDocsMirrorThunk` + `corruptedRecords` slice to `customerSlices.ts` | ⬜ Not started |
-| Register mirror slice in `customerReducers.ts` + widen `CustomerSliceGetDocs` type | ⬜ Not started |
+| Modify `binarySearchCorruptedRecord` to accumulate CorruptedContext[] | ✅ Done |
+| Modify `binarySearchCorruptedId` to accumulate CorruptedContext[] | ✅ Done |
+| Create `corruptedRecords/` data module (types, model, contract, slice, selectors, hook, api stub) | ✅ Done |
+| Persist corrupted context in sync funcs (service, program, customer) | ✅ Done |
+| Create `CustomerMirrorContract.ts` + `mirror/api/route.ts` stub | ✅ Done |
+| Add `createGetCustDocsMirrorThunk` + `corruptedRecords` slice to `customerSlices.ts` | ✅ Done |
+| Register mirror slice in `customerReducers.ts` + widen `CustomerSliceGetDocs` type | ✅ Done |
+| Create `MirrorTypes.ts` | ⬜ Not started |
+| Create `QueryBuilder.ts` | ⬜ Not started |
+| Update `CustomerMirrorContract.ts` with `MirrorQueryPlan` params | ⬜ Not started |
+| Implement server-side plan executor in `mirror/api/route.ts` | ⬜ Not started |
 | Corrupted records sandbox UI (Phase 3) | ⬜ Not started |
 
 ---

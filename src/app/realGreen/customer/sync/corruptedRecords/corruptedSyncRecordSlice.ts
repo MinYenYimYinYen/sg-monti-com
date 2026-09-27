@@ -1,14 +1,16 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { CorruptedSyncRecordContract } from "@/app/realGreen/customer/sync/corruptedRecords/CorruptedSyncRecordContract";
 import { CorruptedSyncRecord } from "@/app/realGreen/customer/sync/corruptedRecords/CorruptedSyncRecordTypes";
 
 type CorruptedSyncRecordState = {
   corruptedSyncRecords: CorruptedSyncRecord[];
+  selectedSeason: number;
 };
 
 const initialState: CorruptedSyncRecordState = {
   corruptedSyncRecords: [],
+  selectedSeason: new Date().getFullYear(),
 };
 
 export const getCorruptedSyncRecords = createStandardThunk<
@@ -23,7 +25,11 @@ export const getCorruptedSyncRecords = createStandardThunk<
 const corruptedSyncRecordSlice = createSlice({
   name: "corruptedSyncRecord",
   initialState,
-  reducers: {},
+  reducers: {
+    setSelectedSeason(state, action: PayloadAction<number>) {
+      state.selectedSeason = action.payload;
+    },
+  },
   extraReducers: (builder) => {
     builder.addCase(getCorruptedSyncRecords.fulfilled, (state, action) => {
       state.corruptedSyncRecords = action.payload;

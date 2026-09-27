@@ -46,12 +46,20 @@ function extractFirstId(items: unknown[]): number | null {
  * Returns all recovered fetch results AND an array of CorruptedContext objects
  * (one per corrupted record encountered, including recursive calls).
  *
+ * Neighbor ID accumulation (reduce-style):
+ * `lastKnownBeforeId` and `lastKnownAfterId` carry forward the best known
+ * neighbor context as recursion narrows the range. When a phase is skipped
+ * (corrupted record at the boundary of the current range) or fails (another
+ * corrupted record in that sub-range), the inherited context fills the gap.
+ *
  * @param baseSearchCriteria - The search criteria without offset/records
  * @param errorOffset - The offset where the error occurred
  * @param batchSize - The batch size that caused the error
  * @param entityType - The entity type being synced (for CorruptedContext)
  * @param timestamp - Shared ISO timestamp for all hits in one sync operation
  * @param accumulatedContexts - Internal accumulator for recursive calls
+ * @param lastKnownBeforeId - Best known ID immediately before this range (from outer call)
+ * @param lastKnownAfterId - Best known ID immediately after this range (from outer call)
  */
 export async function binarySearchCorruptedRecord<TRawData extends RawData>(
   baseSearchCriteria: SearchCriteriaRaw,
@@ -60,6 +68,8 @@ export async function binarySearchCorruptedRecord<TRawData extends RawData>(
   entityType?: CorruptedEntityType,
   timestamp?: string,
   accumulatedContexts: CorruptedContext[] = [],
+  lastKnownBeforeId: number | null = null,
+  lastKnownAfterId: number | null = null,
 ): Promise<BinaryOffsetSearchResult<TRawData>> {
   console.log(`[binaryOffsetSearch] Starting binary search for corrupted record at offset ${errorOffset} with batch size ${batchSize}`);
 
@@ -77,8 +87,10 @@ export async function binarySearchCorruptedRecord<TRawData extends RawData>(
     `[sync] ⚠ Corrupted record skipped — entity: ${(baseSearchCriteria as any).searchType ?? "unknown"}, offset: ${corruptedOffset}`,
   );
 
-  let entityBeforeId: number | null = null;
-  let entityAfterId: number | null = null;
+  // Start with the inherited context from the outer call.
+  // These will be overwritten if we successfully fetch records in Phase 2/4.
+  let entityBeforeId: number | null = lastKnownBeforeId;
+  let entityAfterId: number | null = lastKnownAfterId;
 
   // Phase 2: Fetch all records before the corrupted record
   if (corruptedOffset > errorOffset) {
@@ -104,7 +116,9 @@ export async function binarySearchCorruptedRecord<TRawData extends RawData>(
       }
     } catch (error) {
       console.error(`[binaryOffsetSearch] Unexpected error fetching records before corrupted record:`, error);
-      // Recursively handle if there's another corrupted record in the before range
+      // Recursively handle if there's another corrupted record in the before range.
+      // Pass entityAfterId as the inherited after context for the recursive call,
+      // since the recursive call's range ends just before the current corrupted record.
       const subResult = await binarySearchCorruptedRecord<TRawData>(
         baseSearchCriteria,
         errorOffset,
@@ -112,9 +126,16 @@ export async function binarySearchCorruptedRecord<TRawData extends RawData>(
         entityType,
         timestamp,
         accumulatedContexts,
+        lastKnownBeforeId,   // inherit the outer before context
+        entityAfterId,       // the current corrupted record is "after" the sub-range
       );
       results.push(...subResult.results);
-      // entityBeforeId stays null — we couldn't cleanly get the last before record
+      // Update entityBeforeId from the last record the recursive call recovered
+      if (subResult.results.length > 0) {
+        const lastSubResult = subResult.results[subResult.results.length - 1];
+        const lastId = extractLastId(lastSubResult.items as unknown[]);
+        if (lastId !== null) entityBeforeId = lastId;
+      }
     }
   }
 
@@ -147,7 +168,9 @@ export async function binarySearchCorruptedRecord<TRawData extends RawData>(
       }
     } catch (error) {
       console.error(`[binaryOffsetSearch] Another corrupted record found after offset ${corruptedOffset}:`, error);
-      // Recursively handle if there's another corrupted record in the after range
+      // Recursively handle if there's another corrupted record in the after range.
+      // Pass entityBeforeId as the inherited before context for the recursive call,
+      // since the recursive call's range starts just after the current corrupted record.
       const subResult = await binarySearchCorruptedRecord<TRawData>(
         baseSearchCriteria,
         afterOffset,
@@ -155,14 +178,23 @@ export async function binarySearchCorruptedRecord<TRawData extends RawData>(
         entityType,
         timestamp,
         accumulatedContexts,
+        entityBeforeId,      // the current corrupted record is "before" the sub-range
+        lastKnownAfterId,    // inherit the outer after context
       );
       results.push(...subResult.results);
-      // entityAfterId stays null — we couldn't cleanly get the first after record
+      // Update entityAfterId from the first record the recursive call recovered
+      if (subResult.results.length > 0) {
+        const firstSubResult = subResult.results[0];
+        const firstId = extractFirstId(firstSubResult.items as unknown[]);
+        if (firstId !== null) entityAfterId = firstId;
+      }
     }
   }
 
   // Record this corrupted encounter if we have entity type and timestamp context
-  // (only present when called from a sync func, not from the live pipeline)
+  // (only present when called from a sync func, not from the live pipeline).
+  // entityBeforeId and entityAfterId already incorporate the inherited context
+  // from lastKnownBeforeId/lastKnownAfterId, so no additional fallback needed.
   if (entityType && timestamp) {
     accumulatedContexts.push({
       corruptedContextId: globalThis.crypto.randomUUID(),

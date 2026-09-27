@@ -133,9 +133,11 @@ export function createStreamThunk<
           body,
         });
 
+        const _streamStart = Date.now(); // [timing]
         await readNdjsonStream<TChunk>(reader, (chunk) => {
           config.onChunk(dispatch as AppDispatch, chunk);
         });
+        console.log(`[timing] ${config.typePrefix} stream complete: ${Date.now() - _streamStart}ms`); // [timing]
 
         return;
       } catch (e) {

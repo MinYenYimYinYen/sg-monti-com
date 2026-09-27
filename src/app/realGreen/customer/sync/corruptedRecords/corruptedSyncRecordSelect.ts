@@ -5,6 +5,9 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 const selectCorruptedSyncRecords = (state: AppState) =>
   state.corruptedSyncRecord.corruptedSyncRecords;
 
+const selectSelectedSeason = (state: AppState) =>
+  state.corruptedSyncRecord.selectedSeason;
+
 /** All records grouped by timestamp — primary grouping for the investigation UI. */
 const selectByTimestamp = createSelector(
   [selectCorruptedSyncRecords],
@@ -25,6 +28,7 @@ const selectTimestamps = createSelector(
 
 export const corruptedSyncRecordSelect = {
   corruptedSyncRecords: selectCorruptedSyncRecords,
+  selectedSeason: selectSelectedSeason,
   byTimestamp: selectByTimestamp,
   byEntityType: selectByEntityType,
   timestamps: selectTimestamps,
