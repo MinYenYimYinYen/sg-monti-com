@@ -3,10 +3,8 @@ import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { useSelector } from "react-redux";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useEffect } from "react";
-import {
-  byAssignmentActions,
-} from "@/app/realGreen/customer/slices/customerSlices";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
+import { useByAssignmentCustomers } from "@/app/realGreen/customer/hooks/useByAssignmentCustomers";
 import { loadoutActions } from "@/app/loadout/loadoutSlice";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { useAppMethod } from "@/app/appMethod/useAppMethod";
@@ -28,6 +26,7 @@ export function useLoadoutFeedbackDeps({
   showLoading: boolean;
 }) {
   const dispatch = useAppDispatch();
+  const { loadByServIds } = useByAssignmentCustomers();
   useCustomerContext({ contexts: ["byAssignment"] });
   useProduct({ autoLoad: true });
   useAppMethod({ autoLoad: true });
@@ -61,21 +60,12 @@ export function useLoadoutFeedbackDeps({
 
   useEffect(() => {
     if (!assignedServIds.length || !season) return;
-    dispatch(
-      byAssignmentActions.getDocs({
-        params: {
-          schemeName: "byServIds",
-          season,
-          schemeParams: { servIds: assignedServIds },
-        },
-        config: {
-          loadingMsg: "Loading production data",
-          showLoading,
-          staleTime: 500,
-        },
-      }),
-    );
-  }, [assignedServIds, dispatch, season, showLoading]);
+    loadByServIds(assignedServIds, {
+      loadingMsg: "Loading production data",
+      showLoading,
+      staleTime: 500,
+    });
+  }, [assignedServIds, loadByServIds, season, showLoading]);
 
   useEffect(() => {
     dispatch(

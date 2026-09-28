@@ -35,6 +35,11 @@ If you need more context beyond these files, **stop and ask the user** before re
 3. **`runDeltaSync` is called automatically** by the mirror route before every query.
    No changes needed to sync infrastructure.
 
+4. **Refresh thunks stay on the RealGreen pipeline.** `createRefreshCustomerThunk` is not
+   migrated. Since a full mirror reload is ~5 seconds, per-customer refresh via the RealGreen
+   API remains the right tool for mid-session single-customer updates. The hook's
+   `refreshCustomer` function is left unchanged when migrating a context.
+
 ---
 
 ## Refactor Process
@@ -92,16 +97,67 @@ Confirm the plan with the user. Adjust until both agree it correctly captures th
 
 In `customerSlices.ts`, for the target context:
 
-1. Change `createGetCustDocsThunk(...)` to `createGetCustDocsMirrorThunk(...)`
-2. Update the corresponding hook (`use[Context]Customers.ts`) to pass `{ params: { plan } }`
-   instead of `{ params: { schemeName, season } }`
-3. Remove the old search scheme from `searchSchemes.ts` if it is no longer used elsewhere
+1. Add the context to the `PIPELINE` constant with `"mirror"`. The `createGetDocsThunk` helper
+   reads this flag and automatically routes to `createGetCustDocsMirrorThunk`.
+2. Update the corresponding hook to branch on `PIPELINE[context]` and dispatch with the correct
+   param shape for each pipeline.
+3. Keep the RealGreen path (search scheme) intact in the hook for easy rollback.
+4. Keep the search scheme in `searchSchemes.ts` — do not delete it until the context is fully
+   retired from RealGreen.
 
 **No changes needed to:**
 - The slice itself (`createCustomerSlice`)
 - The registry entry in `customerSliceRegistry`
 - `customerReducers.ts`
 - `centralCustomerSlice`
+
+#### Hook pattern A — `autoLoad` contexts (most contexts)
+
+For contexts with a dedicated hook that uses `autoLoad` (e.g., `useActiveCustomers`,
+`usePrintedCustomers`), branch on `PIPELINE[context]` in both `useEffect` and `refresh()`:
+
+```typescript
+if (PIPELINE.active === "mirror") {
+  const plan = buildActiveCustomersPlan(season);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (dispatch as any)(activeCustomersGetDocs({ params: { plan } as any, config: { ... } as any }));
+} else {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (dispatch as any)(activeCustomersGetDocs({ params: { schemeName: "activeCustomers", season } as any, config: { ... } as any }));
+}
+```
+
+The `(dispatch as any)` cast is required because `printedCustomersGetDocs` has a union param
+type (`{ plan } | { schemeName, season }`) that TypeScript cannot narrow through a runtime flag
+check. This is the established pattern — scope the `any` to just the dispatch call.
+
+#### Hook pattern B — `loadByServIds` contexts (byAssignment, priorityService)
+
+For contexts dispatched inline from feature code with a dynamic list of `servIds`, create a
+dedicated hook that exposes `loadByServIds(servIds, config?)`:
+
+```typescript
+// useByAssignmentCustomers.ts
+export function useByAssignmentCustomers() {
+  const dispatch = useAppDispatch();
+  const season = useSelector(globalSettingsSelect.season);
+
+  const loadByServIds = (servIds: number[], config?: LoadConfig) => {
+    if (!season || !servIds.length) return;
+    if (PIPELINE.byAssignment === "mirror") {
+      const plan = buildByAssignmentPlan(season, servIds);
+      (dispatch as any)(byAssignmentActions.getDocs({ params: { plan } as any, config: config as any }));
+    } else {
+      (dispatch as any)(byAssignmentActions.getDocs({ params: { schemeName: "byServIds", season, schemeParams: { servIds } } as any, config: config as any }));
+    }
+  };
+
+  return { loadByServIds };
+}
+```
+
+Callers replace their inline `dispatch(byAssignmentActions.getDocs(...))` with
+`const { loadByServIds } = useByAssignmentCustomers()` and call `loadByServIds(servIds, config)`.
 
 ### Step 4 — Verify
 

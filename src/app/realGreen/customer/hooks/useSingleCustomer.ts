@@ -6,7 +6,35 @@ import { useState } from "react";
 import {
   singleCustomerActions,
   singleCustomerRefresh,
+  PIPELINE,
 } from "@/app/realGreen/customer/slices/customerSlices";
+import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
+
+function buildSingleCustomerPlan(season: number, custId: number) {
+  return new QueryBuilder()
+    .addCustomerStep(["entity", "provider"], {
+      stepName: "getCustomer",
+      source: "values",
+      filters: [{ field: "custId", operator: "eq", value: custId }],
+      provides: { custId: true },
+    })
+    .addProgramStep(["entity", "provider"], {
+      stepName: "getPrograms",
+      source: "step",
+      fromStep: "getCustomer",
+      joinKey: "custId",
+      filters: [{ field: "season", operator: "eq", value: season }],
+      provides: { progId: true },
+    })
+    .addServiceStep(["entity"], {
+      stepName: "getServices",
+      source: "step",
+      fromStep: "getPrograms",
+      joinKey: "progId",
+      filters: [{ field: "season", operator: "eq", value: season }],
+    })
+    .build();
+}
 
 export function useSingleCustomer() {
   const dispatch = useAppDispatch();
@@ -17,16 +45,15 @@ export function useSingleCustomer() {
   const lookup = (custId: number) => {
     if (!season) return;
     if (!custId || custId < 0) return;
-    dispatch(
-      singleCustomerActions.getDocs({
-        params: {
-          schemeName: "singleCustomer",
-          season,
-          schemeParams: { custId },
-        },
-        config: { showLoading: false, force: true },
-      }),
-    );
+
+    if (PIPELINE.single === "mirror") {
+      const plan = buildSingleCustomerPlan(season, custId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(singleCustomerActions.getDocs({ params: { plan } as any, config: { showLoading: false, force: true } as any }));
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(singleCustomerActions.getDocs({ params: { schemeName: "singleCustomer", season, schemeParams: { custId } } as any, config: { showLoading: false, force: true } as any }));
+    }
   };
 
   const clearCustomer = (custId: number) => {

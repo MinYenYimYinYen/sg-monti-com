@@ -272,8 +272,8 @@ src/app/realGreen/customer/mirror/
 | Step | Status |
 |---|---|
 | Design + documentation | ✅ Done |
-| `MirrorTypes.ts` | ⬜ Not started |
-| `QueryBuilder.ts` | ⬜ Not started |
-| Update `CustomerMirrorContract.ts` with plan params | ⬜ Not started |
-| Implement server-side plan executor in `mirror/api/route.ts` | ⬜ Not started |
-| Wire into corrupted records UI | ⬜ Not started (blocked on UI) |
+| `MirrorTypes.ts` | ✅ Done |
+| `QueryBuilder.ts` | ✅ Done |
+| `CustomerMirrorContract.ts` with plan params | ✅ Done |
+| Server-side plan executor in `mirror/api/route.ts` | ✅ Done |
+| All customer contexts migrated to mirror pipeline | ✅ Done |

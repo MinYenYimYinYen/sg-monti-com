@@ -12,11 +12,12 @@ import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipme
 import { useEquipment } from "@/app/equipment/useEquipment";
 import { assignmentActions } from "@/app/assignment/assignmentSlice";
 import { assignmentSelect } from "@/app/assignment/assignmentSelect";
-import { byAssignmentActions } from "@/app/realGreen/customer/slices/customerSlices";
+import { useByAssignmentCustomers } from "@/app/realGreen/customer/hooks/useByAssignmentCustomers";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
 export function useLoadoutPageDeps({ routeDate }: { routeDate: string | null }) {
   const dispatch = useAppDispatch();
+  const { loadByServIds } = useByAssignmentCustomers();
 
   useCustomerContext({ contexts: ["byAssignment"] });
   useEmployee({ autoLoad: true });
@@ -59,18 +60,9 @@ export function useLoadoutPageDeps({ routeDate }: { routeDate: string | null }) 
   const servIdsForDate = useSelector(assignmentSelect.servIdsForDate(routeDate ?? ""));
   useEffect(() => {
     if (!servIdsForDate.length || !season) return;
-    dispatch(
-      byAssignmentActions.getDocs({
-        params: {
-          schemeName: "byServIds",
-          season,
-          schemeParams: { servIds: servIdsForDate },
-        },
-        config: {
-          loadingMsg: "Loading route services...",
-          force: true,
-        },
-      }),
-    );
-  }, [dispatch, servIdsForDate, season]);
+    loadByServIds(servIdsForDate, {
+      loadingMsg: "Loading route services...",
+      force: true,
+    });
+  }, [loadByServIds, servIdsForDate, season]);
 }

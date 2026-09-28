@@ -7,7 +7,43 @@ import {
   multiSeasonProductionGetDocs,
   multiSeasonProductionRefresh,
   multiSeasonProductionActions,
+  PIPELINE,
 } from "@/app/realGreen/customer/slices/customerSlices";
+import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
+import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
+
+function buildMultiSeasonProductionPlan(season: number) {
+  return new QueryBuilder()
+    // Seed: completed services across 4 prior seasons
+    .addServiceStep(["entity", "provider"], {
+      stepName: "getServices",
+      source: "values",
+      filters: [
+        { field: "season", operator: "gte", value: season - 4 },
+        { field: "season", operator: "lte", value: season - 1 },
+        { field: "status", operator: "in", value: getServiceStatuses(["completed"]) },
+      ],
+      provides: { progId: true },
+    })
+    // Programs for those services
+    .addProgramStep(["entity", "provider"], {
+      stepName: "getPrograms",
+      source: "step",
+      fromStep: "getServices",
+      joinKey: "progId",
+      filters: [],
+      provides: { custId: true },
+    })
+    // Customers for those programs
+    .addCustomerStep(["entity"], {
+      stepName: "getCustomers",
+      source: "step",
+      fromStep: "getPrograms",
+      joinKey: "custId",
+      filters: [],
+    })
+    .build();
+}
 
 export function useMultiSeasonProduction() {
   const dispatch = useAppDispatch();
@@ -17,17 +53,15 @@ export function useMultiSeasonProduction() {
 
   const load = () => {
     if (!season) return;
-    dispatch(
-      multiSeasonProductionGetDocs({
-        params: {
-          schemeName: "multiSeasonProduction",
-          season,
-        },
-        config: {
-          loadingMsg: "Loading multi-season production data...",
-        },
-      }),
-    );
+
+    if (PIPELINE.multiSeasonProduction === "mirror") {
+      const plan = buildMultiSeasonProductionPlan(season);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(multiSeasonProductionGetDocs({ params: { plan } as any, config: { loadingMsg: "Loading multi-season production data..." } as any }));
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(multiSeasonProductionGetDocs({ params: { schemeName: "multiSeasonProduction", season } as any, config: { loadingMsg: "Loading multi-season production data..." } as any }));
+    }
   };
 
   const refreshCustomer = async (custId: number) => {

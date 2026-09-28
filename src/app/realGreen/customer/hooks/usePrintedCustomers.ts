@@ -8,7 +8,57 @@ import {
   printedCustomersGetDocs,
   printedCustomersRefresh,
   printedCustomersActions,
+  PIPELINE,
 } from "@/app/realGreen/customer/slices/customerSlices";
+import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
+
+function buildPrintedCustomersPlan(season: number) {
+  return new QueryBuilder()
+    // Seed: printed services for the current season (most selective starting point)
+    .addServiceStep(["provider"], {
+      stepName: "getPrintedServices",
+      source: "values",
+      filters: [
+        { field: "status", operator: "eq", value: "$" },
+        { field: "season", operator: "eq", value: season },
+      ],
+      provides: { custId: true },
+    })
+    // Active customers who have a printed service
+    .addCustomerStep(["entity", "provider"], {
+      stepName: "getCustomers",
+      source: "step",
+      fromStep: "getPrintedServices",
+      joinKey: "custId",
+      filters: [{ field: "status", operator: "eq", value: "9" }],
+      provides: { custId: true },
+    })
+    // Active programs for current season and prior season
+    .addProgramStep(["entity", "provider"], {
+      stepName: "getPrograms",
+      source: "step",
+      fromStep: "getCustomers",
+      joinKey: "custId",
+      filters: [
+        { field: "season", operator: "gte", value: season - 1 },
+        { field: "season", operator: "lte", value: season },
+        { field: "status", operator: "eq", value: "9" },
+      ],
+      provides: { progId: true },
+    })
+    // All services for those programs (current season and prior season, all statuses)
+    .addServiceStep(["entity"], {
+      stepName: "getAllServices",
+      source: "step",
+      fromStep: "getPrograms",
+      joinKey: "progId",
+      filters: [
+        { field: "season", operator: "gte", value: season - 1 },
+        { field: "season", operator: "lte", value: season },
+      ],
+    })
+    .build();
+}
 
 export function usePrintedCustomers({
   autoLoad = false,
@@ -22,28 +72,28 @@ export function usePrintedCustomers({
     if (!autoLoad || !season) {
       return;
     }
-    dispatch(
-      printedCustomersGetDocs({
-        params: {
-          schemeName: "printedCustomers",
-          season,
-        },
-        config: { staleTime: realGreenConst.paramTypesCacheTime },
-      }),
-    );
+
+    if (PIPELINE.printed === "mirror") {
+      const plan = buildPrintedCustomersPlan(season);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(printedCustomersGetDocs({ params: { plan } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } }));
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(printedCustomersGetDocs({ params: { schemeName: "printedCustomers", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } }));
+    }
   }, [autoLoad, dispatch, season]);
 
   const refresh = () => {
     if (!season) return;
-    dispatch(
-      printedCustomersGetDocs({
-        params: {
-          schemeName: "printedCustomers",
-          season,
-        },
-        config: { staleTime: realGreenConst.paramTypesCacheTime, force: true },
-      }),
-    );
+
+    if (PIPELINE.printed === "mirror") {
+      const plan = buildPrintedCustomersPlan(season);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(printedCustomersGetDocs({ params: { plan } as any, config: { staleTime: realGreenConst.paramTypesCacheTime, force: true } as any }));
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(printedCustomersGetDocs({ params: { schemeName: "printedCustomers", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime, force: true } as any }));
+    }
   };
 
   const refreshCustomer = async (custId: number) => {
@@ -52,7 +102,7 @@ export function usePrintedCustomers({
     try {
       const result = await dispatch(
         printedCustomersRefresh({
-          params: { schemeName: "printedCustomers", season, custId },
+          params: { schemeName: "activeCustomers" as const, season, custId },
           config: { showLoading: false },
         }),
       );

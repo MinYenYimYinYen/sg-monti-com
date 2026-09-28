@@ -10,11 +10,47 @@ import {
 } from "@/app/realGreen/customer/api/CustomerContract";
 import { CustomerMirrorContract } from "@/app/realGreen/customer/mirror/CustomerMirrorContract";
 import { createStandardThunk, createStreamThunk } from "@/store/reduxUtil/thunkFactories";
-import { AsyncThunk } from "@reduxjs/toolkit";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { uiActions } from "@/store/reduxUtil/uiSlice";
 import { searchScheme } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/searchSchemes";
 import { toast } from "react-toastify";
+
+// ---------------------------------------------------------------------------
+// Pipeline flags — controls which data source each context uses.
+//
+// Set a context to "mirror" to use the synced MongoDB pipeline (fast, ~5s).
+// Set to "realGreen" (or omit) to use the live RealGreen API pipeline.
+//
+// To flip a context back to RealGreen: change "mirror" → "realGreen" here.
+// The corresponding hook reads this flag and adjusts its dispatch params
+// automatically — no other files need to change.
+//
+// Contexts permanently on the mirror pipeline (not feature-flagged):
+//   - "corruptedRecords" and "mirrorQuery" are always mirror-only.
+// ---------------------------------------------------------------------------
+export const PIPELINE: Partial<Record<CustomerContextMode, "mirror" | "realGreen">> = {
+  active: "mirror",
+  byAssignment: "mirror",
+  fullSeasonServices: "mirror",
+  lastSeasonProduction: "mirror",
+  multiSeasonProduction: "mirror",
+  printed: "mirror",
+  priorityService: "mirror",
+  recentProduction: "mirror",
+  single: "mirror",
+};
+
+// ---------------------------------------------------------------------------
+// Helper: selects the correct getDocs thunk factory based on the PIPELINE flag.
+// ---------------------------------------------------------------------------
+const createGetDocsThunk = (
+  context: CustomerContextMode,
+  sliceName: string,
+  slice: ReturnType<typeof createCustomerSlice>,
+) =>
+  PIPELINE[context] === "mirror"
+    ? createGetCustDocsMirrorThunk(sliceName, slice)
+    : createGetCustDocsThunk(sliceName, slice);
 
 export const createCustomerSlice = (sliceName: string) =>
   createSlice({
@@ -173,7 +209,7 @@ export const createGetCustDocsMirrorThunk = (
   });
 
 export const activeCustomersSlice = createCustomerSlice("activeCustomers");
-export const activeCustomersGetDocs = createGetCustDocsThunk("activeCustomers", activeCustomersSlice);
+export const activeCustomersGetDocs = createGetDocsThunk("active", "activeCustomers", activeCustomersSlice);
 export const activeCustomersRefresh = createRefreshCustomerThunk("activeCustomers", "activeCustomers");
 export const activeCustomersActions = {
   ...activeCustomersSlice.actions,
@@ -183,8 +219,8 @@ export const activeCustomersActions = {
 export const activeCustomerReducer = activeCustomersSlice.reducer;
 
 export const printedCustomersSlice = createCustomerSlice("printedCustomers");
-export const printedCustomersGetDocs = createGetCustDocsThunk("printedCustomers", printedCustomersSlice);
-export const printedCustomersRefresh = createRefreshCustomerThunk("printedCustomers", "printedCustomers");
+export const printedCustomersGetDocs = createGetDocsThunk("printed", "printedCustomers", printedCustomersSlice);
+export const printedCustomersRefresh = createRefreshCustomerThunk("printedCustomers", "activeCustomers");
 export const printedCustomersActions = {
   ...printedCustomersSlice.actions,
   getDocs: printedCustomersGetDocs,
@@ -193,7 +229,7 @@ export const printedCustomersActions = {
 export const printedCustomerReducer = printedCustomersSlice.reducer;
 
 export const lastSeasonProductionSlice = createCustomerSlice("lastSeasonProduction");
-export const lastSeasonProductionGetDocs = createGetCustDocsThunk("lastSeasonProduction", lastSeasonProductionSlice);
+export const lastSeasonProductionGetDocs = createGetDocsThunk("lastSeasonProduction", "lastSeasonProduction", lastSeasonProductionSlice);
 export const lastSeasonProductionRefresh = createRefreshCustomerThunk("lastSeasonProduction", "lastSeasonProduction");
 export const lastSeasonProductionActions = {
   ...lastSeasonProductionSlice.actions,
@@ -203,7 +239,7 @@ export const lastSeasonProductionActions = {
 export const lastSeasonProductionReducer = lastSeasonProductionSlice.reducer;
 
 export const recentProductionSlice = createCustomerSlice("recentProduction");
-export const recentProductionGetDocs = createGetCustDocsThunk("recentProduction", recentProductionSlice);
+export const recentProductionGetDocs = createGetDocsThunk("recentProduction", "recentProduction", recentProductionSlice);
 export const recentProductionRefresh = createRefreshCustomerThunk("recentProduction", "recentProduction");
 export const recentProductionActions = {
   ...recentProductionSlice.actions,
@@ -213,7 +249,7 @@ export const recentProductionActions = {
 export const recentProductionReducer = recentProductionSlice.reducer;
 
 export const singleCustomerSlice = createCustomerSlice("singleCustomer");
-export const singleCustomerGetDocs = createGetCustDocsThunk("singleCustomer", singleCustomerSlice);
+export const singleCustomerGetDocs = createGetDocsThunk("single", "singleCustomer", singleCustomerSlice);
 export const singleCustomerRefresh = createRefreshCustomerThunk("singleCustomer", "singleCustomer");
 export const singleCustomerActions = {
   ...singleCustomerSlice.actions,
@@ -223,7 +259,7 @@ export const singleCustomerActions = {
 export const singleCustomerReducer = singleCustomerSlice.reducer;
 
 export const byAssignmentSlice = createCustomerSlice("byAssignment");
-export const byAssignmentGetDocs = createGetCustDocsThunk("byAssignment", byAssignmentSlice);
+export const byAssignmentGetDocs = createGetDocsThunk("byAssignment", "byAssignment", byAssignmentSlice);
 export const byAssignmentRefresh = createRefreshCustomerThunk("byAssignment", "byServIds");
 export const byAssignmentActions = {
   ...byAssignmentSlice.actions,
@@ -233,7 +269,7 @@ export const byAssignmentActions = {
 export const byAssignmentReducer = byAssignmentSlice.reducer;
 
 export const priorityServiceCustomerSlice = createCustomerSlice("priorityServiceCustomer");
-export const priorityServiceCustomerGetDocs = createGetCustDocsThunk("priorityServiceCustomer", priorityServiceCustomerSlice);
+export const priorityServiceCustomerGetDocs = createGetDocsThunk("priorityService", "priorityServiceCustomer", priorityServiceCustomerSlice);
 export const priorityServiceCustomerRefresh = createRefreshCustomerThunk("priorityServiceCustomer", "activeCustomers");
 export const priorityServiceCustomerActions = {
   ...priorityServiceCustomerSlice.actions,
@@ -243,7 +279,7 @@ export const priorityServiceCustomerActions = {
 export const priorityServiceCustomerReducer = priorityServiceCustomerSlice.reducer;
 
 export const multiSeasonProductionSlice = createCustomerSlice("multiSeasonProduction");
-export const multiSeasonProductionGetDocs = createGetCustDocsThunk("multiSeasonProduction", multiSeasonProductionSlice);
+export const multiSeasonProductionGetDocs = createGetDocsThunk("multiSeasonProduction", "multiSeasonProduction", multiSeasonProductionSlice);
 export const multiSeasonProductionRefresh = createRefreshCustomerThunk("multiSeasonProduction", "multiSeasonProduction");
 export const multiSeasonProductionActions = {
   ...multiSeasonProductionSlice.actions,
@@ -253,7 +289,7 @@ export const multiSeasonProductionActions = {
 export const multiSeasonProductionReducer = multiSeasonProductionSlice.reducer;
 
 export const fullSeasonServicesSlice = createCustomerSlice("fullSeasonServices");
-export const fullSeasonServicesGetDocs = createGetCustDocsThunk("fullSeasonServices", fullSeasonServicesSlice);
+export const fullSeasonServicesGetDocs = createGetDocsThunk("fullSeasonServices", "fullSeasonServices", fullSeasonServicesSlice);
 export const fullSeasonServicesRefresh = createRefreshCustomerThunk("fullSeasonServices", "fullSeasonServices");
 export const fullSeasonServicesActions = {
   ...fullSeasonServicesSlice.actions,
