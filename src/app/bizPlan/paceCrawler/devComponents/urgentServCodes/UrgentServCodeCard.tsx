@@ -13,7 +13,7 @@ import { AppDispatch } from "@/store";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { Number } from "@/components/Number";
-import { AlertTriangle, CalendarX, CircleHelp, ClipboardList, Info, LandPlot, Zap } from "lucide-react";
+import { AlertTriangle, CalendarX, CircleHelp, ClipboardList, LandPlot, Zap } from "lucide-react";
 import { cn } from "@/style/utils";
 import {
   Popover,
@@ -21,18 +21,13 @@ import {
   PopoverTrigger,
 } from "@/style/components/popover";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/style/components/tooltip";
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/style/components/accordion";
 import { Checkbox } from "@/style/components/checkbox";
+import { ServiceTechNotesPopover } from "@/components/ServiceTechNotesPopover";
 
 // ---------------------------------------------------------------------------
 // Reason badge helpers
@@ -130,26 +125,7 @@ function ChecklistServiceRow({
           <LandPlot className="w-3 h-3" />
           <Number decimals={0}>{service.size}</Number>
         </span>
-        {allTechNotes.length > 0 && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-muted-foreground shrink-0 cursor-default">
-                  <Info className="size-3.5" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="p-0 max-w-none">
-                <div className="flex gap-2 p-2">
-                  {allTechNotes.map((techNote, idx) => (
-                    <div key={idx} className="w-72 text-xs whitespace-pre-wrap">
-                      {techNote}
-                    </div>
-                  ))}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+        <ServiceTechNotesPopover service={service} />
       </div>
 
       {/* Badge row */}

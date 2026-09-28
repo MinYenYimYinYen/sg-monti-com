@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { format, parseISO, isValid } from "date-fns";
-import { CalendarClock, ClipboardList, Info } from "lucide-react";
+import { CalendarClock, ClipboardList } from "lucide-react";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
 import { urgentServCodesSelect } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentServCodesSelect";
 import { urgentActions } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentSlice";
@@ -21,13 +21,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/style/components/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/style/components/tooltip";
 import { AppDispatch } from "@/store";
+import { ServiceTechNotesPopover } from "@/components/ServiceTechNotesPopover";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -124,27 +119,7 @@ function PriorityServiceRow({ ps }: { ps: PriorityService }) {
           {formatDateDisplay(ps)}
         </span>
 
-        {/* Info tooltip for note + tech notes */}
-        {tooltipLines.length > 0 && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-muted-foreground shrink-0 cursor-default">
-                  <Info className="size-3.5" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="p-0 max-w-none">
-                <div className="flex gap-2 p-2">
-                  {tooltipLines.map((line, idx) => (
-                    <div key={idx} className="w-72 text-xs whitespace-pre-wrap">
-                      {line}
-                    </div>
-                  ))}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+        <ServiceTechNotesPopover service={service} extraNote={ps.note ?? undefined} />
       </div>
 
       {/* Badge row */}

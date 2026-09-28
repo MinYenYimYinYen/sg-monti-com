@@ -3,7 +3,7 @@ import { use } from "react";
 import { useSelector } from "react-redux";
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 import { Container } from "@/components/Containers";
-import { Document, Page, PDFViewer, View, Text } from "@react-pdf/renderer";
+import { Document, Page, usePDF, View, Text } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { useCoverSheetDeps } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheetDeps";
 import {
@@ -94,21 +94,15 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
         </TabsContent>
 
         <TabsContent value="pdf" className="mt-2">
-          <div className={"w-full h-[75vh] overflow-y-auto"}>
-            {loadingCount > 0 && <div>Loading...</div>}
-            {loadingCount === 0 && (
-              <PDFViewer style={{ width: "100%", height: "100%" }}>
-                <CoverSheetsPDF
-                  routeDate={routeDate}
-                  serviceByEmployee={serviceByEmployee}
-                  getPlannedAppProductTotal={getPlannedAppProductTotal}
-                  getServCodeCounts={getServCodeCounts}
-                  getServicesByRuleDesc={getServicesByRuleDesc}
-                  productCommonMap={productCommonMap}
-                />
-              </PDFViewer>
-            )}
-          </div>
+          <CoverSheetViewer
+            routeDate={routeDate}
+            serviceByEmployee={serviceByEmployee}
+            getPlannedAppProductTotal={getPlannedAppProductTotal}
+            getServCodeCounts={getServCodeCounts}
+            getServicesByRuleDesc={getServicesByRuleDesc}
+            productCommonMap={productCommonMap}
+            loadingCount={loadingCount}
+          />
         </TabsContent>
       </Tabs>
     </Container>
@@ -131,6 +125,61 @@ type CoverSheetsPDFProps = {
   }[];
   productCommonMap: ReturnType<typeof productSelect.productCommonMap>;
 };
+
+type CoverSheetViewerProps = CoverSheetsPDFProps & {
+  loadingCount: number;
+};
+
+function CoverSheetViewer({
+  routeDate,
+  serviceByEmployee,
+  getPlannedAppProductTotal,
+  getServCodeCounts,
+  getServicesByRuleDesc,
+  productCommonMap,
+  loadingCount,
+}: CoverSheetViewerProps) {
+  const doc = (
+    <CoverSheetsPDF
+      routeDate={routeDate}
+      serviceByEmployee={serviceByEmployee}
+      getPlannedAppProductTotal={getPlannedAppProductTotal}
+      getServCodeCounts={getServCodeCounts}
+      getServicesByRuleDesc={getServicesByRuleDesc}
+      productCommonMap={productCommonMap}
+    />
+  );
+  const [instance] = usePDF({ document: loadingCount === 0 ? doc : undefined });
+
+  if (loadingCount > 0) {
+    return <div>Loading...</div>;
+  }
+
+  const url = instance.url;
+
+  return (
+    <div className="w-full flex flex-col gap-2">
+      <div className="flex gap-2">
+        {url && (
+          <a
+            href={url}
+            download={`${routeDate} cover sheets.pdf`}
+            className="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-accent/20 text-foreground hover:bg-accent/30"
+          >
+            Download PDF
+          </a>
+        )}
+        {instance.loading && <span className="text-sm text-foreground/60">Generating PDF…</span>}
+        {instance.error && <span className="text-sm text-destructive">Error generating PDF</span>}
+      </div>
+      {url && (
+        <div className="w-full h-[75vh]">
+          <iframe src={url} className="w-full h-full border-0" title="Cover Sheets PDF" />
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CoverSheetsPDF({
   serviceByEmployee,
@@ -328,9 +377,9 @@ function CoverSheetsPDF({
                 const currentAssignedTo = isPrinted
                   ? (service.x.schedInfo?.employeeId ?? "")
                   : "";
-                
 
                 return {
+                  servId: service.servId,
                   servCodeId: service.servCodeId,
                   isPrinted,
                   currentAssignedDate,
@@ -747,7 +796,7 @@ function CoverSheetsPDF({
                     {remaining.map((serv) => {
                       return (
                         <View
-                          key={serv.servCodeId}
+                          key={serv.servId}
                           style={tw(
                             "flex flex-row border border-gray-200 rounded-full p-1 items-center justify-center gap-2",
                           )}
