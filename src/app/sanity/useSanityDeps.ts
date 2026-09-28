@@ -12,9 +12,6 @@ import { sanitySelect } from "@/app/sanity/sanitySelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { sanityActions } from "@/app/sanity/sanitySlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
-import {
-  fullSeasonServicesGetDocs,
-} from "@/app/realGreen/customer/slices/customerSlices";
 import { progServActions } from "@/app/realGreen/progServ/_lib/slice/progServSlice";
 import { flagActions } from "@/app/realGreen/flag/flagSlice";
 import { flagRuleActions } from "@/app/flagRule/flagRuleSlice";
@@ -29,7 +26,7 @@ export function useSanityDeps() {
   const season = seasonOverride ?? globalSeason;
 
   useCustomerContext({ contexts: ["fullSeasonServices"] });
-  useFullSeasonServices();
+  const { refresh: refreshFullSeasonServices } = useFullSeasonServices();
   useProgServ({});
   useFlag({ autoLoad: false });
   useFlagRule({});
@@ -45,12 +42,7 @@ export function useSanityDeps() {
       dispatch(sanityActions.setSeasonOverride(globalSeason));
     }
 
-    dispatch(
-      fullSeasonServicesGetDocs({
-        params: { schemeName: "fullSeasonServices", season },
-        config: { force: true, staleTime: realGreenConst.paramTypesCacheTime },
-      }),
-    );
+    refreshFullSeasonServices();
 
     dispatch(
       progServActions.getProgCodeDocs({

@@ -10,6 +10,9 @@ const ServiceUnservicedSchema = z.object({
   schedDate: z.string().min(1, "Scheduled date cannot be empty"),
   status: z.string().min(1, "Status cannot be empty"),
   sequence: z.number().nonnegative("Sequence must be a non-negative number"),
+  // createdAt is set server-side at write time; the parser produces an empty placeholder
+  // that is always overwritten before persistence.
+  createdAt: z.string().default(""),
 });
 
 const UNSERVICED_PARSE_CONFIG: ParseConfig<AssignmentDoc> = {

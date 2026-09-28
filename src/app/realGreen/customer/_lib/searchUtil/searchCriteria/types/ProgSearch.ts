@@ -76,7 +76,6 @@ export type ProgramSearchRaw = RGSearchBase & {
   // temporaryDaycode?: string;
   // temporaryRoute?: string;
   // temporarySequence?: number;
-  // // updated?: DateTimeRange;
   // workOrderPricing?: number;
 };
 
@@ -86,4 +85,5 @@ export type ProgramSearchCriteria = {
   progIds?: number[];
   statuses?: ProgStat[];
   season?: TRange<number>;
+  updated?: TRange<string>;
 };

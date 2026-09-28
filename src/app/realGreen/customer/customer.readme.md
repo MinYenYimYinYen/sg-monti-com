@@ -315,6 +315,75 @@ See TODO comment in `binaryIdSearch.ts:71-74`.
 
 ---
 
+## Pipeline Flag System (Mirror vs. RealGreen)
+
+The customer module supports two data pipelines for loading customer contexts:
+
+| Pipeline | Source | Load time (~2,200 customers) | Notes |
+|---|---|---|---|
+| `"realGreen"` | Live RealGreen API | ~38 seconds | Paginated, handles corrupted records via binary search |
+| `"mirror"` | Synced MongoDB (delta-synced) | ~5 seconds | Single query per step, no pagination |
+
+### The `PIPELINE` Flag
+
+`PIPELINE` is a single exported constant in `customerSlices.ts` that controls which pipeline each context uses:
+
+```typescript
+// src/app/realGreen/customer/slices/customerSlices.ts
+export const PIPELINE: Partial<Record<CustomerContextMode, "mirror" | "realGreen">> = {
+  active: "mirror",
+  byAssignment: "mirror",
+  fullSeasonServices: "mirror",
+  lastSeasonProduction: "mirror",
+  multiSeasonProduction: "mirror",
+  printed: "mirror",
+  priorityService: "mirror",
+  recentProduction: "mirror",
+  single: "mirror",
+};
+```
+
+**To flip a context back to RealGreen:** change `"mirror"` → `"realGreen"`. No other files need to change.
+
+**Current status:** All 9 migratable contexts are on the mirror pipeline. Only `"corruptedRecords"` and `"mirrorQuery"` are not in the flag — they are permanently mirror-only.
+
+### How It Works
+
+1. **`customerSlices.ts`** — `createGetDocsThunk` reads `PIPELINE[context]` and calls either `createGetCustDocsMirrorThunk` or `createGetCustDocsThunk`. The thunk wiring is automatic.
+
+2. **The hook** — reads `PIPELINE` and dispatches with the correct param shape:
+   - `"mirror"` → `{ params: { plan } }` (a `QueryBuilder` plan)
+   - `"realGreen"` → `{ params: { schemeName, season } }` (a search scheme name)
+
+   The `(dispatch as any)` cast is required at each dispatch site because the thunk's param type
+   is a union of two incompatible shapes that TypeScript cannot narrow through a runtime flag check.
+   This is the established pattern — scope the `any` to just the dispatch call.
+
+### Hook Patterns
+
+**Pattern A — `autoLoad` hooks** (most contexts): The hook has `useEffect` + `refresh()` that branch on `PIPELINE[context]`. See `useActiveCustomers.ts` as the canonical example.
+
+**Pattern B — `loadByServIds` hooks** (`byAssignment`, `priorityService`): These contexts are loaded with a dynamic list of `servIds` from feature code. The hook exposes `loadByServIds(servIds, config?)` instead of `autoLoad`. See `useByAssignmentCustomers.ts` and `usePriorityServiceCustomers.ts`.
+
+### Migrating a Context
+
+Follow the process in `src/app/realGreen/customer/mirror/MirrorRefactor.md`. The high-level steps are:
+
+1. Add the context to `PIPELINE` with `"mirror"` in `customerSlices.ts`
+2. Update the hook to branch on `PIPELINE[context]` and build a `QueryBuilder` plan for the mirror path
+3. Keep the RealGreen path (search scheme) intact in the hook for easy rollback
+4. Keep the search scheme in `searchSchemes.ts` — do not delete it until the context is fully retired from RealGreen
+
+### Contexts Permanently on Mirror
+
+`"corruptedRecords"` and `"mirrorQuery"` are always mirror-only and are not in the `PIPELINE` flag — they use `createGetCustDocsMirrorThunk` directly.
+
+### Refresh Thunks
+
+`createRefreshCustomerThunk` (single-customer refresh) always uses the RealGreen API regardless of the `PIPELINE` flag. Since a full mirror reload is ~5 seconds, per-customer refresh via the RealGreen API remains the right tool for mid-session single-customer updates.
+
+---
+
 ## Refreshing a Single Customer
 
 ### When to Use

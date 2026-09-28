@@ -8,16 +8,60 @@ import {
   StreamChunk,
   StreamChunkData,
 } from "@/app/realGreen/customer/api/CustomerContract";
+import { CustomerMirrorContract } from "@/app/realGreen/customer/mirror/CustomerMirrorContract";
 import { createStandardThunk, createStreamThunk } from "@/store/reduxUtil/thunkFactories";
+import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { uiActions } from "@/store/reduxUtil/uiSlice";
 import { searchScheme } from "@/app/realGreen/customer/_lib/searchUtil/searchSchemes/searchSchemes";
 import { toast } from "react-toastify";
+
+// ---------------------------------------------------------------------------
+// Pipeline flags — controls which data source each context uses.
+//
+// Set a context to "mirror" to use the synced MongoDB pipeline (fast, ~5s).
+// Set to "realGreen" (or omit) to use the live RealGreen API pipeline.
+//
+// To flip a context back to RealGreen: change "mirror" → "realGreen" here.
+// The corresponding hook reads this flag and adjusts its dispatch params
+// automatically — no other files need to change.
+//
+// Contexts permanently on the mirror pipeline (not feature-flagged):
+//   - "corruptedRecords" and "mirrorQuery" are always mirror-only.
+// ---------------------------------------------------------------------------
+export const PIPELINE: Partial<Record<CustomerContextMode, "mirror" | "realGreen">> = {
+  active: "mirror",
+  byAssignment: "mirror",
+  fullSeasonServices: "mirror",
+  lastSeasonProduction: "mirror",
+  multiSeasonProduction: "mirror",
+  printed: "mirror",
+  priorityService: "mirror",
+  recentProduction: "mirror",
+  single: "mirror",
+};
+
+// ---------------------------------------------------------------------------
+// Helper: selects the correct getDocs thunk factory based on the PIPELINE flag.
+// ---------------------------------------------------------------------------
+const createGetDocsThunk = (
+  context: CustomerContextMode,
+  sliceName: string,
+  slice: ReturnType<typeof createCustomerSlice>,
+) =>
+  PIPELINE[context] === "mirror"
+    ? createGetCustDocsMirrorThunk(sliceName, slice)
+    : createGetCustDocsThunk(sliceName, slice);
 
 export const createCustomerSlice = (sliceName: string) =>
   createSlice({
     name: sliceName,
     initialState: { ...baseInitialState } as BaseCustomerState,
     reducers: {
+      clearDocs(state) {
+        state.customerDocs = [];
+        state.programDocs = [];
+        state.serviceDocs = [];
+      },
       receiveChunk(state, action: PayloadAction<StreamChunk>) {
         const { stepName, data } = action.payload;
         if (stepName === "customers" && data.customerDocs) {
@@ -139,8 +183,33 @@ export const createRefreshCustomerThunk = (
     opName: "refreshCustomer",
   });
 
+/**
+ * Creates a streaming thunk that fetches customer, program, and service docs
+ * from our synced MongoDB mirror collections.
+ *
+ * Uses the same streaming infrastructure as createGetCustDocsThunk but points
+ * to the mirror API route instead of the RealGreen search scheme route.
+ * The typePrefix uses the same `${sliceName}/getCustDocs` convention so the
+ * slice's `pending` extraReducer fires and clears state on each new fetch.
+ *
+ * Params are not yet implemented — see CustomerMirrorContract.ts for the TODO.
+ */
+export const createGetCustDocsMirrorThunk = (
+  sliceName: string,
+  slice: ReturnType<typeof createCustomerSlice>,
+) =>
+  createStreamThunk<CustomerMirrorContract, "getMirrorCustomers">({
+    typePrefix: `${sliceName}/getCustDocs`,
+    apiPath: "/realGreen/customer/mirror/api",
+    opName: "getMirrorCustomers",
+    onChunk: (dispatch, chunk) => {
+      console.log("[corruptedRecords] onChunk received:", chunk);
+      dispatch(slice.actions.receiveChunk(chunk));
+    },
+  });
+
 export const activeCustomersSlice = createCustomerSlice("activeCustomers");
-export const activeCustomersGetDocs = createGetCustDocsThunk("activeCustomers", activeCustomersSlice);
+export const activeCustomersGetDocs = createGetDocsThunk("active", "activeCustomers", activeCustomersSlice);
 export const activeCustomersRefresh = createRefreshCustomerThunk("activeCustomers", "activeCustomers");
 export const activeCustomersActions = {
   ...activeCustomersSlice.actions,
@@ -150,8 +219,8 @@ export const activeCustomersActions = {
 export const activeCustomerReducer = activeCustomersSlice.reducer;
 
 export const printedCustomersSlice = createCustomerSlice("printedCustomers");
-export const printedCustomersGetDocs = createGetCustDocsThunk("printedCustomers", printedCustomersSlice);
-export const printedCustomersRefresh = createRefreshCustomerThunk("printedCustomers", "printedCustomers");
+export const printedCustomersGetDocs = createGetDocsThunk("printed", "printedCustomers", printedCustomersSlice);
+export const printedCustomersRefresh = createRefreshCustomerThunk("printedCustomers", "activeCustomers");
 export const printedCustomersActions = {
   ...printedCustomersSlice.actions,
   getDocs: printedCustomersGetDocs,
@@ -160,7 +229,7 @@ export const printedCustomersActions = {
 export const printedCustomerReducer = printedCustomersSlice.reducer;
 
 export const lastSeasonProductionSlice = createCustomerSlice("lastSeasonProduction");
-export const lastSeasonProductionGetDocs = createGetCustDocsThunk("lastSeasonProduction", lastSeasonProductionSlice);
+export const lastSeasonProductionGetDocs = createGetDocsThunk("lastSeasonProduction", "lastSeasonProduction", lastSeasonProductionSlice);
 export const lastSeasonProductionRefresh = createRefreshCustomerThunk("lastSeasonProduction", "lastSeasonProduction");
 export const lastSeasonProductionActions = {
   ...lastSeasonProductionSlice.actions,
@@ -170,7 +239,7 @@ export const lastSeasonProductionActions = {
 export const lastSeasonProductionReducer = lastSeasonProductionSlice.reducer;
 
 export const recentProductionSlice = createCustomerSlice("recentProduction");
-export const recentProductionGetDocs = createGetCustDocsThunk("recentProduction", recentProductionSlice);
+export const recentProductionGetDocs = createGetDocsThunk("recentProduction", "recentProduction", recentProductionSlice);
 export const recentProductionRefresh = createRefreshCustomerThunk("recentProduction", "recentProduction");
 export const recentProductionActions = {
   ...recentProductionSlice.actions,
@@ -180,7 +249,7 @@ export const recentProductionActions = {
 export const recentProductionReducer = recentProductionSlice.reducer;
 
 export const singleCustomerSlice = createCustomerSlice("singleCustomer");
-export const singleCustomerGetDocs = createGetCustDocsThunk("singleCustomer", singleCustomerSlice);
+export const singleCustomerGetDocs = createGetDocsThunk("single", "singleCustomer", singleCustomerSlice);
 export const singleCustomerRefresh = createRefreshCustomerThunk("singleCustomer", "singleCustomer");
 export const singleCustomerActions = {
   ...singleCustomerSlice.actions,
@@ -190,7 +259,7 @@ export const singleCustomerActions = {
 export const singleCustomerReducer = singleCustomerSlice.reducer;
 
 export const byAssignmentSlice = createCustomerSlice("byAssignment");
-export const byAssignmentGetDocs = createGetCustDocsThunk("byAssignment", byAssignmentSlice);
+export const byAssignmentGetDocs = createGetDocsThunk("byAssignment", "byAssignment", byAssignmentSlice);
 export const byAssignmentRefresh = createRefreshCustomerThunk("byAssignment", "byServIds");
 export const byAssignmentActions = {
   ...byAssignmentSlice.actions,
@@ -200,7 +269,7 @@ export const byAssignmentActions = {
 export const byAssignmentReducer = byAssignmentSlice.reducer;
 
 export const priorityServiceCustomerSlice = createCustomerSlice("priorityServiceCustomer");
-export const priorityServiceCustomerGetDocs = createGetCustDocsThunk("priorityServiceCustomer", priorityServiceCustomerSlice);
+export const priorityServiceCustomerGetDocs = createGetDocsThunk("priorityService", "priorityServiceCustomer", priorityServiceCustomerSlice);
 export const priorityServiceCustomerRefresh = createRefreshCustomerThunk("priorityServiceCustomer", "activeCustomers");
 export const priorityServiceCustomerActions = {
   ...priorityServiceCustomerSlice.actions,
@@ -210,7 +279,7 @@ export const priorityServiceCustomerActions = {
 export const priorityServiceCustomerReducer = priorityServiceCustomerSlice.reducer;
 
 export const multiSeasonProductionSlice = createCustomerSlice("multiSeasonProduction");
-export const multiSeasonProductionGetDocs = createGetCustDocsThunk("multiSeasonProduction", multiSeasonProductionSlice);
+export const multiSeasonProductionGetDocs = createGetDocsThunk("multiSeasonProduction", "multiSeasonProduction", multiSeasonProductionSlice);
 export const multiSeasonProductionRefresh = createRefreshCustomerThunk("multiSeasonProduction", "multiSeasonProduction");
 export const multiSeasonProductionActions = {
   ...multiSeasonProductionSlice.actions,
@@ -220,7 +289,7 @@ export const multiSeasonProductionActions = {
 export const multiSeasonProductionReducer = multiSeasonProductionSlice.reducer;
 
 export const fullSeasonServicesSlice = createCustomerSlice("fullSeasonServices");
-export const fullSeasonServicesGetDocs = createGetCustDocsThunk("fullSeasonServices", fullSeasonServicesSlice);
+export const fullSeasonServicesGetDocs = createGetDocsThunk("fullSeasonServices", "fullSeasonServices", fullSeasonServicesSlice);
 export const fullSeasonServicesRefresh = createRefreshCustomerThunk("fullSeasonServices", "fullSeasonServices");
 export const fullSeasonServicesActions = {
   ...fullSeasonServicesSlice.actions,
@@ -228,6 +297,28 @@ export const fullSeasonServicesActions = {
   refreshCustomer: fullSeasonServicesRefresh,
 };
 export const fullSeasonServicesReducer = fullSeasonServicesSlice.reducer;
+
+// Mirror-backed slice for the corrupted records investigation UI.
+// Uses createGetCustDocsMirrorThunk (reads from synced MongoDB) instead of
+// createGetCustDocsThunk (reads from RealGreen API via search schemes).
+export const corruptedRecordsCustomerSlice = createCustomerSlice("corruptedRecordsCustomer");
+export const corruptedRecordsGetMirrorDocs = createGetCustDocsMirrorThunk("corruptedRecordsCustomer", corruptedRecordsCustomerSlice);
+export const corruptedRecordsCustomerActions = {
+  ...corruptedRecordsCustomerSlice.actions,
+  getDocs: corruptedRecordsGetMirrorDocs,
+};
+export const corruptedRecordsCustomerReducer = corruptedRecordsCustomerSlice.reducer;
+
+// General-purpose mirror query slice — not tied to a specific feature context.
+// Use useMirrorQuery() to dispatch ad-hoc QueryBuilder plans against the mirror API.
+// Registered as "mirrorQuery" context so it flows through centralCustomerSlice.
+export const mirrorQuerySlice = createCustomerSlice("mirrorQuery");
+export const mirrorQueryGetDocs = createGetCustDocsMirrorThunk("mirrorQuery", mirrorQuerySlice);
+export const mirrorQueryCustomerActions = {
+  ...mirrorQuerySlice.actions,
+  getDocs: mirrorQueryGetDocs,
+};
+export const mirrorQueryCustomerReducer = mirrorQuerySlice.reducer;
 
 // ---------------------------------------------------------------------------
 // Slice registry — single source of truth for all customer slice instances.
@@ -238,12 +329,38 @@ export const fullSeasonServicesReducer = fullSeasonServicesSlice.reducer;
 export type CustomerSliceActions = ReturnType<
   typeof createCustomerSlice
 >["actions"];
-export type CustomerSliceGetDocs = ReturnType<typeof createGetCustDocsThunk>;
+
+/**
+ * The common structural type for all getDocs thunks across both the RealGreen
+ * pipeline (createGetCustDocsThunk) and the mirror pipeline
+ * (createGetCustDocsMirrorThunk). Both return AsyncThunk<void, ...> so the
+ * registry can hold either without type conflicts.
+ *
+ * The third type parameter is typed as `any` to accommodate the variance in
+ * the `rejected` action creator's `rejectValue` type across different thunk
+ * configurations. This is safe because the registry only uses the thunk for
+ * dispatching and for `pending` action matching — neither of which depends on
+ * the exact `rejectValue` type.
+ */
+// The registry only uses getDocs for dispatching and pending-action matching.
+// Neither use case depends on the exact ThunkApiConfig shape, so we use a
+// permissive structural type that all concrete thunk variants satisfy.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CustomerSliceGetDocs = {
+  pending: { type: string; match: (action: unknown) => boolean };
+  rejected: { type: string; match: (action: unknown) => boolean };
+  fulfilled: { type: string; match: (action: unknown) => boolean };
+  typePrefix: string;
+  // Allow dispatching with any argument shape
+  (arg: WithConfig<any>): any;
+};
 
 export type CustomerContextMode =
   | "active"
   | "byAssignment"
+  | "corruptedRecords"
   | "fullSeasonServices"
+  | "mirrorQuery"
   | "priorityService"
   | "printed"
   | "lastSeasonProduction"
@@ -313,6 +430,18 @@ export const customerSliceRegistry: CustomerSliceRegistryEntry[] = [
     actions: fullSeasonServicesActions,
     getDocs: fullSeasonServicesGetDocs,
     reducer: fullSeasonServicesReducer,
+  },
+  {
+    context: "corruptedRecords",
+    actions: corruptedRecordsCustomerActions,
+    getDocs: corruptedRecordsGetMirrorDocs,
+    reducer: corruptedRecordsCustomerReducer,
+  },
+  {
+    context: "mirrorQuery",
+    actions: mirrorQueryCustomerActions,
+    getDocs: mirrorQueryGetDocs,
+    reducer: mirrorQueryCustomerReducer,
   },
 ];
 

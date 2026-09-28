@@ -6,6 +6,7 @@ import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 import { useSelector } from "react-redux";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { useServiceEta } from "@/app/scheduling/eta/useServiceEta";
+import { useAssignments } from "@/app/assignment/useAssignments";
 
 export function usePrenotify() {
   useCustomerContext({ contexts: ["printed"] });
@@ -16,4 +17,5 @@ export function usePrenotify() {
 
   const serviceDocs = useSelector(centralSelect.serviceDocs);
   useServiceEta({ servIds: serviceDocs.map((s) => s.servId) });
+  useAssignments({ servIds: serviceDocs.map((s) => s.servId) });
 }

@@ -8,7 +8,41 @@ import {
   fullSeasonServicesGetDocs,
   fullSeasonServicesRefresh,
   fullSeasonServicesActions,
+  PIPELINE,
 } from "@/app/realGreen/customer/slices/customerSlices";
+import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
+
+function buildFullSeasonServicesPlan(season: number) {
+  return new QueryBuilder()
+    // Seed: all active customers (status "9")
+    .addCustomerStep(["entity", "provider"], {
+      stepName: "getCustomers",
+      source: "values",
+      filters: [{ field: "status", operator: "eq", value: "9" }],
+      provides: { custId: true },
+    })
+    // Active programs for the current season
+    .addProgramStep(["entity", "provider"], {
+      stepName: "getPrograms",
+      source: "step",
+      fromStep: "getCustomers",
+      joinKey: "custId",
+      filters: [
+        { field: "season", operator: "eq", value: season },
+        { field: "status", operator: "eq", value: "9" },
+      ],
+      provides: { progId: true },
+    })
+    // All services for those programs (current season, all statuses)
+    .addServiceStep(["entity"], {
+      stepName: "getServices",
+      source: "step",
+      fromStep: "getPrograms",
+      joinKey: "progId",
+      filters: [{ field: "season", operator: "eq", value: season }],
+    })
+    .build();
+}
 
 export function useFullSeasonServices({ autoLoad = false }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
@@ -18,32 +52,28 @@ export function useFullSeasonServices({ autoLoad = false }: { autoLoad?: boolean
 
   useEffect(() => {
     if (!autoLoad || !season) return;
-    dispatch(
-      fullSeasonServicesGetDocs({
-        params: {
-          schemeName: "fullSeasonServices",
-          season,
-        },
-        config: {
-          staleTime: realGreenConst.paramTypesCacheTime,
-        },
-      }),
-    );
+
+    if (PIPELINE.fullSeasonServices === "mirror") {
+      const plan = buildFullSeasonServicesPlan(season);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(fullSeasonServicesGetDocs({ params: { plan } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(fullSeasonServicesGetDocs({ params: { schemeName: "fullSeasonServices", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
+    }
   }, [autoLoad, dispatch, season]);
 
   const refresh = () => {
     if (!season) return;
-    dispatch(
-      fullSeasonServicesGetDocs({
-        params: {
-          schemeName: "fullSeasonServices",
-          season,
-        },
-        config: {
-          force: true,
-        },
-      }),
-    );
+
+    if (PIPELINE.fullSeasonServices === "mirror") {
+      const plan = buildFullSeasonServicesPlan(season);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(fullSeasonServicesGetDocs({ params: { plan } as any, config: { force: true } as any }));
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dispatch as any)(fullSeasonServicesGetDocs({ params: { schemeName: "fullSeasonServices", season } as any, config: { force: true } as any }));
+    }
   };
 
   const refreshCustomer = async (custId: number) => {

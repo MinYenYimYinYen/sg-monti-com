@@ -8,6 +8,15 @@ import { employeeAvailabilitySelect } from "@/app/employeeAvailability/employeeA
 
 const selectEmployeeDocs = (state: AppState) => state.employee.employeeDocs;
 
+function getNameLastFirst(name: string) {
+  const parts = name.split(" ");
+  if (parts.length === 1) {
+    return parts[0];
+  }
+  const partsAfter1st = parts.slice(1).join(" ");
+  return `${partsAfter1st}, ${parts[0]}`
+}
+
 const selectEmployees = createSelector(
   [
     selectEmployeeDocs,
@@ -31,7 +40,8 @@ const selectEmployees = createSelector(
       const plannedTimeOff = ptoByEmployeeId.get(doc.employeeId) ?? [];
       // Employees with no availability record get { employeeId } — no restrictions.
       const availability = availabilityByEmployeeId.get(doc.employeeId) ?? { employeeId: doc.employeeId };
-      return { ...doc, servCodeIds, plannedTimeOff, availability };
+      const nameLastFirst = getNameLastFirst(doc.name);
+      return { ...doc, servCodeIds, plannedTimeOff, availability, nameLastFirst };
     });
   },
 );

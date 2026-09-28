@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { DateRangePicker } from "@/components/DateRangePicker";
@@ -27,12 +28,20 @@ import {
   TableRow,
 } from "@/style/components/table";
 import { Punch } from "@/app/timeCard/TimeCardTypes";
-import { defaultTimeCardPolicy } from "@/app/timeCard/timeCardPolicy";
 import { cn } from "@/style/utils";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+type Formatter = (minutes: number) => string;
+
+function makeFormatter(showDecimal: boolean): Formatter {
+  if (showDecimal) {
+    return (minutes) => (minutes / 60).toFixed(2);
+  }
+  return minutesToHoursMinutes;
+}
 
 function formatTime(time: string): string {
   if (!time) return "—";
@@ -45,18 +54,51 @@ function formatSegments(punch: Punch): string {
     .join(", ");
 }
 
+/** Renders "value / runningTotal" with the running total subtly muted. */
+function RunningCell({
+  value,
+  running,
+  accent = false,
+  fmt,
+}: {
+  value: number;
+  running: number;
+  accent?: boolean;
+  fmt: Formatter;
+}) {
+  return (
+    <span className="inline-flex items-baseline gap-1 justify-end w-full">
+      <span className={cn("font-mono", accent && value > 0 && "text-secondary font-semibold")}>
+        {fmt(value)}
+      </span>
+      <span className="text-muted-foreground/50 font-mono text-[10px]">
+        / {fmt(running)}
+      </span>
+    </span>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // EmployeeAccordionItem
 // ---------------------------------------------------------------------------
 
-function EmployeeAccordionItem({ summary }: { summary: EmployeeSummary }) {
+function EmployeeAccordionItem({
+  summary,
+  fmt,
+}: {
+  summary: EmployeeSummary;
+  fmt: Formatter;
+}) {
   const {
     employeeId,
+    nameLastFirst,
     punches,
     regularMinutes,
     overtimeMinutes,
     totalMinutes,
     minutesByDate,
+    regularMinutesByDate,
+    overtimeMinutesByDate,
     hasSuspectPunches,
     hasInvalidPunches,
     suspectPunches,
@@ -69,17 +111,22 @@ function EmployeeAccordionItem({ summary }: { summary: EmployeeSummary }) {
     a.punchDate.localeCompare(b.punchDate),
   );
 
+  // Compute running totals in date order
+  let runningHours = 0;
+  let runningReg = 0;
+  let runningOt = 0;
+
   return (
     <AccordionItem value={employeeId}>
       <AccordionTrigger>
         <div className="flex items-center gap-4 text-sm">
-          <span className="font-mono font-semibold text-foreground w-24 text-left">
-            {employeeId}
+          <span className="font-semibold text-foreground w-48 text-left">
+            {nameLastFirst}
           </span>
           <span className="text-muted-foreground">
             Reg:{" "}
             <span className="text-foreground font-medium">
-              {minutesToHoursMinutes(regularMinutes)}
+              {fmt(regularMinutes)}
             </span>
           </span>
           <span className="text-muted-foreground">
@@ -88,17 +135,17 @@ function EmployeeAccordionItem({ summary }: { summary: EmployeeSummary }) {
               className={cn(
                 "font-medium",
                 overtimeMinutes > 0
-                  ? "text-secondary-foreground"
+                  ? "text-secondary"
                   : "text-foreground",
               )}
             >
-              {minutesToHoursMinutes(overtimeMinutes)}
+              {fmt(overtimeMinutes)}
             </span>
           </span>
           <span className="text-muted-foreground">
             Total:{" "}
             <span className="text-foreground font-medium">
-              {minutesToHoursMinutes(totalMinutes)}
+              {fmt(totalMinutes)}
             </span>
           </span>
           {hasFlags && (
@@ -124,12 +171,21 @@ function EmployeeAccordionItem({ summary }: { summary: EmployeeSummary }) {
                   <TableHead className="text-xs">Date</TableHead>
                   <TableHead className="text-xs">Segments</TableHead>
                   <TableHead className="text-xs text-right">Hours</TableHead>
+                  <TableHead className="text-xs text-right">Reg</TableHead>
+                  <TableHead className="text-xs text-right">OT</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedPunches.map((punch) => {
                   const dayMinutes = minutesByDate.get(punch.punchDate) ?? 0;
+                  const dayReg = regularMinutesByDate.get(punch.punchDate) ?? 0;
+                  const dayOt = overtimeMinutesByDate.get(punch.punchDate) ?? 0;
                   const isSuspect = suspectPunchIds.has(punch.punchId);
+
+                  runningHours += dayMinutes;
+                  runningReg += dayReg;
+                  runningOt += dayOt;
+
                   return (
                     <TableRow
                       key={punch.punchId}
@@ -146,8 +202,14 @@ function EmployeeAccordionItem({ summary }: { summary: EmployeeSummary }) {
                           <AlertTriangle className="inline h-3 w-3 ml-1 text-secondary-foreground" />
                         )}
                       </TableCell>
-                      <TableCell className="text-xs text-right font-mono">
-                        {minutesToHoursMinutes(dayMinutes)}
+                      <TableCell className="text-xs text-right">
+                        <RunningCell value={dayMinutes} running={runningHours} fmt={fmt} />
+                      </TableCell>
+                      <TableCell className="text-xs text-right">
+                        <RunningCell value={dayReg} running={runningReg} fmt={fmt} />
+                      </TableCell>
+                      <TableCell className="text-xs text-right">
+                        <RunningCell value={dayOt} running={runningOt} accent fmt={fmt} />
                       </TableCell>
                     </TableRow>
                   );
@@ -159,7 +221,19 @@ function EmployeeAccordionItem({ summary }: { summary: EmployeeSummary }) {
                     {punches.length} day{punches.length !== 1 ? "s" : ""}
                   </TableCell>
                   <TableCell className="text-xs text-right font-mono">
-                    {minutesToHoursMinutes(totalMinutes)}
+                    {fmt(totalMinutes)}
+                  </TableCell>
+                  <TableCell className="text-xs text-right font-mono">
+                    {fmt(regularMinutes)}
+                  </TableCell>
+                  <TableCell className="text-xs text-right font-mono">
+                    {overtimeMinutes > 0 ? (
+                      <span className="text-secondary">
+                        {fmt(overtimeMinutes)}
+                      </span>
+                    ) : (
+                      fmt(overtimeMinutes)
+                    )}
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -177,12 +251,14 @@ function EmployeeAccordionItem({ summary }: { summary: EmployeeSummary }) {
 
 export function PayrollPanel() {
   const dispatch = useAppDispatch();
+  const [showDecimal, setShowDecimal] = useState(false);
   const dateRange = useSelector(timeCardPayrollSelect.dateRange);
   const employeeSummaries = useSelector(
     timeCardPayrollSelect.employeeSummaries,
   );
   const punches = useSelector(timeCardPayrollSelect.punches);
 
+  const fmt = makeFormatter(showDecimal);
   const isDateRangeValid = dateRange.min !== "" && dateRange.max !== "";
 
   const handleGetTimeCards = () => {
@@ -215,6 +291,14 @@ export function PayrollPanel() {
           >
             Get Time Cards
           </Button>
+          <Button
+            variant="outline"
+            intensity="soft"
+            size="sm"
+            onClick={() => setShowDecimal((prev) => !prev)}
+          >
+            {showDecimal ? "h:mm" : "decimal"}
+          </Button>
         </div>
 
         {/* Results */}
@@ -230,6 +314,7 @@ export function PayrollPanel() {
                 <EmployeeAccordionItem
                   key={summary.employeeId}
                   summary={summary}
+                  fmt={fmt}
                 />
               ))}
             </Accordion>

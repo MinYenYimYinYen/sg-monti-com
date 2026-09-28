@@ -71,7 +71,11 @@ export const centralCustomerSlice = createSlice({
       // The central maps are additive across all active contexts — clearing them
       // here would nuke data from other contexts that are loading in parallel.
       // The maps are rebuilt from scratch via switchContexts when contexts change.
-      builder.addCase(entry.getDocs.pending, (_state) => {
+      //
+      // We use the string typePrefix directly (e.g. "activeCustomers/getCustDocs/pending")
+      // rather than entry.getDocs.pending because CustomerSliceGetDocs is a structural
+      // type that doesn't carry the TypedActionCreator signature required by addCase.
+      builder.addCase(`${entry.getDocs.typePrefix}/pending`, (_state) => {
         // intentionally empty
       });
 

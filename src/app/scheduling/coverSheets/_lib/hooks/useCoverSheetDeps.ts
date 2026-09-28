@@ -13,6 +13,7 @@ import { useCondition } from "@/app/realGreen/conditionCode/useCondition";
 import { useSelector } from "react-redux";
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 import { useServiceEta } from "@/app/scheduling/eta/useServiceEta";
+import { useAssignments } from "@/app/assignment/useAssignments";
 
 export function useCoverSheetDeps() {
   useCustomerContext({ contexts: ["printed"] });
@@ -31,4 +32,5 @@ export function useCoverSheetDeps() {
 
   const printedServices = useSelector(coverSheetsSelect.printedServices);
   useServiceEta({ servIds: printedServices.map((s) => s.servId) });
+  useAssignments({ servIds: printedServices.map((s) => s.servId) });
 }

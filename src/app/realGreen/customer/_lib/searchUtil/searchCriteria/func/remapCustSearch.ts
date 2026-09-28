@@ -17,5 +17,7 @@ export function remapCustSearch(
       minValue: search.size.min,
       maxValue: search.size.max,
     };
+  if (search.updated)
+    rgSearch.updated = { minValue: search.updated.min, maxValue: search.updated.max };
   return rgSearch;
 }

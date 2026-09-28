@@ -9,6 +9,7 @@ import { Button } from "@/style/components/button";
 import { timeCardSelect } from "@/app/timeCard/timeCardSelect";
 import { useTimeCard } from "@/app/timeCard/useTimeCard";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
+import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 
 const NAV_LINKS = [
   { label: "Import", href: "/timeCard/import" },
@@ -19,6 +20,7 @@ export default function TimeCardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const lastImportedDate = useSelector(timeCardSelect.lastImportedDate);
   const { fetchLastImportedDate } = useTimeCard();
+  useEmployee({ autoLoad: true });
 
   useEffect(() => {
     fetchLastImportedDate();

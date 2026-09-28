@@ -1,9 +1,15 @@
 import { SearchCriteria, SearchCriteriaRaw, RawData } from "../types/SearchScheme";
 import { rgSearch } from "@/app/realGreen/_lib/api/rgSearchApi";
+import { CorruptedContext, CorruptedEntityType } from "@/app/realGreen/customer/sync/corruptedRecords/CorruptedSyncRecordTypes";
 
 type FetchResult<TRawData> = {
   items: TRawData;
   duration: number;
+};
+
+type BinaryIdSearchResult<TRawData> = {
+  results: FetchResult<TRawData>[];
+  corruptedContexts: CorruptedContext[];
 };
 
 /**
@@ -17,18 +23,28 @@ type FetchResult<TRawData> = {
  * 3. Skip the corrupted ID
  * 4. Fetch all records for IDs after the corrupted ID
  *
+ * Returns all recovered fetch results AND an array of CorruptedContext objects
+ * (one per corrupted ID encountered, including recursive calls).
+ *
  * @param ids - The array of IDs that caused the error
  * @param getSearchCriteria - Function to build search criteria from an ID array
  * @param mapCriteria - Function to map SearchCriteria to SearchCriteriaRaw
- * @returns Generator that yields all valid records, skipping only the corrupted ID's data
+ * @param entityType - The entity type being synced (for CorruptedContext)
+ * @param timestamp - Shared ISO timestamp for all hits in one sync operation
+ * @param accumulatedContexts - Internal accumulator for recursive calls
  */
-export async function* binarySearchCorruptedId<TRawData extends RawData>(
+export async function binarySearchCorruptedId<TRawData extends RawData>(
   ids: number[],
   getSearchCriteria: (ids: number[]) => SearchCriteria,
   mapCriteria: (criteria: SearchCriteria) => SearchCriteriaRaw,
-): AsyncGenerator<FetchResult<TRawData>> {
+  entityType?: CorruptedEntityType,
+  timestamp?: string,
+  accumulatedContexts: CorruptedContext[] = [],
+): Promise<BinaryIdSearchResult<TRawData>> {
   console.log(`[binaryIdSearch] Starting binary search for corrupted ID in array of ${ids.length} IDs`);
   console.log(`[binaryIdSearch] ID range: [${ids[0]}, ..., ${ids[ids.length - 1]}]`);
+
+  const results: FetchResult<TRawData>[] = [];
 
   // Phase 1: Binary search to isolate the corrupted ID
   const corruptedIdIndex = await findCorruptedIdIndex(
@@ -39,6 +55,10 @@ export async function* binarySearchCorruptedId<TRawData extends RawData>(
 
   const corruptedId = ids[corruptedIdIndex];
   console.log(`[binaryIdSearch] Corrupted ID isolated: ${corruptedId} at index ${corruptedIdIndex}`);
+
+  // Neighbor IDs for CorruptedContext
+  const entityBeforeId = corruptedIdIndex > 0 ? ids[corruptedIdIndex - 1] : null;
+  const entityAfterId = corruptedIdIndex < ids.length - 1 ? ids[corruptedIdIndex + 1] : null;
 
   // Phase 2: Fetch all records for IDs before the corrupted ID
   if (corruptedIdIndex > 0) {
@@ -56,22 +76,37 @@ export async function* binarySearchCorruptedId<TRawData extends RawData>(
 
       if (items && items.length > 0) {
         console.log(`[binaryIdSearch] Successfully fetched ${items.length} records before corrupted ID`);
-        yield { items: items as TRawData, duration };
+        results.push({ items: items as TRawData, duration });
       }
     } catch (error) {
       console.error(`[binaryIdSearch] Unexpected error fetching records before corrupted ID:`, error);
       // Recursively handle if there's another corrupted ID in this subset
-      yield* binarySearchCorruptedId(idsBeforeCorrupted, getSearchCriteria, mapCriteria);
+      const subResult = await binarySearchCorruptedId<TRawData>(
+        idsBeforeCorrupted,
+        getSearchCriteria,
+        mapCriteria,
+        entityType,
+        timestamp,
+        accumulatedContexts,
+      );
+      results.push(...subResult.results);
     }
   }
 
   // Phase 3: Skip the corrupted ID
   console.log(`[binaryIdSearch] Skipping corrupted ID: ${corruptedId}`);
 
-  // TODO: Capture bad program data for investigation
-  // Future enhancement: When a corrupted ID is found, look up the program's progCode and custId
-  // from the pipelineData to identify the record in RealGreen CRM for manual investigation/fixing.
-  // This will require passing pipelineData to this function and cross-referencing the corrupted ID.
+  // Record this corrupted encounter if we have entity type and timestamp context
+  // (only present when called from a sync func, not from the live pipeline)
+  if (entityType && timestamp) {
+    accumulatedContexts.push({
+      corruptedContextId: crypto.randomUUID(),
+      entityType,
+      entityBeforeId,
+      entityAfterId,
+      timestamp,
+    });
+  }
 
   // Phase 4: Fetch all records for IDs after the corrupted ID
   if (corruptedIdIndex < ids.length - 1) {
@@ -89,16 +124,26 @@ export async function* binarySearchCorruptedId<TRawData extends RawData>(
 
       if (items && items.length > 0) {
         console.log(`[binaryIdSearch] Successfully fetched ${items.length} records after corrupted ID`);
-        yield { items: items as TRawData, duration };
+        results.push({ items: items as TRawData, duration });
       }
     } catch (error) {
       console.error(`[binaryIdSearch] Another corrupted ID found after ${corruptedId}:`, error);
       // Recursively handle if there's another corrupted ID in this subset
-      yield* binarySearchCorruptedId(idsAfterCorrupted, getSearchCriteria, mapCriteria);
+      const subResult = await binarySearchCorruptedId<TRawData>(
+        idsAfterCorrupted,
+        getSearchCriteria,
+        mapCriteria,
+        entityType,
+        timestamp,
+        accumulatedContexts,
+      );
+      results.push(...subResult.results);
     }
   }
 
   console.log(`[binaryIdSearch] Completed binary search recovery. Skipped ID: ${corruptedId}`);
+
+  return { results, corruptedContexts: accumulatedContexts };
 }
 
 /**

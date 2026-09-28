@@ -7,12 +7,9 @@ import { AppError } from "@/lib/errors/AppError";
 import {
   ServiceCore,
   ServiceDoc,
-  ServiceDocProps,
   ServiceRaw,
 } from "../types/ServiceTypes";
-import { extendEntities } from "@/app/realGreen/_lib/extendEntities";
-import { ServiceDocPropsModel } from "@/app/realGreen/customer/_lib/models/ServiceDocPropsModel";
-import { baseServiceDocProps } from "@/app/realGreen/customer/_lib/entities/bases/baseService";
+// ServiceDoc = ServiceCore — no DocProps extension needed
 
 function remapProduction({
   invoice,
@@ -87,19 +84,13 @@ function remapService(raw: ServiceRaw): ServiceCore {
       servStatus: raw.serviceStatus,
       doneDate: raw.doneDate,
     }),
+    round: raw.round ?? null,
   };
 }
 
 export function remapServices(raw: ServiceRaw[]) {
   return raw.map((r) => remapService(r));
 }
-export async function extendServices(
-  cores: ServiceCore[],
-): Promise<ServiceDoc[]> {
-  return extendEntities<ServiceCore, ServiceDocProps, ServiceDoc>({
-    cores,
-    model: ServiceDocPropsModel,
-    idField: "servId",
-    baseDocProps: baseServiceDocProps,
-  });
+export function extendServices(cores: ServiceCore[]): ServiceDoc[] {
+  return cores;
 }

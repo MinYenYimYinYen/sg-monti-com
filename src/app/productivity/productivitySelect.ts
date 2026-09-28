@@ -179,8 +179,37 @@ const selectByDateByEmployee = createSelector(
 // Assignment completion by employee
 // ---------------------------------------------------------------------------
 
+const selectAssignmentsByEmployeeForRange = createSelector(
+  [selectDoneDateRange, assignmentSelect.docs],
+  (doneDateRange, docs) => {
+    // Inline the canonical-by-range logic — parameterized selectors can't be
+    // used directly as createSelector inputs.
+    const canonical = docs.flatMap((doc) => {
+      // Replicate AssignmentUtils.canonical: one entry per (servId, schedDate), latest createdAt wins
+      const map = new Map<string, typeof doc.assignments[number]>();
+      for (const a of doc.assignments) {
+        const key = `${a.servId}|${a.schedDate}`;
+        const existing = map.get(key);
+        if (!existing || a.createdAt > existing.createdAt) {
+          map.set(key, a);
+        }
+      }
+      return Array.from(map.values()).filter(
+        (a) => a.schedDate >= doneDateRange.min && a.schedDate <= doneDateRange.max,
+      );
+    });
+    const result = new Map<string, typeof canonical>();
+    for (const entry of canonical) {
+      const existing = result.get(entry.employeeId) ?? [];
+      existing.push(entry);
+      result.set(entry.employeeId, existing);
+    }
+    return result;
+  },
+);
+
 const selectAssignmentCompletionByEmployee = createSelector(
-  [selectCompletedServices, assignmentSelect.assignmentsByEmployeeForRange, holidaySelect.weatherDayDates],
+  [selectCompletedServices, selectAssignmentsByEmployeeForRange, holidaySelect.weatherDayDates],
   (completedServices, assignmentsByEmployee, weatherDayDates): Map<string, { assigned: number; completed: number; pct: number }> => {
     const map = new Map<string, { assigned: number; completed: number; pct: number }>();
 

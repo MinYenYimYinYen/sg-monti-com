@@ -3,12 +3,8 @@ import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { useSelector } from "react-redux";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { useEffect } from "react";
-import {
-  byAssignmentActions,
-  recentProductionActions,
-} from "@/app/realGreen/customer/slices/customerSlices";
-import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
+import { useByAssignmentCustomers } from "@/app/realGreen/customer/hooks/useByAssignmentCustomers";
 import { loadoutActions } from "@/app/loadout/loadoutSlice";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { useAppMethod } from "@/app/appMethod/useAppMethod";
@@ -18,8 +14,7 @@ import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipme
 import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig";
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { assignmentActions } from "@/app/assignment/assignmentSlice";
-import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
-import { feedbackSelect } from "@/app/scheduling/dailyInventory/loadoutFeedback/feedbackSelect";
+import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 
 export function useLoadoutFeedbackDeps({
   employeeId,
@@ -31,6 +26,7 @@ export function useLoadoutFeedbackDeps({
   showLoading: boolean;
 }) {
   const dispatch = useAppDispatch();
+  const { loadByServIds } = useByAssignmentCustomers();
   useCustomerContext({ contexts: ["byAssignment"] });
   useProduct({ autoLoad: true });
   useAppMethod({ autoLoad: true });
@@ -46,38 +42,30 @@ export function useLoadoutFeedbackDeps({
   useEffect(() => {
     if (!employeeId || !routeDate) return;
     if (!season) return;
-    // Clear previous assignments to reset the data flow
-    dispatch(assignmentActions.clearByEmployeeIdAndSchedDate());
     dispatch(
-      assignmentActions.getByEmployeeIdAndSchedDate({
-        params: { employeeId, schedDate: routeDate },
+      assignmentActions.getBySchedDate({
+        params: { schedDate: routeDate },
         config: {
           showLoading,
-          loadingMsg: `Loading for ${employeeId} on ${routeDate}...`,
+          loadingMsg: `Loading assignments for ${routeDate}...`,
           staleTime: 500,
         },
       }),
     );
   }, [employeeId, routeDate, season, dispatch, showLoading]);
 
-  const assignedServIds = useSelector(feedbackSelect.assignedServIds);
+  const assignedServIds = useSelector(
+    assignmentSelect.servIdsByEmployeeAndSchedDate(employeeId, routeDate),
+  );
+
   useEffect(() => {
     if (!assignedServIds.length || !season) return;
-    dispatch(
-      byAssignmentActions.getDocs({
-        params: {
-          schemeName: "byServIds",
-          season,
-          schemeParams: { servIds: assignedServIds },
-        },
-        config: {
-          loadingMsg: "Loading production data",
-          showLoading,
-          staleTime: 500,
-        },
-      }),
-    );
-  }, [assignedServIds, dispatch, season, showLoading]);
+    loadByServIds(assignedServIds, {
+      loadingMsg: "Loading production data",
+      showLoading,
+      staleTime: 500,
+    });
+  }, [assignedServIds, loadByServIds, season, showLoading]);
 
   useEffect(() => {
     dispatch(

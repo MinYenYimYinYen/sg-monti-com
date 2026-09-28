@@ -144,7 +144,8 @@ function CoverSheetsPDF({
     <Document title={`Cover Sheets ${routeDate}`}>
       {[...serviceByEmployee.keys()].map((employeeId) => {
         const services = serviceByEmployee.get(employeeId)!;
-        const employee = services[0].lastAssigned.employee;
+        const employee = services[0]?.assignments.mostRecent;
+        const employeeName = employee?.employeeId ?? "";
         const servCodesByRule = getServicesByRuleDesc(services);
 
         return (
@@ -162,7 +163,7 @@ function CoverSheetsPDF({
               <View>
                 <Text>{prettyDate(routeDate, "EEE, MMM d")}</Text>
                 <Text>
-                  {employeeId} - {employee.name}
+                  {employeeId}
                 </Text>
               </View>
               <View id={"SERV_CODE_PRODUCTS"} style={tw("text-sm")}>
@@ -322,10 +323,10 @@ function CoverSheetsPDF({
               const remaining = remainingServices.map((service) => {
                 const isPrinted = service.status === "$";
                 const currentAssignedDate = isPrinted
-                  ? service.lastAssigned.schedDate
+                  ? (service.x.schedInfo?.schedDate ?? "")
                   : "";
                 const currentAssignedTo = isPrinted
-                  ? service.lastAssigned.employee.employeeId
+                  ? (service.x.schedInfo?.employeeId ?? "")
                   : "";
                 
 

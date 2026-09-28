@@ -9,17 +9,16 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/style/components
 import { format, parseISO, isValid } from "date-fns";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
 import { ScrollArea } from "@/style/components/scroll-area";
-import { useAppDispatch } from "@/lib/hooks/redux";
 import { usePriorityService } from "@/app/priorityService/usePriorityService";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
 import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
-import { singleCustomerActions } from "@/app/realGreen/customer/slices/customerSlices";
+import { useSingleCustomer } from "@/app/realGreen/customer/hooks/useSingleCustomer";
 import { PriorityServiceForm } from "@/app/priorityService/_components/PriorityServiceForm";
 import { PriorityServiceListItem } from "@/app/priorityService/_components/PriorityServiceListItem";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
-import { priorityServiceCustomerActions } from "@/app/realGreen/customer/slices/customerSlices";
+import { usePriorityServiceCustomers } from "@/app/realGreen/customer/hooks/usePriorityServiceCustomers";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 
 // ---------------------------------------------------------------------------
@@ -27,7 +26,8 @@ import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSe
 // ---------------------------------------------------------------------------
 
 export default function PriorityServicePage() {
-  const dispatch = useAppDispatch();
+  const { loadByServIds: loadPriorityServiceCustomers } = usePriorityServiceCustomers();
+  const { clearCustomer } = useSingleCustomer();
 
   // Load priority service docs
   usePriorityService({ autoLoad: true });
@@ -53,20 +53,11 @@ export default function PriorityServicePage() {
   // into the "priorityService" customer context so the CRUD list can hydrate.
   useEffect(() => {
     if (!docs.length || !season) return;
-    dispatch(
-      priorityServiceCustomerActions.getDocs({
-        params: {
-          schemeName: "byServIds",
-          season,
-          schemeParams: { servIds: docs.map((d) => d.servId) },
-        },
-        config: {
-          loadingMsg: "Loading priority services...",
-          force: true,
-        },
-      }),
+    loadPriorityServiceCustomers(
+      docs.map((d) => d.servId),
+      { loadingMsg: "Loading priority services...", force: true },
     );
-  }, [dispatch, docs, season]);
+  }, [docs, loadPriorityServiceCustomers, season]);
 
   // null = nothing selected, "new" = create form, number = edit form for that servId
   const [selected, setSelected] = useState<number | "new" | null>(null);
@@ -93,7 +84,7 @@ export default function PriorityServicePage() {
             onClick={() => {
               // Clear any previously looked-up single customer before opening the new form
               if (lookupCustomer) {
-                dispatch(singleCustomerActions.removeCustomer(lookupCustomer.custId));
+                clearCustomer(lookupCustomer.custId);
               }
               setSelected("new");
             }}

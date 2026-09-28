@@ -41,7 +41,6 @@ export function EtaSetupPanel({ serviceByEmployee }: EtaSetupPanelProps) {
         >
           {[...serviceByEmployee.keys()].map((employeeId) => {
             const services = serviceByEmployee.get(employeeId)!;
-            const employee = services[0].lastAssigned.employee;
             const { needed, filled } = getEtaStatus(services);
             const allFilled = needed === 0 || filled === needed;
 
@@ -49,7 +48,7 @@ export function EtaSetupPanel({ serviceByEmployee }: EtaSetupPanelProps) {
               <AccordionItem key={employeeId} value={employeeId}>
                 <AccordionTrigger className="px-1 font-semibold">
                   <span className="flex items-center gap-3">
-                    <span>{employee.name}</span>
+                    <span>{employeeId}</span>
                     {needed > 0 && (
                       <span
                         className={`text-xs font-mono ${allFilled ? "text-accent" : "text-destructive"}`}

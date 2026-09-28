@@ -17,6 +17,9 @@
  */
 export const SYNC_ENTITY_TYPES = {
   callLog: "callLog",
+  customer: "customer",
+  program: "program",
+  service: "service",
 } as const;
 
 export type SyncEntityType = (typeof SYNC_ENTITY_TYPES)[keyof typeof SYNC_ENTITY_TYPES];

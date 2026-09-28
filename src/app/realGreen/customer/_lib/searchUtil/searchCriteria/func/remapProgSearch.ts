@@ -19,5 +19,7 @@ export function remapProgSearch(
       minValue: search.season.min,
       maxValue: search.season.max,
     };
+  if (search.updated)
+    rgSearch.updated = { minValue: search.updated.min, maxValue: search.updated.max };
   return rgSearch;
 }

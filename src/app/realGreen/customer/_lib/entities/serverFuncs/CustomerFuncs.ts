@@ -5,6 +5,7 @@ import {
 } from "@/app/realGreen/_lib/subTypes/ContactPreferences";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { CustomerCore, CustomerDoc, CustomerRaw } from "../types/CustomerTypes";
+// CustomerDoc = CustomerCore — no DocProps extension needed
 import { ContactPoint } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 import { AgingParams } from "@/app/realGreen/customer/_lib/classes/Aging";
 
@@ -31,6 +32,7 @@ function remapCustomer(raw: CustomerRaw): CustomerCore {
     },
     billingAddress: raw.billingAddress,
     billingCompanyName: raw.billingCompanyName,
+    billingEmail: raw.billingEmail,
     billingFirstName: raw.billingFirstName,
     billingLastName: raw.billingLastName,
     billingTitle: raw.billingTitle,
@@ -73,20 +75,38 @@ function remapCustomer(raw: CustomerRaw): CustomerCore {
       .filter((t) => t.length > 0),
     techNote: raw.techNote,
     useBilling: raw.useBillingInfo,
+    cancelCodeId: raw.cancelCode,
+    cancelDate: raw.cancelDate ? raw.cancelDate.split("T")[0] : null,
+    canceledBy: raw.canceledBy,
+    cardExpiryDate: raw.cardExpiryDate ? raw.cardExpiryDate.split("T")[0] : null,
+    cardType: raw.cardType,
+    companyName: raw.companyName,
+    creditHoldStatus: raw.creditHoldStatus,
+    doNotChargeInterest: raw.doNotChargeInterest,
+    doNotPutOnCreditHold: raw.doNotPutOnCreditHold,
+    firstName: raw.firstName,
+    invoiceTypeId: raw.invoiceType,
+    isBilledWithMasterAcct: raw.isBilledWithMasterAccount,
+    isCanceled: raw.isCanceled,
+    cardLastFour: raw.lastFourNumber,
+    masterAcctBranches: raw.masterAccountBranches,
+    memo: raw.memo,
+    memoAlert: raw.memoAlert,
+    memoPayAlert: raw.payAlert,
+    prepayBalance: raw.prepayBalance,
+    since: raw.since ? raw.since.split("T")[0] : "",
+    sizeSourceId: raw.sizeSource,
+    sizeUnitOfMeasureId: raw.sizeUnitOfMeasureID,
+    sourceCodeId: raw.sourceCD,
+    statementFrequency: raw.statementFrequency,
+    statementTypeId: raw.statementType,
+    title: raw.title,
   };
 }
 
 export function remapCustomers(raw: CustomerRaw[]) {
   return raw.map((r) => remapCustomer(r));
 }
-export async function extendCustomers(
-  remapped: CustomerCore[],
-): Promise<CustomerDoc[]> {
-  //MOCKED for now
-  const withMongo = remapped.map((cust) => ({
-    ...cust,
-    createdAt: "",
-    updatedAt: "",
-  }));
-  return withMongo;
+export function extendCustomers(remapped: CustomerCore[]): CustomerDoc[] {
+  return remapped;
 }

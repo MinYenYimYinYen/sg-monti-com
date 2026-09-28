@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { useAppDispatch } from "@/lib/hooks/redux";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { CardContent } from "@/style/components/card";
 import { Input } from "@/style/components/input";
@@ -22,8 +21,7 @@ import { DatePicker } from "@/components/DatePicker";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { FormGroup } from "@/components/FormGroup";
 import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
-import { singleCustomerActions } from "@/app/realGreen/customer/slices/customerSlices";
-import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
+import { useSingleCustomer } from "@/app/realGreen/customer/hooks/useSingleCustomer";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
 import { usePriorityService } from "@/app/priorityService/usePriorityService";
 import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
@@ -44,27 +42,8 @@ export function PriorityServiceForm({
   existingDoc,
   onDone,
 }: PriorityServiceFormProps) {
-  const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
-  const season = useSelector(globalSettingsSelect.season);
-
-  const lookup = (custId: number) => {
-    if (!season || !custId || custId < 0) return;
-    dispatch(
-      singleCustomerActions.getDocs({
-        params: {
-          schemeName: "singleCustomer",
-          season,
-          schemeParams: { custId },
-        },
-        config: { showLoading: false, force: true },
-      }),
-    );
-  };
-
-  const clearCustomer = (custId: number) => {
-    dispatch(singleCustomerActions.removeCustomer(custId));
-  };
+  const { lookup, clearCustomer } = useSingleCustomer();
 
   const { upsert, deleteOne } = usePriorityService();
   const priorityServiceMap = useSelector(priorityServiceSelect.priorityServiceMap);

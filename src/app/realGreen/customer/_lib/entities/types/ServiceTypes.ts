@@ -1,4 +1,3 @@
-import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { AppProductRaw } from "@/app/realGreen/_lib/subTypes/AppProduct";
 import { ServiceHistoryRaw } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import { DoneByRaw } from "@/app/realGreen/_lib/subTypes/DoneByCore";
@@ -13,7 +12,7 @@ import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
-import { Assignment, AssignmentDoc } from "@/app/assignment/AssignmentTypes";
+import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
 
 export type ServiceRaw = {
@@ -61,7 +60,7 @@ export type ServiceRaw = {
   programDiscountAmount: number;
   // programDiscountCodeId?: string;
   programID: number;
-  // round?: number;
+  round?: number;
   // scheduledTime?: number;
   serviceCode?: string;
   serviceHistory?: ServiceHistoryRaw;
@@ -105,14 +104,10 @@ export type ServiceCore = {
   season: number;
   techNote: string;
   productionCore: ProductionCore | null;
+  round: number | null;
 };
 
-export type ServiceDocProps = CreatedUpdated & {
-  servId: number;
-  assignments: AssignmentDoc[];
-};
-
-export type ServiceDoc = ServiceCore & ServiceDocProps;
+export type ServiceDoc = ServiceCore;
 
 export type ServiceProps = {
   x: ServiceUtils;
@@ -121,7 +116,8 @@ export type ServiceProps = {
   callAhead: CallAhead | null;
   discount: DiscountDoc | null;
   production: Production | null;
-  lastAssigned: Assignment;
+  /** Assignment history for this service. Use AssignmentUtils methods to access canonical data. */
+  assignments: AssignmentUtils;
   promise: SchedPromise | null;
   promiseIssues: string[];
   loadoutInventory: LoadoutBase;

@@ -203,4 +203,52 @@ export class TimeCard {
     }
     return map;
   }
+
+  /**
+   * Regular (non-overtime) minutes per calendar date.
+   *
+   * OT is determined weekly: once a week's total exceeds the threshold, the
+   * excess minutes are OT. We distribute OT to the last punch(es) of the week
+   * chronologically — i.e., we fill regular minutes day-by-day in date order
+   * until the threshold is reached, then the remainder is OT.
+   */
+  get regularMinutesByDate(): Map<string, number> {
+    const threshold = this.policy.weeklyOvertimeThresholdMinutes;
+    const result = new Map<string, number>();
+
+    for (const [, weekPunches] of this.byEmployeeWeek) {
+      // Sort punches within the week by date ascending
+      const sorted = [...weekPunches].sort((a, b) =>
+        a.punchDate.localeCompare(b.punchDate),
+      );
+
+      let weekRegRemaining = threshold;
+      for (const punch of sorted) {
+        const dayTotal = TimeCard.punchMinutes(punch);
+        const dayReg = Math.min(dayTotal, weekRegRemaining);
+        weekRegRemaining -= dayReg;
+        const existing = result.get(punch.punchDate) ?? 0;
+        result.set(punch.punchDate, existing + dayReg);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Overtime minutes per calendar date.
+   * Derived from minutesByDate minus regularMinutesByDate.
+   */
+  get overtimeMinutesByDate(): Map<string, number> {
+    const totalByDate = this.minutesByDate;
+    const regByDate = this.regularMinutesByDate;
+    const result = new Map<string, number>();
+
+    for (const [date, total] of totalByDate) {
+      const reg = regByDate.get(date) ?? 0;
+      result.set(date, Math.max(0, total - reg));
+    }
+
+    return result;
+  }
 }

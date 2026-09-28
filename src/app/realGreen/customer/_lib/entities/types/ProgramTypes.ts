@@ -1,4 +1,3 @@
-import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { Service } from "./ServiceTypes";
 import { Customer } from "./CustomerTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
@@ -9,31 +8,31 @@ import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 
 export type ProgramRaw = {
   averagePrice: number;
-  // averageTime: number | null;
+  averageTime: number | null;
   billingType: string;
   callAhead: number | null;
   // callBackDate: string | null;
-  // cancelCode: number | null;
-  // cancelDate: string | null;
-  // canceledBy: string;
+  cancelCode: number | null;
+  cancelDate: string | null;
+  canceledBy: string;
   // confirmationDate: string | null;
   // confirmedBy: string;
   // contactDate: string | null;
   // contractId: number | null;
   // created: string;
   // customerLetterId: number | null;
-  // customerNote: string;
-  // customerNoteExpiration: string | null;
+  customerNote: string;
+  customerNoteExpiration: string | null;
   customerNumber: number;
   dateSold: string;
-  // dayCode: string;
-  // difficulty: number;
+  dayCode: string;
+  difficulty: number;
   discountCodeId: string;
   // doneToDate: number;
   // endOn: string | null;
   // estimateAssignedDate: string | null;
   // estimateAssignedTo: string;
-  // estimatedBy: string;
+  // estimatedBy: string;// todo: Add to core
   // estimateGivenDate: string | null;
   // estimatePrintDate: string | null;
   // estimateReferredBy: number | null;
@@ -49,8 +48,8 @@ export type ProgramRaw = {
   // isComplete: boolean;
   isFullProgram: boolean;
   // isNonServiceYear: boolean;
-  // isProgram: boolean;
-  // isRenewed: boolean;
+  isProgram: boolean;
+  isRenewed: boolean;
   // isWorkOrder: boolean;
   lastPriceChange: string | null;
   // latestDependentServiceCompletionDate: string | null;
@@ -112,13 +111,19 @@ export type ProgramCore = {
   holdCodeId: number | null;
   holdStart: string | null;
   holdEnd: string | null;
+  avgTime: number | null;
+  cancelCodeId: number | null;
+  cancelDate: string | null;
+  canceledBy: string;
+  custNote: string;
+  custNoteExpiration: string | null;
+  dayCodeId: string;
+  difficulty: number;
+  isProgram: boolean;
+  isRenewed: boolean;
 };
 
-export type ProgramDocProps = CreatedUpdated & {
-  progId: number;
-};
-
-export type ProgramDoc = ProgramCore & ProgramDocProps;
+export type ProgramDoc = ProgramCore;
 
 export type ProgramProps = {
   x: ProgramUtils;
