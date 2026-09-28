@@ -57,6 +57,9 @@ const selectPrenotifications = createSelector(
           .toMap();
 
         servicesByDate.forEach((services, scheduleDate) => {
+          // Skip printed services that have no assignment yet (schedDate is "")
+          if (!scheduleDate) return;
+
           // Ensure date key exists in result
           if (!result.has(scheduleDate)) {
             result.set(scheduleDate, new Map());

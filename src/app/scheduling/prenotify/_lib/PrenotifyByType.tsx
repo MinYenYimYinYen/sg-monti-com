@@ -159,7 +159,13 @@ function PreNotifyManual({ data }: { data: PrenotificationData[] }) {
           textAllowedTypes?.includes(cp.type),
         );
 
-        const formattedDate = prettyDate(services[0]?.x.schedInfo?.schedDate ?? "", "EEE, MMM d");
+        // schedInfo is null for unassigned printed services — the selector filters those out,
+        // but use a fallback here as defense-in-depth to prevent a crash if data is inconsistent.
+        const formattedDate = prettyDate(
+          services[0]?.x.schedInfo?.schedDate ?? "",
+          "EEE, MMM d",
+          { fallback: "Not Assigned" },
+        );
 
         const emailPN: EmailPreNotifData[] = getMessages[NotificationType.Email](
           formattedDate,
