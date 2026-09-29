@@ -32,7 +32,12 @@ const handlers: HandlerMap<CallLogSyncContract> = {
 
       // Record the sync completion time.
       const newLastSyncedAt = new Date().toISOString();
-      await setLastSyncedAt(SYNC_ENTITY_TYPES.callLog, newLastSyncedAt);
+      await setLastSyncedAt(SYNC_ENTITY_TYPES.callLog, {
+        lastSyncedAt: newLastSyncedAt,
+        lastSyncCount: synced,
+        lastSyncEdgeIterations: 0,
+        lastSyncBufferSeconds: 0,
+      });
 
       console.log(
         `[callLog sync] Sync complete — ${synced} record${synced === 1 ? "" : "s"} synced, lastSyncedAt: ${newLastSyncedAt}`,

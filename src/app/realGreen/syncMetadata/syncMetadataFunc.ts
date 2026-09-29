@@ -12,18 +12,28 @@ export async function getLastSyncedAt(entityType: SyncEntityType): Promise<strin
   return doc?.lastSyncedAt ?? null;
 }
 
+type SetLastSyncedAtParams = {
+  lastSyncedAt: string;
+  lastSyncCount: number;
+  lastSyncEdgeIterations: number;
+  lastSyncBufferSeconds: number;
+};
+
 /**
- * Persists the `lastSyncedAt` timestamp for the given entity type.
+ * Persists the `lastSyncedAt` timestamp and diagnostic fields for the given entity type.
  * Creates the document on first sync; updates it on subsequent syncs.
+ *
+ * Only call this when records were actually fetched — do not advance lastSyncedAt
+ * when a sync returns 0 records (the window should stay the same).
  */
 export async function setLastSyncedAt(
   entityType: SyncEntityType,
-  lastSyncedAt: string,
+  { lastSyncedAt, lastSyncCount, lastSyncEdgeIterations, lastSyncBufferSeconds }: SetLastSyncedAtParams,
 ): Promise<void> {
   await connectToMongoDB();
   await SyncMetadataModel.findOneAndUpdate(
     { entityType },
-    { $set: { entityType, lastSyncedAt } },
+    { $set: { entityType, lastSyncedAt, lastSyncCount, lastSyncEdgeIterations, lastSyncBufferSeconds } },
     { upsert: true },
   );
 }

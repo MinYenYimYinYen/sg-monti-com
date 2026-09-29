@@ -57,6 +57,7 @@ import seasonIncreasesReducer from "@/app/priceIncrease/seasonIncreases/seasonIn
 import priceIncreaseSettingsReducer from "@/app/priceIncrease/settings/settingsSlice";
 import priceIncreaseConfigReducer from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
 import { corruptedSyncRecordReducer } from "@/app/realGreen/customer/sync/corruptedRecords/corruptedSyncRecordSlice";
+import { prepayConfigReducer } from "@/app/prepayLetters/config/prepayConfigSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -117,6 +118,7 @@ const rootReducer = combineReducers({
   priceIncreaseSettings: priceIncreaseSettingsReducer,
   priceIncreaseConfig: priceIncreaseConfigReducer,
   corruptedSyncRecord: corruptedSyncRecordReducer,
+  prepayConfig: prepayConfigReducer,
 });
 
 export default rootReducer;

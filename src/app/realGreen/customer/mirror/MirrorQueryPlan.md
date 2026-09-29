@@ -267,6 +267,29 @@ src/app/realGreen/customer/mirror/
 
 ---
 
+## Delta Sync Reliability
+
+The mirror pipeline depends on `runDeltaSync` keeping the MongoDB collections current before
+each query. The sync uses RealGreen's `updated` date range filter to fetch only changed records.
+
+**The problem:** RealGreen does not return the `updated` field in search results, so we cannot
+know the exact timestamp of the most recently modified record. Storing `now` as `lastSyncedAt`
+after each sync creates a race condition — records modified just before the sync window closes
+may not yet be indexed by RealGreen's search API, causing them to be permanently missed.
+
+**The solution:** After each sync, a binary search on RealGreen's `POST /Reporting/[Entity]/Updated`
+endpoint finds the true "edge" — the latest timestamp after which no records are known to have
+been updated. `lastSyncedAt` is set to `edge - 5 minutes` (comfort buffer) rather than `now`.
+
+- `POST /Reporting/Customer/Updated` and `POST /Reporting/Program/Updated` are confirmed available.
+- `POST /Reporting/Service/Updated` does **not** exist. Services use the program edge as a proxy —
+  confirmed by testing: editing any service field in the CRM also updates the parent program's
+  `updated` timestamp, making the program Reporting endpoint a reliable proxy for service changes.
+
+See `sync/MirrorSyncRefactor.md` for the full algorithm and implementation details.
+
+---
+
 ## Status
 
 | Step | Status |
@@ -277,3 +300,4 @@ src/app/realGreen/customer/mirror/
 | `CustomerMirrorContract.ts` with plan params | ✅ Done |
 | Server-side plan executor in `mirror/api/route.ts` | ✅ Done |
 | All customer contexts migrated to mirror pipeline | ✅ Done |
+| Delta sync reliability (binary search edge-finding) | ✅ Done |

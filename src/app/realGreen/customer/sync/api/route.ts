@@ -34,13 +34,17 @@ const handlers: HandlerMap<CustomerSyncContract> = {
       // Paginated fetch from RealGreen using capped exponential batch algorithm.
       const rawCustomers = await fetchCustomers(rawSearch);
 
-      // Record the sync timestamp before the bulkWrite so that delta syncs work correctly
-      // even if the HTTP response times out during the upsert phase.
-      const newLastSyncedAt = new Date().toISOString();
-      await setLastSyncedAt(SYNC_ENTITY_TYPES.customer, newLastSyncedAt);
-
       // Bulk upsert to MongoDB — single command, keyed by custId.
       const synced = await bulkUpsertCustomers(rawCustomers);
+
+      // Record the sync completion time.
+      const newLastSyncedAt = new Date().toISOString();
+      await setLastSyncedAt(SYNC_ENTITY_TYPES.customer, {
+        lastSyncedAt: newLastSyncedAt,
+        lastSyncCount: synced,
+        lastSyncEdgeIterations: 0,
+        lastSyncBufferSeconds: 0,
+      });
 
       console.log(
         `[customer sync] Sync complete — ${synced} record${synced === 1 ? "" : "s"} synced, lastSyncedAt: ${newLastSyncedAt}`,

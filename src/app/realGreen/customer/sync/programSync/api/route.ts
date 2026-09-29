@@ -38,13 +38,17 @@ const handlers: HandlerMap<ProgramSyncContract> = {
       // Paginated fetch from RealGreen using capped exponential batch algorithm.
       const rawPrograms = await fetchPrograms(rawSearch);
 
-      // Record the sync timestamp before the bulkWrite so that delta syncs work correctly
-      // even if the HTTP response times out during the upsert phase.
-      const newLastSyncedAt = new Date().toISOString();
-      await setLastSyncedAt(SYNC_ENTITY_TYPES.program, newLastSyncedAt);
-
       // Bulk upsert to MongoDB — single command, keyed by progId.
       const synced = await bulkUpsertPrograms(rawPrograms);
+
+      // Record the sync completion time.
+      const newLastSyncedAt = new Date().toISOString();
+      await setLastSyncedAt(SYNC_ENTITY_TYPES.program, {
+        lastSyncedAt: newLastSyncedAt,
+        lastSyncCount: synced,
+        lastSyncEdgeIterations: 0,
+        lastSyncBufferSeconds: 0,
+      });
 
       console.log(
         `[program sync] Sync complete — ${synced} record${synced === 1 ? "" : "s"} synced, lastSyncedAt: ${newLastSyncedAt}`,

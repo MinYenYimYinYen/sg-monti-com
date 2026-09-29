@@ -222,4 +222,74 @@ The same delta-sync pattern applies to the customer pipeline:
 - The pagination loop is identical
 - The `bulkWrite` upsert strategy is identical
 
-Once the callLog sync is validated, the framework is proven and can be applied to the major version upgrade of the customer pipeline — where routes read from Mongo instead of always calling RealGreen.
+The customer/program/service sync is implemented and active — it runs automatically before every
+mirror query (`runDeltaSync` in `src/app/realGreen/customer/sync/runDeltaSync.ts`).
+
+---
+
+## 10. Delta Sync Edge-Finding (Customer Pipeline)
+
+The basic delta-sync loop has a race condition: storing `now` as `lastSyncedAt` after a fetch
+can permanently miss records that were modified just before the sync window closed but not yet
+indexed by RealGreen's search API.
+
+**Solution:** After each sync, a binary search on RealGreen's `POST /Reporting/[Entity]/Updated`
+endpoint finds the true "edge" — the latest timestamp after which no records are known to have
+been updated. `lastSyncedAt` is set to `edge - COMFORT_BUFFER` rather than `now`.
+
+### Reporting Endpoints
+
+```
+POST /Reporting/Customer/Updated   ← confirmed available
+POST /Reporting/Program/Updated    ← confirmed available
+POST /Reporting/Service/Updated    ← does NOT exist
+```
+
+Body: `{ "dateTimeRange": { "minValue": ISO8601, "maxValue": ISO8601 } }`
+Response: `number[]` (array of entity IDs updated in that window)
+
+These are cheap calls — no pagination, IDs only.
+
+### Binary Search Algorithm
+
+```
+lo = lastSyncedAt (or HISTORY_FLOOR for initial sync)
+hi = now
+GRANULARITY = 10 minutes
+MAX_ITERATIONS = 25
+
+while (hi - lo) > GRANULARITY AND iterations < MAX_ITERATIONS:
+  mid = (lo + hi) / 2
+  rightIds = POST /Reporting/[Entity]/Updated { min: mid, max: hi }
+  if rightIds.empty: break   // lo is the answer
+  else: lo = mid             // advance lo
+
+newLastSyncedAt = lo - COMFORT_BUFFER (5 minutes)
+```
+
+**Call count:** log₂(range / granularity), capped at 25. Typically 1–7 for normal syncs.
+
+### Service Proxy
+
+Since `/Reporting/Service/Updated` does not exist, services use the program edge as a proxy.
+Confirmed by testing: editing any service field in the RealGreen CRM also updates the parent
+program's `updated` timestamp. The program Reporting endpoint is therefore a reliable proxy
+for detecting service changes.
+
+### SyncMetadata Diagnostic Fields
+
+`SyncMetadata` now includes three diagnostic fields per entity:
+
+| Field | Purpose |
+|---|---|
+| `lastSyncCount` | Records fetched in the last sync |
+| `lastSyncEdgeIterations` | Binary search iterations used |
+| `lastSyncBufferSeconds` | Comfort buffer subtracted from the edge |
+
+See `src/app/realGreen/customer/sync/MirrorSyncRefactor.md` for full documentation.
+
+### Metadata Write Pattern
+
+All three sync functions run concurrently. Each returns a `SyncResult` without writing to the DB.
+After all three complete, `runDeltaSync` writes all metadata at once — only for entities that
+fetched records (zero-record syncs leave `lastSyncedAt` unchanged).

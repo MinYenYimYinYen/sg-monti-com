@@ -12,12 +12,9 @@ import { Button } from "@/style/components/button";
 import Link from "next/link";
 import { Role } from "@/lib/api/types/roles";
 import { Menu } from "lucide-react";
-import { cn } from "@/lib/tailwindUtils";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
 import { useIsClient } from "@/lib/hooks/useIsClient";
-
-// ... (Types and Data objects remain the same) ...
 
 type NavItem = {
   title: string;
@@ -71,15 +68,10 @@ const schedulingSection: NavSection = {
   ],
 };
 
-const prepaySection: NavSection = {
-  title: "Prepay Letters",
+const customerContactSection: NavSection = {
+  title: "Customer Contact",
   navItems: [
-    {
-      title: "Email",
-      href: "/prepayLetters/email",
-      roles: ["admin", "office"],
-    },
-    { title: "PDF", href: "/prepayLetters/pdf", roles: ["admin", "office"] },
+    { title: "Prepay Letters", href: "/prepayLetters/config", roles: ["admin", "office"] },
     { title: "QuickSend", href: "/quickSend", roles: ["admin", "office"] },
   ],
 };
@@ -118,7 +110,7 @@ const bizPlanSection: NavSection = {
 
 const menuSections = [
   schedulingSection,
-  prepaySection,
+  customerContactSection,
   realGreenParams,
   bizPlanSection,
 ];
