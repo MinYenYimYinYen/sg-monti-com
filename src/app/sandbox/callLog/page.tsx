@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useSingleCustomer } from "@/app/realGreen/customer/hooks/useSingleCustomer";
 import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
+import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
 import { useCallLog } from "@/app/realGreen/callLog/useCallLog";
 import { callLogSelect } from "@/app/realGreen/callLog/callLogSelect";
 import {
@@ -18,7 +19,16 @@ export default function CallLogDevPage() {
   const [inputValue, setInputValue] = useState("");
   const [custId, setCustId] = useState<number | null>(null);
 
-  const { lookup } = useSingleCustomer();
+  // This sandbox page only needs the customer entity — no programs or services.
+  const callLogDevPlan = new QueryBuilder()
+    .addCustomerStep(["entity"], {
+      stepName: "getCustomer",
+      source: "values",
+      filters: [] as [],  // custId injected by useSingleCustomer
+    })
+    .build();
+
+  const { lookup } = useSingleCustomer({ mirrorQueryPlan: callLogDevPlan });
   const { refreshForCustomer } = useCallLog({ custId: custId ?? undefined });
 
   const customer = useSelector(singleCustSelect.customer);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { Plus } from "lucide-react";
 import { Container } from "@/components/Containers";
@@ -20,6 +20,41 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { usePriorityServiceCustomers } from "@/app/realGreen/customer/hooks/usePriorityServiceCustomers";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
+import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
+
+// ---------------------------------------------------------------------------
+// Single-customer lookup plan for the "New Entry" form.
+//
+// Seeds from custId (injected by useSingleCustomer at call time) and walks
+// down to programs and services for the current season. Season is injected
+// here because the form needs to show only current-season services.
+// ---------------------------------------------------------------------------
+
+function buildSingleCustomerPlan(season: number) {
+  return new QueryBuilder()
+    .addCustomerStep(["entity", "provider"], {
+      stepName: "getCustomer",
+      source: "values",
+      filters: [] as [],  // custId injected by useSingleCustomer
+      provides: { custId: true },
+    })
+    .addProgramStep(["entity", "provider"], {
+      stepName: "getPrograms",
+      source: "step",
+      fromStep: "getCustomer",
+      joinKey: "custId",
+      filters: [{ field: "season", operator: "eq", value: season }],
+      provides: { progId: true },
+    })
+    .addServiceStep(["entity"], {
+      stepName: "getServices",
+      source: "step",
+      fromStep: "getPrograms",
+      joinKey: "progId",
+      filters: [{ field: "season", operator: "eq", value: season }],
+    })
+    .build();
+}
 
 // ---------------------------------------------------------------------------
 // PriorityServicePage
@@ -27,7 +62,6 @@ import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSe
 
 export default function PriorityServicePage() {
   const { loadByServIds: loadPriorityServiceCustomers } = usePriorityServiceCustomers();
-  const { clearCustomer } = useSingleCustomer();
 
   // Load priority service docs
   usePriorityService({ autoLoad: true });
@@ -39,23 +73,37 @@ export default function PriorityServicePage() {
   // ProgServ needed to resolve servCode names in the form dropdowns
   useProgServ({ autoLoad: true });
 
-  // Global settings needed by useSingleCustomer (season)
+  // Global settings needed for the single-customer plan (season)
   useGlobalSettings({ autoLoad: true });
 
   const docs = useSelector(priorityServiceSelect.docs);
   const priorityServiceMap = useSelector(priorityServiceSelect.priorityServiceMap);
+  const season = useSelector(globalSettingsSelect.season);
+
   // lookupCustomer reads from state.customer.single (not central), so it never
   // conflicts with the priorityService list context.
   const lookupCustomer = useSelector(singleCustSelect.customer);
-  const season = useSelector(globalSettingsSelect.season);
+
+  // Build the single-customer plan once season is available.
+  // React Compiler handles memoization — no useMemo needed.
+  const singleCustomerPlan = season ? buildSingleCustomerPlan(season) : null;
+
+  const { clearCustomer } = useSingleCustomer({
+    mirrorQueryPlan: singleCustomerPlan ?? [],
+  });
 
   // Load the full customer/program/service data for each priority service doc
   // into the "priorityService" customer context so the CRUD list can hydrate.
+  // Guard with a ref so this only fires once on mount (or when season first
+  // becomes available) — not on every doc change after a CRUD operation.
+  const initialLoadFired = useRef(false);
   useEffect(() => {
     if (!docs.length || !season) return;
+    if (initialLoadFired.current) return;
+    initialLoadFired.current = true;
     loadPriorityServiceCustomers(
       docs.map((d) => d.servId),
-      { loadingMsg: "Loading priority services...", force: true },
+      { loadingMsg: "Loading priority services..." },
     );
   }, [docs, loadPriorityServiceCustomers, season]);
 

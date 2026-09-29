@@ -29,6 +29,8 @@ import { TRange } from "@/lib/primatives/tRange/TRange";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
+import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
+import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
 
 const ELIGIBLE_STATUSES = getServiceStatuses(["active", "asap", "printed"]);
 
@@ -43,7 +45,39 @@ export function PriorityServiceForm({
   onDone,
 }: PriorityServiceFormProps) {
   useGlobalSettings({ autoLoad: true });
-  const { lookup, clearCustomer } = useSingleCustomer();
+
+  const season = useSelector(globalSettingsSelect.season);
+
+  // Build the single-customer plan for the form's customer lookup.
+  // Season filters programs and services to the current season so the
+  // dropdowns only show relevant options.
+  const singleCustomerPlan = season
+    ? new QueryBuilder()
+        .addCustomerStep(["entity", "provider"], {
+          stepName: "getCustomer",
+          source: "values",
+          filters: [] as [],  // custId injected by useSingleCustomer
+          provides: { custId: true },
+        })
+        .addProgramStep(["entity", "provider"], {
+          stepName: "getPrograms",
+          source: "step",
+          fromStep: "getCustomer",
+          joinKey: "custId",
+          filters: [{ field: "season", operator: "eq", value: season }],
+          provides: { progId: true },
+        })
+        .addServiceStep(["entity"], {
+          stepName: "getServices",
+          source: "step",
+          fromStep: "getPrograms",
+          joinKey: "progId",
+          filters: [{ field: "season", operator: "eq", value: season }],
+        })
+        .build()
+    : [];
+
+  const { lookup, clearCustomer } = useSingleCustomer({ mirrorQueryPlan: singleCustomerPlan });
 
   const { upsert, deleteOne } = usePriorityService();
   const priorityServiceMap = useSelector(priorityServiceSelect.priorityServiceMap);
