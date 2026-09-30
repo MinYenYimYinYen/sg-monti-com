@@ -1,7 +1,7 @@
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { useEffect } from "react";
 import { prepayConfigActions } from "./prepayConfigSlice";
-import type { PrepayConfigDoc } from "./prepayConfigTypes";
+import type { PrepayConfig } from "./prepayConfigTypes";
 
 export function usePrepayConfig({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
@@ -17,7 +17,7 @@ export function usePrepayConfig({ autoLoad }: { autoLoad?: boolean } = {}) {
     }
   }, [autoLoad, dispatch]);
 
-  const saveConfig = (config: PrepayConfigDoc) =>
+  const saveConfig = (config: PrepayConfig) =>
     dispatch(
       prepayConfigActions.saveConfig({
         params: { config },

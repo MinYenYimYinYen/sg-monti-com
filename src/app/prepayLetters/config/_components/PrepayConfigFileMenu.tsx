@@ -24,9 +24,9 @@ import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 import { ChevronDown } from "lucide-react";
-import type { PrepayConfigDoc } from "../prepayConfigTypes";
+import type { PrepayConfig } from "../prepayConfigTypes";
 
-const BLANK_CONFIG: Omit<PrepayConfigDoc, "configId" | "name" | "saId"> = {
+const BLANK_CONFIG: Omit<PrepayConfig, "configId" | "name" | "saId"> = {
   selectionMode: "batch",
   season: new Date().getFullYear(),
   stdPrepayDiscPercent: 0,
@@ -76,7 +76,7 @@ export function PrepayConfigFileMenu() {
 
   const handleSaveAs = () => {
     if (!draft || !saveAsName.trim()) return;
-    const newDoc: PrepayConfigDoc = {
+    const newDoc: PrepayConfig = {
       ...draft,
       configId: "", // server will generate
       name: saveAsName.trim(),

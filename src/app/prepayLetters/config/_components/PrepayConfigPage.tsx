@@ -2,7 +2,7 @@
 
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { prepayConfigSelect } from "../prepayConfigSelect";
+import { prepayConfigSelect, prepayLetterVarParsers } from "../prepayConfigSelect";
 import { prepayConfigActions } from "../prepayConfigSlice";
 import { authSelect } from "@/app/auth/authSlice";
 import { RenewalFlagsDisplay } from "./RenewalFlagsDisplay";
@@ -13,7 +13,8 @@ import { Checkbox } from "@/style/components/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import { DatePicker } from "@/components/DatePicker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/style/components/card";
-import type { PrepayConfigDoc } from "../prepayConfigTypes";
+import { MentionEditor } from "@/components/MentionEditor/MentionEditor";
+import type { PrepayConfig } from "../prepayConfigTypes";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -52,9 +53,17 @@ export function PrepayConfigPage() {
     );
   }
 
-  const update = (patch: Partial<PrepayConfigDoc>) => {
+  const update = (patch: Partial<PrepayConfig>) => {
     if (isReadOnly) return;
     dispatch(prepayConfigActions.updateDraft(patch));
+  };
+
+  // The vars object passed to MentionEditor — the keys become the available @ variables.
+  const letterVars = {
+    season: draft.season,
+    stdPrepayDiscPercent: draft.stdPrepayDiscPercent,
+    upsellPrepayDiscPercent: draft.upsellPrepayDiscPercent,
+    expirationDate: draft.expirationDate,
   };
 
   return (
@@ -90,7 +99,7 @@ export function PrepayConfigPage() {
                 <RadioGroup
                   variant="button-group"
                   value={draft.selectionMode}
-                  onValueChange={(v) => update({ selectionMode: v as PrepayConfigDoc["selectionMode"] })}
+                  onValueChange={(v) => update({ selectionMode: v as PrepayConfig["selectionMode"] })}
                   disabled={isReadOnly}
                 >
                   <RadioGroupItem value="single">Single Customer</RadioGroupItem>
@@ -174,33 +183,41 @@ export function PrepayConfigPage() {
 
               <FormGroup>
                 <Label>Universal Message</Label>
-                <textarea
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                  placeholder="Message shown to all customers regardless of renewal status…"
+                <MentionEditor
                   value={draft.universalMessage}
-                  onChange={(e) => update({ universalMessage: e.target.value })}
+                  onChange={(html) => update({ universalMessage: html })}
+                  vars={letterVars}
+                  parsers={prepayLetterVarParsers}
                   disabled={isReadOnly}
+                  placeholder="Message shown to all customers regardless of renewal status…"
+                  minHeight="80px"
                 />
               </FormGroup>
 
               <div className="grid grid-cols-2 gap-4">
                 <FormGroup>
                   <Label>Auto-Renew Header</Label>
-                  <Input
+                  <MentionEditor
                     value={draft.autoRenewHeader}
-                    onChange={(e) => update({ autoRenewHeader: e.target.value })}
-                    placeholder="e.g. Thank you for renewing!"
+                    onChange={(html) => update({ autoRenewHeader: html })}
+                    vars={letterVars}
+                    parsers={prepayLetterVarParsers}
                     disabled={isReadOnly}
+                    placeholder="e.g. Thank you for renewing!"
+                    minHeight="40px"
                   />
                 </FormGroup>
 
                 <FormGroup>
                   <Label>Don&apos;t Auto-Renew Header</Label>
-                  <Input
+                  <MentionEditor
                     value={draft.dontAutoRenewHeader}
-                    onChange={(e) => update({ dontAutoRenewHeader: e.target.value })}
-                    placeholder="e.g. We miss you!"
+                    onChange={(html) => update({ dontAutoRenewHeader: html })}
+                    vars={letterVars}
+                    parsers={prepayLetterVarParsers}
                     disabled={isReadOnly}
+                    placeholder="e.g. We miss you!"
+                    minHeight="40px"
                   />
                 </FormGroup>
               </div>
@@ -208,23 +225,27 @@ export function PrepayConfigPage() {
               <div className="grid grid-cols-2 gap-4">
                 <FormGroup>
                   <Label>Auto-Renew Message</Label>
-                  <textarea
-                    className="flex min-h-[80px] w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                    placeholder="Message for auto-renewing customers…"
+                  <MentionEditor
                     value={draft.autoRenewMessage}
-                    onChange={(e) => update({ autoRenewMessage: e.target.value })}
+                    onChange={(html) => update({ autoRenewMessage: html })}
+                    vars={letterVars}
+                    parsers={prepayLetterVarParsers}
                     disabled={isReadOnly}
+                    placeholder="Message for auto-renewing customers…"
+                    minHeight="80px"
                   />
                 </FormGroup>
 
                 <FormGroup>
                   <Label>Don&apos;t Auto-Renew Message</Label>
-                  <textarea
-                    className="flex min-h-[80px] w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                    placeholder="Message for non-renewing customers…"
+                  <MentionEditor
                     value={draft.dontAutoRenewMessage}
-                    onChange={(e) => update({ dontAutoRenewMessage: e.target.value })}
+                    onChange={(html) => update({ dontAutoRenewMessage: html })}
+                    vars={letterVars}
+                    parsers={prepayLetterVarParsers}
                     disabled={isReadOnly}
+                    placeholder="Message for non-renewing customers…"
+                    minHeight="80px"
                   />
                 </FormGroup>
               </div>

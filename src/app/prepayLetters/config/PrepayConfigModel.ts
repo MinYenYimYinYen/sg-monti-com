@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import { createModel } from "@/lib/mongoose/createModel";
-import type { PrepayConfigDoc } from "./prepayConfigTypes";
+import type { PrepayConfig } from "./prepayConfigTypes";
 
-const PrepayConfigSchema = new mongoose.Schema<PrepayConfigDoc>(
+const PrepayConfigSchema = new mongoose.Schema<PrepayConfig>(
   {
     configId: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
@@ -26,4 +26,4 @@ const PrepayConfigSchema = new mongoose.Schema<PrepayConfigDoc>(
 // Enforce uniqueness of name per user
 PrepayConfigSchema.index({ name: 1, saId: 1 }, { unique: true });
 
-export const PrepayConfigModel = createModel<PrepayConfigDoc>("PrepayConfig", PrepayConfigSchema);
+export const PrepayConfigModel = createModel<PrepayConfig>("PrepayConfig", PrepayConfigSchema);

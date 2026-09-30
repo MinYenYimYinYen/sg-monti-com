@@ -1,7 +1,7 @@
 import type { HandlerMap } from "@/lib/api/types/rpcUtils";
 import type { PrepayConfigContract } from "../prepayConfigContract";
 import { PrepayConfigModel } from "../PrepayConfigModel";
-import type { PrepayConfigDoc } from "../prepayConfigTypes";
+import type { PrepayConfig } from "../prepayConfigTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
@@ -49,7 +49,7 @@ const handlers: HandlerMap<PrepayConfigContract> = {
     handler: async () => {
       await connectToMongoDB();
       const docs = await PrepayConfigModel.find().lean();
-      return { success: true, payload: cleanMongoArray(docs) as PrepayConfigDoc[] };
+      return { success: true, payload: cleanMongoArray(docs) as PrepayConfig[] };
     },
   },
 
@@ -60,7 +60,7 @@ const handlers: HandlerMap<PrepayConfigContract> = {
       const saId = await getCurrentUserSaId();
 
       const configId = makeConfigId(config.name, saId);
-      const docToSave: PrepayConfigDoc = {
+      const docToSave: PrepayConfig = {
         ...config,
         configId,
         saId,
@@ -74,7 +74,7 @@ const handlers: HandlerMap<PrepayConfigContract> = {
 
       return {
         success: true,
-        payload: cleanMongoObject(result!) as PrepayConfigDoc,
+        payload: cleanMongoObject(result!) as PrepayConfig,
       };
     },
   },

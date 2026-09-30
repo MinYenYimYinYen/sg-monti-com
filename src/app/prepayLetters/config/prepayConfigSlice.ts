@@ -1,12 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import type { PrepayConfigContract } from "./prepayConfigContract";
-import type { PrepayConfigDoc } from "./prepayConfigTypes";
+import type { PrepayConfig } from "./prepayConfigTypes";
 
 type PrepayConfigState = {
-  configs: PrepayConfigDoc[];
+  configs: PrepayConfig[];
   /** The config currently open in the editor. null = new/blank. */
-  draft: PrepayConfigDoc | null;
+  draft: PrepayConfig | null;
 };
 
 const initialState: PrepayConfigState = {
@@ -41,11 +41,11 @@ const prepayConfigSlice = createSlice({
   initialState,
   reducers: {
     /** Load a saved config into the editor. */
-    setDraft: (state, action: PayloadAction<PrepayConfigDoc>) => {
+    setDraft: (state, action: PayloadAction<PrepayConfig>) => {
       state.draft = action.payload;
     },
     /** Patch individual fields on the active draft. */
-    updateDraft: (state, action: PayloadAction<Partial<PrepayConfigDoc>>) => {
+    updateDraft: (state, action: PayloadAction<Partial<PrepayConfig>>) => {
       if (state.draft) {
         state.draft = { ...state.draft, ...action.payload };
       }
