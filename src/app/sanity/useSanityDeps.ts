@@ -9,8 +9,6 @@ import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { useSelector } from "react-redux";
 import { sanitySelect } from "@/app/sanity/sanitySelect";
-import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
-import { sanityActions } from "@/app/sanity/sanitySlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { progServActions } from "@/app/realGreen/progServ/_lib/slice/progServSlice";
 import { flagActions } from "@/app/realGreen/flag/flagSlice";
@@ -19,30 +17,24 @@ import { callAheadActions } from "@/app/realGreen/callAhead/callAheadSlice";
 
 export function useSanityDeps() {
   const dispatch = useAppDispatch();
-  const globalSeason = useSelector(globalSettingsSelect.season);
-  const seasonOverride = useSelector(sanitySelect.seasonOverride);
-
-  // Effective season: use the override if set, otherwise fall back to globalSettings.season
-  const season = seasonOverride ?? globalSeason;
+  const sanitySeason = useSelector(sanitySelect.sanitySeason);
 
   useCustomerContext({ contexts: ["fullSeasonServices"] });
-  const { refresh: refreshFullSeasonServices } = useFullSeasonServices();
+  const { refresh: refreshFullSeasonServices } = useFullSeasonServices({
+    seasonOverride: sanitySeason ?? undefined,
+  });
   useProgServ({});
   useFlag({ autoLoad: false });
   useFlagRule({});
-  useFlagRuleCustFlags();
+  const { reload: reloadCustFlags } = useFlagRuleCustFlags();
   useRenewalFlagIds();
   useCallAhead({ autoLoad: false });
 
   const load = () => {
-    if (!season) return;
-
-    // Initialize seasonOverride from globalSettings.season on first load if not yet set
-    if (seasonOverride === null && globalSeason !== undefined) {
-      dispatch(sanityActions.setSeasonOverride(globalSeason));
-    }
+    if (!sanitySeason) return;
 
     refreshFullSeasonServices();
+    reloadCustFlags();
 
     dispatch(
       progServActions.getProgCodeDocs({
@@ -97,5 +89,5 @@ export function useSanityDeps() {
     );
   };
 
-  return { load, season };
+  return { load, season: sanitySeason };
 }

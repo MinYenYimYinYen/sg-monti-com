@@ -13,5 +13,6 @@ const ACTIVE_STATUSES = ["9"];
  */
 export function useFlagRuleCustFlags() {
   const allRuleFlagIds = useSelector(flagRuleSelect.allRuleFlagIds);
-  useCustFlag({ flagIds: allRuleFlagIds, custStatuses: ACTIVE_STATUSES });
+  const { reloadFlagIds } = useCustFlag({ flagIds: allRuleFlagIds, custStatuses: ACTIVE_STATUSES });
+  return { reload: reloadFlagIds };
 }

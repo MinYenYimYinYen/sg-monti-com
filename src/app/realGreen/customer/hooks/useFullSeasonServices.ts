@@ -44,10 +44,18 @@ function buildFullSeasonServicesPlan(season: number) {
     .build();
 }
 
-export function useFullSeasonServices({ autoLoad = false }: { autoLoad?: boolean } = {}) {
+export function useFullSeasonServices({
+  autoLoad = false,
+  seasonOverride,
+}: {
+  autoLoad?: boolean;
+  /** Override the season used for the query. Defaults to globalSettings.season. */
+  seasonOverride?: number;
+} = {}) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
-  const season = useSelector(globalSettingsSelect.season);
+  const globalSeason = useSelector(globalSettingsSelect.season);
+  const season = seasonOverride ?? globalSeason;
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {

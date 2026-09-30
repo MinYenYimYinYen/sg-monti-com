@@ -55,7 +55,17 @@ type SanityUiPrefs = {
     /** ISO timestamp of the last modification to finishedCustIds. Used for expiry. */
     finishedAt: string | null;
   };
+  /** Layout-level preferences shared across all sanity pages. */
+  layoutState: {
+    /**
+     * Season override for the sanity section. When null, falls back to globalSettings.season.
+     * Persisted so the user's season selection survives page reloads.
+     */
+    seasonOverride: number | null;
+  };
 };
+
+type SanityState = SanityUiPrefs;
 
 const defaultPrefs: SanityUiPrefs = {
   allPages: {
@@ -75,6 +85,9 @@ const defaultPrefs: SanityUiPrefs = {
   sizeSanityPage: {
     finishedCustIds: [],
     finishedAt: null,
+  },
+  layoutState: {
+    seasonOverride: null,
   },
 };
 
@@ -123,21 +136,17 @@ function getStoredSanityPrefs(): SanityUiPrefs {
     customerSanityPage: mergedCustomerSanity,
     programSanityPage: mergedProgramSanity,
     sizeSanityPage: mergedSizeSanity,
+    layoutState: { ...defaultPrefs.layoutState, ...parsed.layoutState },
   };
 }
 
-function persistSanityPrefs(state: SanityUiPrefs): void {
+function persistSanityPrefs(state: SanityState): void {
   writeLocalStorage(SANITY_PREFS_KEY, state);
 }
 
-type SanityState = SanityUiPrefs & {
-  /** Session-only season override — not persisted to localStorage. Defaults to globalSettings.season. */
-  seasonOverride: number | null;
-};
-
 const sanitySlice = createSlice({
   name: "sanity",
-  initialState: { ...getStoredSanityPrefs(), seasonOverride: null } as SanityState,
+  initialState: getStoredSanityPrefs() as SanityState,
   reducers: {
     // --- allPages ---
     toggleExcludedProgCodeId(state, action: PayloadAction<string>) {
@@ -239,10 +248,10 @@ const sanitySlice = createSlice({
       persistSanityPrefs(state);
     },
 
-    // --- session-only ---
+    // --- layoutState ---
     setSeasonOverride(state, action: PayloadAction<number>) {
-      state.seasonOverride = action.payload;
-      // Not persisted — session only
+      state.layoutState.seasonOverride = action.payload;
+      persistSanityPrefs(state);
     },
   },
 });

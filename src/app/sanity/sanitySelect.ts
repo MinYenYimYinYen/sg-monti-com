@@ -3,6 +3,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
+import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 
 // ---------------------------------------------------------------------------
 // sanitySelect — the global data pipeline for the sanity section.
@@ -47,11 +48,18 @@ const selectServices = createSelector([selectPrograms], (programs) =>
   programs.flatMap((p) => p.services),
 );
 
-const selectSeasonOverride = (state: AppState) => state.sanity.seasonOverride;
+const selectSeasonOverride = (state: AppState) => state.sanity.layoutState.seasonOverride;
+
+/** Effective season: layout override if set, otherwise globalSettings.season. */
+const selectSanitySeason = createSelector(
+  [selectSeasonOverride, globalSettingsSelect.season],
+  (override, globalSeason) => override ?? globalSeason,
+);
 
 export const sanitySelect = {
   excludedProgCodeIds: selectExcludedProgCodeIds,
   seasonOverride: selectSeasonOverride,
+  sanitySeason: selectSanitySeason,
   customers: selectCustomers,
   programs: selectPrograms,
   services: selectServices,
