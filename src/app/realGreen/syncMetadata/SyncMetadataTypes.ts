@@ -23,4 +23,11 @@ export type SyncMetadata = CreatedUpdated & {
   lastSyncEdgeIterations: number;
   /** Comfort buffer subtracted from the discovered edge before storing as lastSyncedAt (seconds). */
   lastSyncBufferSeconds: number;
+  /**
+   * ISO 8601 timestamp of the most recent mirror query (getMirrorCustomers call).
+   * Written fire-and-forget by the mirror route. Used by the Vercel Cron job to determine
+   * how frequently to sync based on recent user activity.
+   * Only present on the "customer" entity document.
+   */
+  lastQueriedAt?: string;
 };

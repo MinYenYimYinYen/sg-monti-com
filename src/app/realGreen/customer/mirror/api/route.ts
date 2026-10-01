@@ -18,6 +18,7 @@ import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { StreamChunk } from "@/app/realGreen/customer/api/CustomerContract";
 import { runDeltaSync } from "@/app/realGreen/customer/sync/runDeltaSync";
+import { recordMirrorQuery } from "@/app/realGreen/syncMetadata/syncMetadataFunc";
 
 // ---------------------------------------------------------------------------
 // Filter Translation
@@ -186,14 +187,21 @@ async function executePlan(
 const handlers: HandlerMap<CustomerMirrorContract> = {
   getMirrorCustomers: {
     roles: ["admin", "office", "tech"],
-    handler: async ({ plan }) => {
+    handler: async ({ plan, syncFirst }) => {
       console.log("[mirror] getMirrorCustomers handler triggered with plan steps:", plan.map(s => s.stepName));
       await connectToMongoDB();
 
-      // Sync all three entity types from RealGreen before querying the mirror.
-      // Uses delta sync (only records updated since last sync) so this is fast
-      // on subsequent calls. Runs concurrently across all three entities.
-      await runDeltaSync();
+      // Track query activity fire-and-forget — the Vercel Cron job reads lastQueriedAt
+      // to determine how frequently to sync. No await: zero latency impact on the query.
+      recordMirrorQuery().catch(() => {});
+
+      // Sync gate — normally the Vercel Cron job keeps the mirror current.
+      // Set syncFirst: true in the hook params to force a sync before this query,
+      // e.g. when the cron is not running or absolutely fresh data is required.
+      if (syncFirst) {
+        console.log("[mirror] syncFirst=true — running delta sync before query");
+        await runDeltaSync();
+      }
 
       const encoder = new TextEncoder();
 

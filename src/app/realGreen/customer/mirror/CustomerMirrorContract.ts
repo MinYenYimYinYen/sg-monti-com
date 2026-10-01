@@ -25,6 +25,14 @@ export interface CustomerMirrorContract extends ApiContract {
   getMirrorCustomers: {
     params: {
       plan: MirrorQueryPlan;
+      /**
+       * If true, runs a delta sync against RealGreen before executing the query plan.
+       * Use this as a fallback when the Vercel Cron job is not running or when
+       * absolutely fresh data is required. Defaults to false (cron keeps mirror current).
+       *
+       * To re-enable sync-before-query globally: set syncFirst: true in the hook params.
+       */
+      syncFirst?: boolean;
     };
     result: DataResponse<StreamChunk[]>;
   };

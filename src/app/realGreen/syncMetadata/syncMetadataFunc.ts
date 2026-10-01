@@ -20,6 +20,19 @@ type SetLastSyncedAtParams = {
 };
 
 /**
+ * Records the current timestamp as `lastQueriedAt` on the customer SyncMetadata document.
+ * Called fire-and-forget (no await) by the mirror query route to track user activity.
+ * The Vercel Cron job reads this value to determine how frequently to run delta syncs.
+ */
+export async function recordMirrorQuery(): Promise<void> {
+  await connectToMongoDB();
+  await SyncMetadataModel.findOneAndUpdate(
+    { entityType: "customer" },
+    { $set: { lastQueriedAt: new Date().toISOString() } },
+  );
+}
+
+/**
  * Persists the `lastSyncedAt` timestamp and diagnostic fields for the given entity type.
  * Creates the document on first sync; updates it on subsequent syncs.
  *

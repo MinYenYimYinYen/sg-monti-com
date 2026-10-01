@@ -9,6 +9,7 @@ const SyncMetadataSchema = new mongoose.Schema<SyncMetadata>(
     lastSyncCount: { type: Number, required: true, default: 0 },
     lastSyncEdgeIterations: { type: Number, required: true, default: 0 },
     lastSyncBufferSeconds: { type: Number, required: true, default: 0 },
+    lastQueriedAt: { type: String, required: false },
   },
   { timestamps: true },
 );
