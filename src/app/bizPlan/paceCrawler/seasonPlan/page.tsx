@@ -5,8 +5,16 @@ import { useSelector } from "react-redux";
 import { seasonPlanSelect } from "@/app/bizPlan/seasonPlan/seasonPlanSelect";
 import { useSeasonPlan } from "@/app/bizPlan/seasonPlan/useSeasonPlan";
 import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
+import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
+import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
+import { holidaySelect } from "@/app/holiday/holidaySelect";
+import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { SeasonPlan, GroupSchedule } from "@/app/bizPlan/seasonPlan/SeasonPlanTypes";
-import { Plus, Trash2, Check } from "lucide-react";
+import { AssignmentGroup } from "@/app/assignmentGroup/AssignmentGroupTypes";
+import { Plus, Trash2, Check, Copy, Info } from "lucide-react";
+import { dateStrings } from "@/lib/primatives/dates/dateStrings";
+import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
+import { Button } from "@/style/components/button";
 
 // ---------------------------------------------------------------------------
 // Week / date helpers
@@ -212,6 +220,244 @@ function WeekRangeSlider({
 }
 
 // ---------------------------------------------------------------------------
+// Feasibility — compute whether a group's planned window is achievable
+// ---------------------------------------------------------------------------
+
+type FeasibilityStatus = "no-data" | "too-early" | "on-track" | "tight" | "over";
+
+type FeasibilityResult = {
+  status: FeasibilityStatus;
+  daysAvailable: number;
+  daysNeeded: number;
+  /** Total unscheduled price remaining in the group's servCodes. */
+  priceRemaining: number;
+  /** Sum of all assigned employees' daily rate for this group. 0 = no data. */
+  goalPricePerDay: number;
+  /** Estimated price still remaining on the plannedEnd date (floored at 0). */
+  priceRemainingOnEndDate: number;
+  /** daysNeeded - daysAvailable. Negative = early, positive = late. */
+  daysEarlyLate: number;
+};
+
+type FeasibilityInputs = {
+  group: AssignmentGroup;
+  plannedStart: string;
+  plannedEnd: string;
+  cascadeThreshold: number;
+  assignmentPlans: ReturnType<typeof assignmentPlanSelect.assignmentPlans>;
+  activePoolPriceByServCode: Map<string, number>;
+  totalAvgDailyPriceByEmployee: Map<string, number>;
+  holidayDates: Set<string>;
+  employeeMap: ReturnType<typeof employeeSelect.employeeMap>;
+};
+
+function computeGroupFeasibility({
+  group,
+  plannedStart,
+  plannedEnd,
+  cascadeThreshold,
+  assignmentPlans,
+  activePoolPriceByServCode,
+  totalAvgDailyPriceByEmployee,
+  holidayDates,
+  employeeMap,
+}: FeasibilityInputs): FeasibilityResult {
+  // Total pool for this group across all member servCodes
+  const totalPool = group.servCodeIds.reduce(
+    (sum, servCodeId) => sum + (activePoolPriceByServCode.get(servCodeId) ?? 0),
+    0,
+  );
+
+  // Find all employees assigned to this group and their daily rate for it
+  let teamDailyRate = 0;
+  for (const plan of assignmentPlans) {
+    const groupAssignment = plan.groupAssignments.find((ga) => ga.groupId === group.groupId);
+    if (!groupAssignment) continue;
+    const goal = groupAssignment.dailyRevenueGoal;
+    const rate = goal !== null ? goal : (totalAvgDailyPriceByEmployee.get(plan.employeeId) ?? 0);
+    teamDailyRate += rate;
+  }
+
+  if (totalPool === 0 || teamDailyRate === 0) {
+    return {
+      status: "no-data",
+      daysAvailable: 0,
+      daysNeeded: 0,
+      priceRemaining: totalPool,
+      goalPricePerDay: teamDailyRate,
+      priceRemainingOnEndDate: totalPool,
+      daysEarlyLate: 0,
+    };
+  }
+
+  // Count effective working days in [plannedStart, plannedEnd]
+  // Subtract global holidays and per-employee PTO/availability restrictions
+  // Collect the set of all days any assigned employee is unavailable
+  const assignedEmployeeIds = assignmentPlans
+    .filter((plan) => plan.groupAssignments.some((ga) => ga.groupId === group.groupId))
+    .map((plan) => plan.employeeId);
+
+  // Build a set of dates where at least one employee is unavailable (for informational purposes
+  // we count days where the team can work — i.e. days not blocked by holidays).
+  // Per-employee PTO reduces the team rate on those days rather than blocking the whole team,
+  // but for simplicity we count raw weekdays minus global holidays, then subtract the
+  // average fraction of employee-days lost to PTO/availability across the window.
+  let rawWeekdays = 0;
+  let employeeDaysLost = 0;
+  let day = plannedStart;
+
+  while (day <= plannedEnd) {
+    if (dateStrings.isWeekDay(day)) {
+      if (!holidayDates.has(day)) {
+        rawWeekdays++;
+        // Count how many assigned employees are unavailable on this day
+        for (const employeeId of assignedEmployeeIds) {
+          const employee = employeeMap.get(employeeId);
+          if (!employee) continue;
+          // Check availability window
+          const avail = employee.availability;
+          if (avail.startDate && day < avail.startDate) { employeeDaysLost++; continue; }
+          if (avail.endDate && day > avail.endDate) { employeeDaysLost++; continue; }
+          // Check PTO
+          for (const pto of employee.plannedTimeOff) {
+            if (day >= pto.dateRange.min && day <= pto.dateRange.max) {
+              employeeDaysLost++;
+              break;
+            }
+          }
+        }
+      }
+    }
+    day = dateStrings.addDays(day, 1);
+  }
+
+  // Effective capacity = rawWeekdays * teamDailyRate - employeeDaysLost * avgDailyRate
+  // Expressed as equivalent full-team days: subtract fractional days lost
+  const avgDailyRate = assignedEmployeeIds.length > 0 ? teamDailyRate / assignedEmployeeIds.length : 0;
+  const effectiveCapacity = rawWeekdays * teamDailyRate - employeeDaysLost * avgDailyRate;
+  // Convert back to equivalent days at full team rate
+  const daysAvailable = teamDailyRate > 0 ? Math.round(effectiveCapacity / teamDailyRate) : rawWeekdays;
+  const daysNeeded = Math.round(totalPool / teamDailyRate);
+
+  const utilizationRatio = daysAvailable > 0 ? daysNeeded / daysAvailable : Infinity;
+  const tooEarlyThreshold = 1 - cascadeThreshold;
+
+  let status: FeasibilityStatus;
+  if (utilizationRatio < tooEarlyThreshold) {
+    status = "too-early";
+  } else if (utilizationRatio <= cascadeThreshold) {
+    status = "on-track";
+  } else if (utilizationRatio <= 1.0) {
+    status = "tight";
+  } else {
+    status = "over";
+  }
+
+  const priceRemainingOnEndDate = Math.max(0, totalPool - daysAvailable * teamDailyRate);
+  const daysEarlyLate = daysNeeded - daysAvailable;
+
+  return {
+    status,
+    daysAvailable,
+    daysNeeded,
+    priceRemaining: totalPool,
+    goalPricePerDay: teamDailyRate,
+    priceRemainingOnEndDate,
+    daysEarlyLate,
+  };
+}
+
+function fmtDollars(value: number): string {
+  return `$${Math.round(value).toLocaleString()}`;
+}
+
+function fmtDaysEarlyLate(days: number): string {
+  if (days === 0) return "on time";
+  if (days < 0) return `${Math.abs(days)} days early`;
+  return `${days} days late`;
+}
+
+type FeasibilityBadgeProps = { result: FeasibilityResult };
+
+function FeasibilityBadge({ result }: FeasibilityBadgeProps) {
+  const noData = result.status === "no-data";
+  const noRate = result.goalPricePerDay === 0;
+
+  const statusIcon = noData ? "—" :
+    result.status === "too-early" ? "⏩" :
+    result.status === "on-track" ? "✅" :
+    result.status === "tight" ? "⚠️" : "❌";
+
+  const statusColor = noData ? "text-muted-foreground/50" :
+    result.status === "too-early" ? "text-secondary" :
+    result.status === "on-track" ? "text-accent" :
+    result.status === "tight" ? "text-secondary" : "text-destructive";
+
+  const label = noData ? "" : ` ${result.daysNeeded}/${result.daysAvailable}d`;
+
+  return (
+    <span className="flex items-center gap-0.5 shrink-0">
+      <span className={`text-[9px] font-mono font-semibold ${statusColor}`}>
+        {statusIcon}{label}
+      </span>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="primary"
+            intensity="ghost"
+            size="icon"
+            className="h-4 w-4 text-muted-foreground/50 hover:text-foreground"
+          >
+            <Info className="h-3 w-3" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 text-xs" align="start">
+          <p className="font-semibold text-foreground mb-2 text-[11px]">Feasibility Details</p>
+          <div className="space-y-1">
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Price Remaining</span>
+              <span className="font-mono font-semibold text-foreground">
+                {fmtDollars(result.priceRemaining)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Goal $/Day</span>
+              <span className="font-mono font-semibold text-foreground">
+                {noRate ? "∞" : fmtDollars(result.goalPricePerDay)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Days Available</span>
+              <span className="font-mono font-semibold text-foreground">
+                {result.daysAvailable}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Days Needed</span>
+              <span className="font-mono font-semibold text-foreground">
+                {noRate ? "∞" : result.daysNeeded}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Price on End Date</span>
+              <span className="font-mono font-semibold text-foreground">
+                {noRate ? "∞" : fmtDollars(result.priceRemainingOnEndDate)}
+              </span>
+            </div>
+            <div className={`flex justify-between gap-4 pt-1 border-t border-border/50`}>
+              <span className="text-muted-foreground">Early / Late</span>
+              <span className={`font-mono font-semibold ${noRate ? "text-muted-foreground" : result.daysEarlyLate > 0 ? "text-destructive" : result.daysEarlyLate < 0 ? "text-accent" : "text-foreground"}`}>
+                {noRate ? "∞" : fmtDaysEarlyLate(result.daysEarlyLate)}
+              </span>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // SeasonPlanForm — create/edit a season plan
 // ---------------------------------------------------------------------------
 
@@ -256,6 +502,11 @@ type SeasonPlanFormProps = {
 function SeasonPlanForm({ initialForm, isEditing, onSave, onCancel }: SeasonPlanFormProps) {
   const [form, setForm] = useState<FormState>(initialForm);
   const groups = useSelector(assignmentGroupSelect.groups);
+  const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
+  const activePoolPriceByServCode = useSelector(paceCrawlerSelect.activePoolPriceByServCode);
+  const totalAvgDailyPriceByEmployee = useSelector(paceCrawlerSelect.totalAvgDailyPriceByEmployee);
+  const holidayDates = useSelector(holidaySelect.holidayDates);
+  const employeeMap = useSelector(employeeSelect.employeeMap);
 
   const sliderMin = form.snowMelt || `${form.year}-01-01`;
   const sliderMax = form.snowDeadline || `${form.year}-11-30`;
@@ -395,16 +646,33 @@ function SeasonPlanForm({ initialForm, isEditing, onSave, onCancel }: SeasonPlan
             const currentStart = schedule?.plannedStart || sliderMin;
             const currentEnd = schedule?.plannedEnd || sliderMax;
 
+            const feasibility = schedule?.plannedStart && schedule?.plannedEnd
+              ? computeGroupFeasibility({
+                  group,
+                  plannedStart: schedule.plannedStart,
+                  plannedEnd: schedule.plannedEnd,
+                  cascadeThreshold: form.cascadeThreshold,
+                  assignmentPlans,
+                  activePoolPriceByServCode,
+                  totalAvgDailyPriceByEmployee,
+                  holidayDates,
+                  employeeMap,
+                })
+              : null;
+
             return (
               <div
                 key={group.groupId}
                 className="flex items-center gap-3 px-4 py-3 bg-card hover:bg-accent/5"
               >
-                {/* Group label */}
+                {/* Group label + feasibility badge */}
                 <div className="w-28 shrink-0">
-                  <span className="font-mono text-[10px] text-primary font-semibold block">
-                    {group.label}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-[10px] text-primary font-semibold">
+                      {group.label}
+                    </span>
+                    {feasibility && <FeasibilityBadge result={feasibility} />}
+                  </div>
                   <span className="text-[9px] text-muted-foreground block truncate">
                     {group.servCodeIds.join(", ")}
                   </span>
@@ -454,7 +722,7 @@ export default function SeasonPlanPage() {
   const seasonPlans = useSelector(seasonPlanSelect.seasonPlans);
   const { upsertSeasonPlan, deleteSeasonPlan, activateSeasonPlan } = useSeasonPlan({ autoLoad: true });
 
-  const [mode, setMode] = useState<"list" | "create" | "edit">("list");
+  const [mode, setMode] = useState<"list" | "create" | "edit" | "copy">("list");
   const [editingPlan, setEditingPlan] = useState<SeasonPlan | null>(null);
   const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
 
@@ -466,6 +734,11 @@ export default function SeasonPlanPage() {
   function handleEdit(plan: SeasonPlan) {
     setEditingPlan(plan);
     setMode("edit");
+  }
+
+  function handleCopy(plan: SeasonPlan) {
+    setEditingPlan(plan);
+    setMode("copy");
   }
 
   function handleSave(form: FormState) {
@@ -495,7 +768,7 @@ export default function SeasonPlanPage() {
     activateSeasonPlan(name);
   }
 
-  if (mode === "create" || mode === "edit") {
+  if (mode === "create" || mode === "edit" || mode === "copy") {
     return (
       <div className="flex flex-col h-full overflow-hidden">
         <div className="shrink-0 px-4 py-3 border-b border-border bg-card flex items-center gap-2">
@@ -507,12 +780,12 @@ export default function SeasonPlanPage() {
           </button>
           <span className="text-muted-foreground">/</span>
           <span className="text-xs font-semibold text-foreground">
-            {mode === "create" ? "New Season Plan" : `Edit: ${editingPlan?.name}`}
+            {mode === "edit" ? `Edit: ${editingPlan?.name}` : mode === "copy" ? `Copy: ${editingPlan?.name}` : "New Season Plan"}
           </span>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
           <SeasonPlanForm
-            initialForm={editingPlan ? planToForm(editingPlan) : emptyForm()}
+            initialForm={mode === "copy" ? { ...planToForm(editingPlan!), name: "" } : editingPlan ? planToForm(editingPlan) : emptyForm()}
             isEditing={mode === "edit"}
             onSave={handleSave}
             onCancel={() => { setMode("list"); setEditingPlan(null); }}
@@ -606,6 +879,13 @@ export default function SeasonPlanPage() {
                         Activate
                       </button>
                     )}
+                    <button
+                      onClick={() => handleCopy(plan)}
+                      className="h-7 w-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
+                      title="Copy plan"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
                     <button
                       onClick={() => handleEdit(plan)}
                       className="h-7 px-2.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"

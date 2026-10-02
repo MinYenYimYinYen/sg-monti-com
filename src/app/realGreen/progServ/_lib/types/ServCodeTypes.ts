@@ -114,7 +114,7 @@ export type ServCodeDocProps = CreatedUpdated & {
    * consumers (e.g. the pace crawler's open-date floor logic) but should not be used as
    * a deadline in the urgent list or any new feature. Use the SeasonPlan instead.
    */
-  dateRange: TRange<string>;
+  // dateRange: TRange<string>;
   alwaysAsap: boolean;
   productRuleDocs: ProductRuleDoc[];
   callAheadTag: string | null;

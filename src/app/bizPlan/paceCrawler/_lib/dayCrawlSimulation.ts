@@ -208,21 +208,12 @@ export function runDayCrawlSimulation(
     for (let i = 0; i < sorted.length - 1; i++) {
       const current = sorted[i];
       const successor = sorted[i + 1];
-      const currentPool = pools.get(current.servCodeId) ?? 0;
-      const isPastDue = today > current.servCodeRangeMax;
-      const shouldUnlock = isPastDue || shouldUnlockSuccessor(current.servCodeId, today);
+      const shouldUnlock = shouldUnlockSuccessor(current.servCodeId, today);
 
-      if (shouldUnlock && currentPool > 0) {
-        // Carry remaining pool forward to the successor
-        const successorPool = pools.get(successor.servCodeId) ?? 0;
-        pools.set(successor.servCodeId, successorPool + currentPool);
-        pools.set(current.servCodeId, 0);
+      if (shouldUnlock) {
+        const currentEntry = servCodeEntries.find((e) => e.servCodeId === current.servCodeId);
         sequentialLocks.set(successor.servCodeId, false);
-        resolvedServCodeRangeMin.set(successor.servCodeId, current.servCodeRangeMax);
-      } else if (shouldUnlock && currentPool <= 0) {
-        // Already drained — just unlock the successor
-        sequentialLocks.set(successor.servCodeId, false);
-        resolvedServCodeRangeMin.set(successor.servCodeId, current.servCodeRangeMax);
+        resolvedServCodeRangeMin.set(successor.servCodeId, currentEntry?.plannedEnd ?? today);
       }
     }
   }
@@ -283,6 +274,35 @@ export function runDayCrawlSimulation(
       for (const priorityEntry of employee.priorityEntries) {
         const { groupId, label, servCodeIds } = priorityEntry;
 
+        // Non-sequential cascade close: if all members are past their plannedEnd AND
+        // above the cascade threshold, treat the group as closed. Stragglers are surfaced
+        // by the Priorities page as overdue — the crawl moves on.
+        // When closing, record projectedEndDate = plannedEnd so the Gantt shows the deadline.
+        const allMembersPastDeadline = servCodeIds.every((servCodeId) => {
+          const entry = servCodeEntries.find((e) => e.servCodeId === servCodeId);
+          if (!entry || !entry.plannedEnd) return false;
+          if (day <= entry.plannedEnd) return false;
+          const currentPool = pools.get(servCodeId) ?? 0;
+          if (currentPool <= 0) return true; // already drained
+          if (entry.totalPool > 0) {
+            const completionPct = 1 - currentPool / entry.totalPool;
+            return completionPct >= cascadeThreshold;
+          }
+          return false;
+        });
+        if (allMembersPastDeadline && servCodeIds.length > 0) {
+          // Record projectedEndDate = plannedEnd for members that haven't been set yet
+          for (const servCodeId of servCodeIds) {
+            if (projectedEndDate.get(servCodeId) === null) {
+              const entry = servCodeEntries.find((e) => e.servCodeId === servCodeId);
+              if (entry?.plannedEnd) {
+                projectedEndDate.set(servCodeId, entry.plannedEnd);
+              }
+            }
+          }
+          continue;
+        }
+
         // Build the set of eligible (unlocked) members for this day.
         // Locked sequential members are skipped — they are waiting for their predecessor
         // to drain. The group proceeds with whatever unlocked members have pool remaining.
@@ -327,7 +347,7 @@ export function runDayCrawlSimulation(
         const memberWeights: number[] = eligibleMemberIds.map((servCodeId) => {
           const pool = pools.get(servCodeId) ?? 0;
           const entry = servCodeEntries.find((e) => e.servCodeId === servCodeId);
-          const scMax = entry?.servCodeRangeMax ?? day;
+          const scMax = entry?.plannedEnd ?? day;
           const remainingWeekdays = Math.max(1, dateRanges.weekdaysBetween(day, scMax));
           return pool / remainingWeekdays;
         });
@@ -456,7 +476,7 @@ export function runDayCrawlSimulation(
   for (const entry of servCodeEntries) {
     const endDate = projectedEndDate.get(entry.servCodeId) ?? null;
     const optimizedMin = resolvedServCodeRangeMin.get(entry.servCodeId) ?? entry.servCodeRangeMin;
-    const optimizedMax = endDate ?? entry.servCodeRangeMax;
+    const optimizedMax = endDate ?? entry.plannedEnd ?? today;
     const groupLabel = servCodeGroupLabelMap.get(entry.servCodeId) ?? null;
 
     byServCode.set(entry.servCodeId, {

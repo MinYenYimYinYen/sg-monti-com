@@ -55,8 +55,6 @@ export type DayCrawlServCodeEntry = {
   servCodeRangeMin: string;
   /** Remaining unscheduled work pool — price (dollars) only. */
   pool: number;
-  /** servCode.dateRange.max from RealGreen — used as fallback optimizedMax when no lookback data. */
-  servCodeRangeMax: string;
   /**
    * Total pool at the time the simulation was assembled (completed + remaining).
    * Used to compute completionPct for cascade unlock.
@@ -244,6 +242,8 @@ export type SeasonOptimizedRange = {
   isStarted: boolean;
   /** True when any member has unscheduled work */
   hasWork: boolean;
+  /** The planned start date from the active SeasonPlan (earliest across all members). */
+  plannedStart: string | null;
   /** The planned end date from the active SeasonPlan (latest across all members). */
   plannedEnd: string | null;
 };

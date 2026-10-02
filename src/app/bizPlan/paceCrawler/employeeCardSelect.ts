@@ -87,9 +87,7 @@ const selectOpenServCodesForEmployees = createSelector(
 
           const isOpen =
             servCode.alwaysAsap ||
-            isOpenBySeasonPlan ||
-            (dateRanges.isValidDateRange(servCode.dateRange) &&
-              dateStrings.isInRange(mainDate, servCode.dateRange));
+            isOpenBySeasonPlan;
           if (!isOpen) continue;
 
           anyMemberOpen = true;
@@ -127,14 +125,27 @@ const selectOpenServCodesForEmployeeMap = createSelector(
 // ---------------------------------------------------------------------------
 
 const selectRemainingWeekdaysByServCode = createSelector(
-  [progServSelect.servCodeMap, selectMainDate],
-  (servCodeMap, mainDate): Map<string, number> => {
+  [progServSelect.servCodeMap, selectMainDate, seasonPlanSelect.groupScheduleMap, assignmentGroupSelect.groupMap],
+  (servCodeMap, mainDate, groupScheduleMap, groupMap): Map<string, number> => {
+    // Build servCodeId → plannedEnd from the season plan
+    const servCodePlannedEndMap = new Map<string, string>();
+    for (const [groupId, schedule] of groupScheduleMap) {
+      const group = groupMap.get(groupId);
+      const servCodeIds = group?.servCodeIds ?? groupId.split("+");
+      for (const servCodeId of servCodeIds) {
+        servCodePlannedEndMap.set(servCodeId, schedule.plannedEnd);
+      }
+    }
+
     const result = new Map<string, number>();
     for (const servCode of servCodeMap.values()) {
       if (servCode.alwaysAsap) continue;
-      if (!dateRanges.isValidDateRange(servCode.dateRange)) continue;
-      const remaining = dateRanges.weekdaysBetween(mainDate, servCode.dateRange.max);
-      result.set(servCode.servCodeId, remaining);
+      const plannedEnd = servCodePlannedEndMap.get(servCode.servCodeId);
+      if (plannedEnd) {
+        const remaining = dateRanges.weekdaysBetween(mainDate, plannedEnd);
+        result.set(servCode.servCodeId, remaining);
+      }
+      // ServCodes not in any season plan group are excluded from remaining weekdays
     }
     return result;
   },
@@ -399,12 +410,20 @@ const selectEmployeeCardData = createSelector(
         let latestScMax = "";
         let anyOverdue = false;
 
+        // Build servCodeId → plannedEnd for this group's members
+        const servCodePlannedEndMap = new Map<string, string>();
+        for (const [gId, schedule] of groupScheduleMap) {
+          const g = groupMap.get(gId);
+          const ids = g?.servCodeIds ?? gId.split("+");
+          for (const id of ids) servCodePlannedEndMap.set(id, schedule.plannedEnd);
+        }
+
         for (const servCodeId of servCodeIds) {
           const memberPool = activePoolMap.get(servCodeId) ?? 0;
           if (memberPool <= 0) continue;
 
           const servCode = servCodeMap.get(servCodeId);
-          const scMax = servCode?.dateRange.max ?? "";
+          const scMax = servCodePlannedEndMap.get(servCodeId) ?? plannedEnd ?? "";
           const remainingWeekdays = scMax
             ? Math.max(0, dateRanges.weekdaysBetween(mainDate, scMax))
             : 0;

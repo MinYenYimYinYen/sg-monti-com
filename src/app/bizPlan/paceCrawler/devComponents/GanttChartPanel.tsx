@@ -8,11 +8,7 @@ import { seasonPlanSelect } from "@/app/bizPlan/seasonPlan/seasonPlanSelect";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { getWeekNumber } from "@/lib/primatives/dates/getWeek";
 import { SeasonOptimizedRange } from "@/app/bizPlan/paceCrawler/PaceCrawlerTypes";
-import {
-  buildSegmentsFromTimeline,
-  GanttBarDetail,
-  type GanttSegment,
-} from "@/app/bizPlan/paceCrawler/devComponents/GanttBarDetail";
+import { GanttGroupStatusDetail } from "@/app/bizPlan/paceCrawler/devComponents/GanttBarDetail";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 
 // ---------------------------------------------------------------------------
@@ -73,141 +69,27 @@ function getMondaysInRange(start: string, end: string): string[] {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function SegmentedBar({
-  groupLabel,
-  memberServCodeIds,
-  segments,
-  totalDays,
-  chartStart,
-  barStart,
-  barEnd,
-  barColor,
-  groupBarColor,
-}: {
-  groupLabel: string;
-  memberServCodeIds: string[];
-  segments: GanttSegment[];
-  totalDays: number;
-  chartStart: string;
-  barStart: string;
-  barEnd: string;
-  barColor: string;
-  groupBarColor: string | null;
-}) {
-  const startDay = dayOffset(chartStart, barStart);
-  const widthDays = Math.max(dayOffset(barStart, barEnd), 1);
-  const leftPct = (startDay / totalDays) * 100;
-  const widthPct = (widthDays / totalDays) * 100;
-
-  const isGroup = memberServCodeIds.length > 1;
-
-  // No segments — render a plain unsegmented bar
-  if (segments.length === 0) {
-    return (
-      <div
-        className={`absolute top-1/2 rounded-full overflow-hidden ${barColor} ${groupBarColor ?? ""}`}
-        style={{
-          left: `${leftPct}%`,
-          width: `${widthPct}%`,
-          height: 18,
-          transform: "translateY(10%)",
-        }}
-      >
-        <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-mono truncate leading-none pointer-events-none">
-          {groupLabel}
-        </span>
-      </div>
-    );
-  }
-
-  // Segmented bar — pill outer, flex segments inside
-  return (
-    <div
-      className={`absolute top-1/2 rounded-full overflow-hidden flex ${barColor}`}
-      style={{
-        left: `${leftPct}%`,
-        width: `${widthPct}%`,
-        height: 18,
-        transform: "translateY(10%)",
-      }}
-    >
-      {/* Label — absolutely positioned over the full bar */}
-      <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-mono truncate leading-none pointer-events-none z-10">
-        {groupLabel}
-        {isGroup && (
-          <span className="ml-1 text-[8px] opacity-60">[{memberServCodeIds.length}]</span>
-        )}
-      </span>
-
-      {segments.map((segment, idx) => {
-        const segStart = segment.startDate < barStart ? barStart : segment.startDate;
-        const segEnd = segment.endDate
-          ? (segment.endDate > barEnd ? barEnd : segment.endDate)
-          : barEnd;
-
-        const segWidthDays = Math.max(dayOffset(segStart, segEnd), 1);
-        const segWidthPct = (segWidthDays / widthDays) * 100;
-
-        const isFirst = idx === 0;
-        const isLast = idx === segments.length - 1;
-
-        const roundingClass = isFirst && isLast
-          ? "rounded-full"
-          : isFirst
-            ? "rounded-l-full"
-            : isLast
-              ? "rounded-r-full"
-              : "border-l border-r border-border/40";
-
-        const leftBorderClass = !isFirst && !(isFirst && isLast) ? "border-l border-border/40" : "";
-
-        return (
-          <Popover key={idx}>
-            <PopoverTrigger asChild>
-              <button
-                className={`h-full cursor-pointer hover:brightness-90 transition-[filter] ${roundingClass} ${leftBorderClass} ${groupBarColor ?? ""}`}
-                style={{ width: `${segWidthPct}%` }}
-              />
-            </PopoverTrigger>
-            <PopoverContent
-              className="p-3 w-auto max-w-xs"
-              side="top"
-              align="start"
-              sideOffset={6}
-            >
-              <GanttBarDetail
-                groupLabel={groupLabel}
-                memberServCodeIds={memberServCodeIds}
-                segment={segment}
-              />
-            </PopoverContent>
-          </Popover>
-        );
-      })}
-    </div>
-  );
-}
-
 function GanttGroupRow({
   row,
   totalDays,
   chartStart,
-  servCodeTimelineMap,
+  asOfDate,
   groupColorIndex,
 }: {
   row: SeasonOptimizedRange;
   totalDays: number;
   chartStart: string;
-  servCodeTimelineMap: ReturnType<typeof paceCrawlerSelect.servCodeTimelineMap>;
+  asOfDate: string;
   groupColorIndex: Map<string, number>;
 }) {
   // --- Plan band (SeasonPlan plannedStart → plannedEnd) ---
+  const plannedStart = row.plannedStart;
   const plannedEnd = row.plannedEnd;
-  const hasPlanBand = isValidDate(row.optimizedMin) && plannedEnd && isValidDate(plannedEnd);
+  const hasPlanBand = plannedStart && isValidDate(plannedStart) && plannedEnd && isValidDate(plannedEnd);
 
-  const planStartDay = hasPlanBand ? dayOffset(chartStart, row.optimizedMin) : 0;
+  const planStartDay = hasPlanBand ? dayOffset(chartStart, plannedStart!) : 0;
   const planWidthDays = hasPlanBand
-    ? Math.max(dayOffset(row.optimizedMin, plannedEnd!), 1)
+    ? Math.max(dayOffset(plannedStart!, plannedEnd!), 1)
     : 0;
   const planLeftPct = hasPlanBand ? (planStartDay / totalDays) * 100 : 0;
   const planWidthPct = hasPlanBand ? (planWidthDays / totalDays) * 100 : 0;
@@ -232,14 +114,12 @@ function GanttGroupRow({
     ? (GROUP_BAR_COLORS[colorIdx % GROUP_BAR_COLORS.length] ?? null)
     : null;
 
-  // Timeline key is the groupLabel directly (set by the simulation)
-  const timelineEvents = servCodeTimelineMap.get(row.groupLabel) ?? [];
+  const startDay = dayOffset(chartStart, row.optimizedMin);
+  const widthDays = Math.max(dayOffset(row.optimizedMin, row.optimizedMax), 1);
+  const leftPct = (startDay / totalDays) * 100;
+  const widthPct = (widthDays / totalDays) * 100;
 
-  const segments = buildSegmentsFromTimeline(
-    timelineEvents,
-    row.optimizedMin,
-    row.optimizedMax,
-  );
+  const isGroup = row.memberServCodeIds.length > 1;
 
   return (
     <div
@@ -256,22 +136,39 @@ function GanttGroupRow({
             height: 8,
             top: 4,
           }}
-          title={`${row.groupLabel} planned: ${row.optimizedMin} → ${plannedEnd}`}
+          title={`${row.groupLabel} planned: ${plannedStart} → ${plannedEnd}`}
         />
       )}
 
-      {/* Segmented projected bar */}
-      <SegmentedBar
-        groupLabel={row.groupLabel}
-        memberServCodeIds={row.memberServCodeIds}
-        segments={segments}
-        totalDays={totalDays}
-        chartStart={chartStart}
-        barStart={row.optimizedMin}
-        barEnd={row.optimizedMax}
-        barColor={barColor}
-        groupBarColor={groupBarColor}
-      />
+      {/* Single clickable bar with status popover */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            className={`absolute top-1/2 rounded-full overflow-hidden cursor-pointer hover:brightness-90 transition-[filter] ${barColor} ${groupBarColor ?? ""}`}
+            style={{
+              left: `${leftPct}%`,
+              width: `${widthPct}%`,
+              height: 18,
+              transform: "translateY(10%)",
+            }}
+          >
+            <span className="absolute inset-0 flex items-center px-1.5 text-[10px] font-mono truncate leading-none pointer-events-none">
+              {row.groupLabel}
+              {isGroup && (
+                <span className="ml-1 text-[8px] opacity-60">[{row.memberServCodeIds.length}]</span>
+              )}
+            </span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="p-3 w-auto max-w-xs"
+          side="top"
+          align="start"
+          sideOffset={6}
+        >
+          <GanttGroupStatusDetail row={row} asOfDate={asOfDate} />
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
@@ -285,7 +182,6 @@ export function GanttChartPanel() {
   const today = useSelector(paceCrawlerSelect.mainDate);
   const groupMap = useSelector(assignmentGroupSelect.groupMap);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
-  const servCodeTimelineMap = useSelector(paceCrawlerSelect.servCodeTimelineMap);
   const snowDeadline = useSelector(seasonPlanSelect.snowDeadline);
   const activeSeasonPlan = useSelector(seasonPlanSelect.activeSeasonPlan);
 
@@ -480,7 +376,7 @@ export function GanttChartPanel() {
                   row={row}
                   totalDays={totalDays}
                   chartStart={chartStart}
-                  servCodeTimelineMap={servCodeTimelineMap}
+                  asOfDate={today}
                   groupColorIndex={groupColorIndex}
                 />
               ))}

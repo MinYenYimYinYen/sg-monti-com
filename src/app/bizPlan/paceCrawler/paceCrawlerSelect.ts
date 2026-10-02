@@ -121,22 +121,36 @@ const NULL_PROGRAM_TYPE_KEY = "__null__";
  * "What is each servCode's static open date floor?"
  *
  * = today for alwaysAsap servCodes
- * = servCode.dateRange.min for all others (sequential N+1 floors are resolved dynamically in the crawl)
+ * = plannedStart from the active SeasonPlan for servCodes with a group schedule
  *
- * ServCodes with no valid dateRange are excluded.
+ * ServCodes with no season plan entry are excluded from the crawl entirely.
+ * The SeasonPlan is the sole source of truth for what gets crawled and when.
  */
 const selectServCodeOpenDateFloor = createSelector(
-  [progServSelect.progCodes, selectMainDate],
-  (progCodes, today): Map<string, string> => {
+  [progServSelect.progCodes, selectMainDate, seasonPlanSelect.groupScheduleMap, assignmentGroupSelect.groupMap],
+  (progCodes, today, groupScheduleMap, groupMap): Map<string, string> => {
+    // Build servCodeId → plannedStart from the season plan
+    const servCodePlannedStartMap = new Map<string, string>();
+    for (const [groupId, schedule] of groupScheduleMap) {
+      const group = groupMap.get(groupId);
+      const servCodeIds = group?.servCodeIds ?? groupId.split("+");
+      for (const servCodeId of servCodeIds) {
+        servCodePlannedStartMap.set(servCodeId, schedule.plannedStart);
+      }
+    }
+
     const result = new Map<string, string>();
     for (const progCode of progCodes) {
       for (const servCode of progCode.servCodes) {
         if (servCode.alwaysAsap) {
           result.set(servCode.servCodeId, today);
-        } else if (dateRanges.isValidDateRange(servCode.dateRange)) {
-          result.set(servCode.servCodeId, servCode.dateRange.min);
+        } else {
+          const plannedStart = servCodePlannedStartMap.get(servCode.servCodeId);
+          if (plannedStart) {
+            result.set(servCode.servCodeId, plannedStart);
+          }
+          // No season plan entry → excluded from crawl.
         }
-        // ServCodes with no valid dateRange are excluded — they cannot be crawled.
       }
     }
     return result;
@@ -485,9 +499,6 @@ const selectCrawlerResult = createSelector(
 
         const pool = activePoolMap.get(servCode.servCodeId) ?? 0;
         const totalPool = totalPoolMap.get(servCode.servCodeId) ?? pool;
-        const servCodeRangeMax = servCode.alwaysAsap
-          ? today
-          : (servCode.dateRange.max ?? today);
         const schedule = servCodeScheduleMap.get(servCode.servCodeId);
 
         servCodeEntries.push({
@@ -497,7 +508,6 @@ const selectCrawlerResult = createSelector(
           servCodeRangeMin: floor,
           pool,
           totalPool,
-          servCodeRangeMax,
           plannedEnd: schedule?.plannedEnd ?? null,
         });
       }
@@ -576,26 +586,21 @@ const selectServCodeDeltaMap = createSelector(
     selectActivePoolPriceByServCode,
     progServSelect.servCodes,
   ],
-  (crawlerResult, activePoolMap, servCodes): Map<string, ServCodePaceDelta> => {
+  (crawlerResult, _activePoolMap, servCodes): Map<string, ServCodePaceDelta> => {
     const result = new Map<string, ServCodePaceDelta>();
 
     for (const servCode of servCodes) {
       const servCodeId = servCode.servCodeId;
       const crawled = crawlerResult.byServCode.get(servCodeId);
-      const pool = activePoolMap.get(servCodeId) ?? 0;
       const projectedEndDate = crawled?.projectedEndDate ?? null;
-      const servCodeRange = servCode.dateRange;
-
-      const deltaDays =
-        projectedEndDate != null && pool > 0 && servCodeRange.max
-          ? dateRanges.weekdaysBetween(servCodeRange.max, projectedEndDate)
-          : null;
+      // servCodeRange: dateRange is deprecated — use empty range as placeholder
+      const servCodeRange = { min: "", max: "" };
 
       result.set(servCodeId, {
         servCodeId,
         servCodeRange,
         projectedEndDate,
-        deltaDays,
+        deltaDays: null,
         deltaDaysCSP: null,
       } satisfies ServCodePaceDelta);
     }
@@ -623,9 +628,9 @@ const selectProgCodeProjectedCompletionMap = createSelector(
         const crawled = crawlerResult.byServCode.get(servCode.servCodeId);
         if (crawled?.projectedEndDate != null) {
           dates.push(crawled.projectedEndDate);
-        } else if (servCode.dateRange.max) {
+        } else if (crawled?.optimizedMax) {
           anyEstimated = true;
-          dates.push(servCode.dateRange.max);
+          dates.push(crawled.optimizedMax);
         }
       }
 
@@ -665,12 +670,13 @@ const selectSeasonOptimizerResult = createSelector(
       progCodeId: string;
       progCodeName: string;
       servCodeName: string;
-      servCodeRange: ReturnType<typeof progServSelect.progCodes>[number]["servCodes"][number]["dateRange"];
+      servCodeRange: { min: string; max: string };
       optimizedMin: string;
       optimizedMax: string;
       projectedEndDate: string | null;
       runsInSequence: boolean;
       hasWork: boolean;
+      plannedStart: string | null;
       plannedEnd: string | null;
       groupLabel: string;
     };
@@ -694,12 +700,13 @@ const selectSeasonOptimizerResult = createSelector(
           progCodeId: progCode.progCodeId,
           progCodeName: progCode.progCodeId,
           servCodeName: servCode.longName,
-          servCodeRange: servCode.dateRange,
-          optimizedMin: crawled?.optimizedMin ?? servCode.dateRange.min ?? today,
-          optimizedMax: crawled?.optimizedMax ?? servCode.dateRange.max ?? today,
+          servCodeRange: { min: "", max: "" },
+          optimizedMin: crawled?.optimizedMin ?? schedule?.plannedStart ?? today,
+          optimizedMax: crawled?.optimizedMax ?? schedule?.plannedEnd ?? today,
           projectedEndDate: crawled?.projectedEndDate ?? null,
           runsInSequence: progCode.runsInSequence,
           hasWork,
+          plannedStart: schedule?.plannedStart ?? null,
           plannedEnd: schedule?.plannedEnd ?? null,
           groupLabel,
         });
@@ -728,16 +735,21 @@ const selectSeasonOptimizerResult = createSelector(
           runsInSequence: sc.runsInSequence,
           isStarted,
           hasWork: sc.hasWork,
+          plannedStart: sc.plannedStart,
           plannedEnd: sc.plannedEnd,
         });
       } else {
-        // Merge: earliest min, latest max, latest projectedEndDate, latest plannedEnd
+        // Merge: earliest min, latest max, latest projectedEndDate, earliest plannedStart, latest plannedEnd
         const mergedMin = sc.optimizedMin < existing.optimizedMin ? sc.optimizedMin : existing.optimizedMin;
         const mergedMax = sc.optimizedMax > existing.optimizedMax ? sc.optimizedMax : existing.optimizedMax;
         const mergedProjectedEnd =
           sc.projectedEndDate !== null && existing.projectedEndDate !== null
             ? sc.projectedEndDate > existing.projectedEndDate ? sc.projectedEndDate : existing.projectedEndDate
             : sc.projectedEndDate ?? existing.projectedEndDate;
+        const mergedPlannedStart =
+          sc.plannedStart !== null && existing.plannedStart !== null
+            ? sc.plannedStart < existing.plannedStart ? sc.plannedStart : existing.plannedStart
+            : sc.plannedStart ?? existing.plannedStart;
         const mergedPlannedEnd =
           sc.plannedEnd !== null && existing.plannedEnd !== null
             ? sc.plannedEnd > existing.plannedEnd ? sc.plannedEnd : existing.plannedEnd
@@ -749,9 +761,11 @@ const selectSeasonOptimizerResult = createSelector(
           optimizedMin: mergedMin,
           optimizedMax: mergedMax,
           projectedEndDate: mergedProjectedEnd,
+          plannedStart: mergedPlannedStart,
           plannedEnd: mergedPlannedEnd,
           isStarted: mergedMin <= today,
           hasWork: existing.hasWork || sc.hasWork,
+          servCodeRange: existing.servCodeRange,
         });
       }
     }
