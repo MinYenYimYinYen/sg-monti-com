@@ -1,5 +1,33 @@
 # Expanded Sync Plan — RealGreen Mirror Strategy
 
+## Agent Context — Read This First
+
+This document is the entry point for adding a new entity to the RealGreen sync pipeline.
+Before writing any code, read the following files in order:
+
+### Required Reading
+
+| File | Purpose |
+|---|---|
+| `src/app/vercelCron/expandedSyncPlan.md` | This document — strategy, switch points, principles |
+| `src/app/realGreen/syncMetadata/realGreenSync.readme.md` | General sync architecture (delta-sync loop, pagination algorithm, upsert strategy) |
+| `src/app/realGreen/customer/sync/runDeltaSync.ts` | The orchestrator — shows how all four current entities are wired together |
+| `src/app/realGreen/callLog/sync/callLogSyncFunc.ts` | Best template for a new entity — shows fetch, edge-finding, and upsert |
+| `src/app/realGreen/syncMetadata/syncEntityTypes.ts` | Registry of all entity types — add the new entity here |
+
+### Do NOT Read Without Being Asked
+
+- Individual hook files, slice files, or component files — not relevant to sync
+- The `mirror/` folder — that's the query layer, not the sync layer
+- Any file outside `realGreen/` or `vercelCron/` — out of scope
+
+### Before Writing Any Code
+
+Answer the four questions in the "Step 1 — Determine the sync strategy" section below.
+Present your answers to the user and confirm before proceeding to implementation.
+
+---
+
 ## Overview
 
 This document describes the long-term strategy for syncing RealGreen data into MongoDB
@@ -133,6 +161,37 @@ activity-based cron. They belong in `metadataSync` when that cron is implemented
 
 The sync strategy for many-to-many relationship data is unknown and must be determined
 case-by-case. Do not add these to `runDeltaSync` without a clear plan.
+
+---
+
+## Module Folder Convention
+
+Each RealGreen module that participates in the sync pipeline follows this folder structure:
+
+```
+src/app/realGreen/[module]/
+  [module].readme.md          ← module documentation (data shape, sync strategy, switch points)
+  [Module]Types.ts            ← type pipeline (Raw → Core → Doc → hydrated entity)
+  [module]Slice.ts            ← Redux slice + thunks
+  [module]Select.ts           ← Reselect selectors
+  use[Module].ts              ← React hook
+  _lib/                       ← search types, remap functions, server-side helpers
+  api/
+    [Module]Contract.ts       ← API contract for live RealGreen reads
+    route.ts                  ← Live RealGreen API route (reads from RealGreen directly)
+  models/
+    [Module]Model.ts          ← Mongoose model
+  sync/
+    [Module]SyncContract.ts   ← Sync API contract (admin-only trigger)
+    [module]SyncFunc.ts       ← fetch[Module](), bulkUpsert[Module](), edge-finding
+    api/route.ts              ← Admin-only sync trigger route
+```
+
+**Notes:**
+- `api/route.ts` — live RealGreen reads (on-demand, single-entity or small queries)
+- `sync/api/route.ts` — admin-only sync trigger; not called by the UI
+- The `mirrorSync` cron calls `runDeltaSync()` directly, not the sync route
+- Not all modules will have all folders — add only what's needed
 
 ---
 
