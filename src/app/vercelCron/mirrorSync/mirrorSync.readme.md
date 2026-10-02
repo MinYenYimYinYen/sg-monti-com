@@ -1,8 +1,8 @@
-# Customer Mirror Sync — Vercel Cron
+# Mirror Sync — Vercel Cron
 
 ## Overview
 
-The customer mirror is a MongoDB copy of RealGreen's customer, program, and service data.
+The mirror is a MongoDB copy of RealGreen's live data (customers, programs, services, call logs).
 It is kept current by a Vercel Cron job that runs `runDeltaSync()` on a dynamic schedule
 based on user activity, rather than on a fixed interval.
 
@@ -21,7 +21,7 @@ adds zero latency to the query.
 
 ### Cron Job
 
-Vercel calls `GET /vercelCron/customerSync/api` every minute (configured in `vercel.json`).
+Vercel calls `GET /vercelCron/mirrorSync/api` every minute (configured in `vercel.json`).
 
 On each tick, the cron endpoint:
 1. Reads `lastQueriedAt` from MongoDB
@@ -47,13 +47,27 @@ of the first query — no manual intervention needed.
 
 ---
 
+## What Gets Synced
+
+`runDeltaSync()` syncs all four entity types concurrently on every tick:
+
+| Entity | Edge-finding method |
+|---|---|
+| Customer | Binary search on `/Reporting/Customer/Updated` |
+| Program | Binary search on `/Reporting/Program/Updated` |
+| Service | Uses program edge as proxy (no `/Reporting/Service/Updated` endpoint) |
+| CallLog | Max `notes[].date` across returned records (no Reporting endpoint needed) |
+
+See `src/app/realGreen/customer/sync/runDeltaSync.ts` for the orchestrator.
+
+---
+
 ## Sync Gap Safety
 
 The delta sync algorithm is designed to never introduce gaps:
 
-- `lastSyncedAt` is advanced using binary search on RealGreen's Reporting endpoint, not
-  by storing `now`. This finds the true "edge" — the latest point where records are known
-  to exist — and subtracts a 5-minute comfort buffer.
+- `lastSyncedAt` is advanced using the true edge (binary search or max note date), not `now`.
+  This finds the latest point where records are known to exist and subtracts a 5-minute comfort buffer.
 - The comfort buffer ensures the next sync re-queries a window that slightly overlaps the
   previous one, catching any records that were indexed by RealGreen after the last sync ran.
 - Zero-record syncs leave `lastSyncedAt` unchanged — the same window is re-queried next time.
@@ -88,7 +102,7 @@ relevant hook's dispatch call. One line of code restores the old behavior.
 {
   "crons": [
     {
-      "path": "/vercelCron/customerSync/api",
+      "path": "/vercelCron/mirrorSync/api",
       "schedule": "* * * * *"
     }
   ]
@@ -111,7 +125,7 @@ The endpoint validates this header to reject unauthorized callers.
 **For local development:** Add `CRON_SECRET=any-local-secret` to `.env.local`.
 You can then test the cron endpoint manually:
 ```
-curl -H "Authorization: Bearer any-local-secret" http://localhost:3000/vercelCron/customerSync/api
+curl -H "Authorization: Bearer any-local-secret" http://localhost:3000/vercelCron/mirrorSync/api
 ```
 
 ---
@@ -119,8 +133,8 @@ curl -H "Authorization: Bearer any-local-secret" http://localhost:3000/vercelCro
 ## Files
 
 ```
-src/app/vercelCron/customerSync/
-  cronSync.readme.md          ← this document
+src/app/vercelCron/mirrorSync/
+  mirrorSync.readme.md        ← this document
   syncSchedule.ts             ← shouldSync() tier logic
   api/
     route.ts                  ← GET handler (Vercel Cron endpoint)
@@ -138,6 +152,9 @@ src/app/realGreen/syncMetadata/
 src/app/realGreen/customer/mirror/
   CustomerMirrorContract.ts   ← syncFirst?: boolean param
   api/route.ts                ← fire-and-forget recordMirrorQuery(), syncFirst gate
+
+src/app/realGreen/customer/sync/
+  runDeltaSync.ts             ← orchestrates all four entity syncs concurrently
 ```
 
 ---

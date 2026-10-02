@@ -20,7 +20,7 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { usePriorityServiceCustomers } from "@/app/realGreen/customer/hooks/usePriorityServiceCustomers";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
-import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
+import { CustomerQueryBuilder } from "@/app/realGreen/customer/mirror/CustomerQueryBuilder";
 
 // ---------------------------------------------------------------------------
 // Single-customer lookup plan for the "New Entry" form.
@@ -31,7 +31,7 @@ import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
 // ---------------------------------------------------------------------------
 
 function buildSingleCustomerPlan(season: number) {
-  return new QueryBuilder()
+  return new CustomerQueryBuilder()
     .addCustomerStep(["entity", "provider"], {
       stepName: "getCustomer",
       source: "values",
@@ -89,7 +89,7 @@ export default function PriorityServicePage() {
   const singleCustomerPlan = season ? buildSingleCustomerPlan(season) : null;
 
   const { clearCustomer } = useSingleCustomer({
-    mirrorQueryPlan: singleCustomerPlan ?? [],
+    queryPlan: singleCustomerPlan ?? [],
   });
 
   // Load the full customer/program/service data for each priority service doc

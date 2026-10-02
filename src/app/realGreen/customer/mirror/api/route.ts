@@ -8,9 +8,9 @@ import {
   FilterNode,
   FiltersInput,
   JoinKey,
-  MirrorQueryPlan,
-  MirrorStep,
-} from "@/app/realGreen/customer/mirror/MirrorTypes";
+  CustomerQueryPlan,
+  QueryStep,
+} from "@/app/realGreen/customer/mirror/CustomerQueryTypes";
 import { CustomerModel } from "@/app/realGreen/customer/models/CustomerModel";
 import { ProgramModel } from "@/app/realGreen/customer/models/ProgramModel";
 import { ServiceModel } from "@/app/realGreen/customer/models/ServiceModel";
@@ -95,7 +95,7 @@ type LeanQueryable = {
   find(filter: Record<string, unknown>): { lean(): Promise<Record<string, unknown>[]> };
 };
 
-function getModel(model: MirrorStep["model"]): LeanQueryable {
+function getModel(model: QueryStep["model"]): LeanQueryable {
   switch (model) {
     case "customer": return CustomerModel as unknown as LeanQueryable;
     case "program":  return ProgramModel as unknown as LeanQueryable;
@@ -103,7 +103,7 @@ function getModel(model: MirrorStep["model"]): LeanQueryable {
   }
 }
 
-function getChunkKey(model: MirrorStep["model"]): keyof StreamChunk["data"] {
+function getChunkKey(model: QueryStep["model"]): keyof StreamChunk["data"] {
   switch (model) {
     case "customer": return "customerDocs";
     case "program":  return "programDocs";
@@ -116,7 +116,7 @@ function getChunkKey(model: MirrorStep["model"]): keyof StreamChunk["data"] {
 // ---------------------------------------------------------------------------
 
 async function executePlan(
-  plan: MirrorQueryPlan,
+  plan: CustomerQueryPlan,
   encoder: TextEncoder,
   controller: ReadableStreamDefaultController,
 ): Promise<void> {

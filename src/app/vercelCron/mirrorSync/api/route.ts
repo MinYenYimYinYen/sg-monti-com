@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { SyncMetadataModel } from "@/app/realGreen/syncMetadata/SyncMetadataModel";
 import { runDeltaSync } from "@/app/realGreen/customer/sync/runDeltaSync";
-import { shouldSync } from "@/app/vercelCron/customerSync/syncSchedule";
+import { shouldSync } from "@/app/vercelCron/mirrorSync/syncSchedule";
 
 // ---------------------------------------------------------------------------
 // Vercel Cron — Customer Mirror Sync

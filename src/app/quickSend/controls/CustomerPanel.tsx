@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { useSingleCustomer } from "@/app/realGreen/customer/hooks/useSingleCustomer";
 import { singleCustSelect } from "@/app/realGreen/customer/selectors/singleCustSelect";
-import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
+import { CustomerQueryBuilder } from "@/app/realGreen/customer/mirror/CustomerQueryBuilder";
 import { zipCodeSelect } from "@/app/realGreen/zipCode/zipCodeSelectors";
 import { qsSelect } from "../quickSendSelect";
 import { quickSendActions } from "../quickSendSlice";
@@ -28,7 +28,7 @@ export function CustomerPanel() {
 
   // quickSend only needs basic customer info — no season filter required since
   // it uses the customer for name/tax/size overrides, not program/service data.
-  const quickSendCustomerPlan = new QueryBuilder()
+  const quickSendCustomerPlan = new CustomerQueryBuilder()
     .addCustomerStep(["entity"], {
       stepName: "getCustomer",
       source: "values",
@@ -36,7 +36,7 @@ export function CustomerPanel() {
     })
     .build();
 
-  const { lookup, clearCustomer } = useSingleCustomer({ mirrorQueryPlan: quickSendCustomerPlan });
+  const { lookup, clearCustomer } = useSingleCustomer({ queryPlan: quickSendCustomerPlan });
 
   const customerState = useSelector(qsSelect.customerState);
   const loadedCustomer = useSelector(singleCustSelect.customer);

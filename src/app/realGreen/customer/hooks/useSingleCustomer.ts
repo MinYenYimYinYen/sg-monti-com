@@ -7,7 +7,7 @@ import {
   singleCustomerRefresh,
   PIPELINE,
 } from "@/app/realGreen/customer/slices/customerSlices";
-import { MirrorQueryPlan, MirrorStep } from "@/app/realGreen/customer/mirror/MirrorTypes";
+import { CustomerQueryPlan, QueryStep } from "@/app/realGreen/customer/mirror/CustomerQueryTypes";
 import { CustomerCore } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { ProgramCore } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { ServiceCore } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
@@ -26,7 +26,7 @@ import { ServiceCore } from "@/app/realGreen/customer/_lib/entities/types/Servic
 
 type AnyCore = CustomerCore | ProgramCore | ServiceCore;
 
-function injectCustId(plan: MirrorQueryPlan, custId: number): MirrorQueryPlan {
+function injectCustId(plan: CustomerQueryPlan, custId: number): CustomerQueryPlan {
   const custIdFilter = {
     field: "custId" as keyof AnyCore,
     operator: "eq" as const,
@@ -39,14 +39,14 @@ function injectCustId(plan: MirrorQueryPlan, custId: number): MirrorQueryPlan {
       ? [custIdFilter, ...existingFilters]
       : [custIdFilter, existingFilters];
 
-    return { ...step, filters: newFilters } as MirrorStep;
+    return { ...step, filters: newFilters } as QueryStep;
   });
 }
 
 // ---------------------------------------------------------------------------
 // useSingleCustomer
 //
-// Dispatches a mirror query plan scoped to a single customer. The caller
+// Dispatches a customer query plan scoped to a single customer. The caller
 // provides the plan template (including any season or other filters). This
 // hook injects the custId filter into every step before dispatching.
 //
@@ -54,7 +54,7 @@ function injectCustId(plan: MirrorQueryPlan, custId: number): MirrorQueryPlan {
 // so each lookup replaces the previous customer — no accumulation.
 // ---------------------------------------------------------------------------
 
-export function useSingleCustomer({ mirrorQueryPlan }: { mirrorQueryPlan: MirrorQueryPlan }) {
+export function useSingleCustomer({ queryPlan }: { queryPlan: CustomerQueryPlan }) {
   const dispatch = useAppDispatch();
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
@@ -62,14 +62,14 @@ export function useSingleCustomer({ mirrorQueryPlan }: { mirrorQueryPlan: Mirror
     if (!custId || custId < 0) return;
 
     if (PIPELINE.single === "mirror") {
-      const plan = injectCustId(mirrorQueryPlan, custId);
+      const plan = injectCustId(queryPlan, custId);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(singleCustomerActions.getDocs({ params: { plan } as any, config: { showLoading: false, force: true } as any }));
     } else {
       // RealGreen pipeline callers must include season in their plan context.
       // The legacy path is kept for backward compatibility but is not used
       // when PIPELINE.single === "mirror".
-      console.warn("[useSingleCustomer] RealGreen pipeline is not supported with the new mirrorQueryPlan API.");
+      console.warn("[useSingleCustomer] RealGreen pipeline is not supported with the new queryPlan API.");
     }
   };
 

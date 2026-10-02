@@ -32,7 +32,7 @@ import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTyp
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
-import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
+import { CustomerQueryBuilder } from "@/app/realGreen/customer/mirror/CustomerQueryBuilder";
 import { AppState } from "@/store";
 
 const ELIGIBLE_STATUSES = getServiceStatuses(["active", "asap", "printed"]);
@@ -55,7 +55,7 @@ export function PriorityServiceForm({
   // Season filters programs and services to the current season so the
   // dropdowns only show relevant options.
   const singleCustomerPlan = season
-    ? new QueryBuilder()
+    ? new CustomerQueryBuilder()
         .addCustomerStep(["entity", "provider"], {
           stepName: "getCustomer",
           source: "values",
@@ -80,7 +80,7 @@ export function PriorityServiceForm({
         .build()
     : [];
 
-  const { lookup, clearCustomer } = useSingleCustomer({ mirrorQueryPlan: singleCustomerPlan });
+  const { lookup, clearCustomer } = useSingleCustomer({ queryPlan: singleCustomerPlan });
 
   const dispatch = useAppDispatch();
   const { upsert, deleteOne } = usePriorityService();

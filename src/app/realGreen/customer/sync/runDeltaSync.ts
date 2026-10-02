@@ -10,6 +10,8 @@ import { fetchPrograms, bulkUpsertPrograms } from "@/app/realGreen/customer/sync
 import { fetchServices, bulkUpsertServices } from "@/app/realGreen/customer/sync/serviceSyncFunc";
 import { CustStat } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 import { findSyncEdge, COMFORT_BUFFER_MS } from "@/app/realGreen/customer/sync/findSyncEdge";
+import { remapCallLogSearch } from "@/app/realGreen/callLog/_lib/remapCallLogSearch";
+import { fetchCallLogs, bulkUpsertCallLogs, findCallLogSyncEdge } from "@/app/realGreen/callLog/sync/callLogSyncFunc";
 
 const ALL_CUST_STATS: CustStat[] = ["M", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -114,6 +116,46 @@ async function syncPrograms(): Promise<SyncResult> {
   };
 }
 
+async function syncCallLogs(): Promise<SyncResult> {
+  const lastSyncedAt = await getLastSyncedAt(SYNC_ENTITY_TYPES.callLog);
+  const syncStart = new Date();
+
+  const criteria = lastSyncedAt
+    ? { updated: { min: lastSyncedAt, max: syncStart.toISOString() } }
+    : {};
+  const rawSearch = remapCallLogSearch(criteria);
+  const rawLogs = await fetchCallLogs(rawSearch);
+
+  await bulkUpsertCallLogs(rawLogs);
+
+  if (rawLogs.length === 0) {
+    console.log("[callLog sync] No records fetched — lastSyncedAt unchanged");
+    return {
+      entityType: SYNC_ENTITY_TYPES.callLog,
+      lastSyncedAt: lastSyncedAt ?? syncStart.toISOString(),
+      lastSyncCount: 0,
+      lastSyncEdgeIterations: 0,
+      lastSyncBufferSeconds: 0,
+    };
+  }
+
+  // Call logs include notes[].date in the response — compute the edge directly
+  // from the returned data rather than calling a Reporting endpoint.
+  const edgeResult = findCallLogSyncEdge(rawLogs, syncStart);
+  const newLastSyncedAt = edgeResult?.newLastSyncedAt ?? syncStart.toISOString();
+  const bufferSeconds = edgeResult?.bufferSeconds ?? 0;
+
+  console.log(`[callLog sync] Edge found — new lastSyncedAt: ${newLastSyncedAt}`);
+
+  return {
+    entityType: SYNC_ENTITY_TYPES.callLog,
+    lastSyncedAt: newLastSyncedAt,
+    lastSyncCount: rawLogs.length,
+    lastSyncEdgeIterations: 0, // no binary search needed — edge computed from response data
+    lastSyncBufferSeconds: bufferSeconds,
+  };
+}
+
 async function syncServices(): Promise<SyncResult> {
   const lastSyncedAt = await getLastSyncedAt(SYNC_ENTITY_TYPES.service);
   const syncStart = new Date();
@@ -172,11 +214,12 @@ export async function runDeltaSync(): Promise<void> {
   console.log("[mirror] Running delta sync before query...");
   const start = Date.now();
 
-  // Step 1: Run all three fetches + upserts + edge-finding concurrently.
-  const [customerResult, programResult, serviceResult] = await Promise.all([
+  // Step 1: Run all four fetches + upserts + edge-finding concurrently.
+  const [customerResult, programResult, serviceResult, callLogResult] = await Promise.all([
     syncCustomers(),
     syncPrograms(),
     syncServices(),
+    syncCallLogs(),
   ]);
 
   // Step 2: Override service metadata with the program edge.
@@ -198,6 +241,9 @@ export async function runDeltaSync(): Promise<void> {
       : Promise.resolve(),
     serviceResult.lastSyncCount > 0
       ? setLastSyncedAt(SYNC_ENTITY_TYPES.service, serviceMetadata)
+      : Promise.resolve(),
+    callLogResult.lastSyncCount > 0
+      ? setLastSyncedAt(SYNC_ENTITY_TYPES.callLog, callLogResult)
       : Promise.resolve(),
   ]);
 

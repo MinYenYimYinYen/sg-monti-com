@@ -26,7 +26,7 @@ import { toast } from "react-toastify";
 // automatically — no other files need to change.
 //
 // Contexts permanently on the mirror pipeline (not feature-flagged):
-//   - "corruptedRecords" and "mirrorQuery" are always mirror-only.
+//   - "corruptedRecords" and "customerQuery" are always mirror-only.
 // ---------------------------------------------------------------------------
 export const PIPELINE: Partial<Record<CustomerContextMode, "mirror" | "realGreen">> = {
   active: "mirror",
@@ -309,16 +309,16 @@ export const corruptedRecordsCustomerActions = {
 };
 export const corruptedRecordsCustomerReducer = corruptedRecordsCustomerSlice.reducer;
 
-// General-purpose mirror query slice — not tied to a specific feature context.
-// Use useMirrorQuery() to dispatch ad-hoc QueryBuilder plans against the mirror API.
-// Registered as "mirrorQuery" context so it flows through centralCustomerSlice.
-export const mirrorQuerySlice = createCustomerSlice("mirrorQuery");
-export const mirrorQueryGetDocs = createGetCustDocsMirrorThunk("mirrorQuery", mirrorQuerySlice);
-export const mirrorQueryCustomerActions = {
-  ...mirrorQuerySlice.actions,
-  getDocs: mirrorQueryGetDocs,
+// General-purpose customer query slice — not tied to a specific feature context.
+// Use useCustomerQuery() to dispatch ad-hoc CustomerQueryBuilder plans against the mirror API.
+// Registered as "customerQuery" context so it flows through centralCustomerSlice.
+export const customerQuerySlice = createCustomerSlice("customerQuery");
+export const customerQueryGetDocs = createGetCustDocsMirrorThunk("customerQuery", customerQuerySlice);
+export const customerQueryCustomerActions = {
+  ...customerQuerySlice.actions,
+  getDocs: customerQueryGetDocs,
 };
-export const mirrorQueryCustomerReducer = mirrorQuerySlice.reducer;
+export const customerQueryCustomerReducer = customerQuerySlice.reducer;
 
 // ---------------------------------------------------------------------------
 // Slice registry — single source of truth for all customer slice instances.
@@ -359,8 +359,8 @@ export type CustomerContextMode =
   | "active"
   | "byAssignment"
   | "corruptedRecords"
+  | "customerQuery"
   | "fullSeasonServices"
-  | "mirrorQuery"
   | "priorityService"
   | "printed"
   | "lastSeasonProduction"
@@ -438,10 +438,10 @@ export const customerSliceRegistry: CustomerSliceRegistryEntry[] = [
     reducer: corruptedRecordsCustomerReducer,
   },
   {
-    context: "mirrorQuery",
-    actions: mirrorQueryCustomerActions,
-    getDocs: mirrorQueryGetDocs,
-    reducer: mirrorQueryCustomerReducer,
+    context: "customerQuery",
+    actions: customerQueryCustomerActions,
+    getDocs: customerQueryGetDocs,
+    reducer: customerQueryCustomerReducer,
   },
 ];
 

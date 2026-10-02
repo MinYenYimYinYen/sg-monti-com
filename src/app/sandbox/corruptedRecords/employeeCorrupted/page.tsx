@@ -3,8 +3,8 @@
 import { useMemo } from "react";
 import { useSelector } from "react-redux";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
-import { useMirrorQuery } from "@/app/realGreen/customer/mirror/useMirrorQuery";
-import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
+import { useCustomerQuery } from "@/app/realGreen/customer/mirror/useCustomerQuery";
+import { CustomerQueryBuilder } from "@/app/realGreen/customer/mirror/CustomerQueryBuilder";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
@@ -24,7 +24,7 @@ const CUST_LABELS: Record<number, string> = {
   3835113: "Forrest",
 };
 
-const INVESTIGATION_PLAN = new QueryBuilder()
+const INVESTIGATION_PLAN = new CustomerQueryBuilder()
   .addCustomerStep(["entity", "provider"], {
     stepName: "investigationCustomers",
     source: "values",
@@ -141,7 +141,7 @@ function CustomerCard({ customer }: { customer: Customer }) {
 // ---------------------------------------------------------------------------
 
 export default function EmployeeCorruptedPage() {
-  const { reload } = useMirrorQuery({ plan: INVESTIGATION_PLAN });
+  const { reload } = useCustomerQuery({ plan: INVESTIGATION_PLAN });
 
   const allCustomers = useSelector(centralSelect.customers);
 

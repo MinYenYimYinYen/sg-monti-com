@@ -13,12 +13,12 @@ import { corruptedSyncRecordSelect } from "@/app/realGreen/customer/sync/corrupt
  *
  * Contexts active:
  * - "corruptedRecords": neighbor services around each corrupted gap (ServId Context tab)
- * - "mirrorQuery": ad-hoc mirror queries (Employee Corrupted? tab, Programs Without Services tab)
+ * - "customerQuery": ad-hoc customer queries (Employee Corrupted? tab, Programs Without Services tab)
  */
 export function useDeps() {
   useCorruptedSyncRecord();
   useProgServ({ autoLoad: true });
-  useCustomerContext({ contexts: ["corruptedRecords", "mirrorQuery", "active"] });
+  useCustomerContext({ contexts: ["corruptedRecords", "customerQuery", "active"] });
 
   // Collect all neighbor servIds from the service-type corrupted records
   // so the corruptedRecords context can load their customer/program/service hierarchy.

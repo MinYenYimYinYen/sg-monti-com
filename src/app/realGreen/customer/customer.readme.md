@@ -345,7 +345,7 @@ export const PIPELINE: Partial<Record<CustomerContextMode, "mirror" | "realGreen
 
 **To flip a context back to RealGreen:** change `"mirror"` → `"realGreen"`. No other files need to change.
 
-**Current status:** All 9 migratable contexts are on the mirror pipeline. Only `"corruptedRecords"` and `"mirrorQuery"` are not in the flag — they are permanently mirror-only.
+**Current status:** All 9 migratable contexts are on the mirror pipeline. Only `"corruptedRecords"` and `"customerQuery"` are not in the flag — they are permanently mirror-only.
 
 ### How It Works
 
@@ -376,7 +376,7 @@ Follow the process in `src/app/realGreen/customer/mirror/MirrorRefactor.md`. The
 
 ### Contexts Permanently on Mirror
 
-`"corruptedRecords"` and `"mirrorQuery"` are always mirror-only and are not in the `PIPELINE` flag — they use `createGetCustDocsMirrorThunk` directly.
+`"corruptedRecords"` and `"customerQuery"` are always mirror-only and are not in the `PIPELINE` flag — they use `createGetCustDocsMirrorThunk` directly.
 
 ### Refresh Thunks
 

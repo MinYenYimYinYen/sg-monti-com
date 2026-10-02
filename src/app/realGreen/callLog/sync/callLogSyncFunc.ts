@@ -8,6 +8,13 @@ const PAGE_SIZE = 500;
 const MAX_CONCURRENT = 8;
 const LOG_PREFIX = "[callLog sync]";
 
+/**
+ * Comfort buffer subtracted from the max note date before storing as lastSyncedAt.
+ * Covers RealGreen's indexing lag — call logs modified near the edge may not yet
+ * be visible in the search API when the sync runs.
+ */
+const COMFORT_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+
 // --- Fetch ---
 
 /**
@@ -79,6 +86,56 @@ export async function fetchCallLogs(rawSearch: CallLogSearchRaw): Promise<CallLo
   );
 
   return allRaw;
+}
+
+// --- Edge Finding ---
+
+/**
+ * Finds the latest note date across all fetched call log records and returns
+ * it minus the comfort buffer as the new `lastSyncedAt`.
+ *
+ * Unlike customer/program/service (which use the Reporting endpoint for edge-finding),
+ * call logs include `notes[].date` in the search response. We can compute the true
+ * edge directly from the returned data — no separate API call needed.
+ *
+ * The comfort buffer (5 min) ensures the next sync re-queries slightly before the
+ * edge, catching any records that were indexed by RealGreen after this sync ran.
+ *
+ * Returns `null` if no records were fetched (caller should leave lastSyncedAt unchanged).
+ */
+export function findCallLogSyncEdge(
+  rawLogs: CallLogSearchResultRaw[],
+  syncStart: Date,
+): { newLastSyncedAt: string; bufferSeconds: number } | null {
+  if (rawLogs.length === 0) return null;
+
+  // Find the maximum note date across all fetched records.
+  // Fall back to EnterDate if a record has no notes.
+  let maxMs = 0;
+  for (const log of rawLogs) {
+    const dates: string[] = [];
+    if (log.EnterDate) dates.push(log.EnterDate);
+    if (log.notes) {
+      for (const note of log.notes) {
+        if (note.date) dates.push(note.date);
+      }
+    }
+    for (const dateStr of dates) {
+      const ms = new Date(dateStr).getTime();
+      if (!isNaN(ms) && ms > maxMs) maxMs = ms;
+    }
+  }
+
+  // If we couldn't parse any dates, fall back to syncStart - buffer
+  if (maxMs === 0) {
+    maxMs = syncStart.getTime();
+  }
+
+  const edgeMs = maxMs - COMFORT_BUFFER_MS;
+  return {
+    newLastSyncedAt: new Date(edgeMs).toISOString(),
+    bufferSeconds: Math.round(COMFORT_BUFFER_MS / 1000),
+  };
 }
 
 // --- Upsert ---

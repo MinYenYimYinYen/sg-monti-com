@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
-import { useMirrorQuery } from "@/app/realGreen/customer/mirror/useMirrorQuery";
-import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
+import { useCustomerQuery } from "@/app/realGreen/customer/mirror/useCustomerQuery";
+import { CustomerQueryBuilder } from "@/app/realGreen/customer/mirror/CustomerQueryBuilder";
 import { corruptedSyncRecordSelect } from "@/app/realGreen/customer/sync/corruptedRecords/corruptedSyncRecordSelect";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
@@ -16,7 +16,7 @@ import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTyp
 // ---------------------------------------------------------------------------
 
 function buildSeasonPlan(season: number) {
-  return new QueryBuilder()
+  return new CustomerQueryBuilder()
     .addProgramStep(["entity", "provider"], {
       stepName: "seasonPrograms",
       source: "values",
@@ -177,7 +177,7 @@ export default function ProgramsWithoutServicesPage() {
   const [loaded, setLoaded] = useState(false);
 
   const plan = useMemo(() => buildSeasonPlan(selectedSeason), [selectedSeason]);
-  const { reload } = useMirrorQuery({ plan });
+  const { reload } = useCustomerQuery({ plan });
 
   const neighborServIds = useNeighborServIds();
   const allCustomers = useSelector(centralSelect.customers);
