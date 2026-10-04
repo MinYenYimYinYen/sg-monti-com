@@ -58,6 +58,11 @@ import priceIncreaseSettingsReducer from "@/app/priceIncrease/settings/settingsS
 import priceIncreaseConfigReducer from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
 import { corruptedSyncRecordReducer } from "@/app/realGreen/customer/sync/corruptedRecords/corruptedSyncRecordSlice";
 import { prepayConfigReducer } from "@/app/prepayLetters/config/prepayConfigSlice";
+import { paceReducer } from "@/app/pace/paceSlice";
+import { paceAssignmentGroupReducer } from "@/app/pace/assignmentGroup/assignmentGroupSlice";
+import { paceGroupSequenceReducer } from "@/app/pace/groupSequence/groupSequenceSlice";
+import { paceAssignmentPlanReducer } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
+import { paceSeasonPlanReducer } from "@/app/pace/seasonPlan/seasonPlanSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -65,7 +70,7 @@ const rootReducer = combineReducers({
   appMethod: appMethodReducer,
   assignmentPlan: assignmentPlanReducer,
   assignment: assignmentReducer,
-  // pace: paceReducer,
+  // pace: paceReducer, // old commented-out entry — now registered below as the new pace module
   // employeePace: employeePaceReducer,
   createAppMethod: createAppMethodReducer,
   auth: authReducer,
@@ -119,6 +124,11 @@ const rootReducer = combineReducers({
   priceIncreaseConfig: priceIncreaseConfigReducer,
   corruptedSyncRecord: corruptedSyncRecordReducer,
   prepayConfig: prepayConfigReducer,
+  pace: paceReducer,
+  paceAssignmentGroup: paceAssignmentGroupReducer,
+  paceGroupSequence: paceGroupSequenceReducer,
+  paceAssignmentPlan: paceAssignmentPlanReducer,
+  paceSeasonPlan: paceSeasonPlanReducer,
 });
 
 export default rootReducer;
