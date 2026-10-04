@@ -14,6 +14,7 @@ import {
   FuturePhaseState,
 } from "./crawlFuturePhase/crawlFuturePhase";
 import { assembleGroupResults } from "./assembleGroupResults/assembleGroupResults";
+import { buildGroupSequenceClassifier } from "./groupSequenceClassifier";
 
 /**
  * The pace engine entry point.
@@ -31,7 +32,8 @@ import { assembleGroupResults } from "./assembleGroupResults/assembleGroupResult
  */
 export function runPaceEngine(inputs: PaceEngineInputs): PaceEngineResult {
   const groupContexts: GroupContext[] = buildGroupContexts(inputs);
-  const pastState: PastPhaseState = crawlPastPhase(inputs, groupContexts);
+  const classifier = buildGroupSequenceClassifier(inputs.sequences);
+  const pastState: PastPhaseState = crawlPastPhase(inputs, groupContexts, classifier);
   const presentState: PresentPhaseState = crawlPresentPhase(
     inputs,
     groupContexts,
@@ -41,6 +43,7 @@ export function runPaceEngine(inputs: PaceEngineInputs): PaceEngineResult {
     inputs,
     groupContexts,
     presentState,
+    classifier,
   );
   return assembleGroupResults(inputs, groupContexts, futureState);
 }

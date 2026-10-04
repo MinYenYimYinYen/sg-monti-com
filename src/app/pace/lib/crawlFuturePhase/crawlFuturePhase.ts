@@ -11,6 +11,7 @@ import { GroupProductionStats } from "@/app/pace/lib/crawlPastPhase/helpers/comp
 import { drainGroupPool } from "./helpers/drainGroupPool";
 import { recordEmployeeTimelineEvent, recordCrewTimelineEvent } from "./helpers/recordTimelineEvent";
 import { resolveSequenceCascade } from "./helpers/resolveSequenceCascade";
+import { GroupSequenceClassifier } from "@/app/pace/lib/groupSequenceClassifier";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 export type FuturePhaseState = {
@@ -44,6 +45,7 @@ export function crawlFuturePhase(
   inputs: PaceEngineInputs,
   groupContexts: GroupContext[],
   presentState: PresentPhaseState,
+  classifier: GroupSequenceClassifier,
 ): FuturePhaseState {
   const { mainDate, sequences, cascadeThreshold, employees, holidayDates } = inputs;
   const { poolStates, servCodeToGroupId, groupProductionStats } = presentState;
@@ -113,47 +115,24 @@ export function crawlFuturePhase(
     inDowntimeByEmployee.set(entry.employeeId, false);
   }
 
-  // Build set of groupIds that are the last in their sequence (or standalone).
-  // Only these groups can become stragglers — non-last groups have remaining pool
-  // carried forward by the cascade mechanism.
-  const lastInSequenceGroupIds = new Set<string>();
-  const sequenceGroupIdSets = new Set(sequences.flatMap((s) => s.groupIds));
-  for (const ctx of groupContexts) {
-    if (!sequenceGroupIdSets.has(ctx.groupId)) {
-      // Standalone group — not in any sequence
-      lastInSequenceGroupIds.add(ctx.groupId);
-    }
-  }
-  for (const sequence of sequences) {
-    const lastGroupId = sequence.groupIds.at(-1);
-    if (lastGroupId) lastInSequenceGroupIds.add(lastGroupId);
-  }
-
   // Walk forward day by day
   let day = dateStrings.nextWeekdayAfter(mainDate);
   const maxDay = dateStrings.addWeekdays(mainDate, MAX_FUTURE_WEEKDAYS);
 
   while (day <= maxDay) {
     // Check if any pool remains that is not a straggler.
-    // A straggler is a STANDALONE group (not in any sequence) that is past its plannedEnd
-    // and past the cascade threshold — the team has moved on; stop projecting it.
-    // Sequence members (first, middle, or last) are never stragglers — they always drain
-    // to zero or cascade their remainder forward to the next group.
+    // Uses the classifier to determine straggler eligibility — only standalone groups
+    // (not in any sequence) can be abandoned. Sequence members always drain to zero.
+    // Locked groups are excluded from snapshots (no active work yet).
     let anyRemaining = false;
     const activeGroupIds = new Set<string>();
     for (const [groupId, state] of poolStates) {
       if (state.poolRemaining <= 0) continue;
-      // Locked groups have no active work — exclude from snapshots
-      if (lockedGroupIds.has(groupId)) continue;
+      if (!classifier.isActiveForSnapshot(groupId, lockedGroupIds)) continue;
 
       const plannedEnd = plannedEndByGroupId.get(groupId) ?? null;
-      const isInSequence = sequenceGroupIdSets.has(groupId);
-      const isStraggler =
-        !isInSequence &&
-        plannedEnd !== null &&
-        day > plannedEnd &&
-        state.totalPool > 0 &&
-        state.completedSoFar / state.totalPool >= cascadeThreshold;
+      const completionPct = state.totalPool > 0 ? state.completedSoFar / state.totalPool : 0;
+      const isStraggler = classifier.isStraggler({ groupId, day, plannedEnd, completionPct, cascadeThreshold });
 
       if (!isStraggler) {
         anyRemaining = true;

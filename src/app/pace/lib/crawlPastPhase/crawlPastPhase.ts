@@ -1,5 +1,6 @@
 import { GroupContext, GroupPoolState, PoolDaySnapshot } from "@/app/pace/PaceEngineTypes";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
+import { GroupSequenceClassifier } from "@/app/pace/lib/groupSequenceClassifier";
 import { accumulateActualProduction } from "./helpers/accumulateActualProduction";
 import { computeActualGroupRates, GroupProductionStats } from "./helpers/computeActualGroupRates";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
@@ -33,6 +34,7 @@ export type PastPhaseState = {
 export function crawlPastPhase(
   inputs: PaceEngineInputs,
   groupContexts: GroupContext[],
+  classifier: GroupSequenceClassifier,
 ): PastPhaseState {
   const { servCodes, mainDate } = inputs;
 
@@ -75,19 +77,6 @@ export function crawlPastPhase(
   // Compute per-group and per-employee actual rates
   const groupProductionStats = computeActualGroupRates(productionByGroupByEmployeeByDate);
 
-  // Build set of last-in-sequence / standalone groupIds for straggler detection.
-  const lastInSequenceGroupIds = new Set<string>();
-  const sequenceGroupIdSets = new Set(inputs.sequences.flatMap((s) => s.groupIds));
-  for (const context of groupContexts) {
-    if (!sequenceGroupIdSets.has(context.groupId)) {
-      lastInSequenceGroupIds.add(context.groupId);
-    }
-  }
-  for (const sequence of inputs.sequences) {
-    const lastGroupId = sequence.groupIds.at(-1);
-    if (lastGroupId) lastInSequenceGroupIds.add(lastGroupId);
-  }
-
   // Build pool history for past days.
   // We record one snapshot per production day (days with actual work).
   // The mainDate snapshot is the handoff point.
@@ -101,7 +90,11 @@ export function crawlPastPhase(
 
     // Collect all unique dates across all employees for this group
     const byEmployeeByDate = productionByGroupByEmployeeByDate.get(groupId);
+    const isLockedSuccessorEarly = classifier.isInSequence(groupId) && !classifier.isFirstInSequence(groupId);
     if (!byEmployeeByDate || byEmployeeByDate.size === 0 || !stats) {
+      // Locked sequence successors have no history yet — cascade hasn't fired.
+      // Return empty array so they don't appear in the burndown until they open.
+      if (isLockedSuccessorEarly) return [];
       return [{
         date: mainDate,
         completed: totalPool - activePool,
@@ -131,7 +124,7 @@ export function crawlPastPhase(
     const sortedDates = [...byDate.keys()].sort();
     const snapshots: PoolDaySnapshot[] = [];
     let cumulativeCompleted = 0;
-    // Track whether the straggler condition was ever met during the crawl.
+    // Track whether the straggler condition was ever met during the past crawl.
     // When true, the mainDate handoff snapshot is suppressed — the group is overdue
     // and the last real production snapshot is its final entry.
     let stragglerDetected = false;
@@ -152,23 +145,22 @@ export function crawlPastPhase(
         percentCompleted,
       });
 
-      // Detect when the group crosses the cascade threshold past its plannedEnd.
-      // We do NOT break — all production dates are recorded. The flag is used
-      // to suppress the mainDate handoff snapshot.
+      // Detect when a standalone group crosses the cascade threshold past its plannedEnd.
+      // Sequence members are never stragglers — they always drain to zero.
       if (
         !stragglerDetected &&
-        lastInSequenceGroupIds.has(groupId) &&
-        plannedEnd !== null &&
-        date > plannedEnd &&
-        percentCompleted >= inputs.cascadeThreshold
+        classifier.isStraggler({ groupId, day: date, plannedEnd, completionPct: percentCompleted, cascadeThreshold: inputs.cascadeThreshold })
       ) {
         stragglerDetected = true;
       }
     }
 
-    // Add mainDate handoff snapshot — only if the group still has an active pool
-    // AND was not identified as a straggler during the crawl.
-    if (activePool > 0 && !stragglerDetected) {
+    // Add mainDate handoff snapshot — only if the group still has an active pool,
+    // was not identified as a straggler, AND is not a locked sequence successor.
+    // Sequence successors (index > 0) have not opened yet at mainDate — they should
+    // not appear in the burndown until the cascade fires in the future phase.
+    const isLockedSuccessor = classifier.isInSequence(groupId) && !classifier.isFirstInSequence(groupId);
+    if (activePool > 0 && !stragglerDetected && !isLockedSuccessor) {
       const finalCompleted = totalPool - activePool;
       snapshots.push({
         date: mainDate,
