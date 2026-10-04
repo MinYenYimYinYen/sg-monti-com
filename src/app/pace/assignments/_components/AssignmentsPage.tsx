@@ -6,6 +6,7 @@ import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { paceAssignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceActions } from "@/app/pace/paceSlice";
 import { PaceAssignmentGroupManager } from "@/app/pace/assignments/_components/PaceAssignmentGroupManager";
+import { GroupSequencePanel } from "@/app/pace/assignments/_components/GroupSequencePanel";
 import { EmployeeAssignmentCard } from "@/app/pace/assignments/_components/EmployeeAssignmentCard";
 import { selectSelectedEmployeeIds } from "@/app/pace/assignments/_components/assignmentsHelpers";
 
@@ -39,7 +40,12 @@ export function AssignmentsPage() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Left panel — Group Manager */}
+      {/* Sequences panel — leftmost */}
+      <div className="w-52 shrink-0 border-r flex flex-col bg-card">
+        <GroupSequencePanel />
+      </div>
+
+      {/* Groups panel */}
       <div className="w-64 shrink-0 border-r flex flex-col bg-card">
         <PaceAssignmentGroupManager />
       </div>

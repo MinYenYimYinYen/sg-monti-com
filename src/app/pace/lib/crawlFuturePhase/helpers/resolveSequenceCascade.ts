@@ -4,9 +4,15 @@ import { GroupSequence } from "@/app/pace/groupSequence/GroupSequenceTypes";
 /**
  * Checks whether any group in a sequence should cascade-unlock its successor.
  *
- * Cascade unlock fires when EITHER:
- *   completionPct >= cascadeThreshold  (e.g. 95% of total pool completed)
- *   OR today > plannedEnd              (from SeasonPlan)
+ * Cascade unlock fires when BOTH:
+ *   today > plannedEnd              (from SeasonPlan)
+ *   AND completionPct >= cascadeThreshold  (e.g. 95% of total pool completed)
+ *
+ * Either condition alone is insufficient. The successor only opens when the
+ * predecessor's planned window has passed AND enough work is complete.
+ *
+ * Special case: if the predecessor's pool is fully drained, cascade fires
+ * unconditionally (nothing left to carry forward).
  *
  * When a cascade fires:
  * - The predecessor's remaining pool is carried forward into the successor.
@@ -20,6 +26,7 @@ export function resolveSequenceCascade({
   poolStates,
   lockedGroupIds,
   groupScheduleMap,
+  successorPlannedStartMap,
   cascadeThreshold,
   day,
 }: {
@@ -27,8 +34,10 @@ export function resolveSequenceCascade({
   poolStates: Map<string, GroupPoolState>;
   /** Set of groupIds currently locked (waiting for predecessor to cascade). */
   lockedGroupIds: Set<string>;
-  /** Map<groupId, plannedEnd | null>. */
+  /** Map<groupId, plannedEnd | null> — predecessor's planned end date (cascade trigger). */
   groupScheduleMap: Map<string, string | null>;
+  /** Map<groupId, plannedStart | null> — successor's planned start date (open gate). */
+  successorPlannedStartMap: Map<string, string | null>;
   cascadeThreshold: number;
   day: string;
 }): void {
@@ -42,23 +51,24 @@ export function resolveSequenceCascade({
       const predecessorState = poolStates.get(predecessorId);
       if (!predecessorState) continue;
 
-      const shouldCascade = shouldUnlock(
-        predecessorState,
-        groupScheduleMap.get(predecessorId) ?? null,
-        cascadeThreshold,
-        day,
-      );
+      const plannedEnd = groupScheduleMap.get(predecessorId) ?? null;
+      const predecessorDone = shouldUnlock(predecessorState, plannedEnd, cascadeThreshold, day);
 
-      if (shouldCascade) {
-        const successorState = poolStates.get(successorId);
-        if (successorState && predecessorState.poolRemaining > 0) {
-          // Carry remaining pool forward
-          successorState.poolRemaining += predecessorState.poolRemaining;
-          successorState.totalPool += predecessorState.poolRemaining;
-          predecessorState.poolRemaining = 0;
-        }
-        lockedGroupIds.delete(successorId);
+      if (!predecessorDone) continue;
+
+      // Also require that the successor's own plannedStart has been reached.
+      // A cascade-eligible predecessor does not open the successor early.
+      const successorStart = successorPlannedStartMap.get(successorId) ?? null;
+      if (successorStart && day < successorStart) continue;
+
+      // Cascade fires: carry remaining pool forward and unlock successor
+      const successorState = poolStates.get(successorId);
+      if (successorState && predecessorState.poolRemaining > 0) {
+        successorState.poolRemaining += predecessorState.poolRemaining;
+        successorState.totalPool += predecessorState.poolRemaining;
+        predecessorState.poolRemaining = 0;
       }
+      lockedGroupIds.delete(successorId);
     }
   }
 }
@@ -69,14 +79,16 @@ function shouldUnlock(
   cascadeThreshold: number,
   day: string,
 ): boolean {
+  // Pool fully drained — always cascade regardless of date
   if (state.poolRemaining <= 0) return true;
 
-  if (state.totalPool > 0) {
+  // Both conditions must be met: past plannedEnd AND threshold crossed.
+  // Either condition alone is insufficient — the successor only opens when
+  // the predecessor's planned window has passed AND enough work is complete.
+  if (plannedEnd && day > plannedEnd && state.totalPool > 0) {
     const completionPct = state.completedSoFar / state.totalPool;
     if (completionPct >= cascadeThreshold) return true;
   }
-
-  if (plannedEnd && day > plannedEnd) return true;
 
   return false;
 }

@@ -6,10 +6,16 @@ import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes
 
 export function AssignmentGroupRow({
   group,
+  checked,
+  sequenceLabel,
+  onToggle,
   onDelete,
   onUpdateLabel,
 }: {
   group: AssignmentGroup;
+  checked: boolean;
+  sequenceLabel: string | null;
+  onToggle: (groupId: string) => void;
   onDelete: (id: string) => void;
   onUpdateLabel: (id: string, label: string) => void;
 }) {
@@ -19,6 +25,14 @@ export function AssignmentGroupRow({
 
   return (
     <div className="flex items-start gap-2 px-3 py-2 border-b border-border/50 hover:bg-accent/5">
+      {/* Checkbox for sequence selection */}
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={() => onToggle(group.groupId)}
+        className="accent-primary mt-0.5 shrink-0"
+      />
+
       <div className="flex-1 min-w-0">
         {editingLabel ? (
           <div className="flex items-center gap-1">
@@ -79,6 +93,12 @@ export function AssignmentGroupRow({
             </span>
           ))}
         </div>
+        {/* Sequence membership badge */}
+        {sequenceLabel && (
+          <span className="inline-block mt-0.5 text-[9px] bg-secondary/20 text-secondary rounded px-1 font-medium">
+            {sequenceLabel}
+          </span>
+        )}
       </div>
       <div className="shrink-0">
         {confirmDelete ? (

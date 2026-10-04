@@ -72,10 +72,13 @@ export function crawlFuturePhase(
     contextByGroupId.set(ctx.groupId, ctx);
   }
 
-  // Build groupId → plannedEnd map for cascade checks
+  // Build groupId → plannedEnd map for cascade checks (predecessor gate)
   const plannedEndByGroupId = new Map<string, string | null>();
+  // Build groupId → plannedStart map for successor gate
+  const plannedStartByGroupId = new Map<string, string | null>();
   for (const ctx of groupContexts) {
     plannedEndByGroupId.set(ctx.groupId, ctx.plannedEnd);
+    plannedStartByGroupId.set(ctx.groupId, ctx.plannedStart);
   }
 
   // Initialize sequence locks — all successors (index > 0) start locked
@@ -92,6 +95,7 @@ export function crawlFuturePhase(
     poolStates,
     lockedGroupIds,
     groupScheduleMap: plannedEndByGroupId,
+    successorPlannedStartMap: plannedStartByGroupId,
     cascadeThreshold,
     day: mainDate,
   });
@@ -131,16 +135,21 @@ export function crawlFuturePhase(
 
   while (day <= maxDay) {
     // Check if any pool remains that is not a straggler.
-    // A straggler is a standalone/last-in-sequence group that is past its plannedEnd
+    // A straggler is a STANDALONE group (not in any sequence) that is past its plannedEnd
     // and past the cascade threshold — the team has moved on; stop projecting it.
+    // Sequence members (first, middle, or last) are never stragglers — they always drain
+    // to zero or cascade their remainder forward to the next group.
     let anyRemaining = false;
     const activeGroupIds = new Set<string>();
     for (const [groupId, state] of poolStates) {
       if (state.poolRemaining <= 0) continue;
+      // Locked groups have no active work — exclude from snapshots
+      if (lockedGroupIds.has(groupId)) continue;
 
       const plannedEnd = plannedEndByGroupId.get(groupId) ?? null;
+      const isInSequence = sequenceGroupIdSets.has(groupId);
       const isStraggler =
-        lastInSequenceGroupIds.has(groupId) &&
+        !isInSequence &&
         plannedEnd !== null &&
         day > plannedEnd &&
         state.totalPool > 0 &&
@@ -162,6 +171,7 @@ export function crawlFuturePhase(
       poolStates,
       lockedGroupIds,
       groupScheduleMap: plannedEndByGroupId,
+      successorPlannedStartMap: plannedStartByGroupId,
       cascadeThreshold,
       day,
     });

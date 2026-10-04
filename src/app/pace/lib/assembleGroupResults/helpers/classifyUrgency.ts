@@ -16,16 +16,6 @@ export function classifyUrgency(groups: GroupResult[]): UrgentGroup[] {
   const urgentGroups: UrgentGroup[] = [];
 
   for (const group of groups) {
-    if (group.label.includes("CC3")) {
-      console.log(`[classifyUrgency] ${group.label}:`, {
-        hasWork: group.hasWork,
-        isOverdue: group.isOverdue,
-        plannedEnd: group.plannedEnd,
-        activePool: group.activePool,
-        totalPool: group.totalPool,
-      });
-    }
-
     if (!group.hasWork) continue;
 
     if (group.isOverdue && group.plannedEnd !== null) {

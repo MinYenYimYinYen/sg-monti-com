@@ -2,17 +2,26 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { Plus } from "lucide-react";
+import { GitMerge, Plus } from "lucide-react";
 import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
+import { paceGroupSequenceSelect } from "@/app/pace/groupSequence/groupSequenceSelect";
 import { usePaceAssignmentGroup } from "@/app/pace/assignmentGroup/useAssignmentGroup";
+import { useGroupSequence } from "@/app/pace/groupSequence/useGroupSequence";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { AssignmentGroupRow } from "@/app/pace/assignments/_components/AssignmentGroupRow";
 import { NewGroupForm } from "@/app/pace/assignments/_components/NewGroupForm";
+import { NewSequenceForm } from "@/app/pace/assignments/_components/NewSequenceForm";
 
 export function PaceAssignmentGroupManager() {
   const groups = useSelector(paceAssignmentGroupSelect.groups);
+  const sequences = useSelector(paceGroupSequenceSelect.sequences);
+  const sequenceMap = useSelector(paceGroupSequenceSelect.sequenceMap);
+  const sequenceIdByGroupId = useSelector(paceGroupSequenceSelect.sequenceIdByGroupId);
   const { upsertGroup, deleteGroup } = usePaceAssignmentGroup();
+  const { upsertSequence } = useGroupSequence();
   const [showNewForm, setShowNewForm] = useState(false);
+  const [showSequenceForm, setShowSequenceForm] = useState(false);
+  const [checkedGroupIds, setCheckedGroupIds] = useState<string[]>([]);
   const progCodes = useSelector(progServSelect.progCodes);
   const servCodeMap = useSelector(progServSelect.servCodeMap);
 
@@ -23,17 +32,57 @@ export function PaceAssignmentGroupManager() {
 
   const sortedGroups = [...groups].sort((a, b) => a.label.localeCompare(b.label));
 
+  const checkedSet = new Set(checkedGroupIds);
+
+  function toggleGroup(groupId: string) {
+    setCheckedGroupIds((prev) => {
+      const next = new Set(prev);
+      next.has(groupId) ? next.delete(groupId) : next.add(groupId);
+      return [...next];
+    });
+  }
+
+  function handleCreateSequence(label: string, orderedGroupIds: string[]) {
+    // Generate a stable sequenceId from the ordered group IDs
+    const sequenceId = crypto.randomUUID();
+    void upsertSequence({ sequenceId, label, groupIds: orderedGroupIds });
+    setCheckedGroupIds([]);
+    setShowSequenceForm(false);
+  }
+
+  // The selected groups in sorted-list order (preserving the order they appear in the panel)
+  const selectedGroupsInOrder = sortedGroups.filter((g) => checkedSet.has(g.groupId));
+
+  const canCreateSequence = checkedSet.size >= 2 && !showSequenceForm;
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="shrink-0 px-3 py-2 border-b border-border flex items-center justify-between">
+      <div className="shrink-0 px-3 py-2 border-b border-border flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Groups</span>
-        <button
-          onClick={() => setShowNewForm((v) => !v)}
-          className="flex items-center gap-1 text-[10px] text-primary hover:bg-primary/10 rounded px-1.5 py-0.5 transition-colors"
-        >
-          <Plus className="w-3 h-3" />
-          New Group
-        </button>
+        <div className="flex items-center gap-1">
+          {canCreateSequence && (
+            <button
+              onClick={() => {
+                setShowSequenceForm(true);
+                setShowNewForm(false);
+              }}
+              className="flex items-center gap-1 text-[10px] text-secondary hover:bg-secondary/10 rounded px-1.5 py-0.5 transition-colors"
+            >
+              <GitMerge className="w-3 h-3" />
+              Sequence ({checkedSet.size})
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setShowNewForm((v) => !v);
+              setShowSequenceForm(false);
+            }}
+            className="flex items-center gap-1 text-[10px] text-primary hover:bg-primary/10 rounded px-1.5 py-0.5 transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            New Group
+          </button>
+        </div>
       </div>
 
       {showNewForm && (
@@ -51,27 +100,55 @@ export function PaceAssignmentGroupManager() {
         </div>
       )}
 
+      {showSequenceForm && (
+        <div className="shrink-0 p-3 border-b border-border">
+          <NewSequenceForm
+            selectedGroups={selectedGroupsInOrder}
+            onSave={handleCreateSequence}
+            onCancel={() => {
+              setShowSequenceForm(false);
+              setCheckedGroupIds([]);
+            }}
+          />
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto">
         {sortedGroups.length === 0 && !showNewForm && (
           <p className="px-3 py-4 text-[10px] text-muted-foreground text-center">
             No groups defined. Click &ldquo;New Group&rdquo; to create one.
           </p>
         )}
-        {sortedGroups.map((group) => (
-          <AssignmentGroupRow
-            key={group.groupId}
-            group={group}
-            onDelete={(id) => void deleteGroup(id)}
-            onUpdateLabel={(id, label) => {
-              const g = groups.find((g) => g.groupId === id);
-              if (g) void upsertGroup({ ...g, label });
-            }}
-          />
-        ))}
+        {sortedGroups.map((group) => {
+          const seqId = sequenceIdByGroupId.get(group.groupId) ?? null;
+          const seq = seqId ? sequenceMap.get(seqId) ?? null : null;
+          return (
+            <AssignmentGroupRow
+              key={group.groupId}
+              group={group}
+              checked={checkedSet.has(group.groupId)}
+              sequenceLabel={seq?.label ?? null}
+              onToggle={toggleGroup}
+              onDelete={(id) => {
+                void deleteGroup(id);
+                setCheckedGroupIds((prev) => prev.filter((gid) => gid !== id));
+              }}
+              onUpdateLabel={(id, label) => {
+                const g = groups.find((gr) => gr.groupId === id);
+                if (g) void upsertGroup({ ...g, label });
+              }}
+            />
+          );
+        })}
       </div>
 
       <div className="shrink-0 px-3 py-2 border-t border-border text-[10px] text-muted-foreground">
         {groups.length} group{groups.length !== 1 ? "s" : ""} defined
+        {checkedSet.size > 0 && (
+          <span className="ml-2 text-secondary font-medium">
+            · {checkedSet.size} selected
+          </span>
+        )}
       </div>
     </div>
   );

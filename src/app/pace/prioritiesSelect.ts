@@ -61,24 +61,14 @@ const selectOverdueGroupServCodes = createSelector(
       const group = engineResult.groupMap.get(urgentGroup.groupId);
       if (!group) continue;
 
-      if (group.label.includes("CC3")) {
-        console.log(`[prioritiesSelect] Processing overdue group: ${group.label}, memberServCodeIds:`, group.memberServCodeIds);
-      }
-
       for (const servCodeId of group.memberServCodeIds) {
         if (seenServCodeIds.has(servCodeId)) continue;
         seenServCodeIds.add(servCodeId);
 
         const servCode = servCodeMap.get(servCodeId);
-        if (!servCode) {
-          if (group.label.includes("CC3")) console.log(`[prioritiesSelect] servCode not found in deepSelect: ${servCodeId}`);
-          continue;
-        }
+        if (!servCode) continue;
         const hasActive = servCode.services.some((s) => ACTIVE_ASAP_STATUSES.includes(s.status));
-        if (!hasActive) {
-          if (group.label.includes("CC3")) console.log(`[prioritiesSelect] servCode ${servCodeId} has no active services (statuses: ${[...new Set(servCode.services.map(s => s.status))].join(",")})`);
-          continue;
-        }
+        if (!hasActive) continue;
 
         result.push({ servCode, reason: urgentGroup.reason });
       }
