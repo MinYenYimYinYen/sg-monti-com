@@ -64,16 +64,16 @@ export function ServCodeEditPanel({ servCodeId }: ServCodeEditPanelProps) {
       <CardContent className="flex-1 overflow-hidden p-4 pt-0">
         <div className="space-y-4 h-full flex flex-col">
           <div className={"flex items-end gap-4"}>
-            {/* Date Range */}
-            <div className="space-y-1.5 shrink-0">
-              <Label className="text-sm font-medium">Date Range</Label>
-              <DateRangePicker
-                value={servCodeDoc.dateRange}
-                onChange={(dateRange) =>
-                  updateServCode({ servCodeId, dateRange })
-                }
-              />
-            </div>
+            {/*/!* Date Range *!/*/}
+            {/*<div className="space-y-1.5 shrink-0">*/}
+            {/*  <Label className="text-sm font-medium">Date Range</Label>*/}
+            {/*  <DateRangePicker*/}
+            {/*    value={servCodeDoc.dateRange}*/}
+            {/*    onChange={(dateRange) =>*/}
+            {/*      updateServCode({ servCodeId, dateRange })*/}
+            {/*    }*/}
+            {/*  />*/}
+            {/*</div>*/}
 
             {/* Always ASAP */}
             <div className="flex flex-col items-center shrink-0">

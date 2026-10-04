@@ -23,7 +23,7 @@ const extractServCodeDocProps = (doc: ServCodeDoc): ServCodeDocProps => ({
   servCodeId: doc.servCodeId,
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
-  dateRange: doc.dateRange,
+  // dateRange: doc.dateRange,
   alwaysAsap: doc.alwaysAsap,
   productRuleDocs: doc.productRuleDocs,
   callAheadTag: doc.callAheadTag ?? null,

@@ -18,6 +18,14 @@ export type PoolDaySnapshot = {
   completed: number;
   /** Active pool remaining as of this day. */
   remaining: number;
+  /** $ completed on this specific day. */
+  priceCompleted: number;
+  /** $ forecasted for this specific day (goalRate sum of working employees). */
+  priceForecasted: number;
+  /** Employee IDs who worked this group on this day. */
+  employeesWorking: string[];
+  /** completedSoFar / totalPool — used to detect cascade-threshold crossings. */
+  percentCompleted: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -230,6 +238,13 @@ export type GroupPoolState = {
   projectedEndDate: string | null;
   projectedStartDate: string | null;
   poolHistory: PoolDaySnapshot[];
+  /**
+   * True when plannedEnd < mainDate AND activePool > 0 as of the past phase.
+   * Set by crawlPastPhase and never modified by the future phase.
+   * Used by assembleGroupResults for isOverdue — poolRemaining may be drained
+   * to zero by the future phase even when real work remains as of mainDate.
+   */
+  overdueAsOfMainDate: boolean;
 };
 
 /**

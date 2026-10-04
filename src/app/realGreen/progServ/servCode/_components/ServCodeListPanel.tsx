@@ -78,20 +78,20 @@ export function ServCodeListPanel({
                 </div>
                 {/* Line 2: compact badges */}
                 <div className="flex items-center gap-1.5 mt-1">
-                  <Badge
-                    variant="secondary"
-                    intensity="soft"
-                    className={cn(
-                      "text-[10px] px-1.5 py-0 h-4 font-normal",
-                      !sc.dateRange.min && !sc.dateRange.max
-                        ? "bg-muted/30 text-muted-foreground"
-                        : "bg-secondary/30",
-                    )}
-                  >
-                    {sc.dateRange.min || sc.dateRange.max
-                      ? `${sc.dateRange.min || "?"} – ${sc.dateRange.max || "?"}`
-                      : "No dates"}
-                  </Badge>
+                  {/*<Badge*/}
+                  {/*  variant="secondary"*/}
+                  {/*  intensity="soft"*/}
+                  {/*  className={cn(*/}
+                  {/*    "text-[10px] px-1.5 py-0 h-4 font-normal",*/}
+                  {/*    !sc.dateRange.min && !sc.dateRange.max*/}
+                  {/*      ? "bg-muted/30 text-muted-foreground"*/}
+                  {/*      : "bg-secondary/30",*/}
+                  {/*  )}*/}
+                  {/*>*/}
+                  {/*  {sc.dateRange.min || sc.dateRange.max*/}
+                  {/*    ? `${sc.dateRange.min || "?"} – ${sc.dateRange.max || "?"}`*/}
+                  {/*    : "No dates"}*/}
+                  {/*</Badge>*/}
                   <Badge
                     variant="secondary"
                     intensity="soft"

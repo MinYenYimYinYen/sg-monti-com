@@ -14,9 +14,15 @@ import {
 /**
  * Renders one Gantt row using poolHistory as the authoritative date range.
  *
- * The bar is split at mainDate into two segments:
- *   - Past segment (poolHistory[0].date → mainDate): solid — actual production
- *   - Future segment (mainDate → poolHistory.at(-1).date): lighter — projected trajectory
+ * The bar spans from poolHistory[0].date to poolHistory.at(-1).date — exactly
+ * what the engine recorded. No date arithmetic is done here beyond positioning.
+ *
+ * The bar is split at mainDate into two visual segments:
+ *   - Past segment (barStart → mainDate): solid — actual production
+ *   - Future segment (mainDate → barEnd): lighter — projected trajectory
+ *
+ * If the pool finished before mainDate (completed group), barEnd <= mainDate,
+ * so only the past segment renders and no future bar appears.
  *
  * The plan band (thin gray pill) uses plannedStart / plannedEnd from the SeasonPlan.
  *
@@ -47,36 +53,35 @@ export function GanttGroupRow({
     ? (Math.max(dayOffset(row.plannedStart!, row.plannedEnd!), 1) / totalDays) * 100
     : 0;
 
-  // --- Pool history bar ---
+  // --- Bar extents from poolHistory (engine is the source of truth) ---
   const firstSnapshot = row.poolHistory[0];
   const lastSnapshot = row.poolHistory.at(-1);
   const hasHistory = firstSnapshot !== undefined && lastSnapshot !== undefined;
 
   if (!hasHistory && !hasPlanBand) return null;
 
-  // Past segment: from first snapshot to mainDate (clamped)
-  const pastStart = hasHistory ? firstSnapshot.date : null;
-  const pastEnd = mainDate; // always ends at today
-  const hasPastBar =
-    hasHistory && isValidDate(pastStart) && pastStart < mainDate;
+  const barStart = hasHistory ? firstSnapshot.date : null;
+  const barEnd = hasHistory ? lastSnapshot.date : null;
+
+  // Past segment: barStart → min(barEnd, mainDate)
+  const pastEnd = barEnd && barEnd < mainDate ? barEnd : mainDate;
+  const hasPastBar = hasHistory && isValidDate(barStart) && barStart < pastEnd;
 
   const pastLeftPct = hasPastBar
-    ? (dayOffset(chartStart, pastStart!) / totalDays) * 100
+    ? (dayOffset(chartStart, barStart!) / totalDays) * 100
     : 0;
   const pastWidthPct = hasPastBar
-    ? (Math.max(dayOffset(pastStart!, pastEnd), 1) / totalDays) * 100
+    ? (Math.max(dayOffset(barStart!, pastEnd), 1) / totalDays) * 100
     : 0;
 
-  // Future segment: from mainDate to last snapshot
-  const futureEnd = hasHistory ? lastSnapshot.date : null;
-  const hasFutureBar =
-    hasHistory && isValidDate(futureEnd) && futureEnd > mainDate;
+  // Future segment: mainDate → barEnd (only if barEnd is after mainDate)
+  const hasFutureBar = hasHistory && isValidDate(barEnd) && barEnd! > mainDate;
 
   const futureLeftPct = hasFutureBar
     ? (dayOffset(chartStart, mainDate) / totalDays) * 100
     : 0;
   const futureWidthPct = hasFutureBar
-    ? (Math.max(dayOffset(mainDate, futureEnd!), 1) / totalDays) * 100
+    ? (Math.max(dayOffset(mainDate, barEnd!), 1) / totalDays) * 100
     : 0;
 
   // Color logic: future bar color based on on-track status
@@ -114,7 +119,7 @@ export function GanttGroupRow({
             {/* Past bar segment */}
             {hasPastBar && pastWidthPct > 0 && (
               <div
-                className={`absolute rounded-l-full ${pastBarColor} ${groupBarColor}`}
+                className={`absolute rounded-l-full ${!hasFutureBar ? "rounded-r-full" : ""} ${pastBarColor} ${groupBarColor}`}
                 style={{
                   left: `${pastLeftPct}%`,
                   width: `${pastWidthPct}%`,

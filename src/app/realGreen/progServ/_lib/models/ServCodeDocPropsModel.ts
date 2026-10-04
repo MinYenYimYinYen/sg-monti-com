@@ -20,7 +20,7 @@ const DateRangeSchema = new mongoose.Schema(
 const ServCodeSchema = new mongoose.Schema<ServCodeDocProps>(
   {
     servCodeId: { type: String, required: true, unique: true },
-    dateRange: { type: DateRangeSchema, default: () => ({ min: "", max: "" }) },
+    // dateRange: { type: DateRangeSchema, default: () => ({ min: "", max: "" }) },
     alwaysAsap: { type: Boolean },
     productRuleDocs: [ServCodeProductSchema],
     callAheadTag: { type: String, default: null },

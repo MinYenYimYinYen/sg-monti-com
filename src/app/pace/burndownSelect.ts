@@ -39,21 +39,36 @@ export type BurndownSeries = {
  * Dates that appear in some but not all groups are included with partial sums.
  */
 function mergePoolHistories(histories: PoolDaySnapshot[][]): PoolDaySnapshot[] {
-  const byDate = new Map<string, { completed: number; remaining: number }>();
+  const byDate = new Map<string, { completed: number; remaining: number; priceCompleted: number; priceForecasted: number; employeesWorking: string[]; percentCompleted: number }>();
 
   for (const history of histories) {
     for (const snapshot of history) {
-      const existing = byDate.get(snapshot.date) ?? { completed: 0, remaining: 0 };
+      const existing = byDate.get(snapshot.date) ?? { completed: 0, remaining: 0, priceCompleted: 0, priceForecasted: 0, employeesWorking: [], percentCompleted: 0 };
+      const mergedEmployees = [...new Set([...existing.employeesWorking, ...snapshot.employeesWorking])];
+      const mergedCompleted = existing.completed + snapshot.completed;
+      const mergedRemaining = existing.remaining + snapshot.remaining;
       byDate.set(snapshot.date, {
-        completed: existing.completed + snapshot.completed,
-        remaining: existing.remaining + snapshot.remaining,
+        completed: mergedCompleted,
+        remaining: mergedRemaining,
+        priceCompleted: existing.priceCompleted + snapshot.priceCompleted,
+        priceForecasted: existing.priceForecasted + snapshot.priceForecasted,
+        employeesWorking: mergedEmployees,
+        percentCompleted: (mergedCompleted + mergedRemaining) > 0 ? mergedCompleted / (mergedCompleted + mergedRemaining) : 0,
       });
     }
   }
 
   return [...byDate.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, { completed, remaining }]) => ({ date, completed, remaining }));
+    .map(([date, { completed, remaining, priceCompleted, priceForecasted, employeesWorking, percentCompleted }]) => ({
+      date,
+      completed,
+      remaining,
+      priceCompleted,
+      priceForecasted,
+      employeesWorking,
+      percentCompleted,
+    }));
 }
 
 /**

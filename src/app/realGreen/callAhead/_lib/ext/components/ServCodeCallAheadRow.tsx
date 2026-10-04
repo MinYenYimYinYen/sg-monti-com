@@ -18,7 +18,6 @@ function buildDocProps(doc: ServCodeDoc): UnsavedServCodeChanges["original"] {
     servCodeId: doc.servCodeId,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
-    dateRange: doc.dateRange,
     alwaysAsap: doc.alwaysAsap,
     productRuleDocs: doc.productRuleDocs,
     callAheadTag: doc.callAheadTag ?? null,

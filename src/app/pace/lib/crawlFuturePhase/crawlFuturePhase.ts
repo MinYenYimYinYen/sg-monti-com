@@ -109,17 +109,52 @@ export function crawlFuturePhase(
     inDowntimeByEmployee.set(entry.employeeId, false);
   }
 
+  // Build set of groupIds that are the last in their sequence (or standalone).
+  // Only these groups can become stragglers — non-last groups have remaining pool
+  // carried forward by the cascade mechanism.
+  const lastInSequenceGroupIds = new Set<string>();
+  const sequenceGroupIdSets = new Set(sequences.flatMap((s) => s.groupIds));
+  for (const ctx of groupContexts) {
+    if (!sequenceGroupIdSets.has(ctx.groupId)) {
+      // Standalone group — not in any sequence
+      lastInSequenceGroupIds.add(ctx.groupId);
+    }
+  }
+  for (const sequence of sequences) {
+    const lastGroupId = sequence.groupIds.at(-1);
+    if (lastGroupId) lastInSequenceGroupIds.add(lastGroupId);
+  }
+
   // Walk forward day by day
   let day = dateStrings.nextWeekdayAfter(mainDate);
   const maxDay = dateStrings.addWeekdays(mainDate, MAX_FUTURE_WEEKDAYS);
 
   while (day <= maxDay) {
-    // Check if any pool remains
+    // Check if any pool remains that is not a straggler.
+    // A straggler is a standalone/last-in-sequence group that is past its plannedEnd
+    // and past the cascade threshold — the team has moved on; stop projecting it.
     let anyRemaining = false;
-    for (const state of poolStates.values()) {
-      if (state.poolRemaining > 0) { anyRemaining = true; break; }
+    const activeGroupIds = new Set<string>();
+    for (const [groupId, state] of poolStates) {
+      if (state.poolRemaining <= 0) continue;
+
+      const plannedEnd = plannedEndByGroupId.get(groupId) ?? null;
+      const isStraggler =
+        lastInSequenceGroupIds.has(groupId) &&
+        plannedEnd !== null &&
+        day > plannedEnd &&
+        state.totalPool > 0 &&
+        state.completedSoFar / state.totalPool >= cascadeThreshold;
+
+      if (!isStraggler) {
+        anyRemaining = true;
+        activeGroupIds.add(groupId);
+      }
     }
     if (!anyRemaining) break;
+
+    // Per-group daily stats for snapshot population (priceCompleted, priceForecasted, employeesWorking)
+    const dailyGroupStats = new Map<string, { priceCompleted: number; priceForecasted: number; employeesWorking: string[] }>();
 
     // Check cascade unlocks at the start of each day
     resolveSequenceCascade({
@@ -173,6 +208,16 @@ export function crawlFuturePhase(
         if (drained <= 0) continue;
 
         workedGroupId = groupId;
+
+        // Accumulate daily stats for this group's snapshot
+        const existing = dailyGroupStats.get(groupId) ?? { priceCompleted: 0, priceForecasted: 0, employeesWorking: [] };
+        dailyGroupStats.set(groupId, {
+          priceCompleted: existing.priceCompleted + drained,
+          priceForecasted: existing.priceForecasted + goalRate,
+          employeesWorking: existing.employeesWorking.includes(employeeId)
+            ? existing.employeesWorking
+            : [...existing.employeesWorking, employeeId],
+        });
 
         // Record projectedStartDate
         if (!poolState.projectedStartDate) {
@@ -263,13 +308,21 @@ export function crawlFuturePhase(
       lastWorkedGroupByEmployee.set(employeeId, workedGroupId);
     }
 
-    // Append pool history snapshot for this day
+    // Append pool history snapshot only for groups that had remaining work at the start of this day.
+    // Groups already at zero before this day started don't need projected zero-snapshots.
     for (const poolState of poolStates.values()) {
-      poolState.poolHistory.push({
-        date: day,
-        completed: poolState.completedSoFar,
-        remaining: poolState.poolRemaining,
-      });
+      if (activeGroupIds.has(poolState.groupId)) {
+        const groupDailyStats = dailyGroupStats.get(poolState.groupId);
+        poolState.poolHistory.push({
+          date: day,
+          completed: poolState.completedSoFar,
+          remaining: poolState.poolRemaining,
+          priceCompleted: groupDailyStats?.priceCompleted ?? 0,
+          priceForecasted: groupDailyStats?.priceForecasted ?? 0,
+          employeesWorking: groupDailyStats?.employeesWorking ?? [],
+          percentCompleted: poolState.totalPool > 0 ? poolState.completedSoFar / poolState.totalPool : 0,
+        });
+      }
     }
 
     day = dateStrings.nextWeekdayAfter(day);

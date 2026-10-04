@@ -59,7 +59,11 @@ export function assembleGroupResults(
     const poolState = poolStates.get(groupId);
     const activePool = poolState?.poolRemaining ?? 0;
     const totalPool = poolState?.totalPool ?? 0;
-    const hasWork = activePool > 0;
+    // hasWork reflects the post-future-phase pool (projected remaining).
+    // For overdue detection we use overdueAsOfMainDate from the past phase,
+    // which captures whether real work existed as of mainDate before the future
+    // phase drained poolRemaining to zero via projection.
+    const hasWork = activePool > 0 || (poolState?.overdueAsOfMainDate ?? false);
 
     const actualPriceCompleted = poolState?.completedSoFar ?? 0;
     const actualDaysWorked = poolState?.productionDays ?? 0;
@@ -150,7 +154,9 @@ export function assembleGroupResults(
       daysAvailable: paceAnalysis.daysAvailable,
       daysEarlyLate: paceAnalysis.daysEarlyLate,
       isOnTrack: paceAnalysis.isOnTrack,
-      isOverdue: paceAnalysis.isOverdue,
+      // Use overdueAsOfMainDate from the past phase — paceAnalysis.isOverdue recomputes
+      // from the post-future-phase activePool which may be 0 after projection drains it.
+      isOverdue: poolState?.overdueAsOfMainDate ?? paceAnalysis.isOverdue,
       employeeBreakdowns,
       crewTimeline,
       poolHistory,

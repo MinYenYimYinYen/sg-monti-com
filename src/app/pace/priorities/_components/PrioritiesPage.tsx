@@ -11,6 +11,7 @@ import { UrgentGroupRow } from "@/app/pace/priorities/_components/UrgentGroupRow
 
 export function PrioritiesPage() {
   const urgentGroups = useSelector(prioritiesSelect.urgentGroups);
+  const overdueGroupServCodes = useSelector(prioritiesSelect.overdueGroupServCodes);
   const alwaysAsapServCodes = useSelector(prioritiesSelect.alwaysAsapServCodes);
   const priorityServices = useSelector(priorityServiceSelect.priorityServices);
 
@@ -19,9 +20,15 @@ export function PrioritiesPage() {
     reason: { kind: "alwaysAsap" as const },
   }));
 
-  const hasUrgentGroups = urgentGroups.length > 0;
+  const unplannedGroups = urgentGroups.filter((g) => g.reason.kind === "unplanned");
+  const hasOverdueServCodes = overdueGroupServCodes.length > 0;
+  const hasUnplanned = unplannedGroups.length > 0;
   const hasAsap = asapUrgentServCodes.length > 0;
   const hasPriority = priorityServices.length > 0;
+  const hasAnyUrgent = hasOverdueServCodes || hasUnplanned || hasAsap;
+
+  const urgentItemCount =
+    overdueGroupServCodes.length + unplannedGroups.length + asapUrgentServCodes.length;
 
   return (
     <div className="flex h-full overflow-hidden gap-0">
@@ -30,15 +37,15 @@ export function PrioritiesPage() {
         <div className="shrink-0 flex items-center gap-1.5 px-4 py-3 border-b border-border bg-destructive/10">
           <AlertTriangle className="w-4 h-4 text-destructive" />
           <span className="text-sm font-semibold text-destructive">Urgent</span>
-          {(hasUrgentGroups || hasAsap) && (
+          {hasAnyUrgent && (
             <span className="ml-auto text-[10px] text-destructive/70 tabular-nums">
-              {urgentGroups.length + asapUrgentServCodes.length} items
+              {urgentItemCount} items
             </span>
           )}
         </div>
 
         <ScrollArea className="flex-1">
-          {!hasUrgentGroups && !hasAsap ? (
+          {!hasAnyUrgent ? (
             <div className="flex items-center justify-center h-32 text-sm text-muted-foreground italic">
               No urgent items
             </div>
@@ -55,14 +62,25 @@ export function PrioritiesPage() {
                 </div>
               )}
 
-              {hasUrgentGroups && (
+              {hasOverdueServCodes && (
                 <div>
                   <div className="px-4 py-1.5 bg-destructive/5 border-b border-border/40">
                     <span className="text-[10px] font-semibold text-destructive uppercase tracking-wide">
-                      Overdue / Unplanned Groups
+                      Overdue Groups
                     </span>
                   </div>
-                  {urgentGroups.map((group) => (
+                  <UrgentChecklistContent urgentServCodes={overdueGroupServCodes} />
+                </div>
+              )}
+
+              {hasUnplanned && (
+                <div>
+                  <div className="px-4 py-1.5 bg-destructive/5 border-b border-border/40">
+                    <span className="text-[10px] font-semibold text-destructive uppercase tracking-wide">
+                      Unplanned Groups
+                    </span>
+                  </div>
+                  {unplannedGroups.map((group) => (
                     <UrgentGroupRow key={group.groupId} group={group} />
                   ))}
                 </div>
