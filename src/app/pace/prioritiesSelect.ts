@@ -47,6 +47,7 @@ const selectUrgentGroups = createSelector(
  * ServCodeIds are deduplicated — a servCode that appears in multiple overdue groups
  * is only included once (with the earliest deadline).
  * Only servCodes with active work remaining are included.
+ * Reads from groupMap (all groups including sequence members).
  */
 const selectOverdueGroupServCodes = createSelector(
   [paceEngineSelect, deepSelect.servCodes],

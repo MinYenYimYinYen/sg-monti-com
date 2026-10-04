@@ -1,4 +1,4 @@
-import { GroupContext, GroupPoolState, PoolDaySnapshot } from "@/app/pace/PaceEngineTypes";
+import { GroupContext, GroupPoolState, PoolDaySnapshot, PoolDaySnapshotEmployeeBreakdown } from "@/app/pace/PaceEngineTypes";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { GroupSequenceClassifier } from "@/app/pace/lib/groupSequenceClassifier";
 import { accumulateActualProduction } from "./helpers/accumulateActualProduction";
@@ -6,6 +6,7 @@ import { computeActualGroupRates, GroupProductionStats } from "./helpers/compute
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 
 const ACTIVE_STATUSES = new Set(getServiceStatuses(["active", "asap"]));
+const COMPLETED_STATUSES = new Set(getServiceStatuses(["completed"]));
 
 export type PastPhaseState = {
   /** Mutable pool state per group, initialized from past-phase data. */
@@ -74,6 +75,42 @@ export function crawlPastPhase(
     mainDate,
   );
 
+  // Build per-group, per-date employee breakdowns from doneBys.
+  // Map<groupId, Map<date, PoolDaySnapshotEmployeeBreakdown[]>>
+  const breakdownsByGroupByDate = new Map<string, Map<string, PoolDaySnapshotEmployeeBreakdown[]>>();
+
+  for (const servCode of servCodes) {
+    const groupId = servCodeToGroupId.get(servCode.servCodeId);
+    if (!groupId) continue;
+
+    for (const service of servCode.services) {
+      if (!COMPLETED_STATUSES.has(service.status) || !service.production) continue;
+      const doneDate = service.production.doneDate;
+      if (!doneDate || doneDate >= mainDate) continue;
+
+      if (!breakdownsByGroupByDate.has(groupId)) {
+        breakdownsByGroupByDate.set(groupId, new Map());
+      }
+      const byDate = breakdownsByGroupByDate.get(groupId)!;
+      if (!byDate.has(doneDate)) byDate.set(doneDate, []);
+      const dayBreakdowns = byDate.get(doneDate)!;
+
+      const { doneBys } = service.production;
+      if (doneBys.length > 0) {
+        for (const doneBy of doneBys) {
+          if (!doneBy.employeeId) continue;
+          const share = service.price * doneBy.percent;
+          const existing = dayBreakdowns.find((b) => b.employeeId === doneBy.employeeId);
+          if (existing) {
+            existing.priceCompleted += share;
+          } else {
+            dayBreakdowns.push({ employeeId: doneBy.employeeId, priceCompleted: share, priceForecasted: 0 });
+          }
+        }
+      }
+    }
+  }
+
   // Compute per-group and per-employee actual rates
   const groupProductionStats = computeActualGroupRates(productionByGroupByEmployeeByDate);
 
@@ -90,11 +127,10 @@ export function crawlPastPhase(
 
     // Collect all unique dates across all employees for this group
     const byEmployeeByDate = productionByGroupByEmployeeByDate.get(groupId);
-    const isLockedSuccessorEarly = classifier.isInSequence(groupId) && !classifier.isFirstInSequence(groupId);
     if (!byEmployeeByDate || byEmployeeByDate.size === 0 || !stats) {
       // Locked sequence successors have no history yet — cascade hasn't fired.
       // Return empty array so they don't appear in the burndown until they open.
-      if (isLockedSuccessorEarly) return [];
+      if (!classifier.shouldHaveMainDateSnapshot(groupId)) return [];
       return [{
         date: mainDate,
         completed: totalPool - activePool,
@@ -103,6 +139,7 @@ export function crawlPastPhase(
         priceForecasted: 0,
         employeesWorking: [],
         percentCompleted: totalPool > 0 ? (totalPool - activePool) / totalPool : 0,
+        employeeBreakdowns: [],
       }];
     }
 
@@ -143,10 +180,11 @@ export function crawlPastPhase(
         priceForecasted: 0,
         employeesWorking: employeesByDate.get(date) ?? [],
         percentCompleted,
+        employeeBreakdowns: breakdownsByGroupByDate.get(groupId)?.get(date) ?? [],
       });
 
-      // Detect when a standalone group crosses the cascade threshold past its plannedEnd.
-      // Sequence members are never stragglers — they always drain to zero.
+      // Detect when a single-member sequence group crosses the cascade threshold past its plannedEnd.
+      // Multi-member sequence members are never stragglers — they always drain to zero.
       if (
         !stragglerDetected &&
         classifier.isStraggler({ groupId, day: date, plannedEnd, completionPct: percentCompleted, cascadeThreshold: inputs.cascadeThreshold })
@@ -156,11 +194,8 @@ export function crawlPastPhase(
     }
 
     // Add mainDate handoff snapshot — only if the group still has an active pool,
-    // was not identified as a straggler, AND is not a locked sequence successor.
-    // Sequence successors (index > 0) have not opened yet at mainDate — they should
-    // not appear in the burndown until the cascade fires in the future phase.
-    const isLockedSuccessor = classifier.isInSequence(groupId) && !classifier.isFirstInSequence(groupId);
-    if (activePool > 0 && !stragglerDetected && !isLockedSuccessor) {
+    // was not identified as a straggler, AND should have a mainDate snapshot.
+    if (activePool > 0 && !stragglerDetected && classifier.shouldHaveMainDateSnapshot(groupId)) {
       const finalCompleted = totalPool - activePool;
       snapshots.push({
         date: mainDate,
@@ -168,8 +203,9 @@ export function crawlPastPhase(
         remaining: activePool,
         priceCompleted: 0,
         priceForecasted: 0,
-        employeesWorking: [],
+        employeesWorking: [] as string[],
         percentCompleted: totalPool > 0 ? finalCompleted / totalPool : 0,
+        employeeBreakdowns: [],
       });
     }
 

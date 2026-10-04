@@ -9,6 +9,7 @@ import { AppState } from "@/store";
 // Derives per-employee card data from engine output.
 // The engine already computed all rates, pools, and pace analysis —
 // this selector just shapes the data for the Employee Plan page.
+// Reads from groupMap (all groups including sequence members).
 // ---------------------------------------------------------------------------
 
 const selectMainDate = (state: AppState): string => state.pace.mainDate;
@@ -45,12 +46,10 @@ export type EmployeePlanData = {
 const selectEmployeePlanData = createSelector(
   [paceEngineSelect],
   (engineResult): EmployeePlanData[] => {
-    const { groups } = engineResult;
-
-    // Build a map of employeeId → groups they appear in
+    // Iterate all groups via groupMap (includes sequence members)
     const byEmployee = new Map<string, EmployeePlanGroupRow[]>();
 
-    for (const group of groups) {
+    for (const group of engineResult.groupMap.values()) {
       for (const breakdown of group.employeeBreakdowns) {
         const { employeeId } = breakdown;
         if (!byEmployee.has(employeeId)) {

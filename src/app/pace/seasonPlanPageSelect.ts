@@ -12,11 +12,16 @@ import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 // The Season Plan page reads feasibility data directly from the engine output.
 // daysNeeded, daysAvailable, and daysEarlyLate are first-class fields on GroupResult —
 // no inline re-computation needed.
+//
+// Reads from sequenceResults — one feasibility row per sequence.
+// Synthetic single-member sequences represent standalone groups.
 // ---------------------------------------------------------------------------
 
 export type SeasonPlanFeasibilityRow = {
-  groupId: string;
+  /** sequenceId for multi-member sequences; groupId + "-seq" for synthetic ones. */
+  id: string;
   label: string;
+  isSynthetic: boolean;
   plannedStart: string | null;
   plannedEnd: string | null;
   activePool: number;
@@ -32,20 +37,31 @@ export type SeasonPlanFeasibilityRow = {
 const selectFeasibilityRows = createSelector(
   [paceEngineSelect],
   (engineResult): SeasonPlanFeasibilityRow[] =>
-    engineResult.groups.map((group) => ({
-      groupId: group.groupId,
-      label: group.label,
-      plannedStart: group.plannedStart,
-      plannedEnd: group.plannedEnd,
-      activePool: group.activePool,
-      teamGoalDailyRate: group.teamGoalDailyRate,
-      daysNeeded: group.daysNeeded,
-      daysAvailable: group.daysAvailable,
-      daysEarlyLate: group.daysEarlyLate,
-      isOnTrack: group.isOnTrack,
-      isOverdue: group.isOverdue,
-      missingGoals: group.missingGoals,
-    })),
+    engineResult.sequenceResults.map((sequence) => {
+      // For feasibility, aggregate across members
+      const totalActivePool = sequence.members.reduce((sum, m) => sum + m.activePool, 0);
+      const totalTeamGoal = sequence.members.reduce((sum, m) => sum + m.teamGoalDailyRate, 0);
+      const allDaysNeeded = sequence.members.map((m) => m.daysNeeded).filter((d): d is number => d !== null);
+      const allDaysAvailable = sequence.members.map((m) => m.daysAvailable);
+      const allDaysEarlyLate = sequence.members.map((m) => m.daysEarlyLate).filter((d): d is number => d !== null);
+      const allMissingGoals = [...new Set(sequence.members.flatMap((m) => m.missingGoals))];
+
+      return {
+        id: sequence.sequenceId,
+        label: sequence.label,
+        isSynthetic: sequence.isSynthetic,
+        plannedStart: sequence.plannedStart,
+        plannedEnd: sequence.plannedEnd,
+        activePool: totalActivePool,
+        teamGoalDailyRate: totalTeamGoal,
+        daysNeeded: allDaysNeeded.length > 0 ? allDaysNeeded.reduce((a, b) => a + b, 0) : null,
+        daysAvailable: allDaysAvailable.length > 0 ? Math.min(...allDaysAvailable) : 0,
+        daysEarlyLate: allDaysEarlyLate.length > 0 ? Math.max(...allDaysEarlyLate) : null,
+        isOnTrack: sequence.members.every((m) => m.isOnTrack),
+        isOverdue: sequence.isOverdue,
+        missingGoals: allMissingGoals,
+      };
+    }),
 );
 
 export const seasonPlanPageSelect = {

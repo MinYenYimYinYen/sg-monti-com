@@ -6,7 +6,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popo
 
 export function FeasibilityBadge({ groupId }: { groupId: string }) {
   const feasibilityRows = useSelector(seasonPlanPageSelect.feasibilityRows);
-  const row = feasibilityRows.find((r) => r.groupId === groupId);
+  // feasibilityRows now use `id` (sequenceId or groupId+"-seq") instead of `groupId`.
+  // For synthetic single-member sequences, the id is groupId + "-seq".
+  const row = feasibilityRows.find((r) => r.id === groupId || r.id === groupId + "-seq");
   if (!row) return null;
 
   const noData = row.daysNeeded === null || row.teamGoalDailyRate === 0;

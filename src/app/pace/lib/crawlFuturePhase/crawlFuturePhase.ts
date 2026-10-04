@@ -4,6 +4,7 @@ import {
   EmployeeTimelineEvent,
   ServCodeTimelineEvent,
   EngineEmployeeEntry,
+  PoolDaySnapshotEmployeeBreakdown,
 } from "@/app/pace/PaceEngineTypes";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { PresentPhaseState } from "@/app/pace/lib/crawlPresentPhase/crawlPresentPhase";
@@ -120,6 +121,19 @@ export function crawlFuturePhase(
   const maxDay = dateStrings.addWeekdays(mainDate, MAX_FUTURE_WEEKDAYS);
 
   while (day <= maxDay) {
+    // Check cascade unlocks at the START of each day — before building activeGroupIds.
+    // This ensures newly-unlocked groups are correctly excluded from snapshots on their
+    // unlock day (they have no work yet on that day).
+    resolveSequenceCascade({
+      sequences,
+      poolStates,
+      lockedGroupIds,
+      groupScheduleMap: plannedEndByGroupId,
+      successorPlannedStartMap: plannedStartByGroupId,
+      cascadeThreshold,
+      day,
+    });
+
     // Check if any pool remains that is not a straggler.
     // Uses the classifier to determine straggler eligibility — only standalone groups
     // (not in any sequence) can be abandoned. Sequence members always drain to zero.
@@ -141,19 +155,13 @@ export function crawlFuturePhase(
     }
     if (!anyRemaining) break;
 
-    // Per-group daily stats for snapshot population (priceCompleted, priceForecasted, employeesWorking)
-    const dailyGroupStats = new Map<string, { priceCompleted: number; priceForecasted: number; employeesWorking: string[] }>();
-
-    // Check cascade unlocks at the start of each day
-    resolveSequenceCascade({
-      sequences,
-      poolStates,
-      lockedGroupIds,
-      groupScheduleMap: plannedEndByGroupId,
-      successorPlannedStartMap: plannedStartByGroupId,
-      cascadeThreshold,
-      day,
-    });
+    // Per-group daily stats for snapshot population
+    const dailyGroupStats = new Map<string, {
+      priceCompleted: number;
+      priceForecasted: number;
+      employeesWorking: string[];
+      employeeBreakdowns: PoolDaySnapshotEmployeeBreakdown[];
+    }>();
 
     for (const entry of employeeEntries) {
       const { employeeId, availability, timeOffDates } = entry;
@@ -199,13 +207,29 @@ export function crawlFuturePhase(
         workedGroupId = groupId;
 
         // Accumulate daily stats for this group's snapshot
-        const existing = dailyGroupStats.get(groupId) ?? { priceCompleted: 0, priceForecasted: 0, employeesWorking: [] };
+        if (!dailyGroupStats.has(groupId)) {
+          dailyGroupStats.set(groupId, {
+            priceCompleted: 0,
+            priceForecasted: 0,
+            employeesWorking: [] as string[],
+            employeeBreakdowns: [] as PoolDaySnapshotEmployeeBreakdown[],
+          });
+        }
+        const existing = dailyGroupStats.get(groupId)!;
+        const existingBreakdown = existing.employeeBreakdowns.find((b) => b.employeeId === employeeId);
+        if (existingBreakdown) {
+          existingBreakdown.priceCompleted += drained;
+          existingBreakdown.priceForecasted += goalRate;
+        } else {
+          existing.employeeBreakdowns.push({ employeeId, priceCompleted: drained, priceForecasted: goalRate });
+        }
         dailyGroupStats.set(groupId, {
           priceCompleted: existing.priceCompleted + drained,
           priceForecasted: existing.priceForecasted + goalRate,
           employeesWorking: existing.employeesWorking.includes(employeeId)
             ? existing.employeesWorking
             : [...existing.employeesWorking, employeeId],
+          employeeBreakdowns: existing.employeeBreakdowns,
         });
 
         // Record projectedStartDate
@@ -310,6 +334,7 @@ export function crawlFuturePhase(
           priceForecasted: groupDailyStats?.priceForecasted ?? 0,
           employeesWorking: groupDailyStats?.employeesWorking ?? [],
           percentCompleted: poolState.totalPool > 0 ? poolState.completedSoFar / poolState.totalPool : 0,
+          employeeBreakdowns: groupDailyStats?.employeeBreakdowns ?? [],
         });
       }
     }

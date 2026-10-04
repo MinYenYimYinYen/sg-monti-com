@@ -13,6 +13,9 @@ export function BurndownPage() {
     ? burndownSeries.find((s) => s.id === selectedId) ?? null
     : null;
 
+  const groupCount = burndownSeries.filter((s) => s.kind === "group").length;
+  const sequenceCount = burndownSeries.filter((s) => s.kind === "sequence").length;
+
   return (
     <div className="flex h-full overflow-hidden">
       {/* Left panel — series selector */}
@@ -51,8 +54,7 @@ export function BurndownPage() {
           ))}
         </div>
         <div className="px-3 py-2 border-t text-[10px] text-muted-foreground">
-          {burndownSeries.filter((s) => s.kind === "group").length} groups ·{" "}
-          {burndownSeries.filter((s) => s.kind === "sequence").length} sequences
+          {groupCount} groups · {sequenceCount} sequences
         </div>
       </div>
 

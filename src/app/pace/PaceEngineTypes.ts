@@ -5,6 +5,17 @@ import { EmployeeAvailability } from "@/app/employeeAvailability/EmployeeAvailab
 // ---------------------------------------------------------------------------
 
 /**
+ * Per-employee contribution on a single crawl day.
+ * Future phase: populated from simulation drain (which employee drained what).
+ * Past phase: populated from service.production.doneBys + doneDate.
+ */
+export type PoolDaySnapshotEmployeeBreakdown = {
+  employeeId: string;
+  priceCompleted: number;
+  priceForecasted: number;
+};
+
+/**
  * A single day's pool snapshot recorded during the crawl.
  * Past phase: populated from actual service completion data.
  * Future phase: populated from the simulation drain.
@@ -26,6 +37,13 @@ export type PoolDaySnapshot = {
   employeesWorking: string[];
   /** completedSoFar / totalPool — used to detect cascade-threshold crossings. */
   percentCompleted: number;
+  /**
+   * Per-employee breakdown for this day.
+   * Future phase: populated from simulation drain.
+   * Past phase: populated from service.production.doneBys + doneDate.
+   * Empty when no per-employee attribution is available.
+   */
+  employeeBreakdowns: PoolDaySnapshotEmployeeBreakdown[];
 };
 
 // ---------------------------------------------------------------------------
@@ -177,12 +195,61 @@ export type GroupResult = {
 };
 
 // ---------------------------------------------------------------------------
+// Sequence result — one per GroupSequence (including synthetic single-member sequences)
+// ---------------------------------------------------------------------------
+
+/**
+ * The engine's output for one GroupSequence.
+ *
+ * Synthetic sequences (isSynthetic === true) are auto-generated for standalone groups
+ * that are not part of any user-created GroupSequence. They have exactly one member.
+ *
+ * The UI uses isSynthetic to distinguish:
+ * - Assignments panel: shows groups where isSynthetic === true (standalone groups)
+ * - Sequences panel: shows sequences where isSynthetic === false (user-created)
+ * - Gantt/Burndown: renders all sequences uniformly; omits container styling for synthetic ones
+ */
+export type SequenceResult = {
+  sequenceId: string;
+  label: string;
+  /** True when auto-generated for a standalone group (groupIds.length === 1). */
+  isSynthetic: boolean;
+  /** Ordered member GroupResults — index 0 opens first. */
+  members: GroupResult[];
+  /** Merged pool history across all members (summed by date). */
+  poolHistory: PoolDaySnapshot[];
+  /** Earliest plannedStart across all members. */
+  plannedStart: string | null;
+  /** Latest plannedEnd across all members. */
+  plannedEnd: string | null;
+  /** Earliest projectedStartDate across members with work. */
+  projectedStartDate: string | null;
+  /** Latest projectedEndDate across all members. */
+  projectedEndDate: string | null;
+  /** Sum of totalPool across all members. */
+  totalPool: number;
+  /** True if any member has work remaining. */
+  hasWork: boolean;
+  /** True if any member is overdue. */
+  isOverdue: boolean;
+};
+
+// ---------------------------------------------------------------------------
 // Full engine output
 // ---------------------------------------------------------------------------
 
 export type PaceEngineResult = {
-  groups: GroupResult[];
-  /** O(1) lookup by groupId. */
+  /**
+   * All sequence results — includes synthetic single-member sequences for standalone groups.
+   * This is the primary collection for UI consumers (Gantt, Burndown, Season Plan).
+   */
+  sequenceResults: SequenceResult[];
+  /** Map<sequenceId, SequenceResult> for O(1) lookup. */
+  sequenceResultMap: Map<string, SequenceResult>;
+  /**
+   * Map<groupId, GroupResult> for O(1) lookup — all groups including sequence members.
+   * Used by consumers that need to resolve a groupId (e.g. priorities, crew timelines).
+   */
   groupMap: Map<string, GroupResult>;
 
   /** Per-employee ordered list of timeline events. */

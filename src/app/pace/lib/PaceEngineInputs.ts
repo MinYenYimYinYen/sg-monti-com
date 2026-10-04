@@ -76,6 +76,11 @@ const selectMainDate = (state: AppState): string => state.pace.mainDate;
  * Assembles all engine inputs from Redux state into a single plain object.
  * This is the only selector that `paceEngineSelect` depends on.
  * Memoized — only re-runs when any input selector changes.
+ *
+ * Normalizes sequences: every AssignmentGroup that is NOT already in a user-created
+ * GroupSequence is wrapped in a synthetic single-member GroupSequence. This ensures
+ * the engine always operates on a uniform SequenceResult[] — no special-casing for
+ * standalone groups anywhere downstream.
  */
 export const selectPaceEngineInputs = createSelector(
   [
@@ -113,22 +118,35 @@ export const selectPaceEngineInputs = createSelector(
     employeeMap,
     holidays,
     holidayDates,
-  ): PaceEngineInputs => ({
-    mainDate,
-    groups,
-    groupMap,
-    sequences,
-    sequenceIdByGroupId,
-    assignmentPlans,
-    assignmentsByEmployeeId,
-    goalByEmployeeByGroup,
-    activeSeasonPlan,
-    groupScheduleMap,
-    cascadeThreshold,
-    servCodes,
-    employees,
-    employeeMap,
-    holidays,
-    holidayDates,
-  }),
+  ): PaceEngineInputs => {
+    // Wrap standalone groups (not in any user-created sequence) as synthetic sequences of 1.
+    const sequencedGroupIds = new Set(sequences.flatMap((s) => s.groupIds));
+    const syntheticSequences: GroupSequence[] = groups
+      .filter((g) => !sequencedGroupIds.has(g.groupId))
+      .map((g) => ({
+        sequenceId: g.groupId + "-seq",
+        label: g.label,
+        groupIds: [g.groupId],
+      }));
+    const normalizedSequences: GroupSequence[] = [...sequences, ...syntheticSequences];
+
+    return {
+      mainDate,
+      groups,
+      groupMap,
+      sequences: normalizedSequences,
+      sequenceIdByGroupId,
+      assignmentPlans,
+      assignmentsByEmployeeId,
+      goalByEmployeeByGroup,
+      activeSeasonPlan,
+      groupScheduleMap,
+      cascadeThreshold,
+      servCodes,
+      employees,
+      employeeMap,
+      holidays,
+      holidayDates,
+    };
+  },
 );

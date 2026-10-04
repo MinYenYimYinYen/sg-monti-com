@@ -17,6 +17,13 @@ export function PaceAssignmentGroupManager() {
   const sequences = useSelector(paceGroupSequenceSelect.sequences);
   const sequenceMap = useSelector(paceGroupSequenceSelect.sequenceMap);
   const sequenceIdByGroupId = useSelector(paceGroupSequenceSelect.sequenceIdByGroupId);
+
+  // Only show groups that are NOT in a user-created multi-member sequence.
+  // Groups in sequences are managed via the Sequences panel.
+  const multiMemberSequenceGroupIds = new Set(
+    sequences.filter((s) => s.groupIds.length > 1).flatMap((s) => s.groupIds),
+  );
+  const standaloneGroups = groups.filter((g) => !multiMemberSequenceGroupIds.has(g.groupId));
   const { upsertGroup, deleteGroup } = usePaceAssignmentGroup();
   const { upsertSequence } = useGroupSequence();
   const [showNewForm, setShowNewForm] = useState(false);
@@ -114,12 +121,12 @@ export function PaceAssignmentGroupManager() {
       )}
 
       <div className="flex-1 overflow-y-auto">
-        {sortedGroups.length === 0 && !showNewForm && (
+        {standaloneGroups.length === 0 && !showNewForm && (
           <p className="px-3 py-4 text-[10px] text-muted-foreground text-center">
-            No groups defined. Click &ldquo;New Group&rdquo; to create one.
+            No standalone groups. All groups are in sequences.
           </p>
         )}
-        {sortedGroups.map((group) => {
+        {standaloneGroups.sort((a, b) => a.label.localeCompare(b.label)).map((group) => {
           const seqId = sequenceIdByGroupId.get(group.groupId) ?? null;
           const seq = seqId ? sequenceMap.get(seqId) ?? null : null;
           return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { ganttSelect } from "@/app/pace/ganttSelect";
+import { ganttSelect, GanttSequenceRow } from "@/app/pace/ganttSelect";
 import { getWeekNumber } from "@/lib/primatives/dates/getWeek";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { GanttGroupRow } from "@/app/pace/gantt/_components/GanttGroupRow";
@@ -16,17 +16,22 @@ import {
   getMondaysInRange,
 } from "@/app/pace/gantt/_components/ganttHelpers";
 
+const SEQUENCE_CONTAINER_BG = "bg-secondary/5";
+
 export function GanttPage() {
-  const ganttRows = useSelector(ganttSelect.ganttRows);
+  const ganttSequenceRows = useSelector(ganttSelect.ganttSequenceRows);
   const mainDate = useSelector(ganttSelect.mainDate);
   const snowDeadline = useSelector(ganttSelect.snowDeadline);
   const activeSeasonPlan = useSelector(ganttSelect.activeSeasonPlan);
 
-  // Show all rows that have either a plan band or pool history — no longer require projected dates
-  const visibleRows = ganttRows.filter(
+  // Show all rows that have either a plan band or pool history
+  const visibleRows = ganttSequenceRows.filter(
     (r) =>
       r.poolHistory.length > 0 ||
-      (isValidDate(r.plannedStart) && isValidDate(r.plannedEnd)),
+      (isValidDate(r.plannedStart) && isValidDate(r.plannedEnd)) ||
+      r.members.some(
+        (m) => m.poolHistory.length > 0 || (isValidDate(m.plannedStart) && isValidDate(m.plannedEnd)),
+      ),
   );
 
   if (visibleRows.length === 0) {
@@ -37,25 +42,26 @@ export function GanttPage() {
     );
   }
 
-  // Compute chart bounds from poolHistory dates + plan bands
+  // Compute chart bounds from all member poolHistory dates + plan bands
   let chartStart = mainDate;
   let chartEnd = mainDate;
 
-  for (const row of visibleRows) {
-    const firstSnapshot = row.poolHistory[0];
-    const lastSnapshot = row.poolHistory.at(-1);
-
-    if (firstSnapshot && firstSnapshot.date < chartStart) chartStart = firstSnapshot.date;
-    if (lastSnapshot && lastSnapshot.date > chartEnd) chartEnd = lastSnapshot.date;
-
-    // Also include plan band in bounds
-    if (row.plannedStart && row.plannedStart < chartStart) chartStart = row.plannedStart;
-    if (row.plannedEnd && row.plannedEnd > chartEnd) chartEnd = row.plannedEnd;
+  for (const seqRow of visibleRows) {
+    for (const row of seqRow.members) {
+      const firstSnapshot = row.poolHistory[0];
+      const lastSnapshot = row.poolHistory.at(-1);
+      if (firstSnapshot && firstSnapshot.date < chartStart) chartStart = firstSnapshot.date;
+      if (lastSnapshot && lastSnapshot.date > chartEnd) chartEnd = lastSnapshot.date;
+      if (row.plannedStart && row.plannedStart < chartStart) chartStart = row.plannedStart;
+      if (row.plannedEnd && row.plannedEnd > chartEnd) chartEnd = row.plannedEnd;
+    }
+    // Also include sequence-level plan band
+    if (seqRow.plannedStart && seqRow.plannedStart < chartStart) chartStart = seqRow.plannedStart;
+    if (seqRow.plannedEnd && seqRow.plannedEnd > chartEnd) chartEnd = seqRow.plannedEnd;
   }
 
   if (snowDeadline && snowDeadline > chartEnd) chartEnd = snowDeadline;
   chartEnd = dateStrings.addDays(chartEnd, 3);
-  // Pad start slightly so the first bar isn't flush against the edge
   chartStart = dateStrings.addDays(chartStart, -3);
 
   const totalDays = Math.max(dayOffset(chartStart, chartEnd), 1);
@@ -75,6 +81,13 @@ export function GanttPage() {
       : null;
 
   const sortedRows = [...visibleRows].sort((a, b) => a.label.localeCompare(b.label));
+
+  // Compute total row count for label column height
+  function getRowCount(seqRow: GanttSequenceRow): number {
+    if (seqRow.isSynthetic) return 1;
+    // Multi-member: 1 header row + N member rows
+    return 1 + seqRow.members.length;
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -104,20 +117,55 @@ export function GanttPage() {
           {/* Label column */}
           <div className="shrink-0 flex flex-col" style={{ width: LABEL_WIDTH }}>
             <div style={{ height: HEADER_HEIGHT }} className="border-b border-border bg-card" />
-            {sortedRows.map((row) => (
-              <div
-                key={row.groupId}
-                className="flex items-center px-2 border-b border-border/50 bg-card"
-                style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
-              >
-                <span
-                  className="text-xs font-semibold text-foreground truncate font-mono"
-                  title={row.memberServCodeIds.join(", ")}
-                >
-                  {row.label}
-                </span>
-              </div>
-            ))}
+            {sortedRows.map((seqRow) => {
+              if (seqRow.isSynthetic) {
+                // Single-member: render exactly like the old standalone group row
+                const member = seqRow.members[0];
+                return (
+                  <div
+                    key={seqRow.sequenceId}
+                    className="flex items-center px-2 border-b border-border/50 bg-card"
+                    style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
+                  >
+                    <span
+                      className="text-xs font-semibold text-foreground truncate font-mono"
+                      title={member?.memberServCodeIds.join(", ")}
+                    >
+                      {seqRow.label}
+                    </span>
+                  </div>
+                );
+              }
+              // Multi-member sequence: header + indented member labels
+              return (
+                <div key={seqRow.sequenceId} className={`${SEQUENCE_CONTAINER_BG} border-b border-border/30`}>
+                  {/* Sequence header label */}
+                  <div
+                    className="flex items-center px-2 border-b border-border/20"
+                    style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
+                  >
+                    <span className="text-[10px] font-semibold text-secondary uppercase tracking-wide truncate">
+                      {seqRow.label}
+                    </span>
+                  </div>
+                  {/* Member labels */}
+                  {seqRow.members.map((member) => (
+                    <div
+                      key={member.groupId}
+                      className="flex items-center pl-4 pr-2 border-b border-border/20"
+                      style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }}
+                    >
+                      <span
+                        className="text-xs font-semibold text-foreground truncate font-mono"
+                        title={member.memberServCodeIds.join(", ")}
+                      >
+                        {member.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
 
           {/* Chart area */}
@@ -170,16 +218,44 @@ export function GanttPage() {
                   title={`Snow deadline: ${snowDeadline}`}
                 />
               )}
-              {sortedRows.map((row, idx) => (
-                <GanttGroupRow
-                  key={row.groupId}
-                  row={row}
-                  mainDate={mainDate}
-                  totalDays={totalDays}
-                  chartStart={chartStart}
-                  colorIndex={idx}
-                />
-              ))}
+              {sortedRows.map((seqRow, seqIdx) => {
+                if (seqRow.isSynthetic && seqRow.members[0]) {
+                  // Single-member: render exactly like the old GanttGroupRow
+                  return (
+                    <GanttGroupRow
+                      key={seqRow.sequenceId}
+                      row={seqRow.members[0]}
+                      mainDate={mainDate}
+                      totalDays={totalDays}
+                      chartStart={chartStart}
+                      colorIndex={seqIdx}
+                    />
+                  );
+                }
+                // Multi-member sequence: container with stacked member bars
+                const containerHeight = (ROW_HEIGHT + GROUP_GAP) * (1 + seqRow.members.length);
+                return (
+                  <div
+                    key={seqRow.sequenceId}
+                    className={`${SEQUENCE_CONTAINER_BG} border-b border-border/30`}
+                    style={{ minHeight: containerHeight }}
+                  >
+                    {/* Sequence header row (no bar — just spacing) */}
+                    <div style={{ height: ROW_HEIGHT, marginBottom: GROUP_GAP }} />
+                    {/* Member bars */}
+                    {seqRow.members.map((member, memberIdx) => (
+                      <GanttGroupRow
+                        key={member.groupId}
+                        row={member}
+                        mainDate={mainDate}
+                        totalDays={totalDays}
+                        chartStart={chartStart}
+                        colorIndex={seqIdx * 10 + memberIdx}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

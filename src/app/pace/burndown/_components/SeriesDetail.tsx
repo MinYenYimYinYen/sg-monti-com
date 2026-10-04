@@ -3,9 +3,11 @@
 import { useSelector } from "react-redux";
 import { BurndownSeries, burndownSelect } from "@/app/pace/burndownSelect";
 import { formatDollars, formatDate } from "@/app/pace/burndown/_components/burndownHelpers";
+import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 
 export function SeriesDetail({ series }: { series: BurndownSeries }) {
   const mainDate = useSelector(burndownSelect.mainDate);
+  const employeeMap = useSelector(employeeSelect.employeeMap);
 
   return (
     <div className="flex-1 overflow-y-auto p-4">
@@ -66,18 +68,25 @@ export function SeriesDetail({ series }: { series: BurndownSeries }) {
         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
           Pool History ({series.poolHistory.length} snapshots)
         </p>
-        <table className="text-xs border-separate border-spacing-0 w-full max-w-lg">
+        <table className="text-xs border-separate border-spacing-0 w-full max-w-3xl">
           <thead>
             <tr className="bg-accent/10">
               <th className="text-left px-2 py-1 border border-border font-semibold">Date</th>
               <th className="text-right px-2 py-1 border border-border font-semibold">Completed</th>
               <th className="text-right px-2 py-1 border border-border font-semibold">Remaining</th>
+              <th className="text-right px-2 py-1 border border-border font-semibold">Day $</th>
+              <th className="text-right px-2 py-1 border border-border font-semibold">Forecast $</th>
+              <th className="text-right px-2 py-1 border border-border font-semibold">%</th>
+              <th className="text-left px-2 py-1 border border-border font-semibold">Crew</th>
               <th className="text-left px-2 py-1 border border-border font-semibold">Phase</th>
             </tr>
           </thead>
           <tbody>
             {series.poolHistory.map((snapshot, idx) => {
               const isPast = snapshot.date <= mainDate;
+              const crewNames = snapshot.employeesWorking
+                .map((id) => employeeMap.get(id)?.name ?? id)
+                .join(", ");
               return (
                 <tr
                   key={idx}
@@ -96,6 +105,18 @@ export function SeriesDetail({ series }: { series: BurndownSeries }) {
                   </td>
                   <td className="px-2 py-0.5 border border-border text-right font-mono text-foreground">
                     {formatDollars(snapshot.remaining)}
+                  </td>
+                  <td className="px-2 py-0.5 border border-border text-right font-mono text-muted-foreground">
+                    {snapshot.priceCompleted > 0 ? formatDollars(snapshot.priceCompleted) : "—"}
+                  </td>
+                  <td className="px-2 py-0.5 border border-border text-right font-mono text-muted-foreground">
+                    {snapshot.priceForecasted > 0 ? formatDollars(snapshot.priceForecasted) : "—"}
+                  </td>
+                  <td className="px-2 py-0.5 border border-border text-right font-mono text-muted-foreground">
+                    {Math.round(snapshot.percentCompleted * 100)}%
+                  </td>
+                  <td className="px-2 py-0.5 border border-border text-[9px] text-muted-foreground max-w-[160px] truncate">
+                    {crewNames || "—"}
                   </td>
                   <td className="px-2 py-0.5 border border-border text-[9px] text-muted-foreground">
                     {isPast ? "actual" : "projected"}

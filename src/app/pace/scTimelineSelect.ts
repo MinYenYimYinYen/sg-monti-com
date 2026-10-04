@@ -1,6 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { paceEngineSelect } from "@/app/pace/paceEngineSelect";
-import { ServCodeTimelineEvent } from "@/app/pace/PaceEngineTypes";
+import { GroupResult, ServCodeTimelineEvent } from "@/app/pace/PaceEngineTypes";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 
 // ---------------------------------------------------------------------------
@@ -8,6 +8,7 @@ import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 //
 // Pure consumer of engine output — no re-derivation.
 // The crew timeline is keyed by groupId (not servCodeId) in the new engine.
+// Reads from groupMap (all groups including sequence members).
 // ---------------------------------------------------------------------------
 
 /**
@@ -18,7 +19,7 @@ const selectCrewTimelines = createSelector(
   [paceEngineSelect],
   (engineResult): Map<string, ServCodeTimelineEvent[]> => {
     const result = new Map<string, ServCodeTimelineEvent[]>();
-    for (const group of engineResult.groups) {
+    for (const group of engineResult.groupMap.values()) {
       if (group.crewTimeline.length > 0) {
         result.set(group.groupId, group.crewTimeline);
       }
@@ -33,7 +34,7 @@ const selectCrewTimelines = createSelector(
 const selectGroupLabelMap = createSelector(
   [paceEngineSelect],
   (engineResult): Map<string, string> =>
-    new Map(engineResult.groups.map((g) => [g.groupId, g.label])),
+    new Map([...engineResult.groupMap.values()].map((g: GroupResult) => [g.groupId, g.label])),
 );
 
 export const scTimelineSelect = {
