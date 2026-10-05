@@ -6,6 +6,7 @@ import {
   EngineEmployeeEntry,
   PoolDaySnapshotEmployeeBreakdown,
 } from "@/app/pace/PaceEngineTypes";
+import { CrawlerDay, CrawlerDayGroup } from "@/app/pace/CrawlerDay";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { PresentPhaseState } from "@/app/pace/lib/crawlPresentPhase/crawlPresentPhase";
 import { GroupProductionStats } from "@/app/pace/lib/crawlPastPhase/helpers/computeActualGroupRates";
@@ -22,6 +23,8 @@ export type FuturePhaseState = {
   crewTimelines: Map<string, ServCodeTimelineEvent[]>;
   /** Passed through from past phase for use in assembleGroupResults. */
   groupProductionStats: Map<string, GroupProductionStats>;
+  /** Ordered CrawlerDay[] for future days (mainDate+1 onward). */
+  crawlerDays: CrawlerDay[];
 };
 
 const MAX_FUTURE_WEEKDAYS = 365;
@@ -114,6 +117,19 @@ export function crawlFuturePhase(
     employeeTimeline.set(entry.employeeId, []);
     lastWorkedGroupByEmployee.set(entry.employeeId, null);
     inDowntimeByEmployee.set(entry.employeeId, false);
+  }
+
+  // Accumulate CrawlerDay entries for future days
+  const crawlerDays: CrawlerDay[] = [];
+
+  // Build groupId → sequenceId map for CrawlerDayGroup population.
+  // Uses the non-synthetic sequenceId (null for synthetic single-member sequences).
+  const sequenceIdByGroupId = new Map<string, string | null>();
+  for (const sequence of sequences) {
+    const isSynthetic = sequence.groupIds.length === 1;
+    for (const groupId of sequence.groupIds) {
+      sequenceIdByGroupId.set(groupId, isSynthetic ? null : sequence.sequenceId);
+    }
   }
 
   // Walk forward day by day
@@ -323,6 +339,7 @@ export function crawlFuturePhase(
 
     // Append pool history snapshot only for groups that had remaining work at the start of this day.
     // Groups already at zero before this day started don't need projected zero-snapshots.
+    const crawlerDayGroups: CrawlerDayGroup[] = [];
     for (const poolState of poolStates.values()) {
       if (activeGroupIds.has(poolState.groupId)) {
         const groupDailyStats = dailyGroupStats.get(poolState.groupId);
@@ -336,13 +353,39 @@ export function crawlFuturePhase(
           percentCompleted: poolState.totalPool > 0 ? poolState.completedSoFar / poolState.totalPool : 0,
           employeeBreakdowns: groupDailyStats?.employeeBreakdowns ?? [],
         });
+
+        const context = contextByGroupId.get(poolState.groupId);
+        crawlerDayGroups.push({
+          groupId: poolState.groupId,
+          label: context?.label ?? poolState.groupId,
+          sequenceId: sequenceIdByGroupId.get(poolState.groupId) ?? null,
+          poolCompletedSoFar: poolState.completedSoFar,
+          poolRemaining: poolState.poolRemaining,
+          priceCompleted: groupDailyStats?.priceCompleted ?? 0,
+          priceForecasted: groupDailyStats?.priceForecasted ?? 0,
+          percentCompleted: poolState.totalPool > 0 ? poolState.completedSoFar / poolState.totalPool : 0,
+          totalPool: poolState.totalPool,
+          // cascadedToSuccessor is set in a post-processing pass in assembleGroupResults
+          // because resolveSequenceCascade mutates poolStates in place and we can't detect
+          // the cascade event here without inspecting the lock set before and after.
+          cascadedToSuccessor: false,
+          employees: (groupDailyStats?.employeeBreakdowns ?? []).map((bd) => ({
+            employeeId: bd.employeeId,
+            priceCompleted: bd.priceCompleted,
+            priceForecasted: bd.priceForecasted,
+          })),
+        });
       }
+    }
+
+    if (crawlerDayGroups.length > 0) {
+      crawlerDays.push({ date: day, phase: "future", groups: crawlerDayGroups });
     }
 
     day = dateStrings.nextWeekdayAfter(day);
   }
 
-  return { poolStates, servCodeToGroupId, employeeTimeline, crewTimelines, groupProductionStats };
+  return { poolStates, servCodeToGroupId, employeeTimeline, crewTimelines, groupProductionStats, crawlerDays };
 }
 
 function computeTeamRate(

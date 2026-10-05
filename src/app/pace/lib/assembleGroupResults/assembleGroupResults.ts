@@ -5,10 +5,13 @@ import {
   MemberResult,
   PaceEngineResult,
   PoolDaySnapshot,
+  PoolDaySnapshotEmployeeBreakdown,
   SequenceResult,
 } from "@/app/pace/PaceEngineTypes";
+import { CrawlerDay, CrawlerDayGroup } from "@/app/pace/CrawlerDay";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { FuturePhaseState } from "@/app/pace/lib/crawlFuturePhase/crawlFuturePhase";
+import { PastPhaseState } from "@/app/pace/lib/crawlPastPhase/crawlPastPhase";
 import {
   computePaceAnalysis,
   PaceAnalysis,
@@ -111,6 +114,7 @@ export function assembleGroupResults(
   inputs: PaceEngineInputs,
   groupContexts: GroupContext[],
   futureState: FuturePhaseState,
+  pastState: PastPhaseState,
 ): PaceEngineResult {
   const { mainDate, holidayDates } = inputs;
   const { poolStates, employeeTimeline, crewTimelines, groupProductionStats } = futureState;
@@ -292,6 +296,17 @@ export function assembleGroupResults(
     snowDeadline ??
     (allPlannedEnds.length > 0 ? [...allPlannedEnds].sort().at(-1)! : mainDate);
 
+  // Build CrawlerDay[] — past days from pastState.breakdownsByGroupByDate,
+  // present (mainDate) from poolStates, future days from futureState.crawlerDays.
+  const crawlerDays = buildCrawlerDays({
+    mainDate,
+    groupContexts,
+    poolStates,
+    breakdownsByGroupByDate: pastState.breakdownsByGroupByDate,
+    futureCrawlerDays: futureState.crawlerDays,
+    sequences: inputs.sequences,
+  });
+
   return {
     sequenceResults,
     sequenceResultMap,
@@ -301,5 +316,129 @@ export function assembleGroupResults(
     mainDate,
     seasonStart,
     seasonEnd,
+    crawlerDays,
   };
+}
+
+// ---------------------------------------------------------------------------
+// CrawlerDay construction helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the full CrawlerDay[] spanning past + present + future.
+ *
+ * Past days: one CrawlerDay per date that appears in breakdownsByGroupByDate
+ *   (days with actual production). Groups with no production on a given date
+ *   are omitted from that day's groups array.
+ *
+ * Present (mainDate): one CrawlerDay with all groups that have active pool,
+ *   representing the handoff point between actual and projected.
+ *
+ * Future days: passed through from futureState.crawlerDays (already built
+ *   during the future phase loop).
+ */
+function buildCrawlerDays({
+  mainDate,
+  groupContexts,
+  poolStates,
+  breakdownsByGroupByDate,
+  futureCrawlerDays,
+  sequences,
+}: {
+  mainDate: string;
+  groupContexts: GroupContext[];
+  poolStates: Map<string, import("@/app/pace/PaceEngineTypes").GroupPoolState>;
+  breakdownsByGroupByDate: Map<string, Map<string, PoolDaySnapshotEmployeeBreakdown[]>>;
+  futureCrawlerDays: CrawlerDay[];
+  sequences: import("@/app/pace/groupSequence/GroupSequenceTypes").GroupSequence[];
+}): CrawlerDay[] {
+  // Build groupId → sequenceId map (null for synthetic single-member sequences)
+  const sequenceIdByGroupId = new Map<string, string | null>();
+  for (const sequence of sequences) {
+    const isSynthetic = sequence.groupIds.length === 1;
+    for (const groupId of sequence.groupIds) {
+      sequenceIdByGroupId.set(groupId, isSynthetic ? null : sequence.sequenceId);
+    }
+  }
+
+  // Build groupId → label map
+  const labelByGroupId = new Map<string, string>();
+  for (const ctx of groupContexts) {
+    labelByGroupId.set(ctx.groupId, ctx.label);
+  }
+
+  // Collect all past production dates across all groups
+  const allPastDates = new Set<string>();
+  for (const byDate of breakdownsByGroupByDate.values()) {
+    for (const date of byDate.keys()) {
+      if (date < mainDate) allPastDates.add(date);
+    }
+  }
+
+  // Build past CrawlerDays — one per production date
+  const pastDays: CrawlerDay[] = [...allPastDates].sort().map((date): CrawlerDay => {
+    const groups: CrawlerDayGroup[] = [];
+    for (const [groupId, byDate] of breakdownsByGroupByDate) {
+      const dayBreakdowns = byDate.get(date);
+      if (!dayBreakdowns || dayBreakdowns.length === 0) continue;
+
+      const poolState = poolStates.get(groupId);
+      const totalPool = poolState?.totalPool ?? 0;
+      // For past days, poolCompletedSoFar is approximated from the poolHistory snapshot
+      // for this date. If not available, use 0.
+      const snapshot = poolState?.poolHistory.find((s) => s.date === date);
+      const poolCompletedSoFar = snapshot?.completed ?? 0;
+      const poolRemaining = snapshot?.remaining ?? 0;
+      const priceCompleted = snapshot?.priceCompleted ?? dayBreakdowns.reduce((sum, bd) => sum + bd.priceCompleted, 0);
+
+      groups.push({
+        groupId,
+        label: labelByGroupId.get(groupId) ?? groupId,
+        sequenceId: sequenceIdByGroupId.get(groupId) ?? null,
+        poolCompletedSoFar,
+        poolRemaining,
+        priceCompleted,
+        priceForecasted: 0,
+        percentCompleted: totalPool > 0 ? poolCompletedSoFar / totalPool : 0,
+        totalPool,
+        cascadedToSuccessor: false,
+        employees: dayBreakdowns.map((bd) => ({
+          employeeId: bd.employeeId,
+          priceCompleted: bd.priceCompleted,
+          priceForecasted: 0,
+        })),
+      });
+    }
+    return { date, phase: "past", groups };
+  }).filter((day) => day.groups.length > 0);
+
+  // Build present CrawlerDay (mainDate handoff)
+  const presentGroups: CrawlerDayGroup[] = [];
+  for (const ctx of groupContexts) {
+    const poolState = poolStates.get(ctx.groupId);
+    if (!poolState || poolState.poolRemaining <= 0) continue;
+    // Only include groups that have a mainDate snapshot (i.e., are open at mainDate)
+    const snapshot = poolState.poolHistory.find((s) => s.date === mainDate);
+    if (!snapshot) continue;
+
+    presentGroups.push({
+      groupId: ctx.groupId,
+      label: ctx.label,
+      sequenceId: sequenceIdByGroupId.get(ctx.groupId) ?? null,
+      poolCompletedSoFar: snapshot.completed,
+      poolRemaining: snapshot.remaining,
+      priceCompleted: 0,
+      priceForecasted: 0,
+      percentCompleted: snapshot.percentCompleted,
+      totalPool: poolState.totalPool,
+      cascadedToSuccessor: false,
+      employees: [],
+    });
+  }
+
+  const presentDay: CrawlerDay[] = presentGroups.length > 0
+    ? [{ date: mainDate, phase: "present", groups: presentGroups }]
+    : [];
+
+  return [...pastDays, ...presentDay, ...futureCrawlerDays];
 }

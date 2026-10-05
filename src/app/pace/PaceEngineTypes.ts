@@ -1,4 +1,5 @@
 import { EmployeeAvailability } from "@/app/employeeAvailability/EmployeeAvailabilityTypes";
+import { CrawlerDay } from "@/app/pace/CrawlerDay";
 
 // ---------------------------------------------------------------------------
 // Pool history — one snapshot per crawl day
@@ -264,6 +265,15 @@ export type PaceEngineResult = {
   seasonStart: string;
   /** snowDeadline (or latest plannedEnd). */
   seasonEnd: string;
+
+  /**
+   * Canonical per-day crawl output at day → group → employee granularity.
+   * Primary source for burndown, gantt, and timeline consumers.
+   * Replaces the per-group poolHistory arrays as the authoritative history.
+   * Old poolHistory fields on GroupResult/SequenceResult remain for backward
+   * compatibility until all consumers are migrated to CrawlerDayUtils.
+   */
+  crawlerDays: CrawlerDay[];
 };
 
 // ---------------------------------------------------------------------------

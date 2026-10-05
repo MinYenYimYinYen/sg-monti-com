@@ -45,5 +45,5 @@ export function runPaceEngine(inputs: PaceEngineInputs): PaceEngineResult {
     presentState,
     classifier,
   );
-  return assembleGroupResults(inputs, groupContexts, futureState);
+  return assembleGroupResults(inputs, groupContexts, futureState, pastState);
 }

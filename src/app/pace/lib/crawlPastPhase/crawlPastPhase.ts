@@ -15,6 +15,12 @@ export type PastPhaseState = {
   servCodeToGroupId: Map<string, string>;
   /** Per-group production stats including per-employee breakdown. */
   groupProductionStats: Map<string, GroupProductionStats>;
+  /**
+   * Per-group, per-date employee breakdowns sourced from service.production.doneBys.
+   * Used by assembleGroupResults to build CrawlerDay entries for past days.
+   * Map<groupId, Map<date, { employeeId, priceCompleted, priceForecasted }[]>>
+   */
+  breakdownsByGroupByDate: Map<string, Map<string, PoolDaySnapshotEmployeeBreakdown[]>>;
 };
 
 /**
@@ -245,5 +251,5 @@ export function crawlPastPhase(
     });
   }
 
-  return { poolStates, servCodeToGroupId, groupProductionStats };
+  return { poolStates, servCodeToGroupId, groupProductionStats, breakdownsByGroupByDate };
 }
