@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { seasonPlanPageSelect } from "@/app/pace/seasonPlanPageSelect";
+import { seasonPlanPageSelect } from "@/app/pace/seasonPlan/seasonPlanPageSelect";
 import { usePaceSeasonPlan } from "@/app/pace/seasonPlan/useSeasonPlan";
 import { SeasonPlan } from "@/app/pace/seasonPlan/SeasonPlanTypes";
 import { Plus, Trash2, Check, Copy } from "lucide-react";

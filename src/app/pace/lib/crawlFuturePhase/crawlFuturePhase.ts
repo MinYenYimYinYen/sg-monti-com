@@ -6,7 +6,7 @@ import {
   EngineEmployeeEntry,
   PoolDaySnapshotEmployeeBreakdown,
 } from "@/app/pace/PaceEngineTypes";
-import { CrawlerDay, CrawlerDayGroup } from "@/app/pace/CrawlerDay";
+import { CrawlerDay, CrawlerDayGroup } from "@/app/pace/lib/crawlerDay/CrawlerDay";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { PresentPhaseState } from "@/app/pace/lib/crawlPresentPhase/crawlPresentPhase";
 import { GroupProductionStats } from "@/app/pace/lib/crawlPastPhase/helpers/computeActualGroupRates";
@@ -131,6 +131,10 @@ export function crawlFuturePhase(
       sequenceIdByGroupId.set(groupId, isSynthetic ? null : sequence.sequenceId);
     }
   }
+
+  // Track cumulative priceCompleted per employee per group across future days.
+  // Map<groupId, Map<employeeId, cumulativePriceCompleted>>
+  const employeeCumulativeByGroup = new Map<string, Map<string, number>>();
 
   // Walk forward day by day
   let day = dateStrings.nextWeekdayAfter(mainDate);
@@ -355,10 +359,21 @@ export function crawlFuturePhase(
         });
 
         const context = contextByGroupId.get(poolState.groupId);
+        const groupId = poolState.groupId;
+
+        // Update cumulative per-employee totals for this group
+        if (!employeeCumulativeByGroup.has(groupId)) {
+          employeeCumulativeByGroup.set(groupId, new Map());
+        }
+        const empCumulative = employeeCumulativeByGroup.get(groupId)!;
+        for (const bd of groupDailyStats?.employeeBreakdowns ?? []) {
+          empCumulative.set(bd.employeeId, (empCumulative.get(bd.employeeId) ?? 0) + bd.priceCompleted);
+        }
+
         crawlerDayGroups.push({
-          groupId: poolState.groupId,
-          label: context?.label ?? poolState.groupId,
-          sequenceId: sequenceIdByGroupId.get(poolState.groupId) ?? null,
+          groupId,
+          label: context?.label ?? groupId,
+          sequenceId: sequenceIdByGroupId.get(groupId) ?? null,
           poolCompletedSoFar: poolState.completedSoFar,
           poolRemaining: poolState.poolRemaining,
           priceCompleted: groupDailyStats?.priceCompleted ?? 0,
@@ -373,6 +388,7 @@ export function crawlFuturePhase(
             employeeId: bd.employeeId,
             priceCompleted: bd.priceCompleted,
             priceForecasted: bd.priceForecasted,
+            priceCompletedSoFar: empCumulative.get(bd.employeeId) ?? bd.priceCompleted,
           })),
         });
       }

@@ -1,5 +1,5 @@
 import { EmployeeAvailability } from "@/app/employeeAvailability/EmployeeAvailabilityTypes";
-import { CrawlerDay } from "@/app/pace/CrawlerDay";
+import { CrawlerDay } from "@/app/pace/lib/crawlerDay/CrawlerDay";
 
 // ---------------------------------------------------------------------------
 // Pool history — one snapshot per crawl day
@@ -147,10 +147,17 @@ export type GroupResult = {
   planDeadlineWeekdays: number;
 
   // --- Pool state (as of mainDate) ---
-  /** Sum of actionable service prices. */
+  /**
+   * @deprecated Post-simulation value — drained to 0 by the future phase projection.
+   * Use CrawlerDayUtils.groupPoolRemainingAsOf(crawlerDays, groupId, mainDate) instead.
+   */
   activePool: number;
   /** Sum of all non-N service prices. */
   totalPool: number;
+  /**
+   * @deprecated Derived from post-simulation activePool — may be false even when real work remains.
+   * Use CrawlerDayUtils.groupHasWorkAsOf(crawlerDays, groupId, mainDate) instead.
+   */
   hasWork: boolean;
 
   // --- Actual history (from past crawl phase) ---
@@ -172,12 +179,22 @@ export type GroupResult = {
   // --- Pace analysis (single source of truth) ---
   /** Sum of all assigned employees' goalDailyPrice. */
   teamGoalDailyRate: number;
-  /** activePool / teamGoalDailyRate. null if goals missing. */
+  /**
+   * @deprecated Computed from post-simulation activePool — will be 0 when pool is drained by projection.
+   * Recompute using CrawlerDayUtils.groupPoolRemainingAsOf(crawlerDays, groupId, mainDate) / teamGoalDailyRate.
+   */
   daysNeeded: number | null;
   /** Effective working days in [mainDate, plannedEnd]. */
   daysAvailable: number;
-  /** daysNeeded - daysAvailable. Positive = late, negative = early. null if goals missing. */
+  /**
+   * @deprecated Derived from deprecated daysNeeded — incorrect when activePool is post-simulation.
+   * Recompute using correct poolRemaining from CrawlerDayUtils.
+   */
   daysEarlyLate: number | null;
+  /**
+   * @deprecated Derived from deprecated daysEarlyLate — incorrect when activePool is post-simulation.
+   * Recompute using correct poolRemaining from CrawlerDayUtils.
+   */
   isOnTrack: boolean;
   /** plannedEnd < mainDate AND hasWork. */
   isOverdue: boolean;

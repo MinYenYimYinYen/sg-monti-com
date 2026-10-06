@@ -1,7 +1,7 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { seasonPlanPageSelect } from "@/app/pace/seasonPlanPageSelect";
+import { seasonPlanPageSelect } from "@/app/pace/seasonPlan/seasonPlanPageSelect";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 
 export function FeasibilityBadge({ groupId }: { groupId: string }) {

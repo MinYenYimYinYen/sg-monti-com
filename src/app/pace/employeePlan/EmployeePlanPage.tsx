@@ -1,10 +1,10 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { employeePlanSelect } from "@/app/pace/employeePlanSelect";
+import { employeePlanSelect } from "@/app/pace/employeePlan/employeePlanSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { holidaySelect } from "@/app/holiday/holidaySelect";
-import { EmployeeCard } from "@/app/pace/_components/EmployeeCard";
+import { EmployeeCard } from "@/app/pace/employeePlan/EmployeeCard";
 
 export function EmployeePlanPage() {
   const employeePlanData = useSelector(employeePlanSelect.employeePlanData);

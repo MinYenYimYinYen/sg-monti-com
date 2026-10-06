@@ -1,6 +1,8 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { paceEngineSelect } from "@/app/pace/paceEngineSelect";
-import { GroupResult, PoolDaySnapshot, SequenceResult } from "@/app/pace/PaceEngineTypes";
+import { GroupResult, SequenceResult } from "@/app/pace/PaceEngineTypes";
+import { CrawlerDay } from "@/app/pace/lib/crawlerDay/CrawlerDay";
+import { CrawlerDayUtils } from "@/app/pace/lib/crawlerDay/crawlerDayUtils";
 import { paceSeasonPlanSelect } from "@/app/pace/seasonPlan/seasonPlanSelect";
 
 // ---------------------------------------------------------------------------
@@ -9,6 +11,9 @@ import { paceSeasonPlanSelect } from "@/app/pace/seasonPlan/seasonPlanSelect";
 // Shapes engine output into Gantt bar data.
 // One GanttSequenceRow per sequence — synthetic single-member sequences render
 // identically to the old standalone group rows.
+//
+// Bar positioning reads from crawlerDays (CrawlerDay[]) — the canonical crawl
+// output. Summary fields (pace analysis, crew) remain on GroupResult.
 // ---------------------------------------------------------------------------
 
 export type GanttRow = {
@@ -21,12 +26,16 @@ export type GanttRow = {
   plannedStart: string | null;
   plannedEnd: string | null;
 
-  // Crawler projection
+  // Crawler projection dates (for popover display)
   projectedStartDate: string | null;
   projectedEndDate: string | null;
 
-  // Pool history — authoritative date range for bar positioning
-  poolHistory: PoolDaySnapshot[];
+  /**
+   * CrawlerDay[] filtered to days where this group appears.
+   * Used for bar positioning (first/last date) and past/future split.
+   * Replaces poolHistory: PoolDaySnapshot[].
+   */
+  crawlerDays: CrawlerDay[];
 
   // Status
   hasWork: boolean;
@@ -65,8 +74,11 @@ export type GanttSequenceRow = {
   projectedStartDate: string | null;
   projectedEndDate: string | null;
 
-  // Merged pool history across all members
-  poolHistory: PoolDaySnapshot[];
+  /**
+   * CrawlerDay[] filtered to days where any member of this sequence appears.
+   * Used for sequence-level chart bounds.
+   */
+  crawlerDays: CrawlerDay[];
 
   // Status
   hasWork: boolean;
@@ -76,7 +88,20 @@ export type GanttSequenceRow = {
   members: GanttRow[];
 };
 
-function toGanttRow(group: GroupResult): GanttRow {
+function toGanttRow(group: GroupResult, crawlerDays: CrawlerDay[], mainDate: string): GanttRow {
+  const groupDays = CrawlerDayUtils.daysForGroup(crawlerDays, group.groupId);
+
+  // Use CrawlerDayUtils for correct as-of-mainDate pace analysis.
+  // GroupResult.activePool, daysNeeded, daysEarlyLate, isOnTrack are post-simulation
+  // values (drained to 0 by the future phase) and are marked @deprecated.
+  const pace = CrawlerDayUtils.groupPaceAsOf(
+    crawlerDays,
+    group.groupId,
+    mainDate,
+    group.teamGoalDailyRate,
+    group.daysAvailable,
+  );
+
   return {
     groupId: group.groupId,
     label: group.label,
@@ -86,41 +111,52 @@ function toGanttRow(group: GroupResult): GanttRow {
     plannedEnd: group.plannedEnd,
     projectedStartDate: group.projectedStartDate,
     projectedEndDate: group.projectedEndDate,
-    poolHistory: group.poolHistory ?? [],
-    hasWork: group.hasWork,
-    isOnTrack: group.isOnTrack,
+    crawlerDays: groupDays,
+    hasWork: CrawlerDayUtils.groupHasWorkAsOf(crawlerDays, group.groupId, mainDate),
+    isOnTrack: pace.isOnTrack,
     isOverdue: group.isOverdue,
     missingGoals: group.missingGoals,
-    activePool: group.activePool,
+    activePool: pace.poolRemaining,
     teamGoalDailyRate: group.teamGoalDailyRate,
-    daysNeeded: group.daysNeeded,
+    daysNeeded: pace.daysNeeded,
     daysAvailable: group.daysAvailable,
-    daysEarlyLate: group.daysEarlyLate,
+    daysEarlyLate: pace.daysEarlyLate,
     crewTimeline: group.crewTimeline,
     employeeBreakdowns: group.employeeBreakdowns,
   };
 }
 
-function toGanttSequenceRow(sequence: SequenceResult): GanttSequenceRow {
+function toGanttSequenceRow(
+  sequence: SequenceResult,
+  crawlerDays: CrawlerDay[],
+  mainDate: string,
+): GanttSequenceRow {
+  const isSynthetic = sequence.isSynthetic;
+  const sequenceDays = isSynthetic && sequence.members[0]
+    ? CrawlerDayUtils.daysForGroup(crawlerDays, sequence.members[0].groupId)
+    : CrawlerDayUtils.daysForSequence(crawlerDays, sequence.sequenceId);
+
   return {
     sequenceId: sequence.sequenceId,
     label: sequence.label,
-    isSynthetic: sequence.isSynthetic,
+    isSynthetic,
     plannedStart: sequence.plannedStart,
     plannedEnd: sequence.plannedEnd,
     projectedStartDate: sequence.projectedStartDate,
     projectedEndDate: sequence.projectedEndDate,
-    poolHistory: sequence.poolHistory,
+    crawlerDays: sequenceDays,
     hasWork: sequence.hasWork,
     isOverdue: sequence.isOverdue,
-    members: sequence.members.map(toGanttRow),
+    members: sequence.members.map((group) => toGanttRow(group, crawlerDays, mainDate)),
   };
 }
 
 const selectGanttSequenceRows = createSelector(
   [paceEngineSelect],
   (engineResult): GanttSequenceRow[] =>
-    engineResult.sequenceResults.map(toGanttSequenceRow),
+    engineResult.sequenceResults.map((sequence) =>
+      toGanttSequenceRow(sequence, engineResult.crawlerDays, engineResult.mainDate),
+    ),
 );
 
 const selectSeasonStart = createSelector(

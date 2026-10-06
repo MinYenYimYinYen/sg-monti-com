@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { seasonPlanPageSelect } from "@/app/pace/seasonPlanPageSelect";
+import { seasonPlanPageSelect } from "@/app/pace/seasonPlan/seasonPlanPageSelect";
 import { GroupSchedule } from "@/app/pace/seasonPlan/SeasonPlanTypes";
 import { WeekRangeSlider } from "@/app/pace/seasonPlan/_components/WeekRangeSlider";
 import { FeasibilityBadge } from "@/app/pace/seasonPlan/_components/FeasibilityBadge";

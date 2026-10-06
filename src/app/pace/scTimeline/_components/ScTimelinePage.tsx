@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { scTimelineSelect } from "@/app/pace/scTimelineSelect";
+import { scTimelineSelect } from "@/app/pace/scTimeline/scTimelineSelect";
 import {
   formatDate,
   formatDollars,

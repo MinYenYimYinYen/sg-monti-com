@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/style/utils";
-import { EmployeePlanGroupRow } from "@/app/pace/employeePlanSelect";
+import { EmployeePlanGroupRow } from "@/app/pace/employeePlan/employeePlanSelect";
 import {
   formatDollars,
   formatDate,
   computeDaysLate,
-} from "@/app/pace/_components/employeePlanHelpers";
+} from "@/app/pace/employeePlan/employeePlanHelpers";
 
 export function GroupRow({ row, isFirst }: { row: EmployeePlanGroupRow; isFirst: boolean }) {
   const [expanded, setExpanded] = useState(false);

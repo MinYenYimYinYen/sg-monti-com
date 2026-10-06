@@ -1,7 +1,7 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { prioritiesSelect } from "@/app/pace/prioritiesSelect";
+import { prioritiesSelect } from "@/app/pace/priorities/prioritiesSelect";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
 import { UrgentChecklistContent } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/UrgentServCodeCard";
 import { PriorityChecklistContent } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/PriorityServiceCard";

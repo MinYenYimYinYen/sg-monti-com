@@ -8,10 +8,12 @@ export type CrawlerDayPhase = "past" | "present" | "future";
  */
 export type CrawlerDayEmployee = {
   employeeId: string;
-  /** $ drained from this group's pool by this employee on this day. */
+  /** $ this employee contributed to this group on this specific day. */
   priceCompleted: number;
-  /** This employee's goalDailyPrice for this group (0 in past phase). */
+  /** This employee's goalDailyPrice for this group on this day (0 in past phase). */
   priceForecasted: number;
+  /** Cumulative $ this employee has contributed to this group across all days up to and including this one. */
+  priceCompletedSoFar: number;
 };
 
 /**

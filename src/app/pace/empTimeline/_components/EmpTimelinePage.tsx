@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { empTimelineSelect } from "@/app/pace/empTimelineSelect";
+import { empTimelineSelect } from "@/app/pace/empTimeline/empTimelineSelect";
 import { EmployeeAvailabilitySheet } from "@/app/employeeAvailability/_components/EmployeeAvailabilitySheet";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { CalendarClock } from "lucide-react";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { ganttSelect, GanttSequenceRow } from "@/app/pace/ganttSelect";
+import { ganttSelect, GanttSequenceRow } from "@/app/pace/gantt/ganttSelect";
 import { getWeekNumber } from "@/lib/primatives/dates/getWeek";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { GanttGroupRow } from "@/app/pace/gantt/_components/GanttGroupRow";
@@ -24,13 +24,13 @@ export function GanttPage() {
   const snowDeadline = useSelector(ganttSelect.snowDeadline);
   const activeSeasonPlan = useSelector(ganttSelect.activeSeasonPlan);
 
-  // Show all rows that have either a plan band or pool history
+  // Show all rows that have either a plan band or crawl history
   const visibleRows = ganttSequenceRows.filter(
     (r) =>
-      r.poolHistory.length > 0 ||
+      r.crawlerDays.length > 0 ||
       (isValidDate(r.plannedStart) && isValidDate(r.plannedEnd)) ||
       r.members.some(
-        (m) => m.poolHistory.length > 0 || (isValidDate(m.plannedStart) && isValidDate(m.plannedEnd)),
+        (m) => m.crawlerDays.length > 0 || (isValidDate(m.plannedStart) && isValidDate(m.plannedEnd)),
       ),
   );
 
@@ -42,16 +42,16 @@ export function GanttPage() {
     );
   }
 
-  // Compute chart bounds from all member poolHistory dates + plan bands
+  // Compute chart bounds from all member crawlerDays dates + plan bands
   let chartStart = mainDate;
   let chartEnd = mainDate;
 
   for (const seqRow of visibleRows) {
     for (const row of seqRow.members) {
-      const firstSnapshot = row.poolHistory[0];
-      const lastSnapshot = row.poolHistory.at(-1);
-      if (firstSnapshot && firstSnapshot.date < chartStart) chartStart = firstSnapshot.date;
-      if (lastSnapshot && lastSnapshot.date > chartEnd) chartEnd = lastSnapshot.date;
+      const firstDay = row.crawlerDays[0];
+      const lastDay = row.crawlerDays.at(-1);
+      if (firstDay && firstDay.date < chartStart) chartStart = firstDay.date;
+      if (lastDay && lastDay.date > chartEnd) chartEnd = lastDay.date;
       if (row.plannedStart && row.plannedStart < chartStart) chartStart = row.plannedStart;
       if (row.plannedEnd && row.plannedEnd > chartEnd) chartEnd = row.plannedEnd;
     }

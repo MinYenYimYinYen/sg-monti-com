@@ -1,7 +1,7 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { GanttRow } from "@/app/pace/ganttSelect";
+import { GanttRow } from "@/app/pace/gantt/ganttSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 
 function fmt(n: number): string {

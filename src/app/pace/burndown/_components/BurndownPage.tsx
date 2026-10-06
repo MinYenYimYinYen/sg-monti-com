@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { burndownSelect } from "@/app/pace/burndownSelect";
+import { burndownSelect } from "@/app/pace/burndown/burndownSelect";
 import { SeriesDetail } from "@/app/pace/burndown/_components/SeriesDetail";
 
 export function BurndownPage() {

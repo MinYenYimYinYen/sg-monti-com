@@ -2,10 +2,10 @@
 
 import { useSelector } from "react-redux";
 import { cn } from "@/style/utils";
-import { EmployeePlanData } from "@/app/pace/employeePlanSelect";
+import { EmployeePlanData } from "@/app/pace/employeePlan/employeePlanSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
-import { GroupRow } from "@/app/pace/_components/GroupRow";
-import { getAvailabilityStatus } from "@/app/pace/_components/employeePlanHelpers";
+import { GroupRow } from "@/app/pace/employeePlan/GroupRow";
+import { getAvailabilityStatus } from "@/app/pace/employeePlan/employeePlanHelpers";
 
 export function EmployeeCard({
   data,

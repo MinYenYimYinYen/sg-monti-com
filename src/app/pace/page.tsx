@@ -1,3 +1,3 @@
-import { EmployeePlanPage } from "@/app/pace/_components/EmployeePlanPage";
+import { EmployeePlanPage } from "@/app/pace/employeePlan/EmployeePlanPage";
 
 export default EmployeePlanPage;

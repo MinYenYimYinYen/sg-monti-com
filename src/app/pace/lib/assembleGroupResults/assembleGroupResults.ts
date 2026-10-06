@@ -8,7 +8,7 @@ import {
   PoolDaySnapshotEmployeeBreakdown,
   SequenceResult,
 } from "@/app/pace/PaceEngineTypes";
-import { CrawlerDay, CrawlerDayGroup } from "@/app/pace/CrawlerDay";
+import { CrawlerDay, CrawlerDayGroup } from "@/app/pace/lib/crawlerDay/CrawlerDay";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { FuturePhaseState } from "@/app/pace/lib/crawlFuturePhase/crawlFuturePhase";
 import { PastPhaseState } from "@/app/pace/lib/crawlPastPhase/crawlPastPhase";
@@ -375,8 +375,14 @@ function buildCrawlerDays({
     }
   }
 
+  // Build per-employee cumulative totals for past days.
+  // Walk dates in sorted order so we can accumulate correctly.
+  // Map<groupId, Map<employeeId, cumulativePriceCompleted>>
+  const pastEmpCumulativeByGroup = new Map<string, Map<string, number>>();
+
   // Build past CrawlerDays — one per production date
-  const pastDays: CrawlerDay[] = [...allPastDates].sort().map((date): CrawlerDay => {
+  const sortedPastDates = [...allPastDates].sort();
+  const pastDays: CrawlerDay[] = sortedPastDates.map((date): CrawlerDay => {
     const groups: CrawlerDayGroup[] = [];
     for (const [groupId, byDate] of breakdownsByGroupByDate) {
       const dayBreakdowns = byDate.get(date);
@@ -390,6 +396,15 @@ function buildCrawlerDays({
       const poolCompletedSoFar = snapshot?.completed ?? 0;
       const poolRemaining = snapshot?.remaining ?? 0;
       const priceCompleted = snapshot?.priceCompleted ?? dayBreakdowns.reduce((sum, bd) => sum + bd.priceCompleted, 0);
+
+      // Update cumulative per-employee totals for this group on this date
+      if (!pastEmpCumulativeByGroup.has(groupId)) {
+        pastEmpCumulativeByGroup.set(groupId, new Map());
+      }
+      const empCumulative = pastEmpCumulativeByGroup.get(groupId)!;
+      for (const bd of dayBreakdowns) {
+        empCumulative.set(bd.employeeId, (empCumulative.get(bd.employeeId) ?? 0) + bd.priceCompleted);
+      }
 
       groups.push({
         groupId,
@@ -406,6 +421,7 @@ function buildCrawlerDays({
           employeeId: bd.employeeId,
           priceCompleted: bd.priceCompleted,
           priceForecasted: 0,
+          priceCompletedSoFar: empCumulative.get(bd.employeeId) ?? bd.priceCompleted,
         })),
       });
     }

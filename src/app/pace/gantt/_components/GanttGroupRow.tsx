@@ -1,6 +1,6 @@
 "use client";
 
-import { GanttRow } from "@/app/pace/ganttSelect";
+import { GanttRow } from "@/app/pace/gantt/ganttSelect";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 import { GanttBarDetail } from "@/app/pace/gantt/_components/GanttBarDetail";
 import {
@@ -12,9 +12,9 @@ import {
 } from "@/app/pace/gantt/_components/ganttHelpers";
 
 /**
- * Renders one Gantt row using poolHistory as the authoritative date range.
+ * Renders one Gantt row using crawlerDays as the authoritative date range.
  *
- * The bar spans from poolHistory[0].date to poolHistory.at(-1).date — exactly
+ * The bar spans from crawlerDays[0].date to crawlerDays.at(-1).date — exactly
  * what the engine recorded. No date arithmetic is done here beyond positioning.
  *
  * The bar is split at mainDate into two visual segments:
@@ -26,7 +26,7 @@ import {
  *
  * The plan band (thin gray pill) uses plannedStart / plannedEnd from the SeasonPlan.
  *
- * Groups with no poolHistory (no goals set, engine couldn't project) show only the
+ * Groups with no crawlerDays (no goals set, engine couldn't project) show only the
  * plan band with a "missing goals" indicator.
  */
 export function GanttGroupRow({
@@ -53,15 +53,15 @@ export function GanttGroupRow({
     ? (Math.max(dayOffset(row.plannedStart!, row.plannedEnd!), 1) / totalDays) * 100
     : 0;
 
-  // --- Bar extents from poolHistory (engine is the source of truth) ---
-  const firstSnapshot = row.poolHistory[0];
-  const lastSnapshot = row.poolHistory.at(-1);
-  const hasHistory = firstSnapshot !== undefined && lastSnapshot !== undefined;
+  // --- Bar extents from crawlerDays (engine is the source of truth) ---
+  const firstDay = row.crawlerDays[0];
+  const lastDay = row.crawlerDays.at(-1);
+  const hasHistory = firstDay !== undefined && lastDay !== undefined;
 
   if (!hasHistory && !hasPlanBand) return null;
 
-  const barStart = hasHistory ? firstSnapshot.date : null;
-  const barEnd = hasHistory ? lastSnapshot.date : null;
+  const barStart: string | null = hasHistory ? firstDay!.date : null;
+  const barEnd: string | null = hasHistory ? lastDay!.date : null;
 
   // Past segment: barStart → min(barEnd, mainDate)
   const pastEnd = barEnd && barEnd < mainDate ? barEnd : mainDate;
