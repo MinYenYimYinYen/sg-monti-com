@@ -1,8 +1,8 @@
 import mongoose, { Schema } from "mongoose";
 import { createModel } from "@/lib/mongoose/createModel";
-import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
+import { AssignmentGroupDoc } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 
-const AssignmentGroupSchema = new Schema<AssignmentGroup>(
+const AssignmentGroupSchema = new Schema<AssignmentGroupDoc>(
   {
     groupId: { type: String, required: true, unique: true },
     label: { type: String, required: true },
@@ -12,7 +12,7 @@ const AssignmentGroupSchema = new Schema<AssignmentGroup>(
 );
 
 // modelName "AssignmentGroup" matches the original — no collection rename, no migration needed.
-export const AssignmentGroupModel = createModel<AssignmentGroup>(
+export const AssignmentGroupModel = createModel<AssignmentGroupDoc>(
   "AssignmentGroup",
   AssignmentGroupSchema,
 );

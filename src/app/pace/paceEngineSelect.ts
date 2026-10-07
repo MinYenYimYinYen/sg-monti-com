@@ -1,7 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { selectPaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { runPaceEngine } from "@/app/pace/lib/runPaceEngine";
-import { PaceEngineResult } from "@/app/pace/PaceEngineTypes";
+import { PaceEngineResult } from "@/app/pace/lib/PaceEngineTypes";
 
 /**
  * The single Redux selector that runs the pace engine.
@@ -15,7 +15,23 @@ import { PaceEngineResult } from "@/app/pace/PaceEngineTypes";
  * Sub-page selectors (ganttSelect, employeePlanSelect, etc.) memoize their own
  * derived slices from this result.
  */
-export const paceEngineSelect = createSelector(
+const selectPaceEngineResult = createSelector(
   [selectPaceEngineInputs],
   (inputs): PaceEngineResult => runPaceEngine(inputs),
 );
+
+const selectCrawlerDays = createSelector(
+  [selectPaceEngineResult],
+  (result) => result.crawlerDays,
+);
+
+const selectUrgentGroups = createSelector(
+  [selectPaceEngineResult],
+  (result) => result.urgentGroups,
+);
+
+export const paceEngineSelect = {
+  paceEngineResult: selectPaceEngineResult,
+  crawlerDays: selectCrawlerDays,
+  urgentGroups: selectUrgentGroups,
+};

@@ -1,3 +1,3 @@
-import { ScTimelinePage } from "@/app/pace/scTimeline/_components/ScTimelinePage";
+import TempStub from "@/app/pace/TempStub";
 
-export default ScTimelinePage;
+export default TempStub;

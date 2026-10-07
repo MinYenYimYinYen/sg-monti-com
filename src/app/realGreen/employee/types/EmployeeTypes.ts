@@ -43,6 +43,12 @@ export type EmployeeProps = {
    */
   availability: EmployeeAvailability;
   nameLastFirst: string;
+  /**
+   * Pre-computed set of ISO date strings on which this employee is unavailable.
+   * Union of all holiday weekdays and all PTO date range weekdays.
+   * Hydrated by employeeSelect — requires holidaySelect.holidayDates as input.
+   */
+  timeOffDates: Set<string>;
 };
 
 export type Employee = EmployeeProps & EmployeeDoc;

@@ -2,7 +2,7 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { SeasonPlan, GroupSchedule } from "@/app/pace/seasonPlan/SeasonPlanTypes";
-import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
+import { AssignmentGroupDoc } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 
 const selectSeasonPlans = (state: AppState): SeasonPlan[] =>
   state.paceSeasonPlan.seasonPlans;
@@ -58,17 +58,17 @@ const selectSnowDeadline = createSelector(
 );
 
 /**
- * Helper to build servCodeId → GroupSchedule map given a groupMap.
- * Call in selectors that have groupMap available.
+ * Helper to build servCodeId → GroupSchedule map given a groupDocMap.
+ * Call in selectors that have AssignmentGroupDoc data available.
  */
 function buildServCodeScheduleMap(
   groupScheduleMap: Map<string, GroupSchedule>,
-  groupMap: Map<string, AssignmentGroup>,
+  groupDocMap: Map<string, AssignmentGroupDoc>,
 ): Map<string, GroupSchedule> {
   const result = new Map<string, GroupSchedule>();
   for (const [groupId, schedule] of groupScheduleMap) {
-    const group = groupMap.get(groupId);
-    const servCodeIds = group?.servCodeIds ?? groupId.split("+");
+    const groupDoc = groupDocMap.get(groupId);
+    const servCodeIds = groupDoc?.servCodeIds ?? groupId.split("+");
     for (const servCodeId of servCodeIds) {
       result.set(servCodeId, schedule);
     }

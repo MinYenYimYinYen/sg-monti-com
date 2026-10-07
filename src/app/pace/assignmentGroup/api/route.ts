@@ -1,6 +1,6 @@
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { AssignmentGroupContract } from "@/app/pace/assignmentGroup/api/AssignmentGroupContract";
-import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
+import { AssignmentGroupDoc } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { AssignmentGroupModel } from "@/app/pace/assignmentGroup/AssignmentGroupModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
@@ -12,20 +12,20 @@ const handlers: HandlerMap<AssignmentGroupContract> = {
     handler: async () => {
       await connectToMongoDB();
       const docs = await AssignmentGroupModel.find({}).lean();
-      return { success: true, payload: cleanMongoArray<AssignmentGroup>(docs) };
+      return { success: true, payload: cleanMongoArray<AssignmentGroupDoc>(docs) };
     },
   },
 
   upsertGroup: {
     roles: ["admin", "office"],
-    handler: async (group) => {
+    handler: async (assignmentGroupDoc) => {
       await connectToMongoDB();
       const saved = await AssignmentGroupModel.findOneAndUpdate(
-        { groupId: group.groupId },
-        { $set: group },
+        { groupId: assignmentGroupDoc.groupId },
+        { $set: assignmentGroupDoc },
         { upsert: true, new: true },
       ).lean();
-      return { success: true, payload: cleanMongoObject<AssignmentGroup>(saved!) };
+      return { success: true, payload: cleanMongoObject<AssignmentGroupDoc>(saved!) };
     },
   },
 

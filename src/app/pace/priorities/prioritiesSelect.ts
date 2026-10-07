@@ -1,10 +1,9 @@
 import { createSelector } from "@reduxjs/toolkit";
-import { paceEngineSelect } from "@/app/pace/paceEngineSelect";
-import { UrgentGroup } from "@/app/pace/PaceEngineTypes";
 import { deepSelect } from "@/app/realGreen/deepSelect";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
 import { UrgentServCode } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentServCodesSelect";
+import { paceEngineSelect } from "../paceEngineSelect";
 
 // ---------------------------------------------------------------------------
 // Priorities page selectors
@@ -34,12 +33,6 @@ const selectAlwaysAsapServCodes = createSelector(
     ),
 );
 
-/** Overdue and unplanned groups from the engine. */
-const selectUrgentGroups = createSelector(
-  [paceEngineSelect],
-  (engineResult): UrgentGroup[] => engineResult.urgentGroups,
-);
-
 /**
  * Overdue engine groups expanded into UrgentServCode[] for use with UrgentChecklistContent.
  *
@@ -47,10 +40,10 @@ const selectUrgentGroups = createSelector(
  * ServCodeIds are deduplicated — a servCode that appears in multiple overdue groups
  * is only included once (with the earliest deadline).
  * Only servCodes with active work remaining are included.
- * Reads from groupMap (all groups including sequence members).
+ * Reads memberServCodeIds directly from UrgentGroup — no groupMap lookup needed.
  */
 const selectOverdueGroupServCodes = createSelector(
-  [paceEngineSelect, deepSelect.servCodes],
+  [paceEngineSelect.paceEngineResult, deepSelect.servCodes],
   (engineResult, allServCodes): UrgentServCode[] => {
     const servCodeMap = new Map(allServCodes.map((sc) => [sc.servCodeId, sc]));
     // Track seen servCodeIds to deduplicate across groups
@@ -59,16 +52,16 @@ const selectOverdueGroupServCodes = createSelector(
 
     for (const urgentGroup of engineResult.urgentGroups) {
       if (urgentGroup.reason.kind !== "overdue") continue;
-      const group = engineResult.groupMap.get(urgentGroup.groupId);
-      if (!group) continue;
 
-      for (const servCodeId of group.memberServCodeIds) {
+      for (const servCodeId of urgentGroup.memberServCodeIds) {
         if (seenServCodeIds.has(servCodeId)) continue;
         seenServCodeIds.add(servCodeId);
 
         const servCode = servCodeMap.get(servCodeId);
         if (!servCode) continue;
-        const hasActive = servCode.services.some((s) => ACTIVE_ASAP_STATUSES.includes(s.status));
+        const hasActive = servCode.services.some((s) =>
+          ACTIVE_ASAP_STATUSES.includes(s.status),
+        );
         if (!hasActive) continue;
 
         result.push({ servCode, reason: urgentGroup.reason });
@@ -80,7 +73,7 @@ const selectOverdueGroupServCodes = createSelector(
 );
 
 export const prioritiesSelect = {
-  urgentGroups: selectUrgentGroups,
+  urgentGroups: paceEngineSelect.urgentGroups,
   overdueGroupServCodes: selectOverdueGroupServCodes,
   alwaysAsapServCodes: selectAlwaysAsapServCodes,
   /** Re-exported for the Priority Scheduling column. */

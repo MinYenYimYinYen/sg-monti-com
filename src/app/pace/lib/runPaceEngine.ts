@@ -1,6 +1,5 @@
-import { GroupContext, PaceEngineResult } from "@/app/pace/PaceEngineTypes";
+import { PaceEngineResult } from "@/app/pace/lib/PaceEngineTypes";
 import { PaceEngineInputs } from "./PaceEngineInputs";
-import { buildGroupContexts } from "./buildGroupContexts/buildGroupContexts";
 import {
   crawlPastPhase,
   PastPhaseState,
@@ -24,26 +23,29 @@ import { buildGroupSequenceClassifier } from "./groupSequenceClassifier";
  * Fully testable in isolation.
  *
  * Phases:
- *   0. buildGroupContexts  — resolve groups from AssignmentGroups + SeasonPlan + AssignmentPlan
  *   1. crawlPastPhase      — walk days < mainDate; accumulate actual production history
  *   2. crawlPresentPhase   — handle mainDate handoff (printed = committed, done = done)
  *   3. crawlFuturePhase    — drain pools by goalDailyPrice; record projectedEndDate + timelines
- *   4. assembleGroupResults — combine past + present + future into GroupResult[]
+ *   4. assembleGroupResults — combine past + present + future into PaceEngineResult
+ *
+ * AssignmentGroups are fully hydrated by the selector layer before reaching the engine —
+ * they carry sequenceId, plannedStart/End, goalsByEmployee, and assignedEmployeeIds.
+ * No separate "buildGroupContexts" phase is needed.
  */
 export function runPaceEngine(inputs: PaceEngineInputs): PaceEngineResult {
-  const groupContexts: GroupContext[] = buildGroupContexts(inputs);
+  const { assignmentGroups } = inputs;
   const classifier = buildGroupSequenceClassifier(inputs.sequences);
-  const pastState: PastPhaseState = crawlPastPhase(inputs, groupContexts, classifier);
+  const pastState: PastPhaseState = crawlPastPhase(inputs, assignmentGroups, classifier);
   const presentState: PresentPhaseState = crawlPresentPhase(
     inputs,
-    groupContexts,
+    assignmentGroups,
     pastState,
   );
   const futureState: FuturePhaseState = crawlFuturePhase(
     inputs,
-    groupContexts,
+    assignmentGroups,
     presentState,
     classifier,
   );
-  return assembleGroupResults(inputs, groupContexts, futureState, pastState);
+  return assembleGroupResults(inputs, assignmentGroups, futureState, pastState);
 }

@@ -1,4 +1,5 @@
-import { GroupContext, GroupPoolState, PoolDaySnapshot, PoolDaySnapshotEmployeeBreakdown } from "@/app/pace/PaceEngineTypes";
+import { GroupPoolState } from "@/app/pace/lib/PaceEngineTypes";
+import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { GroupSequenceClassifier } from "@/app/pace/lib/groupSequenceClassifier";
 import { accumulateActualProduction } from "./helpers/accumulateActualProduction";
@@ -8,52 +9,33 @@ import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus"
 const ACTIVE_STATUSES = new Set(getServiceStatuses(["active", "asap"]));
 const COMPLETED_STATUSES = new Set(getServiceStatuses(["completed"]));
 
-export type PastPhaseState = {
-  /** Mutable pool state per group, initialized from past-phase data. */
-  poolStates: Map<string, GroupPoolState>;
-  /** servCodeId → groupId reverse lookup. */
-  servCodeToGroupId: Map<string, string>;
-  /** Per-group production stats including per-employee breakdown. */
-  groupProductionStats: Map<string, GroupProductionStats>;
-  /**
-   * Per-group, per-date employee breakdowns sourced from service.production.doneBys.
-   * Used by assembleGroupResults to build CrawlerDay entries for past days.
-   * Map<groupId, Map<date, { employeeId, priceCompleted, priceForecasted }[]>>
-   */
-  breakdownsByGroupByDate: Map<string, Map<string, PoolDaySnapshotEmployeeBreakdown[]>>;
+type EmployeeProductionEntry = {
+  employeeId: string;
+  priceCompleted: number;
+  priceForecasted: number;
 };
 
-/**
- * Phase 1: Walk days < mainDate.
- *
- * Responsibilities:
- * 1. Build servCodeId → groupId reverse lookup from group contexts.
- * 2. Compute each group's active pool (actionable services as of mainDate).
- * 3. Compute each group's total pool (all non-N services).
- * 4. Accumulate actual production history from completed/printed services (per-employee).
- * 5. Compute per-group and per-employee actual rates.
- * 6. Initialize GroupPoolState for each group with past-phase data.
- * 7. Populate poolHistory for past days (completed = cumulative, remaining = active pool).
- *
- * The past phase does NOT walk day-by-day — it reads service data directly.
- * Day-by-day walking happens in the future phase only.
- */
+export type PastPhaseState = {
+  poolStates: Map<string, GroupPoolState>;
+  servCodeToGroupId: Map<string, string>;
+  groupProductionStats: Map<string, GroupProductionStats>;
+  breakdownsByGroupByDate: Map<string, Map<string, EmployeeProductionEntry[]>>;
+};
+
 export function crawlPastPhase(
   inputs: PaceEngineInputs,
-  groupContexts: GroupContext[],
+  assignmentGroups: AssignmentGroup[],
   classifier: GroupSequenceClassifier,
 ): PastPhaseState {
   const { servCodes, mainDate } = inputs;
 
-  // Build servCodeId → groupId reverse lookup
   const servCodeToGroupId = new Map<string, string>();
-  for (const context of groupContexts) {
-    for (const servCodeId of context.memberServCodeIds) {
-      servCodeToGroupId.set(servCodeId, context.groupId);
+  for (const assignmentGroup of assignmentGroups) {
+    for (const servCodeId of assignmentGroup.servCodeIds) {
+      servCodeToGroupId.set(servCodeId, assignmentGroup.groupId);
     }
   }
 
-  // Compute active pool and total pool per group
   const activePoolByGroup = new Map<string, number>();
   const totalPoolByGroup = new Map<string, number>();
 
@@ -62,19 +44,19 @@ export function crawlPastPhase(
     if (!groupId) continue;
 
     for (const service of servCode.services) {
-      if (service.status === "N") continue; // never — excluded from all pools
+      if (service.status === "N") continue;
 
-      // Total pool: all non-N services
       totalPoolByGroup.set(groupId, (totalPoolByGroup.get(groupId) ?? 0) + service.price);
 
-      // Active pool: actionable services only (Y, *, $)
       if (ACTIVE_STATUSES.has(service.status) || service.status === "$") {
         activePoolByGroup.set(groupId, (activePoolByGroup.get(groupId) ?? 0) + service.price);
       }
     }
   }
 
-  // Accumulate actual production history (per-employee breakdown)
+  // Accumulate actual production history (per-employee breakdown).
+  // Includes mainDate completions (doneDate === mainDate) so the present CrawlerDay
+  // reflects work already done today.
   const productionByGroupByEmployeeByDate = accumulateActualProduction(
     servCodes,
     servCodeToGroupId,
@@ -82,8 +64,9 @@ export function crawlPastPhase(
   );
 
   // Build per-group, per-date employee breakdowns from doneBys.
-  // Map<groupId, Map<date, PoolDaySnapshotEmployeeBreakdown[]>>
-  const breakdownsByGroupByDate = new Map<string, Map<string, PoolDaySnapshotEmployeeBreakdown[]>>();
+  // Includes mainDate (doneDate <= mainDate) so assembleGroupResults can build
+  // a present CrawlerDay with real priceCompleted and employee attribution.
+  const breakdownsByGroupByDate = new Map<string, Map<string, EmployeeProductionEntry[]>>();
 
   for (const servCode of servCodes) {
     const groupId = servCodeToGroupId.get(servCode.servCodeId);
@@ -92,7 +75,7 @@ export function crawlPastPhase(
     for (const service of servCode.services) {
       if (!COMPLETED_STATUSES.has(service.status) || !service.production) continue;
       const doneDate = service.production.doneDate;
-      if (!doneDate || doneDate >= mainDate) continue;
+      if (!doneDate || doneDate > mainDate) continue;
 
       if (!breakdownsByGroupByDate.has(groupId)) {
         breakdownsByGroupByDate.set(groupId, new Map());
@@ -117,123 +100,38 @@ export function crawlPastPhase(
     }
   }
 
-  // Compute per-group and per-employee actual rates
   const groupProductionStats = computeActualGroupRates(productionByGroupByEmployeeByDate);
 
-  // Build pool history for past days.
-  // We record one snapshot per production day (days with actual work).
-  // The mainDate snapshot is the handoff point.
-  function buildPastPoolHistory(
-    groupId: string,
-    activePool: number,
-    totalPool: number,
-    plannedEnd: string | null,
-  ): PoolDaySnapshot[] {
-    const stats = groupProductionStats.get(groupId);
-
-    // Collect all unique dates across all employees for this group
-    const byEmployeeByDate = productionByGroupByEmployeeByDate.get(groupId);
-    if (!byEmployeeByDate || byEmployeeByDate.size === 0 || !stats) {
-      // Locked sequence successors have no history yet — cascade hasn't fired.
-      // Return empty array so they don't appear in the burndown until they open.
-      if (!classifier.shouldHaveMainDateSnapshot(groupId)) return [];
-      return [{
-        date: mainDate,
-        completed: totalPool - activePool,
-        remaining: activePool,
-        priceCompleted: 0,
-        priceForecasted: 0,
-        employeesWorking: [],
-        percentCompleted: totalPool > 0 ? (totalPool - activePool) / totalPool : 0,
-        employeeBreakdowns: [],
-      }];
-    }
-
-    // Merge all employee dates into a single date → total map,
-    // and build a date → employeeIds map for employeesWorking.
-    const byDate = new Map<string, number>();
-    const employeesByDate = new Map<string, string[]>();
-    for (const [employeeId, employeeDates] of byEmployeeByDate) {
-      for (const [date, dailyPrice] of employeeDates) {
-        byDate.set(date, (byDate.get(date) ?? 0) + dailyPrice);
-        if (employeeId !== "_team") {
-          const existing = employeesByDate.get(date) ?? [];
-          if (!existing.includes(employeeId)) existing.push(employeeId);
-          employeesByDate.set(date, existing);
-        }
-      }
-    }
-
-    const sortedDates = [...byDate.keys()].sort();
-    const snapshots: PoolDaySnapshot[] = [];
-    let cumulativeCompleted = 0;
-    // Track whether the straggler condition was ever met during the past crawl.
-    // When true, the mainDate handoff snapshot is suppressed — the group is overdue
-    // and the last real production snapshot is its final entry.
-    let stragglerDetected = false;
-
-    for (const date of sortedDates) {
-      const dailyPrice = byDate.get(date)!;
-      cumulativeCompleted += dailyPrice;
-      const remaining = Math.max(0, totalPool - cumulativeCompleted);
-      const percentCompleted = totalPool > 0 ? cumulativeCompleted / totalPool : 0;
-
-      snapshots.push({
-        date,
-        completed: cumulativeCompleted,
-        remaining,
-        priceCompleted: dailyPrice,
-        priceForecasted: 0,
-        employeesWorking: employeesByDate.get(date) ?? [],
-        percentCompleted,
-        employeeBreakdowns: breakdownsByGroupByDate.get(groupId)?.get(date) ?? [],
-      });
-
-      // Detect when a single-member sequence group crosses the cascade threshold past its plannedEnd.
-      // Multi-member sequence members are never stragglers — they always drain to zero.
-      if (
-        !stragglerDetected &&
-        classifier.isStraggler({ groupId, day: date, plannedEnd, completionPct: percentCompleted, cascadeThreshold: inputs.cascadeThreshold })
-      ) {
-        stragglerDetected = true;
-      }
-    }
-
-    // Add mainDate handoff snapshot — only if the group still has an active pool,
-    // was not identified as a straggler, AND should have a mainDate snapshot.
-    if (activePool > 0 && !stragglerDetected && classifier.shouldHaveMainDateSnapshot(groupId)) {
-      const finalCompleted = totalPool - activePool;
-      snapshots.push({
-        date: mainDate,
-        completed: finalCompleted,
-        remaining: activePool,
-        priceCompleted: 0,
-        priceForecasted: 0,
-        employeesWorking: [] as string[],
-        percentCompleted: totalPool > 0 ? finalCompleted / totalPool : 0,
-        employeeBreakdowns: [],
-      });
-    }
-
-    return snapshots;
-  }
-
-  // Initialize GroupPoolState for each group
   const poolStates = new Map<string, GroupPoolState>();
 
-  for (const context of groupContexts) {
-    const { groupId } = context;
+  for (const assignmentGroup of assignmentGroups) {
+    const { groupId } = assignmentGroup;
     const activePool = activePoolByGroup.get(groupId) ?? 0;
     const totalPool = totalPoolByGroup.get(groupId) ?? 0;
     const stats = groupProductionStats.get(groupId);
-    const poolHistory = buildPastPoolHistory(groupId, activePool, totalPool, context.plannedEnd);
 
-    // If the pool is already fully drained as of mainDate, find the date it first hit zero
-    // so the future phase doesn't need to drain it to record a projectedEndDate.
+    // Determine projectedEndDate for groups already fully drained as of mainDate.
+    // Walk production dates in order, accumulating until we reach totalPool.
     let pastProjectedEndDate: string | null = null;
-    if (activePool === 0 && poolHistory.length > 0) {
-      const firstZeroSnapshot = poolHistory.find((s) => s.remaining === 0);
-      pastProjectedEndDate = firstZeroSnapshot?.date ?? mainDate;
+    if (activePool === 0 && totalPool > 0) {
+      const byEmployeeByDate = productionByGroupByEmployeeByDate.get(groupId);
+      if (byEmployeeByDate) {
+        const byDate = new Map<string, number>();
+        for (const employeeDates of byEmployeeByDate.values()) {
+          for (const [date, price] of employeeDates) {
+            byDate.set(date, (byDate.get(date) ?? 0) + price);
+          }
+        }
+        let cumulative = 0;
+        for (const date of [...byDate.keys()].sort()) {
+          cumulative += byDate.get(date)!;
+          if (cumulative >= totalPool) {
+            pastProjectedEndDate = date;
+            break;
+          }
+        }
+        if (!pastProjectedEndDate) pastProjectedEndDate = mainDate;
+      }
     }
 
     poolStates.set(groupId, {
@@ -245,9 +143,8 @@ export function crawlPastPhase(
       productionSum: stats?.actualPriceCompleted ?? 0,
       projectedEndDate: pastProjectedEndDate,
       projectedStartDate: null,
-      poolHistory,
       overdueAsOfMainDate:
-        context.plannedEnd !== null && context.plannedEnd < mainDate && activePool > 0,
+        assignmentGroup.plannedEnd !== null && assignmentGroup.plannedEnd < mainDate && activePool > 0,
     });
   }
 

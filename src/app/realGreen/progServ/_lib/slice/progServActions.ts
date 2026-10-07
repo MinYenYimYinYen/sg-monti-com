@@ -9,7 +9,6 @@ import {
 } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import {
   ProgServState,
-  UnsavedProgCodeChanges,
   UnsavedServCodeChanges,
 } from "@/app/realGreen/progServ/_lib/types/ProgServState";
 import {
@@ -23,7 +22,7 @@ const extractServCodeDocProps = (doc: ServCodeDoc): ServCodeDocProps => ({
   servCodeId: doc.servCodeId,
   createdAt: doc.createdAt,
   updatedAt: doc.updatedAt,
-  // dateRange: doc.dateRange,
+  dateRange: doc.dateRange,
   alwaysAsap: doc.alwaysAsap,
   productRuleDocs: doc.productRuleDocs,
   callAheadTag: doc.callAheadTag ?? null,

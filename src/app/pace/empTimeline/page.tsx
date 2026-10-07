@@ -1,3 +1,4 @@
-import { EmpTimelinePage } from "@/app/pace/empTimeline/_components/EmpTimelinePage";
+import TempStub from "@/app/pace/TempStub";
 
-export default EmpTimelinePage;
+
+export default TempStub;

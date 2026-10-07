@@ -13,7 +13,7 @@ import { NewGroupForm } from "@/app/pace/assignments/_components/NewGroupForm";
 import { NewSequenceForm } from "@/app/pace/assignments/_components/NewSequenceForm";
 
 export function PaceAssignmentGroupManager() {
-  const groups = useSelector(paceAssignmentGroupSelect.groups);
+  const assignmentGroups = useSelector(paceAssignmentGroupSelect.assignmentGroups);
   const sequences = useSelector(paceGroupSequenceSelect.sequences);
   const sequenceMap = useSelector(paceGroupSequenceSelect.sequenceMap);
   const sequenceIdByGroupId = useSelector(paceGroupSequenceSelect.sequenceIdByGroupId);
@@ -23,7 +23,7 @@ export function PaceAssignmentGroupManager() {
   const multiMemberSequenceGroupIds = new Set(
     sequences.filter((s) => s.groupIds.length > 1).flatMap((s) => s.groupIds),
   );
-  const standaloneGroups = groups.filter((g) => !multiMemberSequenceGroupIds.has(g.groupId));
+  const standaloneGroups = assignmentGroups.filter((g) => !multiMemberSequenceGroupIds.has(g.groupId));
   const { upsertGroup, deleteGroup } = usePaceAssignmentGroup();
   const { upsertSequence } = useGroupSequence();
   const [showNewForm, setShowNewForm] = useState(false);
@@ -33,11 +33,11 @@ export function PaceAssignmentGroupManager() {
   const servCodeMap = useSelector(progServSelect.servCodeMap);
 
   const existingGroupServCodeIds = new Set<string>();
-  for (const group of groups) {
-    for (const id of group.servCodeIds) existingGroupServCodeIds.add(id);
+  for (const assignmentGroup of assignmentGroups) {
+    for (const id of assignmentGroup.servCodeIds) existingGroupServCodeIds.add(id);
   }
 
-  const sortedGroups = [...groups].sort((a, b) => a.label.localeCompare(b.label));
+  const sortedGroups = [...assignmentGroups].sort((a, b) => a.label.localeCompare(b.label));
 
   const checkedSet = new Set(checkedGroupIds);
 
@@ -98,8 +98,8 @@ export function PaceAssignmentGroupManager() {
             existingGroupServCodeIds={existingGroupServCodeIds}
             progCodes={progCodes}
             servCodeMap={servCodeMap}
-            onSave={(group) => {
-              void upsertGroup(group);
+            onSave={(assignmentGroupDoc) => {
+              void upsertGroup(assignmentGroupDoc);
               setShowNewForm(false);
             }}
             onCancel={() => setShowNewForm(false)}
@@ -126,14 +126,14 @@ export function PaceAssignmentGroupManager() {
             No standalone groups. All groups are in sequences.
           </p>
         )}
-        {standaloneGroups.sort((a, b) => a.label.localeCompare(b.label)).map((group) => {
-          const seqId = sequenceIdByGroupId.get(group.groupId) ?? null;
+        {standaloneGroups.sort((a, b) => a.label.localeCompare(b.label)).map((assignmentGroup) => {
+          const seqId = sequenceIdByGroupId.get(assignmentGroup.groupId) ?? null;
           const seq = seqId ? sequenceMap.get(seqId) ?? null : null;
           return (
             <AssignmentGroupRow
-              key={group.groupId}
-              group={group}
-              checked={checkedSet.has(group.groupId)}
+              key={assignmentGroup.groupId}
+              group={assignmentGroup}
+              checked={checkedSet.has(assignmentGroup.groupId)}
               sequenceLabel={seq?.label ?? null}
               onToggle={toggleGroup}
               onDelete={(id) => {
@@ -141,8 +141,8 @@ export function PaceAssignmentGroupManager() {
                 setCheckedGroupIds((prev) => prev.filter((gid) => gid !== id));
               }}
               onUpdateLabel={(id, label) => {
-                const g = groups.find((gr) => gr.groupId === id);
-                if (g) void upsertGroup({ ...g, label });
+                const g = assignmentGroups.find((gr) => gr.groupId === id);
+                if (g) void upsertGroup({ groupId: g.groupId, label, servCodeIds: g.servCodeIds });
               }}
             />
           );
@@ -150,7 +150,7 @@ export function PaceAssignmentGroupManager() {
       </div>
 
       <div className="shrink-0 px-3 py-2 border-t border-border text-[10px] text-muted-foreground">
-        {groups.length} group{groups.length !== 1 ? "s" : ""} defined
+        {assignmentGroups.length} group{assignmentGroups.length !== 1 ? "s" : ""} defined
         {checkedSet.size > 0 && (
           <span className="ml-2 text-secondary font-medium">
             · {checkedSet.size} selected

@@ -1,14 +1,14 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { AssignmentGroupContract } from "@/app/pace/assignmentGroup/api/AssignmentGroupContract";
-import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
+import { AssignmentGroupDoc } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 
 type AssignmentGroupState = {
-  groups: AssignmentGroup[];
+  assignmentGroupDocs: AssignmentGroupDoc[];
 };
 
 const initialState: AssignmentGroupState = {
-  groups: [],
+  assignmentGroupDocs: [],
 };
 
 const getGroups = createStandardThunk<AssignmentGroupContract, "getGroups">({
@@ -35,22 +35,22 @@ const assignmentGroupSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getGroups.fulfilled, (state, action) => {
-      state.groups = action.payload;
+      state.assignmentGroupDocs = action.payload;
     });
 
     builder.addCase(upsertGroup.fulfilled, (state, action) => {
       const updated = action.payload;
-      const idx = state.groups.findIndex((g) => g.groupId === updated.groupId);
+      const idx = state.assignmentGroupDocs.findIndex((g) => g.groupId === updated.groupId);
       if (idx !== -1) {
-        state.groups[idx] = updated;
+        state.assignmentGroupDocs[idx] = updated;
       } else {
-        state.groups.push(updated);
+        state.assignmentGroupDocs.push(updated);
       }
     });
 
     builder.addCase(deleteGroup.fulfilled, (state, action) => {
       const { groupId } = action.payload;
-      state.groups = state.groups.filter((g) => g.groupId !== groupId);
+      state.assignmentGroupDocs = state.assignmentGroupDocs.filter((g) => g.groupId !== groupId);
     });
   },
 });

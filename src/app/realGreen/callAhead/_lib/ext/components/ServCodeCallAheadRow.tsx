@@ -22,6 +22,7 @@ function buildDocProps(doc: ServCodeDoc): UnsavedServCodeChanges["original"] {
     productRuleDocs: doc.productRuleDocs,
     callAheadTag: doc.callAheadTag ?? null,
     paddingDays: doc.paddingDays,
+    dateRange: doc.dateRange,
   };
 }
 

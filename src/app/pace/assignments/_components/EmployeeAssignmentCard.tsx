@@ -16,9 +16,9 @@ import { formatGoal } from "@/app/pace/assignments/_components/assignmentsHelper
 export function EmployeeAssignmentCard({ employeeId }: { employeeId: string }) {
   const dispatch = useAppDispatch();
   const employeeMap = useSelector(employeeSelect.employeeMap);
-  const groupMap = useSelector(paceAssignmentGroupSelect.groupMap);
+  const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
   const assignmentsByEmployeeId = useSelector(paceAssignmentPlanSelect.assignmentsByEmployeeId);
-  const groups = useSelector(paceAssignmentGroupSelect.groups);
+  const assignmentGroups = useSelector(paceAssignmentGroupSelect.assignmentGroups);
   const [openAdd, setOpenAdd] = useState(false);
   const [availabilitySheetEmployee, setAvailabilitySheetEmployee] = useState<Employee | null>(null);
 
@@ -63,7 +63,7 @@ export function EmployeeAssignmentCard({ employeeId }: { employeeId: string }) {
     setOpenAdd(false);
   }
 
-  const availableGroups = groups
+  const availableGroups = assignmentGroups
     .filter((g) => !existingGroupIds.has(g.groupId))
     .sort((a, b) => a.label.localeCompare(b.label));
 
@@ -97,7 +97,7 @@ export function EmployeeAssignmentCard({ employeeId }: { employeeId: string }) {
           <p className="px-3 py-2 text-[10px] text-muted-foreground">No groups assigned.</p>
         )}
         {groupAssignments.map(({ groupId, dailyRevenueGoal }, index) => {
-          const group = groupMap.get(groupId);
+          const group = (assignmentGroupMap as Map<string, import("@/app/pace/assignmentGroup/AssignmentGroupTypes").AssignmentGroup>).get(groupId);
           const label = group?.label ?? groupId;
           return (
             <div key={index} className="flex items-center gap-1.5 px-2 py-1.5 text-xs">

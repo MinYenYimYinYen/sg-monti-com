@@ -1,6 +1,6 @@
 "use client";
 
-import { UrgentGroup } from "@/app/pace/PaceEngineTypes";
+import { UrgentGroup } from "@/app/pace/lib/PaceEngineTypes";
 
 export function UrgentGroupRow({ group }: { group: UrgentGroup }) {
   return (

@@ -1,4 +1,4 @@
-import { GroupContext } from "@/app/pace/PaceEngineTypes";
+import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { PastPhaseState } from "@/app/pace/lib/crawlPastPhase/crawlPastPhase";
 
@@ -20,7 +20,7 @@ export type PresentPhaseState = PastPhaseState;
  */
 export function crawlPresentPhase(
   _inputs: PaceEngineInputs,
-  _groupContexts: GroupContext[],
+  _assignmentGroups: AssignmentGroup[],
   pastState: PastPhaseState,
 ): PresentPhaseState {
   // The active pool already reflects mainDate reality:

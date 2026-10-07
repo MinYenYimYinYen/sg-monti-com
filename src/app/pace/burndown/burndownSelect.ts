@@ -1,88 +1,99 @@
 import { createSelector } from "@reduxjs/toolkit";
+import { AppState } from "@/store";
 import { paceEngineSelect } from "@/app/pace/paceEngineSelect";
-import { PoolDaySnapshot } from "@/app/pace/PaceEngineTypes";
-import { CrawlerDay } from "@/app/pace/lib/crawlerDay/CrawlerDay";
+import { paceSeasonPlanSelect } from "@/app/pace/seasonPlan/seasonPlanSelect";
 import { CrawlerDayUtils } from "@/app/pace/lib/crawlerDay/crawlerDayUtils";
+import { BurndownChartData, BurndownDay, BurndownVelocityLine } from "@/app/pace/burndown/burndownTypes";
 
 // ---------------------------------------------------------------------------
-// Burndown page selectors
-//
-// Reads sequenceResults from the engine.
-// Synthetic single-member sequences (standalone groups) are shown without the "seq" badge.
-// crawlerDays provides the hierarchical day → group → employee data for the accordion table.
+// Local input selectors
 // ---------------------------------------------------------------------------
 
-export type BurndownSeries = {
-  /** The entity being charted — a sequence (may be synthetic for standalone groups). */
-  id: string;
-  label: string;
-  /** "group" for synthetic single-member sequences; "sequence" for multi-member. */
-  kind: "group" | "sequence";
-  /**
-   * Merged pool history across all member groups (legacy — kept for backward compat).
-   * New consumers should use crawlerDays instead.
-   */
-  poolHistory: PoolDaySnapshot[];
-  /** The planned end date for this entity (latest plannedEnd across members). */
-  plannedEnd: string | null;
-  /** The projected end date from the engine (latest projectedEndDate across members). */
-  projectedEndDate: string | null;
-  /** Total pool at the start of the season (for the burndown ceiling). */
-  totalPool: number;
-  /**
-   * Hierarchical crawl output for this series — day → group → employee.
-   * For synthetic (single-group) sequences: filtered to days where the group appears.
-   * For multi-member sequences: filtered to days where any member appears.
-   * Use CrawlerDayUtils to further query this data.
-   */
-  crawlerDays: CrawlerDay[];
-  /**
-   * The groupId for synthetic single-member sequences (null for multi-member).
-   * Used by SeriesDetail to look up group-level data without the sequence layer.
-   */
-  singleGroupId: string | null;
-};
+const selectMainDate = (state: AppState): string => state.pace.mainDate;
+
+// ---------------------------------------------------------------------------
+// Burndown days — one BurndownDay per CrawlerDay
+// ---------------------------------------------------------------------------
 
 /**
- * All burndown series available for display.
- * One series per SequenceResult — synthetic sequences (standalone groups) get kind: "group".
+ * Maps crawlerDays to BurndownDay[].
+ *
+ * Each BurndownDay carries the total poolRemaining across all groups (for the
+ * overall burn line) and per-group slices (for stacked bar rendering).
  */
-const selectBurndownSeries = createSelector(
-  [paceEngineSelect],
-  (engineResult): BurndownSeries[] =>
-    engineResult.sequenceResults.map((sequence) => {
-      const isSynthetic = sequence.isSynthetic;
-      const singleGroupId = isSynthetic && sequence.members[0] ? sequence.members[0].groupId : null;
-
-      // Filter crawlerDays to only those relevant to this series
-      const seriesDays = isSynthetic && singleGroupId
-        ? CrawlerDayUtils.daysForGroup(engineResult.crawlerDays, singleGroupId)
-        : CrawlerDayUtils.daysForSequence(engineResult.crawlerDays, sequence.sequenceId);
-
-      return {
-        id: sequence.sequenceId,
-        label: sequence.label,
-        kind: isSynthetic ? "group" : "sequence",
-        poolHistory: sequence.poolHistory,
-        plannedEnd: sequence.plannedEnd,
-        projectedEndDate: sequence.projectedEndDate,
-        totalPool: sequence.totalPool,
-        crawlerDays: seriesDays,
-        singleGroupId,
-      };
-    }),
+const selectBurndownDays = createSelector(
+  [paceEngineSelect.crawlerDays],
+  (crawlerDays): BurndownDay[] =>
+    crawlerDays.map((day) => ({
+      date: day.date,
+      phase: day.phase,
+      totalRemaining: CrawlerDayUtils.totalRemainingOnDay(day),
+      groups: day.groups.map((g) => ({
+        groupId: g.groupId,
+        label: g.label,
+        sequenceId: g.sequenceId,
+        remaining: g.poolRemaining,
+      })),
+    })),
 );
 
-/** Map<id, BurndownSeries> for O(1) lookup by sequenceId. */
-const selectBurndownSeriesMap = createSelector(
-  [selectBurndownSeries],
-  (series): Map<string, BurndownSeries> =>
-    new Map(series.map((s) => [s.id, s])),
+// ---------------------------------------------------------------------------
+// Velocity line — ideal straight-line burn from day 1 to deadline
+// ---------------------------------------------------------------------------
+
+/**
+ * Computes the ideal burndown velocity line.
+ *
+ * Start: first crawlerDay's totalRemaining (the season's full pool).
+ * End: snowDeadline if set, otherwise the last crawlerDay's date.
+ *
+ * Returns null when there are no crawlerDays (engine hasn't run yet).
+ */
+const selectBurndownVelocityLine = createSelector(
+  [selectBurndownDays, paceSeasonPlanSelect.snowDeadline],
+  (burndownDays, snowDeadline): BurndownVelocityLine | null => {
+    if (burndownDays.length === 0) return null;
+
+    const firstDay = burndownDays[0];
+    const lastDay = burndownDays[burndownDays.length - 1];
+
+    return {
+      startDate: firstDay.date,
+      startRemaining: firstDay.totalRemaining,
+      endDate: snowDeadline ?? lastDay.date,
+    };
+  },
 );
+
+// ---------------------------------------------------------------------------
+// Chart data — everything the burndown chart component needs
+// ---------------------------------------------------------------------------
+
+/**
+ * Assembles all burndown chart data into a single object.
+ *
+ * Inputs:
+ *   - crawlerDays (via paceEngineSelect) — the computed timeline
+ *   - snowMelt / snowDeadline (via paceSeasonPlanSelect) — season boundaries
+ *   - mainDate (from paceSlice) — the vertical "as of" line
+ */
+const selectBurndownChartData = createSelector(
+  [selectBurndownDays, selectBurndownVelocityLine, selectMainDate, paceSeasonPlanSelect.snowMelt, paceSeasonPlanSelect.snowDeadline],
+  (burndownDays, velocityLine, mainDate, snowMelt, snowDeadline): BurndownChartData => ({
+    days: burndownDays,
+    velocityLine,
+    mainDate,
+    snowMelt,
+    snowDeadline,
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Export
+// ---------------------------------------------------------------------------
 
 export const burndownSelect = {
-  burndownSeries: selectBurndownSeries,
-  burndownSeriesMap: selectBurndownSeriesMap,
-  mainDate: createSelector([paceEngineSelect], (r) => r.mainDate),
-  crawlerDays: createSelector([paceEngineSelect], (r) => r.crawlerDays),
+  burndownDays: selectBurndownDays,
+  velocityLine: selectBurndownVelocityLine,
+  chartData: selectBurndownChartData,
 };

@@ -28,10 +28,10 @@ export type PaceEngineInputs = {
   /** The "as of" date — past/future split point. */
   mainDate: string;
 
-  /** All assignment groups. */
-  groups: AssignmentGroup[];
+  /** All assignment groups — fully hydrated with sequenceId, plannedStart/End, goalsByEmployee, assignedEmployeeIds. */
+  assignmentGroups: AssignmentGroup[];
   /** Map<groupId, AssignmentGroup> for O(1) lookups. */
-  groupMap: Map<string, AssignmentGroup>;
+  assignmentGroupMap: Map<string, AssignmentGroup>;
 
   /** All group sequences (ordered chains). */
   sequences: GroupSequence[];
@@ -79,14 +79,14 @@ const selectMainDate = (state: AppState): string => state.pace.mainDate;
  *
  * Normalizes sequences: every AssignmentGroup that is NOT already in a user-created
  * GroupSequence is wrapped in a synthetic single-member GroupSequence. This ensures
- * the engine always operates on a uniform SequenceResult[] — no special-casing for
+ * the engine always operates on a uniform sequence model — no special-casing for
  * standalone groups anywhere downstream.
  */
 export const selectPaceEngineInputs = createSelector(
   [
     selectMainDate,
-    paceAssignmentGroupSelect.groups,
-    paceAssignmentGroupSelect.groupMap,
+    paceAssignmentGroupSelect.assignmentGroups,
+    paceAssignmentGroupSelect.assignmentGroupMap,
     paceGroupSequenceSelect.sequences,
     paceGroupSequenceSelect.sequenceIdByGroupId,
     paceAssignmentPlanSelect.assignmentPlans,
@@ -103,8 +103,8 @@ export const selectPaceEngineInputs = createSelector(
   ],
   (
     mainDate,
-    groups,
-    groupMap,
+    assignmentGroups,
+    assignmentGroupMap,
     sequences,
     sequenceIdByGroupId,
     assignmentPlans,
@@ -121,7 +121,7 @@ export const selectPaceEngineInputs = createSelector(
   ): PaceEngineInputs => {
     // Wrap standalone groups (not in any user-created sequence) as synthetic sequences of 1.
     const sequencedGroupIds = new Set(sequences.flatMap((s) => s.groupIds));
-    const syntheticSequences: GroupSequence[] = groups
+    const syntheticSequences: GroupSequence[] = assignmentGroups
       .filter((g) => !sequencedGroupIds.has(g.groupId))
       .map((g) => ({
         sequenceId: g.groupId + "-seq",
@@ -132,8 +132,8 @@ export const selectPaceEngineInputs = createSelector(
 
     return {
       mainDate,
-      groups,
-      groupMap,
+      assignmentGroups,
+      assignmentGroupMap,
       sequences: normalizedSequences,
       sequenceIdByGroupId,
       assignmentPlans,

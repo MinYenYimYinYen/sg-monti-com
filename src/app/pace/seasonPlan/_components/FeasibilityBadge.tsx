@@ -1,41 +1,74 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { seasonPlanPageSelect } from "@/app/pace/seasonPlan/seasonPlanPageSelect";
+import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
+import { dateRanges } from "@/lib/primatives/dates/dateStrings";
+import { holidaySelect } from "@/app/holiday/holidaySelect";
+import { AppState } from "@/store";
 
+const selectMainDate = (state: AppState): string => state.pace.mainDate;
+
+/**
+ * Computes feasibility for a single assignment group directly from the hydrated
+ * AssignmentGroup (which carries plannedEnd, goalsByEmployee, assignedEmployeeIds).
+ * No engine run needed — the data is already in the selector layer.
+ */
 export function FeasibilityBadge({ groupId }: { groupId: string }) {
-  const feasibilityRows = useSelector(seasonPlanPageSelect.feasibilityRows);
-  // feasibilityRows now use `id` (sequenceId or groupId+"-seq") instead of `groupId`.
-  // For synthetic single-member sequences, the id is groupId + "-seq".
-  const row = feasibilityRows.find((r) => r.id === groupId || r.id === groupId + "-seq");
-  if (!row) return null;
+  const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
+  const holidayDates = useSelector(holidaySelect.holidayDates);
+  const mainDate = useSelector(selectMainDate);
 
-  const noData = row.daysNeeded === null || row.teamGoalDailyRate === 0;
-  const daysEarlyLate = row.daysEarlyLate;
+  const assignmentGroup = (assignmentGroupMap as Map<string, import("@/app/pace/assignmentGroup/AssignmentGroupTypes").AssignmentGroup>).get(groupId);
+  if (!assignmentGroup) return null;
+
+  const { plannedEnd, goalsByEmployee, assignedEmployeeIds } = assignmentGroup;
+
+  // Compute teamGoalDailyRate
+  let teamGoalDailyRate = 0;
+  const missingGoals: string[] = [];
+  for (const employeeId of assignedEmployeeIds) {
+    const goal = goalsByEmployee.get(employeeId) ?? null;
+    if (goal === null) {
+      missingGoals.push(employeeId);
+    } else {
+      teamGoalDailyRate += goal;
+    }
+  }
+
+  // Compute daysAvailable
+  let daysAvailable = 0;
+  if (plannedEnd && plannedEnd > mainDate) {
+    const rawWeekdays = dateRanges.weekdaysBetween(mainDate, plannedEnd);
+    let holidayCount = 0;
+    for (const holidayDate of holidayDates) {
+      if (holidayDate > mainDate && holidayDate <= plannedEnd) holidayCount++;
+    }
+    daysAvailable = Math.max(0, rawWeekdays - holidayCount);
+  }
+
+  const isOverdue = plannedEnd !== null && plannedEnd < mainDate;
+  const hasMissingGoals = missingGoals.length > 0;
+  const noData = hasMissingGoals || teamGoalDailyRate === 0;
+
+  // We don't have activePool here without running the engine — show goal/days info only
+  const daysNeeded: number | null = null; // requires activePool from engine
+  const daysEarlyLate: number | null = null;
+  const isOnTrack = false;
 
   const statusIcon = noData
     ? "—"
-    : row.isOverdue
+    : isOverdue
       ? "❌"
-      : row.isOnTrack
-        ? "✅"
-        : daysEarlyLate !== null && daysEarlyLate > 0
-          ? "⚠️"
-          : "✅";
+      : "📅";
 
   const statusColor = noData
     ? "text-muted-foreground/50"
-    : row.isOverdue
+    : isOverdue
       ? "text-destructive"
-      : row.isOnTrack
-        ? "text-accent"
-        : "text-secondary";
+      : "text-muted-foreground";
 
-  const label =
-    noData
-      ? ""
-      : ` ${row.daysNeeded !== null ? Math.ceil(row.daysNeeded) : "?"}/${row.daysAvailable}d`;
+  const label = noData ? "" : ` ${daysAvailable}d avail`;
 
   return (
     <Popover>
@@ -49,44 +82,24 @@ export function FeasibilityBadge({ groupId }: { groupId: string }) {
         <p className="font-semibold text-foreground mb-2 text-[11px]">Feasibility</p>
         <div className="space-y-1">
           <div className="flex justify-between gap-4">
-            <span className="text-muted-foreground">Pool remaining</span>
-            <span className="font-mono font-semibold">
-              ${Math.round(row.activePool).toLocaleString()}
-            </span>
-          </div>
-          <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Goal $/day</span>
             <span className="font-mono">
-              {row.teamGoalDailyRate > 0
-                ? `$${Math.round(row.teamGoalDailyRate).toLocaleString()}`
+              {teamGoalDailyRate > 0
+                ? `$${Math.round(teamGoalDailyRate).toLocaleString()}`
                 : "—"}
             </span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="text-muted-foreground">Days needed</span>
-            <span className="font-mono">
-              {row.daysNeeded !== null ? Math.ceil(row.daysNeeded) : "—"}
-            </span>
-          </div>
-          <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Days available</span>
-            <span className="font-mono">{row.daysAvailable}</span>
+            <span className="font-mono">{daysAvailable}</span>
           </div>
-          {daysEarlyLate !== null && (
-            <div className="flex justify-between gap-4 pt-1 border-t border-border/50">
-              <span className="text-muted-foreground">Early / Late</span>
-              <span
-                className={`font-mono font-semibold ${daysEarlyLate > 0 ? "text-destructive" : "text-accent"}`}
-              >
-                {daysEarlyLate > 0 ? "+" : ""}
-                {Math.round(daysEarlyLate)}d
-              </span>
-            </div>
+          {isOverdue && (
+            <p className="text-[10px] text-destructive pt-1">⚠ Past planned end date</p>
           )}
-          {row.missingGoals.length > 0 && (
+          {missingGoals.length > 0 && (
             <p className="text-[10px] text-secondary pt-1">
-              ⚠ Missing goals for {row.missingGoals.length} employee
-              {row.missingGoals.length !== 1 ? "s" : ""}
+              ⚠ Missing goals for {missingGoals.length} employee
+              {missingGoals.length !== 1 ? "s" : ""}
             </p>
           )}
         </div>

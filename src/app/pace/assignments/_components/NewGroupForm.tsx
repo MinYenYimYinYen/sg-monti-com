@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
+import { AssignmentGroupDoc } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { Button } from "@/style/components/button";
 
@@ -15,7 +15,7 @@ export function NewGroupForm({
   existingGroupServCodeIds: Set<string>;
   progCodes: ReturnType<typeof progServSelect.progCodes>;
   servCodeMap: ReturnType<typeof progServSelect.servCodeMap>;
-  onSave: (group: AssignmentGroup) => void;
+  onSave: (assignmentGroupDoc: AssignmentGroupDoc) => void;
   onCancel: () => void;
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

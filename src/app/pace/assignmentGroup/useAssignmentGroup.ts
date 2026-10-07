@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { paceAssignmentGroupActions } from "@/app/pace/assignmentGroup/assignmentGroupSlice";
-import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
+import { AssignmentGroupDoc } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
 export function usePaceAssignmentGroup({ autoLoad }: { autoLoad?: boolean } = {}) {
@@ -20,10 +20,10 @@ export function usePaceAssignmentGroup({ autoLoad }: { autoLoad?: boolean } = {}
     }
   }, [autoLoad, dispatch]);
 
-  const upsertGroup = (group: AssignmentGroup) =>
+  const upsertGroup = (assignmentGroupDoc: AssignmentGroupDoc) =>
     dispatch(
       paceAssignmentGroupActions.upsertGroup({
-        params: group,
+        params: assignmentGroupDoc,
         config: { force: true },
       }),
     );

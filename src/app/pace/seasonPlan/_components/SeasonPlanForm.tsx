@@ -24,7 +24,7 @@ export function SeasonPlanForm({
   onCancel: () => void;
 }) {
   const [form, setForm] = useState<FormState>(initialForm);
-  const groups = useSelector(seasonPlanPageSelect.groups);
+  const assignmentGroups = useSelector(seasonPlanPageSelect.assignmentGroups);
 
   const sliderMin = form.snowMelt || `${form.year}-01-01`;
   const sliderMax = form.snowDeadline || `${form.year}-11-30`;
@@ -138,29 +138,29 @@ export function SeasonPlanForm({
           Group Planned Dates
         </p>
         <div className="border border-border rounded overflow-hidden divide-y divide-border/50">
-          {groups.length === 0 && (
+          {assignmentGroups.length === 0 && (
             <p className="px-4 py-3 text-[10px] text-muted-foreground italic">
               No assignment groups found. Create groups in the Assignments tab first.
             </p>
           )}
-          {groups.map((group) => {
-            const schedule = getGroupSchedule(group.groupId);
+          {assignmentGroups.map((assignmentGroup) => {
+            const schedule = getGroupSchedule(assignmentGroup.groupId);
             const currentStart = schedule?.plannedStart || sliderMin;
             const currentEnd = schedule?.plannedEnd || sliderMax;
             return (
               <div
-                key={group.groupId}
+                key={assignmentGroup.groupId}
                 className="flex items-center gap-3 px-4 py-3 bg-card hover:bg-accent/5"
               >
                 <div className="w-28 shrink-0">
                   <div className="flex items-center gap-1.5">
                     <span className="font-mono text-[10px] text-primary font-semibold">
-                      {group.label}
+                      {assignmentGroup.label}
                     </span>
-                    <FeasibilityBadge groupId={group.groupId} />
+                    <FeasibilityBadge groupId={assignmentGroup.groupId} />
                   </div>
                   <span className="text-[9px] text-muted-foreground block truncate">
-                    {group.servCodeIds.join(", ")}
+                    {assignmentGroup.servCodeIds.join(", ")}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0 px-2">
@@ -169,7 +169,7 @@ export function SeasonPlanForm({
                     sliderMax={sliderMax}
                     start={currentStart}
                     end={currentEnd}
-                    onChange={(start, end) => setGroupSchedule(group.groupId, start, end)}
+                    onChange={(start, end) => setGroupSchedule(assignmentGroup.groupId, start, end)}
                   />
                 </div>
               </div>

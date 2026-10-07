@@ -1,4 +1,4 @@
-import { GroupPoolState } from "@/app/pace/PaceEngineTypes";
+import { GroupPoolState } from "@/app/pace/lib/PaceEngineTypes";
 
 /**
  * Drains a group's pool by the given employee's goal rate on a single day.

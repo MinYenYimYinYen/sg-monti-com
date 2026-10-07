@@ -1,3 +1,3 @@
-import { GanttPage } from "@/app/pace/gantt/_components/GanttPage";
+import TempStub from "@/app/pace/TempStub";
 
-export default GanttPage;
+export default TempStub;

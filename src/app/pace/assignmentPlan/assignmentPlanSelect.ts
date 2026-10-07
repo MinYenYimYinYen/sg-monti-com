@@ -2,12 +2,18 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { AssignmentPlan } from "@/app/pace/assignmentPlan/AssignmentPlanTypes";
-import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
+import { AssignmentGroupDoc } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 
 const selectAssignmentPlans = (state: AppState): AssignmentPlan[] =>
   state.paceAssignmentPlan.assignmentPlans;
 
 const selectScenarios = (state: AppState) => state.paceAssignmentPlan.scenarios;
+
+// Read raw docs directly from state to avoid circular dependency with assignmentGroupSelect.
+// assignmentGroupSelect imports paceAssignmentPlanSelect, so we cannot import
+// paceAssignmentGroupSelect here — use the raw doc state instead.
+const selectAssignmentGroupDocs = (state: AppState): AssignmentGroupDoc[] =>
+  state.paceAssignmentGroup.assignmentGroupDocs ?? [];
 
 const selectScenarioMap = createSelector(
   [selectScenarios],
@@ -32,17 +38,18 @@ const selectAssignmentsByEmployeeId = createSelector(
 
 /**
  * Inverted map: servCodeId → employeeId[] ordered by each employee's priority for that servCode.
- * Built by resolving each groupId to its member servCodeIds via groupMap.
+ * Built by resolving each groupId to its member servCodeIds via the raw AssignmentGroupDoc state.
  */
 const selectAssignmentsByServCodeId = createSelector(
-  [selectAssignmentPlans, paceAssignmentGroupSelect.groupMap],
-  (assignmentPlans, groupMap) => {
+  [selectAssignmentPlans, selectAssignmentGroupDocs],
+  (assignmentPlans, assignmentGroupDocs) => {
+    const groupDocMap = new Map(assignmentGroupDocs.map((g) => [g.groupId, g]));
     const map = new Map<string, { employeeId: string; priority: number }[]>();
 
     for (const plan of assignmentPlans) {
       plan.groupAssignments.forEach(({ groupId }, priority) => {
-        const group = groupMap.get(groupId);
-        const servCodeIds = group?.servCodeIds ?? groupId.split("+");
+        const groupDoc = groupDocMap.get(groupId);
+        const servCodeIds = groupDoc?.servCodeIds ?? groupId.split("+");
         for (const servCodeId of servCodeIds) {
           const existing = map.get(servCodeId) ?? [];
           existing.push({ employeeId: plan.employeeId, priority });
@@ -82,7 +89,15 @@ const selectGoalByEmployeeByGroup = createSelector(
   },
 );
 
-export const paceAssignmentPlanSelect = {
+export const paceAssignmentPlanSelect: {
+  assignmentPlans: typeof selectAssignmentPlans;
+  assignmentsByEmployeeId: typeof selectAssignmentsByEmployeeId;
+  assignmentsByServCodeId: typeof selectAssignmentsByServCodeId;
+  goalByEmployeeByGroup: typeof selectGoalByEmployeeByGroup;
+  scenarios: typeof selectScenarios;
+  scenarioMap: typeof selectScenarioMap;
+  activeScenario: typeof selectActiveScenario;
+} = {
   assignmentPlans: selectAssignmentPlans,
   assignmentsByEmployeeId: selectAssignmentsByEmployeeId,
   assignmentsByServCodeId: selectAssignmentsByServCodeId,

@@ -1,4 +1,4 @@
-import { EmployeeTimelineEvent, ServCodeTimelineEvent } from "@/app/pace/PaceEngineTypes";
+import { EmployeeTimelineEvent, ServCodeTimelineEvent } from "@/app/pace/lib/PaceEngineTypes";
 
 /**
  * Appends an employee timeline event to the employee's event list.

@@ -1,4 +1,4 @@
-import { GroupPoolState } from "@/app/pace/PaceEngineTypes";
+import { GroupPoolState } from "@/app/pace/lib/PaceEngineTypes";
 import { GroupSequence } from "@/app/pace/groupSequence/GroupSequenceTypes";
 
 /**

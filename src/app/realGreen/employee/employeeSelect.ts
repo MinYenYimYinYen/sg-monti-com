@@ -5,6 +5,8 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { plannedTimeOffSelect } from "@/app/plannedTimeOff/plannedTimeOffSelect";
 import { employeeAvailabilitySelect } from "@/app/employeeAvailability/employeeAvailabilitySelect";
+import { holidaySelect } from "@/app/holiday/holidaySelect";
+import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 const selectEmployeeDocs = (state: AppState) => state.employee.employeeDocs;
 
@@ -14,7 +16,7 @@ function getNameLastFirst(name: string) {
     return parts[0];
   }
   const partsAfter1st = parts.slice(1).join(" ");
-  return `${partsAfter1st}, ${parts[0]}`
+  return `${partsAfter1st}, ${parts[0]}`;
 }
 
 const selectEmployees = createSelector(
@@ -23,8 +25,9 @@ const selectEmployees = createSelector(
     assignmentPlanSelect.assignmentsByServCodeId,
     plannedTimeOffSelect.byEmployeeId,
     employeeAvailabilitySelect.byEmployeeId,
+    holidaySelect.holidayDates,
   ],
-  (employeeDocs, assignmentsByServCodeId, ptoByEmployeeId, availabilityByEmployeeId): Employee[] => {
+  (employeeDocs, assignmentsByServCodeId, ptoByEmployeeId, availabilityByEmployeeId, holidayDates): Employee[] => {
     // Build a map of employeeId → servCodeIds from the inverted servCode map
     const servCodeIdsByEmployee = new Map<string, string[]>();
     for (const [servCodeId, employeeIds] of assignmentsByServCodeId) {
@@ -41,7 +44,18 @@ const selectEmployees = createSelector(
       // Employees with no availability record get { employeeId } — no restrictions.
       const availability = availabilityByEmployeeId.get(doc.employeeId) ?? { employeeId: doc.employeeId };
       const nameLastFirst = getNameLastFirst(doc.name);
-      return { ...doc, servCodeIds, plannedTimeOff, availability, nameLastFirst };
+
+      // Pre-compute all dates this employee is unavailable: holidays + PTO weekdays.
+      const timeOffDates = new Set<string>(holidayDates);
+      for (const pto of plannedTimeOff) {
+        let day = pto.dateRange.min;
+        while (day <= pto.dateRange.max) {
+          if (dateStrings.isWeekDay(day)) timeOffDates.add(day);
+          day = dateStrings.addDays(day, 1);
+        }
+      }
+
+      return { ...doc, servCodeIds, plannedTimeOff, availability, nameLastFirst, timeOffDates };
     });
   },
 );

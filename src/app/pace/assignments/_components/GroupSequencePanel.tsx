@@ -9,7 +9,7 @@ import { GroupSequenceRow } from "@/app/pace/assignments/_components/GroupSequen
 
 export function GroupSequencePanel() {
   const sequences = useSelector(paceGroupSequenceSelect.sequences);
-  const groupMap = useSelector(paceAssignmentGroupSelect.groupMap);
+  const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
   const { upsertSequence, deleteSequence } = useGroupSequence();
 
   function handleDelete(sequenceId: string) {
@@ -50,7 +50,7 @@ export function GroupSequencePanel() {
               <GroupSequenceRow
                 key={sequence.sequenceId}
                 sequence={sequence}
-                groupMap={groupMap}
+                groupMap={assignmentGroupMap as Map<string, import("@/app/pace/assignmentGroup/AssignmentGroupTypes").AssignmentGroup>}
                 onDelete={handleDelete}
                 onUpdateLabel={handleUpdateLabel}
                 onReorderGroups={handleReorderGroups}
