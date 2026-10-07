@@ -2,9 +2,10 @@
 
 import { useSelector } from "react-redux";
 import { burndownSelect } from "@/app/pace/burndown/burndownSelect";
+import { BurndownChart } from "@/app/pace/burndown/_components/BurndownChart";
 
 export default function BurndownPage() {
-  const chartData = useSelector(burndownSelect.chartData);
+  const rechartsData = useSelector(burndownSelect.rechartsData);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -16,19 +17,15 @@ export default function BurndownPage() {
           </p>
         </div>
 
-        {/* Chart placeholder */}
-        <div className="rounded-lg border border-border bg-card flex items-center justify-center h-96 text-muted-foreground text-sm">
-          Chart coming soon — {chartData.days.length} days ·{" "}
-          {chartData.velocityLine
-            ? `velocity line: ${chartData.velocityLine.startDate} → ${chartData.velocityLine.endDate}`
-            : "no velocity line (no deadline set)"}
+        <div className="rounded-lg border border-border bg-card p-4">
+          <BurndownChart data={rechartsData} />
         </div>
 
         {/* Season metadata summary */}
         <div className="text-xs text-muted-foreground space-y-0.5">
-          <div>Main date: {chartData.mainDate}</div>
-          {chartData.snowMelt && <div>Season start (snow melt): {chartData.snowMelt}</div>}
-          {chartData.snowDeadline && <div>Season deadline (snow): {chartData.snowDeadline}</div>}
+          <div>Main date: {rechartsData.mainDate}</div>
+          {rechartsData.snowMelt && <div>Season start (snow melt): {rechartsData.snowMelt}</div>}
+          {rechartsData.snowDeadline && <div>Season deadline (snow): {rechartsData.snowDeadline}</div>}
         </div>
       </div>
     </div>

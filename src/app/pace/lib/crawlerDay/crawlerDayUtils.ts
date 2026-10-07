@@ -160,6 +160,84 @@ function totalRemainingOnDay(day: CrawlerDay): number {
 }
 
 // ---------------------------------------------------------------------------
+// Burndown fill — carry forward last known remaining for all groups
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns a "filled" view of crawlerDays where every group that appears
+ * anywhere in the timeline is present on every day, using its last known
+ * poolRemaining (or totalPool before it first appears).
+ *
+ * This eliminates spikes caused by cascade unlocks: a group that hasn't
+ * started yet contributes its full totalPool to the total remaining, so
+ * the season-wide total is monotonically non-increasing.
+ *
+ * Output is still CrawlerDay[] — synthetic fill-in groups have priceCompleted,
+ * priceForecasted, and employees zeroed/empty since they are not real activity.
+ */
+function fillGroupsAcrossAllDays(days: CrawlerDay[]): CrawlerDay[] {
+  if (days.length === 0) return days;
+
+  // First pass: collect every groupId and its totalPool + label + sequenceId
+  // from the first day it appears.
+  type GroupMeta = { label: string; sequenceId: string | null; totalPool: number };
+  const groupMeta = new Map<string, GroupMeta>();
+  for (const day of days) {
+    for (const group of day.groups) {
+      if (!groupMeta.has(group.groupId)) {
+        groupMeta.set(group.groupId, {
+          label: group.label,
+          sequenceId: group.sequenceId,
+          totalPool: group.totalPool,
+        });
+      }
+    }
+  }
+
+  const allGroupIds = [...groupMeta.keys()];
+
+  // Second pass: for each day, carry forward the last known poolRemaining
+  // for groups not present on that day.
+  const lastKnownRemaining = new Map<string, number>();
+  // Before any day, each group's remaining = its totalPool (not yet started).
+  for (const [groupId, meta] of groupMeta) {
+    lastKnownRemaining.set(groupId, meta.totalPool);
+  }
+
+  return days.map((day) => {
+    // Update last known remaining for groups present on this day.
+    for (const group of day.groups) {
+      lastKnownRemaining.set(group.groupId, group.poolRemaining);
+    }
+
+    // Build the filled groups array — real groups from the day, synthetic for the rest.
+    const presentGroupIds = new Set(day.groups.map((g) => g.groupId));
+    const filledGroups = [...day.groups];
+
+    for (const groupId of allGroupIds) {
+      if (presentGroupIds.has(groupId)) continue;
+      const meta = groupMeta.get(groupId)!;
+      const remaining = lastKnownRemaining.get(groupId) ?? meta.totalPool;
+      filledGroups.push({
+        groupId,
+        label: meta.label,
+        sequenceId: meta.sequenceId,
+        poolCompletedSoFar: meta.totalPool - remaining,
+        poolRemaining: remaining,
+        priceCompleted: 0,
+        priceForecasted: 0,
+        percentCompleted: meta.totalPool > 0 ? (meta.totalPool - remaining) / meta.totalPool : 0,
+        totalPool: meta.totalPool,
+        cascadedToSuccessor: false,
+        employees: [],
+      });
+    }
+
+    return { ...day, groups: filledGroups };
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -177,4 +255,5 @@ export const CrawlerDayUtils = {
   groupPaceAsOf,
   sequenceCumulativeByDate,
   totalRemainingOnDay,
+  fillGroupsAcrossAllDays,
 };
