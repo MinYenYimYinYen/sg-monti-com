@@ -89,6 +89,18 @@ const selectGoalByEmployeeByGroup = createSelector(
   },
 );
 
+/**
+ * True when the current `assignmentPlans` in Redux differ from the active
+ * scenario's saved `plans`. Drives the Save / Save As enabled state.
+ */
+const selectIsDirty = createSelector(
+  [selectActiveScenario, selectAssignmentPlans],
+  (activeScenario, assignmentPlans): boolean => {
+    if (!activeScenario) return assignmentPlans.length > 0;
+    return JSON.stringify(activeScenario.plans) !== JSON.stringify(assignmentPlans);
+  },
+);
+
 export const paceAssignmentPlanSelect: {
   assignmentPlans: typeof selectAssignmentPlans;
   assignmentsByEmployeeId: typeof selectAssignmentsByEmployeeId;
@@ -97,6 +109,7 @@ export const paceAssignmentPlanSelect: {
   scenarios: typeof selectScenarios;
   scenarioMap: typeof selectScenarioMap;
   activeScenario: typeof selectActiveScenario;
+  isDirty: typeof selectIsDirty;
 } = {
   assignmentPlans: selectAssignmentPlans,
   assignmentsByEmployeeId: selectAssignmentsByEmployeeId,
@@ -105,4 +118,5 @@ export const paceAssignmentPlanSelect: {
   scenarios: selectScenarios,
   scenarioMap: selectScenarioMap,
   activeScenario: selectActiveScenario,
+  isDirty: selectIsDirty,
 };

@@ -9,6 +9,7 @@ import { AppState } from "@/store";
 import { DatePicker } from "@/components/DatePicker";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
+import { PaceScenarioSelector } from "@/app/pace/assignments/_components/PaceScenarioSelector";
 import {
   BarChart2,
   CalendarDays,
@@ -64,6 +65,7 @@ export default function PaceLayout({ children }: { children: React.ReactNode }) 
                 if (date) dispatch(paceActions.setMainDate(date));
               }}
             />
+            <PaceScenarioSelector />
           </>
         }
         right={<TabNav items={TABS} rootHref={ROOT_HREF} />}

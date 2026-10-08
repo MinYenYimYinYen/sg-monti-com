@@ -85,8 +85,8 @@ const selectMainDate = (state: AppState): string => state.pace.mainDate;
 export const selectPaceEngineInputs = createSelector(
   [
     selectMainDate,
-    paceAssignmentGroupSelect.assignmentGroups,
-    paceAssignmentGroupSelect.assignmentGroupMap,
+    paceAssignmentGroupSelect.assignmentGroupsScaled,
+    paceAssignmentGroupSelect.assignmentGroupMapScaled,
     paceGroupSequenceSelect.sequences,
     paceGroupSequenceSelect.sequenceIdByGroupId,
     paceAssignmentPlanSelect.assignmentPlans,

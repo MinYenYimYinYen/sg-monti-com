@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { burndownSelect, computeSlopeAnalysis } from "@/app/pace/burndown/burndownSelect";
 import { BurndownChart } from "@/app/pace/burndown/_components/BurndownChart";
+import { GoalMultiplierSlider } from "@/app/pace/lib/_components/GoalMultiplierSlider";
 
 // ---------------------------------------------------------------------------
 // Dollar formatter for stats display
@@ -100,6 +101,11 @@ export default function BurndownPage() {
               Not enough past data for a {windowDays}-day look-back.
             </p>
           )}
+        </div>
+
+        {/* Goal multiplier — what-if slider */}
+        <div className="rounded-lg border border-border bg-card p-4">
+          <GoalMultiplierSlider />
         </div>
 
         {/* Season metadata summary */}

@@ -60,6 +60,27 @@ const assignmentPlanSlice = createSlice({
       const ga = plan.groupAssignments.find((g) => g.groupId === groupId);
       if (ga) ga.dailyRevenueGoal = dailyRevenueGoal;
     },
+    /**
+     * Bakes the what-if goalMultiplier into the stored assignmentPlans,
+     * scoped to the provided groupIds. Only group assignments whose groupId
+     * is in the set are scaled — all others are left unchanged.
+     * After this runs, the slider should be reset to 1.0.
+     */
+    applyGoalMultiplier: (
+      state,
+      action: PayloadAction<{ multiplier: number; groupIds: string[] }>,
+    ) => {
+      const { multiplier, groupIds } = action.payload;
+      if (multiplier === 1 || groupIds.length === 0) return;
+      const groupIdSet = new Set(groupIds);
+      for (const plan of state.assignmentPlans) {
+        for (const ga of plan.groupAssignments) {
+          if (groupIdSet.has(ga.groupId) && ga.dailyRevenueGoal !== null) {
+            ga.dailyRevenueGoal = Math.round(ga.dailyRevenueGoal * multiplier);
+          }
+        }
+      }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(getScenarios.fulfilled, (state, action) => {
