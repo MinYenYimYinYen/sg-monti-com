@@ -4,6 +4,7 @@ import { paceEngineSelect } from "@/app/pace/paceEngineSelect";
 import { paceSeasonPlanSelect } from "@/app/pace/seasonPlan/seasonPlanSelect";
 import { CrawlerDayUtils } from "@/app/pace/lib/crawlerDay/crawlerDayUtils";
 import { BurndownChartData, BurndownDay, BurndownRechartsData, BurndownRechartsRow, BurndownSlopeAnalysis, BurndownVelocityLine } from "@/app/pace/burndown/burndownTypes";
+import { dateRanges } from "@/lib/primatives/dates/dateStrings";
 
 // ---------------------------------------------------------------------------
 // Local input selectors
@@ -138,7 +139,7 @@ const selectBurndownRechartsData = createSelector(
       }
     }
 
-    // Precompute velocity line slope for interpolation
+    // Precompute velocity line slope for interpolation (weekday-based)
     let velocitySlope = 0;
     let velocityStartRemaining = 0;
     let velocityStartDate = "";
@@ -147,11 +148,8 @@ const selectBurndownRechartsData = createSelector(
       velocityStartDate = velocityLine.startDate;
       velocityEndDate = velocityLine.endDate;
       velocityStartRemaining = velocityLine.startRemaining;
-      // Days between start and end (approximate using string comparison for ISO dates)
-      const msPerDay = 86_400_000;
-      const totalMs = new Date(velocityEndDate).getTime() - new Date(velocityStartDate).getTime();
-      const totalDays = totalMs / msPerDay;
-      velocitySlope = totalDays > 0 ? -velocityStartRemaining / totalDays : 0;
+      const totalWeekdays = dateRanges.countWeekdays({ min: velocityStartDate, max: velocityEndDate });
+      velocitySlope = totalWeekdays > 0 ? -velocityStartRemaining / totalWeekdays : 0;
     }
 
     const rows: BurndownRechartsRow[] = burndownDays.map((day) => {
@@ -164,17 +162,11 @@ const selectBurndownRechartsData = createSelector(
         groupRemainingByKey[group.groupId] = group.remaining;
       }
 
-      // Interpolate velocity line value for this date
+      // Interpolate velocity line value for this date (weekday-based)
       let velocityRemaining: number | null = null;
-      if (velocityLine) {
-        const msPerDay = 86_400_000;
-        const dayMs = new Date(day.date).getTime();
-        const startMs = new Date(velocityStartDate).getTime();
-        const endMs = new Date(velocityEndDate).getTime();
-        if (dayMs >= startMs && dayMs <= endMs) {
-          const daysElapsed = (dayMs - startMs) / msPerDay;
-          velocityRemaining = Math.max(0, velocityStartRemaining + velocitySlope * daysElapsed);
-        }
+      if (velocityLine && day.date >= velocityStartDate && day.date <= velocityEndDate) {
+        const weekdaysElapsed = dateRanges.countWeekdays({ min: velocityStartDate, max: day.date });
+        velocityRemaining = Math.max(0, velocityStartRemaining + velocitySlope * weekdaysElapsed);
       }
 
       const row: BurndownRechartsRow = {
@@ -202,8 +194,6 @@ const selectBurndownRechartsData = createSelector(
 // Slope analysis — plain function (not a selector, windowDays is local state)
 // ---------------------------------------------------------------------------
 
-const MS_PER_DAY = 86_400_000;
-
 /**
  * Computes the N-day slope analysis centered on mainDate.
  *
@@ -222,10 +212,10 @@ export function computeSlopeAnalysis(
   mainDate: string,
   windowDays: number,
 ): BurndownSlopeAnalysis {
-  const idealDailyBurn = velocityLine
-    ? velocityLine.startRemaining /
-      Math.max(1, (new Date(velocityLine.endDate).getTime() - new Date(velocityLine.startDate).getTime()) / MS_PER_DAY)
+  const velocityWeekdays = velocityLine
+    ? dateRanges.countWeekdays({ min: velocityLine.startDate, max: velocityLine.endDate })
     : 0;
+  const idealDailyBurn = velocityWeekdays > 0 ? velocityLine!.startRemaining / velocityWeekdays : 0;
 
   // Find the present day and collect past-phase days in order
   const pastDays = burndownDays.filter((d) => d.phase === "past" || d.phase === "present");
