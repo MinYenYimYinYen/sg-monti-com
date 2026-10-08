@@ -9,14 +9,14 @@ export function NewGroupForm({
   existingGroupServCodeIds,
   progCodes,
   servCodeMap,
-  onSave,
-  onCancel,
+  onSaveAction,
+  onCancelAction,
 }: {
   existingGroupServCodeIds: Set<string>;
   progCodes: ReturnType<typeof progServSelect.progCodes>;
   servCodeMap: ReturnType<typeof progServSelect.servCodeMap>;
-  onSave: (assignmentGroupDoc: AssignmentGroupDoc) => void;
-  onCancel: () => void;
+  onSaveAction: (assignmentGroupDoc: AssignmentGroupDoc) => void;
+  onCancelAction: () => void;
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [label, setLabel] = useState("");
@@ -41,7 +41,7 @@ export function NewGroupForm({
   function handleSave() {
     if (selectedIds.size === 0) return;
     const sortedIds = [...selectedIds].sort();
-    onSave({
+    onSaveAction({
       groupId: sortedIds.join("+"),
       label: label.trim() || sortedIds.join("+"),
       servCodeIds: sortedIds,
@@ -100,7 +100,7 @@ export function NewGroupForm({
           Create ({selectedIds.size})
         </Button>
         <button
-          onClick={onCancel}
+          onClick={onCancelAction}
           className="text-[10px] text-muted-foreground hover:text-foreground"
         >
           Cancel

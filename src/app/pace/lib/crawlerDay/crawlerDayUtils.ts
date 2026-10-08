@@ -1,4 +1,7 @@
-import { CrawlerDay, CrawlerDayGroup } from "@/app/pace/lib/crawlerDay/CrawlerDay";
+import {
+  CrawlerDay,
+  CrawlerDayGroup,
+} from "@/app/pace/lib/crawlerDay/CrawlerDay";
 
 // ---------------------------------------------------------------------------
 // Filtering
@@ -8,7 +11,10 @@ function pastDays(days: CrawlerDay[], mainDate: string): CrawlerDay[] {
   return days.filter((d) => d.date < mainDate);
 }
 
-function presentDay(days: CrawlerDay[], mainDate: string): CrawlerDay | undefined {
+function presentDay(
+  days: CrawlerDay[],
+  mainDate: string,
+): CrawlerDay | undefined {
   return days.find((d) => d.date === mainDate);
 }
 
@@ -55,8 +61,13 @@ function bySequence(days: CrawlerDay[]): Map<string, CrawlerDay[]> {
   return result;
 }
 
-function byEmployee(days: CrawlerDay[]): Map<string, { day: CrawlerDay; group: CrawlerDayGroup }[]> {
-  const result = new Map<string, { day: CrawlerDay; group: CrawlerDayGroup }[]>();
+function byEmployee(
+  days: CrawlerDay[],
+): Map<string, { day: CrawlerDay; group: CrawlerDayGroup }[]> {
+  const result = new Map<
+    string,
+    { day: CrawlerDay; group: CrawlerDayGroup }[]
+  >();
   for (const day of days) {
     for (const group of day.groups) {
       for (const employee of group.employees) {
@@ -73,14 +84,24 @@ function byEmployee(days: CrawlerDay[]): Map<string, { day: CrawlerDay; group: C
 // As-of-mainDate group state
 // ---------------------------------------------------------------------------
 
-function groupPoolRemainingAsOf(days: CrawlerDay[], groupId: string, mainDate: string): number {
-  const present = days.find((d) => d.date === mainDate && d.phase === "present");
+function groupPoolRemainingAsOf(
+  days: CrawlerDay[],
+  groupId: string,
+  mainDate: string,
+): number {
+  const present = days.find(
+    (d) => d.date === mainDate && d.phase === "present",
+  );
   if (!present) return 0;
   const group = present.groups.find((g) => g.groupId === groupId);
   return group?.poolRemaining ?? 0;
 }
 
-function groupHasWorkAsOf(days: CrawlerDay[], groupId: string, mainDate: string): boolean {
+function groupHasWorkAsOf(
+  days: CrawlerDay[],
+  groupId: string,
+  mainDate: string,
+): boolean {
   return groupPoolRemainingAsOf(days, groupId, mainDate) > 0;
 }
 
@@ -90,10 +111,20 @@ function groupPaceAsOf(
   mainDate: string,
   teamGoalDailyRate: number,
   daysAvailable: number,
-): { poolRemaining: number; daysNeeded: number | null; daysEarlyLate: number | null; isOnTrack: boolean } {
+): {
+  poolRemaining: number;
+  daysNeeded: number | null;
+  daysEarlyLate: number | null;
+  isOnTrack: boolean;
+} {
   const poolRemaining = groupPoolRemainingAsOf(days, groupId, mainDate);
   if (teamGoalDailyRate <= 0) {
-    return { poolRemaining, daysNeeded: null, daysEarlyLate: null, isOnTrack: false };
+    return {
+      poolRemaining,
+      daysNeeded: null,
+      daysEarlyLate: null,
+      isOnTrack: false,
+    };
   }
   const daysNeeded = poolRemaining / teamGoalDailyRate;
   const daysEarlyLate = daysNeeded - daysAvailable;
@@ -108,23 +139,47 @@ function groupPaceAsOf(
 function sequenceCumulativeByDate(
   days: CrawlerDay[],
   sequenceId: string,
-): Map<string, { completed: number; remaining: number; totalPool: number; percentCompleted: number }> {
-  const result = new Map<string, { completed: number; remaining: number; totalPool: number; percentCompleted: number }>();
+): Map<
+  string,
+  {
+    completed: number;
+    remaining: number;
+    totalPool: number;
+    percentCompleted: number;
+  }
+> {
+  const result = new Map<
+    string,
+    {
+      completed: number;
+      remaining: number;
+      totalPool: number;
+      percentCompleted: number;
+    }
+  >();
 
   const groupTotalPools = new Map<string, number>();
   for (const day of days) {
     for (const group of day.groups) {
-      if (group.sequenceId === sequenceId && !groupTotalPools.has(group.groupId)) {
+      if (
+        group.sequenceId === sequenceId &&
+        !groupTotalPools.has(group.groupId)
+      ) {
         groupTotalPools.set(group.groupId, group.totalPool);
       }
     }
   }
-  const sequenceTotalPool = [...groupTotalPools.values()].reduce((sum, p) => sum + p, 0);
+  const sequenceTotalPool = [...groupTotalPools.values()].reduce(
+    (sum, p) => sum + p,
+    0,
+  );
 
   const lastKnownCompletedByGroup = new Map<string, number>();
 
   for (const day of days) {
-    const sequenceGroups = day.groups.filter((g) => g.sequenceId === sequenceId);
+    const sequenceGroups = day.groups.filter(
+      (g) => g.sequenceId === sequenceId,
+    );
     if (sequenceGroups.length === 0) continue;
 
     for (const group of sequenceGroups) {
@@ -137,7 +192,8 @@ function sequenceCumulativeByDate(
     }
 
     const remaining = sequenceTotalPool - totalCompleted;
-    const percentCompleted = sequenceTotalPool > 0 ? totalCompleted / sequenceTotalPool : 0;
+    const percentCompleted =
+      sequenceTotalPool > 0 ? totalCompleted / sequenceTotalPool : 0;
 
     result.set(day.date, {
       completed: totalCompleted,
@@ -180,7 +236,11 @@ function fillGroupsAcrossAllDays(days: CrawlerDay[]): CrawlerDay[] {
 
   // First pass: collect every groupId and its totalPool + label + sequenceId
   // from the first day it appears.
-  type GroupMeta = { label: string; sequenceId: string | null; totalPool: number };
+  type GroupMeta = {
+    label: string;
+    sequenceId: string | null;
+    totalPool: number;
+  };
   const groupMeta = new Map<string, GroupMeta>();
   for (const day of days) {
     for (const group of day.groups) {
@@ -226,7 +286,10 @@ function fillGroupsAcrossAllDays(days: CrawlerDay[]): CrawlerDay[] {
         poolRemaining: remaining,
         priceCompleted: 0,
         priceForecasted: 0,
-        percentCompleted: meta.totalPool > 0 ? (meta.totalPool - remaining) / meta.totalPool : 0,
+        percentCompleted:
+          meta.totalPool > 0
+            ? (meta.totalPool - remaining) / meta.totalPool
+            : 0,
         totalPool: meta.totalPool,
         cascadedToSuccessor: false,
         employees: [],
@@ -235,6 +298,16 @@ function fillGroupsAcrossAllDays(days: CrawlerDay[]): CrawlerDay[] {
 
     return { ...day, groups: filledGroups };
   });
+}
+
+function getLastDayOfAssignmentGroup(
+  groupId: string,
+  days: CrawlerDay[],
+): CrawlerDay | null {
+  const groupMap = byGroup(days);
+  const groupDays = groupMap.get(groupId);
+  if (!groupDays) return null;
+  return groupDays[groupDays.length - 1];
 }
 
 // ---------------------------------------------------------------------------

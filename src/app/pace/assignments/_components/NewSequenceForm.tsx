@@ -7,12 +7,12 @@ import { Button } from "@/style/components/button";
 
 export function NewSequenceForm({
   selectedGroups,
-  onSave,
-  onCancel,
+  onSaveAction,
+  onCancelAction,
 }: {
   selectedGroups: AssignmentGroup[];
-  onSave: (label: string, orderedGroupIds: string[]) => void;
-  onCancel: () => void;
+  onSaveAction: (label: string, orderedGroupIds: string[]) => void;
+  onCancelAction: () => void;
 }) {
   const [label, setLabel] = useState("");
   const [orderedGroups, setOrderedGroups] = useState<AssignmentGroup[]>(selectedGroups);
@@ -40,7 +40,7 @@ export function NewSequenceForm({
   function handleSave() {
     const trimmed = label.trim();
     if (!trimmed) return;
-    onSave(trimmed, orderedGroups.map((g) => g.groupId));
+    onSaveAction(trimmed, orderedGroups.map((g) => g.groupId));
   }
 
   return (
@@ -58,7 +58,7 @@ export function NewSequenceForm({
           onChange={(e) => setLabel(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave();
-            if (e.key === "Escape") onCancel();
+            if (e.key === "Escape") onCancelAction();
           }}
           placeholder="e.g. Lawn Renovation"
           autoFocus
@@ -112,7 +112,7 @@ export function NewSequenceForm({
           Create Sequence
         </Button>
         <button
-          onClick={onCancel}
+          onClick={onCancelAction}
           className="text-[10px] text-muted-foreground hover:text-foreground"
         >
           Cancel

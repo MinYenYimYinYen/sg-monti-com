@@ -24,7 +24,7 @@ export default function SanityLayout({ children }: { children: React.ReactNode }
     <SanityOptionsProvider>
       <PageLayout>
         <PageLayout.Header
-          left={<SanityLoadControls onLoad={load} />}
+          left={<SanityLoadControls onLoadAction={load} />}
           right={
             <>
               <TabNav items={TABS} rootHref="/sanity" />

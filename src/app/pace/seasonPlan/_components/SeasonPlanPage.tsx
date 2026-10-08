@@ -75,11 +75,8 @@ export function SeasonPlanPage() {
                   : emptyForm()
             }
             isEditing={mode === "edit"}
-            onSave={handleSave}
-            onCancel={() => {
-              setMode("list");
-              setEditingPlan(null);
-            }}
+            onSaveAction={handleSave}
+            onCancelAction={() => { setMode("list"); setEditingPlan(null); }}
           />
         </div>
       </div>

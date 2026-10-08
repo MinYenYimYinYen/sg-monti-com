@@ -50,10 +50,10 @@ export function GroupSequencePanel() {
               <GroupSequenceRow
                 key={sequence.sequenceId}
                 sequence={sequence}
-                groupMap={assignmentGroupMap as Map<string, import("@/app/pace/assignmentGroup/AssignmentGroupTypes").AssignmentGroup>}
-                onDelete={handleDelete}
-                onUpdateLabel={handleUpdateLabel}
-                onReorderGroups={handleReorderGroups}
+              groupMap={assignmentGroupMap as Map<string, import("@/app/pace/assignmentGroup/AssignmentGroupTypes").AssignmentGroup>}
+                onDeleteAction={handleDelete}
+                onUpdateLabelAction={handleUpdateLabel}
+                onReorderGroupsAction={handleReorderGroups}
               />
             ))}
           </Accordion>

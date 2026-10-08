@@ -11,10 +11,10 @@ import { Label } from "@/style/components/label";
 import { RefreshCw } from "lucide-react";
 
 type SanityLoadControlsProps = {
-  onLoad: () => void;
+  onLoadAction: () => void;
 };
 
-export function SanityLoadControls({ onLoad }: SanityLoadControlsProps) {
+export function SanityLoadControls({ onLoadAction }: SanityLoadControlsProps) {
   const dispatch = useAppDispatch();
   const globalSeason = useSelector(globalSettingsSelect.season);
   const seasonOverride = useSelector(sanitySelect.seasonOverride);
@@ -44,7 +44,7 @@ export function SanityLoadControls({ onLoad }: SanityLoadControlsProps) {
           disabled={globalSeason === undefined}
         />
       </div>
-      <Button variant="primary" intensity="solid" size="sm" onClick={onLoad} className="gap-1.5">
+      <Button variant="primary" intensity="solid" size="sm" onClick={onLoadAction} className="gap-1.5">
         <RefreshCw className="h-4 w-4" />
         Load
       </Button>

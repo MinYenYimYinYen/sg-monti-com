@@ -142,7 +142,7 @@ const selectRemainingWeekdaysByServCode = createSelector(
       if (servCode.alwaysAsap) continue;
       const plannedEnd = servCodePlannedEndMap.get(servCode.servCodeId);
       if (plannedEnd) {
-        const remaining = dateRanges.weekdaysBetween(mainDate, plannedEnd);
+        const remaining = dateRanges.countWeekdays({ min: mainDate, max: plannedEnd });
         result.set(servCode.servCodeId, remaining);
       }
       // ServCodes not in any season plan group are excluded from remaining weekdays
@@ -425,7 +425,7 @@ const selectEmployeeCardData = createSelector(
           const servCode = servCodeMap.get(servCodeId);
           const scMax = servCodePlannedEndMap.get(servCodeId) ?? plannedEnd ?? "";
           const remainingWeekdays = scMax
-            ? Math.max(0, dateRanges.weekdaysBetween(mainDate, scMax))
+          ? Math.max(0, dateRanges.countWeekdays({ min: mainDate, max: scMax }))
             : 0;
           const isOverdue = remainingWeekdays <= 0;
           const memberRequired = isOverdue || remainingWeekdays === 0
@@ -449,7 +449,7 @@ const selectEmployeeCardData = createSelector(
         if (combinedPool === 0) continue; // all members done
 
         const latestRemainingWeekdays = latestScMax
-          ? Math.max(0, dateRanges.weekdaysBetween(mainDate, latestScMax))
+          ? Math.max(0, dateRanges.countWeekdays({ min: mainDate, max: latestScMax }))
           : 0;
 
         // Compute the group's total required rate using the season plan's plannedEnd as the
@@ -457,7 +457,7 @@ const selectEmployeeCardData = createSelector(
         const deadlineDate = plannedEnd ?? latestScMax;
         // Allow negative values — past-deadline groups still need a meaningful delta for goal/avg rows.
         const deadlineWeekdays = deadlineDate
-          ? dateRanges.weekdaysBetween(mainDate, deadlineDate)
+          ? dateRanges.countWeekdays({ min: mainDate, max: deadlineDate })
           : 0;
         // Required rate is only meaningful when deadline is in the future.
         const groupRequiredRate = deadlineWeekdays > 0

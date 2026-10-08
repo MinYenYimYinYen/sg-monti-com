@@ -348,7 +348,7 @@ export function runDayCrawlSimulation(
           const pool = pools.get(servCodeId) ?? 0;
           const entry = servCodeEntries.find((e) => e.servCodeId === servCodeId);
           const scMax = entry?.plannedEnd ?? day;
-          const remainingWeekdays = Math.max(1, dateRanges.weekdaysBetween(day, scMax));
+          const remainingWeekdays = Math.max(1, dateRanges.countWeekdays({ min: day, max: scMax }));
           return pool / remainingWeekdays;
         });
 

@@ -25,12 +25,12 @@ import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 
 type EmployeeAvailabilitySheetProps = {
   employee: Employee;
-  onClose: () => void;
+  onCloseAction: () => void;
 };
 
 export function EmployeeAvailabilitySheet({
   employee,
-  onClose,
+  onCloseAction,
 }: EmployeeAvailabilitySheetProps) {
   const { upsert, deleteOne } = useEmployeeAvailability();
   const availabilityByEmployeeId = useSelector(employeeAvailabilitySelect.byEmployeeId);
@@ -42,7 +42,6 @@ export function EmployeeAvailabilitySheet({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const hasExistingDoc = !!existingDoc;
-  const hasAnyConstraint = startDate !== "" || endDate !== "";
 
   const handleSave = async () => {
     setSaveStatus("saving");
@@ -56,16 +55,16 @@ export function EmployeeAvailabilitySheet({
 
   const handleSuccessComplete = () => {
     setSaveStatus("idle");
-    onClose();
+    onCloseAction();
   };
 
   const handleDelete = async () => {
     await deleteOne(employee.employeeId);
-    onClose();
+    onCloseAction();
   };
 
   return (
-    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Sheet open onOpenChange={(open) => { if (!open) onCloseAction(); }}>
       <SheetContent side="right" className="w-[380px] sm:max-w-[380px]">
         <SheetHeader>
           <SheetTitle>{employee.name}</SheetTitle>
@@ -110,7 +109,7 @@ export function EmployeeAvailabilitySheet({
             >
               Save
             </SaveButton>
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onCloseAction}>
               Cancel
             </Button>
           </div>

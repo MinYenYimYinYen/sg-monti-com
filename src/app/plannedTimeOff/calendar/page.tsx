@@ -328,7 +328,7 @@ export default function TimeOffCalendarPage() {
           defaultDate={sheetDefaultDate}
           existingDoc={editingPto}
           employees={employees}
-          onClose={handleClose}
+          onCloseAction={handleClose}
         />
       )}
 
@@ -337,7 +337,7 @@ export default function TimeOffCalendarPage() {
         <UnplannedAbsenceSheet
           defaultDate={sheetDefaultDate}
           employees={employees}
-          onClose={handleUnplannedClose}
+          onCloseAction={handleUnplannedClose}
         />
       )}
     </Container>

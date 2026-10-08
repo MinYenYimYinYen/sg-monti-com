@@ -18,10 +18,10 @@ import { ScrollArea } from "@/style/components/scroll-area";
 
 type Props = {
   open: boolean;
-  onClose: () => void;
+  onCloseAction: () => void;
 };
 
-export function PrepayConfigOpenSheet({ open, onClose }: Props) {
+export function PrepayConfigOpenSheet({ open, onCloseAction }: Props) {
   const dispatch = useAppDispatch();
   const configsWithDisplayName = useSelector(prepayConfigSelect.configsWithDisplayName);
   const currentSaId = useSelector(authSelect.user)?.saId;
@@ -38,11 +38,11 @@ export function PrepayConfigOpenSheet({ open, onClose }: Props) {
       const { displayName: _dn, ...doc } = config;
       dispatch(prepayConfigActions.setDraft(doc));
     }
-    onClose();
+    onCloseAction();
   };
 
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) onCloseAction(); }}>
       <SheetContent side="left" className="w-80 flex flex-col gap-3 p-4">
         <SheetHeader>
           <SheetTitle>Open Config</SheetTitle>

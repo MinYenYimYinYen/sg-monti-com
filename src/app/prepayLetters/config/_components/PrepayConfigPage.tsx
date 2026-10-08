@@ -185,7 +185,7 @@ export function PrepayConfigPage() {
                 <Label>Universal Message</Label>
                 <MentionEditor
                   value={draft.universalMessage}
-                  onChange={(html) => update({ universalMessage: html })}
+                  onChangeAction={(html) => update({ universalMessage: html })}
                   vars={letterVars}
                   parsers={prepayLetterVarParsers}
                   disabled={isReadOnly}
@@ -199,7 +199,7 @@ export function PrepayConfigPage() {
                   <Label>Auto-Renew Header</Label>
                   <MentionEditor
                     value={draft.autoRenewHeader}
-                    onChange={(html) => update({ autoRenewHeader: html })}
+                    onChangeAction={(html) => update({ autoRenewHeader: html })}
                     vars={letterVars}
                     parsers={prepayLetterVarParsers}
                     disabled={isReadOnly}
@@ -212,7 +212,7 @@ export function PrepayConfigPage() {
                   <Label>Don&apos;t Auto-Renew Header</Label>
                   <MentionEditor
                     value={draft.dontAutoRenewHeader}
-                    onChange={(html) => update({ dontAutoRenewHeader: html })}
+                    onChangeAction={(html) => update({ dontAutoRenewHeader: html })}
                     vars={letterVars}
                     parsers={prepayLetterVarParsers}
                     disabled={isReadOnly}
@@ -227,7 +227,7 @@ export function PrepayConfigPage() {
                   <Label>Auto-Renew Message</Label>
                   <MentionEditor
                     value={draft.autoRenewMessage}
-                    onChange={(html) => update({ autoRenewMessage: html })}
+                    onChangeAction={(html) => update({ autoRenewMessage: html })}
                     vars={letterVars}
                     parsers={prepayLetterVarParsers}
                     disabled={isReadOnly}
@@ -240,7 +240,7 @@ export function PrepayConfigPage() {
                   <Label>Don&apos;t Auto-Renew Message</Label>
                   <MentionEditor
                     value={draft.dontAutoRenewMessage}
-                    onChange={(html) => update({ dontAutoRenewMessage: html })}
+                    onChangeAction={(html: string) => update({ dontAutoRenewMessage: html })}
                     vars={letterVars}
                     parsers={prepayLetterVarParsers}
                     disabled={isReadOnly}

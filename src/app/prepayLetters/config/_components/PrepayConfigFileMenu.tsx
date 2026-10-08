@@ -213,7 +213,7 @@ export function PrepayConfigFileMenu() {
 
       <PrepayConfigOpenSheet
         open={openSheetVisible}
-        onClose={() => setOpenSheetVisible(false)}
+        onCloseAction={() => { setOpenSheetVisible(false); }}
       />
     </>
   );

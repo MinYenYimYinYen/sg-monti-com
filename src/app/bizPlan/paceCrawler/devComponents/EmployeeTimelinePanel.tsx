@@ -168,7 +168,7 @@ export function EmployeeTimelinePanel() {
       {availabilitySheetEmployee && (
         <EmployeeAvailabilitySheet
           employee={availabilitySheetEmployee}
-          onClose={() => setAvailabilitySheetEmployee(null)}
+          onCloseAction={() => { setAvailabilitySheetEmployee(null); }}
         />
       )}
     </div>

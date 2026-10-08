@@ -12,10 +12,10 @@ import { seasonIncreasesActions } from "@/app/priceIncrease/seasonIncreases/seas
 
 type InlinePlanEditorProps = {
   /** Called after a new plan is saved, with the new seasonIncreasesId to auto-select */
-  onPlanSaved: (seasonIncreasesId: string) => void;
+  onPlanSavedAction: (seasonIncreasesId: string) => void;
 };
 
-export function InlinePlanEditor({ onPlanSaved }: InlinePlanEditorProps) {
+export function InlinePlanEditor({ onPlanSavedAction }: InlinePlanEditorProps) {
   const dispatch = useAppDispatch();
   const draft = useSelector(priceIncreaseConfigSelect.inlinePlanDraft);
   const isOpen = useSelector(priceIncreaseConfigSelect.inlinePlanIsOpen);
@@ -37,7 +37,7 @@ export function InlinePlanEditor({ onPlanSaved }: InlinePlanEditorProps) {
         config: { loadingMsg: isNew ? "Creating season plan..." : "Saving season plan..." },
       }),
     );
-    onPlanSaved(draft.seasonIncreasesId);
+    onPlanSavedAction(draft.seasonIncreasesId);
     dispatch(priceIncreaseConfigActions.closeInlinePlan());
   };
 

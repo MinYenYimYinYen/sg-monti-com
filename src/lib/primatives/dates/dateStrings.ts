@@ -159,14 +159,34 @@ function dateRangeToDate(
   return { min: dateRange.min, max: date }; // date is within range
 }
 
+type WeekdayInclude = { start?: boolean; end?: boolean };
+
 /**
- * Counts weekdays (Mon–Fri) in a date range, inclusive of both endpoints.
+ * Counts weekdays (Mon–Fri) in a date range.
+ * By default both endpoints are included (`include.start` and `include.end` both default to `true`).
+ * Pass `{ start: false }` or `{ end: false }` to exclude an endpoint.
+ * Exclusion is handled by advancing/retreating the boundary by one calendar day before the
+ * arithmetic runs, so weekend endpoints are handled correctly (excluding a Saturday start
+ * does not accidentally subtract a weekday).
  * O(1) — uses arithmetic instead of allocating a day array.
  */
-function countWeekdays(dateRange: TRange<string>): number {
+function countWeekdays(
+  dateRange: TRange<string>,
+  include: WeekdayInclude = {},
+): number {
   if (!isValidDateRange(dateRange)) return 0;
-  const start = parseISO(dateRange.min);
-  const end = parseISO(dateRange.max);
+
+  const { start: includeStart = true, end: includeEnd = true } = include;
+
+  let start = parseISO(dateRange.min);
+  let end = parseISO(dateRange.max);
+
+  // Shift boundaries inward for excluded endpoints
+  if (!includeStart) start = fnsAddDays(start, 1);
+  if (!includeEnd) end = fnsSubDays(end, 1);
+
+  // After shifting, the range may have collapsed
+  if (end < start) return 0;
 
   const totalDays = differenceInCalendarDays(end, start) + 1;
   const fullWeeks = Math.floor(totalDays / 7);
@@ -181,10 +201,6 @@ function countWeekdays(dateRange: TRange<string>): number {
   }
 
   return fullWeeks * 5 + partialWeekdays;
-}
-
-function countWeekdaysBetween(dateRange: TRange<string>) {
-  return countWeekdays(dateRange) - 1;
 }
 
 /** Clamps a date string to [min, max] using lexicographic ISO comparison. */
@@ -230,20 +246,6 @@ function calendarDaysBetween(from: string, to: string): number {
   return differenceInCalendarDays(parseISO(to), parseISO(from));
 }
 
-/**
- * Counts the number of weekdays between two date strings (exclusive of start, inclusive of end).
- * Returns a positive number if end > start, negative if end < start.
- */
-function weekdaysBetween(start: string, end: string): number {
-  if (start === end) return 0;
-  const forward = start < end;
-  const range: TRange<string> = forward
-    ? { min: start, max: end }
-    : { min: end, max: start };
-  // countWeekdays is inclusive of both endpoints; subtract 1 to exclude start
-  const count = countWeekdays(range) - 1;
-  return forward ? count : -count;
-}
 
 export const dateStrings = {
   today,
@@ -278,7 +280,5 @@ export const dateRanges = {
   dateRangeFromDate,
   dateRangeToDate,
   countWeekdays,
-  countWeekdaysBetween,
   calendarDaysBetween,
-  weekdaysBetween,
 };

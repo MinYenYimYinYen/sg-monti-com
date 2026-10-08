@@ -36,14 +36,14 @@ type PlannedTimeOffSheetProps = {
   defaultDate: string;
   existingDoc?: PlannedTimeOff;
   employees: Employee[];
-  onClose: () => void;
+  onCloseAction: () => void;
 };
 
 export function PlannedTimeOffSheet({
   defaultDate,
   existingDoc,
   employees,
-  onClose,
+  onCloseAction,
 }: PlannedTimeOffSheetProps) {
   const dispatch = useAppDispatch();
 
@@ -96,7 +96,7 @@ export function PlannedTimeOffSheet({
 
   const handleSuccessComplete = () => {
     setSaveStatus("idle");
-    onClose();
+    onCloseAction();
   };
 
   const handleDelete = async () => {
@@ -107,11 +107,11 @@ export function PlannedTimeOffSheet({
         config: { force: true },
       }),
     );
-    onClose();
+    onCloseAction();
   };
 
   return (
-    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Sheet open onOpenChange={(open) => { if (!open) onCloseAction(); }}>
       <SheetContent side="right" className="w-[400px] sm:max-w-[400px]">
         <SheetHeader>
           <SheetTitle>{isEditMode ? "Edit Time Off" : "Add Time Off"}</SheetTitle>
@@ -185,7 +185,7 @@ export function PlannedTimeOffSheet({
             >
               Save
             </SaveButton>
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onCloseAction}>
               Cancel
             </Button>
           </div>

@@ -2,12 +2,17 @@
 
 import { useSelector } from "react-redux";
 import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
-import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/style/components/popover";
 import { dateRanges } from "@/lib/primatives/dates/dateStrings";
 import { holidaySelect } from "@/app/holiday/holidaySelect";
-import { AppState } from "@/store";
+import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
+import { paceSelect } from "@/app/pace/paceSelect";
 
-const selectMainDate = (state: AppState): string => state.pace.mainDate;
+
 
 /**
  * Computes feasibility for a single assignment group directly from the hydrated
@@ -15,11 +20,15 @@ const selectMainDate = (state: AppState): string => state.pace.mainDate;
  * No engine run needed — the data is already in the selector layer.
  */
 export function FeasibilityBadge({ groupId }: { groupId: string }) {
-  const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
+  const assignmentGroupMap = useSelector(
+    paceAssignmentGroupSelect.assignmentGroupMap,
+  );
   const holidayDates = useSelector(holidaySelect.holidayDates);
-  const mainDate = useSelector(selectMainDate);
+  const mainDate = useSelector(paceSelect.mainDate);
 
-  const assignmentGroup = (assignmentGroupMap as Map<string, import("@/app/pace/assignmentGroup/AssignmentGroupTypes").AssignmentGroup>).get(groupId);
+  const assignmentGroup = (
+    assignmentGroupMap as Map<string, AssignmentGroup>
+  ).get(groupId);
   if (!assignmentGroup) return null;
 
   const { plannedEnd, goalsByEmployee, assignedEmployeeIds } = assignmentGroup;
@@ -39,7 +48,7 @@ export function FeasibilityBadge({ groupId }: { groupId: string }) {
   // Compute daysAvailable
   let daysAvailable = 0;
   if (plannedEnd && plannedEnd > mainDate) {
-    const rawWeekdays = dateRanges.weekdaysBetween(mainDate, plannedEnd);
+    const rawWeekdays = dateRanges.countWeekdays({ min: mainDate, max: plannedEnd });
     let holidayCount = 0;
     for (const holidayDate of holidayDates) {
       if (holidayDate > mainDate && holidayDate <= plannedEnd) holidayCount++;
@@ -51,16 +60,11 @@ export function FeasibilityBadge({ groupId }: { groupId: string }) {
   const hasMissingGoals = missingGoals.length > 0;
   const noData = hasMissingGoals || teamGoalDailyRate === 0;
 
-  // We don't have activePool here without running the engine — show goal/days info only
-  const daysNeeded: number | null = null; // requires activePool from engine
+  const daysNeeded: number | null = null;
   const daysEarlyLate: number | null = null;
   const isOnTrack = false;
 
-  const statusIcon = noData
-    ? "—"
-    : isOverdue
-      ? "❌"
-      : "📅";
+  const statusIcon = noData ? "—" : isOverdue ? "❌" : "📅";
 
   const statusColor = noData
     ? "text-muted-foreground/50"
@@ -73,13 +77,17 @@ export function FeasibilityBadge({ groupId }: { groupId: string }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className={`text-[9px] font-mono font-semibold ${statusColor} hover:opacity-80`}>
+        <button
+          className={`text-[9px] font-mono font-semibold ${statusColor} hover:opacity-80`}
+        >
           {statusIcon}
           {label}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-52 text-xs" align="start">
-        <p className="font-semibold text-foreground mb-2 text-[11px]">Feasibility</p>
+        <p className="font-semibold text-foreground mb-2 text-[11px]">
+          Feasibility
+        </p>
         <div className="space-y-1">
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Goal $/day</span>
@@ -94,7 +102,9 @@ export function FeasibilityBadge({ groupId }: { groupId: string }) {
             <span className="font-mono">{daysAvailable}</span>
           </div>
           {isOverdue && (
-            <p className="text-[10px] text-destructive pt-1">⚠ Past planned end date</p>
+            <p className="text-[10px] text-destructive pt-1">
+              ⚠ Past planned end date
+            </p>
           )}
           {missingGoals.length > 0 && (
             <p className="text-[10px] text-secondary pt-1">

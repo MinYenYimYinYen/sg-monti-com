@@ -13,7 +13,7 @@ type WeekRangeSliderProps = {
   sliderMax: string;
   start: string;
   end: string;
-  onChange: (start: string, end: string) => void;
+  onChangeAction: (start: string, end: string) => void;
 };
 
 export function WeekRangeSlider({
@@ -21,7 +21,7 @@ export function WeekRangeSlider({
   sliderMax,
   start,
   end,
-  onChange,
+  onChangeAction,
 }: WeekRangeSliderProps) {
   const startMonday = mondayOf(sliderMin);
   const endMonday = mondayOf(sliderMax);
@@ -70,9 +70,9 @@ export function WeekRangeSlider({
       );
       const newIdx = Math.round(movePct * totalWeeks);
       if (draggingStart) {
-        onChange(mondays[Math.min(newIdx, endIdx)], mondays[endIdx]);
+        onChangeAction(mondays[Math.min(newIdx, endIdx)], mondays[endIdx]);
       } else {
-        onChange(mondays[startIdx], mondays[Math.max(newIdx, startIdx)]);
+        onChangeAction(mondays[startIdx], mondays[Math.max(newIdx, startIdx)]);
       }
     }
 

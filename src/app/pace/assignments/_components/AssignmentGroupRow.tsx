@@ -8,16 +8,16 @@ export function AssignmentGroupRow({
   group,
   checked,
   sequenceLabel,
-  onToggle,
-  onDelete,
-  onUpdateLabel,
+  onToggleAction,
+  onDeleteAction,
+  onUpdateLabelAction,
 }: {
   group: AssignmentGroup;
   checked: boolean;
   sequenceLabel: string | null;
-  onToggle: (groupId: string) => void;
-  onDelete: (id: string) => void;
-  onUpdateLabel: (id: string, label: string) => void;
+  onToggleAction: (groupId: string) => void;
+  onDeleteAction: (id: string) => void;
+  onUpdateLabelAction: (id: string, label: string) => void;
 }) {
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(group.label);
@@ -29,7 +29,7 @@ export function AssignmentGroupRow({
       <input
         type="checkbox"
         checked={checked}
-        onChange={() => onToggle(group.groupId)}
+        onChange={() => onToggleAction(group.groupId)}
         className="accent-primary mt-0.5 shrink-0"
       />
 
@@ -42,7 +42,7 @@ export function AssignmentGroupRow({
               onChange={(e) => setLabelDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  onUpdateLabel(group.groupId, labelDraft.trim() || group.label);
+                  onUpdateLabelAction(group.groupId, labelDraft.trim() || group.label);
                   setEditingLabel(false);
                 }
                 if (e.key === "Escape") {
@@ -55,7 +55,7 @@ export function AssignmentGroupRow({
             />
             <button
               onClick={() => {
-                onUpdateLabel(group.groupId, labelDraft.trim() || group.label);
+                onUpdateLabelAction(group.groupId, labelDraft.trim() || group.label);
                 setEditingLabel(false);
               }}
               className="p-0.5 rounded text-accent hover:bg-accent/10"
@@ -105,7 +105,7 @@ export function AssignmentGroupRow({
           <div className="flex items-center gap-1">
             <button
               onClick={() => {
-                onDelete(group.groupId);
+                onDeleteAction(group.groupId);
                 setConfirmDelete(false);
               }}
               className="text-[9px] text-destructive font-semibold hover:underline"

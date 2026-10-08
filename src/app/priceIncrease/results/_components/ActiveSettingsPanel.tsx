@@ -187,7 +187,7 @@ export function ActiveSettingsPanel() {
             </Button>
           )}
         </div>
-        <InlinePlanEditor onPlanSaved={handlePlanSaved} />
+        <InlinePlanEditor onPlanSavedAction={handlePlanSaved} />
       </div>
 
       {/* Caps */}

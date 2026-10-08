@@ -15,13 +15,13 @@ import {
 export function SeasonPlanForm({
   initialForm,
   isEditing,
-  onSave,
-  onCancel,
+  onSaveAction,
+  onCancelAction,
 }: {
   initialForm: FormState;
   isEditing: boolean;
-  onSave: (form: FormState) => void;
-  onCancel: () => void;
+  onSaveAction: (form: FormState) => void;
+  onCancelAction: () => void;
 }) {
   const [form, setForm] = useState<FormState>(initialForm);
   const assignmentGroups = useSelector(seasonPlanPageSelect.assignmentGroups);
@@ -54,7 +54,7 @@ export function SeasonPlanForm({
   function handleSubmit() {
     const trimmedName = form.name.trim();
     if (!trimmedName) return;
-    onSave({
+    onSaveAction({
       ...form,
       name: trimmedName,
       groupSchedules: form.groupSchedules.filter((s) => s.plannedStart && s.plannedEnd),
@@ -169,7 +169,7 @@ export function SeasonPlanForm({
                     sliderMax={sliderMax}
                     start={currentStart}
                     end={currentEnd}
-                    onChange={(start, end) => setGroupSchedule(assignmentGroup.groupId, start, end)}
+                    onChangeAction={(start, end) => setGroupSchedule(assignmentGroup.groupId, start, end)}
                   />
                 </div>
               </div>
@@ -187,7 +187,7 @@ export function SeasonPlanForm({
           {isEditing ? "Save Changes" : "Create Plan"}
         </button>
         <button
-          onClick={onCancel}
+          onClick={onCancelAction}
           className="h-8 px-3 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
         >
           Cancel

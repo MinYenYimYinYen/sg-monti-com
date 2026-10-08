@@ -13,7 +13,7 @@ type MentionEditorMode = "vars" | "resolved";
 
 type Props<T extends FlatVars> = {
   value: string;
-  onChange: (html: string) => void;
+  onChangeAction: (html: string) => void;
   vars: T;
   parsers: VarParsers<T>;
   disabled?: boolean;
@@ -41,7 +41,7 @@ type Props<T extends FlatVars> = {
  */
 export function MentionEditor<T extends FlatVars>({
   value,
-  onChange,
+  onChangeAction,
   vars,
   parsers,
   disabled = false,
@@ -52,6 +52,7 @@ export function MentionEditor<T extends FlatVars>({
 
   // Ref so the suggestion callback always reads the latest vars without stale captures.
   const varsRef = useRef(vars);
+  // eslint-disable-next-line react-hooks/refs
   varsRef.current = vars;
 
   const editor = useEditor({
@@ -82,7 +83,9 @@ export function MentionEditor<T extends FlatVars>({
             (node.attrs.label as string | null) ?? `@${node.attrs.id as string}`,
           ];
         },
+        // eslint-disable-next-line react-hooks/refs
         suggestion: buildFlatMentionSuggestion({
+          // eslint-disable-next-line react-hooks/refs
           getVars: () => varsRef.current,
         }),
       }),
@@ -97,7 +100,7 @@ export function MentionEditor<T extends FlatVars>({
       },
     },
     onUpdate({ editor: ed }) {
-      onChange(ed.getHTML());
+      onChangeAction(ed.getHTML());
     },
   });
 

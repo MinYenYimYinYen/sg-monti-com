@@ -32,13 +32,13 @@ import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 type UnplannedAbsenceSheetProps = {
   defaultDate: string;
   employees: Employee[];
-  onClose: () => void;
+  onCloseAction: () => void;
 };
 
 export function UnplannedAbsenceSheet({
   defaultDate,
   employees,
-  onClose,
+  onCloseAction,
 }: UnplannedAbsenceSheetProps) {
   const dispatch = useAppDispatch();
 
@@ -86,11 +86,11 @@ export function UnplannedAbsenceSheet({
 
   const handleSuccessComplete = () => {
     setSaveStatus("idle");
-    onClose();
+    onCloseAction();
   };
 
   return (
-    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Sheet open onOpenChange={(open) => { if (!open) onCloseAction(); }}>
       <SheetContent side="right" className="w-[400px] sm:max-w-[400px]">
         <SheetHeader className="bg-destructive/30 -mx-6 -mt-6 px-6 pt-6 pb-4 mb-6 rounded-t-lg">
           <SheetTitle className="text-destructive">Record Unplanned Absence</SheetTitle>
@@ -169,7 +169,7 @@ export function UnplannedAbsenceSheet({
             >
               Record Absence
             </SaveButton>
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onCloseAction}>
               Cancel
             </Button>
           </div>

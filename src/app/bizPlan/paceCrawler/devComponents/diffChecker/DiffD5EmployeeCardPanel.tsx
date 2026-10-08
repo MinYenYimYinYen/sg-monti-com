@@ -34,7 +34,7 @@ function getAvailabilityStatus(
     return {
       kind: "not_started",
       startDate: availability.startDate,
-      daysUntilStart: dateRanges.weekdaysBetween(mainDate, availability.startDate),
+      daysUntilStart: dateRanges.countWeekdays({ min: mainDate, max: availability.startDate }, { start: false }),
     };
   }
   if (availability.endDate && mainDate > availability.endDate) {

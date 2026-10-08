@@ -160,7 +160,7 @@ export function SettingsSheet() {
             </div>
 
             {/* Inline plan editor */}
-            <InlinePlanEditor onPlanSaved={handlePlanSaved} />
+            <InlinePlanEditor onPlanSavedAction={handlePlanSaved} />
           </div>
 
           {/* Caps */}

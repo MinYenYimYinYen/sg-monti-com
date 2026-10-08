@@ -180,7 +180,7 @@ export function EmployeeAssignmentCard({ employeeId }: { employeeId: string }) {
       {availabilitySheetEmployee && (
         <EmployeeAvailabilitySheet
           employee={availabilitySheetEmployee}
-          onClose={() => setAvailabilitySheetEmployee(null)}
+          onCloseAction={() => { setAvailabilitySheetEmployee(null); }}
         />
       )}
     </div>

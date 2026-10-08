@@ -13,15 +13,15 @@ import {
 export function GroupSequenceRow({
   sequence,
   groupMap,
-  onDelete,
-  onUpdateLabel,
-  onReorderGroups,
+  onDeleteAction,
+  onUpdateLabelAction,
+  onReorderGroupsAction,
 }: {
   sequence: GroupSequence;
   groupMap: Map<string, AssignmentGroup>;
-  onDelete: (sequenceId: string) => void;
-  onUpdateLabel: (sequenceId: string, label: string) => void;
-  onReorderGroups: (sequenceId: string, groupIds: string[]) => void;
+  onDeleteAction: (sequenceId: string) => void;
+  onUpdateLabelAction: (sequenceId: string, label: string) => void;
+  onReorderGroupsAction: (sequenceId: string, groupIds: string[]) => void;
 }) {
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(sequence.label);
@@ -54,7 +54,7 @@ export function GroupSequenceRow({
 
   function handleDrop() {
     dragIndexRef.current = null;
-    onReorderGroups(sequence.sequenceId, localGroupIds);
+    onReorderGroupsAction(sequence.sequenceId, localGroupIds);
   }
 
   return (
@@ -72,7 +72,7 @@ export function GroupSequenceRow({
                 onChange={(e) => setLabelDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    onUpdateLabel(sequence.sequenceId, labelDraft.trim() || sequence.label);
+                    onUpdateLabelAction(sequence.sequenceId, labelDraft.trim() || sequence.label);
                     setEditingLabel(false);
                   }
                   if (e.key === "Escape") {
@@ -85,7 +85,7 @@ export function GroupSequenceRow({
               />
               <button
                 onClick={() => {
-                  onUpdateLabel(sequence.sequenceId, labelDraft.trim() || sequence.label);
+                  onUpdateLabelAction(sequence.sequenceId, labelDraft.trim() || sequence.label);
                   setEditingLabel(false);
                 }}
                 className="p-0.5 rounded text-accent hover:bg-accent/10 shrink-0"
@@ -129,7 +129,7 @@ export function GroupSequenceRow({
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => {
-                    onDelete(sequence.sequenceId);
+                    onDeleteAction(sequence.sequenceId);
                     setConfirmDelete(false);
                   }}
                   className="text-[9px] text-destructive font-semibold hover:underline"

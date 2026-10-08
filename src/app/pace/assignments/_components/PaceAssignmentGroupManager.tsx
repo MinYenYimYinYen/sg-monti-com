@@ -98,11 +98,11 @@ export function PaceAssignmentGroupManager() {
             existingGroupServCodeIds={existingGroupServCodeIds}
             progCodes={progCodes}
             servCodeMap={servCodeMap}
-            onSave={(assignmentGroupDoc) => {
+            onSaveAction={(assignmentGroupDoc) => {
               void upsertGroup(assignmentGroupDoc);
               setShowNewForm(false);
             }}
-            onCancel={() => setShowNewForm(false)}
+            onCancelAction={() => setShowNewForm(false)}
           />
         </div>
       )}
@@ -111,8 +111,8 @@ export function PaceAssignmentGroupManager() {
         <div className="shrink-0 p-3 border-b border-border">
           <NewSequenceForm
             selectedGroups={selectedGroupsInOrder}
-            onSave={handleCreateSequence}
-            onCancel={() => {
+            onSaveAction={handleCreateSequence}
+            onCancelAction={() => {
               setShowSequenceForm(false);
               setCheckedGroupIds([]);
             }}
@@ -135,12 +135,12 @@ export function PaceAssignmentGroupManager() {
               group={assignmentGroup}
               checked={checkedSet.has(assignmentGroup.groupId)}
               sequenceLabel={seq?.label ?? null}
-              onToggle={toggleGroup}
-              onDelete={(id) => {
+              onToggleAction={toggleGroup}
+              onDeleteAction={(id: string) => {
                 void deleteGroup(id);
                 setCheckedGroupIds((prev) => prev.filter((gid) => gid !== id));
               }}
-              onUpdateLabel={(id, label) => {
+              onUpdateLabelAction={(id: string, label: string) => {
                 const g = assignmentGroups.find((gr) => gr.groupId === id);
                 if (g) void upsertGroup({ groupId: g.groupId, label, servCodeIds: g.servCodeIds });
               }}
