@@ -3,7 +3,7 @@ import { AppState } from "@/store";
 import { paceEngineSelect } from "@/app/pace/paceEngineSelect";
 import { paceSeasonPlanSelect } from "@/app/pace/seasonPlan/seasonPlanSelect";
 import { CrawlerDayUtils } from "@/app/pace/lib/crawlerDay/crawlerDayUtils";
-import { BurndownChartData, BurndownDay, BurndownRechartsData, BurndownRechartsRow, BurndownVelocityLine } from "@/app/pace/burndown/burndownTypes";
+import { BurndownChartData, BurndownDay, BurndownRechartsData, BurndownRechartsRow, BurndownSlopeAnalysis, BurndownVelocityLine } from "@/app/pace/burndown/burndownTypes";
 
 // ---------------------------------------------------------------------------
 // Local input selectors
@@ -197,6 +197,127 @@ const selectBurndownRechartsData = createSelector(
     };
   },
 );
+
+// ---------------------------------------------------------------------------
+// Slope analysis — plain function (not a selector, windowDays is local state)
+// ---------------------------------------------------------------------------
+
+const MS_PER_DAY = 86_400_000;
+
+/**
+ * Computes the N-day slope analysis centered on mainDate.
+ *
+ * Look-back: finds the past-phase day N days before mainDate (by calendar days,
+ * not weekday count — the burndown array only has weekdays, so we walk back
+ * through the array to find the Nth past-phase entry).
+ *
+ * Look-forward: projects the actual slope N calendar days past mainDate to
+ * produce the end point of the slope line.
+ *
+ * Returns null slopeLine when there are fewer than N past-phase days available.
+ */
+export function computeSlopeAnalysis(
+  burndownDays: BurndownDay[],
+  velocityLine: BurndownVelocityLine | null,
+  mainDate: string,
+  windowDays: number,
+): BurndownSlopeAnalysis {
+  const idealDailyBurn = velocityLine
+    ? velocityLine.startRemaining /
+      Math.max(1, (new Date(velocityLine.endDate).getTime() - new Date(velocityLine.startDate).getTime()) / MS_PER_DAY)
+    : 0;
+
+  // Find the present day and collect past-phase days in order
+  const pastDays = burndownDays.filter((d) => d.phase === "past" || d.phase === "present");
+  const presentIndex = pastDays.findIndex((d) => d.date === mainDate);
+  const presentDay = presentIndex >= 0 ? pastDays[presentIndex] : pastDays[pastDays.length - 1];
+
+  if (!presentDay || pastDays.length < 2) {
+    return {
+      windowDays,
+      windowStartDate: mainDate,
+      windowEndDate: mainDate,
+      actualDailyBurn: 0,
+      idealDailyBurn,
+      variance: -idealDailyBurn,
+      variancePct: -1,
+      slopeLine: null as null,
+    };
+  }
+
+  // Walk back N past-phase entries from the present day
+  const presentIdx = pastDays.indexOf(presentDay);
+  const lookbackIdx = Math.max(0, presentIdx - windowDays);
+  const windowStartDay = pastDays[lookbackIdx];
+  const actualWindowDays = presentIdx - lookbackIdx;
+
+  const actualDailyBurn =
+    actualWindowDays > 0
+      ? (windowStartDay.totalRemaining - presentDay.totalRemaining) / actualWindowDays
+      : 0;
+
+  const variance = actualDailyBurn - idealDailyBurn;
+  const variancePct = idealDailyBurn > 0 ? variance / idealDailyBurn : 0;
+
+  // Project slope forward using the same weekday-based actualDailyBurn rate.
+  // The pivot is pinned to mainDate's totalRemaining so the line always passes
+  // through the top of the mainDate bar regardless of window size.
+  // Start point is projected backward from the pivot using the actual slope.
+  //
+  // Both segments use weekday count (not calendar days) so the slopes match exactly.
+  // The burndownDays array contains only weekdays, so future-phase entries are the
+  // forward weekday count.
+  const futureDays = burndownDays.filter((d) => d.date > mainDate);
+  const lastDay = burndownDays[burndownDays.length - 1];
+  const pivotRemaining = presentDay.totalRemaining;
+  const startRemaining = pivotRemaining + actualDailyBurn * actualWindowDays;
+
+  let windowEndDate: string;
+  let windowEndRemaining: number;
+
+  if (actualDailyBurn > 0) {
+    // Find the zero-crossing weekday index
+    const weekdaysToZero = pivotRemaining / actualDailyBurn;
+    const zeroCrossingIdx = Math.floor(weekdaysToZero);
+
+    if (zeroCrossingIdx < futureDays.length) {
+      // Team finishes before the end of the chart — terminate at the zero-crossing weekday
+      windowEndDate = futureDays[zeroCrossingIdx].date;
+      windowEndRemaining = 0;
+    } else {
+      // Team won't finish by end of chart — extend to last day with positive remaining
+      windowEndDate = lastDay.date;
+      windowEndRemaining = pivotRemaining - actualDailyBurn * futureDays.length;
+    }
+  } else {
+    // No burn rate — flat line to end of chart
+    windowEndDate = lastDay.date;
+    windowEndRemaining = pivotRemaining;
+  }
+
+  const slopeLine =
+    actualWindowDays > 0
+      ? {
+          startDate: windowStartDay.date,
+          startRemaining,
+          pivotDate: mainDate,
+          pivotRemaining,
+          endDate: windowEndDate,
+          endRemaining: windowEndRemaining,
+        }
+      : null;
+
+  return {
+    windowDays,
+    windowStartDate: windowStartDay.date,
+    windowEndDate,
+    actualDailyBurn,
+    idealDailyBurn,
+    variance,
+    variancePct,
+    slopeLine,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Export

@@ -12,7 +12,7 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
-import { BurndownRechartsData } from "@/app/pace/burndown/burndownTypes";
+import { BurndownRechartsData, BurndownSlopeLine } from "@/app/pace/burndown/burndownTypes";
 
 // ---------------------------------------------------------------------------
 // Color palette — cycles through CSS chart variables
@@ -69,9 +69,10 @@ function getCssVar(name: string, fallback: string): string {
 
 type BurndownChartProps = {
   data: BurndownRechartsData;
+  slopeLine?: BurndownSlopeLine | null;
 };
 
-export function BurndownChart({ data }: BurndownChartProps) {
+export function BurndownChart({ data, slopeLine }: BurndownChartProps) {
   const { rows, groupKeys, groupLabels, mainDate, snowDeadline } = data;
 
   if (rows.length === 0) {
@@ -154,6 +155,31 @@ export function BurndownChart({ data }: BurndownChartProps) {
           isAnimationActive={false}
           connectNulls={false}
         />
+
+        {/* Actual slope line — two segments sharing a fixed pivot at mainDate.
+            Splitting into look-back + projection ensures the pivot always snaps
+            to the mainDate X position (which is guaranteed to be in the data array).
+            Slider changes only re-render these two elements. */}
+        {slopeLine && (
+          <>
+            <ReferenceLine
+              segment={[
+                { x: slopeLine.startDate, y: slopeLine.startRemaining },
+                { x: slopeLine.pivotDate, y: slopeLine.pivotRemaining },
+              ]}
+              stroke="var(--color-accent)"
+              strokeWidth={2.5}
+            />
+            <ReferenceLine
+              segment={[
+                { x: slopeLine.pivotDate, y: slopeLine.pivotRemaining },
+                { x: slopeLine.endDate, y: slopeLine.endRemaining },
+              ]}
+              stroke="var(--color-accent)"
+              strokeWidth={2.5}
+            />
+          </>
+        )}
 
         {/* mainDate vertical line — "as of" marker */}
         <ReferenceLine

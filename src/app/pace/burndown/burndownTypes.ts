@@ -57,6 +57,55 @@ export type BurndownChartData = {
 };
 
 // ---------------------------------------------------------------------------
+// Slope analysis types
+// ---------------------------------------------------------------------------
+
+/**
+ * The slope line rendered on the burndown chart.
+ *
+ * Split into two segments sharing a fixed pivot at mainDate so the line
+ * always passes through the top of the mainDate bar regardless of window size:
+ *   - Look-back segment: startDate → pivotDate (historical)
+ *   - Projection segment: pivotDate → endDate (forward)
+ */
+export type BurndownSlopeLine = {
+  /** Start of the look-back segment (N past-phase days before mainDate). */
+  startDate: string;
+  startRemaining: number;
+  /** The fixed pivot — always mainDate. Both segments meet here. */
+  pivotDate: string;
+  pivotRemaining: number;
+  /** End of the projection segment (N calendar days after mainDate). */
+  endDate: string;
+  endRemaining: number;
+};
+
+/**
+ * Result of the N-day slope analysis centered on mainDate.
+ *
+ * Compares the actual burn rate over the look-back window against the ideal
+ * velocity, giving the production manager a signal on whether pace is
+ * improving or deteriorating.
+ */
+export type BurndownSlopeAnalysis = {
+  windowDays: number;
+  /** First date of the look-back window (N past-phase days before mainDate). */
+  windowStartDate: string;
+  /** Last date of the projected slope (N future-phase days after mainDate). */
+  windowEndDate: string;
+  /** Average $/day burned over the N-day look-back window. */
+  actualDailyBurn: number;
+  /** $/day required by the ideal velocity line. */
+  idealDailyBurn: number;
+  /** actualDailyBurn - idealDailyBurn. Positive = ahead of pace, negative = behind. */
+  variance: number;
+  /** variance / idealDailyBurn. Positive = ahead, negative = behind. */
+  variancePct: number;
+  /** The slope line to render on the chart. null when insufficient data. */
+  slopeLine: BurndownSlopeLine | null;
+};
+
+// ---------------------------------------------------------------------------
 // Recharts-ready types
 // ---------------------------------------------------------------------------
 
