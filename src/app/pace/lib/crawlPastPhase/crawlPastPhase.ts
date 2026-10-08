@@ -25,7 +25,6 @@ export type PastPhaseState = {
 export function crawlPastPhase(
   inputs: PaceEngineInputs,
   assignmentGroups: AssignmentGroup[],
-  classifier: GroupSequenceClassifier,
 ): PastPhaseState {
   const { servCodes, mainDate } = inputs;
 
@@ -96,6 +95,37 @@ export function crawlPastPhase(
             dayBreakdowns.push({ employeeId: doneBy.employeeId, priceCompleted: share, priceForecasted: 0 });
           }
         }
+      }
+    }
+  }
+
+  // Include printed services (status "$") scheduled for mainDate in the present day's
+  // priceCompleted. These are committed — scheduled and expected to complete today.
+  // The pool math already accounts for them (status "$" is in ACTIVE_STATUSES and
+  // excluded from the active pool once completed), so this only affects attribution.
+  for (const servCode of servCodes) {
+    const groupId = servCodeToGroupId.get(servCode.servCodeId);
+    if (!groupId) continue;
+
+    for (const service of servCode.services) {
+      if (service.status !== "$") continue;
+      const schedDate = service.assignments.mostRecent?.schedDate;
+      if (schedDate !== mainDate) continue;
+
+      const employeeId = service.assignments.mostRecent?.employeeId ?? "_team";
+
+      if (!breakdownsByGroupByDate.has(groupId)) {
+        breakdownsByGroupByDate.set(groupId, new Map());
+      }
+      const byDate = breakdownsByGroupByDate.get(groupId)!;
+      if (!byDate.has(mainDate)) byDate.set(mainDate, []);
+      const dayBreakdowns = byDate.get(mainDate)!;
+
+      const existing = dayBreakdowns.find((b) => b.employeeId === employeeId);
+      if (existing) {
+        existing.priceCompleted += service.price;
+      } else {
+        dayBreakdowns.push({ employeeId, priceCompleted: service.price, priceForecasted: 0 });
       }
     }
   }

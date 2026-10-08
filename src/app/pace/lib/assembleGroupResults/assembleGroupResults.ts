@@ -45,7 +45,10 @@ export function assembleGroupResults(
   const crawlerDays = buildCrawlerDays({
     mainDate,
     assignmentGroups,
-    poolStates,
+    // Use pastState.poolStates for the present day's poolRemaining — futureState.poolStates
+    // has been mutated in-place by the future crawl and reflects post-drain values, not
+    // the pool state as of mainDate.
+    presentPoolStates: pastState.poolStates,
     breakdownsByGroupByDate: pastState.breakdownsByGroupByDate,
     futureCrawlerDays: futureState.crawlerDays,
     sequences: inputs.sequences,
@@ -60,18 +63,19 @@ export function assembleGroupResults(
 function buildCrawlerDays({
   mainDate,
   assignmentGroups,
-  poolStates,
+  presentPoolStates,
   breakdownsByGroupByDate,
   futureCrawlerDays,
   sequences,
 }: {
   mainDate: string;
   assignmentGroups: AssignmentGroup[];
-  poolStates: Map<string, import("@/app/pace/lib/PaceEngineTypes").GroupPoolState>;
+  presentPoolStates: Map<string, import("@/app/pace/lib/PaceEngineTypes").GroupPoolState>;
   breakdownsByGroupByDate: Map<string, Map<string, { employeeId: string; priceCompleted: number; priceForecasted: number }[]>>;
   futureCrawlerDays: CrawlerDay[];
   sequences: import("@/app/pace/groupSequence/GroupSequenceTypes").GroupSequence[];
 }): CrawlerDay[] {
+  const poolStates = presentPoolStates;
   const sequenceIdByGroupId = new Map<string, string | null>();
   for (const sequence of sequences) {
     const isSynthetic = sequence.groupIds.length === 1;

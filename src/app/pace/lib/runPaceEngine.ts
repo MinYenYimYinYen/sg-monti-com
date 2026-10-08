@@ -1,4 +1,7 @@
-import { PaceEngineResult } from "@/app/pace/lib/PaceEngineTypes";
+import {
+  PaceEngineResult,
+  GroupPoolState,
+} from "@/app/pace/lib/PaceEngineTypes";
 import { PaceEngineInputs } from "./PaceEngineInputs";
 import {
   crawlPastPhase,
@@ -35,7 +38,19 @@ import { buildGroupSequenceClassifier } from "./groupSequenceClassifier";
 export function runPaceEngine(inputs: PaceEngineInputs): PaceEngineResult {
   const { assignmentGroups } = inputs;
   const classifier = buildGroupSequenceClassifier(inputs.sequences);
-  const pastState: PastPhaseState = crawlPastPhase(inputs, assignmentGroups, classifier);
+  const pastState: PastPhaseState = crawlPastPhase(inputs, assignmentGroups);
+
+  // Snapshot pool states before the future phase mutates them in-place.
+  // crawlFuturePhase drains poolRemaining on the shared poolStates Map, so by the
+  // time assembleGroupResults runs, pastState.poolStates reflects post-drain values.
+  // The snapshot preserves the as-of-mainDate pool state for the present CrawlerDay.
+  const presentPoolStatesSnapshot = new Map<string, GroupPoolState>(
+    [...pastState.poolStates.entries()].map(([groupId, state]) => [
+      groupId,
+      { ...state },
+    ]),
+  );
+
   const presentState: PresentPhaseState = crawlPresentPhase(
     inputs,
     assignmentGroups,
@@ -47,5 +62,8 @@ export function runPaceEngine(inputs: PaceEngineInputs): PaceEngineResult {
     presentState,
     classifier,
   );
-  return assembleGroupResults(inputs, assignmentGroups, futureState, pastState);
+  return assembleGroupResults(inputs, assignmentGroups, futureState, {
+    ...pastState,
+    poolStates: presentPoolStatesSnapshot,
+  });
 }
