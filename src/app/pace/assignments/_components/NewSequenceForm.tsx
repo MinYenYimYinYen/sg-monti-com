@@ -11,10 +11,11 @@ export function NewSequenceForm({
   onCancelAction,
 }: {
   selectedGroups: AssignmentGroup[];
-  onSaveAction: (label: string, orderedGroupIds: string[]) => void;
+  onSaveAction: (label: string, orderedGroupIds: string[], daysSince: number | null) => void;
   onCancelAction: () => void;
 }) {
   const [label, setLabel] = useState("");
+  const [daysSince, setDaysSince] = useState<string>("");
   const [orderedGroups, setOrderedGroups] = useState<AssignmentGroup[]>(selectedGroups);
   const dragIndexRef = useRef<number | null>(null);
 
@@ -40,7 +41,11 @@ export function NewSequenceForm({
   function handleSave() {
     const trimmed = label.trim();
     if (!trimmed) return;
-    onSaveAction(trimmed, orderedGroups.map((g) => g.groupId));
+    const parsedDaysSince = daysSince.trim() !== "" ? parseInt(daysSince, 10) : null;
+    const validDaysSince = parsedDaysSince !== null && !isNaN(parsedDaysSince) && parsedDaysSince > 0
+      ? parsedDaysSince
+      : null;
+    onSaveAction(trimmed, orderedGroups.map((g) => g.groupId), validDaysSince);
   }
 
   return (
@@ -63,6 +68,21 @@ export function NewSequenceForm({
           placeholder="e.g. Lawn Renovation"
           autoFocus
           className="h-6 text-[10px] px-2 rounded border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full"
+        />
+      </div>
+
+      {/* Days since constraint */}
+      <div className="space-y-1">
+        <label className="text-[10px] text-muted-foreground">
+          Days between rounds (optional) — min calendar days between predecessor and successor service
+        </label>
+        <input
+          type="number"
+          min={1}
+          value={daysSince}
+          onChange={(e) => setDaysSince(e.target.value)}
+          placeholder="e.g. 21"
+          className="h-6 text-[10px] px-2 rounded border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-24"
         />
       </div>
 

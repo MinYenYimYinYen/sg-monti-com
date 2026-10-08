@@ -41,7 +41,7 @@ export function AssignmentsPage() {
   return (
     <div className="flex h-full overflow-hidden">
       {/* Sequences panel — leftmost */}
-      <div className="w-52 shrink-0 border-r flex flex-col bg-card">
+      <div className="w-72 shrink-0 border-r flex flex-col bg-card">
         <GroupSequencePanel />
       </div>
 

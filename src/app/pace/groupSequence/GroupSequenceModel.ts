@@ -7,6 +7,7 @@ const GroupSequenceSchema = new Schema<GroupSequence>(
     sequenceId: { type: String, required: true, unique: true },
     label: { type: String, required: true },
     groupIds: { type: [String], required: true },
+    daysSince: { type: Number, default: 0 },
   },
   { _id: false },
 );

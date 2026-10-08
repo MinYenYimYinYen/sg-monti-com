@@ -22,6 +22,12 @@ export function GroupSequencePanel() {
     void upsertSequence({ ...sequence, label });
   }
 
+  function handleUpdateDaysSince(sequenceId: string, daysSince: number | null) {
+    const sequence = sequences.find((s) => s.sequenceId === sequenceId);
+    if (!sequence) return;
+    void upsertSequence({ ...sequence, daysSince: daysSince ?? 0 });
+  }
+
   function handleReorderGroups(sequenceId: string, groupIds: string[]) {
     const sequence = sequences.find((s) => s.sequenceId === sequenceId);
     if (!sequence) return;
@@ -50,9 +56,10 @@ export function GroupSequencePanel() {
               <GroupSequenceRow
                 key={sequence.sequenceId}
                 sequence={sequence}
-              groupMap={assignmentGroupMap as Map<string, import("@/app/pace/assignmentGroup/AssignmentGroupTypes").AssignmentGroup>}
+                groupMap={assignmentGroupMap}
                 onDeleteAction={handleDelete}
                 onUpdateLabelAction={handleUpdateLabel}
+                onUpdateDaysSinceAction={handleUpdateDaysSince}
                 onReorderGroupsAction={handleReorderGroups}
               />
             ))}

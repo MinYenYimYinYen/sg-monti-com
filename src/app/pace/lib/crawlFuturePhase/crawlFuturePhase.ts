@@ -14,6 +14,12 @@ import { recordEmployeeTimelineEvent, recordCrewTimelineEvent } from "./helpers/
 import { resolveSequenceCascade } from "./helpers/resolveSequenceCascade";
 import { GroupSequenceClassifier } from "@/app/pace/lib/groupSequenceClassifier";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
+import {
+  buildCrawlServiceQueues,
+  ConstrainedGroupQueue,
+  addCalendarDays,
+} from "./helpers/buildCrawlServiceQueues";
+import { fillEmployeesRoundRobin } from "./helpers/fillEmployeesRoundRobin";
 
 export type FuturePhaseState = {
   poolStates: Map<string, GroupPoolState>;
@@ -32,7 +38,7 @@ export function crawlFuturePhase(
   presentState: PresentPhaseState,
   classifier: GroupSequenceClassifier,
 ): FuturePhaseState {
-  const { mainDate, sequences, cascadeThreshold, employees } = inputs;
+  const { mainDate, sequences, cascadeThreshold, employees, servCodes } = inputs;
   const { poolStates, servCodeToGroupId, groupProductionStats } = presentState;
 
   const activeEmployees: Employee[] = employees.filter((employee) =>
@@ -51,15 +57,22 @@ export function crawlFuturePhase(
     plannedStartByGroupId.set(ag.groupId, ag.plannedStart);
   }
 
+  // Sequences with daysSince > 0 use the service-queue constraint system instead of
+  // cascade locking. Only non-constrained sequences lock their successors.
+  const constrainedSequenceIds = new Set(
+    sequences.filter((s) => s.daysSince > 0).map((s) => s.sequenceId),
+  );
+  const cascadeSequences = sequences.filter((s) => !constrainedSequenceIds.has(s.sequenceId));
+
   const lockedGroupIds = new Set<string>();
-  for (const sequence of sequences) {
+  for (const sequence of cascadeSequences) {
     for (let i = 1; i < sequence.groupIds.length; i++) {
       lockedGroupIds.add(sequence.groupIds[i]);
     }
   }
 
   resolveSequenceCascade({
-    sequences,
+    sequences: cascadeSequences,
     poolStates,
     lockedGroupIds,
     groupScheduleMap: plannedEndByGroupId,
@@ -93,12 +106,82 @@ export function crawlFuturePhase(
   // Cumulative priceCompleted per employee per group across future days.
   const employeeCumulativeByGroup = new Map<string, Map<string, number>>();
 
+  // ---------------------------------------------------------------------------
+  // Build constrained service queues for sequences with daysSince
+  // ---------------------------------------------------------------------------
+
+  // Map<groupId, Set<servCodeId>> for quick lookup
+  const groupServCodeIds = new Map<string, Set<string>>();
+  for (const ag of assignmentGroups) {
+    groupServCodeIds.set(ag.groupId, new Set(ag.servCodeIds));
+  }
+
+  const constrainedQueues: Map<string, ConstrainedGroupQueue> = buildCrawlServiceQueues({
+    servCodes,
+    sequences,
+    servCodeToGroupId,
+    groupServCodeIds,
+    mainDate,
+  });
+
+  // Build a lookup: for each constrained successor group, which sequence and predecessor?
+  // Map<successorGroupId, { predecessorGroupId, daysSince }>
+  const successorConstraintMap = new Map<string, { predecessorGroupId: string; daysSince: number }>();
+  for (const sequence of sequences) {
+    if (sequence.daysSince <= 0 || sequence.groupIds.length < 2) continue;
+    for (let i = 1; i < sequence.groupIds.length; i++) {
+      successorConstraintMap.set(sequence.groupIds[i]!, {
+        predecessorGroupId: sequence.groupIds[i - 1]!,
+        daysSince: sequence.daysSince,
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pre-compute workable groups — groups with at least one employee with a goal rate.
+  // Groups with no workable employees can never be drained and must not count as
+  // "remaining" in the termination check — they would cause the crawler to run indefinitely.
+  // ---------------------------------------------------------------------------
+
+  const workableGroupIds = new Set<string>();
+  for (const ag of assignmentGroups) {
+    for (const goalRate of ag.goalsByEmployee.values()) {
+      if (goalRate !== null && goalRate > 0) {
+        workableGroupIds.add(ag.groupId);
+        break;
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Reconcile constrained group pool states with their queue sums.
+  //
+  // The past phase initializes poolRemaining from the aggregate price of all active
+  // services. The constrained queue contains individual service objects for those same
+  // services. They should match — if they don't, the queue is the source of truth
+  // (it reflects exactly which services are workable). Reconcile now so the termination
+  // check (poolRemaining <= 0) fires correctly when the queue empties.
+  // ---------------------------------------------------------------------------
+
+  // Reconcile: set poolRemaining to the queue sum so termination works correctly
+  for (const [groupId, queue] of constrainedQueues) {
+    const poolState = poolStates.get(groupId);
+    if (!poolState) continue;
+    const queueSum = [...queue.available, ...queue.pending].reduce((sum, s) => sum + s.price, 0);
+    poolState.poolRemaining = queueSum;
+    poolState.totalPool = poolState.completedSoFar + queueSum;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Main crawl loop
+  // ---------------------------------------------------------------------------
+
   let day = dateStrings.nextWeekdayAfter(mainDate);
   const maxDay = dateStrings.addWeekdays(mainDate, MAX_FUTURE_WEEKDAYS);
 
   while (day <= maxDay) {
     resolveSequenceCascade({
-      sequences,
+      sequences: cascadeSequences,
       poolStates,
       lockedGroupIds,
       groupScheduleMap: plannedEndByGroupId,
@@ -107,10 +190,50 @@ export function crawlFuturePhase(
       day,
     });
 
+    // Promote pending → available for constrained queues based on today's date
+    for (const [groupId, queue] of constrainedQueues) {
+      const constraint = successorConstraintMap.get(groupId);
+      if (!constraint) continue; // first group in sequence — no pending
+
+      const { predecessorGroupId, daysSince } = constraint;
+      const predecessorQueue = constrainedQueues.get(predecessorGroupId);
+
+      // Check pending services: if their predecessor has a doneDate and daysSince has elapsed.
+      // Search available, pending, AND completed — consumed services move to completed.
+      const stillPending: typeof queue.pending = [];
+      for (const service of queue.pending) {
+        // Find the matching predecessor service by progId (check all three lists)
+        const predecessorService = predecessorQueue?.available.find((s) => s.progId === service.progId)
+          ?? predecessorQueue?.pending.find((s) => s.progId === service.progId)
+          ?? predecessorQueue?.completed.find((s) => s.progId === service.progId);
+
+        if (predecessorService === undefined) {
+          // No predecessor service exists for this program (e.g. program started mid-sequence).
+          // No constraint to enforce — promote to available immediately.
+          insertSorted(queue.available, service);
+        } else {
+          const predecessorDoneDate = predecessorService.doneDate;
+          if (predecessorDoneDate !== null) {
+            const availableDate = addCalendarDays(predecessorDoneDate, daysSince);
+            if (availableDate <= day) {
+              // Insert into available maintaining price-descending order
+              insertSorted(queue.available, service);
+            } else {
+              stillPending.push(service);
+            }
+          } else {
+            stillPending.push(service);
+          }
+        }
+      }
+      queue.pending = stillPending;
+    }
+
     let anyRemaining = false;
     const activeGroupIds = new Set<string>();
     for (const [groupId, state] of poolStates) {
-      if (state.poolRemaining <= 0) continue;
+      if (state.poolRemaining < 0.01) continue; // treat sub-cent as zero (floating point guard)
+      if (!workableGroupIds.has(groupId)) continue;
       if (!classifier.isActiveForSnapshot(groupId, lockedGroupIds)) continue;
 
       const plannedEnd = plannedEndByGroupId.get(groupId) ?? null;
@@ -120,8 +243,32 @@ export function crawlFuturePhase(
       if (!isStraggler) {
         anyRemaining = true;
         activeGroupIds.add(groupId);
+      } else if (process.env.NODE_ENV === "development" && day === "2026-12-31") {
+        console.log(`[crawl] 12/31 STRAGGLER skipped: group=${groupId} | poolRemaining=${state.poolRemaining.toFixed(2)} | completionPct=${(completionPct * 100).toFixed(1)}% | plannedEnd=${plannedEnd}`);
       }
     }
+
+    // Diagnostic: on 2026-12-31, log every group that is keeping the crawler alive
+    if (process.env.NODE_ENV === "development" && day === "2026-12-31") {
+      if (anyRemaining) {
+        console.log(`[crawl] 12/31 STILL RUNNING — activeGroupIds: ${[...activeGroupIds].join(", ")}`);
+        for (const groupId of activeGroupIds) {
+          const state = poolStates.get(groupId);
+          const plannedEnd = plannedEndByGroupId.get(groupId) ?? null;
+          const completionPct = state && state.totalPool > 0 ? state.completedSoFar / state.totalPool : 0;
+          const isWorkable = workableGroupIds.has(groupId);
+          const isLocked = lockedGroupIds.has(groupId);
+          const isOnlyMember = classifier.isOnlyMember(groupId);
+          const queue = constrainedQueues.get(groupId);
+          console.log(
+            `[crawl] 12/31 group=${groupId} | poolRemaining=${state?.poolRemaining.toFixed(2)} | completionPct=${(completionPct * 100).toFixed(1)}% | plannedEnd=${plannedEnd} | workable=${isWorkable} | locked=${isLocked} | onlyMember=${isOnlyMember}${queue ? ` | queueAvail=${queue.available.length} | queuePending=${queue.pending.length}` : ""}`,
+          );
+        }
+      } else {
+        console.log(`[crawl] 12/31 anyRemaining=false — crawler would stop here`);
+      }
+    }
+
     if (!anyRemaining) break;
 
     type DailyGroupStats = {
@@ -131,6 +278,189 @@ export function crawlFuturePhase(
       employeeBreakdowns: { employeeId: string; priceCompleted: number; priceForecasted: number }[];
     };
     const dailyGroupStats = new Map<string, DailyGroupStats>();
+
+    // ---------------------------------------------------------------------------
+    // Constrained groups: round-robin fill across all assigned employees
+    // ---------------------------------------------------------------------------
+
+    // Process constrained groups first (they have limited available pool)
+    const processedByConstrained = new Set<string>();
+
+    for (const [groupId, queue] of constrainedQueues) {
+      if (!activeGroupIds.has(groupId)) continue;
+      if (lockedGroupIds.has(groupId)) continue;
+
+      const poolState = poolStates.get(groupId);
+      if (!poolState || poolState.poolRemaining <= 0) continue;
+
+      const assignmentGroup = assignmentGroupByGroupId.get(groupId);
+      if (!assignmentGroup) continue;
+
+      if (assignmentGroup.plannedStart && day < assignmentGroup.plannedStart) continue;
+
+      // Collect all employees assigned to this group with their goal rates
+      const employeesForGroup: { employeeId: string; budget: number }[] = [];
+      for (const employee of activeEmployees) {
+        const { employeeId, availability, timeOffDates } = employee;
+        if (timeOffDates.has(day)) continue;
+        if (availability.startDate && day < availability.startDate) continue;
+        if (availability.endDate && day > availability.endDate) continue;
+
+        const plan = inputs.assignmentsByEmployeeId.get(employeeId);
+        if (!plan) continue;
+
+        const assignment = plan.groupAssignments.find((ga) => ga.groupId === groupId);
+        if (!assignment) continue;
+
+        const goalRate = assignmentGroup.goalsByEmployee.get(employeeId) ?? null;
+        if (goalRate === null || goalRate <= 0) continue;
+
+        employeesForGroup.push({ employeeId, budget: goalRate });
+      }
+
+      if (employeesForGroup.length === 0) continue;
+
+      if (queue.available.length === 0) {
+        continue;
+      }
+
+      // Round-robin fill across employees
+      const fillResult = fillEmployeesRoundRobin({
+        available: queue.available,
+        employees: employeesForGroup,
+      });
+      const drainedByEmployee = fillResult.drained;
+      const consumedServices = fillResult.consumed;
+
+      // Mark consumed predecessor services as done today so successor pending can be promoted.
+      // The consumed services were spliced out of queue.available; set their doneDate and
+      // move them to queue.completed so successor pending promotion can find them by progId.
+      for (const service of consumedServices) {
+        service.doneDate = day;
+        queue.completed.push(service);
+      }
+
+      // Apply drain results to pool state and record stats
+      for (const [employeeId, amount] of drainedByEmployee.entries()) {
+        if (amount <= 0) continue;
+
+        const goalRate = assignmentGroup.goalsByEmployee.get(employeeId) ?? 0;
+
+        // Drain from pool state
+        const actualDrain = Math.min(amount, poolState.poolRemaining);
+        poolState.poolRemaining -= actualDrain;
+        poolState.completedSoFar += actualDrain;
+
+        if (!poolState.projectedStartDate) {
+          poolState.projectedStartDate = day;
+        }
+
+        if (!dailyGroupStats.has(groupId)) {
+          dailyGroupStats.set(groupId, {
+            priceCompleted: 0,
+            priceForecasted: 0,
+            employeesWorking: [],
+            employeeBreakdowns: [],
+          });
+        }
+        const existing = dailyGroupStats.get(groupId)!;
+        const existingBreakdown = existing.employeeBreakdowns.find((b) => b.employeeId === employeeId);
+        if (existingBreakdown) {
+          existingBreakdown.priceCompleted += actualDrain;
+          existingBreakdown.priceForecasted += goalRate;
+        } else {
+          existing.employeeBreakdowns.push({ employeeId, priceCompleted: actualDrain, priceForecasted: goalRate });
+        }
+        dailyGroupStats.set(groupId, {
+          priceCompleted: existing.priceCompleted + actualDrain,
+          priceForecasted: existing.priceForecasted + goalRate,
+          employeesWorking: existing.employeesWorking.includes(employeeId)
+            ? existing.employeesWorking
+            : [...existing.employeesWorking, employeeId],
+          employeeBreakdowns: existing.employeeBreakdowns,
+        });
+
+        // Record timeline events for this employee
+        const prevGroupId = lastWorkedGroupByEmployee.get(employeeId) ?? null;
+        if (prevGroupId === null) {
+          recordEmployeeTimelineEvent(employeeTimeline, employeeId, day, {
+            kind: "starts",
+            groupId,
+            fromGroupId: null,
+          });
+        } else if (prevGroupId !== groupId) {
+          recordEmployeeTimelineEvent(employeeTimeline, employeeId, day, {
+            kind: "switches",
+            fromGroupId: prevGroupId,
+            toGroupId: groupId,
+          });
+          recordEmployeeTimelineEvent(employeeTimeline, employeeId, day, {
+            kind: "starts",
+            groupId,
+            fromGroupId: prevGroupId,
+          });
+        }
+        inDowntimeByEmployee.set(employeeId, false);
+
+        if (prevGroupId !== groupId) {
+          if (prevGroupId !== null) {
+            const prevActive = activeEmployeesByGroup.get(prevGroupId);
+            if (prevActive) prevActive.delete(employeeId);
+            const prevPlan = inputs.assignmentsByEmployeeId.get(employeeId)!;
+            recordCrewTimelineEvent(crewTimelines, prevGroupId, {
+              date: day,
+              employeeId,
+              kind: "leaves",
+              toGroupId: groupId,
+              employeeDailyRate: goalRate,
+              teamDailyRate: computeTeamRate(prevGroupId, activeEmployeesByGroup, prevPlan.groupAssignments, assignmentGroupByGroupId),
+              poolRemaining: poolStates.get(prevGroupId)?.poolRemaining ?? 0,
+            });
+          }
+          if (!activeEmployeesByGroup.has(groupId)) activeEmployeesByGroup.set(groupId, new Set());
+          activeEmployeesByGroup.get(groupId)!.add(employeeId);
+          const plan = inputs.assignmentsByEmployeeId.get(employeeId)!;
+          recordCrewTimelineEvent(crewTimelines, groupId, {
+            date: day,
+            employeeId,
+            kind: prevGroupId === null ? "starts" : "returns",
+            fromGroupId: prevGroupId ?? undefined,
+            employeeDailyRate: goalRate,
+            teamDailyRate: computeTeamRate(groupId, activeEmployeesByGroup, plan.groupAssignments, assignmentGroupByGroupId),
+            poolRemaining: poolState.poolRemaining,
+          });
+        }
+
+        lastWorkedGroupByEmployee.set(employeeId, groupId);
+        processedByConstrained.add(employeeId);
+      }
+
+      if (poolState.poolRemaining <= 0) {
+        poolState.projectedEndDate = day;
+        for (const [employeeId] of drainedByEmployee.entries()) {
+          if ((drainedByEmployee.get(employeeId) ?? 0) > 0) {
+            recordEmployeeTimelineEvent(employeeTimeline, employeeId, day, {
+              kind: "finishes",
+              groupId,
+            });
+            activeEmployeesByGroup.get(groupId)?.delete(employeeId);
+            const goalRate = assignmentGroup.goalsByEmployee.get(employeeId) ?? 0;
+            recordCrewTimelineEvent(crewTimelines, groupId, {
+              date: day,
+              employeeId,
+              kind: "finishes",
+              employeeDailyRate: goalRate,
+              teamDailyRate: 0,
+              poolRemaining: 0,
+            });
+          }
+        }
+      }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Unconstrained groups: original per-employee goal-rate drain
+    // ---------------------------------------------------------------------------
 
     for (const employee of activeEmployees) {
       const { employeeId, availability, timeOffDates } = employee;
@@ -143,6 +473,9 @@ export function crawlFuturePhase(
       if (availability.startDate && day < availability.startDate) continue;
       if (availability.endDate && day > availability.endDate) continue;
 
+      // Skip employees already handled by constrained group processing
+      if (processedByConstrained.has(employeeId)) continue;
+
       const prevGroupId = lastWorkedGroupByEmployee.get(employeeId) ?? null;
       let workedGroupId: string | null = null;
 
@@ -151,6 +484,9 @@ export function crawlFuturePhase(
 
       for (const { groupId } of plan.groupAssignments) {
         if (lockedGroupIds.has(groupId)) continue;
+
+        // Skip constrained groups — they're handled above
+        if (constrainedQueues.has(groupId)) continue;
 
         const poolState = poolStates.get(groupId);
         if (!poolState || poolState.poolRemaining <= 0) continue;
@@ -340,4 +676,18 @@ function computeTeamRate(
     total += goal ?? 0;
   }
   return total;
+}
+
+// ---------------------------------------------------------------------------
+// insertSorted — insert into price-descending sorted array
+// ---------------------------------------------------------------------------
+
+/**
+ * Inserts a CrawlService into a price-descending sorted array at the correct position.
+ * O(n) in the worst case but keeps the array sorted for binary search.
+ */
+function insertSorted(arr: { price: number }[], item: { price: number }): void {
+  let i = 0;
+  while (i < arr.length && arr[i]!.price >= item.price) i++;
+  arr.splice(i, 0, item);
 }

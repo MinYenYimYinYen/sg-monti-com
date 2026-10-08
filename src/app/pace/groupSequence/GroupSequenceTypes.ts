@@ -16,4 +16,15 @@ export type GroupSequence = {
   label: string;
   /** Ordered groupIds — index 0 opens first, index 1 opens when 0 hits threshold. */
   groupIds: string[];
+  /**
+   * Minimum calendar days that must elapse between completing a predecessor service
+   * and starting the matching successor service (matched by progId).
+   *
+   * 0 = no constraint (successor can be worked immediately after predecessor).
+   * Applies to every consecutive pair in the sequence (index i → index i+1).
+   * The first group in the sequence ignores this field.
+   *
+   * Example: daysSince = 21 means LR6 cannot be done until 21 calendar days after LR5.
+   */
+  daysSince: number;
 };

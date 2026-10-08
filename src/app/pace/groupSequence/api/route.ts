@@ -12,7 +12,13 @@ const handlers: HandlerMap<GroupSequenceContract> = {
     handler: async () => {
       await connectToMongoDB();
       const docs = await GroupSequenceModel.find({}).lean();
-      return { success: true, payload: cleanMongoArray<GroupSequence>(docs) };
+      // Normalize daysSince: existing docs without the field return undefined from lean().
+      // Coerce to 0 (no constraint) so the client always receives a number.
+      const sequences = cleanMongoArray<GroupSequence>(docs).map((s) => ({
+        ...s,
+        daysSince: s.daysSince ?? 0,
+      }));
+      return { success: true, payload: sequences };
     },
   },
 

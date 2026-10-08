@@ -49,10 +49,9 @@ export function PaceAssignmentGroupManager() {
     });
   }
 
-  function handleCreateSequence(label: string, orderedGroupIds: string[]) {
-    // Generate a stable sequenceId from the ordered group IDs
+  function handleCreateSequence(label: string, orderedGroupIds: string[], daysSince: number | null) {
     const sequenceId = crypto.randomUUID();
-    void upsertSequence({ sequenceId, label, groupIds: orderedGroupIds });
+    void upsertSequence({ sequenceId, label, groupIds: orderedGroupIds, daysSince: daysSince ?? 0 });
     setCheckedGroupIds([]);
     setShowSequenceForm(false);
   }

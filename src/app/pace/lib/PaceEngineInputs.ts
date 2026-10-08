@@ -127,6 +127,7 @@ export const selectPaceEngineInputs = createSelector(
         sequenceId: g.groupId + "-seq",
         label: g.label,
         groupIds: [g.groupId],
+        daysSince: 0,
       }));
     const normalizedSequences: GroupSequence[] = [...sequences, ...syntheticSequences];
 
