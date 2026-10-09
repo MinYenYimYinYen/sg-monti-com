@@ -10,14 +10,13 @@ const selectAssignmentPlans = (state: AppState): AssignmentPlan[] =>
 const selectScenarios = (state: AppState) => state.paceAssignmentPlan.scenarios;
 
 // Read raw docs directly from state to avoid circular dependency with assignmentGroupSelect.
-// assignmentGroupSelect imports paceAssignmentPlanSelect, so we cannot import
+// assignmentGroupSelect imports assignmentPlanSelect, so we cannot import
 // paceAssignmentGroupSelect here — use the raw doc state instead.
 const selectAssignmentGroupDocs = (state: AppState): AssignmentGroupDoc[] =>
   state.paceAssignmentGroup.assignmentGroupDocs ?? [];
 
-const selectScenarioMap = createSelector(
-  [selectScenarios],
-  (scenarios) => new Grouper(scenarios).toUniqueMap((s) => s.name),
+const selectScenarioMap = createSelector([selectScenarios], (scenarios) =>
+  new Grouper(scenarios).toUniqueMap((s) => s.name),
 );
 
 const selectActiveScenario = createSelector(
@@ -97,20 +96,13 @@ const selectIsDirty = createSelector(
   [selectActiveScenario, selectAssignmentPlans],
   (activeScenario, assignmentPlans): boolean => {
     if (!activeScenario) return assignmentPlans.length > 0;
-    return JSON.stringify(activeScenario.plans) !== JSON.stringify(assignmentPlans);
+    return (
+      JSON.stringify(activeScenario.plans) !== JSON.stringify(assignmentPlans)
+    );
   },
 );
 
-export const paceAssignmentPlanSelect: {
-  assignmentPlans: typeof selectAssignmentPlans;
-  assignmentsByEmployeeId: typeof selectAssignmentsByEmployeeId;
-  assignmentsByServCodeId: typeof selectAssignmentsByServCodeId;
-  goalByEmployeeByGroup: typeof selectGoalByEmployeeByGroup;
-  scenarios: typeof selectScenarios;
-  scenarioMap: typeof selectScenarioMap;
-  activeScenario: typeof selectActiveScenario;
-  isDirty: typeof selectIsDirty;
-} = {
+export const assignmentPlanSelect = {
   assignmentPlans: selectAssignmentPlans,
   assignmentsByEmployeeId: selectAssignmentsByEmployeeId,
   assignmentsByServCodeId: selectAssignmentsByServCodeId,

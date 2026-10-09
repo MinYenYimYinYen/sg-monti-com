@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { burndownSelect, computeSlopeAnalysis } from "@/app/pace/burndown/burndownSelect";
+import { burndownActions } from "@/app/pace/burndown/burndownSlice";
 import { BurndownChart } from "@/app/pace/burndown/_components/BurndownChart";
+import { DetailPane } from "@/app/pace/burndown/_components/DetailPane";
 import { GoalMultiplierSlider } from "@/app/pace/lib/_components/GoalMultiplierSlider";
 
 // ---------------------------------------------------------------------------
@@ -25,11 +28,14 @@ function formatPct(value: number): string {
 // ---------------------------------------------------------------------------
 
 export default function BurndownPage() {
+  const dispatch = useAppDispatch();
   const [windowDays, setWindowDays] = useState(10);
 
   const rechartsData = useSelector(burndownSelect.rechartsData);
   const burndownDays = useSelector(burndownSelect.burndownDays);
   const velocityLine = useSelector(burndownSelect.velocityLine);
+  const selectedDate = useSelector(burndownSelect.selectedDate);
+  const selectedGroupId = useSelector(burndownSelect.selectedGroupId);
 
   const slopeAnalysis = computeSlopeAnalysis(
     burndownDays,
@@ -40,9 +46,19 @@ export default function BurndownPage() {
 
   const isAhead = slopeAnalysis.variance >= 0;
 
+  function handleBarClick(date: string) {
+    // Toggle off if clicking the already-selected bar
+    dispatch(burndownActions.selectDate(date === selectedDate ? null : date));
+  }
+
+  function handleLegendClick(groupId: string) {
+    // Toggle off if clicking the already-selected group
+    dispatch(burndownActions.selectGroup(groupId === selectedGroupId ? null : groupId));
+  }
+
   return (
     <div className="h-full overflow-y-auto">
-      <div className="p-6 max-w-5xl mx-auto space-y-4">
+      <div className="p-6 max-w-full mx-auto space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Season Burndown</h2>
           <p className="text-sm text-muted-foreground">
@@ -50,9 +66,22 @@ export default function BurndownPage() {
           </p>
         </div>
 
-        {/* Chart */}
-        <div className="rounded-lg border border-border bg-card p-4">
-          <BurndownChart data={rechartsData} slopeLine={slopeAnalysis.slopeLine} />
+        {/* Chart + Detail panel side by side */}
+        <div className="flex gap-4 items-start">
+          {/* Chart */}
+          <div className="flex-1 min-w-0 rounded-lg border border-border bg-card p-4">
+            <BurndownChart
+              data={rechartsData}
+              slopeLine={slopeAnalysis.slopeLine}
+              selectedDate={selectedDate}
+              selectedGroupId={selectedGroupId}
+              onBarClick={handleBarClick}
+              onLegendClick={handleLegendClick}
+            />
+          </div>
+
+          {/* Detail panel */}
+          <DetailPane />
         </div>
 
         {/* Slope analysis controls */}

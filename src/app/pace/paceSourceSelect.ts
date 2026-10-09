@@ -7,7 +7,7 @@
 // --- Pace-owned data modules ---
 export { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
 export { paceGroupSequenceSelect } from "@/app/pace/groupSequence/groupSequenceSelect";
-export { paceAssignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
+export { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 export { paceSeasonPlanSelect } from "@/app/pace/seasonPlan/seasonPlanSelect";
 
 // --- External selectors consumed by the engine and sub-pages ---

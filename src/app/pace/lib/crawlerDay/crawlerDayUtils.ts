@@ -311,6 +311,71 @@ function getLastDayOfAssignmentGroup(
 }
 
 // ---------------------------------------------------------------------------
+// Effective date ranges — first and last day a group has poolRemaining > 0
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns a map of groupId → { effectiveStart, effectiveEnd } derived from
+ * the raw (unfilled) crawlerDays.
+ *
+ * effectiveStart: the first date the group appears with poolRemaining > 0.
+ * effectiveEnd:   the last date the group appears with poolRemaining > 0,
+ *                 EXCEPT for straggler groups — those cap at the last past-phase
+ *                 day where priceCompleted > 0 (the last day they were actually
+ *                 worked). This prevents the engine's forward projection from
+ *                 inflating the effective range for groups that are overdue but
+ *                 effectively abandoned.
+ *
+ * Groups that never have poolRemaining > 0 are excluded from the map.
+ *
+ * @param days - Raw crawlerDays (not filled).
+ * @param stragglerGroupIds - Set of groupIds classified as overdue stragglers
+ *   by the pace engine. Their effectiveEnd is capped at the last worked day.
+ */
+function getGroupEffectiveDateRanges(
+  days: CrawlerDay[],
+  stragglerGroupIds: Set<string> = new Set(),
+): Map<string, { effectiveStart: string; effectiveEnd: string }> {
+  const result = new Map<string, { effectiveStart: string; effectiveEnd: string }>();
+  // Track the last past-phase day with actual production for straggler capping.
+  const lastWorkedDate = new Map<string, string>();
+
+  for (const day of days) {
+    for (const group of day.groups) {
+      // Track last worked date for stragglers (past-phase days with real production).
+      if (stragglerGroupIds.has(group.groupId) && day.phase === "past" && group.priceCompleted > 0) {
+        const current = lastWorkedDate.get(group.groupId);
+        if (!current || day.date > current) {
+          lastWorkedDate.set(group.groupId, day.date);
+        }
+      }
+
+      if (group.poolRemaining <= 0) continue;
+      const existing = result.get(group.groupId);
+      if (!existing) {
+        result.set(group.groupId, { effectiveStart: day.date, effectiveEnd: day.date });
+      } else {
+        if (day.date < existing.effectiveStart) existing.effectiveStart = day.date;
+        if (day.date > existing.effectiveEnd) existing.effectiveEnd = day.date;
+      }
+    }
+  }
+
+  // Cap effectiveEnd for straggler groups at their last worked date.
+  for (const groupId of stragglerGroupIds) {
+    const range = result.get(groupId);
+    if (!range) continue;
+    const lastWorked = lastWorkedDate.get(groupId);
+    if (lastWorked) {
+      range.effectiveEnd = lastWorked;
+    }
+    // If no past-phase work was found, leave effectiveEnd as-is (best we can do).
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -329,4 +394,5 @@ export const CrawlerDayUtils = {
   sequenceCumulativeByDate,
   totalRemainingOnDay,
   fillGroupsAcrossAllDays,
+  getGroupEffectiveDateRanges,
 };

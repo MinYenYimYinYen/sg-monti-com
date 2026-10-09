@@ -3,7 +3,7 @@
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
-import { paceAssignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
+import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceActions } from "@/app/pace/paceSlice";
 import { PaceAssignmentGroupManager } from "@/app/pace/assignments/_components/PaceAssignmentGroupManager";
 import { GroupSequencePanel } from "@/app/pace/assignments/_components/GroupSequencePanel";
@@ -13,7 +13,7 @@ import { selectSelectedEmployeeIds } from "@/app/pace/assignments/_components/as
 export function AssignmentsPage() {
   const dispatch = useAppDispatch();
   const employeeMap = useSelector(employeeSelect.employeeMap);
-  const assignmentsByEmployeeId = useSelector(paceAssignmentPlanSelect.assignmentsByEmployeeId);
+  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
   const selectedEmployeeIdsArr = useSelector(selectSelectedEmployeeIds);
   const selectedEmployeeIds = new Set(selectedEmployeeIdsArr);
 

@@ -7,10 +7,10 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
   Legend,
   ReferenceLine,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
 import { BurndownRechartsData, BurndownSlopeLine } from "@/app/pace/burndown/burndownTypes";
 
@@ -40,27 +40,12 @@ function formatDateTick(dateStr: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Dollar formatter for Y axis and tooltip
+// Dollar formatter for Y axis
 // ---------------------------------------------------------------------------
 
 function formatDollars(value: number): string {
   if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
   return `$${value.toFixed(0)}`;
-}
-
-// ---------------------------------------------------------------------------
-// CSS variable resolver — reads computed values so Recharts gets real colors
-// ---------------------------------------------------------------------------
-
-/**
- * Reads a CSS custom property from the document root at call time.
- * Safe to call during render in a client component — synchronous, no side effects.
- * Falls back to the provided default when running in SSR or if the var is unset.
- */
-function getCssVar(name: string, fallback: string): string {
-  if (typeof window === "undefined") return fallback;
-  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return value || fallback;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,9 +55,20 @@ function getCssVar(name: string, fallback: string): string {
 type BurndownChartProps = {
   data: BurndownRechartsData;
   slopeLine?: BurndownSlopeLine | null;
+  selectedDate: string | null;
+  selectedGroupId: string | null;
+  onBarClick: (date: string) => void;
+  onLegendClick: (groupId: string) => void;
 };
 
-export function BurndownChart({ data, slopeLine }: BurndownChartProps) {
+export function BurndownChart({
+  data,
+  slopeLine,
+  selectedDate,
+  selectedGroupId,
+  onBarClick,
+  onLegendClick,
+}: BurndownChartProps) {
   const { rows, groupKeys, groupLabels, mainDate, snowDeadline } = data;
 
   if (rows.length === 0) {
@@ -85,7 +81,15 @@ export function BurndownChart({ data, slopeLine }: BurndownChartProps) {
 
   return (
     <ResponsiveContainer width="100%" height={400}>
-      <ComposedChart data={rows} margin={{ top: 8, right: 24, bottom: 8, left: 16 }}>
+      <ComposedChart
+        data={rows}
+        margin={{ top: 8, right: 24, bottom: 8, left: 16 }}
+        onClick={(chartData) => {
+          if (chartData?.activeLabel && typeof chartData.activeLabel === "string") {
+            onBarClick(chartData.activeLabel);
+          }
+        }}
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
 
         <XAxis
@@ -105,31 +109,17 @@ export function BurndownChart({ data, slopeLine }: BurndownChartProps) {
           width={56}
         />
 
-        <Tooltip
-          wrapperStyle={{ zIndex: 50 }}
-          formatter={(value, name) => [
-            formatDollars(typeof value === "number" ? value : 0),
-            typeof name === "string"
-              ? name === "velocityRemaining"
-                ? "Ideal velocity"
-                : (groupLabels.get(name) ?? name)
-              : String(name),
-          ]}
-          labelFormatter={(label) => (typeof label === "string" ? formatDateTick(label) : String(label))}
-          contentStyle={{
-            backgroundColor: "#2a2a2a",
-            border: "1px solid #444",
-            borderRadius: "6px",
-            fontSize: 12,
-            color: "#f0f0f0",
-          }}
-        />
-
         <Legend
           formatter={(value: string) =>
             value === "velocityRemaining" ? "Ideal velocity" : (groupLabels.get(value) ?? value)
           }
-          wrapperStyle={{ fontSize: 12 }}
+          wrapperStyle={{ fontSize: 12, cursor: "pointer" }}
+          onClick={(legendItem) => {
+            const dataKey = legendItem.dataKey;
+            if (typeof dataKey === "string" && dataKey !== "velocityRemaining") {
+              onLegendClick(dataKey);
+            }
+          }}
         />
 
         {/* Stacked bars — one per assignment group */}
@@ -141,7 +131,18 @@ export function BurndownChart({ data, slopeLine }: BurndownChartProps) {
             fill={groupColor(index)}
             fillOpacity={0.85}
             isAnimationActive={false}
-          />
+            style={{ cursor: "pointer" }}
+          >
+            {rows.map((row) => (
+              <Cell
+                key={row.date}
+                fill={groupColor(index)}
+                fillOpacity={0.85}
+                stroke={row.date === selectedDate ? "var(--color-primary)" : "transparent"}
+                strokeWidth={row.date === selectedDate ? 2 : 0}
+              />
+            ))}
+          </Bar>
         ))}
 
         {/* Ideal velocity line */}
@@ -156,10 +157,7 @@ export function BurndownChart({ data, slopeLine }: BurndownChartProps) {
           connectNulls={false}
         />
 
-        {/* Actual slope line — two segments sharing a fixed pivot at mainDate.
-            Splitting into look-back + projection ensures the pivot always snaps
-            to the mainDate X position (which is guaranteed to be in the data array).
-            Slider changes only re-render these two elements. */}
+        {/* Actual slope line — two segments sharing a fixed pivot at mainDate. */}
         {slopeLine && (
           <>
             <ReferenceLine

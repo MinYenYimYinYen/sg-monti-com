@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { ChevronUp, ChevronDown, X, Plus, CalendarClock } from "lucide-react";
 import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
-import { paceAssignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
+import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { EmployeeAvailabilitySheet } from "@/app/employeeAvailability/_components/EmployeeAvailabilitySheet";
@@ -17,7 +17,7 @@ export function EmployeeAssignmentCard({ employeeId }: { employeeId: string }) {
   const dispatch = useAppDispatch();
   const employeeMap = useSelector(employeeSelect.employeeMap);
   const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
-  const assignmentsByEmployeeId = useSelector(paceAssignmentPlanSelect.assignmentsByEmployeeId);
+  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
   const assignmentGroups = useSelector(paceAssignmentGroupSelect.assignmentGroups);
   const [openAdd, setOpenAdd] = useState(false);
   const [availabilitySheetEmployee, setAvailabilitySheetEmployee] = useState<Employee | null>(null);

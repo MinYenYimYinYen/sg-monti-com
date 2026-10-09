@@ -138,6 +138,8 @@ export type BurndownRechartsData = {
   groupKeys: string[];
   /** Display label for each groupId. */
   groupLabels: Map<string, string>;
+  /** Effective date range per groupId — first and last day with poolRemaining > 0. */
+  groupDateRanges: Map<string, { effectiveStart: string; effectiveEnd: string }>;
   mainDate: string;
   snowMelt: string | null;
   snowDeadline: string | null;

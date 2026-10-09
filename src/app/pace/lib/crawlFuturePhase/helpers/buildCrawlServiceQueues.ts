@@ -109,6 +109,10 @@ export function buildCrawlServiceQueues({
       // Completed services are already reflected in the pool state from the past phase.
       if (!ACTIVE_STATUSES.has(service.status) && service.status !== "$") continue;
 
+      // Exclude credit-hold customers — their services are removed from poolRemaining
+      // in the present phase and must not appear in the constrained queues either.
+      if (service.program.customer.x.isCreditHold) continue;
+
       if (!activeServicesByGroup.has(groupId)) {
         activeServicesByGroup.set(groupId, []);
       }

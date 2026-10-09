@@ -121,10 +121,10 @@ const selectBurndownChartData = createSelector(
  * Group order is stable: derived from the first day that has any groups.
  */
 const selectBurndownRechartsData = createSelector(
-  [selectBurndownDays, selectBurndownVelocityLine, selectMainDate, paceSeasonPlanSelect.snowMelt, paceSeasonPlanSelect.snowDeadline],
-  (burndownDays, velocityLine, mainDate, snowMelt, snowDeadline): BurndownRechartsData => {
+  [selectBurndownDays, selectBurndownVelocityLine, selectMainDate, paceSeasonPlanSelect.snowMelt, paceSeasonPlanSelect.snowDeadline, paceEngineSelect.groupEffectiveDateRanges],
+  (burndownDays, velocityLine, mainDate, snowMelt, snowDeadline, groupDateRanges): BurndownRechartsData => {
     if (burndownDays.length === 0) {
-      return { rows: [], groupKeys: [], groupLabels: new Map(), mainDate, snowMelt, snowDeadline };
+      return { rows: [], groupKeys: [], groupLabels: new Map(), groupDateRanges: new Map(), mainDate, snowMelt, snowDeadline };
     }
 
     // Collect stable ordered group keys and labels from all days
@@ -183,6 +183,7 @@ const selectBurndownRechartsData = createSelector(
       rows,
       groupKeys: groupKeyOrder,
       groupLabels,
+      groupDateRanges,
       mainDate,
       snowMelt,
       snowDeadline,
@@ -310,6 +311,25 @@ export function computeSlopeAnalysis(
 }
 
 // ---------------------------------------------------------------------------
+// Selection state selectors
+// ---------------------------------------------------------------------------
+
+const selectSelectedDate = (state: AppState): string | null => state.burndown.selectedDate;
+const selectSelectedGroupId = (state: AppState): string | null => state.burndown.selectedGroupId;
+
+/**
+ * The full BurndownRechartsRow for the currently selected date, or null.
+ * Used by BarDetail to display per-group breakdown.
+ */
+const selectSelectedRow = createSelector(
+  [selectBurndownRechartsData, selectSelectedDate],
+  (rechartsData, selectedDate): BurndownRechartsRow | null => {
+    if (!selectedDate) return null;
+    return rechartsData.rows.find((row) => row.date === selectedDate) ?? null;
+  },
+);
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -318,4 +338,7 @@ export const burndownSelect = {
   velocityLine: selectBurndownVelocityLine,
   chartData: selectBurndownChartData,
   rechartsData: selectBurndownRechartsData,
+  selectedDate: selectSelectedDate,
+  selectedGroupId: selectSelectedGroupId,
+  selectedRow: selectSelectedRow,
 };

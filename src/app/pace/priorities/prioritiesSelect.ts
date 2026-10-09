@@ -59,10 +59,19 @@ const selectOverdueGroupServCodes = createSelector(
 
         const servCode = servCodeMap.get(servCodeId);
         if (!servCode) continue;
-        const hasActive = servCode.services.some((s) =>
+        const activeServices = servCode.services.filter((s) =>
           ACTIVE_ASAP_STATUSES.includes(s.status),
         );
-        if (!hasActive) continue;
+        if (activeServices.length === 0) continue;
+
+        // TEMP DEBUG — log the straggler M4 service so we can look it up in the CRM
+        if (servCodeId === "M4" && activeServices.length === 1) {
+          console.log("[DEBUG M4 straggler]", activeServices.map((s) => ({
+            servId: s.servId,
+            status: s.status,
+            custId: s.custId,
+          })));
+        }
 
         result.push({ servCode, reason: urgentGroup.reason });
       }

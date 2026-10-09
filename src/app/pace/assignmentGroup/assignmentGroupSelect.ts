@@ -7,7 +7,7 @@ import {
 } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { paceGroupSequenceSelect } from "@/app/pace/groupSequence/groupSequenceSelect";
 import { paceSeasonPlanSelect } from "@/app/pace/seasonPlan/seasonPlanSelect";
-import { paceAssignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
+import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceSelect } from "@/app/pace/paceSelect";
 
 const selectAssignmentGroupDocs = (state: AppState): AssignmentGroupDoc[] =>
@@ -22,7 +22,7 @@ const selectAssignmentGroups = createSelector(
     selectAssignmentGroupDocs,
     paceGroupSequenceSelect.sequenceIdByGroupId,
     paceSeasonPlanSelect.groupScheduleMap,
-    paceAssignmentPlanSelect.assignmentPlans,
+    assignmentPlanSelect.assignmentPlans,
   ],
   (
     assignmentGroupDocs,

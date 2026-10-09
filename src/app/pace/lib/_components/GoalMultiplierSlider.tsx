@@ -7,7 +7,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { paceSelect } from "@/app/pace/paceSelect";
 import { paceActions } from "@/app/pace/paceSlice";
 import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
-import { paceAssignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
+import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { ChevronDown } from "lucide-react";
 
@@ -56,8 +56,8 @@ export function GoalMultiplierSlider({ assignmentGroupId }: GoalMultiplierSlider
   const reduxGroupIds = useSelector(paceSelect.goalMultiplierGroupIds);
   const assignmentGroups = useSelector(paceAssignmentGroupSelect.assignmentGroups);
   const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
-  const activeScenario = useSelector(paceAssignmentPlanSelect.activeScenario);
-  const assignmentPlans = useSelector(paceAssignmentPlanSelect.assignmentPlans);
+  const activeScenario = useSelector(assignmentPlanSelect.activeScenario);
+  const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
 
   // Resolve the active group IDs: prop takes precedence over Redux selection
   const selectedGroupIds: string[] = assignmentGroupId ? [assignmentGroupId] : reduxGroupIds;

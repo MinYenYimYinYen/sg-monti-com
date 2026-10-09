@@ -8,7 +8,7 @@ import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { Holiday } from "@/app/holiday/holidayTypes";
 import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
 import { paceGroupSequenceSelect } from "@/app/pace/groupSequence/groupSequenceSelect";
-import { paceAssignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
+import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceSeasonPlanSelect } from "@/app/pace/seasonPlan/seasonPlanSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { holidaySelect } from "@/app/holiday/holidaySelect";
@@ -89,9 +89,9 @@ export const selectPaceEngineInputs = createSelector(
     paceAssignmentGroupSelect.assignmentGroupMapScaled,
     paceGroupSequenceSelect.sequences,
     paceGroupSequenceSelect.sequenceIdByGroupId,
-    paceAssignmentPlanSelect.assignmentPlans,
-    paceAssignmentPlanSelect.assignmentsByEmployeeId,
-    paceAssignmentPlanSelect.goalByEmployeeByGroup,
+    assignmentPlanSelect.assignmentPlans,
+    assignmentPlanSelect.assignmentsByEmployeeId,
+    assignmentPlanSelect.goalByEmployeeByGroup,
     paceSeasonPlanSelect.activeSeasonPlan,
     paceSeasonPlanSelect.groupScheduleMap,
     paceSeasonPlanSelect.cascadeThreshold,

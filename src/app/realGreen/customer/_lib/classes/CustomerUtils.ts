@@ -47,8 +47,10 @@ export class CustomerUtils {
     return onHold;
   }
 
-  /** True when remitBalance exceeds creditLimit, or any balance in due3 or higher is positive. */
+  /** True when remitBalance exceeds creditLimit, or any balance in due3 or higher is positive.
+   *  Returns false immediately when doNotPutOnCreditHold is set — matches CRM override behavior. */
   public get isCreditHold(): boolean {
+    if (this.customer.doNotPutOnCreditHold) return false;
     return this.customer.remitBalance > this.customer.creditLimit || this.customer.aging.isCreditHold;
   }
 

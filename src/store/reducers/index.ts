@@ -63,6 +63,7 @@ import { paceAssignmentGroupReducer } from "@/app/pace/assignmentGroup/assignmen
 import { paceGroupSequenceReducer } from "@/app/pace/groupSequence/groupSequenceSlice";
 import { paceAssignmentPlanReducer } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { paceSeasonPlanReducer } from "@/app/pace/seasonPlan/seasonPlanSlice";
+import { burndownReducer } from "@/app/pace/burndown/burndownSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -129,6 +130,7 @@ const rootReducer = combineReducers({
   paceGroupSequence: paceGroupSequenceReducer,
   paceAssignmentPlan: paceAssignmentPlanReducer,
   paceSeasonPlan: paceSeasonPlanReducer,
+  burndown: burndownReducer,
 });
 
 export default rootReducer;

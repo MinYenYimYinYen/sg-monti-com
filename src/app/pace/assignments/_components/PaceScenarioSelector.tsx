@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { usePathname } from "next/navigation";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { paceAssignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
+import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { Save, Trash2, ChevronDown } from "lucide-react";
 
@@ -23,10 +23,10 @@ export function PaceScenarioSelector() {
   const dispatch = useAppDispatch();
   const pathname = usePathname();
 
-  const activeScenario = useSelector(paceAssignmentPlanSelect.activeScenario);
-  const scenarios = useSelector(paceAssignmentPlanSelect.scenarios);
-  const isDirty = useSelector(paceAssignmentPlanSelect.isDirty);
-  const assignmentPlans = useSelector(paceAssignmentPlanSelect.assignmentPlans);
+  const activeScenario = useSelector(assignmentPlanSelect.activeScenario);
+  const scenarios = useSelector(assignmentPlanSelect.scenarios);
+  const isDirty = useSelector(assignmentPlanSelect.isDirty);
+  const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
 
   const inactiveScenarios = scenarios.filter((s) => !s.isActive);
   const isAssignmentsPage = pathname === ASSIGNMENTS_PATH;
