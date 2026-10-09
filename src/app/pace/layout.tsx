@@ -30,6 +30,7 @@ const TABS: readonly TabNavItem[] = [
   { label: "Employee Plan", href: "/pace", icon: Users },
   { label: "Priorities", href: "/pace/priorities", icon: ClipboardList },
   { label: "Assignments", href: "/pace/assignments", icon: Settings2 },
+  { label: "Setup", href: "/pace/setup", icon: Settings2 },
   { label: "Season Plan", href: "/pace/seasonPlan", icon: Map },
   { label: "Emp Timeline", href: "/pace/empTimeline", icon: CalendarDays },
   { label: "SC Timeline", href: "/pace/scTimeline", icon: GitBranch },

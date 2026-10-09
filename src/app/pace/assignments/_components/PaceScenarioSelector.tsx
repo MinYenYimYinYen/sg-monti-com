@@ -29,7 +29,8 @@ export function PaceScenarioSelector() {
   const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
 
   const inactiveScenarios = scenarios.filter((s) => !s.isActive);
-  const isAssignmentsPage = pathname === ASSIGNMENTS_PATH;
+  const isAssignmentsPage =
+    pathname === ASSIGNMENTS_PATH || pathname.startsWith("/pace/setup/employees");
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
