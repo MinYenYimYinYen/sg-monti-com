@@ -243,29 +243,6 @@ export function crawlFuturePhase(
       if (!isStraggler) {
         anyRemaining = true;
         activeGroupIds.add(groupId);
-      } else if (process.env.NODE_ENV === "development" && day === "2026-12-31") {
-        console.log(`[crawl] 12/31 STRAGGLER skipped: group=${groupId} | poolRemaining=${state.poolRemaining.toFixed(2)} | completionPct=${(completionPct * 100).toFixed(1)}% | plannedEnd=${plannedEnd}`);
-      }
-    }
-
-    // Diagnostic: on 2026-12-31, log every group that is keeping the crawler alive
-    if (process.env.NODE_ENV === "development" && day === "2026-12-31") {
-      if (anyRemaining) {
-        console.log(`[crawl] 12/31 STILL RUNNING — activeGroupIds: ${[...activeGroupIds].join(", ")}`);
-        for (const groupId of activeGroupIds) {
-          const state = poolStates.get(groupId);
-          const plannedEnd = plannedEndByGroupId.get(groupId) ?? null;
-          const completionPct = state && state.totalPool > 0 ? state.completedSoFar / state.totalPool : 0;
-          const isWorkable = workableGroupIds.has(groupId);
-          const isLocked = lockedGroupIds.has(groupId);
-          const isOnlyMember = classifier.isOnlyMember(groupId);
-          const queue = constrainedQueues.get(groupId);
-          console.log(
-            `[crawl] 12/31 group=${groupId} | poolRemaining=${state?.poolRemaining.toFixed(2)} | completionPct=${(completionPct * 100).toFixed(1)}% | plannedEnd=${plannedEnd} | workable=${isWorkable} | locked=${isLocked} | onlyMember=${isOnlyMember}${queue ? ` | queueAvail=${queue.available.length} | queuePending=${queue.pending.length}` : ""}`,
-          );
-        }
-      } else {
-        console.log(`[crawl] 12/31 anyRemaining=false — crawler would stop here`);
       }
     }
 

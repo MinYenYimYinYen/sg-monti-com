@@ -47,7 +47,7 @@ export function BarDetail({ row, groupKeys, groupLabels, groupDateRanges }: BarD
         dateRange: dateRange ? formatDateRange(dateRange.effectiveStart, dateRange.effectiveEnd) : null,
       };
     })
-    .filter((g) => g.remaining > 0);
+    .filter((g) => g.remaining > 0.01);
 
   return (
     <div className="space-y-3">
@@ -71,7 +71,7 @@ export function BarDetail({ row, groupKeys, groupLabels, groupDateRanges }: BarD
               <div key={groupId} className="flex items-center justify-between text-xs gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   {dateRange && (
-                    <span className="text-muted-foreground/70 tabular-nums shrink-0">{dateRange}</span>
+                  <span className="text-muted-foreground/70 tabular-nums shrink-0 w-24 inline-block">{dateRange}</span>
                   )}
                   <span className="text-foreground/80 truncate">{label}</span>
                 </div>

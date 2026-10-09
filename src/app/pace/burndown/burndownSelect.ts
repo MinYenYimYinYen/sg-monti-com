@@ -121,16 +121,17 @@ const selectBurndownChartData = createSelector(
  * Group order is stable: derived from the first day that has any groups.
  */
 const selectBurndownRechartsData = createSelector(
-  [selectBurndownDays, selectBurndownVelocityLine, selectMainDate, paceSeasonPlanSelect.snowMelt, paceSeasonPlanSelect.snowDeadline, paceEngineSelect.groupEffectiveDateRanges],
-  (burndownDays, velocityLine, mainDate, snowMelt, snowDeadline, groupDateRanges): BurndownRechartsData => {
+  [selectBurndownDays, selectBurndownVelocityLine, selectMainDate, paceSeasonPlanSelect.snowMelt, paceSeasonPlanSelect.snowDeadline, paceEngineSelect.groupEffectiveDateRanges, paceEngineSelect.crawlerDays],
+  (burndownDays, velocityLine, mainDate, snowMelt, snowDeadline, groupDateRanges, crawlerDays): BurndownRechartsData => {
     if (burndownDays.length === 0) {
       return { rows: [], groupKeys: [], groupLabels: new Map(), groupDateRanges: new Map(), mainDate, snowMelt, snowDeadline };
     }
 
-    // Collect stable ordered group keys and labels from all days
+    // Collect stable ordered group keys and labels from the raw (unfilled) crawler days,
+    // which preserve the engine's original sequence/schedule order.
     const groupLabels = new Map<string, string>();
     const groupKeyOrder: string[] = [];
-    for (const day of burndownDays) {
+    for (const day of crawlerDays) {
       for (const group of day.groups) {
         if (!groupLabels.has(group.groupId)) {
           groupLabels.set(group.groupId, group.label);
