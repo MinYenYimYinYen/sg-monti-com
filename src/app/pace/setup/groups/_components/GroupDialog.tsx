@@ -19,17 +19,18 @@ import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes
 
 type SequenceMembership =
   | { mode: "standalone" }
-  | { mode: "existing"; sequenceId: string }
-  | { mode: "new"; label: string; daysSince: string };
+  | { mode: "existing"; sequenceId: string };
 
 type GroupDialogProps = {
   /** null = create mode, non-null = edit mode */
   group: AssignmentGroup | null;
   open: boolean;
   onCloseAction: () => void;
+  /** Called after a successful create with the new groupId. Used by SequenceDialog slots. */
+  onCreatedGroupId?: (groupId: string) => void;
 };
 
-export function GroupDialog({ group, open, onCloseAction }: GroupDialogProps) {
+export function GroupDialog({ group, open, onCloseAction, onCreatedGroupId }: GroupDialogProps) {
   const isEditMode = group !== null;
 
   const assignmentGroups = useSelector(paceAssignmentGroupSelect.assignmentGroups);
@@ -62,19 +63,6 @@ export function GroupDialog({ group, open, onCloseAction }: GroupDialogProps) {
     });
   }
 
-  function handleToggleProgCode(servCodeIds: string[]) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      const allSelected = servCodeIds.every((id) => next.has(id));
-      if (allSelected) {
-        servCodeIds.forEach((id) => next.delete(id));
-      } else {
-        servCodeIds.forEach((id) => next.add(id));
-      }
-      return next;
-    });
-  }
-
   async function handleSave() {
     const sortedIds = isEditMode
       ? [...(group?.servCodeIds ?? [])].sort()
@@ -95,28 +83,13 @@ export function GroupDialog({ group, open, onCloseAction }: GroupDialogProps) {
           groupIds: [...existingSeq.groupIds, groupId],
         });
       }
-    } else if (membership.mode === "new") {
-      const seqLabel = membership.label.trim();
-      if (seqLabel) {
-        const parsedDaysSince = parseInt(membership.daysSince, 10);
-        const daysSince =
-          !isNaN(parsedDaysSince) && parsedDaysSince > 0 ? parsedDaysSince : 0;
-        await upsertSequence({
-          sequenceId: crypto.randomUUID(),
-          label: seqLabel,
-          groupIds: [groupId],
-          daysSince,
-        });
-      }
     }
 
+    onCreatedGroupId?.(groupId);
     onCloseAction();
   }
 
-  const canSave = isEditMode
-    ? true
-    : selectedIds.size > 0;
-
+  const canSave = isEditMode ? true : selectedIds.size > 0;
   const autoLabel = [...selectedIds].sort().join("+");
 
   return (
@@ -153,7 +126,6 @@ export function GroupDialog({ group, open, onCloseAction }: GroupDialogProps) {
                 existingGroupServCodeIds={existingGroupServCodeIds}
                 selectedIds={selectedIds}
                 onToggle={handleToggle}
-                onToggleProgCode={handleToggleProgCode}
               />
             )}
           </div>
@@ -215,46 +187,6 @@ export function GroupDialog({ group, open, onCloseAction }: GroupDialogProps) {
                       </option>
                     ))}
                   </select>
-                </div>
-              )}
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="membership"
-                  checked={membership.mode === "new"}
-                  onChange={() => setMembership({ mode: "new", label: "", daysSince: "" })}
-                  className="accent-primary"
-                />
-                <span className="text-xs text-foreground">Create new sequence with this group</span>
-              </label>
-
-              {membership.mode === "new" && (
-                <div className="pl-6 space-y-2">
-                  <input
-                    type="text"
-                    value={membership.label}
-                    onChange={(e) =>
-                      setMembership({ mode: "new", label: e.target.value, daysSince: membership.daysSince })
-                    }
-                    placeholder="Sequence label (required)"
-                    className="h-7 text-xs px-2 rounded border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full"
-                  />
-                  <div className="flex items-center gap-2">
-                    <label className="text-[10px] text-muted-foreground shrink-0">
-                      Days between rounds:
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={membership.daysSince}
-                      onChange={(e) =>
-                        setMembership({ mode: "new", label: membership.label, daysSince: e.target.value })
-                      }
-                      placeholder="none"
-                      className="h-7 w-20 text-xs px-2 rounded border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
                 </div>
               )}
             </div>

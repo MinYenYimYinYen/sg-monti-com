@@ -124,21 +124,31 @@ const selectBurndownRechartsData = createSelector(
   [selectBurndownDays, selectBurndownVelocityLine, selectMainDate, paceSeasonPlanSelect.snowMelt, paceSeasonPlanSelect.snowDeadline, paceEngineSelect.groupEffectiveDateRanges, paceEngineSelect.crawlerDays],
   (burndownDays, velocityLine, mainDate, snowMelt, snowDeadline, groupDateRanges, crawlerDays): BurndownRechartsData => {
     if (burndownDays.length === 0) {
-      return { rows: [], groupKeys: [], groupLabels: new Map(), groupDateRanges: new Map(), mainDate, snowMelt, snowDeadline };
+      return { rows: [], groupKeys: [], groupLabels: new Map(), groupDateRanges: new Map(), groupSequenceIds: new Map(), mainDate, snowMelt, snowDeadline };
     }
 
-    // Collect stable ordered group keys and labels from the raw (unfilled) crawler days,
-    // which preserve the engine's original sequence/schedule order.
+    // Collect unique group keys, labels, and sequenceIds from the raw (unfilled) crawler days.
     const groupLabels = new Map<string, string>();
+    const groupSequenceIds = new Map<string, string | null>();
     const groupKeyOrder: string[] = [];
     for (const day of crawlerDays) {
       for (const group of day.groups) {
         if (!groupLabels.has(group.groupId)) {
           groupLabels.set(group.groupId, group.label);
+          groupSequenceIds.set(group.groupId, group.sequenceId);
           groupKeyOrder.push(group.groupId);
         }
       }
     }
+
+    // Sort by effectiveStart so the legend and bar stack reflect chronological
+    // order (the group that starts first appears first), regardless of the order
+    // groups happen to appear in the crawlerDays array.
+    groupKeyOrder.sort((a, b) => {
+      const startA = groupDateRanges.get(a)?.effectiveStart ?? "";
+      const startB = groupDateRanges.get(b)?.effectiveStart ?? "";
+      return startA < startB ? -1 : startA > startB ? 1 : 0;
+    });
 
     // Precompute velocity line slope for interpolation (weekday-based)
     let velocitySlope = 0;
@@ -185,6 +195,7 @@ const selectBurndownRechartsData = createSelector(
       groupKeys: groupKeyOrder,
       groupLabels,
       groupDateRanges,
+      groupSequenceIds,
       mainDate,
       snowMelt,
       snowDeadline,
@@ -317,6 +328,61 @@ export function computeSlopeAnalysis(
 
 const selectSelectedDate = (state: AppState): string | null => state.burndown.selectedDate;
 const selectSelectedGroupId = (state: AppState): string | null => state.burndown.selectedGroupId;
+const selectDateWindowStart = (state: AppState): string | null => state.burndown.dateWindowStart;
+const selectDateWindowEnd = (state: AppState): string | null => state.burndown.dateWindowEnd;
+
+// ---------------------------------------------------------------------------
+// Visible rows — rechartsData rows clamped to the stored date window
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the slice of rechartsData rows that fall within the stored date window.
+ *
+ * - null window boundaries mean "use the full range".
+ * - If a stored boundary date is no longer in the dataset (e.g. after a goal
+ *   multiplier change), we clamp to the nearest available date so the window
+ *   stays as close as possible to the user's intent.
+ */
+const selectVisibleRows = createSelector(
+  [selectBurndownRechartsData, selectDateWindowStart, selectDateWindowEnd],
+  (rechartsData, windowStart, windowEnd) => {
+    const { rows } = rechartsData;
+    if (rows.length === 0) return rows;
+
+    const firstDate = rows[0].date;
+    const lastDate = rows[rows.length - 1].date;
+
+    // Clamp stored dates to the available range
+    const effectiveStart = windowStart && windowStart > firstDate ? windowStart : firstDate;
+    const effectiveEnd = windowEnd && windowEnd < lastDate ? windowEnd : lastDate;
+
+    const startIdx = rows.findIndex((r) => r.date >= effectiveStart);
+    const endIdx = rows.findLastIndex((r) => r.date <= effectiveEnd);
+
+    if (startIdx === -1 || endIdx === -1 || startIdx > endIdx) return rows;
+    return rows.slice(startIdx, endIdx + 1);
+  },
+);
+
+/**
+ * The resolved start/end indices into rechartsData.rows for the current window.
+ * Used by the slider to know its current thumb positions.
+ */
+const selectDateWindowIndices = createSelector(
+  [selectBurndownRechartsData, selectVisibleRows],
+  (rechartsData, visibleRows): { startIndex: number; endIndex: number } => {
+    const { rows } = rechartsData;
+    if (rows.length === 0 || visibleRows.length === 0) {
+      return { startIndex: 0, endIndex: 0 };
+    }
+    const startIndex = rows.findIndex((r) => r.date === visibleRows[0].date);
+    const endIndex = rows.findIndex((r) => r.date === visibleRows[visibleRows.length - 1].date);
+    return {
+      startIndex: startIndex === -1 ? 0 : startIndex,
+      endIndex: endIndex === -1 ? rows.length - 1 : endIndex,
+    };
+  },
+);
 
 /**
  * The full BurndownRechartsRow for the currently selected date, or null.
@@ -339,6 +405,8 @@ export const burndownSelect = {
   velocityLine: selectBurndownVelocityLine,
   chartData: selectBurndownChartData,
   rechartsData: selectBurndownRechartsData,
+  visibleRows: selectVisibleRows,
+  dateWindowIndices: selectDateWindowIndices,
   selectedDate: selectSelectedDate,
   selectedGroupId: selectSelectedGroupId,
   selectedRow: selectSelectedRow,

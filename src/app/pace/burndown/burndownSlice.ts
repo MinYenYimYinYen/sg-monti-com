@@ -9,11 +9,20 @@ type BurndownState = {
   selectedDate: string | null;
   /** The groupId of the currently selected legend item, or null if none. */
   selectedGroupId: string | null;
+  /**
+   * The visible date window for the burndown chart slider.
+   * Stored as ISO date strings so the window survives dataset re-renders
+   * (e.g. goal multiplier changes). null means "use the full range".
+   */
+  dateWindowStart: string | null;
+  dateWindowEnd: string | null;
 };
 
 const initialState: BurndownState = {
   selectedDate: null,
   selectedGroupId: null,
+  dateWindowStart: null,
+  dateWindowEnd: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -37,6 +46,13 @@ const burndownSlice = createSlice({
     clearSelection: (state) => {
       state.selectedDate = null;
       state.selectedGroupId = null;
+    },
+    setDateWindow: (
+      state,
+      action: PayloadAction<{ start: string | null; end: string | null }>,
+    ) => {
+      state.dateWindowStart = action.payload.start;
+      state.dateWindowEnd = action.payload.end;
     },
   },
 });

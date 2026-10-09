@@ -2,26 +2,22 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { usePathname } from "next/navigation";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { Save, Trash2, ChevronDown } from "lucide-react";
 
-const ASSIGNMENTS_PATH = "/pace/assignments";
-
 /**
  * Scenario dropdown + Save / Save As controls for the pace module's assignment plans.
  *
- * Shown in the pace layout header. The Save / Save As buttons are only visible
- * when the user is on the Assignments page — they are irrelevant elsewhere.
+ * Shown in the pace layout header on all pace pages. Save/Save As are always
+ * visible so the user can confirm changes from any view in the module.
  *
  * Save: overwrites the active scenario's `plans` with the current local plans.
  * Save As: creates a new (inactive) scenario with the current local plans.
  */
 export function PaceScenarioSelector() {
   const dispatch = useAppDispatch();
-  const pathname = usePathname();
 
   const activeScenario = useSelector(assignmentPlanSelect.activeScenario);
   const scenarios = useSelector(assignmentPlanSelect.scenarios);
@@ -29,8 +25,6 @@ export function PaceScenarioSelector() {
   const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
 
   const inactiveScenarios = scenarios.filter((s) => !s.isActive);
-  const isAssignmentsPage =
-    pathname === ASSIGNMENTS_PATH || pathname.startsWith("/pace/setup/employees");
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [confirmDeleteName, setConfirmDeleteName] = useState<string | null>(null);
@@ -163,72 +157,70 @@ export function PaceScenarioSelector() {
         )}
       </div>
 
-      {/* Assignments-page-only controls */}
-      {isAssignmentsPage && (
-        <>
-          {isDirty && (
-            <span className="text-[9px] text-secondary font-semibold uppercase tracking-wide">
-              unsaved
-            </span>
-          )}
+      {/* Save / Save As controls — always visible */}
+      <>
+        {isDirty && (
+          <span className="text-[9px] text-secondary font-semibold uppercase tracking-wide">
+            unsaved
+          </span>
+        )}
 
-          {activeScenario && isDirty && (
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
-              title="Save changes to active scenario"
-            >
-              <Save className="w-3 h-3" />
-              Save
-            </button>
-          )}
+        {activeScenario && isDirty && (
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+            title="Save changes to active scenario"
+          >
+            <Save className="w-3 h-3" />
+            Save
+          </button>
+        )}
 
-          {showSaveAs ? (
-            <div className="flex items-center gap-1">
-              <input
-                type="text"
-                value={saveAsName}
-                onChange={(e) => setSaveAsName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSaveAs();
-                  if (e.key === "Escape") {
-                    setShowSaveAs(false);
-                    setSaveAsName("");
-                  }
-                }}
-                placeholder="Scenario name…"
-                autoFocus
-                className="h-6 text-[10px] px-2 rounded border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-32"
-              />
-              <button
-                onClick={handleSaveAs}
-                disabled={!saveAsName.trim()}
-                className="h-6 px-2 rounded text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => {
+        {showSaveAs ? (
+          <div className="flex items-center gap-1">
+            <input
+              type="text"
+              value={saveAsName}
+              onChange={(e) => setSaveAsName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveAs();
+                if (e.key === "Escape") {
                   setShowSaveAs(false);
                   setSaveAsName("");
-                }}
-                className="h-6 px-1.5 rounded text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-          ) : (
+                }
+              }}
+              placeholder="Scenario name…"
+              autoFocus
+              className="h-6 text-[10px] px-2 rounded border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-32"
+            />
             <button
-              onClick={() => setShowSaveAs(true)}
-              className="flex items-center gap-1 h-6 px-2 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
-              title="Save as new scenario"
+              onClick={handleSaveAs}
+              disabled={!saveAsName.trim()}
+              className="h-6 px-2 rounded text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              <Save className="w-3 h-3" />
-              Save As
+              Save
             </button>
-          )}
-        </>
-      )}
+            <button
+              onClick={() => {
+                setShowSaveAs(false);
+                setSaveAsName("");
+              }}
+              className="h-6 px-1.5 rounded text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowSaveAs(true)}
+            className="flex items-center gap-1 h-6 px-2 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
+            title="Save as new scenario"
+          >
+            <Save className="w-3 h-3" />
+            Save As
+          </button>
+        )}
+      </>
     </div>
   );
 }
