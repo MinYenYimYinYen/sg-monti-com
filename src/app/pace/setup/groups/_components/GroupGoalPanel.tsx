@@ -18,10 +18,17 @@ import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSe
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { GroupScheduleButton } from "@/app/pace/setup/groups/_components/GroupScheduleButton";
 import { AddEmployeeToGroupDialog } from "@/app/pace/setup/groups/_components/AddEmployeeToGroupDialog";
-import { formatGoal } from "@/app/pace/assignments/_components/assignmentsHelpers";
 import { Info } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/style/components/popover";
 
+export function formatGoal(goal: number | null): string {
+  if (goal === null) return "";
+  return String(Math.round(goal));
+}
 type GroupGoalPanelProps = {
   groupId: string;
 };
@@ -33,7 +40,9 @@ type RemoveTarget = {
 
 export function GroupGoalPanel({ groupId }: GroupGoalPanelProps) {
   const dispatch = useAppDispatch();
-  const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
+  const assignmentGroupMap = useSelector(
+    paceAssignmentGroupSelect.assignmentGroupMap,
+  );
   const employeeMap = useSelector(employeeSelect.employeeMap);
   const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
   const isDirty = useSelector(assignmentPlanSelect.isDirty);
@@ -45,7 +54,11 @@ export function GroupGoalPanel({ groupId }: GroupGoalPanelProps) {
   if (!group) return null;
 
   // Build priority-ordered list of employees assigned to this group
-  const employeeAssignments: { employeeId: string; priority: number; goal: number | null }[] = [];
+  const employeeAssignments: {
+    employeeId: string;
+    priority: number;
+    goal: number | null;
+  }[] = [];
   for (const plan of assignmentPlans) {
     const idx = plan.groupAssignments.findIndex((ga) => ga.groupId === groupId);
     if (idx !== -1) {
@@ -65,12 +78,16 @@ export function GroupGoalPanel({ groupId }: GroupGoalPanelProps) {
 
   function handleConfirmRemove() {
     if (!removeTarget) return;
-    const plan = assignmentPlans.find((p) => p.employeeId === removeTarget.employeeId);
+    const plan = assignmentPlans.find(
+      (p) => p.employeeId === removeTarget.employeeId,
+    );
     if (!plan) return;
     dispatch(
       paceAssignmentPlanActions.reorderGroupAssignments({
         employeeId: removeTarget.employeeId,
-        groupAssignments: plan.groupAssignments.filter((ga) => ga.groupId !== groupId),
+        groupAssignments: plan.groupAssignments.filter(
+          (ga) => ga.groupId !== groupId,
+        ),
       }),
     );
     setRemoveTarget(null);
@@ -140,7 +157,8 @@ export function GroupGoalPanel({ groupId }: GroupGoalPanelProps) {
           ) : (
             <div className="p-4 space-y-2">
               {employeeAssignments.map(({ employeeId, priority, goal }) => {
-                const employeeName = employeeMap.get(employeeId)?.name ?? employeeId;
+                const employeeName =
+                  employeeMap.get(employeeId)?.name ?? employeeId;
                 return (
                   <EmployeeGoalCard
                     key={employeeId}
@@ -158,16 +176,22 @@ export function GroupGoalPanel({ groupId }: GroupGoalPanelProps) {
                         }),
                       );
                     }}
-                    onRemoveRequest={() => setRemoveTarget({ employeeId, employeeName })}
+                    onRemoveRequest={() =>
+                      setRemoveTarget({ employeeId, employeeName })
+                    }
                   />
                 );
               })}
 
               {/* Team total */}
               <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 mt-2">
-                <span className="text-xs font-medium text-foreground">Team total</span>
+                <span className="text-xs font-medium text-foreground">
+                  Team total
+                </span>
                 <span className="text-xs font-mono font-semibold text-foreground">
-                  {teamTotal > 0 ? `$${Math.round(teamTotal).toLocaleString()}/day` : "—"}
+                  {teamTotal > 0
+                    ? `$${Math.round(teamTotal).toLocaleString()}/day`
+                    : "—"}
                 </span>
               </div>
 
@@ -197,7 +221,9 @@ export function GroupGoalPanel({ groupId }: GroupGoalPanelProps) {
       {/* Remove confirmation dialog */}
       <Dialog
         open={removeTarget !== null}
-        onOpenChange={(v) => { if (!v) setRemoveTarget(null); }}
+        onOpenChange={(v) => {
+          if (!v) setRemoveTarget(null);
+        }}
       >
         <DialogContent className="max-w-[360px]">
           <DialogHeader>
@@ -205,12 +231,21 @@ export function GroupGoalPanel({ groupId }: GroupGoalPanelProps) {
           </DialogHeader>
           <p className="text-sm text-muted-foreground py-2">
             Remove{" "}
-            <span className="font-semibold text-foreground">{removeTarget?.employeeName}</span>{" "}
+            <span className="font-semibold text-foreground">
+              {removeTarget?.employeeName}
+            </span>{" "}
             from{" "}
-            <span className="font-mono font-semibold text-primary">{group.label}</span>?
+            <span className="font-mono font-semibold text-primary">
+              {group.label}
+            </span>
+            ?
           </p>
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setRemoveTarget(null)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRemoveTarget(null)}
+            >
               Cancel
             </Button>
             <Button
@@ -274,7 +309,9 @@ function EmployeeGoalCard({
       </span>
 
       {/* Employee name */}
-      <span className="text-xs text-foreground flex-1 truncate">{employeeName}</span>
+      <span className="text-xs text-foreground flex-1 truncate">
+        {employeeName}
+      </span>
 
       {/* Goal input */}
       <div className="flex items-center gap-1 shrink-0">

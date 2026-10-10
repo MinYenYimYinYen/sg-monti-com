@@ -4,8 +4,12 @@ import { useState } from "react";
 import { GripVertical, Info } from "lucide-react";
 import { GroupAssignment } from "@/app/pace/assignmentPlan/AssignmentPlanTypes";
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
-import { formatGoal } from "@/app/pace/assignments/_components/assignmentsHelpers";
-import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/style/components/popover";
+import { formatGoal } from "@/app/pace/setup/groups/_components/GroupGoalPanel";
 
 type AssignmentRowProps = {
   groupAssignment: GroupAssignment;

@@ -9,7 +9,7 @@ import { AppState } from "@/store";
 import { DatePicker } from "@/components/DatePicker";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
-import { PaceScenarioSelector } from "@/app/pace/assignments/_components/PaceScenarioSelector";
+import { PaceScenarioSelector } from "@/app/pace/assignmentPlan/PaceScenarioSelector";
 import {
   BarChart2,
   CalendarDays,
