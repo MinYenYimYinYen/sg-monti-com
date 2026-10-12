@@ -1,8 +1,9 @@
 import { Document, Page, View, Text } from "@react-pdf/renderer";
 import { MixChartColumn, MixChartRow } from "@/app/realGreen/product/mixChart/_lib/mixChartUtils";
 import { tw } from "@/lib/pdf/tw";
-import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
-import { PDFNumber } from "@/components/Number";
+import { LandPlotPDFIcon } from "@/lib/pdf/_components/pdfIcons";
+
+import {PDFNumber} from "@/lib/pdf/_components/PDFNumber";
 
 export type MixChartPDFProps = {
   title: string;

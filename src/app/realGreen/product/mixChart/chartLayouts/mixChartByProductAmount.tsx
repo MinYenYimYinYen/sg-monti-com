@@ -4,8 +4,9 @@ import {
   MixChartColumn,
 } from "@/app/realGreen/product/mixChart/_lib/mixChartUtils";
 import { tw } from "@/lib/pdf/tw";
-import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
-import { PDFNumber } from "@/components/Number";
+import { LandPlotPDFIcon } from "@/lib/pdf/_components/pdfIcons";
+
+import {PDFNumber} from "@/lib/pdf/_components/PDFNumber";
 
 const KEY_COLUMN_WIDTH = "w-32";
 

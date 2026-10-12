@@ -21,10 +21,9 @@ import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSel
 import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
 import { tw } from "@/lib/pdf/tw";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
-import { HashPDFIcon, SproutPDFIcon } from "@/lib/pdf/pdfIcons";
+import { HashPDFIcon, SproutPDFIcon } from "@/lib/pdf/_components/pdfIcons";
 import { truncate } from "@/lib/primatives/string/truncate";
-import { LandPlotPDFIcon } from "@/lib/pdf/pdfIcons";
-import { PDFNumber } from "@/components/Number";
+import { LandPlotPDFIcon } from "@/lib/pdf/_components/pdfIcons";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
@@ -33,6 +32,7 @@ import {
   servCodeHasSeed,
   textHasSeedOrPreEm,
 } from "@/app/scheduling/coverSheets/[routeDate]/seedConditions";
+import {PDFNumber} from "@/lib/pdf/_components/PDFNumber";
 
 export type RouteDatePageProps = {
   params: Promise<{

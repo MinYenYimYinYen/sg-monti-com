@@ -1,7 +1,6 @@
-import { Text } from "@react-pdf/renderer";
 // import { Style } from "@react-pdf/types";
 
-type BaseNumberProps = {
+export type BaseNumberProps = {
   children: number | string | null | undefined;
   isMoney?: boolean;
   decimals?: number;
@@ -14,11 +13,7 @@ type NumberProps = BaseNumberProps & {
   className?: string;
 };
 
-type PDFNumberProps = BaseNumberProps & {
-  style?: any | any[]
-};
-
-function formatNumber({
+export function formatNumber({
   children,
   isMoney = false,
   decimals = 0,
@@ -61,16 +56,3 @@ export function Number({
   );
 }
 
-export function PDFNumber({
-  children,
-  isMoney = false,
-  decimals = 0,
-  locale = "en-US",
-  useGrouping = true,
-  signDisplay = "auto",
-  style,
-}: PDFNumberProps) {
-  const formatted = formatNumber({ children, isMoney, decimals, locale, useGrouping, signDisplay });
-
-  return <Text style={style}>{formatted}</Text>;
-}

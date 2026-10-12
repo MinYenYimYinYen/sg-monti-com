@@ -320,6 +320,14 @@ export default function FeatureLayout({ children }: { children: React.ReactNode 
 
 ---
 
+## PDF Generation
+
+- **Reference**: See `src/lib/pdf/pdf.readme.md`.
+- **Libraries**: `@react-pdf/renderer` + `react-pdf-tailwind`
+- **Requirement**: Agents **must** read the PDF readme before creating or modifying any PDF documents or PDF components.
+- **Shared Primitives**: `src/lib/pdf/tw.ts` (styling), `src/lib/pdf/_components/PDFNumber.tsx` (number formatting), `src/lib/pdf/_components/pdfIcons.tsx` (SVG icons).
+- **Feature-Local**: PDF document components live alongside their feature page, not in `src/lib/pdf/`.
+
 ## RealGreen Customer Module
 - **Reference**: See `src/app/realGreen/customer/customer.readme.md`.
 - **Streaming**: See `src/app/realGreen/customer/streaming.readme.md`.
