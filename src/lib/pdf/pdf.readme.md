@@ -145,6 +145,80 @@ Note: `stroke="black"` is hardcoded — CSS variables do not work in PDF.
 
 ---
 
+## PositionedBox
+
+`PositionedBox` is a shared PDF layout primitive for placing content at an absolute position on a page. It is designed for overlaying typed content onto preprinted forms where fields must align precisely with fixed coordinates.
+
+```typescript
+import { PositionedBox } from "@/lib/pdf/_components/PositionedBox";
+
+<PositionedBox x={1.5} y={3.25} width={2} height={0.25}>
+  <Text style={tw("text-[10px]")}>John Smith</Text>
+</PositionedBox>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `x` | `number` | — | Left edge — inches from the left edge of the page |
+| `y` | `number` | — | Top edge — inches from the top edge of the page |
+| `width` | `number` | — | Box width in inches |
+| `height` | `number` | — | Box height in inches |
+| `align` | `"topLeft" \| "center"` | `"topLeft"` | Content alignment within the box |
+| `showBoundingBox` | `boolean` | `false` | Draws a dashed red border for layout development |
+| `children` | `React.ReactNode` | — | Content to render inside the box |
+
+### Coordinate System
+
+- **Origin (0, 0)** = top-left corner of the page
+- **X** increases to the right
+- **Y** increases downward
+- **Unit**: inches (converted to points internally — 72 pts/inch)
+
+| Page Size | Width | Height |
+|---|---|---|
+| Letter | 8.5" | 11" |
+| Legal | 8.5" | 14" |
+
+When measuring a physical form with a ruler:
+- Measure from the **left edge** of the paper → `x`
+- Measure from the **top edge** of the paper → `y`
+- Measure the field **width** and **height**
+
+### Alignment Modes
+
+- **`topLeft`** (default): Content flows from the top-left corner of the box. Standard for text fields.
+- **`center`**: Content is centered both horizontally and vertically. Useful for stamps, seals, or single-value fields.
+
+### Overflow
+
+Content that exceeds the box dimensions is clipped (`overflow: hidden`). This prevents content from bleeding into adjacent fields on the form.
+
+### `showBoundingBox` Workflow
+
+Use `showBoundingBox={true}` during development to verify alignment against a physical form:
+
+1. Set `showBoundingBox={true}` on all `PositionedBox` instances
+2. Generate and print the PDF
+3. Hold the printout up to the preprinted form (or overlay them on a light table)
+4. Adjust `x`, `y`, `width`, `height` as needed
+5. Remove `showBoundingBox` (or set to `false`) when alignment is confirmed
+
+```tsx
+// Development — visible borders
+<PositionedBox x={1.5} y={3.25} width={2} height={0.25} showBoundingBox>
+  <Text style={tw("text-[10px]")}>John Smith</Text>
+</PositionedBox>
+
+// Production — borders hidden
+<PositionedBox x={1.5} y={3.25} width={2} height={0.25}>
+  <Text style={tw("text-[10px]")}>John Smith</Text>
+</PositionedBox>
+```
+
+---
+
 ## Page Sizing
 
 The `<Page>` component accepts a `size` prop with a named string or custom dimensions:
