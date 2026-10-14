@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { formTemplateActions } from "@/app/formTemplate/formTemplateSlice";
@@ -30,21 +30,47 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/style/components/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/style/components/accordion";
 import type { FormLetterSlotDoc } from "@/app/formTemplate/FormTemplateTypes";
 import { Braces, Minus, Plus, FileText, Move } from "lucide-react";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { SamplePdfDownload } from "./SamplePdfDownload";
 
+const INCH_PX = 96;
 const ZOOM_STEP = 0.1;
+/** Default slot dimensions in inches when a new slot is added. */
+const DEFAULT_SLOT_WIDTH = 2;
+const DEFAULT_SLOT_HEIGHT = 0.25;
 
-/** Creates a positioned slot for a given key. */
-function makeSlotForKey(key: string): FormLetterSlotDoc {
+/** Creates a positioned slot for a given key, centered on the visible scroll area. */
+function makeSlotForKey(
+  key: string,
+  scrollContainer: HTMLDivElement | null,
+  scale: number,
+): FormLetterSlotDoc {
+  let x = 1;
+  let y = 1;
+
+  if (scrollContainer) {
+    const { scrollLeft, scrollTop, clientWidth, clientHeight } = scrollContainer;
+    // Convert the visible center from px to inches, then offset by half the slot size
+    const centerXIn = (scrollLeft + clientWidth / 2) / (INCH_PX * scale);
+    const centerYIn = (scrollTop + clientHeight / 2) / (INCH_PX * scale);
+    x = Math.max(0, centerXIn - DEFAULT_SLOT_WIDTH / 2);
+    y = Math.max(0, centerYIn - DEFAULT_SLOT_HEIGHT / 2);
+  }
+
   return {
     key,
-    x: 1,
-    y: 1,
-    width: 2,
-    height: 0.25,
+    x: Math.round(x * 1000) / 1000,
+    y: Math.round(y * 1000) / 1000,
+    width: DEFAULT_SLOT_WIDTH,
+    height: DEFAULT_SLOT_HEIGHT,
   };
 }
 
@@ -61,7 +87,7 @@ function makeNewTemplate() {
 
 /**
  * Two-panel template editor.
- * Left: available fields + positioned slot editor + template metadata.
+ * Left: available fields + positioned slot accordion + template metadata.
  * Right: page preview — handles mode (CSS overlay with drag handles) or PDF mode (live PDFViewer).
  */
 export function FormTemplateEditor() {
@@ -70,8 +96,12 @@ export function FormTemplateEditor() {
   const templates = useSelector(formTemplateSelect.templates);
   const previewScale = useSelector(formTemplateSelect.previewScale);
   const previewMode = useSelector(formTemplateSelect.previewMode);
+  const allEdges = useSelector(formTemplateSelect.draftSlotEdges);
   const [selectedSlotKey, setSelectedSlotKey] = useState<string | null>(null);
   const isClient = useIsClient();
+
+  // Ref to the scrollable preview container — used to compute center-on-add position
+  const previewScrollRef = useRef<HTMLDivElement | null>(null);
 
   // If no draft, show template selector / new template button
   if (!draft) {
@@ -125,14 +155,11 @@ export function FormTemplateEditor() {
   const positionedKeys = new Set(draft.slots.map((s) => s.key));
   const unpositionedKeys = availableKeys.filter((k) => !positionedKeys.has(k));
 
-  const selectedSlot = draft.slots.find((s) => s.key === selectedSlotKey) ?? null;
-  const selectedSlotLabel = selectedSlot ? (contract[selectedSlot.key]?.label ?? selectedSlot.key) : "";
-
   // Capture draft in a non-null local variable — we've already returned early if draft is null above
   const activeDraft = draft;
 
   function handleAddKey(key: string) {
-    const slot = makeSlotForKey(key);
+    const slot = makeSlotForKey(key, previewScrollRef.current, previewScale);
     dispatch(formTemplateActions.addDraftSlot(slot));
     setSelectedSlotKey(key);
   }
@@ -140,7 +167,7 @@ export function FormTemplateEditor() {
   function handleSaveSlot(updated: FormLetterSlotDoc) {
     dispatch(
       formTemplateActions.updateDraftSlot({
-        key: selectedSlotKey!,
+        key: updated.key,
         slot: updated,
       }),
     );
@@ -273,47 +300,40 @@ export function FormTemplateEditor() {
           </>
         )}
 
-        {/* Positioned slots */}
+        {/* Positioned slots — accordion */}
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">
             Positioned ({draft.slots.length})
           </span>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <Accordion
+          type="single"
+          collapsible
+          value={selectedSlotKey ?? ""}
+          onValueChange={(value) => setSelectedSlotKey(value || null)}
+          className="flex flex-col gap-0"
+        >
           {draft.slots.map((slot) => (
-            <button
-              key={slot.key}
-              onClick={() =>
-                setSelectedSlotKey(
-                  selectedSlotKey === slot.key ? null : slot.key,
-                )
-              }
-              className={`text-left text-sm px-2 py-1.5 rounded-md transition-colors ${
-                selectedSlotKey === slot.key
-                  ? "bg-primary/20 text-foreground font-medium"
-                  : "hover:bg-muted text-muted-foreground"
-              }`}
-            >
-              <span className="font-medium">{contract[slot.key]?.label ?? slot.key}</span>
-              <span className="ml-2 text-xs font-mono opacity-60">{slot.key}</span>
-            </button>
+            <AccordionItem key={slot.key} value={slot.key} className="border-b-0">
+              <AccordionTrigger className="text-sm px-2 py-1.5 rounded-md hover:bg-muted hover:no-underline [&[data-state=open]]:bg-primary/10 [&[data-state=open]]:text-foreground [&[data-state=open]]:font-medium">
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="font-medium truncate">{contract[slot.key]?.label ?? slot.key}</span>
+                  <span className="text-xs font-mono opacity-60 shrink-0">{slot.key}</span>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="pb-1 pt-0">
+                <SlotEditor
+                  key={slot.key}
+                  slot={slot}
+                  slotLabel={contract[slot.key]?.label ?? slot.key}
+                  onSave={handleSaveSlot}
+                  onDelete={handleDeleteSlot}
+                />
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
-
-        {/* Selected slot editor */}
-        {selectedSlot && (
-          <>
-            <hr className="border-border" />
-            <SlotEditor
-              key={selectedSlot.key}
-              slot={selectedSlot}
-              slotLabel={selectedSlotLabel}
-              onSave={handleSaveSlot}
-              onDelete={handleDeleteSlot}
-            />
-          </>
-        )}
+        </Accordion>
 
         <hr className="border-border" />
 
@@ -435,7 +455,10 @@ export function FormTemplateEditor() {
         </div>
 
         {/* Scrollable preview area */}
-        <div className="flex-1 overflow-auto bg-muted/30 flex items-start justify-center p-6">
+        <div
+          ref={previewScrollRef}
+          className="flex-1 overflow-auto bg-muted/30 flex items-start justify-center p-6"
+        >
           {isClient && (
             <PagePreview
               template={activeDraft}
@@ -446,9 +469,12 @@ export function FormTemplateEditor() {
                 setSelectedSlotKey(selectedSlotKey === key ? null : key)
               }
               onSlotUpdate={handleSlotUpdate}
+              onSlotSave={handleSaveSlot}
+              onSlotDelete={handleDeleteSlot}
               scale={previewScale}
               previewMode={previewMode}
               backgroundImage={backgroundImage}
+              allEdges={allEdges}
             />
           )}
         </div>
