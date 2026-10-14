@@ -1,11 +1,12 @@
 import { Document, Page } from "@react-pdf/renderer";
 import { PositionedBox } from "@/lib/pdf/_components/PositionedBox";
-import type { FormLetterTemplateDoc, FormLetterData } from "@/app/formTemplate/FormTemplateTypes";
+import type { FormLetterTemplateDoc } from "@/app/formTemplate/FormTemplateTypes";
 import type { FieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
 
 type FormLetterDocumentProps = {
   template: FormLetterTemplateDoc;
-  data: FormLetterData;
+  /** The full data object passed to every slot renderer. */
+  data: unknown;
   /** The feature's data contract — maps slot keys to their react-pdf renderers. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   contract: Record<string, FieldDescriptor<any>>;
@@ -40,7 +41,7 @@ export function FormLetterDocument({
               width={slot.width}
               height={slot.height}
             >
-              {descriptor.render(data[slot.key])}
+              {descriptor.render(data)}
             </PositionedBox>
           );
         })}

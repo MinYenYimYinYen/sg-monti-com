@@ -3,7 +3,6 @@
 import Image from "next/image";
 import type { StaticImageData } from "next/image";
 import { cn } from "@/style/utils";
-import type { FormLetterData } from "@/app/formTemplate/FormTemplateTypes";
 import type { FieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
 import { DragHandle } from "./DragHandle";
 import { PDFViewer } from "@react-pdf/renderer";
@@ -23,7 +22,7 @@ type SlotPatch = { x?: number; y?: number; width?: number; height?: number };
 
 type PagePreviewProps = {
   template: FormLetterTemplateDoc;
-  sampleData: FormLetterData;
+  sampleData: unknown;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   contract: Record<string, FieldDescriptor<any>>;
   selectedSlotKey?: string | null;
@@ -112,7 +111,6 @@ export function PagePreview({
         const slotWidth = slot.width * INCH_PX * scale;
         const slotHeight = slot.height * INCH_PX * scale;
         const isSelected = slot.key === selectedSlotKey;
-        const value = sampleData[slot.key];
         const descriptor = contract[slot.key];
 
         const borderClass = isSelected
@@ -148,10 +146,10 @@ export function PagePreview({
               </span>
             </div>
 
-            {/* Content rendered via the contract's previewRender */}
+            {/* Content rendered via the contract's previewRender — passes full sampleData */}
             {descriptor && (
               <div className="w-full h-full p-px overflow-hidden">
-                {descriptor.previewRender(value, scale)}
+                {descriptor.previewRender(sampleData, scale)}
               </div>
             )}
           </div>

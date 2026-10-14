@@ -4,12 +4,12 @@ import { usePDF } from "@react-pdf/renderer";
 import { Button } from "@/style/components/button";
 import { Printer } from "lucide-react";
 import { FormLetterDocument } from "@/lib/pdf/FormLetterDocument";
-import type { FormLetterTemplateDoc, FormLetterData } from "@/app/formTemplate/FormTemplateTypes";
+import type { FormLetterTemplateDoc } from "@/app/formTemplate/FormTemplateTypes";
 import type { FieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
 
 type SamplePdfDownloadProps = {
   draft: FormLetterTemplateDoc;
-  sampleData: FormLetterData;
+  sampleData: unknown;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   contract: Record<string, FieldDescriptor<any>>;
 };
