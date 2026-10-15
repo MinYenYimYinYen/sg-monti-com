@@ -4,6 +4,7 @@ import type { FormLetterTemplateDoc, FormLetterSlotDoc } from "./FormTemplateTyp
 
 const FormLetterSlotSchema = new mongoose.Schema<FormLetterSlotDoc>(
   {
+    slotId: { type: String, required: true },
     key: { type: String, required: true },
     x: { type: Number, required: true },
     y: { type: Number, required: true },

@@ -6,6 +6,20 @@ import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 
+/**
+ * One-time migration: backfills `slotId` on any slot that was saved before the
+ * slotId field was introduced. Run `getAll` once after deploying, then remove this function.
+ */
+function migrateSlotIds(templates: FormLetterTemplateDoc[]): FormLetterTemplateDoc[] {
+  return templates.map((template) => ({
+    ...template,
+    slots: template.slots.map((slot, index) => ({
+      ...slot,
+      slotId: slot.slotId ?? `slot_migrated_${template.templateId}_${index}`,
+    })),
+  }));
+}
+
 const handlers: HandlerMap<FormTemplateContract> = {
   getAll: {
     roles: ["admin", "office"],
@@ -13,7 +27,7 @@ const handlers: HandlerMap<FormTemplateContract> = {
       await connectToMongoDB();
       const docs = await FormTemplateModel.find({}).lean();
       const cleaned = cleanMongoArray<FormLetterTemplateDoc>(docs);
-      return { success: true, payload: cleaned };
+      return { success: true, payload: migrateSlotIds(cleaned) };
     },
   },
 

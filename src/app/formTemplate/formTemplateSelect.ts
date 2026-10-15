@@ -25,11 +25,11 @@ export type SlotEdges = {
   centerY: number;
 };
 
-/** Maps each slot key to its edge positions (in inches) for snap alignment. */
+/** Maps each slot's slotId to its edge positions (in inches) for snap alignment. */
 const selectDraftSlotEdges = createSelector([selectDraftSlots], (slots) => {
   const map = new Map<string, SlotEdges>();
   for (const slot of slots) {
-    map.set(slot.key, {
+    map.set(slot.slotId, {
       left: slot.x,
       right: slot.x + slot.width,
       top: slot.y,
@@ -41,6 +41,14 @@ const selectDraftSlotEdges = createSelector([selectDraftSlots], (slots) => {
   return map;
 });
 
+/** True when the draft differs from the last saved version (or is a new unsaved template). */
+const selectIsDirty = createSelector([selectDraft, selectTemplateMap], (draft, templateMap) => {
+  if (!draft) return false;
+  const saved = templateMap.get(draft.templateId);
+  if (!saved) return true; // new template, never saved
+  return JSON.stringify(draft) !== JSON.stringify(saved);
+});
+
 export const formTemplateSelect = {
   templates: selectTemplates,
   draft: selectDraft,
@@ -49,4 +57,5 @@ export const formTemplateSelect = {
   templateMap: selectTemplateMap,
   previewScale: selectPreviewScale,
   previewMode: selectPreviewMode,
+  isDirty: selectIsDirty,
 };

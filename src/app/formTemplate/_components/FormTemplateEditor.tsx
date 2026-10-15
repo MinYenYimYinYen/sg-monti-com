@@ -11,6 +11,8 @@ import {
   type FormLetterDataType,
   type AnyFieldDescriptor,
 } from "@/app/formTemplate/formLetterDataTypes";
+import { hasOptions } from "@/app/formTemplate/formLetterDataTypes";
+import { getSchemaDefaults } from "@/app/formTemplate/slotOptionSchema";
 import { PagePreview } from "./PagePreview";
 import { SlotEditor } from "./SlotEditor";
 import { Button } from "@/style/components/button";
@@ -36,8 +38,30 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/style/components/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/style/components/alert-dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/style/components/tabs";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/style/components/popover";
 import type { FormLetterSlotDoc } from "@/app/formTemplate/FormTemplateTypes";
-import { Braces, Minus, Plus, FileText, Move } from "lucide-react";
+import { Braces, Minus, Plus, FileText, Move, Eye, Save } from "lucide-react";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { SamplePdfDownload } from "./SamplePdfDownload";
 
@@ -46,6 +70,13 @@ const ZOOM_STEP = 0.1;
 /** Default slot dimensions in inches when a new slot is added. */
 const DEFAULT_SLOT_WIDTH = 2;
 const DEFAULT_SLOT_HEIGHT = 0.25;
+
+type LeftTab = "config" | "addFields" | "customize";
+
+/** Generates a unique slotId for a new slot instance. */
+function makeSlotId(): string {
+  return `slot_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
 
 /** Creates a positioned slot for a given key, centered on the visible scroll area. */
 function makeSlotForKey(
@@ -58,7 +89,6 @@ function makeSlotForKey(
 
   if (scrollContainer) {
     const { scrollLeft, scrollTop, clientWidth, clientHeight } = scrollContainer;
-    // Convert the visible center from px to inches, then offset by half the slot size
     const centerXIn = (scrollLeft + clientWidth / 2) / (INCH_PX * scale);
     const centerYIn = (scrollTop + clientHeight / 2) / (INCH_PX * scale);
     x = Math.max(0, centerXIn - DEFAULT_SLOT_WIDTH / 2);
@@ -66,6 +96,7 @@ function makeSlotForKey(
   }
 
   return {
+    slotId: makeSlotId(),
     key,
     x: Math.round(x * 1000) / 1000,
     y: Math.round(y * 1000) / 1000,
@@ -87,8 +118,8 @@ function makeNewTemplate() {
 
 /**
  * Two-panel template editor.
- * Left: available fields + positioned slot accordion + template metadata.
- * Right: page preview — handles mode (CSS overlay with drag handles) or PDF mode (live PDFViewer).
+ * Left: tabbed panel (Config / Add Fields / Customize).
+ * Right: page preview with isDirty save trigger in the toolbar.
  */
 export function FormTemplateEditor() {
   const dispatch = useAppDispatch();
@@ -97,11 +128,18 @@ export function FormTemplateEditor() {
   const previewScale = useSelector(formTemplateSelect.previewScale);
   const previewMode = useSelector(formTemplateSelect.previewMode);
   const allEdges = useSelector(formTemplateSelect.draftSlotEdges);
-  const [selectedSlotKey, setSelectedSlotKey] = useState<string | null>(null);
+  const isDirty = useSelector(formTemplateSelect.isDirty);
+
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<LeftTab>("config");
   const isClient = useIsClient();
 
-  // Ref to the scrollable preview container — used to compute center-on-add position
+  // Ref to the scrollable preview container
   const previewScrollRef = useRef<HTMLDivElement | null>(null);
+  // Ref to the left panel scroll container (for scrolling accordion items into view)
+  const leftPanelScrollRef = useRef<HTMLDivElement | null>(null);
+  // Map of slotId → accordion item DOM element for scroll-into-view
+  const accordionItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // If no draft, show template selector / new template button
   if (!draft) {
@@ -143,51 +181,63 @@ export function FormTemplateEditor() {
     );
   }
 
-  // Derive available slot keys, sample data, contract, and background image from the registry
   const descriptor = FORM_LETTER_DATA_TYPE_REGISTRY[draft.dataType];
-  // Cast to the widened type so string-keyed access works throughout the editor.
-  // The registry stores the concrete typed contract; we widen it here for editor use only.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const contract: Record<string, AnyFieldDescriptor<any>> = descriptor?.contract ?? {};
   const availableKeys = descriptor ? Object.keys(contract) : [];
   const sampleData = descriptor?.sampleData ?? {};
   const backgroundImage = descriptor?.backgroundImage;
-  const positionedKeys = new Set(draft.slots.map((s) => s.key));
-  const unpositionedKeys = availableKeys.filter((k) => !positionedKeys.has(k));
-
-  // Capture draft in a non-null local variable — we've already returned early if draft is null above
   const activeDraft = draft;
 
   function handleAddKey(key: string) {
     const slot = makeSlotForKey(key, previewScrollRef.current, previewScale);
     dispatch(formTemplateActions.addDraftSlot(slot));
-    setSelectedSlotKey(key);
+    setSelectedSlotId(slot.slotId);
+    setActiveTab("customize");
+    // Scroll to the new item after React renders it
+    setTimeout(() => {
+      const el = accordionItemRefs.current.get(slot.slotId);
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 50);
   }
 
   function handleSaveSlot(updated: FormLetterSlotDoc) {
     dispatch(
       formTemplateActions.updateDraftSlot({
-        key: updated.key,
+        slotId: updated.slotId,
         slot: updated,
       }),
     );
-    setSelectedSlotKey(updated.key);
+    setSelectedSlotId(updated.slotId);
   }
 
-  function handleSlotUpdate(key: string, patch: { x?: number; y?: number; width?: number; height?: number }) {
-    const slot = activeDraft.slots.find((s) => s.key === key);
+  function handleSlotUpdate(slotId: string, patch: { x?: number; y?: number; width?: number; height?: number }) {
+    const slot = activeDraft.slots.find((s) => s.slotId === slotId);
     if (!slot) return;
     dispatch(
       formTemplateActions.updateDraftSlot({
-        key,
+        slotId,
         slot: { ...slot, ...patch },
       }),
     );
   }
 
-  function handleDeleteSlot(key: string) {
-    dispatch(formTemplateActions.removeDraftSlot(key));
-    setSelectedSlotKey(null);
+  function handleDeleteSlot(slotId: string) {
+    dispatch(formTemplateActions.removeDraftSlot(slotId));
+    setSelectedSlotId(null);
+  }
+
+  function handleSlotClickFromPreview(slotId: string) {
+    const newSelected = selectedSlotId === slotId ? null : slotId;
+    setSelectedSlotId(newSelected);
+    if (newSelected) {
+      // Switch to Customize tab and scroll the accordion item into view
+      setActiveTab("customize");
+      setTimeout(() => {
+        const el = accordionItemRefs.current.get(newSelected);
+        el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 50);
+    }
   }
 
   function handleSaveTemplate() {
@@ -211,157 +261,220 @@ export function FormTemplateEditor() {
   return (
     <div className="flex h-full overflow-hidden">
       {/* ── Left panel ── */}
-      <div className="w-80 shrink-0 flex flex-col gap-3 p-3 border-r border-border overflow-y-auto bg-card">
-        {/* Template metadata */}
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="tpl-name">Template Name</Label>
-            <Input
-              id="tpl-name"
-              value={draft.templateName}
-              onChange={(e) =>
-                dispatch(
-                  formTemplateActions.updateDraft({ templateName: e.target.value }),
-                )
-              }
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <Label>Data Type</Label>
-            <Select
-              value={draft.dataType}
-              onValueChange={(v) =>
-                dispatch(
-                  formTemplateActions.updateDraft({
-                    dataType: v as FormLetterDataType,
-                  }),
-                )
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FORM_LETTER_DATA_TYPE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <Label>Page Size</Label>
-            <Select
-              value={draft.pageSize}
-              onValueChange={(v) =>
-                dispatch(
-                  formTemplateActions.updateDraft({
-                    pageSize: v as "LETTER" | "LEGAL",
-                  }),
-                )
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="LETTER">{"Letter (8.5\" × 11\")"}</SelectItem>
-                <SelectItem value="LEGAL">{"Legal (8.5\" × 14\")"}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <hr className="border-border" />
-
-        {/* Available fields (not yet positioned) */}
-        {unpositionedKeys.length > 0 && (
-          <>
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Available Fields
-            </div>
-            <div className="flex flex-col gap-1">
-              {unpositionedKeys.map((key) => (
-                <button
-                  key={key}
-                  onClick={() => handleAddKey(key)}
-                  className="text-left text-sm px-2 py-1.5 rounded-md transition-colors hover:bg-accent/20 text-muted-foreground hover:text-foreground"
-                >
-                  <span className="font-medium">{contract[key]?.label ?? key}</span>
-                  <span className="ml-2 text-xs font-mono opacity-50">{key}</span>
-                  <span className="ml-2 text-xs opacity-50">+ add</span>
-                </button>
-              ))}
-            </div>
-            <hr className="border-border" />
-          </>
-        )}
-
-        {/* Positioned slots — accordion */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">
-            Positioned ({draft.slots.length})
-          </span>
-        </div>
-
-        <Accordion
-          type="single"
-          collapsible
-          value={selectedSlotKey ?? ""}
-          onValueChange={(value) => setSelectedSlotKey(value || null)}
-          className="flex flex-col gap-0"
+      <div className="w-80 shrink-0 flex flex-col border-r border-border bg-card overflow-hidden">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as LeftTab)}
+          className="flex flex-col h-full overflow-hidden"
         >
-          {draft.slots.map((slot) => (
-            <AccordionItem key={slot.key} value={slot.key} className="border-b-0">
-              <AccordionTrigger className="text-sm px-2 py-1.5 rounded-md hover:bg-muted hover:no-underline [&[data-state=open]]:bg-primary/10 [&[data-state=open]]:text-foreground [&[data-state=open]]:font-medium">
-                <span className="flex items-center gap-2 min-w-0">
-                  <span className="font-medium truncate">{contract[slot.key]?.label ?? slot.key}</span>
-                  <span className="text-xs font-mono opacity-60 shrink-0">{slot.key}</span>
+          <TabsList className="shrink-0 w-full rounded-none border-b border-border justify-start px-2 pt-2 pb-0 h-auto bg-transparent gap-0">
+            <TabsTrigger value="config" className="text-xs rounded-b-none">Config</TabsTrigger>
+            <TabsTrigger value="addFields" className="text-xs rounded-b-none">Add Fields</TabsTrigger>
+            <TabsTrigger value="customize" className="text-xs rounded-b-none">
+              Customize
+              {activeDraft.slots.length > 0 && (
+                <span className="ml-1.5 text-[10px] bg-primary/15 text-primary rounded-full px-1.5 py-0.5 leading-none">
+                  {activeDraft.slots.length}
                 </span>
-              </AccordionTrigger>
-              <AccordionContent className="pb-1 pt-0">
-                <SlotEditor
-                  key={slot.key}
-                  slot={slot}
-                  slotLabel={contract[slot.key]?.label ?? slot.key}
-                  descriptor={contract[slot.key]}
-                  onSave={handleSaveSlot}
-                  onDelete={handleDeleteSlot}
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* ── Config tab ── */}
+          <TabsContent value="config" className="flex-1 overflow-y-auto p-3 mt-0 flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="tpl-name">Template Name</Label>
+                <Input
+                  id="tpl-name"
+                  value={draft.templateName}
+                  onChange={(e) =>
+                    dispatch(formTemplateActions.updateDraft({ templateName: e.target.value }))
+                  }
                 />
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+              </div>
 
-        <hr className="border-border" />
+              <div className="flex flex-col gap-1">
+                <Label>Data Type</Label>
+                <Select
+                  value={draft.dataType}
+                  onValueChange={(v) =>
+                    dispatch(formTemplateActions.updateDraft({ dataType: v as FormLetterDataType }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FORM_LETTER_DATA_TYPE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-        {/* Template actions */}
-        <div className="flex flex-col gap-2">
-          <Button
-            variant="primary"
-            intensity="solid"
-            onClick={handleSaveTemplate}
+              <div className="flex flex-col gap-1">
+                <Label>Page Size</Label>
+                <Select
+                  value={draft.pageSize}
+                  onValueChange={(v) =>
+                    dispatch(formTemplateActions.updateDraft({ pageSize: v as "LETTER" | "LEGAL" }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LETTER">{"Letter (8.5\" × 11\")"}</SelectItem>
+                    <SelectItem value="LEGAL">{"Legal (8.5\" × 14\")"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <hr className="border-border" />
+
+            <div className="flex flex-col gap-2">
+              <Button variant="primary" intensity="solid" onClick={handleSaveTemplate}>
+                Save Template
+              </Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" intensity="ghost">
+                    Delete Template
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete "{draft.templateName}"?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the template. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteTemplate}>
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <Button
+                variant="outline"
+                intensity="ghost"
+                onClick={() => dispatch(formTemplateActions.clearDraft())}
+              >
+                Close
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* ── Add Fields tab ── */}
+          <TabsContent value="addFields" className="flex-1 overflow-y-auto p-3 mt-0 flex flex-col gap-1">
+            {availableKeys.length === 0 && (
+              <p className="text-sm text-muted-foreground">No fields available for this data type.</p>
+            )}
+            {availableKeys.map((key) => {
+              const fieldDescriptor = contract[key];
+              return (
+                <div key={key} className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleAddKey(key)}
+                    className="flex-1 text-left text-sm px-2 py-1.5 rounded-md transition-colors hover:bg-accent/20 text-foreground"
+                  >
+                    <span className="font-medium">{fieldDescriptor?.label ?? key}</span>
+                    <span className="ml-2 text-xs text-muted-foreground opacity-70">+ add</span>
+                  </button>
+
+                  {/* Preview popover */}
+                  {fieldDescriptor && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          title={`Preview ${fieldDescriptor.label ?? key}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent side="right" align="start" className="w-72 p-3">
+                        <div className="text-xs font-semibold text-muted-foreground mb-2">
+                          {fieldDescriptor.label ?? key}
+                        </div>
+                        <div className="bg-white border border-border rounded p-2 min-h-6 text-sm overflow-hidden">
+                          {hasOptions(fieldDescriptor)
+                            ? fieldDescriptor.previewRender(
+                                sampleData,
+                                1,
+                                getSchemaDefaults(fieldDescriptor.optionSchema),
+                              )
+                            : fieldDescriptor.previewRender(sampleData, 1)}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
+              );
+            })}
+          </TabsContent>
+
+          {/* ── Customize tab ── */}
+          <TabsContent
+            value="customize"
+            className="flex-1 overflow-y-auto p-3 mt-0 flex flex-col gap-2"
+            ref={leftPanelScrollRef}
           >
-            Save Template
-          </Button>
-          <Button
-            variant="destructive"
-            intensity="ghost"
-            onClick={handleDeleteTemplate}
-          >
-            Delete Template
-          </Button>
-          <Button
-            variant="outline"
-            intensity="ghost"
-            onClick={() => dispatch(formTemplateActions.clearDraft())}
-          >
-            Close
-          </Button>
-        </div>
+            {activeDraft.slots.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No slots positioned yet. Go to "Add Fields" to place elements.
+              </p>
+            )}
+
+            <Accordion
+              type="single"
+              collapsible
+              value={selectedSlotId ?? ""}
+              onValueChange={(value) => setSelectedSlotId(value || null)}
+              className="flex flex-col gap-0"
+            >
+              {activeDraft.slots.map((slot) => (
+                <AccordionItem
+                  key={slot.slotId}
+                  value={slot.slotId}
+                  className="border-b-0"
+                  ref={(el) => {
+                    if (el) {
+                      accordionItemRefs.current.set(slot.slotId, el);
+                    } else {
+                      accordionItemRefs.current.delete(slot.slotId);
+                    }
+                  }}
+                >
+                  <AccordionTrigger className="text-sm px-2 py-1.5 rounded-md hover:bg-muted hover:no-underline [&[data-state=open]]:bg-primary/10 [&[data-state=open]]:text-foreground [&[data-state=open]]:font-medium">
+                    <span className="font-medium truncate">
+                      {contract[slot.key]?.label ?? slot.key}
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-1 pt-0">
+                    <SlotEditor
+                      key={slot.slotId}
+                      slot={slot}
+                      slotLabel={contract[slot.key]?.label ?? slot.key}
+                      descriptor={contract[slot.key]}
+                      onSave={handleSaveSlot}
+                      onDelete={handleDeleteSlot}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* ── Right panel — page preview ── */}
@@ -427,7 +540,21 @@ export function FormTemplateEditor() {
 
           <div className="flex-1" />
 
-          {/* Print Sample PDF download — guarded by isClient since @react-pdf/renderer is browser-only */}
+          {/* Unsaved changes indicator */}
+          {isDirty && (
+            <Button
+              size="sm"
+              variant="primary"
+              intensity="soft"
+              onClick={handleSaveTemplate}
+              title="Save unsaved changes"
+            >
+              <Save className="h-3 w-3 mr-1" />
+              Save changes
+            </Button>
+          )}
+
+          {/* Print Sample PDF download */}
           {isClient && (
             <SamplePdfDownload
               draft={activeDraft}
@@ -455,7 +582,7 @@ export function FormTemplateEditor() {
           </Sheet>
         </div>
 
-        {/* Scrollable preview area — in PDF mode the viewer fills the panel; in handles mode it centers the scaled page */}
+        {/* Scrollable preview area */}
         <div
           ref={previewScrollRef}
           className={previewMode === "pdf"
@@ -467,10 +594,8 @@ export function FormTemplateEditor() {
               template={activeDraft}
               sampleData={sampleData}
               contract={contract}
-              selectedSlotKey={selectedSlotKey}
-              onSlotClick={(key) =>
-                setSelectedSlotKey(selectedSlotKey === key ? null : key)
-              }
+              selectedSlotId={selectedSlotId}
+              onSlotClick={handleSlotClickFromPreview}
               onSlotUpdate={handleSlotUpdate}
               onSlotSave={handleSaveSlot}
               onSlotDelete={handleDeleteSlot}

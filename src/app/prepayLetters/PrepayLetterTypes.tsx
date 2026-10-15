@@ -35,9 +35,19 @@ export type PrepayLetterData = {
 // ─── Shared Option Schemas ────────────────────────────────────────────────────
 
 /** Options available on all simple text elements. */
-export type TextOptions = { fontSize: number; textAlign: "left" | "center" | "right" };
+export type TextOptions = {
+  fontSize: number;
+  textAlign: "left" | "center" | "right";
+};
 export const textOptionSchema: SlotOptionSchema<TextOptions> = {
-  fontSize: { type: "number", label: "Font Size", min: 6, max: 36, step: 0.5, default: 10 },
+  fontSize: {
+    type: "number",
+    label: "Font Size",
+    min: 6,
+    max: 36,
+    step: 0.5,
+    default: 10,
+  },
   textAlign: {
     type: "select",
     label: "Alignment",
@@ -53,8 +63,22 @@ export const textOptionSchema: SlotOptionSchema<TextOptions> = {
 /** Options available on table/totals elements (rows of text). */
 export type TableOptions = { fontSize: number; lineSpacing: number };
 export const tableOptionSchema: SlotOptionSchema<TableOptions> = {
-  fontSize: { type: "number", label: "Font Size", min: 6, max: 24, step: 0.5, default: 9 },
-  lineSpacing: { type: "number", label: "Line Spacing", min: 1, max: 3, step: 0.1, default: 1.2 },
+  fontSize: {
+    type: "number",
+    label: "Font Size",
+    min: 6,
+    max: 24,
+    step: 0.5,
+    default: 9,
+  },
+  lineSpacing: {
+    type: "number",
+    label: "Line Spacing",
+    min: 1,
+    max: 3,
+    step: 0.1,
+    default: 1.2,
+  },
 };
 
 // ─── Slot Keys ────────────────────────────────────────────────────────────────
@@ -82,7 +106,9 @@ type PrepayLetterSlot =
   | "currentServicesHeader"
   | "upsellServicesHeader"
   | "custIdBlock"
-  | "discountSummary";
+  | "discountSummary"
+  | "leftTotalsByProgram"
+  | "rightTotalsByProgram";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,12 +123,15 @@ type WithTable = FieldDescriptorWithOptions<PrepayLetterData, TableOptions>;
  */
 const PRICE_COL_WIDTH = 82;
 
-/** Collects unique discount descriptions across all services and the customer level. */
+/**
+ * Collects unique discount descriptions from service-level and program-level discounts.
+ * Customer-level discount is intentionally excluded — it is not applied to existing services
+ * (only used as a default when proposing new programs), so it has no effect on the prices
+ * shown in the letter.
+ */
 function getUniqueDiscountDescriptions({ customer }: PrepayLetterData): string[] {
   const descriptions = new Set<string>();
-  if (customer.discount?.description) descriptions.add(customer.discount.description);
   for (const program of customer.programs) {
-    if (program.discount?.description) descriptions.add(program.discount.description);
     for (const service of program.services) {
       for (const discount of service.x.applicableDiscounts) {
         if (discount.description) descriptions.add(discount.description);
@@ -124,23 +153,37 @@ export const prepayLetterContract = {
   companyPhone: {
     label: "Company Phone",
     optionSchema: textOptionSchema,
-    render: ({ company }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
-      <Text style={{ fontSize, textAlign }}>{company.phone1}</Text>
-    ),
-    previewRender: ({ company }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, textAlign }}>{company.phone1}</div>
+    render: (
+      { company }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => <Text style={{ fontSize, textAlign }}>{company.phone1}</Text>,
+    previewRender: (
+      { company }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div style={{ fontSize: fontSize * scale, textAlign }}>
+        {company.phone1}
+      </div>
     ),
   } satisfies WithText,
 
   companyAddressInline: {
     label: "Company Address (inline)",
     optionSchema: textOptionSchema,
-    render: ({ company }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
+    render: (
+      { company }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
       <Text style={{ fontSize, textAlign }}>
         {company.addressLine1}, {company.addressLine3}
       </Text>
     ),
-    previewRender: ({ company }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
+    previewRender: (
+      { company }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
       <div style={{ fontSize: fontSize * scale, textAlign }}>
         {company.addressLine1}, {company.addressLine3}
       </div>
@@ -150,7 +193,10 @@ export const prepayLetterContract = {
   companyAddressBlock: {
     label: "Company Address Block",
     optionSchema: textOptionSchema,
-    render: ({ company }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
+    render: (
+      { company }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
       <Text style={{ fontSize, textAlign }}>
         {[company.addressLine1, company.addressLine2, company.addressLine3]
           .filter(Boolean)
@@ -159,8 +205,19 @@ export const prepayLetterContract = {
         {company.state}
       </Text>
     ),
-    previewRender: ({ company }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, lineHeight: 1.2, textAlign, whiteSpace: "pre-line" }}>
+    previewRender: (
+      { company }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div
+        style={{
+          fontSize: fontSize * scale,
+          lineHeight: 1.2,
+          textAlign,
+          whiteSpace: "pre-line",
+        }}
+      >
         {[company.addressLine1, company.addressLine2, company.addressLine3]
           .filter(Boolean)
           .join("\n")}
@@ -176,15 +233,24 @@ export const prepayLetterContract = {
     render: (_data: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
       <Text style={{ fontSize, textAlign }}>Billing Address</Text>
     ),
-    previewRender: (_data: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, textAlign }}>Billing Address</div>
+    previewRender: (
+      _data: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div style={{ fontSize: fontSize * scale, textAlign }}>
+        Billing Address
+      </div>
     ),
   } satisfies WithText,
 
   billingAddressBlock: {
     label: "Billing Address Block",
     optionSchema: textOptionSchema,
-    render: ({ customer }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => {
+    render: (
+      { customer }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => {
       const addr = customer.useBilling
         ? customer.billingAddress
         : customer.address;
@@ -198,12 +264,23 @@ export const prepayLetterContract = {
         </Text>
       );
     },
-    previewRender: ({ customer }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => {
+    previewRender: (
+      { customer }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => {
       const addr = customer.useBilling
         ? customer.billingAddress
         : customer.address;
       return (
-        <div style={{ fontSize: fontSize * scale, lineHeight: 1.2, textAlign, whiteSpace: "pre-line" }}>
+        <div
+          style={{
+            fontSize: fontSize * scale,
+            lineHeight: 1.2,
+            textAlign,
+            whiteSpace: "pre-line",
+          }}
+        >
           {customer.displayName}
           {"\n"}
           {addr.formattedAddress}
@@ -220,15 +297,24 @@ export const prepayLetterContract = {
     render: (_data: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
       <Text style={{ fontSize, textAlign }}>Service Address</Text>
     ),
-    previewRender: (_data: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, textAlign }}>Service Address</div>
+    previewRender: (
+      _data: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div style={{ fontSize: fontSize * scale, textAlign }}>
+        Service Address
+      </div>
     ),
   } satisfies WithText,
 
   serviceAddressBlock: {
     label: "Service Address Block",
     optionSchema: textOptionSchema,
-    render: ({ customer }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
+    render: (
+      { customer }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
       <Text style={{ fontSize, textAlign }}>
         {customer.displayName}
         {"\n"}
@@ -237,8 +323,19 @@ export const prepayLetterContract = {
         {customer.address.city}, {customer.address.state} {customer.address.zip}
       </Text>
     ),
-    previewRender: ({ customer }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, lineHeight: 1.2, textAlign, whiteSpace: "pre-line" }}>
+    previewRender: (
+      { customer }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div
+        style={{
+          fontSize: fontSize * scale,
+          lineHeight: 1.2,
+          textAlign,
+          whiteSpace: "pre-line",
+        }}
+      >
         {customer.displayName}
         {"\n"}
         {customer.address.formattedAddress}
@@ -251,10 +348,19 @@ export const prepayLetterContract = {
   custIdInline: {
     label: "Customer Number (with label)",
     optionSchema: textOptionSchema,
-    render: ({ customer }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
-      <Text style={{ fontSize, textAlign }}>Customer Number: {customer.custId}</Text>
+    render: (
+      { customer }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <Text style={{ fontSize, textAlign }}>
+        Customer Number: {customer.custId}
+      </Text>
     ),
-    previewRender: ({ customer }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
+    previewRender: (
+      { customer }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
       <div style={{ fontSize: fontSize * scale, textAlign }}>
         Customer Number: {customer.custId}
       </div>
@@ -264,13 +370,22 @@ export const prepayLetterContract = {
   prepayPercent: {
     label: "Prepay %",
     optionSchema: textOptionSchema,
-    render: ({ config }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
+    render: (
+      { config }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
       <Text style={{ fontSize, textAlign, fontWeight: "bold" }}>
         {config.stdPrepayDiscPercent}%
       </Text>
     ),
-    previewRender: ({ config }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, textAlign, fontWeight: "bold" }}>
+    previewRender: (
+      { config }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div
+        style={{ fontSize: fontSize * scale, textAlign, fontWeight: "bold" }}
+      >
         {config.stdPrepayDiscPercent}%
       </div>
     ),
@@ -282,44 +397,82 @@ export const prepayLetterContract = {
     render: (_data: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
       <Text style={{ fontSize, textAlign, fontWeight: "bold" }}></Text>
     ),
-    previewRender: (_data: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, textAlign, fontWeight: "bold" }}></div>
+    previewRender: (
+      _data: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div
+        style={{ fontSize: fontSize * scale, textAlign, fontWeight: "bold" }}
+      ></div>
     ),
   } satisfies WithText,
 
   expirationDate: {
     label: "Expiration Date",
     optionSchema: textOptionSchema,
-    render: ({ config }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
-      <Text style={{ fontSize, textAlign }}>{config.expirationDate}</Text>
-    ),
-    previewRender: ({ config }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, textAlign }}>{config.expirationDate}</div>
+    render: (
+      { config }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => <Text style={{ fontSize, textAlign }}>{config.expirationDate}</Text>,
+    previewRender: (
+      { config }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div style={{ fontSize: fontSize * scale, textAlign }}>
+        {config.expirationDate}
+      </div>
     ),
   } satisfies WithText,
 
   leftPriceTable: {
     label: "Left Price Table (Standard Discount)",
     optionSchema: tableOptionSchema,
-    render: ({ customer }: PrepayLetterData, { fontSize, lineSpacing }: TableOptions) => {
+    render: (
+      { customer }: PrepayLetterData,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
       const services = customer.programs.flatMap((p) => p.services);
       return (
-        <View style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+        <View
+          style={{ display: "flex", flexDirection: "column", width: "100%" }}
+        >
           {services.map((service) => {
             const hasDiscount = service.x.applicableDiscounts.length > 0;
             const discountedPrice = service.x.getPriceAfterDiscounts("price");
             return (
               <View
                 key={service.servId}
-                style={{ display: "flex", flexDirection: "row", width: "100%", marginBottom: (lineSpacing - 1) * fontSize }}
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  width: "100%",
+                  marginBottom: (lineSpacing - 1) * fontSize,
+                }}
               >
                 {/* Service name — fills remaining space */}
-                <Text style={{ flex: 1, fontSize }}>{service.servCode.name}</Text>
+                <Text style={{ flex: 1, fontSize }}>
+                  {service.servCode.name}
+                </Text>
 
                 {/* Price column — inline: ~~orig~~ discounted, right-aligned */}
-                <View style={{ width: PRICE_COL_WIDTH, flexDirection: "row", justifyContent: "flex-end" }}>
+                <View
+                  style={{
+                    width: PRICE_COL_WIDTH,
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
+                  }}
+                >
                   {hasDiscount && (
-                    <Text style={{ fontSize, textDecoration: "line-through", color: "#888888", marginRight: 4 }}>
+                    <Text
+                      style={{
+                        fontSize,
+                        textDecoration: "line-through",
+                        color: "#888888",
+                        marginRight: 4,
+                      }}
+                    >
                       {formatNumber({ children: service.price, decimals: 2 })}
                     </Text>
                   )}
@@ -333,27 +486,59 @@ export const prepayLetterContract = {
         </View>
       );
     },
-    previewRender: ({ customer }: PrepayLetterData, scale: number, { fontSize, lineSpacing }: TableOptions) => {
+    previewRender: (
+      { customer }: PrepayLetterData,
+      scale: number,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
       const services = customer.programs.flatMap((p) => p.services);
       const priceColWidth = PRICE_COL_WIDTH * scale;
       return (
-        <div style={{ fontSize: fontSize * scale, lineHeight: lineSpacing, width: "100%" }}>
+        <div
+          style={{
+            fontSize: fontSize * scale,
+            lineHeight: lineSpacing,
+            width: "100%",
+          }}
+        >
           {services.map((service) => {
             const hasDiscount = service.x.applicableDiscounts.length > 0;
             const discountedPrice = service.x.getPriceAfterDiscounts("price");
             return (
-              <div key={service.servId} style={{ display: "flex", width: "100%", alignItems: "baseline" }}>
+              <div
+                key={service.servId}
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  alignItems: "baseline",
+                }}
+              >
                 {/* Service name — fills remaining space */}
                 <span style={{ flex: 1 }}>{service.servCode.name}</span>
 
                 {/* Price column — inline strikethrough + discounted, right-aligned */}
-                <div style={{ width: priceColWidth, display: "flex", justifyContent: "flex-end", flexShrink: 0, gap: 4 }}>
+                <div
+                  style={{
+                    width: priceColWidth,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    flexShrink: 0,
+                    gap: 4,
+                  }}
+                >
                   {hasDiscount && (
-                    <span style={{ textDecoration: "line-through", color: "#888888" }}>
+                    <span
+                      style={{
+                        textDecoration: "line-through",
+                        color: "#888888",
+                      }}
+                    >
                       {formatNumber({ children: service.price, decimals: 2 })}
                     </span>
                   )}
-                  <span>{formatNumber({ children: discountedPrice, decimals: 2 })}</span>
+                  <span>
+                    {formatNumber({ children: discountedPrice, decimals: 2 })}
+                  </span>
                 </div>
               </div>
             );
@@ -366,22 +551,48 @@ export const prepayLetterContract = {
   rightPriceTable: {
     label: "Right Price Table (Upgrade Discount)",
     optionSchema: tableOptionSchema,
-    render: ({ customer }: PrepayLetterData, { fontSize, lineSpacing }: TableOptions) => {
+    render: (
+      { customer }: PrepayLetterData,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
       const services = customer.programs.flatMap((p) => p.services);
       return (
-        <View style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+        <View
+          style={{ display: "flex", flexDirection: "column", width: "100%" }}
+        >
           {services.map((service) => {
             const hasDiscount = service.x.applicableDiscounts.length > 0;
             const discountedPrice = service.x.getPriceAfterDiscounts("price");
             return (
               <View
                 key={service.servId}
-                style={{ display: "flex", flexDirection: "row", width: "100%", marginBottom: (lineSpacing - 1) * fontSize }}
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  width: "100%",
+                  marginBottom: (lineSpacing - 1) * fontSize,
+                }}
               >
-                <Text style={{ flex: 1, fontSize }}>{service.servCode.name}{hasDiscount && "*"}</Text>
-                <View style={{ width: PRICE_COL_WIDTH, flexDirection: "row", justifyContent: "flex-end" }}>
+                <Text style={{ flex: 1, fontSize }}>
+                  {service.servCode.name}
+                  {hasDiscount && "*"}
+                </Text>
+                <View
+                  style={{
+                    width: PRICE_COL_WIDTH,
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
+                  }}
+                >
                   {hasDiscount && (
-                    <Text style={{ fontSize, textDecoration: "line-through", color: "#888888", marginRight: 4 }}>
+                    <Text
+                      style={{
+                        fontSize,
+                        textDecoration: "line-through",
+                        color: "#888888",
+                        marginRight: 4,
+                      }}
+                    >
                       {formatNumber({ children: service.price, decimals: 2 })}
                     </Text>
                   )}
@@ -395,24 +606,59 @@ export const prepayLetterContract = {
         </View>
       );
     },
-    previewRender: ({ customer }: PrepayLetterData, scale: number, { fontSize, lineSpacing }: TableOptions) => {
+    previewRender: (
+      { customer }: PrepayLetterData,
+      scale: number,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
       const services = customer.programs.flatMap((p) => p.services);
       const priceColWidth = PRICE_COL_WIDTH * scale;
       return (
-        <div style={{ fontSize: fontSize * scale, lineHeight: lineSpacing, width: "100%" }}>
+        <div
+          style={{
+            fontSize: fontSize * scale,
+            lineHeight: lineSpacing,
+            width: "100%",
+          }}
+        >
           {services.map((service) => {
             const hasDiscount = service.x.applicableDiscounts.length > 0;
             const discountedPrice = service.x.getPriceAfterDiscounts("price");
             return (
-              <div key={service.servId} style={{ display: "flex", width: "100%", alignItems: "baseline" }}>
-                <span style={{ flex: 1 }}>{service.servCode.name}{hasDiscount && "*"}</span>
-                <div style={{ width: priceColWidth, display: "flex", justifyContent: "flex-end", flexShrink: 0, gap: 4 }}>
+              <div
+                key={service.servId}
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  alignItems: "baseline",
+                }}
+              >
+                <span style={{ flex: 1 }}>
+                  {service.servCode.name}
+                  {hasDiscount && "*"}
+                </span>
+                <div
+                  style={{
+                    width: priceColWidth,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    flexShrink: 0,
+                    gap: 4,
+                  }}
+                >
                   {hasDiscount && (
-                    <span style={{ textDecoration: "line-through", color: "#888888" }}>
+                    <span
+                      style={{
+                        textDecoration: "line-through",
+                        color: "#888888",
+                      }}
+                    >
                       {formatNumber({ children: service.price, decimals: 2 })}
                     </span>
                   )}
-                  <span>{formatNumber({ children: discountedPrice, decimals: 2 })}</span>
+                  <span>
+                    {formatNumber({ children: discountedPrice, decimals: 2 })}
+                  </span>
                 </div>
               </div>
             );
@@ -425,41 +671,69 @@ export const prepayLetterContract = {
   leftTotals: {
     label: "Left Totals (Standard Discount)",
     optionSchema: tableOptionSchema,
-    render: ({ customer, config }: PrepayLetterData, { fontSize, lineSpacing }: TableOptions) => {
+    render: (
+      { customer, config }: PrepayLetterData,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
       const pp = config.stdPrepayDiscPercent;
       const serviceAmt = customer.x.getPriceAfterDiscounts("price");
       const prepayDisc = customer.x.prepayDiscountAmt(pp);
       const afterPrepay = customer.x.priceAfterPrepay(pp);
       const tax = customer.x.taxAmt(pp);
       const total = customer.x.priceAfterTax(pp);
-      const rowStyle = { display: "flex" as const, flexDirection: "row" as const, width: "100%", marginBottom: (lineSpacing - 1) * fontSize };
-      const numStyle = { width: PRICE_COL_WIDTH, textAlign: "right" as const, fontSize };
+      const rowStyle = {
+        display: "flex" as const,
+        flexDirection: "row" as const,
+        width: "100%",
+        marginBottom: (lineSpacing - 1) * fontSize,
+      };
+      const numStyle = {
+        width: PRICE_COL_WIDTH,
+        textAlign: "right" as const,
+        fontSize,
+      };
       return (
-        <View style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+        <View
+          style={{ display: "flex", flexDirection: "column", width: "100%" }}
+        >
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>Service Amount</Text>
-            <PDFNumber style={numStyle} decimals={2}>{serviceAmt}</PDFNumber>
+            <PDFNumber style={numStyle} decimals={2}>
+              {serviceAmt}
+            </PDFNumber>
           </View>
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>Prepay Discount</Text>
-            <Text style={numStyle}>-{formatNumber({ children: prepayDisc, decimals: 2 })}</Text>
+            <Text style={numStyle}>
+              -{formatNumber({ children: prepayDisc, decimals: 2 })}
+            </Text>
           </View>
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>After Prepay Discount</Text>
-            <PDFNumber style={numStyle} decimals={2}>{afterPrepay}</PDFNumber>
+            <PDFNumber style={numStyle} decimals={2}>
+              {afterPrepay}
+            </PDFNumber>
           </View>
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>Sales Tax</Text>
-            <PDFNumber style={numStyle} decimals={2}>{tax}</PDFNumber>
+            <PDFNumber style={numStyle} decimals={2}>
+              {tax}
+            </PDFNumber>
           </View>
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>Total</Text>
-            <PDFNumber style={numStyle} decimals={2}>{total}</PDFNumber>
+            <PDFNumber style={numStyle} decimals={2}>
+              {total}
+            </PDFNumber>
           </View>
         </View>
       );
     },
-    previewRender: ({ customer, config }: PrepayLetterData, scale: number, { fontSize, lineSpacing }: TableOptions) => {
+    previewRender: (
+      { customer, config }: PrepayLetterData,
+      scale: number,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
       const pp = config.stdPrepayDiscPercent;
       const serviceAmt = customer.x.getPriceAfterDiscounts("price");
       const prepayDisc = customer.x.prepayDiscountAmt(pp);
@@ -467,15 +741,49 @@ export const prepayLetterContract = {
       const tax = customer.x.taxAmt(pp);
       const total = customer.x.priceAfterTax(pp);
       const priceColWidth = PRICE_COL_WIDTH * scale;
-      const rowStyle: React.CSSProperties = { display: "flex", width: "100%", alignItems: "baseline", lineHeight: lineSpacing };
-      const numStyle: React.CSSProperties = { width: priceColWidth, textAlign: "right", flexShrink: 0 };
+      const rowStyle: React.CSSProperties = {
+        display: "flex",
+        width: "100%",
+        alignItems: "baseline",
+        lineHeight: lineSpacing,
+      };
+      const numStyle: React.CSSProperties = {
+        width: priceColWidth,
+        textAlign: "right",
+        flexShrink: 0,
+      };
       return (
         <div style={{ fontSize: fontSize * scale, width: "100%" }}>
-          <div style={rowStyle}><span style={{ flex: 1 }}>Service Amount</span><span style={numStyle}>{formatNumber({ children: serviceAmt, decimals: 2 })}</span></div>
-          <div style={rowStyle}><span style={{ flex: 1 }}>Prepay Discount</span><span style={numStyle}>-{formatNumber({ children: prepayDisc, decimals: 2 })}</span></div>
-          <div style={rowStyle}><span style={{ flex: 1 }}>After Prepay Discount</span><span style={numStyle}>{formatNumber({ children: afterPrepay, decimals: 2 })}</span></div>
-          <div style={rowStyle}><span style={{ flex: 1 }}>Sales Tax</span><span style={numStyle}>{formatNumber({ children: tax, decimals: 2 })}</span></div>
-          <div style={rowStyle}><span style={{ flex: 1 }}>Total</span><span style={numStyle}>{formatNumber({ children: total, decimals: 2 })}</span></div>
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>Service Amount</span>
+            <span style={numStyle}>
+              {formatNumber({ children: serviceAmt, decimals: 2 })}
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>Prepay Discount</span>
+            <span style={numStyle}>
+              -{formatNumber({ children: prepayDisc, decimals: 2 })}
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>After Prepay Discount</span>
+            <span style={numStyle}>
+              {formatNumber({ children: afterPrepay, decimals: 2 })}
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>Sales Tax</span>
+            <span style={numStyle}>
+              {formatNumber({ children: tax, decimals: 2 })}
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>Total</span>
+            <span style={numStyle}>
+              {formatNumber({ children: total, decimals: 2 })}
+            </span>
+          </div>
         </div>
       );
     },
@@ -484,41 +792,69 @@ export const prepayLetterContract = {
   rightTotals: {
     label: "Right Totals (Upgrade Discount)",
     optionSchema: tableOptionSchema,
-    render: ({ customer, config }: PrepayLetterData, { fontSize, lineSpacing }: TableOptions) => {
+    render: (
+      { customer, config }: PrepayLetterData,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
       const pp = config.upsellPrepayDiscPercent;
       const serviceAmt = customer.x.getPriceAfterDiscounts("price");
       const prepayDisc = customer.x.prepayDiscountAmt(pp);
       const afterPrepay = customer.x.priceAfterPrepay(pp);
       const tax = customer.x.taxAmt(pp);
       const total = customer.x.priceAfterTax(pp);
-      const rowStyle = { display: "flex" as const, flexDirection: "row" as const, width: "100%", marginBottom: (lineSpacing - 1) * fontSize };
-      const numStyle = { width: PRICE_COL_WIDTH, textAlign: "right" as const, fontSize };
+      const rowStyle = {
+        display: "flex" as const,
+        flexDirection: "row" as const,
+        width: "100%",
+        marginBottom: (lineSpacing - 1) * fontSize,
+      };
+      const numStyle = {
+        width: PRICE_COL_WIDTH,
+        textAlign: "right" as const,
+        fontSize,
+      };
       return (
-        <View style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+        <View
+          style={{ display: "flex", flexDirection: "column", width: "100%" }}
+        >
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>Service Amount</Text>
-            <PDFNumber style={numStyle} decimals={2}>{serviceAmt}</PDFNumber>
+            <PDFNumber style={numStyle} decimals={2}>
+              {serviceAmt}
+            </PDFNumber>
           </View>
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>Prepay Discount</Text>
-            <Text style={numStyle}>-{formatNumber({ children: prepayDisc, decimals: 2 })}</Text>
+            <Text style={numStyle}>
+              -{formatNumber({ children: prepayDisc, decimals: 2 })}
+            </Text>
           </View>
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>After Prepay Discount</Text>
-            <PDFNumber style={numStyle} decimals={2}>{afterPrepay}</PDFNumber>
+            <PDFNumber style={numStyle} decimals={2}>
+              {afterPrepay}
+            </PDFNumber>
           </View>
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>Sales Tax</Text>
-            <PDFNumber style={numStyle} decimals={2}>{tax}</PDFNumber>
+            <PDFNumber style={numStyle} decimals={2}>
+              {tax}
+            </PDFNumber>
           </View>
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>Total</Text>
-            <PDFNumber style={numStyle} decimals={2}>{total}</PDFNumber>
+            <PDFNumber style={numStyle} decimals={2}>
+              {total}
+            </PDFNumber>
           </View>
         </View>
       );
     },
-    previewRender: ({ customer, config }: PrepayLetterData, scale: number, { fontSize, lineSpacing }: TableOptions) => {
+    previewRender: (
+      { customer, config }: PrepayLetterData,
+      scale: number,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
       const pp = config.upsellPrepayDiscPercent;
       const serviceAmt = customer.x.getPriceAfterDiscounts("price");
       const prepayDisc = customer.x.prepayDiscountAmt(pp);
@@ -526,15 +862,49 @@ export const prepayLetterContract = {
       const tax = customer.x.taxAmt(pp);
       const total = customer.x.priceAfterTax(pp);
       const priceColWidth = PRICE_COL_WIDTH * scale;
-      const rowStyle: React.CSSProperties = { display: "flex", width: "100%", alignItems: "baseline", lineHeight: lineSpacing };
-      const numStyle: React.CSSProperties = { width: priceColWidth, textAlign: "right", flexShrink: 0 };
+      const rowStyle: React.CSSProperties = {
+        display: "flex",
+        width: "100%",
+        alignItems: "baseline",
+        lineHeight: lineSpacing,
+      };
+      const numStyle: React.CSSProperties = {
+        width: priceColWidth,
+        textAlign: "right",
+        flexShrink: 0,
+      };
       return (
         <div style={{ fontSize: fontSize * scale, width: "100%" }}>
-          <div style={rowStyle}><span style={{ flex: 1 }}>Service Amount</span><span style={numStyle}>{formatNumber({ children: serviceAmt, decimals: 2 })}</span></div>
-          <div style={rowStyle}><span style={{ flex: 1 }}>Prepay Discount</span><span style={numStyle}>-{formatNumber({ children: prepayDisc, decimals: 2 })}</span></div>
-          <div style={rowStyle}><span style={{ flex: 1 }}>After Prepay Discount</span><span style={numStyle}>{formatNumber({ children: afterPrepay, decimals: 2 })}</span></div>
-          <div style={rowStyle}><span style={{ flex: 1 }}>Sales Tax</span><span style={numStyle}>{formatNumber({ children: tax, decimals: 2 })}</span></div>
-          <div style={rowStyle}><span style={{ flex: 1 }}>Total</span><span style={numStyle}>{formatNumber({ children: total, decimals: 2 })}</span></div>
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>Service Amount</span>
+            <span style={numStyle}>
+              {formatNumber({ children: serviceAmt, decimals: 2 })}
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>Prepay Discount</span>
+            <span style={numStyle}>
+              -{formatNumber({ children: prepayDisc, decimals: 2 })}
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>After Prepay Discount</span>
+            <span style={numStyle}>
+              {formatNumber({ children: afterPrepay, decimals: 2 })}
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>Sales Tax</span>
+            <span style={numStyle}>
+              {formatNumber({ children: tax, decimals: 2 })}
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>Total</span>
+            <span style={numStyle}>
+              {formatNumber({ children: total, decimals: 2 })}
+            </span>
+          </div>
         </div>
       );
     },
@@ -543,29 +913,52 @@ export const prepayLetterContract = {
   currentServicesHeader: {
     label: "Current Services Header",
     optionSchema: textOptionSchema,
-    render: ({ config }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
-      <Text style={{ fontSize, textAlign }}>{config.currentServicesHeader}</Text>
+    render: (
+      { config }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <Text style={{ fontSize, textAlign }}>
+        {config.currentServicesHeader}
+      </Text>
     ),
-    previewRender: ({ config }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, textAlign }}>{config.currentServicesHeader}</div>
+    previewRender: (
+      { config }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div style={{ fontSize: fontSize * scale, textAlign }}>
+        {config.currentServicesHeader}
+      </div>
     ),
   } satisfies WithText,
 
   upsellServicesHeader: {
     label: "Upsell Services Header",
     optionSchema: textOptionSchema,
-    render: ({ config }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
+    render: (
+      { config }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
       <Text style={{ fontSize, textAlign }}>{config.upsellServicesHeader}</Text>
     ),
-    previewRender: ({ config }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, textAlign }}>{config.upsellServicesHeader}</div>
+    previewRender: (
+      { config }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div style={{ fontSize: fontSize * scale, textAlign }}>
+        {config.upsellServicesHeader}
+      </div>
     ),
   } satisfies WithText,
 
   messageHeader: {
     label: "Message Header",
     optionSchema: textOptionSchema,
-    render: ({ config, isAutoRenew }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
+    render: (
+      { config, isAutoRenew }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
       <Text style={{ fontSize, textAlign }}>
         {isAutoRenew ? config.autoRenewHeader : config.dontAutoRenewHeader}
       </Text>
@@ -584,7 +977,10 @@ export const prepayLetterContract = {
   message: {
     label: "Message",
     optionSchema: textOptionSchema,
-    render: ({ config, isAutoRenew }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
+    render: (
+      { config, isAutoRenew }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
       <Text style={{ fontSize, textAlign }}>
         {isAutoRenew
           ? `${config.universalMessage} ${config.autoRenewMessage}`
@@ -607,13 +1003,22 @@ export const prepayLetterContract = {
   custIdBlock: {
     label: "Customer Number (block)",
     optionSchema: textOptionSchema,
-    render: ({ customer }: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
+    render: (
+      { customer }: PrepayLetterData,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
       <Text style={{ fontSize, textAlign, fontWeight: "bold" }}>
         {customer.custId}
       </Text>
     ),
-    previewRender: ({ customer }: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => (
-      <div style={{ fontSize: fontSize * scale, textAlign, fontWeight: "bold" }}>
+    previewRender: (
+      { customer }: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div
+        style={{ fontSize: fontSize * scale, textAlign, fontWeight: "bold" }}
+      >
         {customer.custId}
       </div>
     ),
@@ -624,21 +1029,131 @@ export const prepayLetterContract = {
     optionSchema: textOptionSchema,
     render: (data: PrepayLetterData, { fontSize, textAlign }: TextOptions) => {
       const descriptions = getUniqueDiscountDescriptions(data);
+      if (descriptions.length === 0) return null;
       return (
         <Text style={{ fontSize, textAlign }}>
-          *{descriptions.join(", ")}
+          *Discount{descriptions.length > 1 ? "s" : ""}:{" "}
+          {descriptions.join(", ")}
         </Text>
       );
     },
-    previewRender: (data: PrepayLetterData, scale: number, { fontSize, textAlign }: TextOptions) => {
+    previewRender: (
+      data: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => {
       const descriptions = getUniqueDiscountDescriptions(data);
+      if (descriptions.length === 0) return null;
       return (
         <div style={{ fontSize: fontSize * scale, textAlign }}>
-          *{descriptions.join(", ")}
+          *Discount{descriptions.length > 1 ? "s" : ""}:{" "}
+          {descriptions.join(", ")}
         </div>
       );
     },
   } satisfies WithText,
+
+  leftTotalsByProgram: {
+    label: "Left Totals by Program (Standard Discount)",
+    optionSchema: tableOptionSchema,
+    render: (
+      { customer, config }: PrepayLetterData,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
+      const pp = config.stdPrepayDiscPercent;
+      return (
+        <View style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+          {customer.programs.map((program) => (
+            <View
+              key={program.progId}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                width: "100%",
+                marginBottom: (lineSpacing - 1) * fontSize,
+              }}
+            >
+              <Text style={{ flex: 1, fontSize }}>{program.progCode.description}</Text>
+              <PDFNumber style={{ width: PRICE_COL_WIDTH, textAlign: "right", fontSize }} decimals={2}>
+                {program.x.priceAfterTax(pp)}
+              </PDFNumber>
+            </View>
+          ))}
+        </View>
+      );
+    },
+    previewRender: (
+      { customer, config }: PrepayLetterData,
+      scale: number,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
+      const pp = config.stdPrepayDiscPercent;
+      const priceColWidth = PRICE_COL_WIDTH * scale;
+      return (
+        <div style={{ fontSize: fontSize * scale, lineHeight: lineSpacing, width: "100%" }}>
+          {customer.programs.map((program) => (
+            <div key={program.progId} style={{ display: "flex", width: "100%", alignItems: "baseline" }}>
+              <span style={{ flex: 1 }}>{program.progCode.description}</span>
+              <span style={{ width: priceColWidth, textAlign: "right", flexShrink: 0 }}>
+                {formatNumber({ children: program.x.priceAfterTax(pp), decimals: 2 })}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    },
+  } satisfies WithTable,
+
+  rightTotalsByProgram: {
+    label: "Right Totals by Program (Upgrade Discount)",
+    optionSchema: tableOptionSchema,
+    render: (
+      { customer, config }: PrepayLetterData,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
+      const pp = config.upsellPrepayDiscPercent;
+      return (
+        <View style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+          {customer.programs.map((program) => (
+            <View
+              key={program.progId}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                width: "100%",
+                marginBottom: (lineSpacing - 1) * fontSize,
+              }}
+            >
+              <Text style={{ flex: 1, fontSize }}>{program.progCode.description}</Text>
+              <PDFNumber style={{ width: PRICE_COL_WIDTH, textAlign: "right", fontSize }} decimals={2}>
+                {program.x.priceAfterTax(pp)}
+              </PDFNumber>
+            </View>
+          ))}
+        </View>
+      );
+    },
+    previewRender: (
+      { customer, config }: PrepayLetterData,
+      scale: number,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
+      const pp = config.upsellPrepayDiscPercent;
+      const priceColWidth = PRICE_COL_WIDTH * scale;
+      return (
+        <div style={{ fontSize: fontSize * scale, lineHeight: lineSpacing, width: "100%" }}>
+          {customer.programs.map((program) => (
+            <div key={program.progId} style={{ display: "flex", width: "100%", alignItems: "baseline" }}>
+              <span style={{ flex: 1 }}>{program.progCode.description}</span>
+              <span style={{ width: priceColWidth, textAlign: "right", flexShrink: 0 }}>
+                {formatNumber({ children: program.x.priceAfterTax(pp), decimals: 2 })}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    },
+  } satisfies WithTable,
 } satisfies FormLetterContract<PrepayLetterData, PrepayLetterSlot>;
 
 // ─── Sample Data ──────────────────────────────────────────────────────────────

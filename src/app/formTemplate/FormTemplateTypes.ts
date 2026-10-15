@@ -11,6 +11,8 @@
  * fully valid options object.
  */
 export type FormLetterSlotDoc = {
+  /** Unique identifier for this slot instance — allows the same key to appear multiple times. */
+  slotId: string;
   key: string;
   x: number;
   y: number;

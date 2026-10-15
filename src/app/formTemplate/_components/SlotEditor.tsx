@@ -50,6 +50,7 @@ export function SlotEditor({ slot, slotLabel, descriptor, onSave, onDelete }: Sl
 
   function buildSlot(): FormLetterSlotDoc {
     const base: FormLetterSlotDoc = {
+      slotId: slot.slotId,
       key: slot.key,
       x: parseFloat(x) || 0,
       y: parseFloat(y) || 0,
@@ -205,7 +206,7 @@ export function SlotEditor({ slot, slotLabel, descriptor, onSave, onDelete }: Sl
           size="sm"
           variant="destructive"
           intensity="ghost"
-          onClick={() => onDelete(slot.key)}
+          onClick={() => onDelete(slot.slotId)}
         >
           Remove
         </Button>

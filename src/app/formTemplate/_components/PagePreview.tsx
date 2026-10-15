@@ -35,14 +35,14 @@ type PagePreviewProps = {
   sampleData: unknown;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   contract: Record<string, AnyFieldDescriptor<any>>;
-  selectedSlotKey?: string | null;
-  onSlotClick?: (key: string) => void;
+  selectedSlotId?: string | null;
+  onSlotClick?: (slotId: string) => void;
   /** Called when the user drags a handle to reposition/resize a slot. */
-  onSlotUpdate?: (key: string, patch: SlotPatch) => void;
+  onSlotUpdate?: (slotId: string, patch: SlotPatch) => void;
   /** Called when the user saves slot edits from the popover. */
   onSlotSave?: (slot: FormLetterSlotDoc) => void;
   /** Called when the user removes a slot from the popover. */
-  onSlotDelete?: (key: string) => void;
+  onSlotDelete?: (slotId: string) => void;
   /** Scale factor for fitting the page into the panel. Default: 1. */
   scale?: number;
   /**
@@ -52,7 +52,7 @@ type PagePreviewProps = {
   previewMode?: "handles" | "pdf";
   /** Optional background image of the physical form, rendered faintly behind the slots. */
   backgroundImage?: StaticImageData;
-  /** Edge map for all slots — passed to DragHandle for snap alignment. */
+  /** Edge map for all slots (keyed by slotId) — passed to DragHandle for snap alignment. */
   allEdges?: Map<string, SlotEdges>;
 };
 
@@ -71,7 +71,7 @@ export function PagePreview({
   template,
   sampleData,
   contract,
-  selectedSlotKey,
+  selectedSlotId,
   onSlotClick,
   onSlotUpdate,
   onSlotSave,
@@ -104,8 +104,8 @@ export function PagePreview({
   }
 
   // ── Handles mode ──────────────────────────────────────────────────────────
-  // Derive the set of slot keys that are currently snapped to (for border highlight)
-  const snappedKeys = new Set(guideLines.map((g) => g.sourceKey));
+  // Derive the set of slotIds that are currently snapped to (for border highlight)
+  const snappedSlotIds = new Set(guideLines.map((g) => g.sourceSlotId));
 
   return (
     <div
@@ -156,8 +156,8 @@ export function PagePreview({
         const top = slot.y * INCH_PX * scale;
         const slotWidth = slot.width * INCH_PX * scale;
         const slotHeight = slot.height * INCH_PX * scale;
-        const isSelected = slot.key === selectedSlotKey;
-        const isSnapped = snappedKeys.has(slot.key);
+        const isSelected = slot.slotId === selectedSlotId;
+        const isSnapped = snappedSlotIds.has(slot.slotId);
         const descriptor = contract[slot.key];
         const slotLabel = descriptor?.label ?? slot.key;
 
@@ -169,8 +169,8 @@ export function PagePreview({
 
         return (
           <div
-            key={slot.key}
-            onClick={() => onSlotClick?.(slot.key)}
+            key={slot.slotId}
+            onClick={() => onSlotClick?.(slot.slotId)}
             className={cn("absolute overflow-visible cursor-pointer group", borderClass)}
             style={{ left, top, width: slotWidth, height: slotHeight }}
           >
@@ -182,10 +182,10 @@ export function PagePreview({
                 width={slot.width}
                 height={slot.height}
                 scale={scale}
-                onUpdate={(patch) => onSlotUpdate(slot.key, patch)}
+                onUpdate={(patch) => onSlotUpdate(slot.slotId, patch)}
                 onGuides={setGuideLines}
                 allEdges={allEdges}
-                slotKey={slot.key}
+                slotId={slot.slotId}
               />
             )}
 
@@ -212,15 +212,15 @@ export function PagePreview({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <SlotEditor
-                    key={slot.key}
+                    key={slot.slotId}
                     slot={slot}
                     slotLabel={slotLabel}
                     descriptor={descriptor}
                     onSave={(updated) => {
                       onSlotSave?.(updated);
                     }}
-                    onDelete={(key) => {
-                      onSlotDelete?.(key);
+                    onDelete={(slotId) => {
+                      onSlotDelete?.(slotId);
                     }}
                   />
                 </PopoverContent>

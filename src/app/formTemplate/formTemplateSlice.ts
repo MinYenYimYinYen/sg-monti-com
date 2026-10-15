@@ -71,25 +71,25 @@ const formTemplateSlice = createSlice({
         state.draft.slots.push(action.payload);
       }
     },
-    /** Update a single slot by key. */
+    /** Update a single slot by slotId. */
     updateDraftSlot: (
       state,
-      action: PayloadAction<{ key: string; slot: FormLetterSlotDoc }>,
+      action: PayloadAction<{ slotId: string; slot: FormLetterSlotDoc }>,
     ) => {
       if (state.draft) {
         const idx = state.draft.slots.findIndex(
-          (s) => s.key === action.payload.key,
+          (s) => s.slotId === action.payload.slotId,
         );
         if (idx !== -1) {
           state.draft.slots[idx] = action.payload.slot;
         }
       }
     },
-    /** Remove a slot by key. */
+    /** Remove a slot by slotId. */
     removeDraftSlot: (state, action: PayloadAction<string>) => {
       if (state.draft) {
         state.draft.slots = state.draft.slots.filter(
-          (s) => s.key !== action.payload,
+          (s) => s.slotId !== action.payload,
         );
       }
     },

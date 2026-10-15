@@ -46,7 +46,7 @@ export function FormLetterDocument({
 
           return (
             <PositionedBox
-              key={slot.key}
+              key={slot.slotId}
               x={slot.x}
               y={slot.y}
               width={slot.width}

@@ -21,8 +21,8 @@ type SlotPatch = {
 export type GuideLine = {
   axis: "x" | "y";
   position: number;
-  /** The key of the foreign slot whose edge triggered this snap. */
-  sourceKey: string;
+  /** The slotId of the foreign slot whose edge triggered this snap. */
+  sourceSlotId: string;
 };
 
 type DragHandleProps = {
@@ -37,8 +37,8 @@ type DragHandleProps = {
   onGuides?: (guides: GuideLine[]) => void;
   /** Edge map for all other slots — used for snap alignment when Ctrl is held. */
   allEdges?: Map<string, SlotEdges>;
-  /** Key of this slot — excluded from snap candidates. */
-  slotKey?: string;
+  /** slotId of this slot — excluded from snap candidates. */
+  slotId?: string;
 };
 
 type HandleType = "left" | "right" | "top" | "bottom" | "move";
@@ -57,19 +57,19 @@ function round3(n: number) {
 
 /**
  * Finds the closest foreign edge value within the snap threshold.
- * Returns the snapped value, guide position, and source slot key, or null if nothing is close enough.
+ * Returns the snapped value, guide position, and source slotId, or null if nothing is close enough.
  */
 function snapToEdges(
   value: number,
-  foreignEntries: { value: number; key: string }[],
-): { snapped: number; guide: number; sourceKey: string } | null {
-  let best: { snapped: number; guide: number; sourceKey: string } | null = null;
+  foreignEntries: { value: number; slotId: string }[],
+): { snapped: number; guide: number; sourceSlotId: string } | null {
+  let best: { snapped: number; guide: number; sourceSlotId: string } | null = null;
   let bestDist = SNAP_THRESHOLD;
-  for (const { value: fv, key } of foreignEntries) {
+  for (const { value: fv, slotId } of foreignEntries) {
     const dist = Math.abs(value - fv);
     if (dist < bestDist) {
       bestDist = dist;
-      best = { snapped: fv, guide: fv, sourceKey: key };
+      best = { snapped: fv, guide: fv, sourceSlotId: slotId };
     }
   }
   return best;
@@ -93,7 +93,7 @@ export function DragHandle({
   onUpdate,
   onGuides,
   allEdges,
-  slotKey,
+  slotId,
 }: DragHandleProps) {
   const pxPerInch = INCH_PX * scale;
 
@@ -186,20 +186,20 @@ export function DragHandle({
       const guides: GuideLine[] = [];
 
       if (ctrlRef.current && allEdges) {
-        // Collect all foreign edge values with their source slot key
-        const xEdges: { value: number; key: string }[] = [];
-        const yEdges: { value: number; key: string }[] = [];
-        for (const [key, edges] of allEdges) {
-          if (key === slotKey) continue;
+        // Collect all foreign edge values with their source slotId
+        const xEdges: { value: number; slotId: string }[] = [];
+        const yEdges: { value: number; slotId: string }[] = [];
+        for (const [foreignSlotId, edges] of allEdges) {
+          if (foreignSlotId === slotId) continue;
           xEdges.push(
-            { value: edges.left, key },
-            { value: edges.right, key },
-            { value: edges.centerX, key },
+            { value: edges.left, slotId: foreignSlotId },
+            { value: edges.right, slotId: foreignSlotId },
+            { value: edges.centerX, slotId: foreignSlotId },
           );
           yEdges.push(
-            { value: edges.top, key },
-            { value: edges.bottom, key },
-            { value: edges.centerY, key },
+            { value: edges.top, slotId: foreignSlotId },
+            { value: edges.bottom, slotId: foreignSlotId },
+            { value: edges.centerY, slotId: foreignSlotId },
           );
         }
 
@@ -219,12 +219,12 @@ export function DragHandle({
             const delta = snapLeft.snapped - dragLeft;
             newX = snapLeft.snapped;
             if (drag.type === "left") newW = Math.max(MIN_INCHES, newW - delta);
-            guides.push({ axis: "x", position: snapLeft.guide, sourceKey: snapLeft.sourceKey });
+            guides.push({ axis: "x", position: snapLeft.guide, sourceSlotId: snapLeft.sourceSlotId });
           } else {
             const snapCX = snapToEdges(dragCenterX, xEdges);
             if (snapCX && drag.type === "move") {
               newX = snapCX.snapped - newW / 2;
-              guides.push({ axis: "x", position: snapCX.guide, sourceKey: snapCX.sourceKey });
+              guides.push({ axis: "x", position: snapCX.guide, sourceSlotId: snapCX.sourceSlotId });
             }
           }
         }
@@ -236,7 +236,7 @@ export function DragHandle({
             } else if (drag.type === "move") {
               newX = snapRight.snapped - newW;
             }
-            guides.push({ axis: "x", position: snapRight.guide, sourceKey: snapRight.sourceKey });
+            guides.push({ axis: "x", position: snapRight.guide, sourceSlotId: snapRight.sourceSlotId });
           }
         }
 
@@ -247,12 +247,12 @@ export function DragHandle({
             const delta = snapTop.snapped - dragTop;
             newY = snapTop.snapped;
             if (drag.type === "top") newH = Math.max(MIN_INCHES, newH - delta);
-            guides.push({ axis: "y", position: snapTop.guide, sourceKey: snapTop.sourceKey });
+            guides.push({ axis: "y", position: snapTop.guide, sourceSlotId: snapTop.sourceSlotId });
           } else {
             const snapCY = snapToEdges(dragCenterY, yEdges);
             if (snapCY && drag.type === "move") {
               newY = snapCY.snapped - newH / 2;
-              guides.push({ axis: "y", position: snapCY.guide, sourceKey: snapCY.sourceKey });
+              guides.push({ axis: "y", position: snapCY.guide, sourceSlotId: snapCY.sourceSlotId });
             }
           }
         }
@@ -264,7 +264,7 @@ export function DragHandle({
             } else if (drag.type === "move") {
               newY = snapBottom.snapped - newH;
             }
-            guides.push({ axis: "y", position: snapBottom.guide, sourceKey: snapBottom.sourceKey });
+            guides.push({ axis: "y", position: snapBottom.guide, sourceSlotId: snapBottom.sourceSlotId });
           }
         }
       }
@@ -305,7 +305,7 @@ export function DragHandle({
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     };
-  }, [pxPerInch, onUpdate, onGuides, allEdges, slotKey]);
+  }, [pxPerInch, onUpdate, onGuides, allEdges, slotId]);
 
   return (
     <>
