@@ -142,6 +142,12 @@ export type BurndownRechartsData = {
   groupDateRanges: Map<string, { effectiveStart: string; effectiveEnd: string }>;
   /** The sequenceId each group belongs to (null for synthetic single-member sequences). */
   groupSequenceIds: Map<string, string | null>;
+  /**
+   * Per-day, per-group production stats from the raw (unfilled) crawlerDays.
+   * Used by GroupDetail to show priceCompleted (past) and priceForecasted (future) per day.
+   * Map<date, Map<groupId, { priceCompleted, priceForecasted }>>
+   */
+  groupDailyStats: Map<string, Map<string, { priceCompleted: number; priceForecasted: number }>>;
   mainDate: string;
   snowMelt: string | null;
   snowDeadline: string | null;

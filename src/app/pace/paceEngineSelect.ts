@@ -31,6 +31,11 @@ const selectUrgentGroups = createSelector(
   (result) => result.urgentGroups,
 );
 
+const selectSequenceTimingStats = createSelector(
+  [selectPaceEngineResult],
+  (result) => result.sequenceTimingStats,
+);
+
 /** Map<groupId, { effectiveStart, effectiveEnd }> — derived from raw crawlerDays.
  *  Straggler groups (overdue urgentGroups) have their effectiveEnd capped at the
  *  last past-phase day they were actually worked, preventing the engine's forward
@@ -52,5 +57,6 @@ export const paceEngineSelect = {
   paceEngineResult: selectPaceEngineResult,
   crawlerDays: selectCrawlerDays,
   urgentGroups: selectUrgentGroups,
+  sequenceTimingStats: selectSequenceTimingStats,
   groupEffectiveDateRanges: selectGroupEffectiveDateRanges,
 };

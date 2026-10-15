@@ -1,6 +1,7 @@
 import {
   UrgentGroup,
   PaceEngineResult,
+  SequenceTimingStats,
 } from "@/app/pace/lib/PaceEngineTypes";
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { CrawlerDay, CrawlerDayGroup } from "@/app/pace/lib/crawlerDay/CrawlerDay";
@@ -57,6 +58,9 @@ export function assembleGroupResults(
   return {
     urgentGroups,
     crawlerDays,
+    // sequenceTimingStats is computed in runPaceEngine after assembly and spread in.
+    // Providing an empty array here satisfies the type; runPaceEngine overwrites it.
+    sequenceTimingStats: [],
   };
 }
 

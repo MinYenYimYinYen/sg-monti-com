@@ -124,19 +124,28 @@ const selectBurndownRechartsData = createSelector(
   [selectBurndownDays, selectBurndownVelocityLine, selectMainDate, paceSeasonPlanSelect.snowMelt, paceSeasonPlanSelect.snowDeadline, paceEngineSelect.groupEffectiveDateRanges, paceEngineSelect.crawlerDays],
   (burndownDays, velocityLine, mainDate, snowMelt, snowDeadline, groupDateRanges, crawlerDays): BurndownRechartsData => {
     if (burndownDays.length === 0) {
-      return { rows: [], groupKeys: [], groupLabels: new Map(), groupDateRanges: new Map(), groupSequenceIds: new Map(), mainDate, snowMelt, snowDeadline };
+      return { rows: [], groupKeys: [], groupLabels: new Map(), groupDateRanges: new Map(), groupSequenceIds: new Map(), groupDailyStats: new Map(), mainDate, snowMelt, snowDeadline };
     }
 
     // Collect unique group keys, labels, and sequenceIds from the raw (unfilled) crawler days.
+    // Also build groupDailyStats: Map<date, Map<groupId, { priceCompleted, priceForecasted }>>
     const groupLabels = new Map<string, string>();
     const groupSequenceIds = new Map<string, string | null>();
     const groupKeyOrder: string[] = [];
+    const groupDailyStats = new Map<string, Map<string, { priceCompleted: number; priceForecasted: number }>>();
     for (const day of crawlerDays) {
       for (const group of day.groups) {
         if (!groupLabels.has(group.groupId)) {
           groupLabels.set(group.groupId, group.label);
           groupSequenceIds.set(group.groupId, group.sequenceId);
           groupKeyOrder.push(group.groupId);
+        }
+        if (group.priceCompleted > 0 || group.priceForecasted > 0) {
+          if (!groupDailyStats.has(day.date)) groupDailyStats.set(day.date, new Map());
+          groupDailyStats.get(day.date)!.set(group.groupId, {
+            priceCompleted: group.priceCompleted,
+            priceForecasted: group.priceForecasted,
+          });
         }
       }
     }
@@ -196,6 +205,7 @@ const selectBurndownRechartsData = createSelector(
       groupLabels,
       groupDateRanges,
       groupSequenceIds,
+      groupDailyStats,
       mainDate,
       snowMelt,
       snowDeadline,

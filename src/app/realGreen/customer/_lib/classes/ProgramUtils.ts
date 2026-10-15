@@ -158,4 +158,24 @@ export class ProgramUtils {
   public taxAmt(prepayDiscountPercent: number = 0): number {
     return this.services.reduce((sum, service) => sum + service.x.taxAmt(prepayDiscountPercent), 0);
   }
+
+  /**
+   * The most recent doneDate across all completed services in this program.
+   * Returns null when no services have been completed.
+   *
+   * Used by the pace engine's daysSince constraint: a successor service cannot
+   * be worked until `daysSince` calendar days have elapsed since this date.
+   * Checking the program-level latest doneDate (rather than just the immediately
+   * preceding group's service) ensures the constraint is respected regardless of
+   * which group in the sequence was most recently completed.
+   */
+  public get latestDoneDate(): string | null {
+    let latest: string | null = null;
+    for (const service of this.services) {
+      const doneDate = service.production?.doneDate;
+      if (!doneDate || doneDate.length < 10) continue;
+      if (!latest || doneDate > latest) latest = doneDate;
+    }
+    return latest;
+  }
 }

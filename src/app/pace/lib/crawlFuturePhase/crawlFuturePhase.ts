@@ -107,6 +107,19 @@ export function crawlFuturePhase(
   const employeeCumulativeByGroup = new Map<string, Map<string, number>>();
 
   // ---------------------------------------------------------------------------
+  // Program-level projected latest doneDate tracking
+  //
+  // During the future crawl, when a service is consumed (projected as complete),
+  // we record its projected doneDate here so that pending successor services can
+  // be promoted to available once daysSince has elapsed since the program's most
+  // recent completion (historical OR projected).
+  //
+  // Key: progId. Value: the latest doneDate seen for any service in that program
+  // (either from historical production data or projected by the crawl).
+  // ---------------------------------------------------------------------------
+  const projectedLatestDoneDateByProgId = new Map<number, string>();
+
+  // ---------------------------------------------------------------------------
   // Build constrained service queues for sequences with daysSince
   // ---------------------------------------------------------------------------
 
@@ -190,40 +203,45 @@ export function crawlFuturePhase(
       day,
     });
 
-    // Promote pending → available for constrained queues based on today's date
+    // Promote pending → available for constrained queues based on today's date.
+    //
+    // The constraint is program-level: a pending successor service becomes available
+    // when `daysSince` calendar days have elapsed since the most recent completion of
+    // ANY service in the same program. We check both:
+    //   1. Historical latestDoneDate from the Service object (set before the crawl)
+    //   2. Projected latestDoneDate from projectedLatestDoneDateByProgId (updated as
+    //      the crawl consumes services)
+    // The effective latestDoneDate is the maximum of the two.
     for (const [groupId, queue] of constrainedQueues) {
       const constraint = successorConstraintMap.get(groupId);
       if (!constraint) continue; // first group in sequence — no pending
 
-      const { predecessorGroupId, daysSince } = constraint;
-      const predecessorQueue = constrainedQueues.get(predecessorGroupId);
+      const { daysSince } = constraint;
 
-      // Check pending services: if their predecessor has a doneDate and daysSince has elapsed.
-      // Search available, pending, AND completed — consumed services move to completed.
       const stillPending: typeof queue.pending = [];
-      for (const service of queue.pending) {
-        // Find the matching predecessor service by progId (check all three lists)
-        const predecessorService = predecessorQueue?.available.find((s) => s.progId === service.progId)
-          ?? predecessorQueue?.pending.find((s) => s.progId === service.progId)
-          ?? predecessorQueue?.completed.find((s) => s.progId === service.progId);
+      for (const crawlService of queue.pending) {
+        // Historical latest doneDate from the program's completed services
+        const historicalLatest = crawlService.service.program.x.latestDoneDate;
+        // Projected latest doneDate from services consumed during this crawl
+        const projectedLatest = projectedLatestDoneDateByProgId.get(crawlService.progId) ?? null;
 
-        if (predecessorService === undefined) {
-          // No predecessor service exists for this program (e.g. program started mid-sequence).
-          // No constraint to enforce — promote to available immediately.
-          insertSorted(queue.available, service);
-        } else {
-          const predecessorDoneDate = predecessorService.doneDate;
-          if (predecessorDoneDate !== null) {
-            const availableDate = addCalendarDays(predecessorDoneDate, daysSince);
-            if (availableDate <= day) {
-              // Insert into available maintaining price-descending order
-              insertSorted(queue.available, service);
-            } else {
-              stillPending.push(service);
-            }
+        // Take the maximum of historical and projected
+        const effectiveLatest =
+          historicalLatest !== null && projectedLatest !== null
+            ? historicalLatest > projectedLatest ? historicalLatest : projectedLatest
+            : historicalLatest ?? projectedLatest;
+
+        if (effectiveLatest !== null) {
+          const availableDate = addCalendarDays(effectiveLatest, daysSince);
+          if (availableDate <= day) {
+            insertSorted(queue.available, crawlService);
           } else {
-            stillPending.push(service);
+            stillPending.push(crawlService);
           }
+        } else {
+          // No completion found anywhere for this program — no prior treatment means no
+          // constraint to enforce. Promote to available immediately.
+          insertSorted(queue.available, crawlService);
         }
       }
       queue.pending = stillPending;
@@ -309,12 +327,16 @@ export function crawlFuturePhase(
       const drainedByEmployee = fillResult.drained;
       const consumedServices = fillResult.consumed;
 
-      // Mark consumed predecessor services as done today so successor pending can be promoted.
-      // The consumed services were spliced out of queue.available; set their doneDate and
-      // move them to queue.completed so successor pending promotion can find them by progId.
+      // Mark consumed services as done today and update the program-level projected
+      // latest doneDate map so pending successor services can be promoted on future days.
       for (const service of consumedServices) {
         service.doneDate = day;
         queue.completed.push(service);
+        // Update projectedLatestDoneDateByProgId — take the max of existing and today
+        const existing = projectedLatestDoneDateByProgId.get(service.progId);
+        if (!existing || day > existing) {
+          projectedLatestDoneDateByProgId.set(service.progId, day);
+        }
       }
 
       // Apply drain results to pool state and record stats
@@ -629,6 +651,22 @@ export function crawlFuturePhase(
 
     if (crawlerDayGroups.length > 0) {
       crawlerDays.push({ date: day, phase: "future", groups: crawlerDayGroups });
+    }
+
+    // Diagnostic: log services still pending in constrained queues as of 2026-12-01
+    if (day === "2026-12-01") {
+      for (const [groupId, queue] of constrainedQueues) {
+        const pendingServices = [...queue.pending, ...queue.available].map((s) => ({
+          custId: s.service.program.customer.custId,
+          progCodeId: s.service.program.progCode.progCodeId,
+          servCodeId: s.service.servCodeId,
+          price: s.price,
+          latestDoneDate: s.service.program.x.latestDoneDate,
+        }));
+        if (pendingServices.length > 0) {
+          console.log(`[daysSince diagnostic] Group ${groupId} — ${pendingServices.length} services still pending/available on 2026-12-01:`, pendingServices);
+        }
+      }
     }
 
     day = dateStrings.nextWeekdayAfter(day);
