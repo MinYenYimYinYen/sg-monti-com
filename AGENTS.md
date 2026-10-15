@@ -331,7 +331,13 @@ export default function FeatureLayout({ children }: { children: React.ReactNode 
 ## RealGreen Customer Module
 - **Reference**: See `src/app/realGreen/customer/customer.readme.md`.
 - **Streaming**: See `src/app/realGreen/customer/streaming.readme.md`.
+- **Sample Data**: See `src/app/realGreen/sampleData/samples.readme.md`.
 - **Summary**: Handles complex data fetching (Customers → Programs -> Services) using a streaming pipeline and "Search Schemes".
+
+## Testing
+- **Reference**: See `src/__tests__/testing.readme.md`.
+- **Requirement**: Agents **must** read the testing readme before writing or modifying any test files.
+- **Summary**: Uses Vitest. Entity construction in tests must use `generateCustomer` from `src/app/realGreen/sampleData/generateCustomer.ts` — never construct `Service`/`Program`/`Customer` manually.
 
 ## Session Learnings (Key Conventions)
 * **Tool Result Loop Detection**: If a tool call returns the same result as the immediately preceding call of the same tool on the same path (especially `read_file` returning identical file content repeatedly), the session is in a broken state where tool results are being replayed. **Stop all tool calls immediately.**

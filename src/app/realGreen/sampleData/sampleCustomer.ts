@@ -2,11 +2,12 @@ import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
 import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { sampleBillingAddress, sampleServiceAddress } from "./sampleAddress";
 import { sampleCustomerDiscount, sampleProgramDiscount, sampleServiceDiscount, sampleServiceDiscount2 } from "./sampleDiscounts";
-import { baseTaxCode } from "@/app/realGreen/taxCode/_lib/baseTaxCode";
-
 /**
  * A sample TaxCode for use in tests and previews.
  * Represents a 7.375% tax rate — matches the CRM reference data used in pricing tests.
+ *
+ * Note: taxRate is a whole-number percentage (7.375 = 7.375%), consistent with
+ * all other percentage values in the pricing system (discounts, prepay, etc.).
  */
 export const sampleTaxCode = {
   taxCodeId: "TX-7375",
@@ -40,7 +41,7 @@ export const sampleCustomer: Customer = generateCustomer({
     address: sampleServiceAddress,
     billingAddress: sampleBillingAddress,
   },
-  taxCodes: [{...baseTaxCode, taxRate: 7.375}],
+  taxCodes: [sampleTaxCode],
   discount: sampleCustomerDiscount,
   programs: [
     // ─── Program 1: Lawn Care ─────────────────────────────────────────────
