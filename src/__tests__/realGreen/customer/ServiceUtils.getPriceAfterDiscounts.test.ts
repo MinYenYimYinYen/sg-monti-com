@@ -1,62 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
-import { baseServiceCore, baseAssignmentUtils } from "@/app/realGreen/customer/_lib/entities/bases/baseService";
-import { baseProgram, baseProgramNoX } from "@/app/realGreen/customer/_lib/entities/bases/baseProgram";
-import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils";
-import { sampleServCode01 } from "@/app/realGreen/sampleData/sampleServCodes";
+import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
 import {
   sampleServiceDiscount,
   sampleServiceDiscount2,
   sampleProgramDiscount,
 } from "@/app/realGreen/sampleData/sampleDiscounts";
-import { baseLoadout } from "@/app/loadout/LoadoutTypes";
-import type { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import type { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Builds a minimal Service with the given price, service discount, and program. */
-function makeService({
-  price,
-  serviceDiscount,
-  program,
-}: {
-  price: number;
-  serviceDiscount: Service["discount"];
-  program: Program;
-}): Service {
-  const doc = {
-    ...baseServiceCore,
-    servId: 9999,
-    price,
-    servCodeId: sampleServCode01.servCodeId,
-  };
-  const props = {
-    program,
-    servCode: sampleServCode01,
-    callAhead: null,
-    discount: serviceDiscount,
-    production: null,
-    assignments: baseAssignmentUtils,
-    promise: null,
-    promiseIssues: [],
-    loadoutInventory: baseLoadout,
-    eta: null,
-    priorityService: null,
-  };
-  return { ...doc, ...props, x: new ServiceUtils({ ...doc, ...props }) };
-}
-
-/** Builds a minimal Program with the given program-level discount. */
-function makeProgramWithDiscount(discount: Program["discount"]): Program {
-  const noX: Omit<Program, "x"> = {
-    ...baseProgramNoX,
-    discount,
-  };
-  return { ...noX, x: new ProgramUtils(noX) };
-}
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -69,11 +17,15 @@ describe("ServiceUtils.getPriceAfterDiscounts", () => {
    * Expected: 100 - 15 = 85
    */
   it("applies a service-level dollar discount when only the service has a discount", () => {
-    const service = makeService({
-      price: 100,
-      serviceDiscount: sampleServiceDiscount, // $15 DOLLAR
-      program: baseProgram,                   // no program discount
+    const customer = generateCustomer({
+      programs: [{
+        services: [{
+          core: { price: 100 },
+          discount: sampleServiceDiscount, // $15 DOLLAR
+        }],
+      }],
     });
+    const service = customer.programs[0]!.services[0]!;
 
     expect(service.x.getPriceAfterDiscounts("price")).toBe(85);
   });
@@ -84,12 +36,15 @@ describe("ServiceUtils.getPriceAfterDiscounts", () => {
    * Expected: 150 - round(150 × 0.10 × 100)/100 = 150 - 15 = 135
    */
   it("applies a program-level percent discount when only the program has a discount", () => {
-    const program = makeProgramWithDiscount(sampleProgramDiscount); // 10% PERCENT
-    const service = makeService({
-      price: 150,
-      serviceDiscount: null,
-      program,
+    const customer = generateCustomer({
+      programs: [{
+        discount: sampleProgramDiscount, // 10% PERCENT
+        services: [{
+          core: { price: 150 },
+        }],
+      }],
     });
+    const service = customer.programs[0]!.services[0]!;
 
     expect(service.x.getPriceAfterDiscounts("price")).toBe(135);
   });
@@ -108,12 +63,16 @@ describe("ServiceUtils.getPriceAfterDiscounts", () => {
    * Expected price: 150 - 22.50 = 127.50
    */
   it("stacks service-level and program-level discounts when both are present", () => {
-    const program = makeProgramWithDiscount(sampleProgramDiscount); // 10% PERCENT
-    const service = makeService({
-      price: 150,
-      serviceDiscount: sampleServiceDiscount2, // 5% PERCENT
-      program,
+    const customer = generateCustomer({
+      programs: [{
+        discount: sampleProgramDiscount, // 10% PERCENT
+        services: [{
+          core: { price: 150 },
+          discount: sampleServiceDiscount2, // 5% PERCENT
+        }],
+      }],
     });
+    const service = customer.programs[0]!.services[0]!;
 
     // Confirm the correct discounts are collected — service first, then program.
     expect(service.x.applicableDiscounts).toEqual([
@@ -129,15 +88,19 @@ describe("ServiceUtils.getPriceAfterDiscounts", () => {
    * appear in applicableDiscounts — it is advisory only (default for new programs).
    */
   it("does not include the customer-level discount in applicableDiscounts", () => {
-    const program = makeProgramWithDiscount(sampleProgramDiscount); // 10% PERCENT
-    const service = makeService({
-      price: 150,
-      serviceDiscount: sampleServiceDiscount2, // 5% PERCENT
-      program,
+    const customer = generateCustomer({
+      programs: [{
+        discount: sampleProgramDiscount, // 10% PERCENT
+        services: [{
+          core: { price: 150 },
+          discount: sampleServiceDiscount2, // 5% PERCENT
+        }],
+      }],
     });
+    const service = customer.programs[0]!.services[0]!;
 
     const discountIds = service.x.applicableDiscounts.map((d) => d.discountId);
-    expect(discountIds).not.toContain(sampleServiceDiscount2.discountId === "SERV-DISC-5" ? "CUST-DISC-5" : "CUST-DISC-5");
+    expect(discountIds).not.toContain("CUST-DISC-5");
     expect(service.x.applicableDiscounts).toHaveLength(2);
   });
 });

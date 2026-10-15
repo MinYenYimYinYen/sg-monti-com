@@ -176,7 +176,7 @@ export const prepayLetterContract = {
       { fontSize, textAlign }: TextOptions,
     ) => (
       <Text style={{ fontSize, textAlign }}>
-        {company.addressLine1}, {company.addressLine3}
+        {company.addressLine1}, {company.addressLine2}
       </Text>
     ),
     previewRender: (
@@ -185,7 +185,7 @@ export const prepayLetterContract = {
       { fontSize, textAlign }: TextOptions,
     ) => (
       <div style={{ fontSize: fontSize * scale, textAlign }}>
-        {company.addressLine1}, {company.addressLine3}
+        {company.addressLine1}, {company.addressLine2}
       </div>
     ),
   } satisfies WithText,
