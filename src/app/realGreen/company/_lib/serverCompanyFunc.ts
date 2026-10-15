@@ -2,6 +2,7 @@ import {
   CompanyCore,
   CompanyRaw,
 } from "@/app/realGreen/company/_lib/CompanyTypes";
+import { formatPhoneDigits } from "@/lib/primatives/string/formatPhoneDigits";
 
 export function remapCompany(raw: CompanyRaw): CompanyCore {
   return {
@@ -14,8 +15,8 @@ export function remapCompany(raw: CompanyRaw): CompanyCore {
     isDefaultCompany: raw.IsDefaultCompany,
     latitude: raw.Latitude,
     longitude: raw.Longitude,
-    phone1: raw.Phone1,
-    phone2: raw.Phone2,
+    phone1: formatPhoneDigits(raw.Phone1),
+    phone2: formatPhoneDigits(raw.Phone2),
     replyEmail: raw.ReplyEmail,
     state: raw.State,
     unitCodeId: raw.UnitCodeID,

@@ -19,6 +19,8 @@ const PrepayConfigSchema = new mongoose.Schema<PrepayConfig>(
     autoRenewHeader: { type: String, required: true },
     dontAutoRenewHeader: { type: String, required: true },
     universalMessage: { type: String, required: true },
+    currentServicesHeader: { type: String, required: true },
+    upsellServicesHeader: { type: String, required: true },
   },
   { timestamps: true },
 );

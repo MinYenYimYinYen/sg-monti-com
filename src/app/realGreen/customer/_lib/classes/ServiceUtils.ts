@@ -7,7 +7,7 @@ import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 import { Discount } from "@/app/realGreen/discount/DiscountTypes";
-import { applyDiscounts, getPriceChartPrice } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
+import { applyDiscounts, calculatePrepayDiscAmt, calculatePrepayServTotal, getPriceChartPrice } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 
@@ -206,6 +206,53 @@ export class ServiceUtils {
       price: this.service[priceKey],
       discounts: this.applicableDiscounts,
     });
+  }
+
+  /**
+   * Returns the net amount due for this service after applying all applicable
+   * discounts, an optional prepay discount, and tax.
+   *
+   * Delegates to `calculatePrepayServTotal` in `pricingFuncs` — the single
+   * source of truth for this calculation.
+   *
+   * @param prepayDiscountPercent - Prepay discount percentage (e.g. `5` for 5%).
+   *                                Defaults to 0 (no prepay).
+   */
+  public priceAfterTax(prepayDiscountPercent: number = 0): number {
+    return calculatePrepayServTotal({
+      price: this.service.price,
+      discounts: this.applicableDiscounts,
+      prepayPercent: prepayDiscountPercent,
+      taxRate: this.service.program.customer.taxRate,
+    });
+  }
+
+  /**
+   * The prepay discount amount for this service (positive number).
+   * Applied to the post-service/program-discount price.
+   * Display as negative at the UI layer when showing as a deduction.
+   */
+  public prepayDiscountAmt(prepayDiscountPercent: number = 0): number {
+    return calculatePrepayDiscAmt({
+      servPrice: this.getPriceAfterDiscounts("price"),
+      prepayPercent: prepayDiscountPercent,
+    });
+  }
+
+  /**
+   * The service price after applying all discounts and the prepay discount,
+   * before tax.
+   */
+  public priceAfterPrepay(prepayDiscountPercent: number = 0): number {
+    return this.getPriceAfterDiscounts("price") - this.prepayDiscountAmt(prepayDiscountPercent);
+  }
+
+  /**
+   * The tax amount for this service, given the prepay discount.
+   * Derived as: priceAfterTax - priceAfterPrepay.
+   */
+  public taxAmt(prepayDiscountPercent: number = 0): number {
+    return this.priceAfterTax(prepayDiscountPercent) - this.priceAfterPrepay(prepayDiscountPercent);
   }
 
   /**

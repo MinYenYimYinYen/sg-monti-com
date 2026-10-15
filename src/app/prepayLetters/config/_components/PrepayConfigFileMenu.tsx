@@ -39,7 +39,9 @@ const BLANK_CONFIG: Omit<PrepayConfig, "configId" | "name" | "saId"> = {
   autoRenewHeader: "",
   dontAutoRenewHeader: "",
   universalMessage: "",
-};
+  currentServicesHeader: "",
+  upsellServicesHeader: "",
+} satisfies Omit<PrepayConfig, "configId" | "name" | "saId">;
 
 export function PrepayConfigFileMenu() {
   const dispatch = useAppDispatch();

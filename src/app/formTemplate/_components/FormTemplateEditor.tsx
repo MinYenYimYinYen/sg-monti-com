@@ -9,7 +9,7 @@ import {
   FORM_LETTER_DATA_TYPE_OPTIONS,
   FORM_LETTER_DATA_TYPE_REGISTRY,
   type FormLetterDataType,
-  type FieldDescriptor,
+  type AnyFieldDescriptor,
 } from "@/app/formTemplate/formLetterDataTypes";
 import { PagePreview } from "./PagePreview";
 import { SlotEditor } from "./SlotEditor";
@@ -148,7 +148,7 @@ export function FormTemplateEditor() {
   // Cast to the widened type so string-keyed access works throughout the editor.
   // The registry stores the concrete typed contract; we widen it here for editor use only.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const contract: Record<string, FieldDescriptor<any>> = descriptor?.contract ?? {};
+  const contract: Record<string, AnyFieldDescriptor<any>> = descriptor?.contract ?? {};
   const availableKeys = descriptor ? Object.keys(contract) : [];
   const sampleData = descriptor?.sampleData ?? {};
   const backgroundImage = descriptor?.backgroundImage;
@@ -327,6 +327,7 @@ export function FormTemplateEditor() {
                   key={slot.key}
                   slot={slot}
                   slotLabel={contract[slot.key]?.label ?? slot.key}
+                  descriptor={contract[slot.key]}
                   onSave={handleSaveSlot}
                   onDelete={handleDeleteSlot}
                 />
@@ -454,10 +455,12 @@ export function FormTemplateEditor() {
           </Sheet>
         </div>
 
-        {/* Scrollable preview area */}
+        {/* Scrollable preview area — in PDF mode the viewer fills the panel; in handles mode it centers the scaled page */}
         <div
           ref={previewScrollRef}
-          className="flex-1 overflow-auto bg-muted/30 flex items-start justify-center p-6"
+          className={previewMode === "pdf"
+            ? "flex-1 overflow-hidden"
+            : "flex-1 overflow-auto bg-muted/30 flex items-start justify-center p-6"}
         >
           {isClient && (
             <PagePreview

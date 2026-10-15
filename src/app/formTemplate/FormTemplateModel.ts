@@ -9,6 +9,7 @@ const FormLetterSlotSchema = new mongoose.Schema<FormLetterSlotDoc>(
     y: { type: Number, required: true },
     width: { type: Number, required: true },
     height: { type: Number, required: true },
+    options: { type: mongoose.Schema.Types.Mixed, default: undefined },
   },
   { _id: false },
 );

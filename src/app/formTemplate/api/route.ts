@@ -12,7 +12,8 @@ const handlers: HandlerMap<FormTemplateContract> = {
     handler: async () => {
       await connectToMongoDB();
       const docs = await FormTemplateModel.find({}).lean();
-      return { success: true, payload: cleanMongoArray<FormLetterTemplateDoc>(docs) };
+      const cleaned = cleanMongoArray<FormLetterTemplateDoc>(docs);
+      return { success: true, payload: cleaned };
     },
   },
 

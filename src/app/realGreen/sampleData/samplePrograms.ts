@@ -14,6 +14,7 @@ import {
   sampleService08,
   sampleService09,
 } from "./sampleServices";
+import { sampleProgramDiscount } from "./sampleDiscounts";
 
 // ─── Program 1: Lawn Care ─────────────────────────────────────────────────────
 
@@ -36,9 +37,9 @@ export const sampleProgram1: Program = {
   x: new ProgramUtils(sampleProgram1NoX),
 };
 
-// ─── Program 2: Insect Control ────────────────────────────────────────────────
+// ─── Program 2: Insect Control (with program-level discount) ─────────────────
 
-const sampleProgram2NoX: Omit<Program, "x"> = {
+const sampleProgram2DiscountedNoX: Omit<Program, "x"> = {
   ...baseProgramNoX,
   progId: 2,
   custId: 10001,
@@ -49,12 +50,13 @@ const sampleProgram2NoX: Omit<Program, "x"> = {
   progDefId: 2,
   progCode: sampleProgCode2,
   customer: baseCustomer,
+  discount: sampleProgramDiscount,
   services: [sampleService04, sampleService05],
 };
 
-export const sampleProgram2: Program = {
-  ...sampleProgram2NoX,
-  x: new ProgramUtils(sampleProgram2NoX),
+export const sampleProgram2Discounted: Program = {
+  ...sampleProgram2DiscountedNoX,
+  x: new ProgramUtils(sampleProgram2DiscountedNoX),
 };
 
 // ─── Program 3: Mosquito Reduction ───────────────────────────────────────────

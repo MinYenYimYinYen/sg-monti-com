@@ -236,9 +236,9 @@ type CalculateTaxParams = {
  *
  * Tax is calculated per service — the caller sums results for a program total.
  *
- * Rounding is asymmetric (matches SA5 behavior):
- * - If a discount was applied: ceil(rawTax × 100) / 100
- * - If no discount was applied: round(rawTax × 100) / 100
+ * Rounding is asymmetric (matches SA5/CRM behavior):
+ * - If no discount was applied: ceil(rawTax × 100) / 100
+ * - If a discount was applied: round(rawTax × 100) / 100
  *
  * Returns 0 if `taxRate` is 0.
  */
@@ -248,7 +248,46 @@ export function calculateTax({ price, taxRate, hasDiscount }: CalculateTaxParams
   const rawTax = price * (taxRate / 100);
 
   if (hasDiscount) {
-    return Math.ceil(rawTax * 100) / 100;
+    return Math.round(rawTax * 100) / 100;
   }
-  return Math.round(rawTax * 100) / 100;
+  return Math.ceil(rawTax * 100) / 100;
+}
+
+// ---------------------------------------------------------------------------
+// Prepay letter per-service total (full pipeline)
+// ---------------------------------------------------------------------------
+
+type CalculatePrepayServTotalParams = {
+  /** Service price before any discounts. */
+  price: number;
+  /** Service-level and program-level discounts (customer discount excluded). */
+  discounts: Discount[];
+  /** Prepay discount percentage (e.g. `5` for 5%). Zero means no prepay. */
+  prepayPercent: number;
+  /** Customer's effective tax rate as a percentage (e.g. `7.375`). */
+  taxRate: number;
+};
+
+/**
+ * Calculates the net amount due for a single service in the prepay letter context.
+ *
+ * Pipeline (per SA5/CRM behavior):
+ * 1. Apply service/program discounts via `applyDiscounts`.
+ * 2. Apply prepay discount: round(priceAfterDiscounts × prepayPercent / 100 × 100) / 100.
+ * 3. Determine `hasDiscount`: true when any service/program discount exists OR prepayPercent > 0.
+ * 4. Calculate tax via `calculateTax` (ceil when no discount, round when discount).
+ * 5. Return postPrepayPrice + tax.
+ */
+export function calculatePrepayServTotal({
+  price,
+  discounts,
+  prepayPercent,
+  taxRate,
+}: CalculatePrepayServTotalParams): number {
+  const priceAfterDiscounts = applyDiscounts({ price, discounts });
+  const prepayDiscAmt = Math.round(priceAfterDiscounts * (prepayPercent / 100) * 100) / 100;
+  const postPrepayPrice = priceAfterDiscounts - prepayDiscAmt;
+  const hasDiscount = discounts.length > 0 || prepayPercent > 0;
+  const tax = calculateTax({ price: postPrepayPrice, taxRate, hasDiscount });
+  return postPrepayPrice + tax;
 }

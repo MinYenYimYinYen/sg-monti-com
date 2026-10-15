@@ -14,6 +14,7 @@ function remapDiscount(raw: DiscountRaw): DiscountCore {
     isPermanent: raw.permanent,
     isSurcharge: raw.isSurcharge,
     available: raw.available,
+    description: raw.discountDescription,
   };
 }
 

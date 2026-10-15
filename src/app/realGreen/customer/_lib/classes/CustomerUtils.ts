@@ -12,6 +12,10 @@ export class CustomerUtils {
     public readonly customer: Omit<Customer, "x">,
     public readonly renewalFlagIds: RenewalFlagIds | null = null,
   ) {}
+  public get taxRate(): number {
+    return this.customer.taxRate;
+  }
+
   public get programs() {
     return this.customer.programs;
   }
@@ -102,6 +106,46 @@ export class CustomerUtils {
     return this.programs
       .filter((p) => p.status === "9")
       .reduce((sum, program) => sum + program.x.revenue(method), 0);
+  }
+
+  /**
+   * Sum of `getPriceAfterDiscounts` across all programs for this customer.
+   * No status filtering — the caller decides which programs to include.
+   */
+  public getPriceAfterDiscounts(priceKey: "price" | "nextPrice"): number {
+    return this.programs.reduce((sum, program) => sum + program.x.getPriceAfterDiscounts(priceKey), 0);
+  }
+
+  /**
+   * Sum of `priceAfterTax` across all programs for this customer.
+   * No status filtering — the caller decides which programs to include.
+   */
+  public priceAfterTax(prepayDiscountPercent: number = 0): number {
+    return this.programs.reduce((sum, program) => sum + program.x.priceAfterTax(prepayDiscountPercent), 0);
+  }
+
+  /**
+   * Sum of `prepayDiscountAmt` across all programs for this customer (positive number).
+   * No status filtering — the caller decides which programs to include.
+   */
+  public prepayDiscountAmt(prepayDiscountPercent: number = 0): number {
+    return this.programs.reduce((sum, program) => sum + program.x.prepayDiscountAmt(prepayDiscountPercent), 0);
+  }
+
+  /**
+   * Sum of `priceAfterPrepay` across all programs for this customer.
+   * No status filtering — the caller decides which programs to include.
+   */
+  public priceAfterPrepay(prepayDiscountPercent: number = 0): number {
+    return this.programs.reduce((sum, program) => sum + program.x.priceAfterPrepay(prepayDiscountPercent), 0);
+  }
+
+  /**
+   * Sum of `taxAmt` across all programs for this customer.
+   * No status filtering — the caller decides which programs to include.
+   */
+  public taxAmt(prepayDiscountPercent: number = 0): number {
+    return this.programs.reduce((sum, program) => sum + program.x.taxAmt(prepayDiscountPercent), 0);
   }
 
   /**

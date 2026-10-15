@@ -1,12 +1,14 @@
-import type { LabelValuePair } from "@/lib/pdf/_components/LabelValueList";
-
 // ─── Slot ─────────────────────────────────────────────────────────────────────
 
 /**
  * A single positioned slot in a form letter template.
  * `key` bridges the template to the data contract — it must match a key in the
  * feature's `FormLetterDataContract`. The contract owns all rendering decisions;
- * the slot only stores position.
+ * the slot only stores position and any user-configured options.
+ *
+ * `options` is stored as a loose record and sanitized against the descriptor's
+ * `optionSchema` on the server read path — so the client always receives a
+ * fully valid options object.
  */
 export type FormLetterSlotDoc = {
   key: string;
@@ -14,6 +16,8 @@ export type FormLetterSlotDoc = {
   y: number;
   width: number;
   height: number;
+  /** Persisted per-slot options. Sanitized against the descriptor's optionSchema on read. */
+  options?: Record<string, unknown>;
 };
 
 // ─── Template ─────────────────────────────────────────────────────────────────
@@ -26,19 +30,3 @@ export type FormLetterTemplateDoc = {
   pageSize: "LETTER" | "LEGAL";
   slots: FormLetterSlotDoc[];
 };
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-/**
- * The runtime data object passed to `FormLetterDocument`.
- * Scalar slots receive `string | number | null`.
- * LabelValueList slots receive `LabelValuePair[]`.
- * Static slots (defined in the contract but not in the data type) receive `undefined`.
- */
-export type FormLetterData = Record<
-  string,
-  string | number | null | LabelValuePair[] | undefined
->;
-
-// Re-export for convenience so consumers only need to import from this file.
-export type { LabelValuePair };

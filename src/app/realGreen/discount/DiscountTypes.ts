@@ -29,6 +29,7 @@ export type DiscountCore = {
   isPermanent: boolean;
   amount: number;
   isSurcharge: boolean;
+  description: string;
 };
 
 export type DiscountDocProps = {

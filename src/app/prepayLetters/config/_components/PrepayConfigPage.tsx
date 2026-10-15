@@ -224,6 +224,34 @@ export function PrepayConfigPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <FormGroup>
+                  <Label>Current Services Header</Label>
+                  <MentionEditor
+                    value={draft.currentServicesHeader}
+                    onChangeAction={(html) => update({ currentServicesHeader: html })}
+                    vars={letterVars}
+                    parsers={prepayLetterVarParsers}
+                    disabled={isReadOnly}
+                    placeholder="e.g. Your current services…"
+                    minHeight="40px"
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Upsell Services Header</Label>
+                  <MentionEditor
+                    value={draft.upsellServicesHeader}
+                    onChangeAction={(html) => update({ upsellServicesHeader: html })}
+                    vars={letterVars}
+                    parsers={prepayLetterVarParsers}
+                    disabled={isReadOnly}
+                    placeholder="e.g. Upgrade your services…"
+                    minHeight="40px"
+                  />
+                </FormGroup>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormGroup>
                   <Label>Auto-Renew Message</Label>
                   <MentionEditor
                     value={draft.autoRenewMessage}

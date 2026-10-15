@@ -16,4 +16,6 @@ export const samplePrepayConfig: PrepayConfig = {
   autoRenewMessage: "This is an auto renew message.",
   dontAutoRenewMessage: "This is a don't auto renew message.",
   universalMessage: "This is a universal message.",
+  currentServicesHeader: "This is a Current Services Header",
+  upsellServicesHeader: "This is an Upsell Services Header",
 };

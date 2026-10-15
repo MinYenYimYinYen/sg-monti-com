@@ -49,4 +49,6 @@ export type PrepayConfig = {
   autoRenewHeader: string;
   dontAutoRenewHeader: string;
   universalMessage: string;
+  currentServicesHeader: string;
+  upsellServicesHeader: string;
 } & PrepayLetterVars;

@@ -82,6 +82,8 @@ const selectParsedDraft = createSelector([selectDraft], (draft) => {
     dontAutoRenewMessage: resolve(draft.dontAutoRenewMessage),
     autoRenewHeader: resolve(draft.autoRenewHeader),
     dontAutoRenewHeader: resolve(draft.dontAutoRenewHeader),
+    currentServicesHeader: resolve(draft.currentServicesHeader),
+    upsellServicesHeader: resolve(draft.upsellServicesHeader),
   };
 });
 

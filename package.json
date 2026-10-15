@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "engines": {
     "npm": "use npm instead",
@@ -97,7 +99,8 @@
     "@babel/plugin-transform-private-methods": "^7.28.6",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.1"
+    "eslint-config-next": "16.1.1",
+    "vitest": "^5.0.4"
   },
   "overrides": {
     "@babel/plugin-proposal-private-methods": "npm:@babel/plugin-transform-private-methods@^7.25.9"

@@ -15,6 +15,7 @@ export const baseDiscountCore: DiscountCore = {
   isPermanent: false,
   amount: 0,
   isSurcharge: false,
+  description: "",
 };
 
 export const baseDiscountDocProps: DiscountDocProps = {

@@ -5,13 +5,13 @@ import { Button } from "@/style/components/button";
 import { Printer } from "lucide-react";
 import { FormLetterDocument } from "@/lib/pdf/FormLetterDocument";
 import type { FormLetterTemplateDoc } from "@/app/formTemplate/FormTemplateTypes";
-import type { FieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
+import type { AnyFieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
 
 type SamplePdfDownloadProps = {
   draft: FormLetterTemplateDoc;
   sampleData: unknown;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  contract: Record<string, FieldDescriptor<any>>;
+  contract: Record<string, AnyFieldDescriptor<any>>;
 };
 
 /**

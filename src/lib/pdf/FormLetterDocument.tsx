@@ -1,7 +1,8 @@
 import { Document, Page } from "@react-pdf/renderer";
 import { PositionedBox } from "@/lib/pdf/_components/PositionedBox";
 import type { FormLetterTemplateDoc } from "@/app/formTemplate/FormTemplateTypes";
-import type { FieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
+import { hasOptions, type AnyFieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
+import { getSchemaDefaults } from "@/app/formTemplate/slotOptionSchema";
 
 type FormLetterDocumentProps = {
   template: FormLetterTemplateDoc;
@@ -9,7 +10,7 @@ type FormLetterDocumentProps = {
   data: unknown;
   /** The feature's data contract — maps slot keys to their react-pdf renderers. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  contract: Record<string, FieldDescriptor<any>>;
+  contract: Record<string, AnyFieldDescriptor<any>>;
 };
 
 /**
@@ -18,8 +19,9 @@ type FormLetterDocumentProps = {
  * for each slot key. The contract owns all rendering decisions; this component only
  * handles positioning via `PositionedBox`.
  *
- * Static slots (keys present in the contract but not in `data`) receive `undefined`
- * as their value — their renderers are expected to ignore it.
+ * For descriptors with `optionSchema`, the slot's stored options are merged with
+ * schema defaults before being passed to the renderer. This ensures renderers always
+ * receive a fully populated options object even if the slot predates an option being added.
  */
 export function FormLetterDocument({
   template,
@@ -33,6 +35,15 @@ export function FormLetterDocument({
           const descriptor = contract[slot.key];
           if (!descriptor) return null;
 
+          let rendered: React.ReactNode;
+          if (hasOptions(descriptor)) {
+            const defaults = getSchemaDefaults(descriptor.optionSchema);
+            const options = { ...defaults, ...(slot.options ?? {}) };
+            rendered = descriptor.render(data, options);
+          } else {
+            rendered = descriptor.render(data);
+          }
+
           return (
             <PositionedBox
               key={slot.key}
@@ -41,7 +52,7 @@ export function FormLetterDocument({
               width={slot.width}
               height={slot.height}
             >
-              {descriptor.render(data)}
+              {rendered}
             </PositionedBox>
           );
         })}

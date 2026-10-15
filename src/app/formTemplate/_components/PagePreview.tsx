@@ -4,7 +4,8 @@ import Image from "next/image";
 import type { StaticImageData } from "next/image";
 import { useState } from "react";
 import { cn } from "@/style/utils";
-import type { FieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
+import { hasOptions, type AnyFieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
+import { getSchemaDefaults } from "@/app/formTemplate/slotOptionSchema";
 import { DragHandle, type GuideLine } from "./DragHandle";
 import { PDFViewer } from "@react-pdf/renderer";
 import { FormLetterDocument } from "@/lib/pdf/FormLetterDocument";
@@ -33,7 +34,7 @@ type PagePreviewProps = {
   template: FormLetterTemplateDoc;
   sampleData: unknown;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  contract: Record<string, FieldDescriptor<any>>;
+  contract: Record<string, AnyFieldDescriptor<any>>;
   selectedSlotKey?: string | null;
   onSlotClick?: (key: string) => void;
   /** Called when the user drags a handle to reposition/resize a slot. */
@@ -89,20 +90,16 @@ export function PagePreview({
   const [guideLines, setGuideLines] = useState<GuideLine[]>([]);
 
   // ── PDF mode ──────────────────────────────────────────────────────────────
+  // Fill the entire available panel — PDFViewer has its own internal zoom/scroll.
   if (previewMode === "pdf") {
     return (
-      <div
-        className="relative bg-white shadow-lg border border-border shrink-0"
-        style={{ width: pxWidth, height: pxHeight }}
-      >
-        <PDFViewer style={{ width: "100%", height: "100%", border: "none" }}>
-          <FormLetterDocument
-            template={template}
-            data={sampleData}
-            contract={contract}
-          />
-        </PDFViewer>
-      </div>
+      <PDFViewer style={{ width: "100%", height: "100%", border: "none" }}>
+        <FormLetterDocument
+          template={template}
+          data={sampleData}
+          contract={contract}
+        />
+      </PDFViewer>
     );
   }
 
@@ -218,6 +215,7 @@ export function PagePreview({
                     key={slot.key}
                     slot={slot}
                     slotLabel={slotLabel}
+                    descriptor={descriptor}
                     onSave={(updated) => {
                       onSlotSave?.(updated);
                     }}
@@ -242,7 +240,13 @@ export function PagePreview({
             {/* Content rendered via the contract's previewRender — passes full sampleData */}
             {descriptor && (
               <div className="w-full h-full p-px overflow-hidden">
-                {descriptor.previewRender(sampleData, scale)}
+                {hasOptions(descriptor)
+                  ? descriptor.previewRender(
+                      sampleData,
+                      scale,
+                      { ...getSchemaDefaults(descriptor.optionSchema), ...(slot.options ?? {}) },
+                    )
+                  : descriptor.previewRender(sampleData, scale)}
               </div>
             )}
           </div>

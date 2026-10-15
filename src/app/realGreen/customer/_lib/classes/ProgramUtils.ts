@@ -118,4 +118,44 @@ export class ProgramUtils {
     const ACTUAL_STATUSES = ["Y", "*", "$", "S"];
     return this.services.filter((s) => ACTUAL_STATUSES.includes(s.status));
   }
+
+  /**
+   * Sum of `getPriceAfterDiscounts` across all services in this program.
+   * No status filtering — the caller decides which services to include.
+   */
+  public getPriceAfterDiscounts(priceKey: "price" | "nextPrice"): number {
+    return this.services.reduce((sum, service) => sum + service.x.getPriceAfterDiscounts(priceKey), 0);
+  }
+
+  /**
+   * Sum of `priceAfterTax` across all services in this program.
+   * No status filtering — the caller decides which services to include.
+   */
+  public priceAfterTax(prepayDiscountPercent: number = 0): number {
+    return this.services.reduce((sum, service) => sum + service.x.priceAfterTax(prepayDiscountPercent), 0);
+  }
+
+  /**
+   * Sum of `prepayDiscountAmt` across all services in this program (positive number).
+   * No status filtering — the caller decides which services to include.
+   */
+  public prepayDiscountAmt(prepayDiscountPercent: number = 0): number {
+    return this.services.reduce((sum, service) => sum + service.x.prepayDiscountAmt(prepayDiscountPercent), 0);
+  }
+
+  /**
+   * Sum of `priceAfterPrepay` across all services in this program.
+   * No status filtering — the caller decides which services to include.
+   */
+  public priceAfterPrepay(prepayDiscountPercent: number = 0): number {
+    return this.services.reduce((sum, service) => sum + service.x.priceAfterPrepay(prepayDiscountPercent), 0);
+  }
+
+  /**
+   * Sum of `taxAmt` across all services in this program.
+   * No status filtering — the caller decides which services to include.
+   */
+  public taxAmt(prepayDiscountPercent: number = 0): number {
+    return this.services.reduce((sum, service) => sum + service.x.taxAmt(prepayDiscountPercent), 0);
+  }
 }
