@@ -11,10 +11,7 @@ import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
 import { PaceScenarioSelector } from "@/app/pace/assignmentPlan/PaceScenarioSelector";
 import {
-  BarChart2,
-  CalendarDays,
   ClipboardList,
-  GitBranch,
   Map,
   Settings2,
   TrendingDown,
@@ -27,15 +24,11 @@ import Link from "next/link";
 // ---------------------------------------------------------------------------
 
 const TABS: readonly TabNavItem[] = [
-  { label: "Employee Plan", href: "/pace", icon: Users },
+  { label: "Route Plan", href: "/pace", icon: Users },
   { label: "Priorities", href: "/pace/priorities", icon: ClipboardList },
-  { label: "Assignments", href: "/pace/assignments", icon: Settings2 },
+  { label: "Burndown", href: "/pace/burndown", icon: TrendingDown },
   { label: "Setup", href: "/pace/setup", icon: Settings2 },
   { label: "Season Plan", href: "/pace/seasonPlan", icon: Map },
-  { label: "Emp Timeline", href: "/pace/empTimeline", icon: CalendarDays },
-  { label: "SC Timeline", href: "/pace/scTimeline", icon: GitBranch },
-  { label: "Gantt", href: "/pace/gantt", icon: BarChart2 },
-  { label: "Burndown", href: "/pace/burndown", icon: TrendingDown },
 ];
 
 const ROOT_HREF = "/pace";

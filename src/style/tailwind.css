@@ -75,12 +75,12 @@
   --popover-foreground: var(--card-foreground);
 
 
-  /* Chart Colors - Brand Palette */
+  /* Chart Colors - Distinct Palette */
   --chart-1: oklch(0.534 0.042 239.5); /* Blue */
   --chart-2: oklch(0.628 0.145 142.4); /* Green */
-  --chart-3: oklch(0.691 0.137 42.8); /* Orange */
-  --chart-4: oklch(0.525 0.173 38.4); /* Dark Orange */
-  --chart-5: oklch(0.708 0.032 239.5); /* Light Blue */
+  --chart-3: oklch(0.55 0.18 290); /* Purple */
+  --chart-4: oklch(0.78 0.16 85); /* Amber */
+  --chart-5: oklch(0.62 0.13 195); /* Teal */
 
   /* Typography */
   font-family: 'Inter', 'Inter-Fallback', sans-serif;
@@ -121,9 +121,9 @@
   /* Chart Colors - Adjusted for Dark Mode */
   --chart-1: oklch(0.60 0.08 239.5); /* Brighter Blue */
   --chart-2: oklch(0.68 0.16 142.4); /* Brighter Green */
-  --chart-3: oklch(0.72 0.15 42.8); /* Brighter Orange */
-  --chart-4: oklch(0.60 0.173 38.4); /* Brighter Dark Orange */
-  --chart-5: oklch(0.75 0.05 239.5); /* Lighter Blue variant */
+  --chart-3: oklch(0.65 0.20 290); /* Brighter Purple */
+  --chart-4: oklch(0.84 0.17 85); /* Brighter Amber */
+  --chart-5: oklch(0.70 0.14 195); /* Brighter Teal */
 }
 /*---break---*/
 @layer base {

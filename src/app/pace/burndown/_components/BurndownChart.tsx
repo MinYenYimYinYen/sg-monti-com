@@ -21,15 +21,20 @@ import { burndownSelect } from "@/app/pace/burndown/burndownSelect";
 import { burndownActions } from "@/app/pace/burndown/burndownSlice";
 
 // ---------------------------------------------------------------------------
-// Color palette — cycles through CSS chart variables
+// Color palette — 10 distinct colors, brand anchors first
 // ---------------------------------------------------------------------------
 
 const CHART_COLORS = [
-  "var(--color-chart-1)",
-  "var(--color-chart-2)",
-  "var(--color-chart-3)",
-  "var(--color-chart-4)",
-  "var(--color-chart-5)",
+  "oklch(0.534 0.042 239.5)", // Blue (brand)
+  "oklch(0.628 0.145 142.4)", // Green (brand)
+  "oklch(0.691 0.137 42.8)",  // Orange (brand)
+  "oklch(0.55 0.18 290)",     // Purple
+  "oklch(0.78 0.16 85)",      // Amber
+  "oklch(0.62 0.13 195)",     // Teal
+  "oklch(0.60 0.20 10)",      // Rose
+  "oklch(0.72 0.18 125)",     // Lime
+  "oklch(0.50 0.22 265)",     // Indigo
+  "oklch(0.70 0.12 210)",     // Cyan
 ];
 
 function chartColor(index: number): string {
@@ -37,34 +42,40 @@ function chartColor(index: number): string {
 }
 
 /**
- * Builds a Map<groupId, color> by assigning one color per unique sequence.
- * Groups with the same sequenceId share a color. Standalone groups (sequenceId=null)
- * get their own color slot, but only from indices not already claimed by a sequence.
+ * Builds a Map<groupId, color> by assigning two alternating colors per unique sequence.
+ * Groups within the same sequence alternate between color A and color B.
+ * Standalone groups (sequenceId=null) cycle through the remaining color indices.
  *
  * Two-pass approach:
- *   1. Assign color indices to all unique sequences first.
- *   2. Assign remaining indices to standalone groups.
+ *   1. Reserve a pair of color indices per unique sequence (in encounter order).
+ *   2. Assign colors — sequence groups alternate A/B, standalones get the next available index.
  */
 function buildGroupColorMap(
   groupKeys: string[],
   groupSequenceIds: Map<string, string | null>,
 ): Map<string, string> {
-  // Pass 1: collect unique sequences in encounter order and assign color indices
-  const sequenceColorIndex = new Map<string, number>();
+  // Pass 1: reserve two color indices per unique sequence in encounter order
+  const sequenceColorPairs = new Map<string, [number, number]>();
   let nextColorIndex = 0;
   for (const groupId of groupKeys) {
     const sequenceId = groupSequenceIds.get(groupId) ?? null;
-    if (sequenceId !== null && !sequenceColorIndex.has(sequenceId)) {
-      sequenceColorIndex.set(sequenceId, nextColorIndex++);
+    if (sequenceId !== null && !sequenceColorPairs.has(sequenceId)) {
+      sequenceColorPairs.set(sequenceId, [nextColorIndex, nextColorIndex + 1]);
+      nextColorIndex += 2;
     }
   }
 
-  // Pass 2: assign colors — sequences use their reserved index, standalones get the next available
+  // Pass 2: assign colors — sequence groups alternate between their pair's A and B colors,
+  // standalones get the next available index after all sequence pairs are claimed
+  const sequenceGroupCount = new Map<string, number>();
   const colorMap = new Map<string, string>();
   for (const groupId of groupKeys) {
     const sequenceId = groupSequenceIds.get(groupId) ?? null;
     if (sequenceId !== null) {
-      colorMap.set(groupId, chartColor(sequenceColorIndex.get(sequenceId)!));
+      const [colorA, colorB] = sequenceColorPairs.get(sequenceId)!;
+      const count = sequenceGroupCount.get(sequenceId) ?? 0;
+      colorMap.set(groupId, chartColor(count % 2 === 0 ? colorA : colorB));
+      sequenceGroupCount.set(sequenceId, count + 1);
     } else {
       colorMap.set(groupId, chartColor(nextColorIndex++));
     }

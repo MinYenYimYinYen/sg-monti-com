@@ -1,3 +1,3 @@
-import TempStub from "@/app/pace/TempStub";
+import { RoutePlanPage } from "@/app/pace/_components/RoutePlanPage";
 
-export default TempStub;
+export default RoutePlanPage;
