@@ -10,9 +10,12 @@ import {
 } from "@/style/components/accordion";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { EtaServiceRow } from "@/app/scheduling/coverSheets/_lib/components/EtaServiceRow";
+import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
 
 type EtaSetupPanelProps = {
   serviceByEmployee: Map<string, Service[]>;
+  /** Map<employeeId | "__day__", RouteNote[]> for this date. */
+  notesByEmployee?: Map<string, RouteNote[]>;
 };
 
 function getEtaStatus(services: Service[]) {
@@ -26,11 +29,25 @@ function getEtaStatus(services: Service[]) {
   return { needed: etaServices.length, filled: filled.length };
 }
 
-export function EtaSetupPanel({ serviceByEmployee }: EtaSetupPanelProps) {
+export function EtaSetupPanel({ serviceByEmployee, notesByEmployee }: EtaSetupPanelProps) {
   const [openItem, setOpenItem] = useState<string>("");
+
+  const dayNotes = (notesByEmployee?.get("__day__") ?? []).filter((n) => n.note);
 
   return (
     <div className="flex flex-col gap-2 flex-1 min-h-0">
+      {/* Day-level notes — above the employee accordion */}
+      {dayNotes.length > 0 && (
+        <div className="flex flex-col gap-1 px-1 py-2 rounded-md bg-primary/10 border border-primary/20 text-sm shrink-0">
+          {dayNotes.map((n) => (
+            <p key={n.routeNoteId}>
+              <span className="font-semibold">Route Note: </span>
+              {n.note}
+            </p>
+          ))}
+        </div>
+      )}
+
       <ScrollArea className="flex-1">
         <Accordion
           type="single"
@@ -43,6 +60,7 @@ export function EtaSetupPanel({ serviceByEmployee }: EtaSetupPanelProps) {
             const services = serviceByEmployee.get(employeeId)!;
             const { needed, filled } = getEtaStatus(services);
             const allFilled = needed === 0 || filled === needed;
+            const employeeNotes = (notesByEmployee?.get(employeeId) ?? []).filter((n) => n.note);
 
             return (
               <AccordionItem key={employeeId} value={employeeId}>
@@ -59,6 +77,17 @@ export function EtaSetupPanel({ serviceByEmployee }: EtaSetupPanelProps) {
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="px-1">
+                  {/* Employee route notes — above the service list */}
+                  {employeeNotes.length > 0 && (
+                    <div className="flex flex-col gap-1 mb-2 p-2 rounded-md bg-secondary/10 border border-secondary/20 text-xs">
+                      {employeeNotes.map((n) => (
+                        <p key={n.routeNoteId}>
+                          <span className="font-semibold">Route Note: </span>
+                          {n.note}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                   {services.map((service) => (
                     <EtaServiceRow key={service.servId} service={service} />
                   ))}

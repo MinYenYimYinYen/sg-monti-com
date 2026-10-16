@@ -18,6 +18,13 @@ type PaceState = {
    * Empty array = no groups selected (slider is disabled).
    */
   goalMultiplierGroupIds: string[];
+  /**
+   * Visual "queued" toggle — tracks which employees the manager has mentally queued up
+   * in the CRM for a given date. Toggled by clicking the employee name in RoutePlanEmployeeRow.
+   * Shape: { [date]: { [employeeId]: boolean } }
+   * Pure UI state — not persisted, not synced to any backend.
+   */
+  queuedByDateAndEmployee: Record<string, Record<string, boolean>>;
 };
 
 const initialState: PaceState = {
@@ -25,6 +32,7 @@ const initialState: PaceState = {
   assignmentEditorSelectedEmployeeIds: [],
   goalMultiplier: 1,
   goalMultiplierGroupIds: [],
+  queuedByDateAndEmployee: {},
 };
 
 const paceSlice = createSlice({
@@ -42,6 +50,14 @@ const paceSlice = createSlice({
     },
     setGoalMultiplierGroupIds: (state, action: PayloadAction<string[]>) => {
       state.goalMultiplierGroupIds = action.payload;
+    },
+    toggleQueued: (state, action: PayloadAction<{ date: string; employeeId: string }>) => {
+      const { date, employeeId } = action.payload;
+      if (!state.queuedByDateAndEmployee[date]) {
+        state.queuedByDateAndEmployee[date] = {};
+      }
+      const current = state.queuedByDateAndEmployee[date][employeeId] ?? false;
+      state.queuedByDateAndEmployee[date][employeeId] = !current;
     },
   },
 });

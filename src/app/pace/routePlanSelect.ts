@@ -7,7 +7,12 @@ import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelecto
 import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { plannedTimeOffSelect } from "@/app/plannedTimeOff/plannedTimeOffSelect";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
-import { EmployeeDayStatus, RoutePlanDay, RoutePlanEmployee } from "@/app/pace/routePlanTypes";
+import {
+  EmployeeDayStatus,
+  EmployeeDayStatuses,
+  RoutePlanDay,
+  RoutePlanEmployee,
+} from "@/app/pace/routePlanTypes";
 import { CrawlerDayPhase } from "@/app/pace/lib/crawlerDay/CrawlerDay";
 
 const selectMainDate = (state: AppState): string => state.pace.mainDate;
@@ -33,17 +38,19 @@ function weekdaysFromMonday(monday: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Printed services map — Map<date, Map<employeeId, serviceCount>>
+// Printed services map — Map<date, Map<employeeId, PrintedEntry>>
 //
 // Built from centralSelect.services filtered to status === "$" (printed).
 // Uses service.x.schedInfo (which reads assignments.mostRecent) for the
 // canonical schedDate and employeeId — the same source coverSheetsSelect uses.
 // ---------------------------------------------------------------------------
 
+type PrintedEntry = { serviceCount: number; totalPrice: number; servCodeIds: string[] };
+
 const selectPrintedServicesByDateAndEmployee = createSelector(
   [centralSelect.services],
-  (services): Map<string, Map<string, number>> => {
-    const result = new Map<string, Map<string, number>>();
+  (services): Map<string, Map<string, PrintedEntry>> => {
+    const result = new Map<string, Map<string, PrintedEntry>>();
     for (const service of services) {
       if (service.status !== "$") continue;
       const schedInfo = service.x.schedInfo;
@@ -51,7 +58,20 @@ const selectPrintedServicesByDateAndEmployee = createSelector(
       const { schedDate, employeeId } = schedInfo;
       if (!result.has(schedDate)) result.set(schedDate, new Map());
       const byEmployee = result.get(schedDate)!;
-      byEmployee.set(employeeId, (byEmployee.get(employeeId) ?? 0) + 1);
+      const existing = byEmployee.get(employeeId);
+      if (existing) {
+        existing.serviceCount += 1;
+        existing.totalPrice += service.price;
+        if (!existing.servCodeIds.includes(service.servCodeId)) {
+          existing.servCodeIds.push(service.servCodeId);
+        }
+      } else {
+        byEmployee.set(employeeId, {
+          serviceCount: 1,
+          totalPrice: service.price,
+          servCodeIds: [service.servCodeId],
+        });
+      }
     }
     return result;
   },
@@ -248,37 +268,81 @@ const selectRoutePlanDays = createSelector(
       const completedForDate = completedByDateAndEmployee.get(date);
       const projectedForDate = projectedByDateAndEmployee.get(date);
 
-      const routeEmployees: RoutePlanEmployee[] = plannedEmployees.map((employee): RoutePlanEmployee => {
+      // Build the employee list for this date:
+      //   - All employees in the active assignment plan (the normal case).
+      //   - PLUS any employees who have printed services on this date but are NOT in the
+      //     plan. This surfaces the "scheduled but not tracked" conflict (e.g. an employee
+      //     who was removed from the plan but still has routed work in the CRM).
+      const employeesForDate = [...plannedEmployees];
+      if (printedForDate) {
+        for (const scheduledEmployeeId of printedForDate.keys()) {
+          if (!assignmentsByEmployeeId.has(scheduledEmployeeId)) {
+            const employee = employees.find((e) => e.employeeId === scheduledEmployeeId);
+            if (employee) employeesForDate.push(employee);
+          }
+        }
+        // Re-sort after any additions to keep alphabetical order.
+        employeesForDate.sort((a, b) => a.name.localeCompare(b.name));
+      }
+
+      const routeEmployees: RoutePlanEmployee[] = employeesForDate.map((employee): RoutePlanEmployee => {
         const { employeeId } = employee;
-        let status: EmployeeDayStatus;
+
+        const isUnplannedAbsent = unplannedAbsenceDatesByEmployee.get(employeeId)?.has(date) ?? false;
+        const isPto = !isUnplannedAbsent && employee.timeOffDates.has(date);
+        const isScheduled = printedForDate?.has(employeeId) ?? false;
+
+        // Build the statuses array. Normally one entry; two entries when there's a conflict.
+        // A conflict is: employee has printed services AND has a planned absence (PTO or unplanned).
+        // In that case we include both the absence status and the scheduled status so the UI
+        // can render both chips and highlight the row.
+        const statuses: EmployeeDayStatuses = [];
+
+        // Helper to build a "scheduled" status from the printed entry for this employee.
+        const buildScheduledStatus = (): EmployeeDayStatus => {
+          const p = printedForDate!.get(employeeId)!;
+          return { kind: "scheduled", serviceCount: p.serviceCount, totalPrice: p.totalPrice, servCodeIds: p.servCodeIds };
+        };
 
         if (isHoliday) {
-          status = { kind: "holiday" };
-        } else if (unplannedAbsenceDatesByEmployee.get(employeeId)?.has(date)) {
-          status = { kind: "unplanned-absence" };
-        } else if (employee.timeOffDates.has(date)) {
-          // timeOffDates includes all PTO types; unplanned-absence already handled above.
-          status = { kind: "pto" };
+          // Always record the holiday status. If the employee also has printed services,
+          // both statuses are included so hasSchedulingConflict() fires and the row is
+          // highlighted. The "holiday" chip is suppressed in the UI (the card header
+          // already shows the holiday/weather banner), so only the "scheduled" chip renders.
+          statuses.push({ kind: "holiday" });
+          if (isScheduled) {
+            statuses.push(buildScheduledStatus());
+          }
+        } else if (isUnplannedAbsent) {
+          statuses.push({ kind: "unplanned-absence" });
+          if (isScheduled) {
+            statuses.push(buildScheduledStatus());
+          }
+        } else if (isPto) {
+          statuses.push({ kind: "pto" });
+          if (isScheduled) {
+            statuses.push(buildScheduledStatus());
+          }
         } else if (employee.availability.startDate && date < employee.availability.startDate) {
-          status = { kind: "not-started" };
+          statuses.push({ kind: "not-started" });
         } else if (employee.availability.endDate && date > employee.availability.endDate) {
-          status = { kind: "done" };
+          statuses.push({ kind: "done" });
         } else if (isPast && completedForDate?.has(employeeId)) {
           const entry = completedForDate.get(employeeId)!;
-          status = { kind: "completed", totalPrice: entry.totalPrice, servCodeIds: entry.servCodeIds };
-        } else if (printedForDate?.has(employeeId)) {
-          status = { kind: "scheduled", serviceCount: printedForDate.get(employeeId)! };
+          statuses.push({ kind: "completed", totalPrice: entry.totalPrice, servCodeIds: entry.servCodeIds });
+        } else if (isScheduled) {
+          statuses.push(buildScheduledStatus());
         } else if (projectedForDate?.has(employeeId)) {
           const projected = projectedForDate.get(employeeId)!;
           const plan = assignmentsByEmployeeId.get(employeeId);
           const goalDailyPrice =
             plan?.groupAssignments.find((ga) => ga.groupId === projected.groupId)?.dailyRevenueGoal ?? null;
-          status = { kind: "projected", groupLabel: projected.groupLabel, goalDailyPrice };
+          statuses.push({ kind: "projected", groupLabel: projected.groupLabel, goalDailyPrice });
         } else {
-          status = { kind: "available" };
+          statuses.push({ kind: "available" });
         }
 
-        return { employeeId, name: employee.name, status };
+        return { employeeId, name: employee.name, statuses };
       });
 
       return {

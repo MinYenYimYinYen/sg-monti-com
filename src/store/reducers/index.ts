@@ -65,6 +65,7 @@ import { paceAssignmentPlanReducer } from "@/app/pace/assignmentPlan/assignmentP
 import { paceSeasonPlanReducer } from "@/app/pace/seasonPlan/seasonPlanSlice";
 import { burndownReducer } from "@/app/pace/burndown/burndownSlice";
 import { formTemplateReducer } from "@/app/formTemplate/formTemplateSlice";
+import { routeNoteReducer } from "@/app/routeNotes/routeNoteSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -133,6 +134,7 @@ const rootReducer = combineReducers({
   paceSeasonPlan: paceSeasonPlanReducer,
   burndown: burndownReducer,
   formTemplate: formTemplateReducer,
+  routeNotes: routeNoteReducer,
 });
 
 export default rootReducer;

@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { useServiceEta } from "@/app/scheduling/eta/useServiceEta";
 import { useAssignments } from "@/app/assignment/useAssignments";
+import { usePlannedTimeOff } from "@/app/plannedTimeOff/usePlannedTimeOff";
 
 export function usePrenotify() {
   useCustomerContext({ contexts: ["printed"] });
@@ -14,6 +15,8 @@ export function usePrenotify() {
   useProgServ({ autoLoad: true });
   useEmployee({ autoLoad: true });
   useCallAhead({ autoLoad: true });
+  // Required for employeeRoutedStatusSelect conflict detection.
+  usePlannedTimeOff({ autoLoad: true });
 
   const serviceDocs = useSelector(centralSelect.serviceDocs);
   useServiceEta({ servIds: serviceDocs.map((s) => s.servId) });

@@ -9,6 +9,7 @@ import { Settings } from "lucide-react";
 import { Fragment, useState } from "react";
 import { CallAheadConfig } from "@/app/realGreen/callAhead/_lib/ext/components/CallAheadConfig";
 import { prenotifySelect } from "@/app/scheduling/prenotify/_lib/prenotifySelect";
+import { employeeRoutedStatusSelect } from "@/app/scheduling/employeeRoutedStatusSelect";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import {
   Tabs,
@@ -27,6 +28,7 @@ export default function Prenotify() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const prenotifications = useSelector(prenotifySelect.prenotifications);
   const summaries = useSelector(prenotifySelect.summaries);
+  const conflictDates = useSelector(employeeRoutedStatusSelect.conflictDates);
   const dates = Array.from(prenotifications.keys()).sort((a, b) =>
     a.localeCompare(b),
   );
@@ -61,12 +63,20 @@ export default function Prenotify() {
               <div className="rounded-md border bg-popover shadow-md">
                 {dates.map((date) => {
                   const summary = summaries.get(date)!;
+                  const hasConflict = conflictDates.has(date);
                   return (
                     <MultiSelectItem value={date} key={date}>
                       <div>
-                        <h3 className="font-semibold text-lg">
-                          {prettyDate(date, "EEE, MMM d")}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg">
+                            {prettyDate(date, "EEE, MMM d")}
+                          </h3>
+                          {hasConflict && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-destructive/20 text-destructive whitespace-nowrap">
+                              ⚠ Conflict
+                            </span>
+                          )}
+                        </div>
                         <div className="grid grid-cols-[1fr_4rem] gap-1">
                           {Array.from(summary.notificationCounts.entries()).map(
                             ([type, count]) => (

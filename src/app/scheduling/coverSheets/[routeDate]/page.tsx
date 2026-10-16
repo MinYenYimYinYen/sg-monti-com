@@ -6,6 +6,8 @@ import { Container } from "@/components/Containers";
 import { Document, Page, usePDF, View, Text } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { useCoverSheetDeps } from "@/app/scheduling/coverSheets/_lib/hooks/useCoverSheetDeps";
+import { routeNoteSelect } from "@/app/routeNotes/routeNoteSelect";
+import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
 import {
   Tabs,
   TabsContent,
@@ -53,6 +55,8 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   const serviceByEmployee = servicesByDateAndEmployee.get(routeDate);
   const productCommonMap = useSelector(productSelect.productCommonMap);
   const { getServCodeCounts, getServicesByRuleDesc } = useServCodes();
+  const notesByDateAndEmployee = useSelector(routeNoteSelect.byDateAndEmployee);
+  const notesByEmployee = notesByDateAndEmployee.get(routeDate) ?? new Map<string, RouteNote[]>();
 
   const getPlannedAppProductTotal = (services: Service[]): AppProduct[] => {
     const allCores = services.flatMap((service) =>
@@ -90,7 +94,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
         </TabsList>
 
         <TabsContent value="eta" className="mt-2 flex flex-col flex-1 min-h-0">
-          <EtaSetupPanel serviceByEmployee={serviceByEmployee} />
+          <EtaSetupPanel serviceByEmployee={serviceByEmployee} notesByEmployee={notesByEmployee} />
         </TabsContent>
 
         <TabsContent value="pdf" className="mt-2">
@@ -101,6 +105,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
             getServCodeCounts={getServCodeCounts}
             getServicesByRuleDesc={getServicesByRuleDesc}
             productCommonMap={productCommonMap}
+            notesByEmployee={notesByEmployee}
             loadingCount={loadingCount}
           />
         </TabsContent>
@@ -124,6 +129,8 @@ type CoverSheetsPDFProps = {
     services: Service[];
   }[];
   productCommonMap: ReturnType<typeof productSelect.productCommonMap>;
+  /** Map<employeeId, RouteNote[]> — notes for this date, keyed by employeeId. */
+  notesByEmployee: Map<string, RouteNote[]>;
 };
 
 type CoverSheetViewerProps = CoverSheetsPDFProps & {
@@ -137,6 +144,7 @@ function CoverSheetViewer({
   getServCodeCounts,
   getServicesByRuleDesc,
   productCommonMap,
+  notesByEmployee,
   loadingCount,
 }: CoverSheetViewerProps) {
   const doc = (
@@ -147,6 +155,7 @@ function CoverSheetViewer({
       getServCodeCounts={getServCodeCounts}
       getServicesByRuleDesc={getServicesByRuleDesc}
       productCommonMap={productCommonMap}
+      notesByEmployee={notesByEmployee}
     />
   );
   const [instance] = usePDF({ document: loadingCount === 0 ? doc : undefined });
@@ -188,6 +197,7 @@ function CoverSheetsPDF({
   getPlannedAppProductTotal,
   getServicesByRuleDesc,
   productCommonMap,
+  notesByEmployee,
 }: CoverSheetsPDFProps) {
   return (
     <Document title={`Cover Sheets ${routeDate}`}>
@@ -196,6 +206,10 @@ function CoverSheetsPDF({
         const employee = services[0]?.assignments.mostRecent;
         const employeeName = employee?.employeeId ?? "";
         const servCodesByRule = getServicesByRuleDesc(services);
+        // Route notes for this employee that should print on the cover sheet.
+        const coverSheetNotes = (notesByEmployee.get(employeeId) ?? []).filter(
+          (n) => n.showOnCoverSheet && n.note,
+        );
 
         return (
           <Page
@@ -214,6 +228,11 @@ function CoverSheetsPDF({
                 <Text>
                   {employeeId}
                 </Text>
+                {coverSheetNotes.map((n) => (
+                  <Text key={n.routeNoteId} style={tw("text-xs mt-1")}>
+                    Route Note: {n.note}
+                  </Text>
+                ))}
               </View>
               <View id={"SERV_CODE_PRODUCTS"} style={tw("text-sm")}>
                 {servCodesByRule.map((group, index) => {

@@ -3,8 +3,13 @@
 import { useSelector } from "react-redux";
 import { routePlanSelect } from "@/app/pace/routePlanSelect";
 import { paceSelect } from "@/app/pace/paceSelect";
+import { paceActions } from "@/app/pace/paceSlice";
+import { routeNoteSelect } from "@/app/routeNotes/routeNoteSelect";
+import { useRouteNotes } from "@/app/routeNotes/useRouteNotes";
 import { RoutePlanDateCard } from "@/app/pace/_components/RoutePlanDateCard";
 import { RoutePlanDay } from "@/app/pace/routePlanTypes";
+import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
+import { useAppDispatch } from "@/lib/hooks/redux";
 
 // ---------------------------------------------------------------------------
 // Week row — 5 cards side by side
@@ -14,9 +19,25 @@ type WeekRowProps = {
   label: string;
   days: RoutePlanDay[];
   mainDate: string;
+  notesByDateAndEmployee: Map<string, Map<string, RouteNote[]>>;
+  crewLeadSummaryByDate: Map<string, RouteNote[]>;
+  queuedByDateAndEmployee: Record<string, Record<string, boolean>>;
+  onSaveNote: (note: RouteNote) => void;
+  onDeleteNote: (routeNoteId: string) => void;
+  onToggleQueued: (date: string, employeeId: string) => void;
 };
 
-function WeekRow({ label, days, mainDate }: WeekRowProps) {
+function WeekRow({
+  label,
+  days,
+  mainDate,
+  notesByDateAndEmployee,
+  crewLeadSummaryByDate,
+  queuedByDateAndEmployee,
+  onSaveNote,
+  onDeleteNote,
+  onToggleQueued,
+}: WeekRowProps) {
   return (
     <div className="space-y-1.5">
       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
@@ -28,6 +49,12 @@ function WeekRow({ label, days, mainDate }: WeekRowProps) {
             key={day.date}
             day={day}
             isToday={day.date === mainDate}
+            notesByEmployee={notesByDateAndEmployee.get(day.date) ?? new Map()}
+            crewLeadNotes={crewLeadSummaryByDate.get(day.date) ?? []}
+            queuedForDate={queuedByDateAndEmployee[day.date] ?? {}}
+            onSaveNote={onSaveNote}
+            onDeleteNote={onDeleteNote}
+            onToggleQueued={(employeeId) => onToggleQueued(day.date, employeeId)}
           />
         ))}
       </div>
@@ -40,14 +67,28 @@ function WeekRow({ label, days, mainDate }: WeekRowProps) {
 // ---------------------------------------------------------------------------
 
 export function RoutePlanPage() {
+  const dispatch = useAppDispatch();
   const routePlanDays = useSelector(routePlanSelect.routePlanDays);
   const mainDate = useSelector(paceSelect.mainDate);
+  const notesByDateAndEmployee = useSelector(routeNoteSelect.byDateAndEmployee);
+  const crewLeadSummaryByDate = useSelector(routeNoteSelect.crewLeadSummaryByDate);
+  const queuedByDateAndEmployee = useSelector(paceSelect.queuedByDateAndEmployee);
+
+  // Derive the date range from the displayed days (always 10 weekdays).
+  const minDate = routePlanDays[0]?.date ?? mainDate;
+  const maxDate = routePlanDays[routePlanDays.length - 1]?.date ?? mainDate;
+  const { upsert: saveNote, deleteOne: deleteNote } = useRouteNotes({ minDate, maxDate });
+
+  function handleToggleQueued(date: string, employeeId: string) {
+    dispatch(paceActions.toggleQueued({ date, employeeId }));
+  }
 
   if (routePlanDays.length === 0) {
     return (
       <div className="h-full overflow-y-auto">
         <div className="p-6 flex items-center justify-center text-sm text-muted-foreground">
-          No data — set up assignment groups and a scenario to see the route plan.
+          No data — set up assignment groups and a scenario to see the route
+          plan.
         </div>
       </div>
     );
@@ -57,18 +98,21 @@ export function RoutePlanPage() {
   const thisWeek = routePlanDays.slice(0, 5);
   const nextWeek = routePlanDays.slice(5, 10);
 
+  const sharedProps = {
+    mainDate,
+    notesByDateAndEmployee,
+    crewLeadSummaryByDate,
+    queuedByDateAndEmployee,
+    onSaveNote: (note: RouteNote) => { saveNote(note); },
+    onDeleteNote: (routeNoteId: string) => { deleteNote(routeNoteId); },
+    onToggleQueued: handleToggleQueued,
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-4 space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Route Plan</h2>
-          <p className="text-sm text-muted-foreground">
-            Two-week view — employee availability, production, and projected work.
-          </p>
-        </div>
-
-        <WeekRow label="This Week" days={thisWeek} mainDate={mainDate} />
-        <WeekRow label="Next Week" days={nextWeek} mainDate={mainDate} />
+        <WeekRow label="This Week" days={thisWeek} {...sharedProps} />
+        <WeekRow label="Next Week" days={nextWeek} {...sharedProps} />
 
         {/* Legend */}
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground pt-1 border-t border-border">

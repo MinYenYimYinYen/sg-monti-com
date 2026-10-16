@@ -14,6 +14,7 @@ import { useSelector } from "react-redux";
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 import { useServiceEta } from "@/app/scheduling/eta/useServiceEta";
 import { useAssignments } from "@/app/assignment/useAssignments";
+import { useRouteNotes } from "@/app/routeNotes/useRouteNotes";
 
 export function useCoverSheetDeps() {
   useCustomerContext({ contexts: ["printed"] });
@@ -33,4 +34,10 @@ export function useCoverSheetDeps() {
   const printedServices = useSelector(coverSheetsSelect.printedServices);
   useServiceEta({ servIds: printedServices.map((s) => s.servId) });
   useAssignments({ servIds: printedServices.map((s) => s.servId) });
+
+  // Load route notes for all dates that have printed services.
+  const allDates = useSelector(coverSheetsSelect.allDates) as string[];
+  const minDate = allDates[0] ?? "";
+  const maxDate = allDates[allDates.length - 1] ?? "";
+  useRouteNotes({ minDate, maxDate });
 }

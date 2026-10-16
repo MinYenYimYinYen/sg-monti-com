@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { RoutePlanDay } from "@/app/pace/routePlanTypes";
+import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
 import { RoutePlanEmployeeRow } from "@/app/pace/_components/RoutePlanEmployeeRow";
+import { RouteNoteEditor } from "@/app/routeNotes/_components/RouteNoteEditor";
+import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { cn } from "@/style/utils";
-import { CloudRain } from "lucide-react";
+import { CloudRain, StickyNote, Copy, Check } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Date header formatter
@@ -24,10 +28,52 @@ function formatCardDate(dateStr: string): { weekday: string; monthDay: string } 
 type RoutePlanDateCardProps = {
   day: RoutePlanDay;
   isToday: boolean;
+  /** Map<employeeId | "__day__", RouteNote[]> for this date. */
+  notesByEmployee: Map<string, RouteNote[]>;
+  onSaveNote: (note: RouteNote) => void;
+  onDeleteNote: (routeNoteId: string) => void;
+  /** All notes for this date that should appear in the crew lead summary. */
+  crewLeadNotes: RouteNote[];
+  /** Queued state for this date: { [employeeId]: boolean } */
+  queuedForDate: Record<string, boolean>;
+  onToggleQueued: (employeeId: string) => void;
 };
 
-export function RoutePlanDateCard({ day, isToday }: RoutePlanDateCardProps) {
+export function RoutePlanDateCard({
+  day,
+  isToday,
+  notesByEmployee,
+  onSaveNote,
+  onDeleteNote,
+  crewLeadNotes,
+  queuedForDate,
+  onToggleQueued,
+}: RoutePlanDateCardProps) {
   const { weekday, monthDay } = formatCardDate(day.date);
+  const [isDayNoteOpen, setIsDayNoteOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const dayNote = notesByEmployee.get("__day__")?.[0] ?? null;
+  const hasDayNote = dayNote !== null;
+  const hasCrewLeadNotes = crewLeadNotes.length > 0;
+
+  function handleCopy() {
+    const header = `${prettyDate(day.date, "EEE, MMM d")} Route Notes:`;
+    // Day-level notes (employeeId === null) come first, then employee notes.
+    const sorted = [...crewLeadNotes].sort((a, b) => {
+      if (a.employeeId === null && b.employeeId !== null) return -1;
+      if (a.employeeId !== null && b.employeeId === null) return 1;
+      return 0;
+    });
+    const noteLines = sorted
+      .map((n) => n.note)
+      .join("\n\n");
+    const text = `${header}\n${noteLines}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
 
   return (
     <div
@@ -49,17 +95,48 @@ export function RoutePlanDateCard({ day, isToday }: RoutePlanDateCardProps) {
           <span className="text-xs text-muted-foreground">{monthDay}</span>
         </div>
 
-        {/* Phase badge */}
-        <span
-          className={cn(
-            "text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide",
-            day.phase === "past" && "bg-muted text-muted-foreground",
-            day.phase === "present" && "bg-primary/20 text-primary",
-            day.phase === "future" && "bg-accent/20 text-accent",
+        <div className="flex items-center gap-1">
+          {/* Day note trigger */}
+          <button
+            onClick={() => setIsDayNoteOpen(true)}
+            className={cn(
+              "p-0.5 rounded transition-colors",
+              hasDayNote
+                ? "text-primary hover:text-primary/80"
+                : "text-muted-foreground/40 hover:text-muted-foreground",
+            )}
+            title={hasDayNote ? "Edit day note" : "Add day note"}
+          >
+            <StickyNote className="w-3 h-3" />
+          </button>
+
+          {/* Copy crew lead summary */}
+          {hasCrewLeadNotes && (
+            <button
+              onClick={handleCopy}
+              className="p-0.5 rounded transition-colors text-muted-foreground hover:text-foreground"
+              title="Copy crew lead summary"
+            >
+              {copied ? (
+                <Check className="w-3 h-3 text-accent" />
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
+            </button>
           )}
-        >
-          {day.phase}
-        </span>
+
+          {/* Phase badge */}
+          <span
+            className={cn(
+              "text-[9px] font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide",
+              day.phase === "past" && "bg-muted text-muted-foreground",
+              day.phase === "present" && "bg-primary/20 text-primary",
+              day.phase === "future" && "bg-accent/20 text-accent",
+            )}
+          >
+            {day.phase}
+          </span>
+        </div>
       </div>
 
       {/* Holiday / weather banner */}
@@ -82,16 +159,37 @@ export function RoutePlanDateCard({ day, isToday }: RoutePlanDateCardProps) {
         {day.employees.length === 0 ? (
           <p className="text-xs text-muted-foreground italic">No employees assigned</p>
         ) : (
-          day.employees.map((employee) => (
-            <RoutePlanEmployeeRow
-              key={employee.employeeId}
-              name={employee.name}
-              status={employee.status}
-              isHolidayDay={day.isHoliday}
-            />
-          ))
+          day.employees.map((employee) => {
+            const employeeNotes = notesByEmployee.get(employee.employeeId);
+            const employeeNote = employeeNotes?.[0] ?? null;
+            return (
+              <RoutePlanEmployeeRow
+                key={employee.employeeId}
+                employeeId={employee.employeeId}
+                name={employee.name}
+                statuses={employee.statuses}
+                isHolidayDay={day.isHoliday}
+                schedDate={day.date}
+                note={employeeNote}
+                onSaveNote={onSaveNote}
+                onDeleteNote={onDeleteNote}
+                isQueued={queuedForDate[employee.employeeId] ?? false}
+                onToggleQueued={() => onToggleQueued(employee.employeeId)}
+              />
+            );
+          })
         )}
       </div>
+
+      {/* Day note editor dialog */}
+      <RouteNoteEditor
+        note={dayNote}
+        defaults={{ schedDate: day.date, employeeId: null }}
+        isOpen={isDayNoteOpen}
+        onClose={() => setIsDayNoteOpen(false)}
+        onSave={onSaveNote}
+        onDelete={onDeleteNote}
+      />
     </div>
   );
 }
