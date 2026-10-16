@@ -2,7 +2,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { deepSelect } from "@/app/realGreen/deepSelect";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
-import { UrgentServCode } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentServCodesSelect";
+import { UrgentServCode } from "@/app/pace/priorities/_components/UrgentChecklistContent";
 import { paceEngineSelect } from "../paceEngineSelect";
 
 // ---------------------------------------------------------------------------

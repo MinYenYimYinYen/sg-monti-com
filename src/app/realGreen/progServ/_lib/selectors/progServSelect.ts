@@ -8,8 +8,8 @@ import { hydrateProductRules } from "./hydrateProductRules";
 import { hydrateAssignedTo } from "./hydrateAssignedTo";
 import { priceTableSelect } from "@/app/realGreen/priceTable/priceTableSelect";
 import { buildProgCode } from "@/app/realGreen/progServ/_lib/buildProgCode";
-import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
+import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 
 const selectProgCodeDocs = (state: AppState) => state.progServ.progCodeDocs;
 const selectServCodeDocs = (state: AppState) => state.progServ.servCodeDocs;

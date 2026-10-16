@@ -2,7 +2,7 @@ import { AppState } from "@/store";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
-import { assignmentPlanSelect } from "@/app/bizPlan/assignmentPlan/assignmentPlanSelect";
+import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { plannedTimeOffSelect } from "@/app/plannedTimeOff/plannedTimeOffSelect";
 import { employeeAvailabilitySelect } from "@/app/employeeAvailability/employeeAvailabilitySelect";
 import { holidaySelect } from "@/app/holiday/holidaySelect";

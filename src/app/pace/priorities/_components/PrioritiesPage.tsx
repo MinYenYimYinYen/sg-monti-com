@@ -3,8 +3,8 @@
 import { useSelector } from "react-redux";
 import { prioritiesSelect } from "@/app/pace/priorities/prioritiesSelect";
 import { priorityServiceSelect } from "@/app/priorityService/priorityServiceSelect";
-import { UrgentChecklistContent } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/UrgentServCodeCard";
-import { PriorityChecklistContent } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/PriorityServiceCard";
+import { UrgentChecklistContent } from "@/app/pace/priorities/_components/UrgentChecklistContent";
+import { PriorityChecklistContent } from "@/app/pace/priorities/_components/PriorityChecklistContent";
 import { ScrollArea } from "@/style/components/scroll-area";
 import { AlertTriangle, CalendarClock } from "lucide-react";
 import { UrgentGroupRow } from "@/app/pace/priorities/_components/UrgentGroupRow";

@@ -13,7 +13,7 @@ const initialState: UrgentState = {
 };
 
 const urgentSlice = createSlice({
-  name: "urgent",
+  name: "paceUrgent",
   initialState,
   reducers: {
     toggleChecked: (state, action: PayloadAction<number>) => {

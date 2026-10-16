@@ -5,10 +5,28 @@ import { useSelector } from "react-redux";
 import { assignmentGroupSelect } from "@/app/assignmentGroup/assignmentGroupSelect";
 import { useAssignmentGroup } from "@/app/assignmentGroup/useAssignmentGroup";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
-import { paceCrawlerSelect } from "@/app/bizPlan/paceCrawler/paceCrawlerSelect";
+import { deepSelect } from "@/app/realGreen/deepSelect";
+import { createSelector } from "@reduxjs/toolkit";
 import { AssignmentGroup } from "@/app/assignmentGroup/AssignmentGroupTypes";
 import { Button } from "@/style/components/button";
 import { Plus, Trash2, Pencil, Check, X } from "lucide-react";
+
+// Inline selector: remaining unscheduled price per servCode (actionable services only).
+// Mirrors paceCrawlerSelect.activePoolPriceByServCode without the cross-module dependency.
+const selectActivePoolPriceByServCode = createSelector(
+  [deepSelect.servCodes],
+  (servCodes): Map<string, number> => {
+    const result = new Map<string, number>();
+    for (const servCode of servCodes) {
+      const pool = servCode.services
+        .filter((s) => s.x.isActionable)
+        .reduce((sum, s) => sum + s.price, 0);
+      result.set(servCode.servCodeId, pool);
+    }
+    return result;
+  },
+);
+
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -37,7 +55,7 @@ function ProgCodeServCodePicker({
 }: ProgCodeServCodePickerProps) {
   const progCodes = useSelector(progServSelect.progCodes);
   const servCodeMap = useSelector(progServSelect.servCodeMap);
-  const activePoolMap = useSelector(paceCrawlerSelect.activePoolPriceByServCode);
+  const activePoolMap = useSelector(selectActivePoolPriceByServCode);
 
   const availableProgCodes = progCodes
     .map((progCode) => {

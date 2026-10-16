@@ -32,7 +32,7 @@ const schedulingSection: NavSection = {
   navItems: [
     {
       title: "Pace",
-      href: "/bizPlan/paceCrawler",
+      href: "/pace",
       roles: ["admin", "office", "tech"],
     },
     {

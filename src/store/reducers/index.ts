@@ -2,7 +2,6 @@ import { combineReducers } from "redux";
 import globalSettingsReducer from "@/app/globalSettings/_lib/globalSettingsSlice";
 import uiReducer from "@/store/reduxUtil/uiSlice";
 import authReducer from "@/app/auth/authSlice";
-import { assignmentPlanReducer } from "@/app/bizPlan/assignmentPlan/assignmentPlanSlice";
 import companyReducer from "@/app/realGreen/company/companySlice";
 import callAheadReducer from "@/app/realGreen/callAhead/callAheadSlice";
 import discountReducer from "@/app/realGreen/discount/discountSlice";
@@ -34,8 +33,6 @@ import quickSendReducer from "@/app/quickSend/quickSendSlice";
 import { storedTemplatesReducer } from "@/app/quickSend/storedTemplates/storedTemplatesSlice";
 import prepayReducer from "@/app/realGreen/prepay/prepaySlice";
 import { serviceEtaReducer } from "@/app/scheduling/eta/serviceEtaSlice";
-import { urgentReducer } from "@/app/bizPlan/paceCrawler/devComponents/urgentServCodes/urgentSlice";
-import { paceCrawlerReducer } from "@/app/bizPlan/paceCrawler/paceCrawlerSlice";
 import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFeedback/report/loadoutReportSlice";
 import { inventoryReducer } from "@/app/inventory/inventorySlice";
 import javelinReducer from "@/app/javelin/javelinSlice";
@@ -49,7 +46,6 @@ import { timeCardPayrollReducer } from "@/app/timeCard/payroll/timeCardPayrollSl
 import { customerValueFilterReducer } from "@/app/bizPlan/customerValue/customerValueFilterSlice";
 import { productivityReducer } from "@/app/productivity/productivitySlice";
 import { assignmentGroupReducer } from "@/app/assignmentGroup/assignmentGroupSlice";
-import { seasonPlanReducer } from "@/app/bizPlan/seasonPlan/seasonPlanSlice";
 import { flagRuleReducer } from "@/app/flagRule/flagRuleSlice";
 import { employeeAvailabilityReducer } from "@/app/employeeAvailability/employeeAvailabilitySlice";
 import { sanityReducer } from "@/app/sanity/sanitySlice";
@@ -66,12 +62,12 @@ import { paceSeasonPlanReducer } from "@/app/pace/seasonPlan/seasonPlanSlice";
 import { burndownReducer } from "@/app/pace/burndown/burndownSlice";
 import { formTemplateReducer } from "@/app/formTemplate/formTemplateSlice";
 import { routeNoteReducer } from "@/app/routeNotes/routeNoteSlice";
+import { urgentReducer } from "@/app/pace/priorities/urgentSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
   ui: uiReducer,
   appMethod: appMethodReducer,
-  assignmentPlan: assignmentPlanReducer,
   assignment: assignmentReducer,
   // pace: paceReducer, // old commented-out entry — now registered below as the new pace module
   // employeePace: employeePaceReducer,
@@ -104,8 +100,6 @@ const rootReducer = combineReducers({
   quickSend: quickSendReducer,
   serviceEta: serviceEtaReducer,
   storedTemplates: storedTemplatesReducer,
-  urgent: urgentReducer,
-  paceCrawler: paceCrawlerReducer,
   loadoutReport: loadoutReportReducer,
   javelin: javelinReducer,
   deposit: depositReducer,
@@ -118,7 +112,6 @@ const rootReducer = combineReducers({
   customerValueFilter: customerValueFilterReducer,
   productivity: productivityReducer,
   assignmentGroup: assignmentGroupReducer,
-  seasonPlan: seasonPlanReducer,
   flagRule: flagRuleReducer,
   employeeAvailability: employeeAvailabilityReducer,
   sanity: sanityReducer,
@@ -135,6 +128,7 @@ const rootReducer = combineReducers({
   burndown: burndownReducer,
   formTemplate: formTemplateReducer,
   routeNotes: routeNoteReducer,
+  paceUrgent: urgentReducer,
 });
 
 export default rootReducer;

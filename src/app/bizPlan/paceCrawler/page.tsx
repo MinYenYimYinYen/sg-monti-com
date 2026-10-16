@@ -1,7 +1,0 @@
-"use client";
-
-import { EmployeeCardPanel } from "@/app/bizPlan/paceCrawler/devComponents/EmployeeCardPanel";
-
-export default function PaceCrawlerPage() {
-  return <EmployeeCardPanel />;
-}
