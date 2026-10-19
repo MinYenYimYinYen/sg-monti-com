@@ -466,8 +466,8 @@ export function FormTemplateEditor() {
                       slot={slot}
                       slotLabel={contract[slot.key]?.label ?? slot.key}
                       descriptor={contract[slot.key]}
-                      onSave={handleSaveSlot}
-                      onDelete={handleDeleteSlot}
+                      onSaveAction={handleSaveSlot}
+                      onDeleteAction={handleDeleteSlot}
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -595,10 +595,10 @@ export function FormTemplateEditor() {
               sampleData={sampleData}
               contract={contract}
               selectedSlotId={selectedSlotId}
-              onSlotClick={handleSlotClickFromPreview}
-              onSlotUpdate={handleSlotUpdate}
-              onSlotSave={handleSaveSlot}
-              onSlotDelete={handleDeleteSlot}
+              onSlotClickAction={handleSlotClickFromPreview}
+              onSlotUpdateAction={handleSlotUpdate}
+              onSlotSaveAction={handleSaveSlot}
+              onSlotDeleteAction={handleDeleteSlot}
               scale={previewScale}
               previewMode={previewMode}
               backgroundImage={backgroundImage}

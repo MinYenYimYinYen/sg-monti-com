@@ -6,7 +6,7 @@ import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServ
 type ServCodePickerProps = {
   existingGroupServCodeIds: Set<string>;
   selectedIds: Set<string>;
-  onToggle: (servCodeId: string) => void;
+  onToggleAction: (servCodeId: string) => void;
   disabled?: boolean;
 };
 
@@ -18,7 +18,7 @@ type ServCodePickerProps = {
 export function ServCodePicker({
   existingGroupServCodeIds,
   selectedIds,
-  onToggle,
+  onToggleAction,
   disabled = false,
 }: ServCodePickerProps) {
   const progCodes = useSelector(progServSelect.progCodes);
@@ -47,7 +47,7 @@ export function ServCodePicker({
             type="checkbox"
             checked={selectedIds.has(id)}
             disabled={disabled}
-            onChange={() => onToggle(id)}
+            onChange={() => onToggleAction(id)}
             className="accent-primary shrink-0"
           />
           <span className="font-mono text-[10px] text-foreground">{id}</span>

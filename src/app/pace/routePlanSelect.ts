@@ -15,6 +15,9 @@ import {
 } from "@/app/pace/routePlanTypes";
 import { CrawlerDayPhase } from "@/app/pace/lib/crawlerDay/CrawlerDay";
 
+const selectQueuedPriceByDateAndEmployee = (state: AppState): Record<string, Record<string, number>> =>
+  state.pace.queuedPriceByDateAndEmployee;
+
 const selectMainDate = (state: AppState): string => state.pace.mainDate;
 
 // ---------------------------------------------------------------------------
@@ -301,7 +304,12 @@ const selectRoutePlanDays = createSelector(
         // Helper to build a "scheduled" status from the printed entry for this employee.
         const buildScheduledStatus = (): EmployeeDayStatus => {
           const p = printedForDate!.get(employeeId)!;
-          return { kind: "scheduled", serviceCount: p.serviceCount, totalPrice: p.totalPrice, servCodeIds: p.servCodeIds };
+          // Look up the employee's goal for the day from the assignment plan.
+          // We use the first group assignment's dailyRevenueGoal as the goal proxy,
+          // since scheduled employees don't have a projected groupId to key off of.
+          const plan = assignmentsByEmployeeId.get(employeeId);
+          const goalDailyPrice = plan?.groupAssignments[0]?.dailyRevenueGoal ?? null;
+          return { kind: "scheduled", serviceCount: p.serviceCount, totalPrice: p.totalPrice, servCodeIds: p.servCodeIds, goalDailyPrice };
         };
 
         if (isHoliday) {
@@ -357,6 +365,46 @@ const selectRoutePlanDays = createSelector(
   },
 );
 
+// ---------------------------------------------------------------------------
+// Day totals selector — Map<date, { totalGoalPrice: number; totalQueuedPrice: number }>
+//
+// Goal: sum of goalDailyPrice for every employee on the day (projected + scheduled).
+// Queued: sum of already-scheduled totalPrice + manually entered queuedPrice for
+//         all other employees. Together these let the manager compare what's targeted
+//         vs what's actually in or headed to the CRM.
+// ---------------------------------------------------------------------------
+
+type DayTotals = { totalGoalPrice: number; totalQueuedPrice: number };
+
+const selectRoutePlanDayTotals = createSelector(
+  [selectRoutePlanDays, selectQueuedPriceByDateAndEmployee],
+  (routePlanDays, queuedPriceByDateAndEmployee): Map<string, DayTotals> => {
+    const result = new Map<string, DayTotals>();
+    for (const day of routePlanDays) {
+      let totalGoalPrice = 0;
+      let totalQueuedPrice = 0;
+      const queuedPriceForDate = queuedPriceByDateAndEmployee[day.date] ?? {};
+
+      for (const employee of day.employees) {
+        for (const status of employee.statuses) {
+          if (status.kind === "projected") {
+            totalGoalPrice += status.goalDailyPrice ?? 0;
+            totalQueuedPrice += queuedPriceForDate[employee.employeeId] ?? 0;
+          } else if (status.kind === "scheduled") {
+            totalGoalPrice += status.goalDailyPrice ?? 0;
+            // Scheduled employees already have work in the CRM — count their printed price.
+            totalQueuedPrice += status.totalPrice;
+          }
+        }
+      }
+
+      result.set(day.date, { totalGoalPrice, totalQueuedPrice });
+    }
+    return result;
+  },
+);
+
 export const routePlanSelect = {
   routePlanDays: selectRoutePlanDays,
+  routePlanDayTotals: selectRoutePlanDayTotals,
 };

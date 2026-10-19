@@ -410,7 +410,7 @@ export function SequenceDialog({ sequence, open, onCloseAction }: SequenceDialog
           group={null}
           open={true}
           onCloseAction={() => setNewGroupForSlotId(null)}
-          onCreatedGroupId={(groupId) => {
+          onCreatedGroupIdAction={(groupId: string) => {
             setSlotGroup(newGroupForSlotId, groupId);
             setNewGroupForSlotId(null);
           }}

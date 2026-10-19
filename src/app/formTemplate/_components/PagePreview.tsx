@@ -36,13 +36,13 @@ type PagePreviewProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   contract: Record<string, AnyFieldDescriptor<any>>;
   selectedSlotId?: string | null;
-  onSlotClick?: (slotId: string) => void;
+  onSlotClickAction?: (slotId: string) => void;
   /** Called when the user drags a handle to reposition/resize a slot. */
-  onSlotUpdate?: (slotId: string, patch: SlotPatch) => void;
+  onSlotUpdateAction?: (slotId: string, patch: SlotPatch) => void;
   /** Called when the user saves slot edits from the popover. */
-  onSlotSave?: (slot: FormLetterSlotDoc) => void;
+  onSlotSaveAction?: (slot: FormLetterSlotDoc) => void;
   /** Called when the user removes a slot from the popover. */
-  onSlotDelete?: (slotId: string) => void;
+  onSlotDeleteAction?: (slotId: string) => void;
   /** Scale factor for fitting the page into the panel. Default: 1. */
   scale?: number;
   /**
@@ -72,10 +72,10 @@ export function PagePreview({
   sampleData,
   contract,
   selectedSlotId,
-  onSlotClick,
-  onSlotUpdate,
-  onSlotSave,
-  onSlotDelete,
+  onSlotClickAction,
+  onSlotUpdateAction,
+  onSlotSaveAction,
+  onSlotDeleteAction,
   scale = 1,
   previewMode = "handles",
   backgroundImage,
@@ -170,27 +170,27 @@ export function PagePreview({
         return (
           <div
             key={slot.slotId}
-            onClick={() => onSlotClick?.(slot.slotId)}
+            onClick={() => onSlotClickAction?.(slot.slotId)}
             className={cn("absolute overflow-visible cursor-pointer group", borderClass)}
             style={{ left, top, width: slotWidth, height: slotHeight }}
           >
             {/* Drag handles — only shown on the selected slot */}
-            {isSelected && onSlotUpdate && (
+            {isSelected && onSlotUpdateAction && (
               <DragHandle
                 x={slot.x}
                 y={slot.y}
                 width={slot.width}
                 height={slot.height}
                 scale={scale}
-                onUpdate={(patch) => onSlotUpdate(slot.slotId, patch)}
-                onGuides={setGuideLines}
+                onUpdateAction={(patch) => onSlotUpdateAction(slot.slotId, patch)}
+                onGuidesAction={setGuideLines}
                 allEdges={allEdges}
                 slotId={slot.slotId}
               />
             )}
 
             {/* Settings popover — shown on hover/selection in top-right corner */}
-            {(onSlotSave || onSlotDelete) && (
+            {(onSlotSaveAction || onSlotDeleteAction) && (
               <Popover>
                 <PopoverTrigger asChild>
                   <button
@@ -216,11 +216,11 @@ export function PagePreview({
                     slot={slot}
                     slotLabel={slotLabel}
                     descriptor={descriptor}
-                    onSave={(updated) => {
-                      onSlotSave?.(updated);
+                    onSaveAction={(updated) => {
+                      onSlotSaveAction?.(updated);
                     }}
-                    onDelete={(slotId) => {
-                      onSlotDelete?.(slotId);
+                    onDeleteAction={(slotId) => {
+                      onSlotDeleteAction?.(slotId);
                     }}
                   />
                 </PopoverContent>

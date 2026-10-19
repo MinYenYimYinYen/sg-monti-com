@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { Plus, Pencil, X } from "lucide-react";
 import { setupSelect } from "@/app/pace/setup/setupSelect";
+import { paceSelect } from "@/app/pace/paceSelect";
+import { paceActions } from "@/app/pace/paceSlice";
 import { GroupNavItem } from "@/app/pace/setup/groups/_components/GroupNavItem";
 import { GroupDialog } from "@/app/pace/setup/groups/_components/GroupDialog";
 import { SequenceDialog } from "@/app/pace/setup/groups/_components/SequenceDialog";
@@ -13,17 +16,21 @@ import { SequenceWithGroups } from "@/app/pace/setup/setupSelect";
 
 type GroupNavPanelProps = {
   selectedGroupId: string | null;
-  onSelectGroup: (groupId: string) => void;
   onGroupDeleted?: (groupId: string) => void;
 };
 
-export function GroupNavPanel({ selectedGroupId, onSelectGroup, onGroupDeleted }: GroupNavPanelProps) {
+export function GroupNavPanel({ selectedGroupId, onGroupDeleted }: GroupNavPanelProps) {
+  const dispatch = useAppDispatch();
   const sequencesWithGroups = useSelector(setupSelect.sequencesWithGroups);
   const standaloneGroups = useSelector(setupSelect.standaloneGroups);
 
   const [newGroupOpen, setNewGroupOpen] = useState(false);
   const [newSequenceOpen, setNewSequenceOpen] = useState(false);
   const [editingSequence, setEditingSequence] = useState<SequenceWithGroups | null>(null);
+
+  function handleSelectGroup(groupId: string) {
+    dispatch(paceActions.setSetupSelectedGroupId(groupId));
+  }
 
   return (
     <>
@@ -54,7 +61,7 @@ export function GroupNavPanel({ selectedGroupId, onSelectGroup, onGroupDeleted }
               key={sequenceWithGroups.sequenceId}
               sequenceWithGroups={sequenceWithGroups}
               selectedGroupId={selectedGroupId}
-              onSelectGroup={onSelectGroup}
+              onSelectGroup={handleSelectGroup}
               onEdit={() => setEditingSequence(sequenceWithGroups)}
               onGroupDeleted={onGroupDeleted}
             />
@@ -75,7 +82,7 @@ export function GroupNavPanel({ selectedGroupId, onSelectGroup, onGroupDeleted }
                   key={group.groupId}
                   group={group}
                   isSelected={selectedGroupId === group.groupId}
-                  onSelect={() => onSelectGroup(group.groupId)}
+                  onSelectAction={() => handleSelectGroup(group.groupId)}
                   onDeletedAction={() => onGroupDeleted?.(group.groupId)}
                 />
               ))}
@@ -229,7 +236,7 @@ function SequenceNavSection({
               key={group.groupId}
               group={group}
               isSelected={selectedGroupId === group.groupId}
-              onSelect={() => onSelectGroup(group.groupId)}
+              onSelectAction={() => onSelectGroup(group.groupId)}
               onDeletedAction={() => onGroupDeleted?.(group.groupId)}
             />
           ))

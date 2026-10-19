@@ -1,6 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useSelector } from "react-redux";
+import { useAppDispatch } from "@/lib/hooks/redux";
+import { useRouteNotes } from "@/app/routeNotes/useRouteNotes";
+import { paceActions } from "@/app/pace/paceSlice";
+import { routePlanSelect } from "@/app/pace/routePlanSelect";
 import { RoutePlanDay } from "@/app/pace/routePlanTypes";
 import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
 import { RoutePlanEmployeeRow } from "@/app/pace/_components/RoutePlanEmployeeRow";
@@ -21,6 +26,11 @@ function formatCardDate(dateStr: string): { weekday: string; monthDay: string } 
   };
 }
 
+function formatPrice(value: number): string {
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
+  return `$${value.toFixed(0)}`;
+}
+
 // ---------------------------------------------------------------------------
 // RoutePlanDateCard
 // ---------------------------------------------------------------------------
@@ -30,28 +40,27 @@ type RoutePlanDateCardProps = {
   isToday: boolean;
   /** Map<employeeId | "__day__", RouteNote[]> for this date. */
   notesByEmployee: Map<string, RouteNote[]>;
-  onSaveNote: (note: RouteNote) => void;
-  onDeleteNote: (routeNoteId: string) => void;
   /** All notes for this date that should appear in the crew lead summary. */
   crewLeadNotes: RouteNote[];
   /** Queued state for this date: { [employeeId]: boolean } */
   queuedForDate: Record<string, boolean>;
-  onToggleQueued: (employeeId: string) => void;
 };
 
 export function RoutePlanDateCard({
   day,
   isToday,
   notesByEmployee,
-  onSaveNote,
-  onDeleteNote,
   crewLeadNotes,
   queuedForDate,
-  onToggleQueued,
 }: RoutePlanDateCardProps) {
+  const dispatch = useAppDispatch();
+  const { upsert: saveNote, deleteOne: deleteNote } = useRouteNotes({ minDate: day.date, maxDate: day.date });
   const { weekday, monthDay } = formatCardDate(day.date);
   const [isDayNoteOpen, setIsDayNoteOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const dayTotals = useSelector(routePlanSelect.routePlanDayTotals);
+  const totals = dayTotals.get(day.date);
 
   const dayNote = notesByEmployee.get("__day__")?.[0] ?? null;
   const hasDayNote = dayNote !== null;
@@ -90,9 +99,22 @@ export function RoutePlanDateCard({
           isToday ? "bg-primary/10" : "bg-muted/40",
         )}
       >
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-xs font-semibold text-foreground">{weekday}</span>
-          <span className="text-xs text-muted-foreground">{monthDay}</span>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-xs font-semibold text-foreground">{weekday}</span>
+            <span className="text-xs text-muted-foreground">{monthDay}</span>
+          </div>
+          {/* Day totals — always shown when there are planned employees */}
+          {totals !== undefined && (
+            <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
+              <span>
+                Goal: <span className="font-medium text-foreground">{formatPrice(totals.totalGoalPrice)}</span>
+              </span>
+              <span>
+                Queued: <span className={cn("font-medium", totals.totalQueuedPrice > 0 ? "text-primary" : "text-foreground")}>{formatPrice(totals.totalQueuedPrice)}</span>
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1">
@@ -170,11 +192,9 @@ export function RoutePlanDateCard({
                 statuses={employee.statuses}
                 isHolidayDay={day.isHoliday}
                 schedDate={day.date}
+                phase={day.phase}
                 note={employeeNote}
-                onSaveNote={onSaveNote}
-                onDeleteNote={onDeleteNote}
                 isQueued={queuedForDate[employee.employeeId] ?? false}
-                onToggleQueued={() => onToggleQueued(employee.employeeId)}
               />
             );
           })
@@ -186,9 +206,9 @@ export function RoutePlanDateCard({
         note={dayNote}
         defaults={{ schedDate: day.date, employeeId: null }}
         isOpen={isDayNoteOpen}
-        onClose={() => setIsDayNoteOpen(false)}
-        onSave={onSaveNote}
-        onDelete={onDeleteNote}
+        onCloseAction={() => setIsDayNoteOpen(false)}
+        onSaveAction={(n) => { saveNote(n); }}
+        onDeleteAction={(id) => { deleteNote(id); }}
       />
     </div>
   );

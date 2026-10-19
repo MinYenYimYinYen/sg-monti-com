@@ -111,10 +111,10 @@ type DateRangeSliderProps = {
   startIndex: number;
   endIndex: number;
   rows: { date: string }[];
-  onChange: (range: [number, number]) => void;
+  onChangeAction: (range: [number, number]) => void;
 };
 
-function DateRangeSlider({ max, startIndex, endIndex, rows, onChange }: DateRangeSliderProps) {
+function DateRangeSlider({ max, startIndex, endIndex, rows, onChangeAction }: DateRangeSliderProps) {
   const startLabel = rows[startIndex] ? formatDateTick(rows[startIndex].date) : "";
   const endLabel = rows[endIndex] ? formatDateTick(rows[endIndex].date) : "";
 
@@ -133,7 +133,7 @@ function DateRangeSlider({ max, startIndex, endIndex, rows, onChange }: DateRang
         max={max}
         step={1}
         value={[startIndex, endIndex]}
-        onValueChange={(values) => onChange([values[0], values[1]])}
+        onValueChange={(values) => onChangeAction([values[0], values[1]])}
       >
         <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-primary/20">
           <SliderPrimitive.Range className="absolute h-full bg-primary/50" />
@@ -214,7 +214,7 @@ type CustomLegendProps = {
   groupDateRanges: Map<string, { effectiveStart: string; effectiveEnd: string }>;
   hoveredGroupId: string | null;
   selectedGroupId: string | null;
-  onLegendClick: (groupId: string) => void;
+  onLegendClickAction: (groupId: string) => void;
 };
 
 function CustomLegend({
@@ -223,7 +223,7 @@ function CustomLegend({
   groupDateRanges,
   hoveredGroupId,
   selectedGroupId,
-  onLegendClick,
+  onLegendClickAction,
 }: CustomLegendProps) {
   if (!payload) return null;
 
@@ -258,7 +258,7 @@ function CustomLegend({
                 : "",
             ].join(" ")}
             onClick={() => {
-              if (!isVelocity) onLegendClick(dataKey);
+              if (!isVelocity) onLegendClickAction(dataKey);
             }}
           >
             <span
@@ -280,19 +280,11 @@ function CustomLegend({
 type BurndownChartProps = {
   data: BurndownRechartsData;
   slopeLine?: BurndownSlopeLine | null;
-  selectedDate: string | null;
-  selectedGroupId: string | null;
-  onBarClick: (date: string) => void;
-  onLegendClick: (groupId: string) => void;
 };
 
 export function BurndownChart({
   data,
   slopeLine,
-  selectedDate,
-  selectedGroupId,
-  onBarClick,
-  onLegendClick,
 }: BurndownChartProps) {
   const dispatch = useAppDispatch();
   const { rows, groupKeys, groupLabels, mainDate, snowDeadline } = data;
@@ -302,6 +294,8 @@ export function BurndownChart({
   // Window state lives in Redux so it survives dataset re-renders
   const visibleRows = useSelector(burndownSelect.visibleRows);
   const { startIndex, endIndex } = useSelector(burndownSelect.dateWindowIndices);
+  const selectedDate = useSelector(burndownSelect.selectedDate);
+  const selectedGroupId = useSelector(burndownSelect.selectedGroupId);
 
   const maxIndex = Math.max(0, rows.length - 1);
 
@@ -312,6 +306,14 @@ export function BurndownChart({
         end: rows[end]?.date ?? null,
       }),
     );
+  }
+
+  function handleBarClick(date: string) {
+    dispatch(burndownActions.selectDate(date));
+  }
+
+  function handleLegendClick(groupId: string) {
+    dispatch(burndownActions.selectGroup(groupId));
   }
 
   if (rows.length === 0) {
@@ -357,7 +359,7 @@ export function BurndownChart({
           margin={{ top: 8, right: 24, bottom: 8, left: 16 }}
           onClick={(chartData) => {
             if (chartData?.activeLabel && typeof chartData.activeLabel === "string") {
-              onBarClick(chartData.activeLabel);
+              handleBarClick(chartData.activeLabel);
             }
           }}
         >
@@ -396,7 +398,7 @@ export function BurndownChart({
                   groupDateRanges={data.groupDateRanges}
                   hoveredGroupId={hoveredGroupId}
                   selectedGroupId={selectedGroupId}
-                  onLegendClick={onLegendClick}
+                  onLegendClickAction={handleLegendClick}
                 />
               );
             }}
@@ -528,7 +530,7 @@ export function BurndownChart({
           startIndex={startIndex}
           endIndex={endIndex}
           rows={rows}
-          onChange={handleWindowChange}
+          onChangeAction={handleWindowChange}
         />
       )}
     </div>

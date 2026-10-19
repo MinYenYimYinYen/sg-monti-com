@@ -27,7 +27,7 @@ export type EmployeeDayStatus =
   | { kind: "not-started" }
   | { kind: "done" }
   | { kind: "completed"; totalPrice: number; servCodeIds: string[] }
-  | { kind: "scheduled"; serviceCount: number; totalPrice: number; servCodeIds: string[] }
+  | { kind: "scheduled"; serviceCount: number; totalPrice: number; servCodeIds: string[]; goalDailyPrice: number | null }
   | { kind: "projected"; groupLabel: string; goalDailyPrice: number | null }
   | { kind: "available" };
 

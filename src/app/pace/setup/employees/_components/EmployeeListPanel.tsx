@@ -1,28 +1,40 @@
 "use client";
 
 import { useSelector } from "react-redux";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
+import { paceSelect } from "@/app/pace/paceSelect";
+import { paceActions } from "@/app/pace/paceSlice";
 
-type EmployeeListPanelProps = {
-  selectedEmployeeIds: Set<string>;
-  onToggleEmployee: (employeeId: string) => void;
-  onSelectAssigned: () => void;
-  onClearAll: () => void;
-};
-
-export function EmployeeListPanel({
-  selectedEmployeeIds,
-  onToggleEmployee,
-  onSelectAssigned,
-  onClearAll,
-}: EmployeeListPanelProps) {
+export function EmployeeListPanel() {
+  const dispatch = useAppDispatch();
   const employees = useSelector(employeeSelect.employees);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
+  const selectedEmployeeIds = useSelector(paceSelect.assignmentEditorSelectedEmployeeIds);
+  const selectedSet = useSelector(paceSelect.assignmentEditorSelectedEmployeeSet);
 
   const activeEmployees = employees
     .filter((e) => e.active)
     .sort((a, b) => a.employeeId.localeCompare(b.employeeId));
+
+  function handleToggleEmployee(employeeId: string) {
+    const next = selectedSet.has(employeeId)
+      ? selectedEmployeeIds.filter((id) => id !== employeeId)
+      : [...selectedEmployeeIds, employeeId];
+    dispatch(paceActions.setAssignmentEditorSelectedEmployeeIds(next));
+  }
+
+  function handleSelectAssigned() {
+    const assignedIds = activeEmployees
+      .filter((e) => (assignmentsByEmployeeId.get(e.employeeId)?.groupAssignments.length ?? 0) > 0)
+      .map((e) => e.employeeId);
+    dispatch(paceActions.setAssignmentEditorSelectedEmployeeIds(assignedIds));
+  }
+
+  function handleClearAll() {
+    dispatch(paceActions.setAssignmentEditorSelectedEmployeeIds([]));
+  }
 
   return (
     <div className="flex flex-col h-full border-r border-border bg-card">
@@ -31,9 +43,9 @@ export function EmployeeListPanel({
         <span className="text-xs font-semibold text-foreground uppercase tracking-wide">
           Employees
         </span>
-        {selectedEmployeeIds.size > 0 && (
+        {selectedSet.size > 0 && (
           <button
-            onClick={onClearAll}
+            onClick={handleClearAll}
             className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
           >
             Clear
@@ -44,7 +56,7 @@ export function EmployeeListPanel({
       {/* Select Assigned shortcut */}
       <div className="shrink-0 px-3 py-1.5 border-b border-border">
         <button
-          onClick={onSelectAssigned}
+          onClick={handleSelectAssigned}
           className="text-[10px] bg-accent/20 hover:bg-accent/30 rounded px-1.5 py-0.5 transition-colors w-full text-left"
         >
           Select Assigned
@@ -56,7 +68,7 @@ export function EmployeeListPanel({
         {activeEmployees.map((employee) => {
           const plan = assignmentsByEmployeeId.get(employee.employeeId);
           const assignedCount = plan?.groupAssignments.length ?? 0;
-          const isSelected = selectedEmployeeIds.has(employee.employeeId);
+          const isSelected = selectedSet.has(employee.employeeId);
 
           return (
             <label
@@ -70,7 +82,7 @@ export function EmployeeListPanel({
               <input
                 type="checkbox"
                 checked={isSelected}
-                onChange={() => onToggleEmployee(employee.employeeId)}
+                onChange={() => handleToggleEmployee(employee.employeeId)}
                 className="accent-primary shrink-0"
               />
               <span className="truncate flex-1 font-mono">

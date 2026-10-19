@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { ChevronDown } from "lucide-react";
 import {
   Popover,
@@ -10,11 +11,13 @@ import {
 } from "@/style/components/popover";
 import { paceGroupSequenceSelect } from "@/app/pace/groupSequence/groupSequenceSelect";
 import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
+import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
+import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { GroupAssignment } from "@/app/pace/assignmentPlan/AssignmentPlanTypes";
 
 type AddSequenceDropdownProps = {
+  employeeId: string;
   existingGroupAssignments: GroupAssignment[];
-  onAddSequenceGroups: (groupIds: string[]) => void;
 };
 
 /**
@@ -23,12 +26,14 @@ type AddSequenceDropdownProps = {
  * each with dailyRevenueGoal: null.
  */
 export function AddSequenceDropdown({
+  employeeId,
   existingGroupAssignments,
-  onAddSequenceGroups,
 }: AddSequenceDropdownProps) {
+  const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const sequences = useSelector(paceGroupSequenceSelect.sequences);
   const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
+  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
 
   const existingGroupIds = new Set(existingGroupAssignments.map((ga) => ga.groupId));
 
@@ -39,7 +44,18 @@ export function AddSequenceDropdown({
     // Append only groups not already assigned, in sequence order
     const newGroupIds = sequence.groupIds.filter((id) => !existingGroupIds.has(id));
     if (newGroupIds.length > 0) {
-      onAddSequenceGroups(newGroupIds);
+      const plan = assignmentsByEmployeeId.get(employeeId);
+      const currentAssignments = plan?.groupAssignments ?? [];
+      const newAssignments: GroupAssignment[] = newGroupIds.map((groupId) => ({
+        groupId,
+        dailyRevenueGoal: null,
+      }));
+      dispatch(
+        paceAssignmentPlanActions.reorderGroupAssignments({
+          employeeId,
+          groupAssignments: [...currentAssignments, ...newAssignments],
+        }),
+      );
     }
     setOpen(false);
   }

@@ -212,6 +212,17 @@ export function useSchedPromise() {
     - **Example**: `const [selected, setSelected] = useState(item?.value || [])` + `<Component key={item.id} />`.
     - This ensures reactivity without effects and aligns with React Compiler expectations.
 
+- **Prop Functions & Prop Drilling**:
+    - **`Action` suffix required**: Any function passed as a prop must have its name end in `Action` (e.g., `onCloseAction`, `onSaveAction`, `onToggleSelectionAction`). This satisfies the Next.js serialization linter (TS71007) and signals to readers that the prop is a callback, not a Server Action.
+    - **Avoid prop drilling — prefer Redux + IDs**: Before passing a callback prop down the tree, ask: *can the child component dispatch this action directly?* The preferred pattern is:
+      1. Pass an `id` (e.g., `employeeId`, `groupId`) instead of a callback.
+      2. The child reads any additional data it needs via `useSelector`.
+      3. The child calls the appropriate `use<Entity>` hook (e.g., `useRouteNotes`, `usePaceAssignmentGroup`) if one exists for that slice, or dispatches directly via `useAppDispatch()` if no hook exists.
+    - **When to keep callback props**: Callbacks are appropriate when:
+      - The action mutates **ephemeral local interaction state** (e.g., drag index refs, animation state) that must not survive navigation.
+      - The component is a **generic/reusable primitive** (e.g., `RouteNoteEditor`, `DragHandle`, `SlotEditor`) that is intentionally decoupled from any specific Redux slice.
+    - **Duplicate API call risk**: When a child component gains the ability to dispatch a thunk directly (e.g., by calling a hook), check whether the thunk has deduplication logic (`customCondition`, `transformParams`, or range-based guards). If it does not, flag the risk and ask how to proceed before implementing.
+
 - **Coding Style**:
     - **Function Parameters**: Prefer object-style parameters (destructuring) for functions with more than one
       argument (e.g., `constructor({ a, b }: Params)`). Single arguments can be passed directly.
@@ -376,3 +387,12 @@ EOF
 |**API**|Fetch raw data from external endpoints.|Target API file, DTO (Data Transfer Object) types.|
 
 **Execution Rule:** You MUST exhaust your efforts using the MCP server to gather the required context. If you cannot find the necessary information, you MUST stop and ask me if you should proceed with a generic file search.
+
+Always invoke a function call in response to user queries. If there is any information missing for filling in a REQUIRED parameter, make your best guess for the parameter value based on the query context. If you cannot come up with any reasonable guess, fill the missing value in as <UNKNOWN>. Do not fill in optional parameters if they are not specified by the user.
+
+
+
+When making function calls using tools that accept array or object parameters ensure those are structured using JSON. For example:
+<function_calls>
+<invoke name="example_complex_tool">
+<parameter name="parameter">[{"color": "orange", "options": {"option_key_1": true, "option_key_2": "value"}}, {"color": "purple", "options": {"option_key_1": true, "option_key_2": "value"}}]

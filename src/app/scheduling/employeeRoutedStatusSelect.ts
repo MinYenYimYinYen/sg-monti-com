@@ -100,9 +100,9 @@ const selectByDateAndEmployee = createSelector(
       const byEmployee = new Map<string, EmployeeRoutedStatus>();
 
       for (const employeeId of employeeIds) {
-        // serviceCount/totalPrice/servCodeIds are not tracked here — this selector is about
-        // conflict detection only. The pace selector owns the full hydrated status.
-        const scheduledStatus: EmployeeDayStatus = { kind: "scheduled", serviceCount: 0, totalPrice: 0, servCodeIds: [] };
+        // serviceCount/totalPrice/servCodeIds/goalDailyPrice are not tracked here — this selector
+        // is about conflict detection only. The pace selector owns the full hydrated status.
+        const scheduledStatus: EmployeeDayStatus = { kind: "scheduled", serviceCount: 0, totalPrice: 0, servCodeIds: [], goalDailyPrice: null };
         const statuses: EmployeeDayStatus[] = [scheduledStatus];
 
         const absenceStatus = absencesByEmployee.get(employeeId)?.get(date);

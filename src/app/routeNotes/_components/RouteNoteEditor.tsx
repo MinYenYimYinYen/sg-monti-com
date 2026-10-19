@@ -39,9 +39,9 @@ type RouteNoteEditorProps = {
     employeeName?: string;
   };
   isOpen: boolean;
-  onClose: () => void;
-  onSave: (note: RouteNote) => void;
-  onDelete: (routeNoteId: string) => void;
+  onCloseAction: () => void;
+  onSaveAction: (note: RouteNote) => void;
+  onDeleteAction: (routeNoteId: string) => void;
 };
 
 // ---------------------------------------------------------------------------
@@ -52,9 +52,9 @@ export function RouteNoteEditor({
   note,
   defaults,
   isOpen,
-  onClose,
-  onSave,
-  onDelete,
+  onCloseAction,
+  onSaveAction,
+  onDeleteAction,
 }: RouteNoteEditorProps) {
   const isNew = note === null;
   const schedDate = note?.schedDate ?? defaults.schedDate;
@@ -93,19 +93,19 @@ export function RouteNoteEditor({
       createdAt: note?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    onSave(doc);
-    onClose();
+    onSaveAction(doc);
+    onCloseAction();
   }
 
   function handleDelete() {
     if (note) {
-      onDelete(note.routeNoteId);
-      onClose();
+      onDeleteAction(note.routeNoteId);
+      onCloseAction();
     }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onCloseAction()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -185,7 +185,7 @@ export function RouteNoteEditor({
               Delete
             </Button>
           )}
-          <Button variant="secondary" intensity="ghost" onClick={onClose}>
+          <Button variant="secondary" intensity="ghost" onClick={onCloseAction}>
             Cancel
           </Button>
           <Button

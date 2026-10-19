@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { ChevronDown } from "lucide-react";
 import {
   Popover,
@@ -9,20 +10,24 @@ import {
   PopoverTrigger,
 } from "@/style/components/popover";
 import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
+import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
+import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { GroupAssignment } from "@/app/pace/assignmentPlan/AssignmentPlanTypes";
 
 type AddGroupDropdownProps = {
+  employeeId: string;
   existingGroupAssignments: GroupAssignment[];
-  onAddGroup: (groupId: string) => void;
 };
 
 /**
  * Popover dropdown showing groups not yet assigned to the employee.
  * Clicking a group appends it to the assignment array with dailyRevenueGoal: null.
  */
-export function AddGroupDropdown({ existingGroupAssignments, onAddGroup }: AddGroupDropdownProps) {
+export function AddGroupDropdown({ employeeId, existingGroupAssignments }: AddGroupDropdownProps) {
+  const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const assignmentGroups = useSelector(paceAssignmentGroupSelect.assignmentGroups);
+  const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
 
   const existingGroupIds = new Set(existingGroupAssignments.map((ga) => ga.groupId));
   const availableGroups = assignmentGroups
@@ -30,7 +35,14 @@ export function AddGroupDropdown({ existingGroupAssignments, onAddGroup }: AddGr
     .sort((a, b) => a.label.localeCompare(b.label));
 
   function handleSelect(groupId: string) {
-    onAddGroup(groupId);
+    const plan = assignmentsByEmployeeId.get(employeeId);
+    const currentAssignments = plan?.groupAssignments ?? [];
+    dispatch(
+      paceAssignmentPlanActions.reorderGroupAssignments({
+        employeeId,
+        groupAssignments: [...currentAssignments, { groupId, dailyRevenueGoal: null }],
+      }),
+    );
     setOpen(false);
   }
 

@@ -27,10 +27,10 @@ type GroupDialogProps = {
   open: boolean;
   onCloseAction: () => void;
   /** Called after a successful create with the new groupId. Used by SequenceDialog slots. */
-  onCreatedGroupId?: (groupId: string) => void;
+  onCreatedGroupIdAction?: (groupId: string) => void;
 };
 
-export function GroupDialog({ group, open, onCloseAction, onCreatedGroupId }: GroupDialogProps) {
+export function GroupDialog({ group, open, onCloseAction, onCreatedGroupIdAction }: GroupDialogProps) {
   const isEditMode = group !== null;
 
   const assignmentGroups = useSelector(paceAssignmentGroupSelect.assignmentGroups);
@@ -85,7 +85,7 @@ export function GroupDialog({ group, open, onCloseAction, onCreatedGroupId }: Gr
       }
     }
 
-    onCreatedGroupId?.(groupId);
+    onCreatedGroupIdAction?.(groupId);
     onCloseAction();
   }
 
@@ -125,7 +125,7 @@ export function GroupDialog({ group, open, onCloseAction, onCreatedGroupId }: Gr
               <ServCodePicker
                 existingGroupServCodeIds={existingGroupServCodeIds}
                 selectedIds={selectedIds}
-                onToggle={handleToggle}
+                onToggleAction={handleToggle}
               />
             )}
           </div>

@@ -15,6 +15,7 @@ import { Button } from "@/style/components/button";
 import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
 import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
+import { paceActions } from "@/app/pace/paceSlice";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { EmployeeAvailabilitySheet } from "@/app/employeeAvailability/_components/EmployeeAvailabilitySheet";
 import { AssignmentRow } from "@/app/pace/setup/employees/_components/AssignmentRow";
@@ -27,21 +28,18 @@ import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 type EmployeeAssignmentPanelProps = {
   employeeId: string;
   selectedGroupIds: Set<string>;
-  onToggleGroupSelection: (groupId: string) => void;
   otherDisplayedEmployeeIds: string[];
 };
 
 export function EmployeeAssignmentPanel({
   employeeId,
   selectedGroupIds,
-  onToggleGroupSelection,
   otherDisplayedEmployeeIds,
 }: EmployeeAssignmentPanelProps) {
   const dispatch = useAppDispatch();
   const employeeMap = useSelector(employeeSelect.employeeMap);
   const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
-  const isDirty = useSelector(assignmentPlanSelect.isDirty);
 
   const [availabilityEmployee, setAvailabilityEmployee] = useState<Employee | null>(null);
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
@@ -87,40 +85,14 @@ export function EmployeeAssignmentPanel({
     );
   }
 
-  function handleGoalChange(groupId: string, goal: number | null) {
-    dispatch(paceAssignmentPlanActions.setGoal({ employeeId, groupId, dailyRevenueGoal: goal }));
-  }
-
   function handleRemoveSelected() {
     const next = groupAssignments.filter((ga) => !selectedGroupIds.has(ga.groupId));
     dispatch(paceAssignmentPlanActions.reorderGroupAssignments({ employeeId, groupAssignments: next }));
     // Clear selections for removed groups
     for (const groupId of selectedGroupIds) {
-      onToggleGroupSelection(groupId);
+      dispatch(paceActions.toggleSetupGroupSelection({ employeeId, groupId }));
     }
     setRemoveConfirmOpen(false);
-  }
-
-  function handleAddGroup(groupId: string) {
-    dispatch(
-      paceAssignmentPlanActions.reorderGroupAssignments({
-        employeeId,
-        groupAssignments: [...groupAssignments, { groupId, dailyRevenueGoal: null }],
-      }),
-    );
-  }
-
-  function handleAddSequenceGroups(groupIds: string[]) {
-    const newAssignments: GroupAssignment[] = groupIds.map((groupId) => ({
-      groupId,
-      dailyRevenueGoal: null,
-    }));
-    dispatch(
-      paceAssignmentPlanActions.reorderGroupAssignments({
-        employeeId,
-        groupAssignments: [...groupAssignments, ...newAssignments],
-      }),
-    );
   }
 
   if (!employee) return null;
@@ -137,7 +109,6 @@ export function EmployeeAssignmentPanel({
             <span className="text-xs font-semibold text-foreground truncate">
               {employee.name}
             </span>
-
           </div>
           <div className="flex items-center gap-1 shrink-0">
             {selectedGroupIds.size > 0 && (
@@ -173,12 +144,12 @@ export function EmployeeAssignmentPanel({
         {/* Toolbar */}
         <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border">
           <AddGroupDropdown
+            employeeId={employeeId}
             existingGroupAssignments={groupAssignments}
-            onAddGroup={handleAddGroup}
           />
           <AddSequenceDropdown
+            employeeId={employeeId}
             existingGroupAssignments={groupAssignments}
-            onAddSequenceGroups={handleAddSequenceGroups}
           />
         </div>
 
@@ -193,15 +164,17 @@ export function EmployeeAssignmentPanel({
               <AssignmentRow
                 key={groupAssignment.groupId}
                 groupAssignment={groupAssignment}
+                employeeId={employeeId}
                 index={index}
                 totalCount={localGroupAssignments.length}
                 group={assignmentGroupMap.get(groupAssignment.groupId)}
                 isSelected={selectedGroupIds.has(groupAssignment.groupId)}
-                onToggleSelection={() => onToggleGroupSelection(groupAssignment.groupId)}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onGoalChange={handleGoalChange}
+                onToggleSelectionAction={() =>
+                  dispatch(paceActions.toggleSetupGroupSelection({ employeeId, groupId: groupAssignment.groupId }))
+                }
+                onDragStartAction={handleDragStart}
+                onDragOverAction={handleDragOver}
+                onDropAction={handleDrop}
               />
             ))
           )}

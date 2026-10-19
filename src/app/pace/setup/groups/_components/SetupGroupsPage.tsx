@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useSelector } from "react-redux";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { GroupNavPanel } from "@/app/pace/setup/groups/_components/GroupNavPanel";
 import { GroupGoalPanel } from "@/app/pace/setup/groups/_components/GroupGoalPanel";
+import { paceSelect } from "@/app/pace/paceSelect";
+import { paceActions } from "@/app/pace/paceSlice";
 
 export function SetupGroupsPage() {
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const selectedGroupId = useSelector(paceSelect.setupSelectedGroupId);
 
   function handleGroupDeleted(groupId: string) {
-    if (selectedGroupId === groupId) setSelectedGroupId(null);
+    if (selectedGroupId === groupId) {
+      dispatch(paceActions.setSetupSelectedGroupId(null));
+    }
   }
 
   return (
@@ -17,7 +23,6 @@ export function SetupGroupsPage() {
       <div className="w-56 shrink-0">
         <GroupNavPanel
           selectedGroupId={selectedGroupId}
-          onSelectGroup={setSelectedGroupId}
           onGroupDeleted={handleGroupDeleted}
         />
       </div>

@@ -9,17 +9,17 @@ import { DeleteGroupDialog } from "@/app/pace/setup/groups/_components/DeleteGro
 type GroupNavItemProps = {
   group: AssignmentGroup;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelectAction: () => void;
   onDeletedAction?: () => void;
 };
 
-export function GroupNavItem({ group, isSelected, onSelect, onDeletedAction }: GroupNavItemProps) {
+export function GroupNavItem({ group, isSelected, onSelectAction, onDeletedAction }: GroupNavItemProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   return (
     <>
       <div
-        onClick={onSelect}
+        onClick={onSelectAction}
         className={`flex items-center gap-1.5 px-3 py-1.5 cursor-pointer border-l-2 transition-colors group/item ${
           isSelected
             ? "bg-primary/10 border-primary"

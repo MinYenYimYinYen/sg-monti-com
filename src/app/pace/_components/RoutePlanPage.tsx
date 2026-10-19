@@ -3,13 +3,11 @@
 import { useSelector } from "react-redux";
 import { routePlanSelect } from "@/app/pace/routePlanSelect";
 import { paceSelect } from "@/app/pace/paceSelect";
-import { paceActions } from "@/app/pace/paceSlice";
 import { routeNoteSelect } from "@/app/routeNotes/routeNoteSelect";
 import { useRouteNotes } from "@/app/routeNotes/useRouteNotes";
 import { RoutePlanDateCard } from "@/app/pace/_components/RoutePlanDateCard";
 import { RoutePlanDay } from "@/app/pace/routePlanTypes";
 import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
-import { useAppDispatch } from "@/lib/hooks/redux";
 
 // ---------------------------------------------------------------------------
 // Week row — 5 cards side by side
@@ -22,9 +20,6 @@ type WeekRowProps = {
   notesByDateAndEmployee: Map<string, Map<string, RouteNote[]>>;
   crewLeadSummaryByDate: Map<string, RouteNote[]>;
   queuedByDateAndEmployee: Record<string, Record<string, boolean>>;
-  onSaveNote: (note: RouteNote) => void;
-  onDeleteNote: (routeNoteId: string) => void;
-  onToggleQueued: (date: string, employeeId: string) => void;
 };
 
 function WeekRow({
@@ -34,9 +29,6 @@ function WeekRow({
   notesByDateAndEmployee,
   crewLeadSummaryByDate,
   queuedByDateAndEmployee,
-  onSaveNote,
-  onDeleteNote,
-  onToggleQueued,
 }: WeekRowProps) {
   return (
     <div className="space-y-1.5">
@@ -52,9 +44,6 @@ function WeekRow({
             notesByEmployee={notesByDateAndEmployee.get(day.date) ?? new Map()}
             crewLeadNotes={crewLeadSummaryByDate.get(day.date) ?? []}
             queuedForDate={queuedByDateAndEmployee[day.date] ?? {}}
-            onSaveNote={onSaveNote}
-            onDeleteNote={onDeleteNote}
-            onToggleQueued={(employeeId) => onToggleQueued(day.date, employeeId)}
           />
         ))}
       </div>
@@ -67,7 +56,6 @@ function WeekRow({
 // ---------------------------------------------------------------------------
 
 export function RoutePlanPage() {
-  const dispatch = useAppDispatch();
   const routePlanDays = useSelector(routePlanSelect.routePlanDays);
   const mainDate = useSelector(paceSelect.mainDate);
   const notesByDateAndEmployee = useSelector(routeNoteSelect.byDateAndEmployee);
@@ -77,11 +65,9 @@ export function RoutePlanPage() {
   // Derive the date range from the displayed days (always 10 weekdays).
   const minDate = routePlanDays[0]?.date ?? mainDate;
   const maxDate = routePlanDays[routePlanDays.length - 1]?.date ?? mainDate;
-  const { upsert: saveNote, deleteOne: deleteNote } = useRouteNotes({ minDate, maxDate });
-
-  function handleToggleQueued(date: string, employeeId: string) {
-    dispatch(paceActions.toggleQueued({ date, employeeId }));
-  }
+  // Call useRouteNotes for the fetch side effect — the returned callbacks are
+  // not used here since RoutePlanDateCard and RoutePlanEmployeeRow dispatch directly.
+  useRouteNotes({ minDate, maxDate });
 
   if (routePlanDays.length === 0) {
     return (
@@ -103,9 +89,6 @@ export function RoutePlanPage() {
     notesByDateAndEmployee,
     crewLeadSummaryByDate,
     queuedByDateAndEmployee,
-    onSaveNote: (note: RouteNote) => { saveNote(note); },
-    onDeleteNote: (routeNoteId: string) => { deleteNote(routeNoteId); },
-    onToggleQueued: handleToggleQueued,
   };
 
   return (

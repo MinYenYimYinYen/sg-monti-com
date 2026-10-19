@@ -32,9 +32,9 @@ type DragHandleProps = {
   width: number;
   height: number;
   scale: number;
-  onUpdate: (patch: SlotPatch) => void;
+  onUpdateAction: (patch: SlotPatch) => void;
   /** Called during Ctrl+drag with active snap guide lines (in inches). */
-  onGuides?: (guides: GuideLine[]) => void;
+  onGuidesAction?: (guides: GuideLine[]) => void;
   /** Edge map for all other slots — used for snap alignment when Ctrl is held. */
   allEdges?: Map<string, SlotEdges>;
   /** slotId of this slot — excluded from snap candidates. */
@@ -82,7 +82,7 @@ function snapToEdges(
  * - Center handle moves the slot (changes x and y, keeps size fixed)
  *
  * When Ctrl is held during drag, edges snap to aligned edges of other slots and
- * guide lines are emitted via `onGuides`.
+ * guide lines are emitted via `onGuidesAction`.
  */
 export function DragHandle({
   x,
@@ -90,8 +90,8 @@ export function DragHandle({
   width,
   height,
   scale,
-  onUpdate,
-  onGuides,
+  onUpdateAction,
+  onGuidesAction,
   allEdges,
   slotId,
 }: DragHandleProps) {
@@ -120,7 +120,7 @@ export function DragHandle({
     function onKeyUp(e: KeyboardEvent) {
       if (e.key === "Control") {
         ctrlRef.current = false;
-        onGuides?.([]);
+        onGuidesAction?.([]);
       }
     }
     document.addEventListener("keydown", onKeyDown);
@@ -129,7 +129,7 @@ export function DragHandle({
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("keyup", onKeyUp);
     };
-  }, [onGuides]);
+  }, [onGuidesAction]);
 
   function startDrag(type: HandleType, e: React.MouseEvent) {
     e.preventDefault();
@@ -269,7 +269,7 @@ export function DragHandle({
         }
       }
 
-      onGuides?.(guides);
+      onGuidesAction?.(guides);
 
       const patch: SlotPatch = {};
       if (drag.type === "move" || drag.type === "left") {
@@ -291,12 +291,12 @@ export function DragHandle({
         patch.height = round3(newH);
       }
 
-      onUpdate(patch);
+      onUpdateAction(patch);
     }
 
     function onMouseUp() {
       dragRef.current = null;
-      onGuides?.([]);
+      onGuidesAction?.([]);
     }
 
     document.addEventListener("mousemove", onMouseMove);
@@ -305,7 +305,7 @@ export function DragHandle({
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     };
-  }, [pxPerInch, onUpdate, onGuides, allEdges, slotId]);
+  }, [pxPerInch, onUpdateAction, onGuidesAction, allEdges, slotId]);
 
   return (
     <>

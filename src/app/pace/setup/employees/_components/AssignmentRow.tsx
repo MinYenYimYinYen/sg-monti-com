@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useAppDispatch } from "@/lib/hooks/redux";
 import { GripVertical, Info } from "lucide-react";
 import { GroupAssignment } from "@/app/pace/assignmentPlan/AssignmentPlanTypes";
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
+import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import {
   Popover,
   PopoverContent,
@@ -13,28 +15,29 @@ import { formatGoal } from "@/app/pace/setup/groups/_components/GroupGoalPanel";
 
 type AssignmentRowProps = {
   groupAssignment: GroupAssignment;
+  employeeId: string;
   index: number;
   totalCount: number;
   group: AssignmentGroup | undefined;
   isSelected: boolean;
-  onToggleSelection: () => void;
-  onDragStart: (index: number) => void;
-  onDragOver: (e: React.DragEvent, index: number) => void;
-  onDrop: () => void;
-  onGoalChange: (groupId: string, goal: number | null) => void;
+  onToggleSelectionAction: () => void;
+  onDragStartAction: (index: number) => void;
+  onDragOverAction: (e: React.DragEvent, index: number) => void;
+  onDropAction: () => void;
 };
 
 export function AssignmentRow({
   groupAssignment,
+  employeeId,
   index,
   group,
   isSelected,
-  onToggleSelection,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onGoalChange,
+  onToggleSelectionAction,
+  onDragStartAction,
+  onDragOverAction,
+  onDropAction,
 }: AssignmentRowProps) {
+  const dispatch = useAppDispatch();
   const { groupId, dailyRevenueGoal } = groupAssignment;
   const label = group?.label ?? groupId;
 
@@ -43,12 +46,12 @@ export function AssignmentRow({
   function handleBlur() {
     const trimmed = inputValue.trim();
     if (trimmed === "") {
-      onGoalChange(groupId, null);
+      dispatch(paceAssignmentPlanActions.setGoal({ employeeId, groupId, dailyRevenueGoal: null }));
       return;
     }
     const n = parseFloat(trimmed);
     if (!isNaN(n) && n >= 0) {
-      onGoalChange(groupId, n);
+      dispatch(paceAssignmentPlanActions.setGoal({ employeeId, groupId, dailyRevenueGoal: n }));
       setInputValue(String(Math.round(n)));
     } else {
       // Reset to last committed value
@@ -59,9 +62,9 @@ export function AssignmentRow({
   return (
     <div
       draggable
-      onDragStart={() => onDragStart(index)}
-      onDragOver={(e) => onDragOver(e, index)}
-      onDrop={onDrop}
+      onDragStart={() => onDragStartAction(index)}
+      onDragOver={(e) => onDragOverAction(e, index)}
+      onDrop={onDropAction}
       className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border/50 hover:bg-accent/5 cursor-grab active:cursor-grabbing"
     >
       {/* Drag handle */}
@@ -125,7 +128,7 @@ export function AssignmentRow({
         <input
           type="checkbox"
           checked={isSelected}
-          onChange={onToggleSelection}
+          onChange={onToggleSelectionAction}
           className="accent-primary cursor-default"
           title="Select for copy / remove"
         />

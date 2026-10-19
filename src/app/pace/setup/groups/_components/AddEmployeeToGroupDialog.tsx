@@ -100,7 +100,6 @@ export function AddEmployeeToGroupDialog({
               <EmployeeAssignmentPanel
                 employeeId={selectedEmployeeId}
                 selectedGroupIds={new Set()}
-                onToggleGroupSelection={() => undefined}
                 otherDisplayedEmployeeIds={[]}
               />
               <div className="flex justify-end pt-1">

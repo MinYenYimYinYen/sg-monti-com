@@ -21,8 +21,8 @@ type SlotEditorProps = {
   /** The descriptor for this slot — used to render option controls when present. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   descriptor?: AnyFieldDescriptor<any>;
-  onSave: (slot: FormLetterSlotDoc) => void;
-  onDelete: (key: string) => void;
+  onSaveAction: (slot: FormLetterSlotDoc) => void;
+  onDeleteAction: (key: string) => void;
 };
 
 /**
@@ -30,7 +30,7 @@ type SlotEditorProps = {
  * The contract owns all rendering decisions — this editor only exposes position
  * and any options declared in the descriptor's `optionSchema`.
  */
-export function SlotEditor({ slot, slotLabel, descriptor, onSave, onDelete }: SlotEditorProps) {
+export function SlotEditor({ slot, slotLabel, descriptor, onSaveAction, onDeleteAction }: SlotEditorProps) {
   const [x, setX] = useState(String(slot.x));
   const [y, setY] = useState(String(slot.y));
   const [width, setWidth] = useState(String(slot.width));
@@ -198,7 +198,7 @@ export function SlotEditor({ slot, slotLabel, descriptor, onSave, onDelete }: Sl
           size="sm"
           variant="primary"
           intensity="solid"
-          onClick={() => onSave(buildSlot())}
+          onClick={() => onSaveAction(buildSlot())}
         >
           Apply
         </Button>
@@ -206,7 +206,7 @@ export function SlotEditor({ slot, slotLabel, descriptor, onSave, onDelete }: Sl
           size="sm"
           variant="destructive"
           intensity="ghost"
-          onClick={() => onDelete(slot.slotId)}
+          onClick={() => onDeleteAction(slot.slotId)}
         >
           Remove
         </Button>
