@@ -68,6 +68,7 @@ export function RoutePlanDateCard({
 
   function handleCopy() {
     const header = `${prettyDate(day.date, "EEE, MMM d")} Route Notes:`;
+    const employeeNameMap = new Map(day.employees.map((e) => [e.employeeId, e.name]));
     // Day-level notes (employeeId === null) come first, then employee notes.
     const sorted = [...crewLeadNotes].sort((a, b) => {
       if (a.employeeId === null && b.employeeId !== null) return -1;
@@ -75,7 +76,11 @@ export function RoutePlanDateCard({
       return 0;
     });
     const noteLines = sorted
-      .map((n) => n.note)
+      .map((n) => {
+        if (n.employeeId === null) return n.note;
+        const name = employeeNameMap.get(n.employeeId) ?? n.employeeId;
+        return `${name}: ${n.note}`;
+      })
       .join("\n\n");
     const text = `${header}\n${noteLines}`;
     navigator.clipboard.writeText(text).then(() => {

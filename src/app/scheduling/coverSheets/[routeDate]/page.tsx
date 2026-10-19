@@ -223,7 +223,7 @@ function CoverSheetsPDF({
                 "p-1 w-full border border-b-2 flex flex-row justify-between gap-2",
               )}
             >
-              <View>
+              <View style={tw("flex-1")}>
                 <Text>{prettyDate(routeDate, "EEE, MMM d")}</Text>
                 <Text>
                   {employeeId}
