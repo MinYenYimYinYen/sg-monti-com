@@ -11,7 +11,7 @@ Branch `2.1.1-01-untrack-idea` stops tracking WebStorm's data source files (`.id
 | Machine | Migrated? |
 |---|---|
 | LukeOffice 2026 | ✅ Done |
-| Comp That Jack Built | ❌ Pending |
+| Comp That Jack Built | ✅ Done |
 | Tower of Power | ❌ Pending |
 
 ## Start of every session
