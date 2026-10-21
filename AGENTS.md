@@ -1,3 +1,47 @@
+# ⚠️ TEMPORARY — HIGHEST PRIORITY: Machine Migration (branch `2.1.1-01-OPEN-ME-FIRST`)
+
+**This block exists ONLY on branch `2.1.1-01-OPEN-ME-FIRST`. It overrides everything else in this file. Resolve it BEFORE any code reading, editing, or pulling.**
+
+**Never merge this branch into `master` or any other branch.** It is deleted at the end.
+
+## Background
+Branch `2.1.1-01-untrack-idea` stops tracking WebStorm's data source files (`.idea/dataSources.xml`, `.idea/dataSources.local.xml`, `.idea/dataSources/`) and adds `pnpm-workspace.yaml`. On a machine that still tracks those files, switching branches fails if WebStorm has modified them. The user does NOT care about preserving local data source settings. They can be discarded.
+
+## Machine status
+| Machine | Migrated? |
+|---|---|
+| LukeOffice 2026 | ✅ Done |
+| Comp That Jack Built | ❌ Pending |
+| Tower of Power | ❌ Pending |
+
+## Start of every session
+1. Ask: **"Which machine are you on: LukeOffice 2026, Comp That Jack Built, or Tower of Power?"** Do not guess.
+2. Look up the machine in the table.
+   - **Done:** tell the user this machine should already be on `2.1.1-01-untrack-idea` (or `master` after the final merge). **Never switch a migrated machine back to this branch.** Checking it out would overwrite its ignored data source files. Stop here.
+   - **Pending:** run the migration below. First run `git ls-files .idea/dataSources.xml .idea/dataSources.local.xml .idea/dataSources`. Empty output means the table is stale, so ask the user to confirm.
+
+## Migration (one step at a time, confirm before each destructive command)
+1. Confirm WebStorm is closed.
+2. `git fetch --all`. Pull this branch if origin is ahead, so the table is current. Confirm `origin/2.1.1-01-untrack-idea` exists.
+3. Discard local data source changes: `git restore .idea/dataSources.xml .idea/dataSources.local.xml .idea/dataSources`
+4. If `pnpm-workspace.yaml` is untracked (`??` in `git status --short`), delete it. The target branch supplies it.
+5. Update this machine's row in the table to ✅ and commit on this branch: "Mark <machine> migrated". **Do not push yet.**
+6. `git checkout 2.1.1-01-untrack-idea`. This block will disappear from the working tree. That is expected.
+7. Verify: `git status --short` is clean, and `git ls-files .idea/dataSources.xml` is empty. Run `pnpm install` if dependencies look out of date. If verification fails, fix the table commit locally before anyone pushes.
+8. Ask the user to push the status commit: `git push origin 2.1.1-01-OPEN-ME-FIRST`. Then have them reopen WebStorm. The data source panel will be empty, and re-adding is optional.
+9. If other machines are still pending, remind the user to check out `2.1.1-01-OPEN-ME-FIRST` on the next one. Otherwise run the finish procedure.
+
+## Finish (only when step 9 shows no pending machines)
+Confirm with the user before each step. Never force-push.
+1. Confirm every row was ✅ on origin, and `2.1.1-01-untrack-idea` is pushed and up to date.
+2. `git checkout master`, `git pull --ff-only`, then `git merge --ff-only 2.1.1-01-untrack-idea`. If it can't fast-forward, STOP and ask. Show `git log --oneline` for the merged commits.
+3. The user pushes `master`.
+4. After the push is confirmed, delete the temporary branch: `git branch -D 2.1.1-01-OPEN-ME-FIRST`, and the user runs `git push origin --delete 2.1.1-01-OPEN-ME-FIRST`. Offer to delete `2.1.1-01-untrack-idea` the same way.
+5. Ask the user for a new branch name, then create a clean branch from `master`.
+6. Confirm `AGENTS.md` on `master` has no migration block. The block never reached it, so no edit should be needed.
+
+---
+
 # Project Overview
 
 ## Framework:
