@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { useRouteNotes } from "@/app/routeNotes/useRouteNotes";
-import { paceActions } from "@/app/pace/paceSlice";
 import { routePlanSelect } from "@/app/pace/routePlanSelect";
 import { RoutePlanDay } from "@/app/pace/routePlanTypes";
 import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
