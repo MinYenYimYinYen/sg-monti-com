@@ -390,15 +390,19 @@ function computeHistoricalDaysSinceAnalysis(
       : null;
 
     if (effectivePredDoneDate === null) {
-      if (predecessorActiveProgramIds.has(progId)) {
-        // Predecessor is genuinely pending (active/asap/printed) — waiting for completion
+      // No predecessor completion on or before `date`. Distinguish three cases:
+      //   1. Predecessor has completions but all are after `date` → not done yet as of this date
+      //   2. Predecessor is still active/pending → not done yet
+      //   3. Predecessor was skipped/never'd (no completions, not active) → no constraint
+      const predecessorHasFutureCompletion = predDates !== undefined && predDates.length > 0;
+      if (predecessorHasFutureCompletion || predecessorActiveProgramIds.has(progId)) {
+        // Predecessor exists but wasn't done yet as of this date — genuinely pending
         countPredecessorNotDone++;
       } else {
         // Predecessor was skipped or never'd — no prior treatment means no constraint.
-        // Treat as available immediately (elapsed = 0 is >= 0, no daysSince constraint applies).
+        // Treat as available immediately.
         countAvailable++;
-        // No elapsed value to push — we don't know how long it's been "waiting"
-        // since there was no predecessor treatment. Omit from distribution.
+        // No elapsed value to push — no meaningful predecessor treatment to measure from.
       }
       continue;
     }
