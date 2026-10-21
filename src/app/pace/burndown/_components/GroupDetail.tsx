@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { burndownSelect } from "@/app/pace/burndown/burndownSelect";
 import { paceEngineSelect } from "@/app/pace/paceEngineSelect";
-import { DailyTimingSnapshot, SequenceTimingStats } from "@/app/pace/lib/PaceEngineTypes";
+import { SequenceTimingStats } from "@/app/pace/lib/PaceEngineTypes";
+import { DaysSinceAnalysis, ElapsedDaysDistribution } from "@/app/pace/lib/crawlerDay/CrawlerDay";
 import { cn } from "@/style/utils";
 
 // ---------------------------------------------------------------------------
@@ -115,6 +116,15 @@ function StatRow({ label, value, valueClass }: StatRowProps) {
 }
 
 // ---------------------------------------------------------------------------
+// DaysSinceDistributionRow — renders a quartile distribution inline
+// ---------------------------------------------------------------------------
+
+function formatDistribution(dist: ElapsedDaysDistribution | null): string {
+  if (!dist) return "—";
+  return `${dist.q1.toFixed(0)} / ${dist.median.toFixed(0)} / ${dist.q3.toFixed(0)}`;
+}
+
+// ---------------------------------------------------------------------------
 // GroupDetail — burndown rows for a single assignment group
 // ---------------------------------------------------------------------------
 
@@ -129,7 +139,7 @@ type DailyRow = {
   remaining: number;
   priceCompleted: number;
   priceForecasted: number;
-  snapshot: DailyTimingSnapshot | null;
+  daysSinceAnalysis: DaysSinceAnalysis | null;
 };
 
 export function GroupDetail({ assignmentGroupId, label }: GroupDetailProps) {
@@ -147,15 +157,6 @@ export function GroupDetail({ assignmentGroupId, label }: GroupDetailProps) {
     (s) => s.groupId === assignmentGroupId && s.phase === "future",
   ) ?? null;
 
-  // Build a Map<date, DailyTimingSnapshot> for quick lookup
-  const snapshotByDate = new Map<string, DailyTimingSnapshot>();
-  for (const snapshot of futureTiming?.dailySnapshots ?? []) {
-    snapshotByDate.set(snapshot.date, snapshot);
-  }
-
-  const hasDaysSince = (futureTiming?.dailySnapshots?.length ?? 0) > 0;
-  const daysSince = futureTiming?.daysSince ?? pastTiming?.daysSince ?? 0;
-
   // Extract per-day rows for this group, restricted to its effective date range
   const groupRows: DailyRow[] = rechartsData.rows
     .filter((row) =>
@@ -172,12 +173,14 @@ export function GroupDetail({ assignmentGroupId, label }: GroupDetailProps) {
         remaining: typeof remaining === "number" ? remaining : 0,
         priceCompleted: dailyStats?.priceCompleted ?? 0,
         priceForecasted: dailyStats?.priceForecasted ?? 0,
-        snapshot: snapshotByDate.get(row.date) ?? null,
+        daysSinceAnalysis: dailyStats?.daysSinceAnalysis ?? null,
       };
     })
     .filter((r) => r.remaining > 0.01);
 
-  const totalPool = groupRows.length > 0 ? groupRows[0].remaining : 0;
+  // Check if any row (past, present, or future) has daysSinceAnalysis data
+  const hasDaysSince = groupRows.some((r) => r.daysSinceAnalysis !== null);
+  const daysSince = futureTiming?.daysSince ?? pastTiming?.daysSince ?? 0;
 
   return (
     <div className="space-y-3">
@@ -185,17 +188,6 @@ export function GroupDetail({ assignmentGroupId, label }: GroupDetailProps) {
       <div>
         <div className="text-xs text-muted-foreground uppercase tracking-wide">Selected Group</div>
         <div className="text-base font-semibold text-foreground">{label}</div>
-        {dateRange && (
-          <div className="text-xs text-muted-foreground">
-            {formatDateRow(dateRange.effectiveStart)} → {formatDateRow(dateRange.effectiveEnd)}
-          </div>
-        )}
-      </div>
-
-      {/* Summary */}
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Starting pool</span>
-        <span className="font-semibold text-foreground tabular-nums">{formatDollars(totalPool)}</span>
       </div>
 
       {/* Sequence timing aggregate stats — only shown for constrained successor groups */}
@@ -267,36 +259,84 @@ export function GroupDetail({ assignmentGroupId, label }: GroupDetailProps) {
               })}
             </div>
           ) : (
-            /* Days Since tab — 5-column grid: Date | Avail | Locked | Pend | Median */
-            <div className="grid text-xs" style={{ gridTemplateColumns: "auto 2.5rem 2.5rem 2.5rem 3rem" }}>
-              <span className="text-[10px] text-muted-foreground pb-0.5" />
-              <span className="text-[10px] text-muted-foreground text-right pb-0.5">Avail</span>
-              <span className="text-[10px] text-muted-foreground text-right pb-0.5">Lock</span>
-              <span className="text-[10px] text-muted-foreground text-right pb-0.5">Pend</span>
-              <span className="text-[10px] text-muted-foreground text-right pb-0.5">Median</span>
+            /* Days Since tab
+             *
+             * Columns: Date | Avail | Lock | Pend | Avail Q1/Med/Q3 | Lock Q1/Med/Q3
+             *
+             * Avail = countAvailable (services ready to schedule — primary capacity signal)
+             * Lock  = countLocked (predecessor done but daysSince not yet elapsed)
+             * Pend  = countPredecessorNotDone
+             * Avail Q1/Med/Q3 = elapsed days for available services (aging signal — high = too slow)
+             * Lock Q1/Med/Q3  = days until unlock for locked services (replenishment signal — low = wave incoming)
+             */
+            <div className="space-y-1">
+              {/* Table ensures header and data cells in each column share the same width,
+                  giving guaranteed vertical alignment even with two-line headers. */}
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="text-[10px] text-muted-foreground leading-tight align-bottom">
+                    <th className="text-left font-normal pb-1 pr-1 whitespace-nowrap" />
+                    <th className="text-right font-normal pb-1 px-1">Avail<br />count</th>
+                    <th className="text-right font-normal pb-1 px-1">Lock<br />count</th>
+                    <th className="text-right font-normal pb-1 px-1">Pend</th>
+                    <th className="text-right font-normal pb-1 pl-2">Avail<br />Q1/Med/Q3</th>
+                    <th className="text-right font-normal pb-1 pl-2">Lock<br />Q1/Med/Q3</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groupRows
+                    .filter((r) => r.daysSinceAnalysis !== null)
+                    .map(({ date, phase, daysSinceAnalysis: analysis }) => {
+                      if (!analysis) return null;
+                      const availableAging = analysis.availableElapsedDays;
+                      const lockedReplenish = analysis.lockedDaysUntilUnlock;
 
-              {groupRows.map(({ date, snapshot }) => (
-                <>
-                  <span key={`${date}-date`} className="text-muted-foreground pr-2 py-px">{formatDateRow(date)}</span>
-                  <span key={`${date}-avail`} className={`text-right tabular-nums py-px ${snapshot && snapshot.countAvailable > 0 ? "text-accent" : "text-muted-foreground"}`}>
-                    {snapshot ? snapshot.countAvailable : "—"}
-                  </span>
-                  <span key={`${date}-lock`} className={`text-right tabular-nums py-px ${snapshot && snapshot.countLocked > 0 ? "text-secondary" : "text-muted-foreground"}`}>
-                    {snapshot ? snapshot.countLocked : "—"}
-                  </span>
-                  <span key={`${date}-pend`} className="text-right tabular-nums py-px text-muted-foreground">
-                    {snapshot ? snapshot.countPredecessorNotDone : "—"}
-                  </span>
-                  <span key={`${date}-med`} className="text-right tabular-nums py-px text-foreground">
-                    {snapshot ? formatDays(snapshot.median) : "—"}
-                  </span>
-                </>
-              ))}
+                      const availClass = analysis.countAvailable > 0 ? "text-accent" : "text-muted-foreground";
+                      const lockClass = analysis.countLocked > 0 ? "text-secondary" : "text-muted-foreground";
 
-              {/* Footer note */}
-              <span className="col-span-5 text-[9px] text-muted-foreground pt-1">
-                Min gap: {daysSince} days. Lock = predecessor done but &lt;{daysSince}d elapsed.
-              </span>
+                      // Aging signal: warn when median elapsed days for available services > 35d
+                      const agingMedian = availableAging?.median ?? null;
+                      const agingClass = agingMedian !== null && agingMedian > 35 ? "text-destructive" : "text-muted-foreground";
+
+                      // Dim past rows slightly to visually distinguish from present/future
+                      const rowOpacity = phase === "past" ? "opacity-70" : "";
+
+                      return (
+                        <tr key={date} className={`text-xs align-baseline ${rowOpacity}`}>
+                          <td className="text-muted-foreground pr-1 py-px whitespace-nowrap">{formatDateRow(date)}</td>
+                          <td className={`text-right tabular-nums py-px px-1 font-medium ${availClass}`}>
+                            {analysis.countAvailable}
+                          </td>
+                          <td className={`text-right tabular-nums py-px px-1 ${lockClass}`}>
+                            {analysis.countLocked}
+                          </td>
+                          <td className="text-right tabular-nums py-px px-1 text-muted-foreground">
+                            {analysis.countPredecessorNotDone > 0 ? analysis.countPredecessorNotDone : "—"}
+                          </td>
+                          <td className={`text-right tabular-nums py-px pl-2 text-[10px] ${agingClass}`}>
+                            {formatDistribution(availableAging)}
+                          </td>
+                          <td className="text-right tabular-nums py-px pl-2 text-[10px] text-muted-foreground">
+                            {formatDistribution(lockedReplenish)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+
+              {/* Footer legend */}
+              <div className="pt-1 space-y-0.5">
+                <p className="text-[9px] text-muted-foreground">
+                  Min gap: {daysSince}d. <span className="text-accent">Avail</span> = ready to schedule. <span className="text-secondary">Lock</span> = predecessor done but &lt;{daysSince}d elapsed.
+                </p>
+                <p className="text-[9px] text-muted-foreground">
+                  Avail Q1/Med/Q3 = elapsed days since predecessor (↑ high = aging, customers may notice above ~45d).
+                </p>
+                <p className="text-[9px] text-muted-foreground">
+                  Lock Q1/Med/Q3 = days until unlock (↓ low = replenishment wave incoming).
+                </p>
+              </div>
             </div>
           )}
         </div>

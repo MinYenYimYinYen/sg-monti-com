@@ -5,7 +5,7 @@ import {
 } from "@/app/pace/lib/PaceEngineTypes";
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
-import { CrawlerDay, CrawlerDayGroup } from "@/app/pace/lib/crawlerDay/CrawlerDay";
+import { CrawlerDay, CrawlerDayGroup, DaysSinceAnalysis, ElapsedDaysDistribution } from "@/app/pace/lib/crawlerDay/CrawlerDay";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { PresentPhaseState } from "@/app/pace/lib/crawlPresentPhase/crawlPresentPhase";
 import { GroupProductionStats } from "@/app/pace/lib/crawlPastPhase/helpers/computeActualGroupRates";
@@ -628,6 +628,11 @@ export function crawlFuturePhase(
           empCumulative.set(bd.employeeId, (empCumulative.get(bd.employeeId) ?? 0) + bd.priceCompleted);
         }
 
+        // Compute DaysSinceAnalysis for constrained successor groups.
+        // This is done after the pending→available promotion loop so the queue state
+        // reflects the crawl's live view (including projected completions).
+        const daysSinceAnalysis = computeDaysSinceAnalysis(groupId, day, constrainedQueues, successorConstraintMap, projectedLatestDoneDateByProgId);
+
         crawlerDayGroups.push({
           groupId,
           label: assignmentGroup?.label ?? groupId,
@@ -645,6 +650,7 @@ export function crawlFuturePhase(
             priceForecasted: bd.priceForecasted,
             priceCompletedSoFar: empCumulative.get(bd.employeeId) ?? bd.priceCompleted,
           })),
+          daysSinceAnalysis: daysSinceAnalysis ?? undefined,
         });
       }
     }
@@ -691,6 +697,123 @@ function computeTeamRate(
     total += goal ?? 0;
   }
   return total;
+}
+
+// ---------------------------------------------------------------------------
+// computeDaysSinceAnalysis — per-day constraint snapshot for a constrained group
+// ---------------------------------------------------------------------------
+
+/**
+ * Computes the DaysSinceAnalysis for a constrained successor group on a given crawl day.
+ *
+ * Called after the pending→available promotion loop so the queue state reflects
+ * the crawl's live view (including projected completions from projectedLatestDoneDateByProgId).
+ *
+ * Returns null for groups that are not constrained successors (no entry in successorConstraintMap).
+ *
+ * Two distributions are computed:
+ *   - availableElapsedDays: elapsed days for services in queue.available (elapsedDays >= daysSince).
+ *     High median = services are aging = team is moving too slow.
+ *   - lockedDaysUntilUnlock: (daysSince - elapsedDays) for services in queue.pending.
+ *     Low q1 = near-term replenishment wave incoming.
+ *
+ * For pending services, elapsedDays is computed using the effective latestDoneDate
+ * (max of historical and projected). Services with no effective latestDoneDate are
+ * counted as countPredecessorNotDone.
+ */
+function computeDaysSinceAnalysis(
+  groupId: string,
+  day: string,
+  constrainedQueues: Map<string, ConstrainedGroupQueue>,
+  successorConstraintMap: Map<string, { predecessorGroupId: string; daysSince: number }>,
+  projectedLatestDoneDateByProgId: Map<number, string>,
+): DaysSinceAnalysis | null {
+  const constraint = successorConstraintMap.get(groupId);
+  if (!constraint) return null;
+
+  const queue = constrainedQueues.get(groupId);
+  if (!queue) return null;
+
+  const { daysSince } = constraint;
+
+  // Available services: compute elapsed days for each
+  const availableElapsed: number[] = [];
+  for (const crawlService of queue.available) {
+    const historicalLatest = crawlService.service.program.x.latestDoneDate;
+    const projectedLatest = projectedLatestDoneDateByProgId.get(crawlService.progId) ?? null;
+    const effectiveLatest =
+      historicalLatest !== null && projectedLatest !== null
+        ? historicalLatest > projectedLatest ? historicalLatest : projectedLatest
+        : historicalLatest ?? projectedLatest;
+    if (effectiveLatest !== null) {
+      availableElapsed.push(calendarDaysBetween(effectiveLatest, day));
+    }
+    // If no effectiveLatest, service was promoted because no prior treatment — elapsed is 0+
+    // We still count it as available but skip it from the distribution (no meaningful elapsed)
+  }
+
+  // Pending services: compute daysUntilUnlock for each; count those with no predecessor
+  const lockedDaysUntilUnlock: number[] = [];
+  let countPredecessorNotDone = 0;
+  for (const crawlService of queue.pending) {
+    const historicalLatest = crawlService.service.program.x.latestDoneDate;
+    const projectedLatest = projectedLatestDoneDateByProgId.get(crawlService.progId) ?? null;
+    const effectiveLatest =
+      historicalLatest !== null && projectedLatest !== null
+        ? historicalLatest > projectedLatest ? historicalLatest : projectedLatest
+        : historicalLatest ?? projectedLatest;
+    if (effectiveLatest === null) {
+      // Predecessor not yet done — shouldn't be in pending (pending means predecessor done
+      // but too soon), but guard defensively
+      countPredecessorNotDone++;
+    } else {
+      const elapsed = calendarDaysBetween(effectiveLatest, day);
+      const daysUntil = daysSince - elapsed;
+      lockedDaysUntilUnlock.push(Math.max(0, daysUntil));
+    }
+  }
+
+  const sortedAvailable = [...availableElapsed].sort((a, b) => a - b);
+  const sortedLocked = [...lockedDaysUntilUnlock].sort((a, b) => a - b);
+
+  return {
+    daysSince,
+    countAvailable: queue.available.length,
+    countLocked: queue.pending.length - countPredecessorNotDone,
+    countPredecessorNotDone,
+    availableElapsedDays: buildDistribution(sortedAvailable),
+    lockedDaysUntilUnlock: buildDistribution(sortedLocked),
+  };
+}
+
+/** Builds an ElapsedDaysDistribution from a pre-sorted ascending array. Returns null if < 4 values. */
+function buildDistribution(sorted: number[]): ElapsedDaysDistribution | null {
+  if (sorted.length < 4) return null;
+  return {
+    q1: quartilePercentile(sorted, 0.25),
+    median: quartilePercentile(sorted, 0.5),
+    q3: quartilePercentile(sorted, 0.75),
+  };
+}
+
+/** Linear interpolation percentile on a pre-sorted ascending array. */
+function quartilePercentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  if (sorted.length === 1) return sorted[0]!;
+  const idx = p * (sorted.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo]!;
+  const frac = idx - lo;
+  return sorted[lo]! + frac * (sorted[hi]! - sorted[lo]!);
+}
+
+/** Calendar days from dateA to dateB (positive when dateB > dateA). */
+function calendarDaysBetween(dateA: string, dateB: string): number {
+  const msPerDay = 86_400_000;
+  return Math.round(
+    (new Date(dateB + "T00:00:00").getTime() - new Date(dateA + "T00:00:00").getTime()) / msPerDay,
+  );
 }
 
 // ---------------------------------------------------------------------------

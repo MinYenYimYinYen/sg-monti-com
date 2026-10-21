@@ -132,7 +132,7 @@ const selectBurndownRechartsData = createSelector(
     const groupLabels = new Map<string, string>();
     const groupSequenceIds = new Map<string, string | null>();
     const groupKeyOrder: string[] = [];
-    const groupDailyStats = new Map<string, Map<string, { priceCompleted: number; priceForecasted: number }>>();
+    const groupDailyStats = new Map<string, Map<string, { priceCompleted: number; priceForecasted: number; daysSinceAnalysis?: import("@/app/pace/lib/crawlerDay/CrawlerDay").DaysSinceAnalysis }>>();
     for (const day of crawlerDays) {
       for (const group of day.groups) {
         if (!groupLabels.has(group.groupId)) {
@@ -140,11 +140,12 @@ const selectBurndownRechartsData = createSelector(
           groupSequenceIds.set(group.groupId, group.sequenceId);
           groupKeyOrder.push(group.groupId);
         }
-        if (group.priceCompleted > 0 || group.priceForecasted > 0) {
+        if (group.priceCompleted > 0 || group.priceForecasted > 0 || group.daysSinceAnalysis !== undefined) {
           if (!groupDailyStats.has(day.date)) groupDailyStats.set(day.date, new Map());
           groupDailyStats.get(day.date)!.set(group.groupId, {
             priceCompleted: group.priceCompleted,
             priceForecasted: group.priceForecasted,
+            daysSinceAnalysis: group.daysSinceAnalysis,
           });
         }
       }

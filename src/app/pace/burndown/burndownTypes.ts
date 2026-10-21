@@ -1,4 +1,4 @@
-import { CrawlerDayPhase } from "@/app/pace/lib/crawlerDay/CrawlerDay";
+import { CrawlerDayPhase, DaysSinceAnalysis } from "@/app/pace/lib/crawlerDay/CrawlerDay";
 
 // ---------------------------------------------------------------------------
 // Burndown chart types
@@ -144,10 +144,11 @@ export type BurndownRechartsData = {
   groupSequenceIds: Map<string, string | null>;
   /**
    * Per-day, per-group production stats from the raw (unfilled) crawlerDays.
-   * Used by GroupDetail to show priceCompleted (past) and priceForecasted (future) per day.
-   * Map<date, Map<groupId, { priceCompleted, priceForecasted }>>
+   * Used by GroupDetail to show priceCompleted (past) and priceForecasted (future) per day,
+   * and daysSinceAnalysis for constrained successor groups (future phase only).
+   * Map<date, Map<groupId, { priceCompleted, priceForecasted, daysSinceAnalysis? }>>
    */
-  groupDailyStats: Map<string, Map<string, { priceCompleted: number; priceForecasted: number }>>;
+  groupDailyStats: Map<string, Map<string, { priceCompleted: number; priceForecasted: number; daysSinceAnalysis?: DaysSinceAnalysis }>>;
   mainDate: string;
   snowMelt: string | null;
   snowDeadline: string | null;

@@ -1,5 +1,5 @@
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
-import { DailyTimingSnapshot, SequenceTimingStats, ServiceTimingEntry } from "@/app/pace/lib/PaceEngineTypes";
+import { SequenceTimingStats, ServiceTimingEntry } from "@/app/pace/lib/PaceEngineTypes";
 import { CrawlerDay } from "@/app/pace/lib/crawlerDay/CrawlerDay";
 import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 
@@ -96,9 +96,6 @@ export function computeSequenceTimingStats(
     }
   }
 
-  // Sorted list of crawl dates for daily snapshots
-  const crawlDates = crawlerDays.map((d) => d.date);
-
   const result: SequenceTimingStats[] = [];
 
   for (const sequence of constrainedSequences) {
@@ -146,51 +143,8 @@ export function computeSequenceTimingStats(
         futureServices.push({ servId: successorInfo.servId, progId, elapsedDays: elapsed, isLocked: elapsed < daysSince });
       }
 
-      // ---------------------------------------------------------------------------
-      // Daily snapshots — per-crawl-date distribution for active successor services
-      //
-      // For each crawl date, compute elapsed days for each active successor service
-      // using the program-level latestDoneDate as of that date. This shows how the
-      // constraint evolves: how many services unlock each day and what the
-      // elapsed-days quartiles look like at each point in time.
-      //
-      // We only use historical latestDoneDate (from Redux state) — projected
-      // completions during the future crawl are not reflected here. This is
-      // intentional: the snapshots show the constraint as it stands from real data.
-      // ---------------------------------------------------------------------------
-
-      const dailySnapshots: DailyTimingSnapshot[] = crawlDates.map((date): DailyTimingSnapshot => {
-        const elapsedValues: number[] = [];
-        let countAvailable = 0;
-        let countLocked = 0;
-        let countPredecessorNotDone = 0;
-
-        for (const [progId] of successorActive) {
-          const latestDoneDate = latestDoneDateByProgId.get(progId) ?? null;
-          if (latestDoneDate === null || latestDoneDate > date) {
-            // Predecessor not yet done as of this date
-            countPredecessorNotDone++;
-          } else {
-            const elapsed = calendarDaysBetween(latestDoneDate, date);
-            elapsedValues.push(elapsed);
-            if (elapsed >= daysSince) {
-              countAvailable++;
-            } else {
-              countLocked++;
-            }
-          }
-        }
-
-        const sorted = [...elapsedValues].sort((a, b) => a - b);
-        const median = sorted.length > 0 ? percentile(sorted, 0.5) : null;
-        const q1 = sorted.length >= 4 ? percentile(sorted, 0.25) : null;
-        const q3 = sorted.length >= 4 ? percentile(sorted, 0.75) : null;
-
-        return { date, countAvailable, countLocked, countPredecessorNotDone, median, q1, q3 };
-      });
-
-      result.push(buildStats({ sequenceId, groupId: successorGroupId, daysSince, phase: "past", services: pastServices, dailySnapshots }));
-      result.push(buildStats({ sequenceId, groupId: successorGroupId, daysSince, phase: "future", services: futureServices, dailySnapshots }));
+      result.push(buildStats({ sequenceId, groupId: successorGroupId, daysSince, phase: "past", services: pastServices }));
+      result.push(buildStats({ sequenceId, groupId: successorGroupId, daysSince, phase: "future", services: futureServices }));
     }
   }
 
@@ -207,14 +161,12 @@ function buildStats({
   daysSince,
   phase,
   services,
-  dailySnapshots,
 }: {
   sequenceId: string;
   groupId: string;
   daysSince: number;
   phase: "past" | "future";
   services: ServiceTimingEntry[];
-  dailySnapshots: DailyTimingSnapshot[];
 }): SequenceTimingStats {
   const count = services.length;
   const countLocked = services.filter((s) => s.isLocked).length;
@@ -234,7 +186,7 @@ function buildStats({
   const q1 = elapsedValues.length >= 4 ? percentile(elapsedValues, 0.25) : null;
   const q3 = elapsedValues.length >= 4 ? percentile(elapsedValues, 0.75) : null;
 
-  return { sequenceId, groupId, daysSince, phase, services, count, countLocked, countAvailable, countPredecessorNotDone, median, mean, q1, q3, dailySnapshots };
+  return { sequenceId, groupId, daysSince, phase, services, count, countLocked, countAvailable, countPredecessorNotDone, median, mean, q1, q3, dailySnapshots: [] };
 }
 
 // ---------------------------------------------------------------------------
