@@ -44,3 +44,5 @@ next-env.d.ts
 .idea/workspace.xml
 /.idea/dictionaries/LukeHolker.xml
 dataSources.local.xml
+/.idea/dataSources.xml
+/.idea/dataSources/
