@@ -21,17 +21,20 @@ Branch `2.1.1-01-untrack-idea` stops tracking WebStorm's data source files (`.id
    - **Pending:** run the migration below. First run `git ls-files .idea/dataSources.xml .idea/dataSources.local.xml .idea/dataSources`. Empty output means the table is stale, so ask the user to confirm.
 
 ## Migration (one step at a time, confirm before each destructive command)
-1. Confirm WebStorm is closed.
-2. `git fetch --all`. Pull this branch if origin is ahead, so the table is current. Confirm `origin/2.1.1-01-untrack-idea` exists.
-3. Discard local data source changes: `git restore .idea/dataSources.xml .idea/dataSources.local.xml .idea/dataSources`
-4. If `pnpm-workspace.yaml` is untracked (`??` in `git status --short`), delete it. The target branch supplies it.
-5. Update this machine's row in the table to ✅ and commit on this branch: "Mark <machine> migrated". **Do not push yet.**
-6. `git checkout 2.1.1-01-untrack-idea`. This block will disappear from the working tree. That is expected.
-7. Verify: `git status --short` is clean, and `git ls-files .idea/dataSources.xml` is empty. Run `pnpm install` if dependencies look out of date. If verification fails, fix the table commit locally before anyone pushes.
-8. Ask the user to push the status commit: `git push origin 2.1.1-01-OPEN-ME-FIRST`. Then have them reopen WebStorm. The data source panel will be empty, and re-adding is optional.
-9. If other machines are still pending, remind the user to check out `2.1.1-01-OPEN-ME-FIRST` on the next one. Otherwise run the finish procedure.
+The agent needs terminal access for the git commands, so in Cline switch to Act mode for the migration. WebStorm stays open because the agent runs inside it. That is fine: the restore, delete and checkout steps (6, 7, 8) are run back to back, and if the checkout is refused because a data source file was modified again, re-run the restore and retry. Never use `--force`.
+1. `git fetch --all`. Pull this branch if origin is ahead, so the table is current. Confirm `origin/2.1.1-01-untrack-idea` exists.
+2. Run `git config user.name` and `git config user.email`. If either is empty, ask the user which identity to use before committing (the commit fails with "Author identity unknown" otherwise).
+3. Update this machine's row in the table to ✅ and commit on this branch: "Mark <machine> migrated". **Do not push yet.**
+4. Confirm `git status --short` shows only data source changes and optionally `pnpm-workspace.yaml`. If anything else is modified, STOP and ask.
+5. Tell the user what steps 6 to 8 will do and get a go-ahead.
+6. Discard local data source changes: `git restore .idea/dataSources.xml .idea/dataSources.local.xml .idea/dataSources`
+7. If `pnpm-workspace.yaml` is untracked (`??` in `git status --short`), delete it. The target branch supplies it.
+8. `git checkout 2.1.1-01-untrack-idea`. This block will disappear from the working tree. That is expected.
+9. Verify: `git status --short` is clean, and `git ls-files .idea/dataSources.xml` is empty. Run `pnpm install` if dependencies look out of date. If verification fails, fix the table commit locally before anyone pushes.
+10. Ask the user to push the status commit: `git push origin 2.1.1-01-OPEN-ME-FIRST`. Tell them the data source panel in WebStorm may show a stale or missing connection until refreshed, and re-adding it is optional.
+11. If other machines are still pending, remind the user to check out `2.1.1-01-OPEN-ME-FIRST` on the next one. Otherwise run the finish procedure.
 
-## Finish (only when step 9 shows no pending machines)
+## Finish (only when step 11 shows no pending machines)
 Confirm with the user before each step. Never force-push.
 1. Confirm every row was ✅ on origin, and `2.1.1-01-untrack-idea` is pushed and up to date.
 2. `git checkout master`, `git pull --ff-only`, then `git merge --ff-only 2.1.1-01-untrack-idea`. If it can't fast-forward, STOP and ask. Show `git log --oneline` for the merged commits.
