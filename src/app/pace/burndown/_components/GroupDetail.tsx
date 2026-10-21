@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { burndownSelect } from "@/app/pace/burndown/burndownSelect";
-import { paceEngineSelect } from "@/app/pace/paceEngineSelect";
-import { SequenceTimingStats } from "@/app/pace/lib/PaceEngineTypes";
 import { DaysSinceAnalysis, ElapsedDaysDistribution } from "@/app/pace/lib/crawlerDay/CrawlerDay";
 import { cn } from "@/style/utils";
 
@@ -22,101 +20,8 @@ function formatDollars(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
-function formatDays(value: number | null): string {
-  if (value === null) return "—";
-  return `${value.toFixed(1)}d`;
-}
-
 // ---------------------------------------------------------------------------
-// SequenceTimingSection — daysSince aggregate stats for a constrained successor group
-// ---------------------------------------------------------------------------
-
-type SequenceTimingSectionProps = {
-  past: SequenceTimingStats | null;
-  future: SequenceTimingStats | null;
-};
-
-function SequenceTimingSection({ past, future }: SequenceTimingSectionProps) {
-  if (!past && !future) return null;
-  const daysSince = past?.daysSince ?? future?.daysSince ?? 0;
-
-  return (
-    <div className="space-y-2">
-      <div className="text-xs text-muted-foreground uppercase tracking-wide">
-        Sequence Timing
-        <span className="ml-1 text-foreground font-medium normal-case">(min gap: {daysSince} days)</span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        {/* Past panel */}
-        <div className="space-y-1">
-          <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Past</div>
-          {past && past.count > 0 ? (
-            <>
-              <StatRow label="On time" value={`${past.countAvailable}`} />
-              <StatRow label="Too soon" value={`${past.countLocked}`} valueClass={past.countLocked > 0 ? "text-destructive" : undefined} />
-              <StatRow label="No predecessor" value={`${past.countPredecessorNotDone}`} />
-              {past.median !== null && (
-                <>
-                  <div className="border-t border-border pt-1 mt-1" />
-                  <StatRow label="Median" value={formatDays(past.median)} />
-                  <StatRow label="Mean" value={formatDays(past.mean)} />
-                  {past.q1 !== null && past.q3 !== null && (
-                    <StatRow label="Q1 / Q3" value={`${past.q1.toFixed(1)} / ${past.q3.toFixed(1)}`} />
-                  )}
-                </>
-              )}
-            </>
-          ) : (
-            <p className="text-[10px] text-muted-foreground">No completed services.</p>
-          )}
-        </div>
-
-        {/* Future panel */}
-        <div className="space-y-1">
-          <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Future</div>
-          {future && future.count > 0 ? (
-            <>
-              <StatRow label="Available" value={`${future.countAvailable}`} valueClass="text-accent" />
-              <StatRow label="Locked" value={`${future.countLocked}`} valueClass={future.countLocked > 0 ? "text-secondary" : undefined} />
-              <StatRow label="Pred. pending" value={`${future.countPredecessorNotDone}`} />
-              {future.median !== null && (
-                <>
-                  <div className="border-t border-border pt-1 mt-1" />
-                  <StatRow label="Median" value={formatDays(future.median)} />
-                  <StatRow label="Mean" value={formatDays(future.mean)} />
-                  {future.q1 !== null && future.q3 !== null && (
-                    <StatRow label="Q1 / Q3" value={`${future.q1.toFixed(1)} / ${future.q3.toFixed(1)}`} />
-                  )}
-                </>
-              )}
-            </>
-          ) : (
-            <p className="text-[10px] text-muted-foreground">No active services.</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type StatRowProps = {
-  label: string;
-  value: string;
-  valueClass?: string;
-};
-
-function StatRow({ label, value, valueClass }: StatRowProps) {
-  return (
-    <div className="flex items-center justify-between text-xs gap-1">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={`font-medium tabular-nums ${valueClass ?? "text-foreground"}`}>{value}</span>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// DaysSinceDistributionRow — renders a quartile distribution inline
+// formatDistribution — renders a quartile distribution as "Q1 / Med / Q3"
 // ---------------------------------------------------------------------------
 
 function formatDistribution(dist: ElapsedDaysDistribution | null): string {
@@ -144,18 +49,9 @@ type DailyRow = {
 
 export function GroupDetail({ assignmentGroupId, label }: GroupDetailProps) {
   const rechartsData = useSelector(burndownSelect.rechartsData);
-  const sequenceTimingStats = useSelector(paceEngineSelect.sequenceTimingStats);
   const [activeTab, setActiveTab] = useState<"price" | "daysSince">("price");
 
   const dateRange = rechartsData.groupDateRanges.get(assignmentGroupId);
-
-  // Find timing stats for this group (it's a constrained successor if entries exist)
-  const pastTiming = sequenceTimingStats.find(
-    (s) => s.groupId === assignmentGroupId && s.phase === "past",
-  ) ?? null;
-  const futureTiming = sequenceTimingStats.find(
-    (s) => s.groupId === assignmentGroupId && s.phase === "future",
-  ) ?? null;
 
   // Extract per-day rows for this group, restricted to its effective date range
   const groupRows: DailyRow[] = rechartsData.rows
@@ -178,9 +74,11 @@ export function GroupDetail({ assignmentGroupId, label }: GroupDetailProps) {
     })
     .filter((r) => r.remaining > 0.01);
 
-  // Check if any row (past, present, or future) has daysSinceAnalysis data
+  // Check if any row has daysSinceAnalysis data (group is a constrained successor)
   const hasDaysSince = groupRows.some((r) => r.daysSinceAnalysis !== null);
-  const daysSince = futureTiming?.daysSince ?? pastTiming?.daysSince ?? 0;
+
+  // Read daysSince from the first row that has analysis data
+  const daysSince = groupRows.find((r) => r.daysSinceAnalysis !== null)?.daysSinceAnalysis?.daysSince ?? 0;
 
   return (
     <div className="space-y-3">
@@ -189,14 +87,6 @@ export function GroupDetail({ assignmentGroupId, label }: GroupDetailProps) {
         <div className="text-xs text-muted-foreground uppercase tracking-wide">Selected Group</div>
         <div className="text-base font-semibold text-foreground">{label}</div>
       </div>
-
-      {/* Sequence timing aggregate stats — only shown for constrained successor groups */}
-      {(pastTiming || futureTiming) && (
-        <>
-          <div className="border-t border-border" />
-          <SequenceTimingSection past={pastTiming} future={futureTiming} />
-        </>
-      )}
 
       {/* Daily detail — tabbed between Price Drain and Days Since */}
       {groupRows.length > 0 ? (
@@ -263,11 +153,13 @@ export function GroupDetail({ assignmentGroupId, label }: GroupDetailProps) {
              *
              * Columns: Date | Avail | Lock | Pend | Avail Q1/Med/Q3 | Lock Q1/Med/Q3
              *
-             * Avail = countAvailable (services ready to schedule — primary capacity signal)
-             * Lock  = countLocked (predecessor done but daysSince not yet elapsed)
-             * Pend  = countPredecessorNotDone
+             * Avail count = services eligible to schedule (predecessor done, daysSince elapsed, not yet worked)
+             * Lock count  = predecessor done but daysSince not yet elapsed
+             * Pend        = predecessor not yet completed
              * Avail Q1/Med/Q3 = elapsed days for available services (aging signal — high = too slow)
              * Lock Q1/Med/Q3  = days until unlock for locked services (replenishment signal — low = wave incoming)
+             *
+             * Past rows are dimmed — they show what the constraint state was historically.
              */
             <div className="space-y-1">
               {/* Table ensures header and data cells in each column share the same width,

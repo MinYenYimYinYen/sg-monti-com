@@ -61,9 +61,6 @@ export function assembleGroupResults(
   return {
     urgentGroups,
     crawlerDays,
-    // sequenceTimingStats is computed in runPaceEngine after assembly and spread in.
-    // Providing an empty array here satisfies the type; runPaceEngine overwrites it.
-    sequenceTimingStats: [],
   };
 }
 

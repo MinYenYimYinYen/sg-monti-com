@@ -17,7 +17,6 @@ import {
 } from "./crawlFuturePhase/crawlFuturePhase";
 import { assembleGroupResults } from "./assembleGroupResults/assembleGroupResults";
 import { buildGroupSequenceClassifier } from "./groupSequenceClassifier";
-import { computeSequenceTimingStats } from "./computeSequenceTimingStats";
 
 /**
  * The pace engine entry point.
@@ -68,9 +67,5 @@ export function runPaceEngine(inputs: PaceEngineInputs): PaceEngineResult {
     poolStates: presentPoolStatesSnapshot,
   });
 
-  const crawlerDays = assembled.crawlerDays;
-  return {
-    ...assembled,
-    sequenceTimingStats: computeSequenceTimingStats(inputs, crawlerDays),
-  };
+  return assembled;
 }
