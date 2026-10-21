@@ -65,6 +65,7 @@ export function assembleGroupResults(
 }
 
 const COMPLETED_STATUSES_ASSEMBLE = new Set(getServiceStatuses(["completed"]));
+const ACTIVE_STATUSES_ASSEMBLE = new Set(getServiceStatuses(["active", "asap", "printed"]));
 
 function buildCrawlerDays({
   mainDate,
@@ -121,12 +122,20 @@ function buildCrawlerDays({
 
   // For each constrained sequence, build:
   //   predecessorDoneDatesByProgId: Map<progId, string[]> — sorted asc completion dates for predecessor group
+  //   predecessorActiveProgramIds: Set<progId> — progIds where the predecessor is still active/pending
   //   successorServicesByProgId: Map<progId, { doneDate: string | null }> — successor services
+  //
+  // The distinction between "predecessor active" and "predecessor skipped/never'd" matters:
+  //   - Active predecessor (Y, *, $) → countPredecessorNotDone (genuinely waiting)
+  //   - Skipped/never'd predecessor (no completion, no active service) → treat as available
+  //     (no prior treatment means no constraint to enforce, same as "no prior treatment")
   type ConstraintContext = {
     daysSince: number;
     successorGroupId: string;
     // Map<progId, sorted asc list of predecessor completion dates>
     predecessorDoneDatesByProgId: Map<number, string[]>;
+    // Set of progIds where the predecessor service is still active/pending (not skipped/never'd)
+    predecessorActiveProgramIds: Set<number>;
     // Map<progId, doneDate | null> — null means not yet completed as of mainDate
     successorDoneDateByProgId: Map<number, string | null>;
   };
@@ -140,6 +149,7 @@ function buildCrawlerDays({
       const predecessorGroupId = groupIds[i - 1]!;
 
       const predecessorDoneDatesByProgId = new Map<number, string[]>();
+      const predecessorActiveProgramIds = new Set<number>();
       const successorDoneDateByProgId = new Map<number, string | null>();
 
       for (const servCode of servCodes) {
@@ -158,7 +168,12 @@ function buildCrawlerDays({
                 }
                 predecessorDoneDatesByProgId.get(service.progId)!.push(doneDate);
               }
+            } else if (ACTIVE_STATUSES_ASSEMBLE.has(service.status)) {
+              // Predecessor is still active/pending — genuinely waiting
+              predecessorActiveProgramIds.add(service.progId);
             }
+            // Skip statuses (not N, not completed, not active) are ignored —
+            // they mean the predecessor was skipped, so no constraint applies.
           } else if (groupId === successorGroupId) {
             if (!successorDoneDateByProgId.has(service.progId)) {
               // Use the doneDate if completed, null otherwise
@@ -180,6 +195,7 @@ function buildCrawlerDays({
         daysSince,
         successorGroupId,
         predecessorDoneDatesByProgId,
+        predecessorActiveProgramIds,
         successorDoneDateByProgId,
       });
     }
@@ -342,6 +358,7 @@ type ConstraintContext = {
   daysSince: number;
   successorGroupId: string;
   predecessorDoneDatesByProgId: Map<number, string[]>;
+  predecessorActiveProgramIds: Set<number>;
   successorDoneDateByProgId: Map<number, string | null>;
 };
 
@@ -353,7 +370,7 @@ function computeHistoricalDaysSinceAnalysis(
   const ctx = constraintContextBySuccessorGroupId.get(groupId);
   if (!ctx) return null;
 
-  const { daysSince, predecessorDoneDatesByProgId, successorDoneDateByProgId } = ctx;
+  const { daysSince, predecessorDoneDatesByProgId, predecessorActiveProgramIds, successorDoneDateByProgId } = ctx;
 
   const availableElapsed: number[] = [];
   const lockedDaysUntilUnlock: number[] = [];
@@ -373,8 +390,16 @@ function computeHistoricalDaysSinceAnalysis(
       : null;
 
     if (effectivePredDoneDate === null) {
-      // Predecessor not yet done as of this date
-      countPredecessorNotDone++;
+      if (predecessorActiveProgramIds.has(progId)) {
+        // Predecessor is genuinely pending (active/asap/printed) — waiting for completion
+        countPredecessorNotDone++;
+      } else {
+        // Predecessor was skipped or never'd — no prior treatment means no constraint.
+        // Treat as available immediately (elapsed = 0 is >= 0, no daysSince constraint applies).
+        countAvailable++;
+        // No elapsed value to push — we don't know how long it's been "waiting"
+        // since there was no predecessor treatment. Omit from distribution.
+      }
       continue;
     }
 

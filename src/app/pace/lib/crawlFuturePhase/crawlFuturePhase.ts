@@ -6,6 +6,7 @@ import {
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { CrawlerDay, CrawlerDayGroup, DaysSinceAnalysis, ElapsedDaysDistribution } from "@/app/pace/lib/crawlerDay/CrawlerDay";
+import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus";
 import { PaceEngineInputs } from "@/app/pace/lib/PaceEngineInputs";
 import { PresentPhaseState } from "@/app/pace/lib/crawlPresentPhase/crawlPresentPhase";
 import { GroupProductionStats } from "@/app/pace/lib/crawlPastPhase/helpers/computeActualGroupRates";
@@ -752,9 +753,13 @@ function computeDaysSinceAnalysis(
     // We still count it as available but skip it from the distribution (no meaningful elapsed)
   }
 
-  // Pending services: compute daysUntilUnlock for each; count those with no predecessor
+  // Pending services: compute daysUntilUnlock for each.
+  // Services in queue.pending have a predecessor that is done but daysSince hasn't elapsed yet.
+  // If effectiveLatest is null here, it means the service was placed in pending without a
+  // known completion date — this shouldn't happen in normal flow (pending requires a predecessor
+  // doneDate to compute the unlock date), but guard defensively.
   const lockedDaysUntilUnlock: number[] = [];
-  let countPredecessorNotDone = 0;
+  const countPredecessorNotDone = 0; // pending services always have a predecessor done (by definition)
   for (const crawlService of queue.pending) {
     const historicalLatest = crawlService.service.program.x.latestDoneDate;
     const projectedLatest = projectedLatestDoneDateByProgId.get(crawlService.progId) ?? null;
@@ -762,15 +767,14 @@ function computeDaysSinceAnalysis(
       historicalLatest !== null && projectedLatest !== null
         ? historicalLatest > projectedLatest ? historicalLatest : projectedLatest
         : historicalLatest ?? projectedLatest;
-    if (effectiveLatest === null) {
-      // Predecessor not yet done — shouldn't be in pending (pending means predecessor done
-      // but too soon), but guard defensively
-      countPredecessorNotDone++;
-    } else {
+    if (effectiveLatest !== null) {
       const elapsed = calendarDaysBetween(effectiveLatest, day);
       const daysUntil = daysSince - elapsed;
       lockedDaysUntilUnlock.push(Math.max(0, daysUntil));
     }
+    // If effectiveLatest is null, the service has no predecessor completion — it was promoted
+    // to pending without a known doneDate. This is a defensive guard; in practice, services
+    // with no predecessor completion are promoted directly to available in buildCrawlServiceQueues.
   }
 
   const sortedAvailable = [...availableElapsed].sort((a, b) => a - b);
