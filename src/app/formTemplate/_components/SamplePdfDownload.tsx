@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePDF } from "@react-pdf/renderer";
 import { Button } from "@/style/components/button";
 import { Printer } from "lucide-react";
@@ -19,15 +20,20 @@ type SamplePdfDownloadProps = {
  * Filename: "sample-{dataType}.pdf"
  */
 export function SamplePdfDownload({ draft, sampleData, contract }: SamplePdfDownloadProps) {
-  const doc = (
-    <FormLetterDocument
-      template={draft}
-      data={sampleData}
-      contract={contract}
-    />
-  );
+  // usePDF reads its `document` argument only once, on mount, so later edits to the
+  // draft would never reach the PDF. Pushing each new document through the update
+  // function (as react-pdf's own PDFViewer does) keeps the download current.
+  const [instance, updateInstance] = usePDF();
 
-  const [instance] = usePDF({ document: doc });
+  useEffect(() => {
+    updateInstance(
+      <FormLetterDocument
+        template={draft}
+        data={sampleData}
+        contract={contract}
+      />,
+    );
+  }, [draft, sampleData, contract, updateInstance]);
 
   const filename = `sample-${draft.dataType}.pdf`;
 

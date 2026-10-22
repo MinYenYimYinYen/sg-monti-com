@@ -58,11 +58,12 @@ export const SproutPDFIcon = ({ size }: PDFIconProps) => (
   </Svg>
 );
 
-// Square Icon — an empty checkbox for the customer to mark with a pen
+// Square Icon — an empty checkbox for the customer to mark with a pen.
+// No `fill` on purpose: react-pdf does not understand fill="none" and paints the
+// shape black. Leaving fill unset makes it draw the outline only.
 export const SquarePDFIcon = ({ size }: PDFIconProps) => (
   <Svg
     viewBox="0 0 24 24"
-    fill="none"
     stroke="black"
     strokeWidth="2"
     strokeLinecap="round"
