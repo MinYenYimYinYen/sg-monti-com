@@ -12,7 +12,7 @@ Branch `2.1.1-01-untrack-idea` stops tracking WebStorm's data source files (`.id
 |---|---|
 | LukeOffice 2026 | ✅ Done |
 | Comp That Jack Built | ✅ Done |
-| Tower of Power | ❌ Pending |
+| Tower of Power | ✅ Done |
 
 ## Start of every session
 1. Ask: **"Which machine are you on: LukeOffice 2026, Comp That Jack Built, or Tower of Power?"** Do not guess.
