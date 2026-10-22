@@ -1,3 +1,4 @@
+import { BillingType } from "@/app/realGreen/_lib/subTypes/BillingType";
 import { Service } from "./ServiceTypes";
 import { Customer } from "./CustomerTypes";
 import { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
@@ -9,7 +10,7 @@ import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 export type ProgramRaw = {
   averagePrice: number;
   averageTime: number | null;
-  billingType: string;
+  billingType: BillingType;
   callAhead: number | null;
   // callBackDate: string | null;
   cancelCode: number | null;
@@ -91,7 +92,7 @@ export type ProgramRaw = {
 
 export type ProgramCore = {
   avgPrice: number;
-  billingType: string;
+  billingType: BillingType;
   callAheadId: number;
   custId: number;
   dateSold: string;
