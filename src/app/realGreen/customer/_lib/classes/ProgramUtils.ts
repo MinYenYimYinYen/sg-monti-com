@@ -6,12 +6,33 @@ import { isEcon } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 import { PriceTable } from "@/app/realGreen/priceTable/_types/PriceTableTypes";
 import { dateRanges, dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { BILLING_TYPE } from "@/app/realGreen/_lib/subTypes/BillingType";
 
 export class ProgramUtils {
   constructor(private readonly program: Omit<Program, "x">) {}
 
   public get customer(): Customer {
     return this.program.customer;
+  }
+
+  /**
+   * True when this program is billed as a monthly installment plan.
+   *
+   * Service prices on an installment program reflect the total for the plan term,
+   * not what the customer sees (a flat monthly amount). Components that display
+   * prices should branch on this rather than showing per-service numbers.
+   * Unrecognized or empty billing types are treated as not installment.
+   */
+  public get isInstallment(): boolean {
+    return this.program.billingType === BILLING_TYPE.Installment;
+  }
+
+  /**
+   * True when the customer's card on file is charged automatically after each service.
+   * Unrecognized or empty billing types are treated as not autopay.
+   */
+  public get isAutopay(): boolean {
+    return this.program.billingType === BILLING_TYPE.AutoCreditCard;
   }
 
   public get services(): Service[] {

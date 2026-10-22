@@ -164,8 +164,8 @@ rawTax = price × (taxRate / 100)
 sum of all applicable tax code rates — the caller is responsible for computing it.
 
 **Asymmetric rounding (matches SA5 behavior):**
-- If a discount was applied (`hasDiscount: true`): `ceil(rawTax × 100) / 100`
-- If no discount was applied (`hasDiscount: false`): `round(rawTax × 100) / 100`
+- If no discount was applied (`hasDiscount: false`): `ceil(rawTax × 100) / 100`
+- If a discount was applied (`hasDiscount: true`): `round(rawTax × 100) / 100`
 
 `hasDiscount` refers to whether `service.x.applicableDiscounts` is non-empty (i.e.
 service-level or program-level discounts). It does **not** refer to the prepay discount.
@@ -244,13 +244,60 @@ See `howToPriceFromOldProject.md` for the distinction between `price` and `nextP
 
 ## Billing Type Eligibility
 
-Programs with `billingType === "C"` (Installment) are excluded from prepay letter
-pricing. These customers are already on a payment plan.
+Billing types come from `BillingType.ts`: `"R"` Regular Invoice, `"A"` Auto Credit Card,
+`"C"` Installment. Unrecognized or empty values are treated as none of these.
 
-All other billing types (`"A"` Credit Card, `"D"` ACH, `"M"` Statement, `"R"` Regular
-Invoice) are eligible.
+### Convenience getters
 
-Check `program.billingType` before including a program in any pricing calculation.
+`ProgramUtils` and `ServiceUtils` both expose:
+
+- **`isInstallment`** — true when the program's `billingType` is `"C"`.
+- **`isAutopay`** — true when the program's `billingType` is `"A"`.
+
+`ServiceUtils` delegates to its program. These are labels only — prices are unchanged.
+
+### Why installment prices need care
+
+The CRM does not store installment amounts on services. A service `price` on an
+installment program is a share of the total for the plan term (a season ending in
+December). The customer knows the flat monthly amount, not these per-service numbers,
+so components that display prices should branch on `isInstallment` rather than show them.
+
+### Prepay letters
+
+Prepaying an installment plan makes no sense, so the prepay letter never prices
+installment programs. `src/app/prepayLetters/installmentSegregation.ts` provides:
+
+- `getPrepayPrograms(customer)` — non-installment programs; used by every price table,
+  totals, by-program totals and discount summary slot.
+- `getInstallmentPrograms(customer)` — installment programs.
+- `calculatePrepayTotals({ programs, prepayPercent })` — sums prepay pricing over the
+  programs passed in.
+- `buildInstallmentNotice({ programs })` — the hardcoded, number-free wording rendered by
+  the `installmentPrograms` letter slot. It names the programs only; it has no contact details.
+
+Contact wording lives in the separate `contactUs` letter slot, which always renders (it is
+not tied to installment programs). Place both slots when laying out a template.
+
+Deciding whether a customer should get a letter at all (for example, only installment
+programs) happens upstream. The letter renders whatever `PrepayLetterData` it is given.
+
+Autopay and regular invoice programs remain eligible for prepay pricing.
+
+### Prepay letter upsell
+
+`PrepayLetterData.upsell` is a `ProgCode | null` — a proposed program, not one on the
+customer, so `ProgramUtils`/`ServiceUtils` cannot price it. `src/app/prepayLetters/upsellPricing.ts`
+prices it at render time:
+
+- Price per visit comes from `progCode.x.getServPrice(customer.size)`.
+- `customer.discount` is the default discount for a proposed program and is applied here.
+- The per-service total uses `calculatePrepayServTotal`, the same pipeline `ServiceUtils`
+  uses, so the upsell rounds exactly like every other service on the letter.
+- `config.upsellPrepayDiscPercent` applies to every current and proposed service in the
+  upsell totals.
+- When the upsell is null, an installment program, has no services, or has no price for the
+  customer's size, `getUpsellLetterPricing` returns null and every upsell slot renders nothing.
 
 ---
 

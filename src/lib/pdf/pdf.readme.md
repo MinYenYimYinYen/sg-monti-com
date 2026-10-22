@@ -119,6 +119,7 @@ import { HashPDFIcon, LandPlotPDFIcon, SproutPDFIcon, DollarSignPDFIcon } from "
 | `LandPlotPDFIcon` | `LandPlot` | Property size (sq ft) |
 | `SproutPDFIcon` | `Sprout` | Seed/pre-emergent indicator |
 | `DollarSignPDFIcon` | `DollarSign` | Price/money |
+| `SquarePDFIcon` | `Square` | Empty checkbox on the prepay letter |
 
 ### Adding a New Icon
 

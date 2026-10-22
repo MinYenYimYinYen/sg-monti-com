@@ -2,6 +2,7 @@ import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
 import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { sampleBillingAddress, sampleServiceAddress } from "./sampleAddress";
 import { sampleCustomerDiscount, sampleProgramDiscount, sampleServiceDiscount, sampleServiceDiscount2 } from "./sampleDiscounts";
+import { BILLING_TYPE } from "@/app/realGreen/_lib/subTypes/BillingType";
 /**
  * A sample TaxCode for use in tests and previews.
  * Represents a 7.375% tax rate — matches the CRM reference data used in pricing tests.
@@ -21,11 +22,12 @@ export const sampleTaxCode = {
  * The canonical sample customer for previews and tests.
  *
  * Structure:
- *   - John Doe, custId 10001, status "9" (active)
- *   - 3 programs:
+ *   - John Doe, custId 10001, status "9" (active), size 15
+ *   - 4 programs:
  *       1. Lawn Care (3 services: Early Spring, Spring, Summer)
  *       2. Insect Control with 10% program discount (2 services)
  *       3. Mosquito Reduction (4 services)
+ *       4. Tree & Shrub Care, installment-billed (2 services) — excluded from prepay pricing
  *   - Customer-level 5% discount
  *   - Service-level $15 discount on first Lawn Care service
  *   - Service-level 5% discount on first Insect Control service
@@ -38,6 +40,7 @@ export const sampleCustomer: Customer = generateCustomer({
     lastName: "Doe",
     useBilling: true,
     status: "9",
+    size: 15,
     address: sampleServiceAddress,
     billingAddress: sampleBillingAddress,
   },
@@ -103,6 +106,32 @@ export const sampleCustomer: Customer = generateCustomer({
         {
           core: { servId: 204, price: 50, season: 2026 },
           servCode: { servCodeId: "S05", name: "Mosquito Visit", longName: "Mosquito Visit" },
+        },
+      ],
+    },
+
+    // ─── Program 4: Tree & Shrub Care (installment billing) ───────────────
+    // Service prices are shares of the plan total — prepay letters describe this
+    // program in words and never show these numbers.
+    {
+      core: {
+        progId: 4,
+        price: 480,
+        season: 2026,
+        isRenewed: true,
+        isProgram: true,
+        progDefId: 4,
+        billingType: BILLING_TYPE.Installment,
+      },
+      progCode: { progCodeId: "PC4", description: "Tree & Shrub Care Program", progDefId: 4 },
+      services: [
+        {
+          core: { servId: 301, price: 240, season: 2026 },
+          servCode: { servCodeId: "S06", name: "Spring Tree & Shrub Visit", longName: "Spring Tree & Shrub Visit" },
+        },
+        {
+          core: { servId: 302, price: 240, season: 2026 },
+          servCode: { servCodeId: "S07", name: "Fall Tree & Shrub Visit", longName: "Fall Tree & Shrub Visit" },
         },
       ],
     },

@@ -44,6 +44,20 @@ export class ServiceUtils {
     return this.service.program.customer;
   }
 
+  /**
+   * True when this service belongs to an installment-billed program.
+   * The service `price` is then a share of the plan total, not an amount the
+   * customer is aware of — avoid displaying it. See `ProgramUtils.isInstallment`.
+   */
+  public get isInstallment(): boolean {
+    return this.service.program.x.isInstallment;
+  }
+
+  /** True when this service belongs to an autopay (card on file) program. */
+  public get isAutopay(): boolean {
+    return this.service.program.x.isAutopay;
+  }
+
   public get doneBys(): DoneBy[] | null {
     return this.service.production?.doneBys || null;
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { Text, View } from "@react-pdf/renderer";
+import { Square } from "lucide-react";
 import type { FormLetterContract } from "@/app/formTemplate/formLetterDataTypes";
 import type { FieldDescriptorWithOptions } from "@/app/formTemplate/formLetterDataTypes";
 import prepayLetterFormImageSrc from "./prepayLetterForm.jpg";
@@ -13,7 +14,25 @@ import { samplePrepayConfig } from "@/app/realGreen/sampleData/samplePrepayConfi
 import type { SlotOptionSchema } from "@/app/formTemplate/slotOptionSchema";
 import { formatNumber } from "@/components/Number";
 import { PDFNumber } from "@/lib/pdf/_components/PDFNumber";
-import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
+import { SquarePDFIcon } from "@/lib/pdf/_components/pdfIcons";
+import type { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
+import { sampleUpsellProgCode } from "@/app/realGreen/sampleData/sampleUpsellProgCode";
+import {
+  buildInstallmentNotice,
+  calculatePrepayTotals,
+  getInstallmentPrograms,
+  getPrepayPrograms,
+} from "@/app/prepayLetters/installmentSegregation";
+import {
+  getUpsellLetterPricing,
+  type UpsellLetterPricing,
+} from "@/app/prepayLetters/upsellPricing";
+import {
+  getStubTotals,
+  type TotalsSource,
+} from "@/app/prepayLetters/stubTotals";
+import { buildIntentionLines } from "@/app/prepayLetters/intentionLines";
+import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 
 /** The scanned blank form image — used as a faint background in the template editor preview. */
 export const prepayLetterFormImage = prepayLetterFormImageSrc;
@@ -23,13 +42,17 @@ export const prepayLetterFormImage = prepayLetterFormImageSrc;
 /**
  * The full input data object for a prepay letter.
  * All slot renderers receive this object and derive their content from it.
+ *
+ * `upsell` is the proposed program, not one on the customer. It is priced at render
+ * time from its price chart and the customer's size and discount. When null (or when
+ * it cannot be priced), every upsell slot renders nothing.
  */
 export type PrepayLetterData = {
   company: Company;
   customer: Customer;
   config: PrepayConfig;
   isAutoRenew: boolean;
-  upsell: Program | null;
+  upsell: ProgCode | null;
 };
 
 // ─── Shared Option Schemas ────────────────────────────────────────────────────
@@ -81,6 +104,24 @@ export const tableOptionSchema: SlotOptionSchema<TableOptions> = {
   },
 };
 
+/**
+ * Options for the stub money slots. `totalsSource` picks which totals appear on the
+ * stub; "upsell" falls back to the current totals when there is no priceable upsell.
+ */
+export type StubTotalsOptions = TextOptions & { totalsSource: TotalsSource };
+export const stubTotalsOptionSchema: SlotOptionSchema<StubTotalsOptions> = {
+  ...textOptionSchema,
+  totalsSource: {
+    type: "select",
+    label: "Show totals for",
+    choices: [
+      { label: "Current services", value: "current" },
+      { label: "Upsell (current if no upsell)", value: "upsell" },
+    ],
+    default: "current",
+  },
+};
+
 // ─── Slot Keys ────────────────────────────────────────────────────────────────
 
 /**
@@ -96,19 +137,24 @@ type PrepayLetterSlot =
   | "custIdInline"
   | "prepayPercent"
   | "upsellPrepayPercent"
+  | "prepayTotal"
+  | "prepayDiscount"
+  | "intentionOptions"
   | "expirationDate"
-  | "leftPriceTable"
-  | "rightPriceTable"
-  | "leftTotals"
-  | "rightTotals"
+  | "currentPriceTable"
+  | "upsellPriceTable"
+  | "currentTotals"
+  | "upsellTotals"
   | "message"
   | "messageHeader"
   | "currentServicesHeader"
   | "upsellServicesHeader"
   | "custIdBlock"
   | "discountSummary"
-  | "leftTotalsByProgram"
-  | "rightTotalsByProgram";
+  | "currentTotalsByProgram"
+  | "upsellTotalsByProgram"
+  | "installmentPrograms"
+  | "contactUs";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -116,6 +162,21 @@ type PrepayLetterSlot =
 type WithText = FieldDescriptorWithOptions<PrepayLetterData, TextOptions>;
 /** Shorthand for a descriptor with TableOptions. */
 type WithTable = FieldDescriptorWithOptions<PrepayLetterData, TableOptions>;
+/** Shorthand for a descriptor with StubTotalsOptions. */
+type WithStubTotals = FieldDescriptorWithOptions<
+  PrepayLetterData,
+  StubTotalsOptions
+>;
+
+type GetStubTotalsForParams = {
+  data: PrepayLetterData;
+  totalsSource: TotalsSource;
+};
+
+function getStubTotalsFor({ data, totalsSource }: GetStubTotalsForParams) {
+  const { customer, config, upsell } = data;
+  return getStubTotals({ customer, config, upsell, totalsSource });
+}
 
 /**
  * Fixed width (in pt) for the price column in price tables.
@@ -123,22 +184,66 @@ type WithTable = FieldDescriptorWithOptions<PrepayLetterData, TableOptions>;
  */
 const PRICE_COL_WIDTH = 82;
 
+/** Label for the prepay discount row in the totals slots, e.g. "Prepay Discount (5%)". */
+function prepayDiscountLabel(percent: number): string {
+  return `Prepay Discount (${percent}%)`;
+}
+
+/**
+ * Pricing for every upsell slot, or null when there is no upsell or it cannot be
+ * priced. Each upsell slot renders nothing on null.
+ * The upsell prepay percentage applies to every current and proposed service.
+ */
+function getUpsellPricing({
+  customer,
+  config,
+  upsell,
+}: PrepayLetterData): UpsellLetterPricing | null {
+  return getUpsellLetterPricing({
+    customer,
+    upsell,
+    prepayPercent: config.upsellPrepayDiscPercent,
+  });
+}
+
 /**
  * Collects unique discount descriptions from service-level and program-level discounts.
- * Customer-level discount is intentionally excluded — it is not applied to existing services
- * (only used as a default when proposing new programs), so it has no effect on the prices
- * shown in the letter.
+ * The customer-level discount is not applied to existing services, so it is excluded —
+ * except when a priced upsell is present: it is the default discount for a proposed
+ * program, and the upsell's asterisks need a footnote.
  */
-function getUniqueDiscountDescriptions({ customer }: PrepayLetterData): string[] {
+function getUniqueDiscountDescriptions(data: PrepayLetterData): string[] {
+  const { customer } = data;
   const descriptions = new Set<string>();
-  for (const program of customer.programs) {
+  for (const program of getPrepayPrograms(customer)) {
     for (const service of program.services) {
       for (const discount of service.x.applicableDiscounts) {
         if (discount.description) descriptions.add(discount.description);
       }
     }
   }
+  if (customer.discount?.description && getUpsellPricing(data) !== null) {
+    descriptions.add(customer.discount.description);
+  }
   return Array.from(descriptions);
+}
+
+/**
+ * Customer-facing text for the `installmentPrograms` slot.
+ * Null when the customer has no installment programs, so the slot renders nothing.
+ */
+function getInstallmentNotice({ customer }: PrepayLetterData): string | null {
+  return buildInstallmentNotice({ programs: getInstallmentPrograms(customer) });
+}
+
+/**
+ * Customer-facing text for the `contactUs` slot. Always renders, regardless of the
+ * customer's programs. The phone number is omitted (rather than leaving a dangling
+ * "at") when the company has none on file.
+ */
+function getContactUsText({ company }: PrepayLetterData): string {
+  const atPhone = company.phone1 ? ` at ${company.phone1}` : "";
+  return `Please contact us${atPhone} with any questions or to make any changes to your program.`;
 }
 
 // ─── Contract ─────────────────────────────────────────────────────────────────
@@ -198,11 +303,9 @@ export const prepayLetterContract = {
       { fontSize, textAlign }: TextOptions,
     ) => (
       <Text style={{ fontSize, textAlign }}>
-        {[company.addressLine1, company.addressLine2, company.addressLine3]
+        {[company.addressLine1, company.addressLine2, company.addressLine3].filter(Boolean)
           .filter(Boolean)
           .join("\n")}
-        {"\n"}
-        {company.state}
       </Text>
     ),
     previewRender: (
@@ -218,11 +321,9 @@ export const prepayLetterContract = {
           whiteSpace: "pre-line",
         }}
       >
-        {[company.addressLine1, company.addressLine2, company.addressLine3]
+        {[company.addressLine1, company.addressLine2, company.addressLine3].filter(Boolean)
           .filter(Boolean)
           .join("\n")}
-        {"\n"}
-        {company.state}
       </div>
     ),
   } satisfies WithText,
@@ -394,19 +495,147 @@ export const prepayLetterContract = {
   upsellPrepayPercent: {
     label: "Upsell Prepay %",
     optionSchema: textOptionSchema,
-    render: (_data: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
-      <Text style={{ fontSize, textAlign, fontWeight: "bold" }}></Text>
-    ),
+    render: (data: PrepayLetterData, { fontSize, textAlign }: TextOptions) => {
+      if (getUpsellPricing(data) === null) return null;
+      return (
+        <Text style={{ fontSize, textAlign, fontWeight: "bold" }}>
+          {data.config.upsellPrepayDiscPercent}%
+        </Text>
+      );
+    },
     previewRender: (
-      _data: PrepayLetterData,
+      data: PrepayLetterData,
       scale: number,
       { fontSize, textAlign }: TextOptions,
-    ) => (
-      <div
-        style={{ fontSize: fontSize * scale, textAlign, fontWeight: "bold" }}
-      ></div>
-    ),
+    ) => {
+      if (getUpsellPricing(data) === null) return null;
+      return (
+        <div
+          style={{ fontSize: fontSize * scale, textAlign, fontWeight: "bold" }}
+        >
+          {data.config.upsellPrepayDiscPercent}%
+        </div>
+      );
+    },
   } satisfies WithText,
+
+  prepayTotal: {
+    label: "Prepay Total (stub)",
+    optionSchema: stubTotalsOptionSchema,
+    render: (
+      data: PrepayLetterData,
+      { fontSize, textAlign, totalsSource }: StubTotalsOptions,
+    ) => (
+      <PDFNumber style={{ fontSize, textAlign }} decimals={2}>
+        {getStubTotalsFor({ data, totalsSource }).total}
+      </PDFNumber>
+    ),
+    previewRender: (
+      data: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign, totalsSource }: StubTotalsOptions,
+    ) => (
+      <div style={{ fontSize: fontSize * scale, textAlign }}>
+        {formatNumber({
+          children: getStubTotalsFor({ data, totalsSource }).total,
+          decimals: 2,
+        })}
+      </div>
+    ),
+  } satisfies WithStubTotals,
+
+  prepayDiscount: {
+    label: "Prepay Discount Amount (stub)",
+    optionSchema: stubTotalsOptionSchema,
+    render: (
+      data: PrepayLetterData,
+      { fontSize, textAlign, totalsSource }: StubTotalsOptions,
+    ) => (
+      <PDFNumber style={{ fontSize, textAlign }} decimals={2}>
+        {getStubTotalsFor({ data, totalsSource }).prepayDisc}
+      </PDFNumber>
+    ),
+    previewRender: (
+      data: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign, totalsSource }: StubTotalsOptions,
+    ) => (
+      <div style={{ fontSize: fontSize * scale, textAlign }}>
+        {formatNumber({
+          children: getStubTotalsFor({ data, totalsSource }).prepayDisc,
+          decimals: 2,
+        })}
+      </div>
+    ),
+  } satisfies WithStubTotals,
+
+  intentionOptions: {
+    label: "Customer Intention Options",
+    optionSchema: tableOptionSchema,
+    render: (
+      { customer, config, upsell }: PrepayLetterData,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
+      const checkboxColWidth = fontSize + 4;
+      return (
+        <View
+          style={{ display: "flex", flexDirection: "column", width: "100%" }}
+        >
+          {buildIntentionLines({ customer, config, upsell }).map((line) => (
+            <View
+              key={line.key}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "flex-start",
+                width: "100%",
+                marginBottom: (lineSpacing - 1) * fontSize,
+              }}
+            >
+              <View style={{ width: checkboxColWidth }}>
+                {line.hasCheckbox && <SquarePDFIcon size={fontSize} />}
+              </View>
+              <Text style={{ flex: 1, fontSize }}>{line.text}</Text>
+            </View>
+          ))}
+        </View>
+      );
+    },
+    previewRender: (
+      { customer, config, upsell }: PrepayLetterData,
+      scale: number,
+      { fontSize, lineSpacing }: TableOptions,
+    ) => {
+      const checkboxColWidth = (fontSize + 4) * scale;
+      return (
+        <div
+          style={{
+            fontSize: fontSize * scale,
+            lineHeight: lineSpacing,
+            width: "100%",
+          }}
+        >
+          {buildIntentionLines({ customer, config, upsell }).map((line) => (
+            <div
+              key={line.key}
+              style={{ display: "flex", alignItems: "flex-start", width: "100%" }}
+            >
+              <div style={{ width: checkboxColWidth, flexShrink: 0 }}>
+                {line.hasCheckbox && (
+                  <Square
+                    size={fontSize * scale}
+                    strokeWidth={2}
+                    style={{ display: "block" }}
+                  />
+                )}
+              </div>
+              <span style={{ flex: 1 }}>{line.text}</span>
+            </div>
+          ))}
+        </div>
+      );
+    },
+  } satisfies WithTable,
 
   expirationDate: {
     label: "Expiration Date",
@@ -414,26 +643,30 @@ export const prepayLetterContract = {
     render: (
       { config }: PrepayLetterData,
       { fontSize, textAlign }: TextOptions,
-    ) => <Text style={{ fontSize, textAlign }}>{config.expirationDate}</Text>,
+    ) => (
+      <Text style={{ fontSize, textAlign }}>
+        {prettyDate(config.expirationDate, "MM/dd/yyyy")}
+      </Text>
+    ),
     previewRender: (
       { config }: PrepayLetterData,
       scale: number,
       { fontSize, textAlign }: TextOptions,
     ) => (
       <div style={{ fontSize: fontSize * scale, textAlign }}>
-        {config.expirationDate}
+        {prettyDate(config.expirationDate, "MM/dd/yyyy")}
       </div>
     ),
   } satisfies WithText,
 
-  leftPriceTable: {
-    label: "Left Price Table (Standard Discount)",
+  currentPriceTable: {
+    label: "Current Price Table (Standard Discount)",
     optionSchema: tableOptionSchema,
     render: (
       { customer }: PrepayLetterData,
       { fontSize, lineSpacing }: TableOptions,
     ) => {
-      const services = customer.programs.flatMap((p) => p.services);
+      const services = getPrepayPrograms(customer).flatMap((p) => p.services);
       return (
         <View
           style={{ display: "flex", flexDirection: "column", width: "100%" }}
@@ -454,6 +687,7 @@ export const prepayLetterContract = {
                 {/* Service name — fills remaining space */}
                 <Text style={{ flex: 1, fontSize }}>
                   {service.servCode.name}
+                  {hasDiscount && "*"}
                 </Text>
 
                 {/* Price column — inline: ~~orig~~ discounted, right-aligned */}
@@ -491,7 +725,7 @@ export const prepayLetterContract = {
       scale: number,
       { fontSize, lineSpacing }: TableOptions,
     ) => {
-      const services = customer.programs.flatMap((p) => p.services);
+      const services = getPrepayPrograms(customer).flatMap((p) => p.services);
       const priceColWidth = PRICE_COL_WIDTH * scale;
       return (
         <div
@@ -514,7 +748,10 @@ export const prepayLetterContract = {
                 }}
               >
                 {/* Service name — fills remaining space */}
-                <span style={{ flex: 1 }}>{service.servCode.name}</span>
+                <span style={{ flex: 1 }}>
+                  {service.servCode.name}
+                  {hasDiscount && "*"}
+                </span>
 
                 {/* Price column — inline strikethrough + discounted, right-aligned */}
                 <div
@@ -548,71 +785,82 @@ export const prepayLetterContract = {
     },
   } satisfies WithTable,
 
-  rightPriceTable: {
-    label: "Right Price Table (Upgrade Discount)",
+  upsellPriceTable: {
+    label: "Upsell Price Table (Upsell Discount)",
     optionSchema: tableOptionSchema,
     render: (
-      { customer }: PrepayLetterData,
+      data: PrepayLetterData,
       { fontSize, lineSpacing }: TableOptions,
     ) => {
-      const services = customer.programs.flatMap((p) => p.services);
+      const pricing = getUpsellPricing(data);
+      if (pricing === null) return null;
+      const rowStyle = {
+        display: "flex" as const,
+        flexDirection: "row" as const,
+        width: "100%",
+        marginBottom: (lineSpacing - 1) * fontSize,
+      };
       return (
         <View
           style={{ display: "flex", flexDirection: "column", width: "100%" }}
         >
-          {services.map((service) => {
-            const hasDiscount = service.x.applicableDiscounts.length > 0;
-            const discountedPrice = service.x.getPriceAfterDiscounts("price");
-            return (
+          {/* Current services collapse to one subtotal row — the upsell is the focus here */}
+          <View style={rowStyle}>
+            <Text style={{ flex: 1, fontSize }}>Current Services</Text>
+            <PDFNumber
+              style={{ width: PRICE_COL_WIDTH, textAlign: "right", fontSize }}
+              decimals={2}
+            >
+              {pricing.currentTotals.serviceAmt}
+            </PDFNumber>
+          </View>
+          {pricing.upsell.services.map((service) => (
+            <View key={service.servCodeId} style={rowStyle}>
+              <Text style={{ flex: 1, fontSize }}>
+                {service.name}
+                {service.hasDiscount && "*"}
+              </Text>
               <View
-                key={service.servId}
                 style={{
-                  display: "flex",
+                  width: PRICE_COL_WIDTH,
                   flexDirection: "row",
-                  width: "100%",
-                  marginBottom: (lineSpacing - 1) * fontSize,
+                  justifyContent: "flex-end",
                 }}
               >
-                <Text style={{ flex: 1, fontSize }}>
-                  {service.servCode.name}
-                  {hasDiscount && "*"}
-                </Text>
-                <View
-                  style={{
-                    width: PRICE_COL_WIDTH,
-                    flexDirection: "row",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  {hasDiscount && (
-                    <Text
-                      style={{
-                        fontSize,
-                        textDecoration: "line-through",
-                        color: "#888888",
-                        marginRight: 4,
-                      }}
-                    >
-                      {formatNumber({ children: service.price, decimals: 2 })}
-                    </Text>
-                  )}
-                  <PDFNumber style={{ fontSize }} decimals={2}>
-                    {discountedPrice}
-                  </PDFNumber>
-                </View>
+                {service.hasDiscount && (
+                  <Text
+                    style={{
+                      fontSize,
+                      textDecoration: "line-through",
+                      color: "#888888",
+                      marginRight: 4,
+                    }}
+                  >
+                    {formatNumber({ children: service.price, decimals: 2 })}
+                  </Text>
+                )}
+                <PDFNumber style={{ fontSize }} decimals={2}>
+                  {service.priceAfterDiscounts}
+                </PDFNumber>
               </View>
-            );
-          })}
+            </View>
+          ))}
         </View>
       );
     },
     previewRender: (
-      { customer }: PrepayLetterData,
+      data: PrepayLetterData,
       scale: number,
       { fontSize, lineSpacing }: TableOptions,
     ) => {
-      const services = customer.programs.flatMap((p) => p.services);
+      const pricing = getUpsellPricing(data);
+      if (pricing === null) return null;
       const priceColWidth = PRICE_COL_WIDTH * scale;
+      const rowStyle: React.CSSProperties = {
+        display: "flex",
+        width: "100%",
+        alignItems: "baseline",
+      };
       return (
         <div
           style={{
@@ -621,66 +869,69 @@ export const prepayLetterContract = {
             width: "100%",
           }}
         >
-          {services.map((service) => {
-            const hasDiscount = service.x.applicableDiscounts.length > 0;
-            const discountedPrice = service.x.getPriceAfterDiscounts("price");
-            return (
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>Current Services</span>
+            <span
+              style={{ width: priceColWidth, textAlign: "right", flexShrink: 0 }}
+            >
+              {formatNumber({
+                children: pricing.currentTotals.serviceAmt,
+                decimals: 2,
+              })}
+            </span>
+          </div>
+          {pricing.upsell.services.map((service) => (
+            <div key={service.servCodeId} style={rowStyle}>
+              <span style={{ flex: 1 }}>
+                {service.name}
+                {service.hasDiscount && "*"}
+              </span>
               <div
-                key={service.servId}
                 style={{
+                  width: priceColWidth,
                   display: "flex",
-                  width: "100%",
-                  alignItems: "baseline",
+                  justifyContent: "flex-end",
+                  flexShrink: 0,
+                  gap: 4,
                 }}
               >
-                <span style={{ flex: 1 }}>
-                  {service.servCode.name}
-                  {hasDiscount && "*"}
-                </span>
-                <div
-                  style={{
-                    width: priceColWidth,
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    flexShrink: 0,
-                    gap: 4,
-                  }}
-                >
-                  {hasDiscount && (
-                    <span
-                      style={{
-                        textDecoration: "line-through",
-                        color: "#888888",
-                      }}
-                    >
-                      {formatNumber({ children: service.price, decimals: 2 })}
-                    </span>
-                  )}
-                  <span>
-                    {formatNumber({ children: discountedPrice, decimals: 2 })}
+                {service.hasDiscount && (
+                  <span
+                    style={{
+                      textDecoration: "line-through",
+                      color: "#888888",
+                    }}
+                  >
+                    {formatNumber({ children: service.price, decimals: 2 })}
                   </span>
-                </div>
+                )}
+                <span>
+                  {formatNumber({
+                    children: service.priceAfterDiscounts,
+                    decimals: 2,
+                  })}
+                </span>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       );
     },
   } satisfies WithTable,
 
-  leftTotals: {
-    label: "Left Totals (Standard Discount)",
+  currentTotals: {
+    label: "Current Totals (Standard Discount)",
     optionSchema: tableOptionSchema,
     render: (
       { customer, config }: PrepayLetterData,
       { fontSize, lineSpacing }: TableOptions,
     ) => {
       const pp = config.stdPrepayDiscPercent;
-      const serviceAmt = customer.x.getPriceAfterDiscounts("price");
-      const prepayDisc = customer.x.prepayDiscountAmt(pp);
-      const afterPrepay = customer.x.priceAfterPrepay(pp);
-      const tax = customer.x.taxAmt(pp);
-      const total = customer.x.priceAfterTax(pp);
+      const { serviceAmt, prepayDisc, afterPrepay, tax, total } =
+        calculatePrepayTotals({
+          programs: getPrepayPrograms(customer),
+          prepayPercent: pp,
+        });
       const rowStyle = {
         display: "flex" as const,
         flexDirection: "row" as const,
@@ -703,7 +954,7 @@ export const prepayLetterContract = {
             </PDFNumber>
           </View>
           <View style={rowStyle}>
-            <Text style={{ flex: 1, fontSize }}>Prepay Discount</Text>
+            <Text style={{ flex: 1, fontSize }}>{prepayDiscountLabel(pp)}</Text>
             <Text style={numStyle}>
               -{formatNumber({ children: prepayDisc, decimals: 2 })}
             </Text>
@@ -735,11 +986,11 @@ export const prepayLetterContract = {
       { fontSize, lineSpacing }: TableOptions,
     ) => {
       const pp = config.stdPrepayDiscPercent;
-      const serviceAmt = customer.x.getPriceAfterDiscounts("price");
-      const prepayDisc = customer.x.prepayDiscountAmt(pp);
-      const afterPrepay = customer.x.priceAfterPrepay(pp);
-      const tax = customer.x.taxAmt(pp);
-      const total = customer.x.priceAfterTax(pp);
+      const { serviceAmt, prepayDisc, afterPrepay, tax, total } =
+        calculatePrepayTotals({
+          programs: getPrepayPrograms(customer),
+          prepayPercent: pp,
+        });
       const priceColWidth = PRICE_COL_WIDTH * scale;
       const rowStyle: React.CSSProperties = {
         display: "flex",
@@ -761,7 +1012,7 @@ export const prepayLetterContract = {
             </span>
           </div>
           <div style={rowStyle}>
-            <span style={{ flex: 1 }}>Prepay Discount</span>
+            <span style={{ flex: 1 }}>{prepayDiscountLabel(pp)}</span>
             <span style={numStyle}>
               -{formatNumber({ children: prepayDisc, decimals: 2 })}
             </span>
@@ -789,19 +1040,17 @@ export const prepayLetterContract = {
     },
   } satisfies WithTable,
 
-  rightTotals: {
-    label: "Right Totals (Upgrade Discount)",
+  upsellTotals: {
+    label: "Upsell Totals (Upsell Discount)",
     optionSchema: tableOptionSchema,
     render: (
-      { customer, config }: PrepayLetterData,
+      data: PrepayLetterData,
       { fontSize, lineSpacing }: TableOptions,
     ) => {
-      const pp = config.upsellPrepayDiscPercent;
-      const serviceAmt = customer.x.getPriceAfterDiscounts("price");
-      const prepayDisc = customer.x.prepayDiscountAmt(pp);
-      const afterPrepay = customer.x.priceAfterPrepay(pp);
-      const tax = customer.x.taxAmt(pp);
-      const total = customer.x.priceAfterTax(pp);
+      const pricing = getUpsellPricing(data);
+      if (pricing === null) return null;
+      const { serviceAmt, prepayDisc, afterPrepay, tax, total } =
+        pricing.combinedTotals;
       const rowStyle = {
         display: "flex" as const,
         flexDirection: "row" as const,
@@ -824,7 +1073,9 @@ export const prepayLetterContract = {
             </PDFNumber>
           </View>
           <View style={rowStyle}>
-            <Text style={{ flex: 1, fontSize }}>Prepay Discount</Text>
+            <Text style={{ flex: 1, fontSize }}>
+              {prepayDiscountLabel(data.config.upsellPrepayDiscPercent)}
+            </Text>
             <Text style={numStyle}>
               -{formatNumber({ children: prepayDisc, decimals: 2 })}
             </Text>
@@ -851,16 +1102,14 @@ export const prepayLetterContract = {
       );
     },
     previewRender: (
-      { customer, config }: PrepayLetterData,
+      data: PrepayLetterData,
       scale: number,
       { fontSize, lineSpacing }: TableOptions,
     ) => {
-      const pp = config.upsellPrepayDiscPercent;
-      const serviceAmt = customer.x.getPriceAfterDiscounts("price");
-      const prepayDisc = customer.x.prepayDiscountAmt(pp);
-      const afterPrepay = customer.x.priceAfterPrepay(pp);
-      const tax = customer.x.taxAmt(pp);
-      const total = customer.x.priceAfterTax(pp);
+      const pricing = getUpsellPricing(data);
+      if (pricing === null) return null;
+      const { serviceAmt, prepayDisc, afterPrepay, tax, total } =
+        pricing.combinedTotals;
       const priceColWidth = PRICE_COL_WIDTH * scale;
       const rowStyle: React.CSSProperties = {
         display: "flex",
@@ -882,7 +1131,9 @@ export const prepayLetterContract = {
             </span>
           </div>
           <div style={rowStyle}>
-            <span style={{ flex: 1 }}>Prepay Discount</span>
+            <span style={{ flex: 1 }}>
+              {prepayDiscountLabel(data.config.upsellPrepayDiscPercent)}
+            </span>
             <span style={numStyle}>
               -{formatNumber({ children: prepayDisc, decimals: 2 })}
             </span>
@@ -935,21 +1186,26 @@ export const prepayLetterContract = {
   upsellServicesHeader: {
     label: "Upsell Services Header",
     optionSchema: textOptionSchema,
-    render: (
-      { config }: PrepayLetterData,
-      { fontSize, textAlign }: TextOptions,
-    ) => (
-      <Text style={{ fontSize, textAlign }}>{config.upsellServicesHeader}</Text>
-    ),
+    render: (data: PrepayLetterData, { fontSize, textAlign }: TextOptions) => {
+      if (getUpsellPricing(data) === null) return null;
+      return (
+        <Text style={{ fontSize, textAlign }}>
+          {data.config.upsellServicesHeader}
+        </Text>
+      );
+    },
     previewRender: (
-      { config }: PrepayLetterData,
+      data: PrepayLetterData,
       scale: number,
       { fontSize, textAlign }: TextOptions,
-    ) => (
-      <div style={{ fontSize: fontSize * scale, textAlign }}>
-        {config.upsellServicesHeader}
-      </div>
-    ),
+    ) => {
+      if (getUpsellPricing(data) === null) return null;
+      return (
+        <div style={{ fontSize: fontSize * scale, textAlign }}>
+          {data.config.upsellServicesHeader}
+        </div>
+      );
+    },
   } satisfies WithText,
 
   messageHeader: {
@@ -1053,8 +1309,8 @@ export const prepayLetterContract = {
     },
   } satisfies WithText,
 
-  leftTotalsByProgram: {
-    label: "Left Totals by Program (Standard Discount)",
+  currentTotalsByProgram: {
+    label: "Current Totals by Program (Standard Discount)",
     optionSchema: tableOptionSchema,
     render: (
       { customer, config }: PrepayLetterData,
@@ -1062,8 +1318,10 @@ export const prepayLetterContract = {
     ) => {
       const pp = config.stdPrepayDiscPercent;
       return (
-        <View style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-          {customer.programs.map((program) => (
+        <View
+          style={{ display: "flex", flexDirection: "column", width: "100%" }}
+        >
+          {getPrepayPrograms(customer).map((program) => (
             <View
               key={program.progId}
               style={{
@@ -1073,8 +1331,13 @@ export const prepayLetterContract = {
                 marginBottom: (lineSpacing - 1) * fontSize,
               }}
             >
-              <Text style={{ flex: 1, fontSize }}>{program.progCode.description}</Text>
-              <PDFNumber style={{ width: PRICE_COL_WIDTH, textAlign: "right", fontSize }} decimals={2}>
+              <Text style={{ flex: 1, fontSize }}>
+                {program.progCode.description}
+              </Text>
+              <PDFNumber
+                style={{ width: PRICE_COL_WIDTH, textAlign: "right", fontSize }}
+                decimals={2}
+              >
                 {program.x.priceAfterTax(pp)}
               </PDFNumber>
             </View>
@@ -1090,12 +1353,30 @@ export const prepayLetterContract = {
       const pp = config.stdPrepayDiscPercent;
       const priceColWidth = PRICE_COL_WIDTH * scale;
       return (
-        <div style={{ fontSize: fontSize * scale, lineHeight: lineSpacing, width: "100%" }}>
-          {customer.programs.map((program) => (
-            <div key={program.progId} style={{ display: "flex", width: "100%", alignItems: "baseline" }}>
+        <div
+          style={{
+            fontSize: fontSize * scale,
+            lineHeight: lineSpacing,
+            width: "100%",
+          }}
+        >
+          {getPrepayPrograms(customer).map((program) => (
+            <div
+              key={program.progId}
+              style={{ display: "flex", width: "100%", alignItems: "baseline" }}
+            >
               <span style={{ flex: 1 }}>{program.progCode.description}</span>
-              <span style={{ width: priceColWidth, textAlign: "right", flexShrink: 0 }}>
-                {formatNumber({ children: program.x.priceAfterTax(pp), decimals: 2 })}
+              <span
+                style={{
+                  width: priceColWidth,
+                  textAlign: "right",
+                  flexShrink: 0,
+                }}
+              >
+                {formatNumber({
+                  children: program.x.priceAfterTax(pp),
+                  decimals: 2,
+                })}
               </span>
             </div>
           ))}
@@ -1104,56 +1385,150 @@ export const prepayLetterContract = {
     },
   } satisfies WithTable,
 
-  rightTotalsByProgram: {
-    label: "Right Totals by Program (Upgrade Discount)",
+  upsellTotalsByProgram: {
+    label: "Upsell Totals by Program (Upsell Discount)",
     optionSchema: tableOptionSchema,
     render: (
-      { customer, config }: PrepayLetterData,
+      data: PrepayLetterData,
       { fontSize, lineSpacing }: TableOptions,
     ) => {
-      const pp = config.upsellPrepayDiscPercent;
+      const pricing = getUpsellPricing(data);
+      if (pricing === null) return null;
+      const pp = data.config.upsellPrepayDiscPercent;
+      const rowStyle = {
+        display: "flex" as const,
+        flexDirection: "row" as const,
+        width: "100%",
+        marginBottom: (lineSpacing - 1) * fontSize,
+      };
+      const numStyle = {
+        width: PRICE_COL_WIDTH,
+        textAlign: "right" as const,
+        fontSize,
+      };
       return (
-        <View style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-          {customer.programs.map((program) => (
-            <View
-              key={program.progId}
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                width: "100%",
-                marginBottom: (lineSpacing - 1) * fontSize,
-              }}
-            >
-              <Text style={{ flex: 1, fontSize }}>{program.progCode.description}</Text>
-              <PDFNumber style={{ width: PRICE_COL_WIDTH, textAlign: "right", fontSize }} decimals={2}>
+        <View
+          style={{ display: "flex", flexDirection: "column", width: "100%" }}
+        >
+          {getPrepayPrograms(data.customer).map((program) => (
+            <View key={program.progId} style={rowStyle}>
+              <Text style={{ flex: 1, fontSize }}>
+                {program.progCode.description}
+              </Text>
+              <PDFNumber style={numStyle} decimals={2}>
                 {program.x.priceAfterTax(pp)}
               </PDFNumber>
             </View>
           ))}
+          <View style={rowStyle}>
+            <Text style={{ flex: 1, fontSize }}>
+              {pricing.upsell.description}
+            </Text>
+            <PDFNumber style={numStyle} decimals={2}>
+              {pricing.upsell.totals.total}
+            </PDFNumber>
+          </View>
         </View>
       );
     },
     previewRender: (
-      { customer, config }: PrepayLetterData,
+      data: PrepayLetterData,
       scale: number,
       { fontSize, lineSpacing }: TableOptions,
     ) => {
-      const pp = config.upsellPrepayDiscPercent;
+      const pricing = getUpsellPricing(data);
+      if (pricing === null) return null;
+      const pp = data.config.upsellPrepayDiscPercent;
       const priceColWidth = PRICE_COL_WIDTH * scale;
+      const rowStyle: React.CSSProperties = {
+        display: "flex",
+        width: "100%",
+        alignItems: "baseline",
+      };
+      const numStyle: React.CSSProperties = {
+        width: priceColWidth,
+        textAlign: "right",
+        flexShrink: 0,
+      };
       return (
-        <div style={{ fontSize: fontSize * scale, lineHeight: lineSpacing, width: "100%" }}>
-          {customer.programs.map((program) => (
-            <div key={program.progId} style={{ display: "flex", width: "100%", alignItems: "baseline" }}>
+        <div
+          style={{
+            fontSize: fontSize * scale,
+            lineHeight: lineSpacing,
+            width: "100%",
+          }}
+        >
+          {getPrepayPrograms(data.customer).map((program) => (
+            <div key={program.progId} style={rowStyle}>
               <span style={{ flex: 1 }}>{program.progCode.description}</span>
-              <span style={{ width: priceColWidth, textAlign: "right", flexShrink: 0 }}>
-                {formatNumber({ children: program.x.priceAfterTax(pp), decimals: 2 })}
+              <span style={numStyle}>
+                {formatNumber({
+                  children: program.x.priceAfterTax(pp),
+                  decimals: 2,
+                })}
               </span>
             </div>
           ))}
+          <div style={rowStyle}>
+            <span style={{ flex: 1 }}>{pricing.upsell.description}</span>
+            <span style={numStyle}>
+              {formatNumber({
+                children: pricing.upsell.totals.total,
+                decimals: 2,
+              })}
+            </span>
+          </div>
         </div>
       );
     },
   } satisfies WithTable,
+
+  installmentPrograms: {
+    label: "Installment Programs Notice",
+    optionSchema: textOptionSchema,
+    render: (data: PrepayLetterData, { fontSize, textAlign }: TextOptions) => {
+      const notice = getInstallmentNotice(data);
+      if (notice === null) return null;
+      return <Text style={{ fontSize, textAlign }}>{notice}</Text>;
+    },
+    previewRender: (
+      data: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => {
+      const notice = getInstallmentNotice(data);
+      if (notice === null) return null;
+      return (
+        <div
+          style={{
+            fontSize: fontSize * scale,
+            lineHeight: 1.2,
+            textAlign,
+            whiteSpace: "pre-line",
+          }}
+        >
+          {notice}
+        </div>
+      );
+    },
+  } satisfies WithText,
+
+  contactUs: {
+    label: "Contact Us",
+    optionSchema: textOptionSchema,
+    render: (data: PrepayLetterData, { fontSize, textAlign }: TextOptions) => (
+      <Text style={{ fontSize, textAlign }}>{getContactUsText(data)}</Text>
+    ),
+    previewRender: (
+      data: PrepayLetterData,
+      scale: number,
+      { fontSize, textAlign }: TextOptions,
+    ) => (
+      <div style={{ fontSize: fontSize * scale, textAlign }}>
+        {getContactUsText(data)}
+      </div>
+    ),
+  } satisfies WithText,
 } satisfies FormLetterContract<PrepayLetterData, PrepayLetterSlot>;
 
 // ─── Sample Data ──────────────────────────────────────────────────────────────
@@ -1163,5 +1538,5 @@ export const samplePrepayLetterData: PrepayLetterData = {
   customer: sampleCustomer,
   config: samplePrepayConfig,
   isAutoRenew: true,
-  upsell: null,
+  upsell: sampleUpsellProgCode,
 };
