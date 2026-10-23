@@ -1,1 +1,1 @@
-Please use the ide_project_status tool from the webstorm-index MCP server to tell me the current indexing status of my project.
+Read and follow `AGENTS.md` in this directory. It is the single source of project instructions. Task-specific skills live in `.claude/skills/`.
