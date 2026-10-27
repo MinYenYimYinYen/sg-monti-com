@@ -8,6 +8,7 @@ import { javelinActions } from "@/app/javelin/javelinSlice";
 import { javelinSelect } from "@/app/javelin/javelinSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { GenLedgerFile } from "@/app/javelin/JavelinTypes";
+import { splitZeroNetRows } from "@/app/javelin/_lib/genLedgerTransform";
 
 const FILENAME_REGEX = /^\d{4}-\d{2}-\d{2}\.csv$/;
 
@@ -53,13 +54,24 @@ export function GenLedgerDropZone() {
         continue;
       }
 
+      // Zero-net accounts have no ledger line; removing them here keeps the table, the
+      // unmapped-account check, and the export consistent.
+      const { postingRows, zeroNetRows } = splitZeroNetRows(parseResult.data);
+      const zeroNetWarnings =
+        zeroNetRows.length > 0
+          ? [
+              `Excluded (nets to $0.00): ${zeroNetRows.map((row) => row.account).join(", ")}`,
+            ]
+          : [];
+
       assembledFiles.push({
         fileName,
         date,
-        rows: parseResult.data,
+        rows: postingRows,
         warnings: [
           ...warnings,
           ...(parseResult.warnings ?? []),
+          ...zeroNetWarnings,
         ],
         errors: [],
       });

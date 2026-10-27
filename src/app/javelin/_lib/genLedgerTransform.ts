@@ -1,5 +1,5 @@
 import Papa from "papaparse";
-import { GenLedgerAccountEntry, GenLedgerFile } from "@/app/javelin/JavelinTypes";
+import { GenLedgerAccountEntry, GenLedgerFile, GenLedgerRow } from "@/app/javelin/JavelinTypes";
 
 type QBJournalRow = {
   "*JournalNo": string;
@@ -16,6 +16,24 @@ function formatQBDate(isoDate: string): string {
   return `${month}/${day}/${year}`;
 }
 
+function toCents(amount: number): number {
+  return Math.round(amount * 100);
+}
+
+/**
+ * Splits rows into those that carry a real ledger amount and those whose debits and credits
+ * cancel out (net $0.00 after rounding to cents). A zero-net account has no ledger line, and
+ * QB rejects an import row with neither a debit nor a credit.
+ */
+export function splitZeroNetRows(rows: GenLedgerRow[]): {
+  postingRows: GenLedgerRow[];
+  zeroNetRows: GenLedgerRow[];
+} {
+  const postingRows = rows.filter((row) => toCents(row.totalNetAmount) !== 0);
+  const zeroNetRows = rows.filter((row) => toCents(row.totalNetAmount) === 0);
+  return { postingRows, zeroNetRows };
+}
+
 /**
  * Converts parsed GL files into a QB Online journal entry import CSV string.
  * JournalNo and JournalDate are repeated on every row of each journal entry group.
@@ -27,11 +45,17 @@ export function transformToQBJournalCSV(
 ): string {
   const outputRows: QBJournalRow[] = [];
 
-  files.forEach((file, fileIndex) => {
+  // Files with nothing to post are dropped before numbering so journal numbers stay sequential.
+  const filesWithPostings = files
+    .map((file) => ({ file, postingRows: splitZeroNetRows(file.rows).postingRows }))
+    .filter(({ postingRows }) => postingRows.length > 0);
+
+  filesWithPostings.forEach(({ file, postingRows }, fileIndex) => {
     const journalNo = `${journalNoPrefix}${String(fileIndex + 1).padStart(2, "0")}`;
     const journalDate = formatQBDate(file.date);
 
-    file.rows.forEach((row) => {
+    postingRows.forEach((row) => {
+      const cents = toCents(row.totalNetAmount);
       const entry = accountMap[row.account];
       const autoAccountNumber = row.account.split(" - ")[0].trim();
       const accountNumber = entry?.accountNumber ?? autoAccountNumber;
@@ -41,8 +65,8 @@ export function transformToQBJournalCSV(
         "*JournalDate": journalDate,
         // Prepend account number to QB name — QBO accepts "102.2 SA Payments:Credit Card Payments"
         "*AccountName": `${accountNumber} ${qbName}`,
-        "*Debits": row.totalNetAmount > 0 ? row.totalNetAmount : "",
-        "*Credits": row.totalNetAmount < 0 ? Math.abs(row.totalNetAmount) : "",
+        "*Debits": cents > 0 ? cents / 100 : "",
+        "*Credits": cents < 0 ? Math.abs(cents) / 100 : "",
         "Name": entry?.name ?? "",
       });
     });

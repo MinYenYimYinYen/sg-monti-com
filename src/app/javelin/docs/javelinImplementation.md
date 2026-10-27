@@ -138,6 +138,10 @@ function transformToQBJournalCSV(
 
 Logic:
 - Iterate `files` in order; assign `JournalNo` as `journalNoPrefix + String(index + 1).padStart(2, "0")`
+- Zero-net rows (net $0.00 after rounding to cents) are never exported — QB rejects a line with
+  neither debit nor credit. `GenLedgerDropZone` removes them on upload via `splitZeroNetRows` and
+  adds an "Excluded (nets to $0.00)" warning; the transform filters again defensively and drops
+  files with no remaining rows before assigning journal numbers. Amounts are rounded to cents.
 - For each `row` in `file.rows`:
   - `AccountName` = `accountMap[row.account]`
   - `Debits` = `row.totalNetAmount > 0 ? row.totalNetAmount : ""`
