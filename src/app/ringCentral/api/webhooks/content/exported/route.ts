@@ -2,8 +2,6 @@ import { createRingCxWebhookHandler } from "@/app/ringCentral/_lib/createRingCxW
 import { WebhookEvent, Content } from "@/app/ringCentral/_lib/api/types/RingCxTypes";
 
 const handler = createRingCxWebhookHandler<WebhookEvent<Content>>({
-  secret: process.env.RINGCX_WEBHOOK_SECRET!,
-  verifyToken: process.env.RINGCX_VERIFY_TOKEN!,
   eventName: "Content Exported",
   handler: async (event, rawBody) => {
     console.log("[Content Exported] Event received:", {

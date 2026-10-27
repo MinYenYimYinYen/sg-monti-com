@@ -1,76 +1,57 @@
-# RingCentral Integration Strategy
+﻿# RingCentral Integration Strategy
 
 ## Environment Variables
 
-### Webhook Configuration
+All RingCX variables are read lazily through `_lib/ringCxEnv.ts`. A missing required value throws a clear error on first use instead of producing `Bearer undefined`. Restart the dev server after editing `.env.local`.
 
-#### `RINGCX_WEBHOOK_SECRET`
-**Purpose**: Used to cryptographically verify webhook payloads are actually from RingCX
+| Variable | Required | Value |
+|---|---|---|
+| `RINGCX_DIGITAL_BASE_URL` | Digital | `https://<DOMAIN>.api.digital.ringcentral.com` (no trailing slash; use the host your tenant shows) |
+| `RINGCX_DIGITAL_TOKEN` | Digital | API access token from the RingCX Digital admin. Inherits the permissions of the user it belongs to. |
+| `RINGCX_WEBHOOK_SECRET` | Webhooks | You generate it. ASCII, under 256 characters. |
+| `RINGCX_VERIFY_TOKEN` | Webhooks | You generate it. Used once per registration for the handshake. |
+| `RINGCX_VOICE_BASE_URL` | Optional | Defaults to `https://ringcx.ringcentral.com/voice/api` |
+| `RC_CLIENT_ID`, `RC_CLIENT_SECRET`, `RC_JWT` | Voice (not built yet) | From a RingCentral private app (JWT auth). Voice needs a RingCentral token exchanged for a RingCX token that expires after 5 minutes. The exchange is limited to 5 requests per minute, so the token must be cached. |
 
-**Requirements**:
-- ASCII string only (no special encoding)
-- Maximum 256 characters
-- You define this value when registering the webhook in RingCX admin interface
-- RingCX uses it to generate HMAC SHA256 signature sent in `X-Dimelo-Secret` header
-- Your Next.js app uses the same secret to verify the signature
+### Generate the two shared secrets
 
-**Where to set it**:
-- RingCX Admin Portal > Webhooks > Create/Configure Webhook > "Secret" field
-- Copy the exact same value to your `.env.local`
-
----
-
-#### `RINGCX_VERIFY_TOKEN`
-**Purpose**: Used for the initial webhook handshake verification (PubSubHubbub protocol)
-
-**Requirements**:
-- Any string value you choose
-- You define this when registering the webhook in RingCX admin interface
-- RingCX sends this back to you in the GET request as `hub.verify_token` query param
-- Your Next.js app validates it matches what you configured
-
-**Where to set it**:
-- RingCX Admin Portal > Webhooks > Create/Configure Webhook > "Verification Token" field
-- Copy the exact same value to your `.env.local`
-
----
-
-## Setup Workflow
-
-### 1. In your `.env.local`:
-```bash
-# RingCX Digital Webhook Configuration
-RINGCX_WEBHOOK_SECRET=your_random_secret_here_max_256_chars
-RINGCX_VERIFY_TOKEN=your_verification_token_here
-```
-
-### 2. In RingCX Admin Portal:
-When you configure the webhook endpoint (pointing to your Next.js route):
-- **URL**: `https://yourdomain.com/ringCentral/webhooks/digital`
-- **Secret**: Paste the same value as `RINGCX_WEBHOOK_SECRET`
-- **Verification Token**: Paste the same value as `RINGCX_VERIFY_TOKEN`
-- **Environment**: Production or Staging
-
-### 3. RingCX will immediately send a GET request to verify:
-```
-GET https://yourdomain.com/ringCentral/webhooks/digital?hub.mode=subscribe&hub.challenge=random_string&hub.verify_token=your_verification_token_here
-```
-
-Your handler validates the token and responds with the `hub.challenge` value.
-
----
-
-## Security Best Practices
-
-**Generate strong secrets**:
-```bash
-# Generate a random secret (recommended)
+```powershell
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-**Never commit to git** - keep them in `.env.local` (already gitignored in Next.js projects)
+Run it twice: one value for `RINGCX_WEBHOOK_SECRET`, one for `RINGCX_VERIFY_TOKEN`. RingCX does not generate them for you. Never commit them (`.env*` is gitignored).
 
-Both values are just shared secrets you create - RingCX doesn't generate them for you.
+### `.env.local`
+
+```bash
+# RingCX Digital
+RINGCX_DIGITAL_BASE_URL=https://<DOMAIN>.api.digital.ringcentral.com
+RINGCX_DIGITAL_TOKEN=<api access token>
+RINGCX_WEBHOOK_SECRET=<generated>
+RINGCX_VERIFY_TOKEN=<generated>
+```
+
+## Webhook Setup
+
+Register in the RingCX Digital admin under Advanced Settings, then Webhooks.
+
+- **URL**: must be public HTTPS. Locally, use a tunnel (ngrok or Cloudflare Tunnel) to `localhost:3000`. Routes live under `/ringCentral/api/webhooks/<group>/<event>`, for example `https://<host>/ringCentral/api/webhooks/interventions/opened`.
+- **Secret**: the same value as `RINGCX_WEBHOOK_SECRET`.
+- **Verification Token**: the same value as `RINGCX_VERIFY_TOKEN`.
+- **Registered Events**: at least one. Selected events are all delivered to the registered URL.
+- **API access token**: your own token unless you have the "Manage API access token" permission.
+
+Registering triggers an immediate validation request. If it fails, the webhook is saved but disabled and must be re-enabled by hand, so have the dev server and tunnel running first.
+
+```
+GET https://<host>/ringCentral/api/webhooks/interventions/opened?hub.mode=subscribe&hub.challenge=<random>&hub.verify_token=<token>
+```
+
+The handler replies 200 with only the `hub.challenge` value.
+
+### How the secret is checked
+
+`X-Dimelo-Secret` carries the configured secret verbatim on every request. It is **not** an HMAC of the body. `_lib/verifyWebhookSecret.ts` compares it to `RINGCX_WEBHOOK_SECRET` in constant time. Because the secret travels in every request, the endpoint must use HTTPS. The header is absent when no secret is configured, so always configure one.
 
 ---
 
@@ -78,33 +59,22 @@ Both values are just shared secrets you create - RingCX doesn't generate them fo
 
 ### Inbound Communication (RingCX to Next.js)
 
-#### Webhook Handler System
-Located in `src/app/ringCentral/_lib/`
+**`_lib/createRingCxWebhookHandler.ts`**
+- Factory for standardized webhook routes. GET answers the handshake, POST verifies the secret, returns 200 immediately and processes the event afterwards.
+- `secret` and `verifyToken` are optional overrides. By default they come from `ringCxEnv`.
 
-**`createRingCxWebhookHandler.ts`**
-- Factory function for creating standardized webhook handlers
-- Handles both GET (verification) and POST (event processing) requests
-- Automatically validates signatures and returns 200 OK immediately
-- Processes events asynchronously to meet RingCX response time requirements
-- Consistent error handling and logging
-
-**`verifyWebhookSignature.ts`**
-- HMAC SHA256 signature verification utility
-- Validates `X-Dimelo-Secret` header against raw request body
-- Uses constant-time comparison to prevent timing attacks
+**`_lib/verifyWebhookSecret.ts`**: constant-time comparison of the `X-Dimelo-Secret` header.
 
 #### Usage Pattern
 ```typescript
-// src/app/ringCentral/webhooks/digital/route.ts
+// src/app/ringCentral/api/webhooks/<group>/<event>/route.ts
 import { createRingCxWebhookHandler } from "@/app/ringCentral/_lib/createRingCxWebhookHandler";
 
-const handler = createRingCxWebhookHandler({
-  secret: process.env.RINGCX_WEBHOOK_SECRET!,
-  verifyToken: process.env.RINGCX_VERIFY_TOKEN!,
-  eventName: "Digital Webhook",
-  handler: async (event, rawBody) => {
+const handler = createRingCxWebhookHandler<WebhookEvent<Task>>({
+  eventName: "Task Created",
+  handler: async (event) => {
     // Process event (save to DB, trigger workflows, etc.)
-  }
+  },
 });
 
 export const GET = handler.GET;
@@ -140,15 +110,15 @@ import { restApi } from "@/lib/api/rest/restApi";
 
 // Direct usage
 await restApi.get('/1.0/interventions', {
-  baseURL: 'https://domain.api.engagement.dimelo.com',
+  baseURL: 'https://<DOMAIN>.api.digital.ringcentral.com',
   params: { category_ids: [4242, 2854] },
   headers: { 'Authorization': `Bearer ${token}` }
 });
 
 // Pre-configured instance (recommended)
 const ringCx = restApi.create({
-  baseURL: 'https://domain.api.engagement.dimelo.com',
-  headers: { 'Authorization': `Bearer ${process.env.RINGCX_TOKEN}` }
+  baseURL: 'https://<DOMAIN>.api.digital.ringcentral.com',
+  headers: { 'Authorization': `Bearer ${process.env.RINGCX_DIGITAL_TOKEN}` }
 });
 
 await ringCx.post('/1.0/interventions/123', {

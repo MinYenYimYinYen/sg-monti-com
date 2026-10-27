@@ -2,8 +2,6 @@ import { createRingCxWebhookHandler } from "@/app/ringCentral/_lib/createRingCxW
 import { WebhookEvent, Task } from "@/app/ringCentral/_lib/api/types/RingCxTypes";
 
 const handler = createRingCxWebhookHandler<WebhookEvent<Task>>({
-  secret: process.env.RINGCX_WEBHOOK_SECRET!,
-  verifyToken: process.env.RINGCX_VERIFY_TOKEN!,
   eventName: "Task Created",
   handler: async (event, rawBody) => {
     console.log("[Task Created] Event received:", {

@@ -17,8 +17,6 @@ One folder per event under `src/app/ringCentral/api/webhooks/<group>/<event>/rou
 
 ```ts
 const handler = createRingCxWebhookHandler<WebhookEvent<Task>>({
-  secret: process.env.RINGCX_WEBHOOK_SECRET!,
-  verifyToken: process.env.RINGCX_VERIFY_TOKEN!,
   eventName: "Task Created",
   handler: async (event, rawBody) => { /* process */ },
 });
@@ -28,8 +26,8 @@ export const POST = handler.POST;
 
 - **These routes are the one exception to "all routes use `createRpcHandler`"**: they use `createRingCxWebhookHandler`, because RingCX dictates the request/response protocol (GET handshake plus signed POST).
 - GET: replies with `hub.challenge` when `hub.mode === "subscribe"` and `hub.verify_token` matches `RINGCX_VERIFY_TOKEN`; otherwise 403.
-- POST: reads the raw body first, verifies the `X-Dimelo-Secret` HMAC signature against `RINGCX_WEBHOOK_SECRET` (403 on failure), parses the JSON, returns 200 immediately, then processes the event in a deferred callback. Errors after verification still return 200 so RingCX does not disable the webhook.
-- Never parse the body before verifying the signature; the raw text is what is signed.
+- POST: reads the raw body first, checks that the `X-Dimelo-Secret` header equals `RINGCX_WEBHOOK_SECRET` (RingCX sends the secret verbatim, not an HMAC) (403 on failure), parses the JSON, returns 200 immediately, then processes the event in a deferred callback. Errors after verification still return 200 so RingCX does not disable the webhook.
+- Read the raw body with `req.text()` before parsing. Env vars are read lazily via `_lib/ringCxEnv.ts`; do not add `process.env.X!` reads to routes.
 - Never log the secret or the verify token. The handler logs only whether the token matched.
 - Caution: work scheduled after the response (`setImmediate`) is not guaranteed to finish on serverless hosts. The handler's own comment suggests a job queue for production. Keep event handlers short and idempotent, and flag the risk if a new handler does heavy or must-not-lose work.
 

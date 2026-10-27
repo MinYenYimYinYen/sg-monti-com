@@ -2,8 +2,6 @@ import { createRingCxWebhookHandler } from "@/app/ringCentral/_lib/createRingCxW
 import { WebhookEvent, Intervention } from "@/app/ringCentral/_lib/api/types/RingCxTypes";
 
 const handler = createRingCxWebhookHandler<WebhookEvent<Intervention>>({
-  secret: process.env.RINGCX_WEBHOOK_SECRET!,
-  verifyToken: process.env.RINGCX_VERIFY_TOKEN!,
   eventName: "Intervention Reactivated",
   handler: async (event, rawBody) => {
     console.log("[Intervention Reactivated] Event received:", {

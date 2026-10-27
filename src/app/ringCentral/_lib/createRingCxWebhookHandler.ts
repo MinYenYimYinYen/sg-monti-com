@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyWebhookSignature } from "./verifyWebhookSignature";
+import { verifyWebhookSecret } from "./verifyWebhookSecret";
+import { ringCxEnv } from "./ringCxEnv";
 import { normalizeError } from "@/lib/errors/errorHandler";
 
 /**
@@ -15,10 +16,10 @@ export type RingCxWebhookHandler<T = any> = (
  * Configuration for RingCX webhook handler
  */
 export interface RingCxWebhookConfig<T = any> {
-  /** The webhook secret for signature verification (from environment) */
-  secret: string;
-  /** The verification token for webhook handshake (from environment) */
-  verifyToken: string;
+  /** Overrides RINGCX_WEBHOOK_SECRET (read lazily from the environment by default) */
+  secret?: string;
+  /** Overrides RINGCX_VERIFY_TOKEN (read lazily from the environment by default) */
+  verifyToken?: string;
   /** Handler function that processes the webhook event */
   handler: RingCxWebhookHandler<T>;
   /** Optional: Custom event name for logging (e.g., "Digital Webhook") */
@@ -49,7 +50,9 @@ export interface RingCxWebhookConfig<T = any> {
 export function createRingCxWebhookHandler<T = any>(
   config: RingCxWebhookConfig<T>,
 ) {
-  const { secret, verifyToken, handler, eventName = "RingCX Webhook" } = config;
+  const { handler, eventName = "RingCX Webhook" } = config;
+  const getSecret = () => config.secret ?? ringCxEnv.webhookSecret();
+  const getVerifyToken = () => config.verifyToken ?? ringCxEnv.verifyToken();
 
   /**
    * GET Handler: Webhook Verification Handshake
@@ -62,6 +65,7 @@ export function createRingCxWebhookHandler<T = any>(
       const mode = searchParams.get("hub.mode");
       const challenge = searchParams.get("hub.challenge");
       const token = searchParams.get("hub.verify_token");
+      const verifyToken = getVerifyToken();
 
       console.log(`[${eventName}] Verification request received`, {
         mode,
@@ -107,16 +111,16 @@ export function createRingCxWebhookHandler<T = any>(
       // 1. Read raw body BEFORE parsing (required for signature verification)
       rawBody = await req.text();
 
-      // 2. Verify signature
-      const signature = req.headers.get("X-Dimelo-Secret");
+      // 2. Verify the shared secret (RingCX sends it verbatim, not as an HMAC)
+      const header = req.headers.get("X-Dimelo-Secret");
 
-      if (!verifyWebhookSignature(rawBody, signature, secret)) {
-        console.warn(`[${eventName}] Invalid signature`, {
-          signatureProvided: !!signature,
+      if (!verifyWebhookSecret({ header, secret: getSecret() })) {
+        console.warn(`[${eventName}] Invalid webhook secret`, {
+          headerProvided: !!header,
         });
 
         return NextResponse.json(
-          { success: false, message: "Invalid signature" },
+          { success: false, message: "Invalid secret" },
           { status: 403 },
         );
       }

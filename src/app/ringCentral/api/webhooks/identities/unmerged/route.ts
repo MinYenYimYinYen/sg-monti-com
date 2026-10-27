@@ -2,8 +2,6 @@ import { createRingCxWebhookHandler } from "@/app/ringCentral/_lib/createRingCxW
 import { WebhookEvent, Identity } from "@/app/ringCentral/_lib/api/types/RingCxTypes";
 
 const handler = createRingCxWebhookHandler<WebhookEvent<Identity>>({
-  secret: process.env.RINGCX_WEBHOOK_SECRET!,
-  verifyToken: process.env.RINGCX_VERIFY_TOKEN!,
   eventName: "Identity Unmerged",
   handler: async (event, rawBody) => {
     console.log("[Identity Unmerged] Event received:", {

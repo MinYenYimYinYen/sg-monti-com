@@ -5,8 +5,6 @@ import {
 } from "@/app/ringCentral/_lib/api/types/RingCxTypes";
 
 const handler = createRingCxWebhookHandler<WebhookEvent<Task>>({
-  secret: process.env.RINGCX_WEBHOOK_SECRET!,
-  verifyToken: process.env.RINGCX_VERIFY_TOKEN!,
   eventName: "Task Undelivered",
   handler: async (event, rawBody) => {
     console.log({ event, rawBody });
