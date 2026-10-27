@@ -104,35 +104,6 @@ export function calcUpsellAdjustment({
 }
 
 // ---------------------------------------------------------------------------
-// calcWeightedProgramIncrease
-// ---------------------------------------------------------------------------
-
-type ServiceIncreaseInput = {
-  size: number;
-  plannedPercent: number;
-};
-
-type CalcWeightedProgramIncreaseParams = {
-  services: ServiceIncreaseInput[];
-};
-
-/**
- * Returns the size-weighted average increase percent across all services in a program.
- *
- * A service with size 100 contributes proportionally more than a service with size 8.
- * Returns 0 if there are no services or total size is 0.
- */
-export function calcWeightedProgramIncrease({
-  services,
-}: CalcWeightedProgramIncreaseParams): number {
-  const totalSize = services.reduce((sum, s) => sum + s.size, 0);
-  if (totalSize === 0) return 0;
-
-  const weightedSum = services.reduce((sum, s) => sum + s.size * s.plannedPercent, 0);
-  return weightedSum / totalSize;
-}
-
-// ---------------------------------------------------------------------------
 // applyIncreaseCaps
 // ---------------------------------------------------------------------------
 

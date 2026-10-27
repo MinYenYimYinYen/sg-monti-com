@@ -135,14 +135,14 @@ const selectServiceIncreaseOutcomes = createSelector(
   },
 );
 
-const selectServiceIncreaseResultMap = createSelector(
+/**
+ * Map<custId, ServiceIncreaseResult[]> — one entry per customer with at least
+ * one priceable service. The customer reference is available on each result
+ * via result.customer.
+ */
+const selectByCustomer = createSelector(
   [selectServiceIncreaseOutcomes],
   (outcomes) => outcomes.serviceIncreaseResultMap,
-);
-
-const selectServiceIncreaseResultsArray = createSelector(
-  [selectServiceIncreaseResultMap],
-  (resultMap): ServiceIncreaseResult[] => Array.from(resultMap.values()).flat(),
 );
 
 const selectDataIssues = createSelector(
@@ -150,26 +150,13 @@ const selectDataIssues = createSelector(
   (outcomes) => outcomes.dataIssues,
 );
 
-/**
- * Map<custId, ServiceIncreaseResult[]> — same as serviceIncreaseResultMap but
- * named to reflect that each entry represents one customer's service results.
- * The customer reference is available on each result via result.customer.
- */
-const selectByCustomer = createSelector(
-  [selectServiceIncreaseResultMap],
-  (resultMap) => resultMap,
-);
-
 // ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
 export const serviceIncreaseResultsSelect = {
-  bucketedCustomers: selectBucketedCustomers,
   matchedCustomers: selectMatchedCustomers,
   unmatchedCustomers: selectUnmatchedCustomers,
-  serviceIncreaseResultMap: selectServiceIncreaseResultMap,
-  serviceIncreaseResultsArray: selectServiceIncreaseResultsArray,
   byCustomer: selectByCustomer,
   dataIssues: selectDataIssues,
 };

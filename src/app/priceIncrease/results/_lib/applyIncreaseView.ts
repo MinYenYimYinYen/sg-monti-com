@@ -3,11 +3,7 @@ import {
   applySortDirection,
   customerIncreaseSortFns,
 } from "@/app/priceIncrease/results/customerIncreaseSortFns";
-import {
-  customerIncreaseGroupFns,
-  CustomerIncreaseGroupKey,
-  groupCustomerIncreaseResults,
-} from "@/app/priceIncrease/results/customerIncreaseGroupFns";
+import { groupCustomerIncreaseResults } from "@/app/priceIncrease/results/customerIncreaseGroupFns";
 import { IncreaseViewConfig } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
 
 export type AppliedIncreaseView =

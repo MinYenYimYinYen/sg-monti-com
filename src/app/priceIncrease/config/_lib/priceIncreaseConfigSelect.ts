@@ -37,8 +37,8 @@ const selectSettingsPanelOpen = (state: AppState) => state.priceIncreaseConfig.s
 // ---------------------------------------------------------------------------
 
 /**
- * Source of truth for downstream selectors (priceIncreaseSelect) responsible
- * for returning customer/service data. Returns the live draft if one exists,
+ * Source of truth for the results selectors (serviceIncreaseResultsSelect,
+ * customerIncreaseResultsSelect). Returns the live draft if one exists,
  * otherwise falls back to the active stored settings.
  */
 const selectSettings = createSelector(

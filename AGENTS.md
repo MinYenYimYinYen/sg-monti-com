@@ -24,6 +24,7 @@ Task-specific procedures live in `.claude/skills/` and load on demand. Use the m
 | RealGreen Product module (Master / Sub / Single) | `product-module` | `src/app/realGreen/product/_lib/product.readme.md` |
 | RealGreen CallLog module and its sync | `call-log` | `src/app/realGreen/callLog/callLog.readme.md` |
 | RingCentral / RingCX webhooks and API client | `ringcentral` | `src/app/ringCentral/ringCentralStrategy.md` |
+| Price Increase module (settings, season plans, results pipeline, flag write-back) | — | `src/app/priceIncrease/priceIncrease.readme.md` (read only the Required Reading for the relevant section) |
 
 ## Styling
 

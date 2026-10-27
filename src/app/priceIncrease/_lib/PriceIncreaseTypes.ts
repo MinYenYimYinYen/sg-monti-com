@@ -21,29 +21,3 @@ export type IncreaseFlagMapping = {
 
 /** Hydrated: IncreaseFlagMapping joined with the full Flag from flagSelect.flagDocMap */
 export type IncreaseFlag = IncreaseFlagMapping & Flag;
-
-// ---------------------------------------------------------------------------
-// PriceIncreaseResult — output of priceIncreaseSelect per customer
-// ---------------------------------------------------------------------------
-
-export type ServiceIncreaseBreakdown = {
-  servId: number;
-  size: number;
-  acquisitionPrice: number;
-  nextPrice: number;
-  plannedPercent: number;
-};
-
-export type PriceIncreaseResult = {
-  custId: number;
-  progId: number;
-  /** Weighted average increase percent before flag rounding */
-  calculatedPercent: number;
-  /** After maxIncreaseNow / maxIncreaseEver caps */
-  cappedPercent: number;
-  resolvedFlag: IncreaseFlag | null;
-  isExempt: boolean;
-  isManual: boolean;
-  needsManualAttention: boolean;
-  serviceBreakdown: ServiceIncreaseBreakdown[];
-};
