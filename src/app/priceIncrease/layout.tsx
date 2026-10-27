@@ -8,9 +8,11 @@ import { TabNav, TabNavItem } from "@/components/PageLayout/TabNav";
 import { usePriceIncreaseDeps } from "@/app/priceIncrease/usePriceIncreaseDeps";
 import { DataIssuesPopover } from "@/app/priceIncrease/results/_components/DataIssuesPopover";
 import {
-  TargetSeasonControl,
+  SeasonControl,
   PRICE_INCREASE_SEASON_KEY,
-} from "@/app/priceIncrease/_components/TargetSeasonControl";
+  PRICE_INCREASE_SEASON_SOURCE_KEY,
+  SEASON_EXPIRY_MONTHS,
+} from "@/app/priceIncrease/_components/SeasonControl";
 import { ActiveSettingsPanel } from "@/app/priceIncrease/results/_components/ActiveSettingsPanel";
 import { priceIncreaseConfigSelect } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSelect";
 import { useAppDispatch } from "@/lib/hooks/redux";
@@ -31,15 +33,21 @@ export default function PriceIncreaseLayout({ children }: { children: React.Reac
 
   usePriceIncreaseDeps();
 
-  // Restore target season override from localStorage on mount (6-month TTL).
-  const { value: storedSeason } = useLocalStorage<number>(PRICE_INCREASE_SEASON_KEY, {
-    expiryMonths: 6,
+  // Restore season overrides from localStorage on mount (6-month TTL). Dispatching
+  // always (even with nulls) opens the gate the customer loader waits on, so it never
+  // fetches the wrong source season first. A stale target is normalized by the selector.
+  const { value: storedTarget } = useLocalStorage<number>(PRICE_INCREASE_SEASON_KEY, {
+    expiryMonths: SEASON_EXPIRY_MONTHS,
+  });
+  const { value: storedSource } = useLocalStorage<number>(PRICE_INCREASE_SEASON_SOURCE_KEY, {
+    expiryMonths: SEASON_EXPIRY_MONTHS,
   });
   React.useEffect(() => {
-    if (storedSeason !== null) {
-      dispatch(priceIncreaseConfigActions.setTargetSeasonOverride(storedSeason));
-    }
-  }, [dispatch, storedSeason]);
+    dispatch(priceIncreaseConfigActions.restoreSeasonOverrides({
+      seasonSourceOverride: storedSource,
+      targetSeasonOverride: storedTarget,
+    }));
+  }, [dispatch, storedSource, storedTarget]);
 
   // The settings panel is only available on non-config pages.
   // The Config page has its own full settings UI.
@@ -65,7 +73,7 @@ export default function PriceIncreaseLayout({ children }: { children: React.Reac
                 <SlidersHorizontal className="h-4 w-4" />
               </button>
             )}
-            <TargetSeasonControl />
+            <SeasonControl />
             <DataIssuesPopover />
           </div>
         }

@@ -9,6 +9,7 @@ import {
   lastSeasonProductionRefresh,
   multiSeasonProductionRefresh,
   printedCustomersRefresh,
+  priceIncreaseCustomersRefresh,
   priorityServiceCustomerRefresh,
   recentProductionRefresh,
   singleCustomerRefresh,
@@ -34,6 +35,7 @@ custFlagListenerMiddleware.startListening({
   matcher: isAnyOf(
     activeCustomersRefresh.fulfilled,
     printedCustomersRefresh.fulfilled,
+    priceIncreaseCustomersRefresh.fulfilled,
     lastSeasonProductionRefresh.fulfilled,
     recentProductionRefresh.fulfilled,
     singleCustomerRefresh.fulfilled,

@@ -6,6 +6,7 @@ import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seaso
 import { priceIncreaseSettingsSelect } from "@/app/priceIncrease/settings/settingsSelect";
 import { SeasonIncrease, IncreaseFlag } from "@/app/priceIncrease/_lib/PriceIncreaseTypes";
 import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
+import { normalizeSeasonPair } from "@/app/priceIncrease/_lib/priceIncreaseFuncs";
 
 // ---------------------------------------------------------------------------
 // Base state selectors
@@ -25,6 +26,9 @@ const selectFlagPickerSelectedId = (state: AppState) =>
 
 const selectTargetSeasonOverride = (state: AppState) =>
   state.priceIncreaseConfig.targetSeasonOverride;
+const selectSeasonSourceOverride = (state: AppState) =>
+  state.priceIncreaseConfig.seasonSourceOverride;
+const selectSeasonsRestored = (state: AppState) => state.priceIncreaseConfig.seasonsRestored;
 
 const selectViewConfig = (state: AppState) => state.priceIncreaseConfig.viewConfig;
 
@@ -194,9 +198,17 @@ const selectFlagMappingsIsDirty = createSelector(
  * globalSettings.season. Use this instead of globalSettingsSelect.season
  * anywhere in the price increase module.
  */
-const selectTargetSeason = createSelector(
-  [selectTargetSeasonOverride, globalSettingsSelect.season],
+const selectSeasonSource = createSelector(
+  [selectSeasonSourceOverride, globalSettingsSelect.season],
   (override, globalSeason) => override ?? globalSeason,
+);
+
+// Normalized against the source so a stale override (e.g. after the global season
+// rolls over) can never produce an invalid pair.
+const selectTargetSeason = createSelector(
+  [selectTargetSeasonOverride, selectSeasonSource, globalSettingsSelect.season],
+  (override, seasonSource, globalSeason) =>
+    normalizeSeasonPair({ seasonSource, targetSeason: override ?? globalSeason }).targetSeason,
 );
 
 // ---------------------------------------------------------------------------
@@ -232,6 +244,9 @@ export const priceIncreaseConfigSelect = {
   // Target season
   targetSeasonOverride: selectTargetSeasonOverride,
   targetSeason: selectTargetSeason,
+  seasonSourceOverride: selectSeasonSourceOverride,
+  seasonSource: selectSeasonSource,
+  seasonsRestored: selectSeasonsRestored,
 
   // View config
   viewConfig: selectViewConfig,

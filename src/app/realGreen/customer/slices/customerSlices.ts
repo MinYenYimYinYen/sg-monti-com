@@ -35,6 +35,7 @@ export const PIPELINE: Partial<Record<CustomerContextMode, "mirror" | "realGreen
   lastSeasonProduction: "mirror",
   multiSeasonProduction: "mirror",
   printed: "mirror",
+  priceIncrease: "mirror",
   priorityService: "mirror",
   recentProduction: "mirror",
   single: "mirror",
@@ -218,6 +219,19 @@ export const activeCustomersActions = {
 };
 export const activeCustomerReducer = activeCustomersSlice.reducer;
 
+// Dedicated slice for the Price Increase module. It loads the "active customers"
+// dataset for a user-chosen source season, so it must not share state with `active`
+// (which is always the global season and is read by many other modules).
+export const priceIncreaseCustomersSlice = createCustomerSlice("priceIncreaseCustomers");
+export const priceIncreaseCustomersGetDocs = createGetDocsThunk("priceIncrease", "priceIncreaseCustomers", priceIncreaseCustomersSlice);
+export const priceIncreaseCustomersRefresh = createRefreshCustomerThunk("priceIncreaseCustomers", "activeCustomers");
+export const priceIncreaseCustomersActions = {
+  ...priceIncreaseCustomersSlice.actions,
+  getDocs: priceIncreaseCustomersGetDocs,
+  refreshCustomer: priceIncreaseCustomersRefresh,
+};
+export const priceIncreaseCustomerReducer = priceIncreaseCustomersSlice.reducer;
+
 export const printedCustomersSlice = createCustomerSlice("printedCustomers");
 export const printedCustomersGetDocs = createGetDocsThunk("printed", "printedCustomers", printedCustomersSlice);
 export const printedCustomersRefresh = createRefreshCustomerThunk("printedCustomers", "activeCustomers");
@@ -362,6 +376,7 @@ export type CustomerContextMode =
   | "customerQuery"
   | "fullSeasonServices"
   | "priorityService"
+  | "priceIncrease"
   | "printed"
   | "lastSeasonProduction"
   | "recentProduction"
@@ -382,6 +397,12 @@ export const customerSliceRegistry: CustomerSliceRegistryEntry[] = [
     actions: activeCustomersActions,
     getDocs: activeCustomersGetDocs,
     reducer: activeCustomerReducer,
+  },
+  {
+    context: "priceIncrease",
+    actions: priceIncreaseCustomersActions,
+    getDocs: priceIncreaseCustomersGetDocs,
+    reducer: priceIncreaseCustomerReducer,
   },
   {
     context: "printed",

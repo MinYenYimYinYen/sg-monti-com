@@ -337,11 +337,14 @@ export const PIPELINE: Partial<Record<CustomerContextMode, "mirror" | "realGreen
   lastSeasonProduction: "mirror",
   multiSeasonProduction: "mirror",
   printed: "mirror",
+  priceIncrease: "mirror",
   priorityService: "mirror",
   recentProduction: "mirror",
   single: "mirror",
 };
 ```
+
+`priceIncrease` is a dedicated slice (`priceIncreaseCustomers`) loaded by `usePriceIncreaseCustomers` for a user-chosen source season. It uses the same query plan as `active` (`buildActiveCustomersPlan`) but never shares state with it.
 
 **To flip a context back to RealGreen:** change `"mirror"` → `"realGreen"`. No other files need to change.
 

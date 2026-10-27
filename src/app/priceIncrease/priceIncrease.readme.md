@@ -20,9 +20,11 @@ src/app/priceIncrease/
   layout.tsx                          <- PageLayout + TabNav; calls usePriceIncreaseDeps(); header controls; settings panel
   page.tsx                            <- redirect to /priceIncrease/config
   usePriceIncreaseDeps.ts             <- every data dependency the module needs (called once, in layout)
+  usePriceIncreaseCustomers.ts        <- loads the dedicated priceIncrease customer slice for seasonSource
   usePriceIncreaseCustFlags.ts        <- loads custFlag data for every flagId the module cares about
   _components/
-    TargetSeasonControl.tsx           <- header season picker (localStorage-backed override)
+    SeasonControl.tsx                 <- header season dialog (source + target, local draft + Apply, localStorage-backed)
+    SeasonStepperRow.tsx              <- stepper row used by SeasonControl
   _lib/
     PriceIncreaseTypes.ts             <- SeasonIncrease, IncreaseFlagMapping, IncreaseFlag
     priceIncreaseFuncs.ts             <- pure math: calcSeasonCount, calcPlannedIncreasePercent,
@@ -81,9 +83,11 @@ Work bottom-up on the Config page; settings depend on flags existing first.
 3. **Season Increase Plan.** Created inside the settings sheet: click **New** in Price Increase Settings, then the **+** next to "Increase Plan". Give it a label and add seasons. Season 2 is the first renewal (season 1 is the sale year, never increased). The cumulative column shows the compounded total. Season numbers are derived from row position; you only edit percentages.
 4. **Price Increase Settings.** Fill the rest of the sheet: program code, caps, ongoing increase, upsell bonus, manual-attention threshold, flag rounding. Save, then click **Set Active** on the card. Exactly one settings record is active at a time; the old ones stay in the list as a record.
 
-### 1.2 Target season
+### 1.2 Season source and target season
 
-The header shows the season being planned. It defaults to `globalSettings.season`. Use the +/- control to plan for a different year (e.g. production is still 2026 but you are planning 2027). The override persists in `localStorage` for six months and affects every season-count calculation in the module without touching stored settings.
+The header shows two seasons: the **source** (the season whose programs and prices are loaded, `seasonSource`) and the **target** (the season being priced, `targetSeason`). Both default to `globalSettings.season`. Click the header to open the dialog and adjust them; nothing changes until **Apply**, and Cancel (or Escape) discards the edit.
+
+Only two pairs are valid: target equals source, or target is one season after source. The dialog states the choice in plain English, e.g. "Considering 2026 program pricing to determine new pricing for 2027 programs." Changing the source reloads customer data (Apply & Reload); changing only the target just recomputes. Overrides persist in `localStorage` for six months and never touch stored settings.
 
 ### 1.3 Reading a customer card (By Customer tab)
 
@@ -266,7 +270,7 @@ This is the conceptual pivot of the module: the increase is measured **relative 
 |---|---|---|
 | Settings | `priceIncreaseConfigSelect.settings` | Returns the live **draft** when one exists, else the active stored settings. This is what makes results update in real time while editing. Never read `priceIncreaseSettingsSelect.activeSettings` from results code. |
 | Season plan | `seasonIncreasesSelect.activeDoc` | Joined from the active *stored* settings' `seasonIncreasesId`. Draft changes to the plan selection are not reflected until saved. |
-| Season | `priceIncreaseConfigSelect.targetSeason` | Override from localStorage, else `globalSettings.season`. **Never use `globalSettingsSelect.season` in this module.** |
+| Season | `priceIncreaseConfigSelect.targetSeason` / `.seasonSource` | Overrides from localStorage, else `globalSettings.season`. `targetSeason` is normalized to `[seasonSource, seasonSource + 1]`. **Never use `globalSettingsSelect.season` in this module.** |
 | Flags | `selectIncreaseFlags` (in `customerIncreaseResultsSelect.ts`), `globalSettingsSelect.priceIncreaseExemptFlagIds`, `globalSettingsSelect.priceIncreaseManualFlagId` | |
 | Customers | `centralSelect.customers` | Fully hydrated `Customer[]` from the active context. |
 
@@ -330,7 +334,7 @@ Called once in `layout.tsx`. Each hook is load-bearing:
 
 | Hook | Without it |
 |---|---|
-| `useCustomerContext({ contexts: ["active"] })` + `useActiveCustomers({ autoLoad: true })` | `centralSelect.customers` is empty; no results at all. |
+| `useCustomerContext({ contexts: ["priceIncrease"] })` + `usePriceIncreaseCustomers({ autoLoad: true })` | `centralSelect.customers` is empty; no results at all. The module has its own customer slice (`priceIncrease` context) so it can load a different season than the shared `active` slice. |
 | `useGlobalSettings({ autoLoad: true })` | No flag mappings, no exempt/manual IDs, no season. |
 | `useProgServ({ autoLoad: true })` | Program dropdown in settings is empty; `progCode` hydration fails. |
 | `useSeasonIncreases()` / `usePriceIncreaseSettings()` | No plan / no settings. |
@@ -433,7 +437,7 @@ Both buttons build the same `flagIds` list (mappings + exempt + manual) that `us
 Two mechanisms keep `customer.flags` honest:
 
 - **Optimistic**: `addCustFlag.fulfilled` adds the custIds to the flag's entry in `custFlag.flagIdCustIds`; `centralSelectors` re-hydrates `customer.flags`; the results selectors recompute `preExistingFlagStatus` (the just-assigned customer flips to `matching`).
-- **Authoritative**: the RTK listener in `custFlagListeners.ts` fires `refreshCustFlags({ custId, flagIdsInState })` after *any* customer refresh thunk fulfills. The card's refresh icon (`useActiveCustomers().refreshCustomer`) therefore pulls the CRM truth for that customer with no extra wiring. Use it after fixing conflicts in RealGreen.
+- **Authoritative**: the RTK listener in `custFlagListeners.ts` fires `refreshCustFlags({ custId, flagIdsInState })` after *any* customer refresh thunk fulfills. The card's refresh icon (`usePriceIncreaseCustomers().refreshCustomer`) therefore pulls the CRM truth for that customer with no extra wiring. Use it after fixing conflicts in RealGreen.
 
 ---
 
@@ -479,14 +483,15 @@ Two mechanisms keep `customer.flags` honest:
 
 **Required Reading:**
 - `src/app/priceIncrease/layout.tsx`
-- `src/app/priceIncrease/_components/TargetSeasonControl.tsx`
+- `src/app/priceIncrease/_components/SeasonControl.tsx`
+- `src/app/priceIncrease/usePriceIncreaseCustomers.ts`
 - `src/app/priceIncrease/results/_components/DataIssuesPopover.tsx`
 
 Standard tab-routed page: `layout.tsx` renders `PageLayout` with `TabNav` (Config / Summary / By Customer, root `/priceIncrease/config`), calls `usePriceIncreaseDeps()` once, and `page.tsx` redirects to Config. Sub-route pages are thin.
 
-Header left slot: settings-panel toggle (hidden on Config), `TargetSeasonControl`, `DataIssuesPopover`.
+Header left slot: settings-panel toggle (hidden on Config), `SeasonControl`, `DataIssuesPopover`.
 
-**Target season restore:** on mount the layout reads `localStorage["priceIncrease.targetSeason"]` via `useLocalStorage` (6-month TTL) and dispatches `setTargetSeasonOverride`. `TargetSeasonControl` writes both Redux and localStorage; stepping back down to the global season clears both.
+**Season restore:** on mount the layout reads `localStorage["priceIncrease.seasonSource"]` and `localStorage["priceIncrease.targetSeason"]` (6-month TTL) and dispatches `restoreSeasonOverrides`, which also sets `seasonsRestored`. `usePriceIncreaseCustomers` waits for that flag so it never fetches the wrong source season first, and forces a reload whenever `seasonSource` changes (the slice is cleared on each fetch, so the dedup cache must not suppress it). `SeasonControl` edits a local draft and writes Redux (`setSeasonOverrides`) and localStorage only on Apply; a value equal to the global season clears its key.
 
 Scroll: the layout body is `flex h-full overflow-hidden`; each page establishes its own `overflow-y-auto` region (By Customer's card list, Summary's wrapper, ConfigPanel's wrapper).
 

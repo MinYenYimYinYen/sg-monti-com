@@ -204,3 +204,32 @@ export function resolveIncreaseFlag({
   }
   return best;
 }
+
+// ---------------------------------------------------------------------------
+// Season pair (seasonSource / targetSeason)
+// ---------------------------------------------------------------------------
+
+type SeasonPairParams = {
+  /** The season whose programs and prices we are projecting FROM. */
+  seasonSource: number;
+  /** The season we are projecting prices TO. */
+  targetSeason: number;
+};
+
+/** The only valid pairs are target === source and target === source + 1. */
+export function isValidSeasonPair({ seasonSource, targetSeason }: SeasonPairParams): boolean {
+  return targetSeason === seasonSource || targetSeason === seasonSource + 1;
+}
+
+/** Clamps the target into [source, source + 1]. The source is never changed. */
+export function normalizeSeasonPair({ seasonSource, targetSeason }: SeasonPairParams): SeasonPairParams {
+  return {
+    seasonSource,
+    targetSeason: Math.min(Math.max(targetSeason, seasonSource), seasonSource + 1),
+  };
+}
+
+/** Plain-English statement of what the chosen season pair will do. */
+export function describeSeasonPair({ seasonSource, targetSeason }: SeasonPairParams): string {
+  return `Considering ${seasonSource} program pricing to determine new pricing for ${targetSeason} programs.`;
+}

@@ -41,6 +41,15 @@ type PriceIncreaseConfigState = {
   // (e.g. global settings season = 2026, but planning for 2027).
   targetSeasonOverride: number | null;
 
+  // Season the customer data is loaded FROM. Same persistence model as
+  // targetSeasonOverride (key: "priceIncrease.seasonSource"). Falls back to
+  // globalSettings.season when null. Changing it reloads the customer data.
+  seasonSourceOverride: number | null;
+
+  // False until the layout has applied the localStorage overrides. The customer
+  // loader waits on this so it never fetches the wrong season on first render.
+  seasonsRestored: boolean;
+
   // View configuration — sort and group state for the results views.
   // Persisted in Redux so the user's configuration survives tab navigation.
   // Use console.log(store.getState().priceIncreaseConfig.viewConfig) to capture
@@ -84,6 +93,8 @@ const initialState: PriceIncreaseConfigState = {
   flagMappingsDraft: [],
   flagPickerSelectedId: null,
   targetSeasonOverride: null,
+  seasonSourceOverride: null,
+  seasonsRestored: false,
   viewConfig: defaultViewConfig,
   summaryGroupKey: null,
   summaryFlagPerspective: "effective",
@@ -218,6 +229,24 @@ const priceIncreaseConfigSlice = createSlice({
     },
     clearTargetSeasonOverride: (state) => {
       state.targetSeasonOverride = null;
+    },
+    // Sets both overrides atomically so the pair can never be observed half-updated.
+    // null means "use globalSettings.season".
+    setSeasonOverrides: (
+      state,
+      action: PayloadAction<{ seasonSourceOverride: number | null; targetSeasonOverride: number | null }>,
+    ) => {
+      state.seasonSourceOverride = action.payload.seasonSourceOverride;
+      state.targetSeasonOverride = action.payload.targetSeasonOverride;
+    },
+    // Called once by the layout after reading localStorage; also opens the loader gate.
+    restoreSeasonOverrides: (
+      state,
+      action: PayloadAction<{ seasonSourceOverride: number | null; targetSeasonOverride: number | null }>,
+    ) => {
+      state.seasonSourceOverride = action.payload.seasonSourceOverride;
+      state.targetSeasonOverride = action.payload.targetSeasonOverride;
+      state.seasonsRestored = true;
     },
 
     // ---------------------------------------------------------------------------

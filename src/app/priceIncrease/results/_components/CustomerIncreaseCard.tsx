@@ -8,7 +8,7 @@ import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSe
 import { ServiceIncreaseRow } from "@/app/priceIncrease/results/_components/ServiceIncreaseRow";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { CustomerLink } from "@/app/realGreen/customer/components/CustomerLink";
-import { useActiveCustomers } from "@/app/realGreen/customer/hooks/useActiveCustomers";
+import { usePriceIncreaseCustomers } from "@/app/priceIncrease/usePriceIncreaseCustomers";
 import { AssignFlagButton } from "@/app/priceIncrease/results/_components/AssignFlagButton";
 
 // ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
   const renewalFlagIds = useSelector(globalSettingsSelect.renewalFlagIds);
   const exemptFlagIds = useSelector(globalSettingsSelect.priceIncreaseExemptFlagIds);
   const manualFlagId = useSelector(globalSettingsSelect.priceIncreaseManualFlagId);
-  const { refreshCustomer, isRefreshingCustomer } = useActiveCustomers();
+  const { refreshCustomer, isRefreshingCustomer } = usePriceIncreaseCustomers();
 
   const {
     customer,
