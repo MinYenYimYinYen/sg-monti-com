@@ -20,6 +20,6 @@ export type GlobalSettings = CreatedUpdated & {
   depositAccountMap: DepositAccountMap;
   renewalFlagIds: RenewalFlagIds;
   increaseFlagMappings: IncreaseFlagMapping[];
-  priceIncreaseExemptFlagId: number | null;
+  priceIncreaseExemptFlagIds: number[];
   priceIncreaseManualFlagId: number | null;
 };

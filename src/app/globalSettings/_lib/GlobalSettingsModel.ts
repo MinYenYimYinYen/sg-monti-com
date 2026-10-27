@@ -55,7 +55,7 @@ const GlobalSettingsSchema = new mongoose.Schema<GlobalSettings>(
       required: true,
       default: [],
     },
-    priceIncreaseExemptFlagId: { type: Number, default: null },
+    priceIncreaseExemptFlagIds: { type: [Number], default: [] },
     priceIncreaseManualFlagId: { type: Number, default: null },
   },
   { timestamps: true },

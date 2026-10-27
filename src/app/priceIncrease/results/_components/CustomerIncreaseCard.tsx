@@ -47,7 +47,7 @@ type CustomerIncreaseCardProps = {
 export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
   const settings = useSelector(priceIncreaseConfigSelect.settings);
   const renewalFlagIds = useSelector(globalSettingsSelect.renewalFlagIds);
-  const exemptFlagId = useSelector(globalSettingsSelect.priceIncreaseExemptFlagId);
+  const exemptFlagIds = useSelector(globalSettingsSelect.priceIncreaseExemptFlagIds);
   const manualFlagId = useSelector(globalSettingsSelect.priceIncreaseManualFlagId);
   const { refreshCustomer, isRefreshingCustomer } = useActiveCustomers();
 
@@ -80,7 +80,7 @@ export function CustomerIncreaseCard({ result }: CustomerIncreaseCardProps) {
 
   // Exempt and manual flags on this customer (shown with destructive styling)
   const exemptManualFlagIds = new Set(
-    [exemptFlagId, manualFlagId].filter((id): id is number => id !== null),
+    [...exemptFlagIds, manualFlagId].filter((id): id is number => id !== null),
   );
   const customerExemptManualFlags = customer.flags.filter((f) => exemptManualFlagIds.has(f.flagId));
 

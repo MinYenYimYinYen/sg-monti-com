@@ -7,7 +7,7 @@ const ACTIVE_STATUSES = ["9"];
 /**
  * Ensures custFlag data is loaded for every flagId used by the price increase module:
  * - increaseFlagMappings (the increase flags assigned to customers)
- * - priceIncreaseExemptFlagId (customers exempt from price increases)
+ * - priceIncreaseExemptFlagIds (customers exempt from price increases)
  * - priceIncreaseManualFlagId (customers with manual price increases)
  *
  * Without this, customer.flags will be empty for these flagIds and isExempt,
@@ -18,12 +18,12 @@ const ACTIVE_STATUSES = ["9"];
  */
 export function usePriceIncreaseCustFlags() {
   const increaseFlagMappings = useSelector(globalSettingsSelect.increaseFlagMappings);
-  const exemptFlagId = useSelector(globalSettingsSelect.priceIncreaseExemptFlagId);
+  const exemptFlagIds = useSelector(globalSettingsSelect.priceIncreaseExemptFlagIds);
   const manualFlagId = useSelector(globalSettingsSelect.priceIncreaseManualFlagId);
 
   const flagIds = [
     ...increaseFlagMappings.map((m) => m.flagId),
-    ...(exemptFlagId !== null ? [exemptFlagId] : []),
+    ...exemptFlagIds,
     ...(manualFlagId !== null ? [manualFlagId] : []),
   ];
 

@@ -64,7 +64,7 @@ const selectCustomerIncreaseResults = createSelector(
     priceIncreaseConfigSelect.settings,
     priceIncreaseConfigSelect.targetSeason,
     selectIncreaseFlags,
-    globalSettingsSelect.priceIncreaseExemptFlagId,
+    globalSettingsSelect.priceIncreaseExemptFlagIds,
     globalSettingsSelect.priceIncreaseManualFlagId,
     seasonIncreasesSelect.activeDoc,
   ],
@@ -74,7 +74,7 @@ const selectCustomerIncreaseResults = createSelector(
     settings,
     currentSeason,
     increaseFlags,
-    exemptFlagId,
+    exemptFlagIds,
     manualFlagId,
     activeSeasonDoc,
   ): CustomerIncreaseResult[] => {
@@ -85,12 +85,11 @@ const selectCustomerIncreaseResults = createSelector(
     const configSeasonCount = activeSeasonDoc ? activeSeasonDoc.seasonIncreases.length + 1 : 0;
 
     const increaseFlagIds = new Set(increaseFlags.map((f) => f.flagId));
+    const exemptFlagIdSet = new Set(exemptFlagIds);
     const results: CustomerIncreaseResult[] = [];
 
     for (const { customer, targetProgram } of matchedCustomers) {
-      const isExempt =
-        exemptFlagId !== null &&
-        customer.flags.some((f) => f.flagId === exemptFlagId);
+      const isExempt = customer.flags.some((f) => exemptFlagIdSet.has(f.flagId));
 
       const isManual =
         manualFlagId !== null &&

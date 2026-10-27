@@ -23,6 +23,6 @@ export const baseGlobalSettings: GlobalSettings = {
     confirmed: null,
   },
   increaseFlagMappings: [],
-  priceIncreaseExemptFlagId: null,
+  priceIncreaseExemptFlagIds: [],
   priceIncreaseManualFlagId: null,
 };

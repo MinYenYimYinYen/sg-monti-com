@@ -19,12 +19,12 @@ type AssignFlagButtonProps = {
  */
 export function AssignFlagButton({ result }: AssignFlagButtonProps) {
   const increaseFlagMappings = useSelector(globalSettingsSelect.increaseFlagMappings);
-  const exemptFlagId = useSelector(globalSettingsSelect.priceIncreaseExemptFlagId);
+  const exemptFlagIds = useSelector(globalSettingsSelect.priceIncreaseExemptFlagIds);
   const manualFlagId = useSelector(globalSettingsSelect.priceIncreaseManualFlagId);
 
   const flagIds = [
     ...increaseFlagMappings.map((m) => m.flagId),
-    ...(exemptFlagId !== null ? [exemptFlagId] : []),
+    ...exemptFlagIds,
     ...(manualFlagId !== null ? [manualFlagId] : []),
   ];
 

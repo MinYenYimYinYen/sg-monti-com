@@ -62,7 +62,7 @@ src/app/priceIncrease/
 
 Redux keys registered in `src/store/reducers/index.ts`: `seasonIncreases`, `priceIncreaseSettings`, `priceIncreaseConfig`.
 
-Outside this folder, the module depends on three `GlobalSettings` fields (`increaseFlagMappings`, `priceIncreaseExemptFlagId`, `priceIncreaseManualFlagId`), on `ServiceUtils.acquisitionPrice`, and on the `custFlag` module for flag reads/writes (see section 7).
+Outside this folder, the module depends on three `GlobalSettings` fields (`increaseFlagMappings`, `priceIncreaseExemptFlagIds`, `priceIncreaseManualFlagId`), on `ServiceUtils.acquisitionPrice`, and on the `custFlag` module for flag reads/writes (see section 7).
 
 ---
 
@@ -75,7 +75,7 @@ Outside this folder, the module depends on three `GlobalSettings` fields (`incre
 Work bottom-up on the Config page; settings depend on flags existing first.
 
 1. **Increase Flag Mappings.** Pick each RealGreen flag that represents an increase percentage (e.g. "PI 3", "PI 5", "PI 8") and type its integer percent. Percentages must be unique; a `0` percent is valid and has a special meaning (see 1.4). Click **Save Changes** (the button is highlighted while there are unsaved edits).
-2. **Exempt Flag / Manual Flag.** Two dropdowns under the picker. These save immediately on change.
+2. **Exempt Flags / Manual Flag.** Under the picker: a multi-select popover of checkboxes for exempt flags (a customer with any of them is exempt) and a single dropdown for the manual flag. These save immediately on change.
    - *Exempt*: customer is never assigned a flag. They still appear in results so the opportunity cost is visible.
    - *Manual*: someone has already set the price in RealGreen. These customers are currently **hidden from results entirely** (see 1.6 and section 4.5).
 3. **Season Increase Plan.** Created inside the settings sheet: click **New** in Price Increase Settings, then the **+** next to "Increase Plan". Give it a label and add seasons. Season 2 is the first renewal (season 1 is the sale year, never increased). The cumulative column shows the compounded total. Season numbers are derived from row position; you only edit percentages.
@@ -196,7 +196,7 @@ type IncreaseFlag = IncreaseFlagMapping & Flag;   // hydrated in selectors via f
 
 // on GlobalSettings
 increaseFlagMappings: IncreaseFlagMapping[];      // default []
-priceIncreaseExemptFlagId: number | null;         // default null
+priceIncreaseExemptFlagIdss: number[];             // default []
 priceIncreaseManualFlagId: number | null;         // default null
 ```
 
@@ -267,7 +267,7 @@ This is the conceptual pivot of the module: the increase is measured **relative 
 | Settings | `priceIncreaseConfigSelect.settings` | Returns the live **draft** when one exists, else the active stored settings. This is what makes results update in real time while editing. Never read `priceIncreaseSettingsSelect.activeSettings` from results code. |
 | Season plan | `seasonIncreasesSelect.activeDoc` | Joined from the active *stored* settings' `seasonIncreasesId`. Draft changes to the plan selection are not reflected until saved. |
 | Season | `priceIncreaseConfigSelect.targetSeason` | Override from localStorage, else `globalSettings.season`. **Never use `globalSettingsSelect.season` in this module.** |
-| Flags | `selectIncreaseFlags` (in `customerIncreaseResultsSelect.ts`), `globalSettingsSelect.priceIncreaseExemptFlagId`, `globalSettingsSelect.priceIncreaseManualFlagId` | |
+| Flags | `selectIncreaseFlags` (in `customerIncreaseResultsSelect.ts`), `globalSettingsSelect.priceIncreaseExemptFlagIds`, `globalSettingsSelect.priceIncreaseManualFlagId` | |
 | Customers | `centralSelect.customers` | Fully hydrated `Customer[]` from the active context. |
 
 ### 4.2 Stage 1 - `serviceIncreaseResultsSelect`

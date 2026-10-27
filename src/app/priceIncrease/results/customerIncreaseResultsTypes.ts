@@ -44,7 +44,7 @@ export type SortableIncreaseProperties = {
 export type PreExistingFlagStatus = "none" | "matching" | "override" | "conflict";
 
 export type GroupableIncreaseProperties = {
-  /** Customer has the priceIncreaseExemptFlagId flag */
+  /** Customer has any of the priceIncreaseExemptFlagIds flags */
   isExempt: boolean;
   /** Customer has the priceIncreaseManualFlagId flag */
   isManual: boolean;
