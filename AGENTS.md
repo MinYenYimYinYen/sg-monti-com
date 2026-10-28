@@ -19,7 +19,7 @@ Task-specific procedures live in `.claude/skills/` and load on demand. Use the m
 | Add or change a tab-routed page or layout | `tab-routed-page` | `src/components/PageLayout/`, `src/app/pace/layout.tsx` |
 | Build or restyle UI, add a variant component, fix scrolling | `ui-styling` | `src/style/style.readme.md` |
 | Create or modify a PDF document | `pdf-document` | `src/lib/pdf/pdf.readme.md` |
-| Form templates (positioned slots on preprinted forms), form data type registry, slot options, batch form printing | `form-template` | `src/app/formTemplate/formDataContract.ts`, `src/app/prepayLetters/PrepayLetterTypes.tsx` |
+| Form templates (positioned slots on preprinted forms), form data type registry, slot options, batch form printing | `form-template` | `src/app/formTemplate/formDataContract.ts`, `src/app/prepayLetters/template/PrepayLetterTypes.tsx` |
 | Write or modify tests | `write-tests` | `src/__tests__/testing.readme.md` |
 | RealGreen Customer / Program / Service pipeline, search schemes, PIPELINE flag | `realgreen-customer` | `src/app/realGreen/realGreen.readme.md`, `src/app/realGreen/customer/customer.readme.md` |
 | RealGreen Product module (Master / Sub / Single) | `product-module` | `src/app/realGreen/product/_lib/product.readme.md` |

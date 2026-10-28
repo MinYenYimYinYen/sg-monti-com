@@ -266,7 +266,7 @@ so components that display prices should branch on `isInstallment` rather than s
 ### Prepay letters
 
 Prepaying an installment plan makes no sense, so the prepay letter never prices
-installment programs. `src/app/prepayLetters/installmentSegregation.ts` provides:
+installment programs. `src/app/prepayLetters/pricing/installmentSegregation.ts` provides:
 
 - `getPrepayPrograms(customer)` — non-installment programs; used by every price table,
   totals, by-program totals and discount summary slot.
@@ -287,7 +287,7 @@ Autopay and regular invoice programs remain eligible for prepay pricing.
 ### Prepay letter upsell
 
 `PrepayLetterData.upsell` is a `ProgCode | null` — a proposed program, not one on the
-customer, so `ProgramUtils`/`ServiceUtils` cannot price it. `src/app/prepayLetters/upsellPricing.ts`
+customer, so `ProgramUtils`/`ServiceUtils` cannot price it. `src/app/prepayLetters/pricing/upsellPricing.ts`
 prices it at render time:
 
 - Price per visit comes from `progCode.x.getServPrice(customer.size)`.

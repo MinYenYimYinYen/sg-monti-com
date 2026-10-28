@@ -22,21 +22,21 @@ import {
   calculatePrepayTotals,
   getInstallmentPrograms,
   getPrepayPrograms,
-} from "@/app/prepayLetters/installmentSegregation";
+} from "@/app/prepayLetters/pricing/installmentSegregation";
 import {
   getUpsellLetterPricing,
   type UpsellLetterPricing,
-} from "@/app/prepayLetters/upsellPricing";
+} from "@/app/prepayLetters/pricing/upsellPricing";
 import {
   getStubTotals,
   type TotalsSource,
-} from "@/app/prepayLetters/stubTotals";
+} from "@/app/prepayLetters/pricing/stubTotals";
 import {
   getBalanceAdjustment,
   getTotalDue,
-} from "@/app/prepayLetters/balanceAdjustment";
-import { buildServicePriceRows } from "@/app/prepayLetters/servicePriceRows";
-import { buildIntentionLines } from "@/app/prepayLetters/intentionLines";
+} from "@/app/prepayLetters/pricing/balanceAdjustment";
+import { buildServicePriceRows } from "@/app/prepayLetters/pricing/servicePriceRows";
+import { buildIntentionLines } from "@/app/prepayLetters/pricing/intentionLines";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 
 /** The scanned blank form image — used as a faint background in the template editor preview. */

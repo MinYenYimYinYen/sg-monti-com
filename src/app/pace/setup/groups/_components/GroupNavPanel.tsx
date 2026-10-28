@@ -16,10 +16,10 @@ import { SequenceWithGroups } from "@/app/pace/setup/setupSelect";
 
 type GroupNavPanelProps = {
   selectedGroupId: string | null;
-  onGroupDeleted?: (groupId: string) => void;
+  onGroupDeletedAction?: (groupId: string) => void;
 };
 
-export function GroupNavPanel({ selectedGroupId, onGroupDeleted }: GroupNavPanelProps) {
+export function GroupNavPanel({ selectedGroupId, onGroupDeletedAction }: GroupNavPanelProps) {
   const dispatch = useAppDispatch();
   const sequencesWithGroups = useSelector(setupSelect.sequencesWithGroups);
   const standaloneGroups = useSelector(setupSelect.standaloneGroups);
@@ -63,7 +63,7 @@ export function GroupNavPanel({ selectedGroupId, onGroupDeleted }: GroupNavPanel
               selectedGroupId={selectedGroupId}
               onSelectGroup={handleSelectGroup}
               onEdit={() => setEditingSequence(sequenceWithGroups)}
-              onGroupDeleted={onGroupDeleted}
+              onGroupDeleted={onGroupDeletedAction}
             />
           ))}
 
@@ -83,7 +83,7 @@ export function GroupNavPanel({ selectedGroupId, onGroupDeleted }: GroupNavPanel
                   group={group}
                   isSelected={selectedGroupId === group.groupId}
                   onSelectAction={() => handleSelectGroup(group.groupId)}
-                  onDeletedAction={() => onGroupDeleted?.(group.groupId)}
+                  onDeletedAction={() => onGroupDeletedAction?.(group.groupId)}
                 />
               ))}
             </div>

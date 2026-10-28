@@ -8,7 +8,7 @@ import {
   calculatePrepayTotals,
   getInstallmentPrograms,
   getPrepayPrograms,
-} from "@/app/prepayLetters/installmentSegregation";
+} from "@/app/prepayLetters/pricing/installmentSegregation";
 import type { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 
 const TAX_RATE = 7.375;

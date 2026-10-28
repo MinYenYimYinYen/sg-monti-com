@@ -9,12 +9,12 @@ import {
 import {
   calculatePrepayTotals,
   getPrepayPrograms,
-} from "@/app/prepayLetters/installmentSegregation";
+} from "@/app/prepayLetters/pricing/installmentSegregation";
 import {
   addPrepayTotals,
   getUpsellLetterPricing,
   priceUpsell,
-} from "@/app/prepayLetters/upsellPricing";
+} from "@/app/prepayLetters/pricing/upsellPricing";
 import { calculatePrepayServTotal } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 import type { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 

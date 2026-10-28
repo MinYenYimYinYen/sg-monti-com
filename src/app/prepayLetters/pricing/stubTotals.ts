@@ -5,12 +5,12 @@ import {
   calculatePrepayTotals,
   getPrepayPrograms,
   type PrepayTotals,
-} from "@/app/prepayLetters/installmentSegregation";
-import { getUpsellLetterPricing } from "@/app/prepayLetters/upsellPricing";
+} from "@/app/prepayLetters/pricing/installmentSegregation";
+import { getUpsellLetterPricing } from "@/app/prepayLetters/pricing/upsellPricing";
 import {
   getBalanceAdjustment,
   getTotalDue,
-} from "@/app/prepayLetters/balanceAdjustment";
+} from "@/app/prepayLetters/pricing/balanceAdjustment";
 
 // Kept free of JSX / react-pdf / image imports so it can be unit tested directly.
 

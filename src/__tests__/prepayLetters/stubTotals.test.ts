@@ -10,10 +10,10 @@ import { BILLING_TYPE } from "@/app/realGreen/_lib/subTypes/BillingType";
 import {
   calculatePrepayTotals,
   getPrepayPrograms,
-} from "@/app/prepayLetters/installmentSegregation";
-import { getUpsellLetterPricing } from "@/app/prepayLetters/upsellPricing";
-import { getStubTotals } from "@/app/prepayLetters/stubTotals";
-import { buildIntentionLines } from "@/app/prepayLetters/intentionLines";
+} from "@/app/prepayLetters/pricing/installmentSegregation";
+import { getUpsellLetterPricing } from "@/app/prepayLetters/pricing/upsellPricing";
+import { getStubTotals } from "@/app/prepayLetters/pricing/stubTotals";
+import { buildIntentionLines } from "@/app/prepayLetters/pricing/intentionLines";
 
 // Balances are covered in balanceAdjustment.test.ts; these tests are about prepay math.
 const config = {

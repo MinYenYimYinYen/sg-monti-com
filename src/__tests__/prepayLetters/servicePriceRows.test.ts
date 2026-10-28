@@ -4,11 +4,11 @@ import { samplePrepayConfig } from "@/app/realGreen/sampleData/samplePrepayConfi
 import {
   buildProgramRollupLabel,
   buildServicePriceRows,
-} from "@/app/prepayLetters/servicePriceRows";
+} from "@/app/prepayLetters/pricing/servicePriceRows";
 import {
   calculatePrepayTotals,
   getPrepayPrograms,
-} from "@/app/prepayLetters/installmentSegregation";
+} from "@/app/prepayLetters/pricing/installmentSegregation";
 
 // Sample customer: 9 prepay services across 3 programs (installment program excluded).
 const SERVICE_COUNT = 9;

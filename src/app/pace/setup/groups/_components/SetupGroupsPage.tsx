@@ -23,7 +23,7 @@ export function SetupGroupsPage() {
       <div className="w-56 shrink-0">
         <GroupNavPanel
           selectedGroupId={selectedGroupId}
-          onGroupDeleted={handleGroupDeleted}
+          onGroupDeletedAction={handleGroupDeleted}
         />
       </div>
 

@@ -1,5 +1,5 @@
 import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
-import { getPrepayPrograms } from "@/app/prepayLetters/installmentSegregation";
+import { getPrepayPrograms } from "@/app/prepayLetters/pricing/installmentSegregation";
 
 // Kept free of JSX / react-pdf / image imports so it can be unit tested directly.
 //

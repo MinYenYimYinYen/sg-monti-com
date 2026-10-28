@@ -1,8 +1,8 @@
 import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import type { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import type { PrepayConfig } from "@/app/prepayLetters/config/prepayConfigTypes";
-import { getStubTotals } from "@/app/prepayLetters/stubTotals";
-import { getUpsellLetterPricing } from "@/app/prepayLetters/upsellPricing";
+import { getStubTotals } from "@/app/prepayLetters/pricing/stubTotals";
+import { getUpsellLetterPricing } from "@/app/prepayLetters/pricing/upsellPricing";
 
 // Kept free of JSX / react-pdf / image imports so it can be unit tested directly.
 

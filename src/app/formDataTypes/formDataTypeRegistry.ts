@@ -3,7 +3,7 @@ import {
   samplePrepayLetterData,
   prepayLetterContract,
   prepayLetterFormImage,
-} from "@/app/prepayLetters/PrepayLetterTypes";
+} from "@/app/prepayLetters/template/PrepayLetterTypes";
 
 /**
  * Registry of all supported form data types. This is the one place that knows about

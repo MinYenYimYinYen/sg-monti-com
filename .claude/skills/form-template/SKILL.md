@@ -5,7 +5,7 @@ description: Work with the form template system in src/app/formTemplate - positi
 
 # Form Template
 
-Read `src/app/formTemplate/formDataContract.ts` first. The types and their comments are the spec. `src/app/prepayLetters/PrepayLetterTypes.tsx` is the one working consumer; copy its structure.
+Read `src/app/formTemplate/formDataContract.ts` first. The types and their comments are the spec. `src/app/prepayLetters/template/PrepayLetterTypes.tsx` is the one working consumer; copy its structure.
 
 For PDF rules (`tw()`, no semantic colors, text inside `<Text>`), also load the `pdf-document` skill. The `render` half of every descriptor is react-pdf.
 

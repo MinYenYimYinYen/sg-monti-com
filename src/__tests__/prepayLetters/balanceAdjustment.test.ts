@@ -5,8 +5,8 @@ import { sampleUpsellProgCode } from "@/app/realGreen/sampleData/sampleUpsellPro
 import {
   getBalanceAdjustment,
   getTotalDue,
-} from "@/app/prepayLetters/balanceAdjustment";
-import { getStubTotals } from "@/app/prepayLetters/stubTotals";
+} from "@/app/prepayLetters/pricing/balanceAdjustment";
+import { getStubTotals } from "@/app/prepayLetters/pricing/stubTotals";
 
 const bothOn = {
   ...samplePrepayConfig,

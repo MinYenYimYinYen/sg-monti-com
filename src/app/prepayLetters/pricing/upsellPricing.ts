@@ -9,7 +9,7 @@ import {
   calculatePrepayTotals,
   getPrepayPrograms,
   type PrepayTotals,
-} from "@/app/prepayLetters/installmentSegregation";
+} from "@/app/prepayLetters/pricing/installmentSegregation";
 
 // Kept free of JSX / react-pdf / image imports so it can be unit tested directly.
 //
