@@ -100,7 +100,7 @@ export function MentionEditor<T extends FlatVars>({
       },
     },
     onUpdate({ editor: ed }) {
-      onChangeAction(ed.getHTML());
+      onChangeAction(MentionEditorUtils.canonicalizeMentions(ed.getHTML()));
     },
   });
 
@@ -108,7 +108,11 @@ export function MentionEditor<T extends FlatVars>({
   // Guard against the editor's own onUpdate triggering a loop by comparing HTML first.
   useEffect(() => {
     if (!editor) return;
-    if (editor.getHTML() !== value) {
+    // Compare canonically: chip label text differs by mode/timing but isn't content.
+    if (
+      MentionEditorUtils.canonicalizeMentions(editor.getHTML()) !==
+      MentionEditorUtils.canonicalizeMentions(value)
+    ) {
       editor.commands.setContent(value, { emitUpdate: false });
     }
   }, [editor, value]);
@@ -145,10 +149,14 @@ export function MentionEditor<T extends FlatVars>({
     });
 
     if (changed) {
-      // Dispatch without triggering onUpdate so we don't write the label into stored HTML.
-      editor.view.dispatch(tr.setMeta("addToHistory", false));
+      // Label patches change node attrs, which counts as a doc change. `addToHistory: false`
+      // only affects undo; `preventUpdate` is what stops onUpdate from firing, so a cosmetic
+      // label change never writes back into the stored HTML (and falsely dirties the draft).
+      editor.view.dispatch(tr.setMeta("addToHistory", false).setMeta("preventUpdate", true));
     }
-  }, [editor, vars, parsers, mode]);
+    // `value` is a dependency so labels are re-patched after external content loads
+    // (the sync effect above skips setContent when only labels differ).
+  }, [editor, vars, parsers, mode, value]);
 
   return (
     <div

@@ -2,8 +2,9 @@ import type { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { MentionEditorUtils, type VarParsers } from "@/components/MentionEditor/MentionEditorUtils";
-import type { PrepayLetterVars } from "./prepayConfigTypes";
+import type { PrepayConfig, PrepayLetterVars } from "./prepayConfigTypes";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
+import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
 
 const selectConfigs = (state: AppState) => state.prepayConfig.configs;
 const selectDraft = (state: AppState) => state.prepayConfig.draft;
@@ -41,6 +42,43 @@ const selectOwnConfigs = createSelector(
 const selectSharedConfigs = createSelector(
   [selectConfigs, selectCurrentSaId],
   (configs, currentSaId) => configs.filter((c) => c.saId !== currentSaId),
+);
+
+/** Names of the current user's configs. configId derives from name + saId, so only these can collide. */
+const selectOwnConfigNames = createSelector([selectOwnConfigs], (configs) =>
+  configs.map((c) => c.name),
+);
+
+/**
+ * Mention chip text is a cached display label, not content, and older saved configs
+ * have resolved values (e.g. "2027") baked in. Compare on `data-id` only.
+ */
+const canonicalizeMessages = (config: PrepayConfig): PrepayConfig => ({
+  ...config,
+  universalMessage: MentionEditorUtils.canonicalizeMentions(config.universalMessage),
+  autoRenewMessage: MentionEditorUtils.canonicalizeMentions(config.autoRenewMessage),
+  dontAutoRenewMessage: MentionEditorUtils.canonicalizeMentions(config.dontAutoRenewMessage),
+  autoRenewHeader: MentionEditorUtils.canonicalizeMentions(config.autoRenewHeader),
+  dontAutoRenewHeader: MentionEditorUtils.canonicalizeMentions(config.dontAutoRenewHeader),
+  currentServicesHeader: MentionEditorUtils.canonicalizeMentions(config.currentServicesHeader),
+  upsellServicesHeader: MentionEditorUtils.canonicalizeMentions(config.upsellServicesHeader),
+});
+
+/** True when the draft differs from its saved version, or has never been saved. */
+const selectIsDirty = createSelector([selectDraft, selectConfigMap], (draft, configMap) => {
+  if (!draft) return false;
+  const saved = draft.configId ? configMap.get(draft.configId) : undefined;
+  if (!saved) return true;
+  return !deepEqual(canonicalizeMessages(draft), canonicalizeMessages(saved));
+});
+
+/** Draft name for the header; other users' configs are prefixed with their saId. Null when no draft. */
+const selectActiveDisplayName = createSelector(
+  [selectDraft, selectCurrentSaId],
+  (draft, currentSaId) => {
+    if (!draft) return null;
+    return !draft.saId || draft.saId === currentSaId ? draft.name : `${draft.saId} - ${draft.name}`;
+  },
 );
 
 /**
@@ -95,4 +133,7 @@ export const prepayConfigSelect = {
   configsWithDisplayName: selectConfigsWithDisplayName,
   ownConfigs: selectOwnConfigs,
   sharedConfigs: selectSharedConfigs,
+  ownConfigNames: selectOwnConfigNames,
+  isDirty: selectIsDirty,
+  activeDisplayName: selectActiveDisplayName,
 };

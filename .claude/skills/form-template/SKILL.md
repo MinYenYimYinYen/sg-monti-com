@@ -93,4 +93,4 @@ This is design guidance for the unbuilt batch module. Confirm it against the rea
 
 ## Verify
 
-Run the IDE diagnostics on every edited file. Run `tsc --noEmit` when changing `formDataContract.ts`, `FormTemplateTypes.ts` or the registry. Then check that nothing under `src/app/formTemplate/` imports a feature or `formDataTypeRegistry` (only `page.tsx` may). You cannot see the rendered PDF, so state that layout was not visually checked. Do not start the dev server.
+Check that nothing under `src/app/formTemplate/` imports a feature or `formDataTypeRegistry` (only `page.tsx` may). You cannot see the rendered PDF, so state that layout was not visually checked.

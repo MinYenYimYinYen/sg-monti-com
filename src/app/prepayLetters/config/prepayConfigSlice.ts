@@ -68,6 +68,9 @@ const prepayConfigSlice = createSlice({
       } else {
         state.configs.push(saved);
       }
+      // The saved doc (with its server-generated configId) becomes the active entity,
+      // so Save As switches to the new copy and the dirty state clears.
+      state.draft = saved;
     });
 
     builder.addCase(deleteConfig.fulfilled, (state, action) => {

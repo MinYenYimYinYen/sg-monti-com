@@ -29,7 +29,3 @@ Wider sync architecture: `src/app/vercelCron/expandedSyncPlan.md`, `src/app/verc
 - RealGreen type boundary: `CallLogSearchRaw` mirrors RealGreen (`RGStringRange`); `CallLogSearchCriteria` uses our `TRange<string>`; `remapCallLogSearch` is the only bridge (see the `realgreen-customer` skill).
 - Routes use `createRealGreenRpcHandler` (see the `api-route` skill). Select with `useSelector(callLogSelect.<name>)`; `useCallLog` exposes actions only.
 - Deferred, not designed: employee hydration (`enteredByEmployee`, `assignedToEmployee`) and write-back to RealGreen. Ask before building either.
-
-## Verify
-
-Run the IDE diagnostics on edited files, and `npx tsc --noEmit` if you changed `CallLogTypes.ts`. Do not start the dev server.

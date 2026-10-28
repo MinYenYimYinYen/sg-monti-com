@@ -51,7 +51,3 @@ Read these (they are the source of truth; this skill only orders the steps):
 - Prefer passing an id to a child and letting it `useSelector` + dispatch, over drilling callbacks. If a child gains the ability to dispatch a thunk that has no `transformParams`/`customCondition` guard, flag the duplicate-call risk and ask before proceeding.
 - Collection names describe the data (`groupAssignments`), never `items`/`entries`/`records`.
 - Multi-argument functions take a destructured object parameter.
-
-## Verify
-
-Run the IDE diagnostics on each edited file. Run `npx tsc --noEmit` only if you changed shared types or signatures. Do not start the dev server.

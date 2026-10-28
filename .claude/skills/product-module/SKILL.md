@@ -28,7 +28,3 @@ Code layout under `src/app/realGreen/product/`:
 3. New operations follow the `data-module` and `api-route` skills: add to `ProductContract`, a handler with explicit `roles`, a thunk in `productSlice.ts` via `createStandardThunk`, and a selector. `api/route.ts` already uses `createRealGreenRpcHandler`, so new operations go in the same `handlers` map.
 4. Select data in components with `useSelector(productSelect.<name>)`; hooks in `_lib/hooks` expose actions only.
 5. PDF mix charts live in `mixChart/chartLayouts/`; use the `pdf-document` skill for those.
-
-## Verify
-
-Run the IDE diagnostics on edited files, and `npx tsc --noEmit` if you changed `ProductTypes.ts` or selector signatures. Do not start the dev server.

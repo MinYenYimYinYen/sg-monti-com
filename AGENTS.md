@@ -17,6 +17,7 @@ Task-specific procedures live in `.claude/skills/` and load on demand. Use the m
 | Add or change an entity, API operation, slice, selector or fetch hook | `data-module` | `src/store/store.readme.md`, `src/lib/api/api.readme.md`, `src/lib/mongoose/mongo.readme.md` |
 | Add or change an API route, client API call, or error handling | `api-route` | `src/lib/api/api.readme.md`, `src/lib/errors/errors.readme.md` |
 | Add or change a tab-routed page or layout | `tab-routed-page` | `src/components/PageLayout/`, `src/app/pace/layout.tsx` |
+| File menu, active entity name, Save / Save As, unsaved-changes guard in a feature header | `entity-file-menu` | `src/components/EntityFileControls/`, `src/app/prepayLetters/config/_components/PrepayConfigFileControls.tsx` |
 | Build or restyle UI, add a variant component, fix scrolling | `ui-styling` | `src/style/style.readme.md` |
 | Create or modify a PDF document | `pdf-document` | `src/lib/pdf/pdf.readme.md` |
 | Form templates (positioned slots on preprinted forms), form data type registry, slot options, batch form printing | `form-template` | `src/app/formTemplate/formDataContract.ts`, `src/app/prepayLetters/template/PrepayLetterTypes.tsx` |
@@ -97,6 +98,7 @@ Types follow a layered suffix pattern that signals their role in the data pipeli
 - **Coding style**:
     - **Function parameters**: use an object parameter (destructuring) for functions with more than one argument (`constructor({ a, b }: Params)`). Single arguments are passed directly.
     - **File naming**: `camelCase` for directories and files (`src/app/auth/changePassword/page.tsx`), except Next.js special files (`page.tsx`, `layout.tsx`) and React components (`Button.tsx`).
+    - **Testable logic**: put selector logic and business logic in pure function helpers (plain inputs and outputs, no store, hooks or React). Selectors, hooks and components stay thin wrappers that call them. This applies whether or not tests are written, so logic can be tested later.
     - **Comments**: describe *why*, not *what*. Only comment where there is real potential for confusion. Type-level JSDoc is appropriate when a type's purpose is non-obvious; per-property comments are noise unless a property has a non-obvious constraint or invariant.
     - **Inline callback variable names**: abbreviation is fine in one-liners (`customers.map(c => c.id)`). Block-body callbacks use full names: `customers.map((customer) => { ... })`.
     - **Naming: describe the data, not the structure**: generic words like `entry`, `item`, `record`, `element` or `node` are not acceptable as property names or standalone type names. If Dr. Bob wouldn't know what it holds from the name alone, rename it.
@@ -117,7 +119,7 @@ Types follow a layered suffix pattern that signals their role in the data pipeli
 
 - **PDF**: `@react-pdf/renderer` + `react-pdf-tailwind`. Agents **must** read `src/lib/pdf/pdf.readme.md` before creating or modifying PDF documents. Shared primitives: `src/lib/pdf/tw.ts`, `_components/PDFNumber.tsx`, `_components/pdfIcons.tsx`. Feature PDF documents live beside their feature, not in `src/lib/pdf/`.
 - **RealGreen Customer module**: see `src/app/realGreen/customer/customer.readme.md` and `src/app/realGreen/realGreen.readme.md` (Customers -> Programs -> Services, search schemes, mirror vs RealGreen pipeline). Sample data: `src/app/realGreen/sampleData/samples.readme.md`.
-- **Testing**: Vitest. Agents **must** read `src/__tests__/testing.readme.md` before writing or modifying tests. Entity construction in tests must use `generateCustomer` from `src/app/realGreen/sampleData/generateCustomer.ts`. Never construct `Service`/`Program`/`Customer` manually.
+- **Testing**: Vitest. Do not write tests unprompted: not everything needs them. When a task adds logic worth testing (pricing, business rules, selector helpers), end by asking whether the user wants tests. Once they say yes, or when modifying existing tests, agents **must** read `src/__tests__/testing.readme.md` first. Entity construction in tests must use `generateCustomer` from `src/app/realGreen/sampleData/generateCustomer.ts`. Never construct `Service`/`Program`/`Customer` manually.
 - **Auth**: password resets are admin-assisted (no email). New users are gated with an "applied" role until approved. See `src/app/auth/auth.readme.md`.
 
 ## Session Learnings (Key Conventions)
@@ -126,12 +128,15 @@ Types follow a layered suffix pattern that signals their role in the data pipeli
     - **In Plan Mode**: Use `plan_mode_respond` to acknowledge the loop to the user and wait for them to interrupt and restart the task.
     - **In Act Mode**: Use `attempt_completion` to report: (1) that a tool result loop was detected, (2) which tool/path is looping, and (3) which files were successfully read before the loop started, so the user can provide that context on restart without re-reading from disk.
     - **Never** retry the same or a different tool call after detecting a loop. Results will continue to be replayed regardless of what you call, and continuing wastes context and risks decisions based on stale data.
-* **Type Checking**: After editing files, use `ide_diagnostics` on the modified files for fast feedback. It reads from the IDE's live language server and is much faster than a full compile. Run `tsc --noEmit` only when making type-level changes (modifying shared types, function signatures, or removing exports) that could affect files not directly edited. Do not run `tsc` checks on markdown files.
-* **Task Completion**: Do not start or launch the development server after completing a task. Do not use `start`, `open`, or `npm run dev` as part of `attempt_completion`. Simply report what was done.
+* **Verification and Task Completion**: After editing files, use `ide_diagnostics` (or the IDE lint tool) on the modified files. It reads from the IDE's live language server. This is the only automated check an agent runs; skills do not repeat it.
+    - **Never** run `tsc`, run a full build, or start/launch a dev server (`npm run dev`, `start`, `open`), including in `attempt_completion`.
+    - **Remind the user instead**: if a change could affect imports or types beyond the edited files, end the task with a short reminder to run `npx tsc --noEmit`, naming the change that triggered it. Triggers: shared types or contracts changed, function signatures changed, exports removed/renamed/moved, union types extended (e.g. `CustomerContextMode`), reducer or registry maps changed, files moved.
+    - Do not run or remind about type checks for markdown-only changes.
+    - Simply report what was done.
 
 ## Windows: writing markdown files
 
-Write markdown files with a UTF-8 BOM. In PowerShell:
+Create **new** markdown files with a UTF-8 BOM. Edit **existing** files in place with the editor/patch tool (the file keeps its encoding); never round-trip them through PowerShell `Get-Content`/`Set-Content`, which can mangle non-ASCII characters. To create a new file in PowerShell:
 
 ```powershell
 [System.IO.File]::WriteAllText($path, $content, (New-Object System.Text.UTF8Encoding($true)))

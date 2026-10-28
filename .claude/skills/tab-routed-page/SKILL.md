@@ -70,7 +70,3 @@ The root layout clips overflow, so the outermost element must establish a scroll
 ## Styling
 
 Use semantic colors only (`bg-card`, `bg-primary/20`, `text-foreground`, `text-muted-foreground`). No `bg-white`, `bg-blue-*`, `text-gray-*`. Buttons use `variant` + `intensity` props. Details: `src/style/style.readme.md`.
-
-## Verify
-
-Run the IDE diagnostics on the new layout and pages. Do not start the dev server.

@@ -38,6 +38,7 @@ export const PIPELINE: Partial<Record<CustomerContextMode, "mirror" | "realGreen
   priceIncrease: "mirror",
   priorityService: "mirror",
   recentProduction: "mirror",
+  renewal: "mirror",
   single: "mirror",
 };
 
@@ -312,6 +313,16 @@ export const fullSeasonServicesActions = {
 };
 export const fullSeasonServicesReducer = fullSeasonServicesSlice.reducer;
 
+export const renewalCustomersSlice = createCustomerSlice("renewalCustomers");
+export const renewalCustomersGetDocs = createGetDocsThunk("renewal", "renewalCustomers", renewalCustomersSlice);
+export const renewalCustomersRefresh = createRefreshCustomerThunk("renewalCustomers", "fullSeasonServices");
+export const renewalCustomersActions = {
+  ...renewalCustomersSlice.actions,
+  getDocs: renewalCustomersGetDocs,
+  refreshCustomer: renewalCustomersRefresh,
+};
+export const renewalCustomersReducer = renewalCustomersSlice.reducer;
+
 // Mirror-backed slice for the corrupted records investigation UI.
 // Uses createGetCustDocsMirrorThunk (reads from synced MongoDB) instead of
 // createGetCustDocsThunk (reads from RealGreen API via search schemes).
@@ -380,6 +391,7 @@ export type CustomerContextMode =
   | "printed"
   | "lastSeasonProduction"
   | "recentProduction"
+  | "renewal"
   | "single"
   | "multiSeasonProduction";
 
@@ -451,6 +463,12 @@ export const customerSliceRegistry: CustomerSliceRegistryEntry[] = [
     actions: fullSeasonServicesActions,
     getDocs: fullSeasonServicesGetDocs,
     reducer: fullSeasonServicesReducer,
+  },
+  {
+    context: "renewal",
+    actions: renewalCustomersActions,
+    getDocs: renewalCustomersGetDocs,
+    reducer: renewalCustomersReducer,
   },
   {
     context: "corruptedRecords",

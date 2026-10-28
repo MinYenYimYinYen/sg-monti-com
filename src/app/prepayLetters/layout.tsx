@@ -3,7 +3,7 @@
 import { usePrepayLettersDeps } from "./usePrepayLettersDeps";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
-import { PrepayConfigFileMenu } from "./config/_components/PrepayConfigFileMenu";
+import { PrepayConfigFileControls } from "./config/_components/PrepayConfigFileControls";
 import { Settings2 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -26,7 +26,7 @@ export default function PrepayLettersLayout({ children }: { children: React.Reac
   return (
     <PageLayout>
       <PageLayout.Header
-        left={<PrepayConfigFileMenu />}
+        left={<PrepayConfigFileControls />}
         right={<TabNav items={TABS} rootHref={ROOT_HREF} />}
       />
       <PageLayout.Body>{children}</PageLayout.Body>

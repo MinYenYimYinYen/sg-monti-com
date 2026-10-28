@@ -35,7 +35,3 @@ Key code locations (verified):
 7. **Single-customer refresh** re-runs the *same* scheme as the original load (not `singleCustomer`) with `custId` injected into every step and fixed optimizer values, via the per-context `<context>Refresh` thunk made by `createRefreshCustomerThunk` in `customerSlices.ts`. It always uses the RealGreen API regardless of `PIPELINE`. The readme and `refreshCustomerImplementationPlan.md` describe a `useRefreshCustomer` hook that was never created; the current pattern is the hook's own `refreshCustomer(custId)` (see `useFullSeasonServices.ts`), which dispatches the refresh thunk and then `replaceCustomer(...)` or `removeCustomer(custId)` when the result is empty.
 8. **RealGreen routes** use `createRealGreenRpcHandler`, not `createRpcHandler`, and call `rgApi` / `rgSearchApi`, never raw `fetch`. See the `api-route` skill.
 9. In tests, build entities only with `generateCustomer`. Never construct `Customer`, `Program` or `Service` by hand.
-
-## Verify
-
-Run the IDE diagnostics on edited files. For changes to shared entity types or selectors, run `npx tsc --noEmit` and the Vitest suite (`npx vitest run src/__tests__/realGreen`). Do not start the dev server.

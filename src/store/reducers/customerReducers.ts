@@ -12,6 +12,7 @@ import {
   priceIncreaseCustomerReducer,
   priorityServiceCustomerReducer,
   recentProductionReducer,
+  renewalCustomersReducer,
   singleCustomerReducer,
 } from "@/app/realGreen/customer/slices/customerSlices";
 
@@ -27,6 +28,7 @@ export const customerReducer = combineReducers({
   priceIncrease: priceIncreaseCustomerReducer,
   priorityService: priorityServiceCustomerReducer,
   recentProduction: recentProductionReducer,
+  renewal: renewalCustomersReducer,
   single: singleCustomerReducer,
   central: centralCustomerReducer,
 });

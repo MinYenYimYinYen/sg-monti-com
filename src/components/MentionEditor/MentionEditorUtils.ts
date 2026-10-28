@@ -71,6 +71,20 @@ export class MentionEditorUtils {
   }
 
   /**
+   * Rewrites the visible text of every mention span to `@<data-id>`.
+   *
+   * The chip text is only a cached display label (resolved value or raw name depending on
+   * editor mode); `data-id` is the real content. Canonicalizing makes two HTML strings that
+   * differ only by label compare equal, and keeps display labels out of stored HTML.
+   */
+  static canonicalizeMentions(html: string): string {
+    return html.replace(
+      /(<span[^>]*data-type="mention"[^>]*data-id="([^"]+)"[^>]*>)[\s\S]*?(<\/span>)/g,
+      (_match, open: string, id: string, close: string) => `${open}@${id}${close}`,
+    );
+  }
+
+  /**
    * Builds the flat suggestion items list from the keys of a vars object.
    * Filters by the current query string (prefix match, case-insensitive).
    */

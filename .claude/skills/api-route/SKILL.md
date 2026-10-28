@@ -40,7 +40,3 @@ Reference route: `src/app/priceIncrease/seasonIncreases/api/route.ts`.
 - Thunks built by `createStandardThunk` toast and reject automatically. Do not add your own `try/catch` + toast around a dispatch.
 - Expected or background failures (auth checks, token refresh): `handleError(e, { silent: true })`, or `config: { silentError: true }` on the dispatch.
 - In components that call `api()` directly: `try { ... } catch (err) { handleError(err) }`.
-
-## Verify
-
-Run the IDE diagnostics on the contract, route and slice. If you changed `ApiContract`, `HandlerMap` or other shared types, also run `npx tsc --noEmit`. Do not start the dev server.

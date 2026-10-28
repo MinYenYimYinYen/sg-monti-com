@@ -40,4 +40,4 @@ Copy the Lucide SVG path data into a new `<Name>PDFIcon` in `pdfIcons.tsx` using
 
 ## Verify
 
-Run the IDE diagnostics on the new files. You cannot see the rendered PDF, so say clearly that layout was not visually checked. Do not start the dev server.
+You cannot see the rendered PDF, so say clearly that layout was not visually checked.

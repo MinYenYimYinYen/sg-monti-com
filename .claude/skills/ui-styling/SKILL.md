@@ -59,4 +59,4 @@ No `useCallback`/`useMemo`. Function props end in `Action`. No `useEffect` + `se
 
 ## Verify
 
-Run the IDE diagnostics on edited files. Search the diff for `bg-white`, `bg-blue`, `bg-green`, `text-gray` before finishing. Do not start the dev server.
+Search the diff for `bg-white`, `bg-blue`, `bg-green`, `text-gray` before finishing.
