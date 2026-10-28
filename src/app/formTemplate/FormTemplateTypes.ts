@@ -1,16 +1,15 @@
 // ─── Slot ─────────────────────────────────────────────────────────────────────
 
 /**
- * A single positioned slot in a form letter template.
- * `key` bridges the template to the data contract — it must match a key in the
- * feature's `FormLetterDataContract`. The contract owns all rendering decisions;
+ * A single positioned slot in a form template.
+ * `key` bridges the template to the data contract: it must match a key in the
+ * data type's `FormDataContract`. The contract owns all rendering decisions;
  * the slot only stores position and any user-configured options.
  *
- * `options` is stored as a loose record and sanitized against the descriptor's
- * `optionSchema` on the server read path — so the client always receives a
- * fully valid options object.
+ * `options` is stored as a loose record. Renderers merge it over the descriptor's
+ * `getSchemaDefaults(optionSchema)`, so options added later still resolve.
  */
-export type FormLetterSlotDoc = {
+export type FormTemplateSlotDoc = {
   /** Unique identifier for this slot instance — allows the same key to appear multiple times. */
   slotId: string;
   key: string;
@@ -18,17 +17,21 @@ export type FormLetterSlotDoc = {
   y: number;
   width: number;
   height: number;
-  /** Persisted per-slot options. Sanitized against the descriptor's optionSchema on read. */
+  /** Persisted per-slot options, merged over the schema defaults at render time. */
   options?: Record<string, unknown>;
 };
 
 // ─── Template ─────────────────────────────────────────────────────────────────
 
-export type FormLetterTemplateDoc = {
+/**
+ * `TDataType` defaults to `string` so the generic template module never depends on a
+ * feature. Code that holds the registry narrows it to `FormDataType`.
+ */
+export type FormTemplateDoc<TDataType extends string = string> = {
   templateId: string;
   templateName: string;
-  /** Identifies which data contract this template consumes. Must be a registered key in FORM_LETTER_DATA_TYPE_REGISTRY. */
-  dataType: import("./formLetterDataTypes").FormLetterDataType;
+  /** Key of the registered form data type this template consumes. */
+  dataType: TDataType;
   pageSize: "LETTER" | "LEGAL";
-  slots: FormLetterSlotDoc[];
+  slots: FormTemplateSlotDoc[];
 };

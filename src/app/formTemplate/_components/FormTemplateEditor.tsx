@@ -6,12 +6,10 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { formTemplateActions } from "@/app/formTemplate/formTemplateSlice";
 import { formTemplateSelect } from "@/app/formTemplate/formTemplateSelect";
 import {
-  FORM_LETTER_DATA_TYPE_OPTIONS,
-  FORM_LETTER_DATA_TYPE_REGISTRY,
-  type FormLetterDataType,
+  type FormDataTypeDescriptor,
   type AnyFieldDescriptor,
-} from "@/app/formTemplate/formLetterDataTypes";
-import { hasOptions } from "@/app/formTemplate/formLetterDataTypes";
+} from "@/app/formTemplate/formDataContract";
+import { hasOptions } from "@/app/formTemplate/formDataContract";
 import { getSchemaDefaults } from "@/app/formTemplate/slotOptionSchema";
 import { PagePreview } from "./PagePreview";
 import { SlotEditor } from "./SlotEditor";
@@ -60,7 +58,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/style/components/popover";
-import type { FormLetterSlotDoc } from "@/app/formTemplate/FormTemplateTypes";
+import type { FormTemplateDoc, FormTemplateSlotDoc } from "@/app/formTemplate/FormTemplateTypes";
 import { Braces, Minus, Plus, FileText, Move, Eye, Save } from "lucide-react";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { SamplePdfDownload } from "./SamplePdfDownload";
@@ -83,7 +81,7 @@ function makeSlotForKey(
   key: string,
   scrollContainer: HTMLDivElement | null,
   scale: number,
-): FormLetterSlotDoc {
+): FormTemplateSlotDoc {
   let x = 1;
   let y = 1;
 
@@ -105,24 +103,33 @@ function makeSlotForKey(
   };
 }
 
-/** Creates a blank new template. */
-function makeNewTemplate() {
+/** Creates a blank new template for the given data type. */
+function makeNewTemplate(dataType: string): FormTemplateDoc {
   return {
     templateId: `tpl_${Date.now()}`,
     templateName: "New Template",
-    dataType: "PrepayLetter" as FormLetterDataType,
-    pageSize: "LEGAL" as const,
-    slots: [] as FormLetterSlotDoc[],
+    dataType,
+    pageSize: "LEGAL",
+    slots: [],
   };
 }
+
+type FormTemplateEditorProps = {
+  /** Registered form data types. Injected so this module never imports a feature. */
+  dataTypeRegistry: Record<string, FormDataTypeDescriptor>;
+};
 
 /**
  * Two-panel template editor.
  * Left: tabbed panel (Config / Add Fields / Customize).
  * Right: page preview with isDirty save trigger in the toolbar.
  */
-export function FormTemplateEditor() {
+export function FormTemplateEditor({ dataTypeRegistry }: FormTemplateEditorProps) {
   const dispatch = useAppDispatch();
+  const dataTypeOptions = Object.entries(dataTypeRegistry).map(([value, registered]) => ({
+    value,
+    label: registered.label,
+  }));
   const draft = useSelector(formTemplateSelect.draft);
   const templates = useSelector(formTemplateSelect.templates);
   const previewScale = useSelector(formTemplateSelect.previewScale);
@@ -173,7 +180,7 @@ export function FormTemplateEditor() {
         <Button
           variant="primary"
           intensity="solid"
-          onClick={() => dispatch(formTemplateActions.setDraft(makeNewTemplate()))}
+          onClick={() => dispatch(formTemplateActions.setDraft(makeNewTemplate(dataTypeOptions[0].value)))}
         >
           New Template
         </Button>
@@ -181,7 +188,7 @@ export function FormTemplateEditor() {
     );
   }
 
-  const descriptor = FORM_LETTER_DATA_TYPE_REGISTRY[draft.dataType];
+  const descriptor = dataTypeRegistry[draft.dataType];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const contract: Record<string, AnyFieldDescriptor<any>> = descriptor?.contract ?? {};
   const availableKeys = descriptor ? Object.keys(contract) : [];
@@ -201,7 +208,7 @@ export function FormTemplateEditor() {
     }, 50);
   }
 
-  function handleSaveSlot(updated: FormLetterSlotDoc) {
+  function handleSaveSlot(updated: FormTemplateSlotDoc) {
     dispatch(
       formTemplateActions.updateDraftSlot({
         slotId: updated.slotId,
@@ -299,14 +306,14 @@ export function FormTemplateEditor() {
                 <Select
                   value={draft.dataType}
                   onValueChange={(v) =>
-                    dispatch(formTemplateActions.updateDraft({ dataType: v as FormLetterDataType }))
+                    dispatch(formTemplateActions.updateDraft({ dataType: v }))
                   }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {FORM_LETTER_DATA_TYPE_OPTIONS.map((opt) => (
+                    {dataTypeOptions.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
                       </SelectItem>

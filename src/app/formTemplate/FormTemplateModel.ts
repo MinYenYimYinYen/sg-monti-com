@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import { createModel } from "@/lib/mongoose/createModel";
-import type { FormLetterTemplateDoc, FormLetterSlotDoc } from "./FormTemplateTypes";
+import type { FormTemplateDoc, FormTemplateSlotDoc } from "./FormTemplateTypes";
 
-const FormLetterSlotSchema = new mongoose.Schema<FormLetterSlotDoc>(
+const FormTemplateSlotSchema = new mongoose.Schema<FormTemplateSlotDoc>(
   {
     slotId: { type: String, required: true },
     key: { type: String, required: true },
@@ -15,18 +15,20 @@ const FormLetterSlotSchema = new mongoose.Schema<FormLetterSlotDoc>(
   { _id: false },
 );
 
-const FormLetterTemplateSchema = new mongoose.Schema<FormLetterTemplateDoc>(
+const FormTemplateSchema = new mongoose.Schema<FormTemplateDoc>(
   {
     templateId: { type: String, required: true, unique: true, index: true },
     templateName: { type: String, required: true },
     dataType: { type: String, required: true },
     pageSize: { type: String, required: true, enum: ["LETTER", "LEGAL"] },
-    slots: { type: [FormLetterSlotSchema], required: true, default: [] },
+    slots: { type: [FormTemplateSlotSchema], required: true, default: [] },
   },
   { timestamps: true },
 );
 
-export const FormTemplateModel = createModel<FormLetterTemplateDoc>(
+// The model name determines the Mongo collection. It predates the "Letter" rename, so
+// changing it would silently point at an empty collection.
+export const FormTemplateModel = createModel<FormTemplateDoc>(
   "FormLetterTemplate",
-  FormLetterTemplateSchema,
+  FormTemplateSchema,
 );

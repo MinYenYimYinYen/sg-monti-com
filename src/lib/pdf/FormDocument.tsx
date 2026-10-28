@@ -1,11 +1,11 @@
 import { Document, Page } from "@react-pdf/renderer";
 import { PositionedBox } from "@/lib/pdf/_components/PositionedBox";
-import type { FormLetterTemplateDoc } from "@/app/formTemplate/FormTemplateTypes";
-import { hasOptions, type AnyFieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
+import type { FormTemplateDoc } from "@/app/formTemplate/FormTemplateTypes";
+import { hasOptions, type AnyFieldDescriptor } from "@/app/formTemplate/formDataContract";
 import { getSchemaDefaults } from "@/app/formTemplate/slotOptionSchema";
 
-type FormLetterDocumentProps = {
-  template: FormLetterTemplateDoc;
+type FormDocumentProps = {
+  template: FormTemplateDoc;
   /** The full data object passed to every slot renderer. */
   data: unknown;
   /** The feature's data contract — maps slot keys to their react-pdf renderers. */
@@ -14,7 +14,7 @@ type FormLetterDocumentProps = {
 };
 
 /**
- * Generic PDF renderer for form letter templates.
+ * Generic PDF renderer for form templates.
  * Iterates template slots and delegates rendering to the contract's `render` function
  * for each slot key. The contract owns all rendering decisions; this component only
  * handles positioning via `PositionedBox`.
@@ -23,11 +23,11 @@ type FormLetterDocumentProps = {
  * schema defaults before being passed to the renderer. This ensures renderers always
  * receive a fully populated options object even if the slot predates an option being added.
  */
-export function FormLetterDocument({
+export function FormDocument({
   template,
   data,
   contract,
-}: FormLetterDocumentProps) {
+}: FormDocumentProps) {
   return (
     <Document title={template.templateName}>
       <Page size={template.pageSize}>

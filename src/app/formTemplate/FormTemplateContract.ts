@@ -1,18 +1,18 @@
 import type { ApiContract } from "@/lib/api/types/ApiContract";
 import type { DataResponse } from "@/lib/api/types/responses";
-import type { FormLetterTemplateDoc } from "./FormTemplateTypes";
+import type { FormTemplateDoc } from "./FormTemplateTypes";
 
 export interface FormTemplateContract extends ApiContract {
   getAll: {
     params: Record<string, never>;
-    result: DataResponse<FormLetterTemplateDoc[]>;
+    result: DataResponse<FormTemplateDoc[]>;
   };
   upsert: {
-    params: { template: FormLetterTemplateDoc };
-    result: DataResponse<FormLetterTemplateDoc>;
+    params: { template: FormTemplateDoc };
+    result: DataResponse<FormTemplateDoc>;
   };
   deleteOne: {
     params: { templateId: string };
-    result: DataResponse<FormLetterTemplateDoc>;
+    result: DataResponse<FormTemplateDoc>;
   };
 }

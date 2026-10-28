@@ -19,10 +19,12 @@ Task-specific procedures live in `.claude/skills/` and load on demand. Use the m
 | Add or change a tab-routed page or layout | `tab-routed-page` | `src/components/PageLayout/`, `src/app/pace/layout.tsx` |
 | Build or restyle UI, add a variant component, fix scrolling | `ui-styling` | `src/style/style.readme.md` |
 | Create or modify a PDF document | `pdf-document` | `src/lib/pdf/pdf.readme.md` |
+| Form templates (positioned slots on preprinted forms), form data type registry, slot options, batch form printing | `form-template` | `src/app/formTemplate/formDataContract.ts`, `src/app/prepayLetters/PrepayLetterTypes.tsx` |
 | Write or modify tests | `write-tests` | `src/__tests__/testing.readme.md` |
 | RealGreen Customer / Program / Service pipeline, search schemes, PIPELINE flag | `realgreen-customer` | `src/app/realGreen/realGreen.readme.md`, `src/app/realGreen/customer/customer.readme.md` |
 | RealGreen Product module (Master / Sub / Single) | `product-module` | `src/app/realGreen/product/_lib/product.readme.md` |
 | RealGreen CallLog module and its sync | `call-log` | `src/app/realGreen/callLog/callLog.readme.md` |
+| Read live data from MongoDB (inspect, count, report on actual documents; read-only, bounded) | `mongo-read` | `.claude/skills/mongo-read/SKILL.md` |
 | Price Increase module (settings, season plans, results pipeline, flag write-back) | — | `src/app/priceIncrease/priceIncrease.readme.md` (read only the Required Reading for the relevant section) |
 
 ## Styling

@@ -1,10 +1,9 @@
 /**
- * Slot option schema system — shared between client and server.
+ * Slot option schema system.
  *
  * No React, Mongoose, or Next.js imports allowed in this file.
  * It is consumed by:
- *   - `formLetterDataTypes.ts` (client) — for typing FieldDescriptorWithOptions
- *   - `api/route.ts` (server) — for sanitizing stored options on read
+ *   - `formDataContract.ts` (client) — for typing FieldDescriptorWithOptions
  *   - `SlotEditor.tsx` (client) — for rendering option controls
  */
 
@@ -62,31 +61,4 @@ export function getSchemaDefaults<TOptions extends Record<string, OptionValue>>(
   return Object.fromEntries(
     Object.entries(schema).map(([key, field]) => [key, field.default]),
   ) as TOptions;
-}
-
-/**
- * Sanitizes a stored options object against a schema.
- *
- * - Keys not in the schema are dropped (handles options that were later removed).
- * - Missing keys are filled from schema defaults (handles newly added options).
- * - Values of the wrong primitive type are replaced with the schema default.
- *
- * This is called on the server read path so the client always receives a fully
- * valid options object regardless of how stale the stored data is.
- */
-export function sanitizeOptions<TOptions extends Record<string, OptionValue>>(
-  stored: Record<string, unknown>,
-  schema: SlotOptionSchema<TOptions>,
-): TOptions {
-  const defaults = getSchemaDefaults(schema);
-  const result: Record<string, OptionValue> = {};
-  for (const key of Object.keys(schema)) {
-    const storedValue = stored[key];
-    const expectedType = typeof defaults[key as keyof TOptions];
-    result[key] =
-      typeof storedValue === expectedType
-        ? (storedValue as OptionValue)
-        : (defaults[key as keyof TOptions] as OptionValue);
-  }
-  return result as TOptions;
 }

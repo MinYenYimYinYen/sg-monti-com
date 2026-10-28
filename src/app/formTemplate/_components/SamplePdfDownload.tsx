@@ -4,12 +4,12 @@ import { useEffect } from "react";
 import { usePDF } from "@react-pdf/renderer";
 import { Button } from "@/style/components/button";
 import { Printer } from "lucide-react";
-import { FormLetterDocument } from "@/lib/pdf/FormLetterDocument";
-import type { FormLetterTemplateDoc } from "@/app/formTemplate/FormTemplateTypes";
-import type { AnyFieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
+import { FormDocument } from "@/lib/pdf/FormDocument";
+import type { FormTemplateDoc } from "@/app/formTemplate/FormTemplateTypes";
+import type { AnyFieldDescriptor } from "@/app/formTemplate/formDataContract";
 
 type SamplePdfDownloadProps = {
-  draft: FormLetterTemplateDoc;
+  draft: FormTemplateDoc;
   sampleData: unknown;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   contract: Record<string, AnyFieldDescriptor<any>>;
@@ -27,7 +27,7 @@ export function SamplePdfDownload({ draft, sampleData, contract }: SamplePdfDown
 
   useEffect(() => {
     updateInstance(
-      <FormLetterDocument
+      <FormDocument
         template={draft}
         data={sampleData}
         contract={contract}

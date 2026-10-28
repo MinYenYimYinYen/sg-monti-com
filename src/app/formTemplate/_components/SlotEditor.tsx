@@ -11,18 +11,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/style/components/select";
-import type { FormLetterSlotDoc } from "@/app/formTemplate/FormTemplateTypes";
-import { hasOptions, type AnyFieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
+import type { FormTemplateSlotDoc } from "@/app/formTemplate/FormTemplateTypes";
+import { hasOptions, type AnyFieldDescriptor } from "@/app/formTemplate/formDataContract";
 import { getSchemaDefaults, type OptionValue } from "@/app/formTemplate/slotOptionSchema";
 
 type SlotEditorProps = {
-  slot: FormLetterSlotDoc;
+  slot: FormTemplateSlotDoc;
   slotLabel: string;
   /** The descriptor for this slot — used to render option controls when present. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   descriptor?: AnyFieldDescriptor<any>;
-  onSaveAction: (slot: FormLetterSlotDoc) => void;
-  onDeleteAction: (key: string) => void;
+  onSaveAction: (slot: FormTemplateSlotDoc) => void;
+  onDeleteAction: (slotId: string) => void;
 };
 
 /**
@@ -48,8 +48,8 @@ export function SlotEditor({ slot, slotLabel, descriptor, onSaveAction, onDelete
     setOptions((prev) => ({ ...prev, [key]: value }));
   }
 
-  function buildSlot(): FormLetterSlotDoc {
-    const base: FormLetterSlotDoc = {
+  function buildSlot(): FormTemplateSlotDoc {
+    const base: FormTemplateSlotDoc = {
       slotId: slot.slotId,
       key: slot.key,
       x: parseFloat(x) || 0,

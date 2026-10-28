@@ -4,12 +4,12 @@ import Image from "next/image";
 import type { StaticImageData } from "next/image";
 import { useState } from "react";
 import { cn } from "@/style/utils";
-import { hasOptions, type AnyFieldDescriptor } from "@/app/formTemplate/formLetterDataTypes";
+import { hasOptions, type AnyFieldDescriptor } from "@/app/formTemplate/formDataContract";
 import { getSchemaDefaults } from "@/app/formTemplate/slotOptionSchema";
 import { DragHandle, type GuideLine } from "./DragHandle";
 import { PDFViewer } from "@react-pdf/renderer";
-import { FormLetterDocument } from "@/lib/pdf/FormLetterDocument";
-import type { FormLetterTemplateDoc, FormLetterSlotDoc } from "@/app/formTemplate/FormTemplateTypes";
+import { FormDocument } from "@/lib/pdf/FormDocument";
+import type { FormTemplateDoc, FormTemplateSlotDoc } from "@/app/formTemplate/FormTemplateTypes";
 import type { SlotEdges } from "@/app/formTemplate/formTemplateSelect";
 import { SlotEditor } from "./SlotEditor";
 import {
@@ -31,7 +31,7 @@ const PAGE_DIMENSIONS: Record<PageSize, { width: number; height: number }> = {
 type SlotPatch = { x?: number; y?: number; width?: number; height?: number };
 
 type PagePreviewProps = {
-  template: FormLetterTemplateDoc;
+  template: FormTemplateDoc;
   sampleData: unknown;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   contract: Record<string, AnyFieldDescriptor<any>>;
@@ -40,7 +40,7 @@ type PagePreviewProps = {
   /** Called when the user drags a handle to reposition/resize a slot. */
   onSlotUpdateAction?: (slotId: string, patch: SlotPatch) => void;
   /** Called when the user saves slot edits from the popover. */
-  onSlotSaveAction?: (slot: FormLetterSlotDoc) => void;
+  onSlotSaveAction?: (slot: FormTemplateSlotDoc) => void;
   /** Called when the user removes a slot from the popover. */
   onSlotDeleteAction?: (slotId: string) => void;
   /** Scale factor for fitting the page into the panel. Default: 1. */
@@ -64,7 +64,7 @@ type PagePreviewProps = {
  * Each slot has a settings popover for editing position values and removing the slot.
  * During Ctrl+drag, snapped-to slots highlight their borders.
  *
- * **PDF mode**: Live `PDFViewer` rendering the actual PDF output via `FormLetterDocument`.
+ * **PDF mode**: Live `PDFViewer` rendering the actual PDF output via `FormDocument`.
  * No drag interaction is available in this mode.
  */
 export function PagePreview({
@@ -94,7 +94,7 @@ export function PagePreview({
   if (previewMode === "pdf") {
     return (
       <PDFViewer style={{ width: "100%", height: "100%", border: "none" }}>
-        <FormLetterDocument
+        <FormDocument
           template={template}
           data={sampleData}
           contract={contract}

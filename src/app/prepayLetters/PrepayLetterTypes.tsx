@@ -2,8 +2,8 @@
 
 import { Text, View } from "@react-pdf/renderer";
 import { Square } from "lucide-react";
-import type { FormLetterContract } from "@/app/formTemplate/formLetterDataTypes";
-import type { FieldDescriptorWithOptions } from "@/app/formTemplate/formLetterDataTypes";
+import type { FormDataContract } from "@/app/formTemplate/formDataContract";
+import type { FieldDescriptorWithOptions } from "@/app/formTemplate/formDataContract";
 import prepayLetterFormImageSrc from "./prepayLetterForm.jpg";
 import type { Company } from "@/app/realGreen/company/_lib/CompanyTypes";
 import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
@@ -251,7 +251,7 @@ function getContactUsText({ company }: PrepayLetterData): string {
 /**
  * Rendering contract for the prepay letter.
  * Each slot receives the full `PrepayLetterData` object and renders its portion of the letter.
- * `satisfies FormLetterContract<PrepayLetterData, PrepayLetterSlot>` enforces that every
+ * `satisfies FormDataContract<PrepayLetterData, PrepayLetterSlot>` enforces that every
  * slot key in `PrepayLetterSlot` is present here.
  */
 export const prepayLetterContract = {
@@ -1529,7 +1529,7 @@ export const prepayLetterContract = {
       </div>
     ),
   } satisfies WithText,
-} satisfies FormLetterContract<PrepayLetterData, PrepayLetterSlot>;
+} satisfies FormDataContract<PrepayLetterData, PrepayLetterSlot>;
 
 // ─── Sample Data ──────────────────────────────────────────────────────────────
 

@@ -1,12 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import type { FormTemplateContract } from "./FormTemplateContract";
-import type { FormLetterTemplateDoc, FormLetterSlotDoc } from "./FormTemplateTypes";
+import type { FormTemplateDoc, FormTemplateSlotDoc } from "./FormTemplateTypes";
 
 type FormTemplateState = {
-  templates: FormLetterTemplateDoc[];
+  templates: FormTemplateDoc[];
   /** The template currently open in the editor. null = new/blank. */
-  draft: FormLetterTemplateDoc | null;
+  draft: FormTemplateDoc | null;
   /** Scale factor for the page preview (1.0 = full size at 96dpi). */
   previewScale: number;
   /** Whether the right panel shows the drag handles overlay or the live PDF viewer. */
@@ -47,26 +47,26 @@ const formTemplateSlice = createSlice({
   initialState,
   reducers: {
     /** Load a saved template into the editor. */
-    setDraft: (state, action: PayloadAction<FormLetterTemplateDoc>) => {
+    setDraft: (state, action: PayloadAction<FormTemplateDoc>) => {
       state.draft = action.payload;
     },
     /** Patch top-level fields on the active draft. */
     updateDraft: (
       state,
-      action: PayloadAction<Partial<Omit<FormLetterTemplateDoc, "slots">>>,
+      action: PayloadAction<Partial<Omit<FormTemplateDoc, "slots">>>,
     ) => {
       if (state.draft) {
         state.draft = { ...state.draft, ...action.payload };
       }
     },
     /** Replace the entire slots array on the draft. */
-    setDraftSlots: (state, action: PayloadAction<FormLetterSlotDoc[]>) => {
+    setDraftSlots: (state, action: PayloadAction<FormTemplateSlotDoc[]>) => {
       if (state.draft) {
         state.draft.slots = action.payload;
       }
     },
     /** Add a new slot to the draft. */
-    addDraftSlot: (state, action: PayloadAction<FormLetterSlotDoc>) => {
+    addDraftSlot: (state, action: PayloadAction<FormTemplateSlotDoc>) => {
       if (state.draft) {
         state.draft.slots.push(action.payload);
       }
@@ -74,7 +74,7 @@ const formTemplateSlice = createSlice({
     /** Update a single slot by slotId. */
     updateDraftSlot: (
       state,
-      action: PayloadAction<{ slotId: string; slot: FormLetterSlotDoc }>,
+      action: PayloadAction<{ slotId: string; slot: FormTemplateSlotDoc }>,
     ) => {
       if (state.draft) {
         const idx = state.draft.slots.findIndex(

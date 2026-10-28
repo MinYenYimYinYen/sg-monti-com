@@ -1,25 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
-import { useAppDispatch } from "@/lib/hooks/redux";
-import { formTemplateActions } from "./formTemplateSlice";
+import { useFormTemplate } from "./useFormTemplate";
 import { FormTemplateEditor } from "./_components/FormTemplateEditor";
+import { FORM_DATA_TYPE_REGISTRY } from "@/app/formDataTypes/formDataTypeRegistry";
 
 export default function FormTemplatePage() {
-  const dispatch = useAppDispatch();
-
-  useEffect(() => {
-    dispatch(
-      formTemplateActions.getAll({
-        params: {},
-        config: { loadingMsg: "Loading form templates..." },
-      }),
-    );
-  }, [dispatch]);
+  useFormTemplate({ autoLoad: true });
 
   return (
     <div className="h-full overflow-hidden">
-      <FormTemplateEditor />
+      <FormTemplateEditor dataTypeRegistry={FORM_DATA_TYPE_REGISTRY} />
     </div>
   );
 }
