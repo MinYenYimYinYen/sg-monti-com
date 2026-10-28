@@ -31,6 +31,11 @@ import {
   getStubTotals,
   type TotalsSource,
 } from "@/app/prepayLetters/stubTotals";
+import {
+  getBalanceAdjustment,
+  getTotalDue,
+} from "@/app/prepayLetters/balanceAdjustment";
+import { buildServicePriceRows } from "@/app/prepayLetters/servicePriceRows";
 import { buildIntentionLines } from "@/app/prepayLetters/intentionLines";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 
@@ -105,6 +110,26 @@ export const tableOptionSchema: SlotOptionSchema<TableOptions> = {
 };
 
 /**
+ * Options for the current price table. Past `thresholdForProgramRollup` services the
+ * table lists one row per program instead of one per service, so a customer with
+ * every program does not overflow the box.
+ */
+export type PriceTableOptions = TableOptions & {
+  thresholdForProgramRollup: number;
+};
+export const priceTableOptionSchema: SlotOptionSchema<PriceTableOptions> = {
+  ...tableOptionSchema,
+  thresholdForProgramRollup: {
+    type: "number",
+    label: "Roll up to programs after N services",
+    min: 1,
+    max: 50,
+    step: 1,
+    default: 12,
+  },
+};
+
+/**
  * Options for the stub money slots. `totalsSource` picks which totals appear on the
  * stub; "upsell" falls back to the current totals when there is no priceable upsell.
  */
@@ -162,6 +187,11 @@ type PrepayLetterSlot =
 type WithText = FieldDescriptorWithOptions<PrepayLetterData, TextOptions>;
 /** Shorthand for a descriptor with TableOptions. */
 type WithTable = FieldDescriptorWithOptions<PrepayLetterData, TableOptions>;
+/** Shorthand for a descriptor with PriceTableOptions. */
+type WithPriceTable = FieldDescriptorWithOptions<
+  PrepayLetterData,
+  PriceTableOptions
+>;
 /** Shorthand for a descriptor with StubTotalsOptions. */
 type WithStubTotals = FieldDescriptorWithOptions<
   PrepayLetterData,
@@ -661,22 +691,24 @@ export const prepayLetterContract = {
 
   currentPriceTable: {
     label: "Current Price Table (Standard Discount)",
-    optionSchema: tableOptionSchema,
+    optionSchema: priceTableOptionSchema,
     render: (
       { customer }: PrepayLetterData,
-      { fontSize, lineSpacing }: TableOptions,
+      { fontSize, lineSpacing, thresholdForProgramRollup }: PriceTableOptions,
     ) => {
-      const services = getPrepayPrograms(customer).flatMap((p) => p.services);
+      const priceRows = buildServicePriceRows({
+        customer,
+        thresholdForProgramRollup,
+      });
       return (
         <View
           style={{ display: "flex", flexDirection: "column", width: "100%" }}
         >
-          {services.map((service) => {
-            const hasDiscount = service.x.applicableDiscounts.length > 0;
-            const discountedPrice = service.x.getPriceAfterDiscounts("price");
+          {priceRows.map((priceRow) => {
+            const { hasDiscount } = priceRow;
             return (
               <View
-                key={service.servId}
+                key={priceRow.key}
                 style={{
                   display: "flex",
                   flexDirection: "row",
@@ -684,9 +716,9 @@ export const prepayLetterContract = {
                   marginBottom: (lineSpacing - 1) * fontSize,
                 }}
               >
-                {/* Service name — fills remaining space */}
+                {/* Service or program name — fills remaining space */}
                 <Text style={{ flex: 1, fontSize }}>
-                  {service.servCode.name}
+                  {priceRow.label}
                   {hasDiscount && "*"}
                 </Text>
 
@@ -707,11 +739,11 @@ export const prepayLetterContract = {
                         marginRight: 4,
                       }}
                     >
-                      {formatNumber({ children: service.price, decimals: 2 })}
+                      {formatNumber({ children: priceRow.originalPrice, decimals: 2 })}
                     </Text>
                   )}
                   <PDFNumber style={{ fontSize }} decimals={2}>
-                    {discountedPrice}
+                    {priceRow.price}
                   </PDFNumber>
                 </View>
               </View>
@@ -723,9 +755,12 @@ export const prepayLetterContract = {
     previewRender: (
       { customer }: PrepayLetterData,
       scale: number,
-      { fontSize, lineSpacing }: TableOptions,
+      { fontSize, lineSpacing, thresholdForProgramRollup }: PriceTableOptions,
     ) => {
-      const services = getPrepayPrograms(customer).flatMap((p) => p.services);
+      const priceRows = buildServicePriceRows({
+        customer,
+        thresholdForProgramRollup,
+      });
       const priceColWidth = PRICE_COL_WIDTH * scale;
       return (
         <div
@@ -735,21 +770,20 @@ export const prepayLetterContract = {
             width: "100%",
           }}
         >
-          {services.map((service) => {
-            const hasDiscount = service.x.applicableDiscounts.length > 0;
-            const discountedPrice = service.x.getPriceAfterDiscounts("price");
+          {priceRows.map((priceRow) => {
+            const { hasDiscount } = priceRow;
             return (
               <div
-                key={service.servId}
+                key={priceRow.key}
                 style={{
                   display: "flex",
                   width: "100%",
                   alignItems: "baseline",
                 }}
               >
-                {/* Service name — fills remaining space */}
+                {/* Service or program name — fills remaining space */}
                 <span style={{ flex: 1 }}>
-                  {service.servCode.name}
+                  {priceRow.label}
                   {hasDiscount && "*"}
                 </span>
 
@@ -770,11 +804,11 @@ export const prepayLetterContract = {
                         color: "#888888",
                       }}
                     >
-                      {formatNumber({ children: service.price, decimals: 2 })}
+                      {formatNumber({ children: priceRow.originalPrice, decimals: 2 })}
                     </span>
                   )}
                   <span>
-                    {formatNumber({ children: discountedPrice, decimals: 2 })}
+                    {formatNumber({ children: priceRow.price, decimals: 2 })}
                   </span>
                 </div>
               </div>
@@ -783,7 +817,7 @@ export const prepayLetterContract = {
         </div>
       );
     },
-  } satisfies WithTable,
+  } satisfies WithPriceTable,
 
   upsellPriceTable: {
     label: "Upsell Price Table (Upsell Discount)",
@@ -932,6 +966,8 @@ export const prepayLetterContract = {
           programs: getPrepayPrograms(customer),
           prepayPercent: pp,
         });
+      const balances = getBalanceAdjustment({ customer: customer, config: config });
+      const totalDue = getTotalDue({ total, balances });
       const rowStyle = {
         display: "flex" as const,
         flexDirection: "row" as const,
@@ -971,10 +1007,26 @@ export const prepayLetterContract = {
               {tax}
             </PDFNumber>
           </View>
+          {balances.creditBalance > 0 && (
+            <View style={rowStyle}>
+              <Text style={{ flex: 1, fontSize }}>Credit Balance</Text>
+              <Text style={numStyle}>
+                -{formatNumber({ children: balances.creditBalance, decimals: 2 })}
+              </Text>
+            </View>
+          )}
+          {balances.remitBalance > 0 && (
+            <View style={rowStyle}>
+              <Text style={{ flex: 1, fontSize }}>Remit Balance</Text>
+              <PDFNumber style={numStyle} decimals={2}>
+                {balances.remitBalance}
+              </PDFNumber>
+            </View>
+          )}
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>Total</Text>
             <PDFNumber style={numStyle} decimals={2}>
-              {total}
+              {totalDue}
             </PDFNumber>
           </View>
         </View>
@@ -991,6 +1043,8 @@ export const prepayLetterContract = {
           programs: getPrepayPrograms(customer),
           prepayPercent: pp,
         });
+      const balances = getBalanceAdjustment({ customer: customer, config: config });
+      const totalDue = getTotalDue({ total, balances });
       const priceColWidth = PRICE_COL_WIDTH * scale;
       const rowStyle: React.CSSProperties = {
         display: "flex",
@@ -1029,10 +1083,26 @@ export const prepayLetterContract = {
               {formatNumber({ children: tax, decimals: 2 })}
             </span>
           </div>
+          {balances.creditBalance > 0 && (
+            <div style={rowStyle}>
+              <span style={{ flex: 1 }}>Credit Balance</span>
+              <span style={numStyle}>
+                -{formatNumber({ children: balances.creditBalance, decimals: 2 })}
+              </span>
+            </div>
+          )}
+          {balances.remitBalance > 0 && (
+            <div style={rowStyle}>
+              <span style={{ flex: 1 }}>Remit Balance</span>
+              <span style={numStyle}>
+                {formatNumber({ children: balances.remitBalance, decimals: 2 })}
+              </span>
+            </div>
+          )}
           <div style={rowStyle}>
             <span style={{ flex: 1 }}>Total</span>
             <span style={numStyle}>
-              {formatNumber({ children: total, decimals: 2 })}
+              {formatNumber({ children: totalDue, decimals: 2 })}
             </span>
           </div>
         </div>
@@ -1051,6 +1121,8 @@ export const prepayLetterContract = {
       if (pricing === null) return null;
       const { serviceAmt, prepayDisc, afterPrepay, tax, total } =
         pricing.combinedTotals;
+      const balances = getBalanceAdjustment({ customer: data.customer, config: data.config });
+      const totalDue = getTotalDue({ total, balances });
       const rowStyle = {
         display: "flex" as const,
         flexDirection: "row" as const,
@@ -1092,10 +1164,26 @@ export const prepayLetterContract = {
               {tax}
             </PDFNumber>
           </View>
+          {balances.creditBalance > 0 && (
+            <View style={rowStyle}>
+              <Text style={{ flex: 1, fontSize }}>Credit Balance</Text>
+              <Text style={numStyle}>
+                -{formatNumber({ children: balances.creditBalance, decimals: 2 })}
+              </Text>
+            </View>
+          )}
+          {balances.remitBalance > 0 && (
+            <View style={rowStyle}>
+              <Text style={{ flex: 1, fontSize }}>Remit Balance</Text>
+              <PDFNumber style={numStyle} decimals={2}>
+                {balances.remitBalance}
+              </PDFNumber>
+            </View>
+          )}
           <View style={rowStyle}>
             <Text style={{ flex: 1, fontSize }}>Total</Text>
             <PDFNumber style={numStyle} decimals={2}>
-              {total}
+              {totalDue}
             </PDFNumber>
           </View>
         </View>
@@ -1110,6 +1198,8 @@ export const prepayLetterContract = {
       if (pricing === null) return null;
       const { serviceAmt, prepayDisc, afterPrepay, tax, total } =
         pricing.combinedTotals;
+      const balances = getBalanceAdjustment({ customer: data.customer, config: data.config });
+      const totalDue = getTotalDue({ total, balances });
       const priceColWidth = PRICE_COL_WIDTH * scale;
       const rowStyle: React.CSSProperties = {
         display: "flex",
@@ -1150,10 +1240,26 @@ export const prepayLetterContract = {
               {formatNumber({ children: tax, decimals: 2 })}
             </span>
           </div>
+          {balances.creditBalance > 0 && (
+            <div style={rowStyle}>
+              <span style={{ flex: 1 }}>Credit Balance</span>
+              <span style={numStyle}>
+                -{formatNumber({ children: balances.creditBalance, decimals: 2 })}
+              </span>
+            </div>
+          )}
+          {balances.remitBalance > 0 && (
+            <div style={rowStyle}>
+              <span style={{ flex: 1 }}>Remit Balance</span>
+              <span style={numStyle}>
+                {formatNumber({ children: balances.remitBalance, decimals: 2 })}
+              </span>
+            </div>
+          )}
           <div style={rowStyle}>
             <span style={{ flex: 1 }}>Total</span>
             <span style={numStyle}>
-              {formatNumber({ children: total, decimals: 2 })}
+              {formatNumber({ children: totalDue, decimals: 2 })}
             </span>
           </div>
         </div>

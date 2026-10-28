@@ -5,7 +5,7 @@ export const samplePrepayConfig: PrepayConfig = {
   name: "Sample Config",
   saId: "sample-sa",
   selectionMode: "single",
-  showCreditBalance: false,
+  showCreditBalance: true,
   showRemitBalance: false,
   season: 2026,
   stdPrepayDiscPercent: 5,

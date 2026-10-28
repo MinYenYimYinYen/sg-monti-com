@@ -29,6 +29,7 @@ export const sampleTaxCode = {
  *       3. Mosquito Reduction (4 services)
  *       4. Tree & Shrub Care, installment-billed (2 services) — excluded from prepay pricing
  *   - Customer-level 5% discount
+ *   - $30 credit balance (netBalance -30; negative means the customer holds a credit)
  *   - Service-level $15 discount on first Lawn Care service
  *   - Service-level 5% discount on first Insect Control service
  */
@@ -41,6 +42,7 @@ export const sampleCustomer: Customer = generateCustomer({
     useBilling: true,
     status: "9",
     size: 15,
+    netBalance: -30,
     address: sampleServiceAddress,
     billingAddress: sampleBillingAddress,
   },

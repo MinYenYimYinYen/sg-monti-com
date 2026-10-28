@@ -7,6 +7,10 @@ import {
   type PrepayTotals,
 } from "@/app/prepayLetters/installmentSegregation";
 import { getUpsellLetterPricing } from "@/app/prepayLetters/upsellPricing";
+import {
+  getBalanceAdjustment,
+  getTotalDue,
+} from "@/app/prepayLetters/balanceAdjustment";
 
 // Kept free of JSX / react-pdf / image imports so it can be unit tested directly.
 
@@ -27,6 +31,22 @@ type GetStubTotalsParams = {
  * upsell, or it cannot be priced — the stub must always show a number.
  */
 export function getStubTotals({
+  customer,
+  config,
+  upsell,
+  totalsSource,
+}: GetStubTotalsParams): PrepayTotals {
+  const totals = getUnadjustedStubTotals({
+    customer,
+    config,
+    upsell,
+    totalsSource,
+  });
+  const balances = getBalanceAdjustment({ customer, config });
+  return { ...totals, total: getTotalDue({ total: totals.total, balances }) };
+}
+
+function getUnadjustedStubTotals({
   customer,
   config,
   upsell,
