@@ -1,6 +1,6 @@
 /**
  * Serializes query parameters into a URL query string
- * Supports RingCX's bracket notation for arrays and nested objects
+ * Supports repeated keys for arrays and bracket notation for nested objects
  *
  * Examples:
  * { foo: 'bar' } => '?foo=bar'
@@ -17,7 +17,7 @@ export function serializeParams(
       continue;
     }
 
-    // Handle arrays: repeat the key for each value (RingCX style)
+    // Handle arrays: repeat the key for each value
     if (Array.isArray(value)) {
       for (const item of value) {
         parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(item))}`);

@@ -52,6 +52,7 @@ import { sanityReducer } from "@/app/sanity/sanitySlice";
 import seasonIncreasesReducer from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSlice";
 import priceIncreaseSettingsReducer from "@/app/priceIncrease/settings/settingsSlice";
 import priceIncreaseConfigReducer from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
+import { topicReducer } from "@/app/knowledgeBase/topicSlice";
 import { corruptedSyncRecordReducer } from "@/app/realGreen/customer/sync/corruptedRecords/corruptedSyncRecordSlice";
 import { prepayConfigReducer } from "@/app/prepayLetters/config/prepayConfigSlice";
 import { paceReducer } from "@/app/pace/paceSlice";
@@ -129,6 +130,7 @@ const rootReducer = combineReducers({
   formTemplate: formTemplateReducer,
   routeNotes: routeNoteReducer,
   paceUrgent: urgentReducer,
+  topic: topicReducer,
 });
 
 export default rootReducer;

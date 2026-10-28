@@ -23,7 +23,6 @@ Task-specific procedures live in `.claude/skills/` and load on demand. Use the m
 | RealGreen Customer / Program / Service pipeline, search schemes, PIPELINE flag | `realgreen-customer` | `src/app/realGreen/realGreen.readme.md`, `src/app/realGreen/customer/customer.readme.md` |
 | RealGreen Product module (Master / Sub / Single) | `product-module` | `src/app/realGreen/product/_lib/product.readme.md` |
 | RealGreen CallLog module and its sync | `call-log` | `src/app/realGreen/callLog/callLog.readme.md` |
-| RingCentral / RingCX webhooks and API client | `ringcentral` | `src/app/ringCentral/ringCentralStrategy.md` |
 | Price Increase module (settings, season plans, results pipeline, flag write-back) | — | `src/app/priceIncrease/priceIncrease.readme.md` (read only the Required Reading for the relevant section) |
 
 ## Styling
@@ -77,7 +76,7 @@ Types follow a layered suffix pattern that signals their role in the data pipeli
 - **Auto-deduplication**: `uiSlice.ts` prevents duplicate API calls by param hashing. A slice's `transformParams` filters out already-loaded data before hashing.
 - **API pattern**: Type-Safe RPC with declarative roles. Agents **must** read `src/lib/api/api.readme.md` before creating or modifying any API route or client API call (the `api-route` skill covers this).
 - **Data sanitization**: API routes **never** return raw Mongoose documents. Use `cleanMongoObject(doc)` / `cleanMongoArray(docs)` from `@/lib/mongoose/cleanMongoObj`, and remove sensitive fields.
-- **Universal handler**: every API route uses `createRpcHandler(handlers)` (RealGreen routes use `createRealGreenRpcHandler`; RingCX webhooks use `createRingCxWebhookHandler`).
+- **Universal handler**: every API route uses `createRpcHandler(handlers)` (RealGreen routes use `createRealGreenRpcHandler`).
 
 ## Development Rules
 

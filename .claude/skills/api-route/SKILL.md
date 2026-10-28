@@ -35,7 +35,7 @@ Reference route: `src/app/priceIncrease/seasonIncreases/api/route.ts`.
 ## Errors
 
 - Server: throw `new AppError(...)` for expected failures (validation, auth). Those are operational: the user sees the real message and the server logs a warning. Any other thrown `Error` is wrapped as non-operational: the user sees a generic message and the server logs the stack. Do not catch and swallow errors just to return `success: false` yourself; `createRpcHandler` already returns structured JSON, even for 500s.
-- External (RealGreen, RingCX) failures are caught server-side and converted; never let an upstream status leak to the client.
+- External (RealGreen, RingCentral) failures are caught server-side and converted; never let an upstream status leak to the client.
 - Client `api()` returns `{ success: false }` as data for operational errors and only throws on network failure or unexpected crashes.
 - Thunks built by `createStandardThunk` toast and reject automatically. Do not add your own `try/catch` + toast around a dispatch.
 - Expected or background failures (auth checks, token refresh): `handleError(e, { silent: true })`, or `config: { silentError: true }` on the dispatch.

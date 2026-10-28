@@ -4,7 +4,14 @@ Running record of what we try and learn while working through RingCentral's deve
 
 ## Decisions
 
-- **2026-10-27: RingEX only.** We will not use anything exclusive to RingCX. The existing RingCX Digital webhook and REST scaffold under `_lib/` and `api/webhooks/` is parked, not deleted. Do not extend it unless this decision changes.
+- **2026-10-27: RingEX only.** We will not use anything exclusive to RingCX. The RingCX Digital webhook and REST scaffold (20 webhook routes, `_lib/`, the RingCX strategy and research docs, and the `ringcentral` skill) was deleted on 2026-10-28. It remains in git history. A new RingEX skill will be drafted once the design settles.
+
+## Planned layout (2026-10-28)
+
+- `src/app/ringCentral/auth/`: OAuth callback, `state` cookie check, token storage.
+- `src/app/ringCentral/callAssist/`: data module for the audio capture, session and transcript flow.
+- `src/app/knowledgeBase/`: separate data module for topics (`TopicDoc`), built first because classification quality is the riskiest part and needs no audio.
+- The CSR UI lets the CSR confirm a topic, query topics manually, and type extra detail. Confirmed topics stop being re-classified.
 
 ## Project facts
 
@@ -73,7 +80,7 @@ A CSR answers calls inside sgmonti.com. While the call runs, AI identifies the c
 
 #### Draft topic shape (not final)
 
-TopicDoc: `topicKey` (natural key), `name`, `description` (when it applies, used to classify), optional `signals`, `guidance`, optional `avoid`, optional `escalateTo`, `updatedAt` (ISO string). Claude gets the list of `topicKey` plus `description` on each request and never writes guidance itself. Open: how often to re-classify, and what to show on low confidence (leaning toward nothing over a wrong topic).
+**Settled 2026-10-28, and now implemented** in `src/app/knowledgeBase/`. TopicDoc: `topicKey` (natural key), `name`, `description` (when it applies, used to classify), optional `signals` (string array), `guidance`, optional `avoid` (string array), plus `createdAt` and `updatedAt` (ISO strings, from `CreatedUpdated`). `escalateTo` was dropped. Claude gets the list of `topicKey` plus `description` on each request and never writes guidance itself. Open: how often to re-classify, and what to show on low confidence (leaning toward nothing over a wrong topic).
 
 #### App registration status
 
@@ -94,6 +101,24 @@ TopicDoc: `topicKey` (natural key), `name`, `description` (when it applies, used
 1. Web phone page with a level meter per audio track. Also tests coexistence with the desktop app.
 2. Stream both tracks to a transcription vendor and print a speaker-labelled transcript.
 3. Topic classification with a few hand-written topics against a fixed transcript.
-4. Mongo topic module (use the `data-module` skill once the shape is settled).
+4. Mongo topic module. **Base module done 2026-10-28** (see below).
 
-Note: the RingCX scaffold under `_lib/` and `api/webhooks/` is unrelated to this work and stays parked.
+#### Knowledge base module status (2026-10-28)
+
+Built with the `data-module` skill as its own module, separate from the call flow. Files in `src/app/knowledgeBase/`: `TopicTypes.ts`, `TopicModel.ts`, `api/TopicContract.ts`, `api/route.ts`, `topicSlice.ts`, `topicSelect.ts`, `useTopics.ts`. The reducer is registered as `topic` in `src/store/reducers/index.ts`.
+
+- **Operations:** `getAll` (admin, office), `upsert` and `remove` (admin only).
+- **Selectors:** `docs`, `docsByKey`, and `classifierCandidates`, which exposes only `topicKey` and `description` so the classifier input cannot include guidance.
+- **Not built yet:**
+  - Any UI, including the editor for writing topics and the CSR side panel.
+  - The classification step (Claude call).
+  - Seed topics.
+  - Validation of `topicKey` format.
+- **Open:** whether `office` should be able to edit topics, or only `admin` (currently admin only).
+- **Not yet verified:** the module has been linted but not run against Mongo or called from the browser.
+
+#### Status of the call-flow work (2026-10-28)
+
+Parked while other work takes priority. Nothing exists yet for `ringCentral/auth/` or `ringCentral/callAssist/`. The RingCentral app is still not created.
+
+Note: the RingCX scaffold was removed on 2026-10-28 (see Decisions).
