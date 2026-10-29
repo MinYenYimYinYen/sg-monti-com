@@ -101,7 +101,7 @@ describe("priceUpsell", () => {
       price: 150,
       discounts: [sampleCustomerDiscount],
       prepayPercent: UPSELL_PERCENT,
-      taxRate: TAX_RATE,
+      taxRates: [TAX_RATE],
     });
     expect(priced.totals.total).toBeCloseTo(perService * 2, 2);
   });

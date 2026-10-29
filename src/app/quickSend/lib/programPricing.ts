@@ -10,7 +10,8 @@ type ProgramPricingInput = {
   progCode: ProgCode;
   includedServCodeIds: string[];
   size: number;
-  effectiveTaxRate: number | null;
+  /** One rate per tax code (never pre-summed: SA5 rounds each code separately). `null` = no customer/zip chosen. */
+  effectiveTaxRates: number[] | null;
   prepayPercent: number | null;
   priceOverride: number | null;
   isInstallment: boolean;
@@ -31,13 +32,12 @@ export function computeProgramPricing({
   progCode,
   includedServCodeIds,
   size,
-  effectiveTaxRate,
+  effectiveTaxRates,
   prepayPercent,
   priceOverride,
 }: ProgramPricingInput): ProgramVariables {
   const hasSize = !isNaN(size) && size > 0;
   const pp = prepayPercent ?? 0;
-  const tr = effectiveTaxRate ?? 0;
 
   // Scope to included servCodes so isEcon is evaluated against the selected count.
   const scoped = progCode.x.getByServCodeIds(includedServCodeIds);
@@ -75,8 +75,8 @@ export function computeProgramPricing({
       ? discPerServ * includedServCodes.length
       : null;
 
-    if (effectiveTaxRate !== null) {
-      const taxPerServ = calculateTaxAmt({ servPrice: effectiveServPrice, prepayDiscAmt: discPerServ, taxRate: tr });
+    if (effectiveTaxRates !== null) {
+      const taxPerServ = calculateTaxAmt({ servPrice: effectiveServPrice, prepayDiscAmt: discPerServ, taxRates: effectiveTaxRates });
       taxAmt = taxPerServ * includedServCodes.length;
 
       const totalPerServ = calculateServTotal({ servPrice: effectiveServPrice, prepayDiscAmt: discPerServ, taxAmt: taxPerServ });

@@ -237,7 +237,7 @@ export class ServiceUtils {
       price: this.service.price,
       discounts: this.applicableDiscounts,
       prepayPercent: prepayDiscountPercent,
-      taxRate: this.service.program.customer.taxRate,
+      taxRates: this.service.program.customer.taxCodes.map((taxCode) => taxCode.taxRate),
     });
   }
 

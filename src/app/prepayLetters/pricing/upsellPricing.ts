@@ -73,7 +73,7 @@ export function priceUpsell({
     price,
     discounts,
     prepayPercent,
-    taxRate: customer.taxRate,
+    taxRates: customer.taxCodes.map((taxCode) => taxCode.taxRate),
   });
   const tax = total - afterPrepay;
 

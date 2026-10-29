@@ -8,8 +8,9 @@ import { useUpsellPriorities } from "./upsellPriorities/useUpsellPriorities";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { useFormTemplate } from "@/app/formTemplate/useFormTemplate";
 import { useCompany } from "@/app/realGreen/company/useCompany";
-import {usePriceTable} from "@/app/realGreen/priceTable/usePriceTable";
-import {useTaxCode} from "@/app/realGreen/taxCode/useTaxCode";
+import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
+import { useTaxCode } from "@/app/realGreen/taxCode/useTaxCode";
+import { useDiscount } from "@/app/realGreen/discount/useDiscount";
 
 const RENEWAL_CUST_STATUSES = ["9"];
 
@@ -18,13 +19,16 @@ export function usePrepayLettersDeps() {
   useUpsellPriorities({ autoLoad: true });
   useProgServ({ autoLoad: true });
   usePriceTable({ autoLoad: true });
-  useTaxCode( { autoLoad: true });
+  useTaxCode({ autoLoad: true });
+  useDiscount({ autoLoad: true });
   useGlobalSettings({ autoLoad: true });
   useFlag({ autoLoad: true });
   useFormTemplate({ autoLoad: true });
   useCompany({ autoLoad: true });
 
-  const { autoRenew, dontAutoRenew, confirmed } = useSelector(globalSettingsSelect.renewalFlagIds);
+  const { autoRenew, dontAutoRenew, confirmed } = useSelector(
+    globalSettingsSelect.renewalFlagIds,
+  );
   const renewalFlagIds = [autoRenew, dontAutoRenew, confirmed].filter(
     (flagId): flagId is number => flagId !== null,
   );

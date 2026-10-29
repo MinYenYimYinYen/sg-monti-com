@@ -28,7 +28,7 @@ describe("calculateTax", () => {
    * 27.00 × 0.07375 = 1.99125 → ceil = 2.00
    */
   it("uses ceil when no discount is present", () => {
-    expect(calculateTax({ price: 27.00, taxRate: TAX_RATE, hasDiscount: false })).toBe(2.00);
+    expect(calculateTax({ price: 27.00, taxRates: [TAX_RATE], hasDiscount: false })).toBe(2.00);
   });
 
   /**
@@ -36,7 +36,7 @@ describe("calculateTax", () => {
    * 24.30 × 0.07375 = 1.792125 → round = 1.79
    */
   it("uses round when a discount is present (10% off $27 → $24.30)", () => {
-    expect(calculateTax({ price: 24.30, taxRate: TAX_RATE, hasDiscount: true })).toBe(1.79);
+    expect(calculateTax({ price: 24.30, taxRates: [TAX_RATE], hasDiscount: true })).toBe(1.79);
   });
 
   /**
@@ -44,11 +44,30 @@ describe("calculateTax", () => {
    * 25.65 × 0.07375 = 1.891688 → round = 1.89
    */
   it("uses round when a discount is present (5% off $27 → $25.65)", () => {
-    expect(calculateTax({ price: 25.65, taxRate: TAX_RATE, hasDiscount: true })).toBe(1.89);
+    expect(calculateTax({ price: 25.65, taxRates: [TAX_RATE], hasDiscount: true })).toBe(1.89);
   });
 
-  it("returns 0 when taxRate is 0", () => {
-    expect(calculateTax({ price: 100, taxRate: 0, hasDiscount: false })).toBe(0);
+  it("returns 0 when every tax rate is 0", () => {
+    expect(calculateTax({ price: 100, taxRates: [0], hasDiscount: false })).toBe(0);
+  });
+
+  it("returns 0 when there are no tax codes", () => {
+    expect(calculateTax({ price: 100, taxRates: [], hasDiscount: true })).toBe(0);
+  });
+
+  /**
+   * SA5 rounds each tax code separately, then adds (CRM: 166.74 -> $12.29).
+   * 166.74 x 6.875% = 11.4634 -> 11.46;  166.74 x 0.5% = 0.8337 -> 0.83;  sum 12.29.
+   * Rounding the combined 7.375% once would give 12.297 -> 12.30.
+   */
+  it("rounds each tax code separately, then sums (CRM: $12.29, not $12.30)", () => {
+    expect(calculateTax({ price: 166.74, taxRates: [6.875, 0.5], hasDiscount: true })).toBe(12.29);
+    expect(calculateTax({ price: 166.74, taxRates: [6.875 + 0.5], hasDiscount: true })).toBe(12.3);
+  });
+
+  it("applies the ceil rule to each tax code when there is no discount", () => {
+    // 27.00 x 6.875% = 1.85625 -> 1.86;  27.00 x 0.5% = 0.135 -> 0.14;  sum 2.00
+    expect(calculateTax({ price: 27.0, taxRates: [6.875, 0.5], hasDiscount: false })).toBe(2.0);
   });
 });
 
@@ -70,7 +89,7 @@ describe("calculatePrepayServTotal", () => {
         price: 27.00,
         discounts: [],
         prepayPercent: 0,
-        taxRate: TAX_RATE,
+        taxRates: [TAX_RATE],
       }),
     ).toBe(29.00);
   });
@@ -89,7 +108,7 @@ describe("calculatePrepayServTotal", () => {
         price: 27.00,
         discounts: [sampleProgramDiscount],
         prepayPercent: 0,
-        taxRate: TAX_RATE,
+        taxRates: [TAX_RATE],
       }),
     ).toBe(26.09);
   });
@@ -108,7 +127,7 @@ describe("calculatePrepayServTotal", () => {
         price: 27.00,
         discounts: [sampleServiceDiscount2], // 5% PERCENT — same math as sampleProgramDiscount at 5%
         prepayPercent: 0,
-        taxRate: TAX_RATE,
+        taxRates: [TAX_RATE],
       }),
     ).toBe(27.54);
   });
@@ -128,7 +147,7 @@ describe("calculatePrepayServTotal", () => {
         price: 27.00,
         discounts: [],
         prepayPercent: 5,
-        taxRate: TAX_RATE,
+        taxRates: [TAX_RATE],
       }),
     ).toBe(27.54);
   });
@@ -148,7 +167,7 @@ describe("calculatePrepayServTotal", () => {
         price: 27.00,
         discounts: [sampleServiceDiscount2], // 5% PERCENT
         prepayPercent: 5,
-        taxRate: TAX_RATE,
+        taxRates: [TAX_RATE],
       }),
     ).toBeCloseTo(26.17, 2);
   });

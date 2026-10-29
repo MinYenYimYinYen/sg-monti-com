@@ -99,6 +99,8 @@ const customer = generateCustomer({
 
 Or import `sampleTaxCode` from `sampleCustomer.ts` for the standard 7.375% rate.
 
+**Tax is rounded per tax code**, so a customer with several codes must be built with several `TaxCode` entries (e.g. `6.875` + `0.5`), not one pre-summed code. A single 7.375% code and a 6.875% + 0.5% pair can differ by a penny.
+
 ---
 
 ## Discount Fixtures
@@ -137,4 +139,6 @@ it("returns correct net with 10% program discount and no prepay (CRM: $26.09)", 
 |---|---|
 | `realGreen/customer/ServiceUtils.getPriceAfterDiscounts.test.ts` | Discount stacking (service + program level) |
 | `realGreen/customer/ServiceUtils.priceAfterTax.test.ts` | Full pricing pipeline with tax (CRM reference values) |
-| `realGreen/priceTable/pricingFuncs.calculateTax.test.ts` | `calculateTax` and `calculatePrepayServTotal` pure functions |
+| `realGreen/customer/ServiceUtils.prepayNoDiscount.test.ts` | 14-service no-discount customer at 3% prepay, tax codes 6.875% + 1.4%: per-service and grand totals, half-cent tie rounding (CRM reference values) |
+| `realGreen/customer/ServiceUtils.prepayNoDiscount.customer2.test.ts` | 14-service no-discount customer at 3% prepay, tax codes 6.875% + 0.5%: per-tax-code rounding (166.74 → 12.29, not 12.30), per-service and grand totals (CRM reference values) |
+| `realGreen/priceTable/pricingFuncs.calculateTax.test.ts` | `calculateTax` (incl. per-tax-code rounding) and `calculatePrepayServTotal` pure functions |

@@ -56,6 +56,22 @@ const selectEffectiveTaxRate = createSelector(
   },
 );
 
+/**
+ * Per-tax-code rates behind `selectEffectiveTaxRate`. Pricing must use these, not the
+ * summed rate: SA5 rounds each tax code's tax separately. The summed rate is display-only.
+ */
+const selectEffectiveTaxRates = createSelector(
+  [selectCustomerState, zipCodeSelect.zipCodeMap],
+  (customerState, zipCodeMap): number[] | null => {
+    if (customerState.taxRateZipOverride != null) {
+      const zipCode = zipCodeMap.get(customerState.taxRateZipOverride);
+      return zipCode ? zipCode.taxCodes.map((taxCode) => taxCode.taxRate) : null;
+    }
+    const customer = customerState.customer;
+    return customer ? customer.taxCodes.map((taxCode) => taxCode.taxRate) : null;
+  },
+);
+
 const selectSizeNum = createSelector([selectSizeOverride], (size): number | null => {
   const n = parseFloat(size);
   return !isNaN(n) && n > 0 ? n : null;
@@ -106,10 +122,10 @@ const selectProgramVariables = createSelector(
     progServSelect.progCodeMap,
     selectSizeNum,
     prepaySelect.prepayDocMap,
-    selectEffectiveTaxRate,
+    selectEffectiveTaxRates,
     selectEffectiveGlobalPrepayId,
   ],
-  (configs, progCodeMap, sizeNum, prepayDocMap, effectiveTaxRate, globalPrepayId): ProgramVariables[] => {
+  (configs, progCodeMap, sizeNum, prepayDocMap, effectiveTaxRates, globalPrepayId): ProgramVariables[] => {
     const size = sizeNum ?? 0;
 
     return configs.map((config) => {
@@ -142,7 +158,7 @@ const selectProgramVariables = createSelector(
         progCode,
         includedServCodeIds: config.includedServCodeIds,
         size,
-        effectiveTaxRate,
+        effectiveTaxRates,
         prepayPercent,
         priceOverride: config.priceOverride,
         isInstallment: progCode.isInstallment,

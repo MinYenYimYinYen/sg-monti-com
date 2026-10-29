@@ -41,6 +41,7 @@ export type ZipCodeDoc = ZipCodeCore & ZipCodeDocProps;
 
 export type ZipCodeProps = {
   taxCodes: TaxCode[];
+  /** Sum of the tax code rates. Display only: pricing must use `taxCodes`, because SA5 rounds tax per code. */
   taxRate: number;
 };
 

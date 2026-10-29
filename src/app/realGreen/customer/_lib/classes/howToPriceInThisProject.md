@@ -107,7 +107,8 @@ Surcharges and discounts are tracked separately:
 Calculates the prepay discount amount for a **single service price**.
 
 ```
-discountAmt = round(servPrice × (prepayPercent / 100) × 100) / 100
+discountCents = (servPriceCents × prepayPercent) / 100
+discountAmt   = roundHalfDown(discountCents) / 100
 ```
 
 `prepayPercent` is a percentage value (e.g. `5` for 5%).
@@ -116,23 +117,30 @@ Rounded per-service — callers multiply by `servCount` to get the program total
 This matches SA5 behavior: `round($69.95 × 5%) × 6 = $3.50 × 6 = $21.00`, not
 `round($419.70 × 5%) = $20.99`.
 
+**Half-cent ties round DOWN** (unlike `Math.round`, which goes up). SA5 shows
+`$82.50 × 3% = 2.475 → $2.47`. Every non-tie value rounds to the nearest cent, so
+all earlier CRM reference values are unaffected. The math is done in integer cents so
+the tie is detected exactly. Confirmed against a 14-service no-discount customer
+(3% prepay, 8.275% tax): PP discount $38.83, tax $103.93, net $1,359.35. See
+`ServiceUtils.prepayNoDiscount.test.ts`.
+
 ---
 
-### `calculateTaxAmt({ servPrice, prepayDiscAmt, taxRate }): number`
+### `calculateTaxAmt({ servPrice, prepayDiscAmt, taxRates }): number`
 
 Calculates the tax amount for a **single service** after the prepay discount.
 
 Tax is applied to the post-prepay price:
 ```
 postPrepayPrice = servPrice - prepayDiscAmt
-taxAmt = calculateTax({ price: postPrepayPrice, taxRate, hasDiscount: false })
+taxAmt = calculateTax({ price: postPrepayPrice, taxRates, hasDiscount: false })
 ```
 
 `hasDiscount: false` because this function models **theoretical price-chart pricing**
 where no service/program discounts exist yet. For real services with discounts, use
 `ServiceUtils.getTaxAmt` (Layer 2) which passes `hasDiscount: true` when applicable.
 
-`taxRate` is the effective rate as a percentage (e.g. `8.25` for 8.25%).
+`taxRates` is one percentage per tax code (e.g. `[6.875, 0.5]`) — see `calculateTax`.
 
 Rounded per-service — callers multiply by `servCount` for the program total.
 
@@ -150,27 +158,40 @@ Callers multiply by `servCount` for the program total.
 
 ---
 
-### `calculateTax({ price, taxRate, hasDiscount }): number`
+### `calculateTax({ price, taxRates, hasDiscount }): number`
 
 Calculates the tax amount for a **single service price**.
 
 Tax is calculated per service — the caller sums results for a program total.
 
 ```
-rawTax = price × (taxRate / 100)
+for each tax code:  codeTax = round-or-ceil(price × (rate / 100))   (to the cent)
+tax = sum of the per-code amounts
 ```
 
-`taxRate` is the effective rate as a percentage (e.g. `8.25` for 8.25%). This is the
-sum of all applicable tax code rates — the caller is responsible for computing it.
+**Never pre-sum the tax codes.** `taxRates` is one percentage per tax code on the
+customer (e.g. `[6.875, 0.5]`), taken from `customer.taxCodes`. SA5 rounds each code's
+tax separately and then adds the rounded amounts. Rounding the summed rate once is a
+penny off on some prices. Confirmed on two no-discount customers at 3% prepay:
+- S68 6.875% + SHT 0.5%: `166.74` → `11.46 + 0.83 = 12.29` (SA5), not `12.30`
+  (combined 7.375%). See `ServiceUtils.prepayNoDiscount.customer2.test.ts`.
+- S68 6.875% + HET 1.4%: all rows match under per-code rounding
+  (`ServiceUtils.prepayNoDiscount.test.ts`).
 
-**Asymmetric rounding (matches SA5 behavior):**
-- If no discount was applied (`hasDiscount: false`): `ceil(rawTax × 100) / 100`
-- If a discount was applied (`hasDiscount: true`): `round(rawTax × 100) / 100`
+`customer.taxRate` / `zipCode.taxRate` (the summed rate) are for display only — do not
+use them for pricing.
 
-`hasDiscount` refers to whether `service.x.applicableDiscounts` is non-empty (i.e.
-service-level or program-level discounts). It does **not** refer to the prepay discount.
+**Asymmetric rounding, applied to each code (matches SA5 behavior):**
+- If no discount was applied (`hasDiscount: false`): `ceil(codeTax × 100) / 100`
+- If a discount was applied (`hasDiscount: true`): `round(codeTax × 100) / 100`
 
-Returns `0` if `taxRate` is `0`.
+`hasDiscount` is true when a service/program discount exists **or** a prepay percent is
+applied (see `calculatePrepayServTotal`). The `ceil` branch was established on
+single-rate customers; it is not confirmed per code, because every per-code
+reference customer so far had a prepay (so the `round` branch applied).
+
+Per-code amounts are summed in integer cents. Returns `0` when there are no tax codes or
+every rate is `0`.
 
 ---
 
@@ -199,11 +220,11 @@ Uses `servCodes.length` on the scoped instance as the active service count.
 Total prepay discount across all services.
 Calls `calculatePrepayDiscAmt` per-service then multiplies by `servCodes.length`.
 
-**`getTaxAmt(size, prepayPercent, taxRate): number | null`**
+**`getTaxAmt(size, prepayPercent, taxRates): number | null`** (`taxRates`: one rate per tax code)
 Total tax across all services, applied to the post-prepay price.
 Calls `calculateTaxAmt` per-service then multiplies by `servCodes.length`.
 
-**`getTotal(size, prepayPercent, taxRate): number | null`**
+**`getTotal(size, prepayPercent, taxRates): number | null`**
 Total net amount due: `(subTotal - prepayDiscAmt) + taxAmt`.
 Calls `calculateServTotal` per-service then multiplies by `servCodes.length`.
 

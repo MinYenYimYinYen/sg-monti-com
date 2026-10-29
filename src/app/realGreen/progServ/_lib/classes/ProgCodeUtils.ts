@@ -83,11 +83,11 @@ export class ProgCodeUtils {
    * Total tax amount across all services, applied to the post-prepay price.
    * Rounds per-service then multiplies — matches SA5 behavior.
    */
-  getTaxAmt(size: number, prepayPercent: number, taxRate: number): number | null {
+  getTaxAmt(size: number, prepayPercent: number, taxRates: number[]): number | null {
     const servPrice = this.getServPrice(size);
     if (servPrice === null) return null;
     const prepayDiscAmtPerServ = calculatePrepayDiscAmt({ servPrice, prepayPercent });
-    const taxAmtPerServ = calculateTaxAmt({ servPrice, prepayDiscAmt: prepayDiscAmtPerServ, taxRate });
+    const taxAmtPerServ = calculateTaxAmt({ servPrice, prepayDiscAmt: prepayDiscAmtPerServ, taxRates });
     return taxAmtPerServ * this.progCode.servCodes.length;
   }
 
@@ -95,11 +95,11 @@ export class ProgCodeUtils {
    * Total net amount due across all services: (subTotal - prepayDiscAmt) + taxAmt.
    * All intermediate values are rounded per-service before summing.
    */
-  getTotal(size: number, prepayPercent: number, taxRate: number): number | null {
+  getTotal(size: number, prepayPercent: number, taxRates: number[]): number | null {
     const servPrice = this.getServPrice(size);
     if (servPrice === null) return null;
     const prepayDiscAmtPerServ = calculatePrepayDiscAmt({ servPrice, prepayPercent });
-    const taxAmtPerServ = calculateTaxAmt({ servPrice, prepayDiscAmt: prepayDiscAmtPerServ, taxRate });
+    const taxAmtPerServ = calculateTaxAmt({ servPrice, prepayDiscAmt: prepayDiscAmtPerServ, taxRates });
     const totalPerServ = calculateServTotal({ servPrice, prepayDiscAmt: prepayDiscAmtPerServ, taxAmt: taxAmtPerServ });
     return totalPerServ * this.progCode.servCodes.length;
   }
