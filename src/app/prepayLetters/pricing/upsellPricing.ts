@@ -10,6 +10,7 @@ import {
   getPrepayPrograms,
   type PrepayTotals,
 } from "@/app/prepayLetters/pricing/installmentSegregation";
+import { getServCodeDisplayName } from "@/app/prepayLetters/pricing/servCodeDisplayName";
 
 // Kept free of JSX / react-pdf / image imports so it can be unit tested directly.
 //
@@ -23,7 +24,8 @@ import {
 
 export type PricedUpsellService = {
   servCodeId: string;
-  name: string;
+  /** The customer-facing name (servCode.longName), as printed on the letter. */
+  longName: string;
   price: number;
   priceAfterDiscounts: number;
   hasDiscount: boolean;
@@ -77,7 +79,7 @@ export function priceUpsell({
 
   const services = progCode.servCodes.map((servCode) => ({
     servCodeId: servCode.servCodeId,
-    name: servCode.name,
+    longName: getServCodeDisplayName(servCode),
     price,
     priceAfterDiscounts,
     hasDiscount,

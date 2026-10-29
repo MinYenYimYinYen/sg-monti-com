@@ -27,7 +27,7 @@ export const sampleTaxCode = {
  *       1. Lawn Care (3 services: Early Spring, Spring, Summer)
  *       2. Insect Control with 10% program discount (2 services)
  *       3. Mosquito Reduction (4 services)
- *       4. Tree & Shrub Care, installment-billed (2 services) — excluded from prepay pricing
+ *       4. Pest Control, installment-billed (2 services) — excluded from prepay pricing
  *   - Customer-level 5% discount
  *   - $30 credit balance (netBalance -30; negative means the customer holds a credit)
  *   - Service-level $15 discount on first Lawn Care service
@@ -56,16 +56,16 @@ export const sampleCustomer: Customer = generateCustomer({
       services: [
         {
           core: { servId: 1, price: 100, season: 2026 },
-          servCode: { servCodeId: "S01", name: "Early Spring Visit", longName: "Early Spring Visit" },
+          servCode: { servCodeId: "S01", name: "Early Spr Visit", longName: "Early Spring Visit" },
           discount: sampleServiceDiscount,
         },
         {
           core: { servId: 2, price: 100, season: 2026 },
-          servCode: { servCodeId: "S02", name: "Spring Visit", longName: "Spring Visit" },
+          servCode: { servCodeId: "S02", name: "Spr Visit", longName: "Spring Fertilizer and Weed Control" },
         },
         {
           core: { servId: 3, price: 100, season: 2026 },
-          servCode: { servCodeId: "S03", name: "Summer Visit", longName: "Summer Visit" },
+          servCode: { servCodeId: "S03", name: "Sum Visit", longName: "Summer Fertilizer and Weed Control" },
         },
       ],
     },
@@ -78,12 +78,12 @@ export const sampleCustomer: Customer = generateCustomer({
       services: [
         {
           core: { servId: 101, price: 150, season: 2026 },
-          servCode: { servCodeId: "S04", name: "Insect Control Visit", longName: "Insect Control Visit" },
+          servCode: { servCodeId: "S04", name: "Insect Visit", longName: "Lawn Insect Control" },
           discount: sampleServiceDiscount2,
         },
         {
           core: { servId: 102, price: 150, season: 2026 },
-          servCode: { servCodeId: "S04", name: "Insect Control Visit", longName: "Insect Control Visit" },
+          servCode: { servCodeId: "S04", name: "Insect Visit", longName: "Lawn Insect Control" },
         },
       ],
     },
@@ -95,24 +95,24 @@ export const sampleCustomer: Customer = generateCustomer({
       services: [
         {
           core: { servId: 201, price: 50, season: 2026 },
-          servCode: { servCodeId: "S05", name: "Mosquito Visit", longName: "Mosquito Visit" },
+          servCode: { servCodeId: "S05A", name: "Mosq May", longName: "Mosquito Reduction - End of May" },
         },
         {
           core: { servId: 202, price: 50, season: 2026 },
-          servCode: { servCodeId: "S05", name: "Mosquito Visit", longName: "Mosquito Visit" },
+          servCode: { servCodeId: "S05B", name: "Mosq Jul", longName: "Mosquito Reduction - Early July" },
         },
         {
           core: { servId: 203, price: 50, season: 2026 },
-          servCode: { servCodeId: "S05", name: "Mosquito Visit", longName: "Mosquito Visit" },
+          servCode: { servCodeId: "S05C", name: "Mosq Aug", longName: "Mosquito Reduction - Early August" },
         },
         {
           core: { servId: 204, price: 50, season: 2026 },
-          servCode: { servCodeId: "S05", name: "Mosquito Visit", longName: "Mosquito Visit" },
+          servCode: { servCodeId: "S05D", name: "Mosq Sep", longName: "Mosquito Reduction - Early September" },
         },
       ],
     },
 
-    // ─── Program 4: Tree & Shrub Care (installment billing) ───────────────
+    // ─── Program 4: Pest Control (installment billing) ────────────────────
     // Service prices are shares of the plan total — prepay letters describe this
     // program in words and never show these numbers.
     {
@@ -125,15 +125,15 @@ export const sampleCustomer: Customer = generateCustomer({
         progDefId: 4,
         billingType: BILLING_TYPE.Installment,
       },
-      progCode: { progCodeId: "PC4", description: "Tree & Shrub Care Program", progDefId: 4 },
+      progCode: { progCodeId: "PC4", description: "Pest Control Program", progDefId: 4 },
       services: [
         {
           core: { servId: 301, price: 240, season: 2026 },
-          servCode: { servCodeId: "S06", name: "Spring Tree & Shrub Visit", longName: "Spring Tree & Shrub Visit" },
+          servCode: { servCodeId: "S06", name: "Spr Pest", longName: "Spring Pest Control" },
         },
         {
           core: { servId: 302, price: 240, season: 2026 },
-          servCode: { servCodeId: "S07", name: "Fall Tree & Shrub Visit", longName: "Fall Tree & Shrub Visit" },
+          servCode: { servCodeId: "S07", name: "Fall Pest", longName: "Fall Pest Control" },
         },
       ],
     },

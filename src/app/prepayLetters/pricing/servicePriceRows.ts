@@ -1,5 +1,6 @@
 import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { getPrepayPrograms } from "@/app/prepayLetters/pricing/installmentSegregation";
+import { getServCodeDisplayName } from "@/app/prepayLetters/pricing/servCodeDisplayName";
 
 // Kept free of JSX / react-pdf / image imports so it can be unit tested directly.
 //
@@ -74,7 +75,7 @@ export function buildServicePriceRows({
   return programs.flatMap((program) =>
     program.services.map((service) => ({
       key: `service-${service.servId}`,
-      label: service.servCode.name,
+      label: getServCodeDisplayName(service.servCode),
       hasDiscount: service.x.applicableDiscounts.length > 0,
       originalPrice: service.price,
       price: service.x.getPriceAfterDiscounts("price"),

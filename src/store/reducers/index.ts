@@ -55,6 +55,7 @@ import priceIncreaseConfigReducer from "@/app/priceIncrease/config/_lib/priceInc
 import { topicReducer } from "@/app/knowledgeBase/topicSlice";
 import { corruptedSyncRecordReducer } from "@/app/realGreen/customer/sync/corruptedRecords/corruptedSyncRecordSlice";
 import { prepayConfigReducer } from "@/app/prepayLetters/config/prepayConfigSlice";
+import { upsellPrioritiesReducer } from "@/app/prepayLetters/upsellPriorities/upsellPrioritiesSlice";
 import { paceReducer } from "@/app/pace/paceSlice";
 import { paceAssignmentGroupReducer } from "@/app/pace/assignmentGroup/assignmentGroupSlice";
 import { paceGroupSequenceReducer } from "@/app/pace/groupSequence/groupSequenceSlice";
@@ -62,6 +63,7 @@ import { paceAssignmentPlanReducer } from "@/app/pace/assignmentPlan/assignmentP
 import { paceSeasonPlanReducer } from "@/app/pace/seasonPlan/seasonPlanSlice";
 import { burndownReducer } from "@/app/pace/burndown/burndownSlice";
 import { formTemplateReducer } from "@/app/formTemplate/formTemplateSlice";
+import { renewalLettersReducer } from "@/app/prepayLetters/renewalLetters/renewalLettersSlice";
 import { routeNoteReducer } from "@/app/routeNotes/routeNoteSlice";
 import { urgentReducer } from "@/app/pace/priorities/urgentSlice";
 
@@ -121,6 +123,7 @@ const rootReducer = combineReducers({
   priceIncreaseConfig: priceIncreaseConfigReducer,
   corruptedSyncRecord: corruptedSyncRecordReducer,
   prepayConfig: prepayConfigReducer,
+  upsellPriorities: upsellPrioritiesReducer,
   pace: paceReducer,
   paceAssignmentGroup: paceAssignmentGroupReducer,
   paceGroupSequence: paceGroupSequenceReducer,
@@ -128,6 +131,7 @@ const rootReducer = combineReducers({
   paceSeasonPlan: paceSeasonPlanReducer,
   burndown: burndownReducer,
   formTemplate: formTemplateReducer,
+  renewalLetters: renewalLettersReducer,
   routeNotes: routeNoteReducer,
   paceUrgent: urgentReducer,
   topic: topicReducer,

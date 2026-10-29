@@ -38,6 +38,7 @@ import {
 import { buildServicePriceRows } from "@/app/prepayLetters/pricing/servicePriceRows";
 import { buildIntentionLines } from "@/app/prepayLetters/pricing/intentionLines";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
+import { buildLetterMessage } from "@/app/prepayLetters/template/letterMessage";
 
 /** The scanned blank form image — used as a faint background in the template editor preview. */
 export const prepayLetterFormImage = prepayLetterFormImageSrc;
@@ -381,45 +382,25 @@ export const prepayLetterContract = {
     render: (
       { customer }: PrepayLetterData,
       { fontSize, textAlign }: TextOptions,
-    ) => {
-      const addr = customer.useBilling
-        ? customer.billingAddress
-        : customer.address;
-      return (
-        <Text style={{ fontSize, textAlign }}>
-          {customer.displayName}
-          {"\n"}
-          {addr.formattedAddress}
-          {"\n"}
-          {addr.city}, {addr.state} {addr.zip}
-        </Text>
-      );
-    },
+    ) => (
+      <Text style={{ fontSize, textAlign }}>{customer.x.billingAddressBlock}</Text>
+    ),
     previewRender: (
       { customer }: PrepayLetterData,
       scale: number,
       { fontSize, textAlign }: TextOptions,
-    ) => {
-      const addr = customer.useBilling
-        ? customer.billingAddress
-        : customer.address;
-      return (
-        <div
-          style={{
-            fontSize: fontSize * scale,
-            lineHeight: 1.2,
-            textAlign,
-            whiteSpace: "pre-line",
-          }}
-        >
-          {customer.displayName}
-          {"\n"}
-          {addr.formattedAddress}
-          {"\n"}
-          {addr.city}, {addr.state} {addr.zip}
-        </div>
-      );
-    },
+    ) => (
+      <div
+        style={{
+          fontSize: fontSize * scale,
+          lineHeight: 1.2,
+          textAlign,
+          whiteSpace: "pre-line",
+        }}
+      >
+        {customer.x.billingAddressBlock}
+      </div>
+    ),
   } satisfies WithText,
 
   serviceAddressLabel: {
@@ -446,13 +427,7 @@ export const prepayLetterContract = {
       { customer }: PrepayLetterData,
       { fontSize, textAlign }: TextOptions,
     ) => (
-      <Text style={{ fontSize, textAlign }}>
-        {customer.displayName}
-        {"\n"}
-        {customer.address.formattedAddress}
-        {"\n"}
-        {customer.address.city}, {customer.address.state} {customer.address.zip}
-      </Text>
+      <Text style={{ fontSize, textAlign }}>{customer.x.serviceAddressBlock}</Text>
     ),
     previewRender: (
       { customer }: PrepayLetterData,
@@ -467,11 +442,7 @@ export const prepayLetterContract = {
           whiteSpace: "pre-line",
         }}
       >
-        {customer.displayName}
-        {"\n"}
-        {customer.address.formattedAddress}
-        {"\n"}
-        {customer.address.city}, {customer.address.state} {customer.address.zip}
+        {customer.x.serviceAddressBlock}
       </div>
     ),
   } satisfies WithText,
@@ -851,7 +822,7 @@ export const prepayLetterContract = {
           {pricing.upsell.services.map((service) => (
             <View key={service.servCodeId} style={rowStyle}>
               <Text style={{ flex: 1, fontSize }}>
-                {service.name}
+                {service.longName}
                 {service.hasDiscount && "*"}
               </Text>
               <View
@@ -917,7 +888,7 @@ export const prepayLetterContract = {
           {pricing.upsell.services.map((service) => (
             <div key={service.servCodeId} style={rowStyle}>
               <span style={{ flex: 1 }}>
-                {service.name}
+                {service.longName}
                 {service.hasDiscount && "*"}
               </span>
               <div
@@ -1344,9 +1315,7 @@ export const prepayLetterContract = {
       { fontSize, textAlign }: TextOptions,
     ) => (
       <Text style={{ fontSize, textAlign }}>
-        {isAutoRenew
-          ? `${config.universalMessage} ${config.autoRenewMessage}`
-          : config.dontAutoRenewMessage}
+        {buildLetterMessage({ config, isAutoRenew })}
       </Text>
     ),
     previewRender: (
@@ -1355,9 +1324,7 @@ export const prepayLetterContract = {
       { fontSize, textAlign }: TextOptions,
     ) => (
       <div style={{ fontSize: fontSize * scale, textAlign }}>
-        {isAutoRenew
-          ? `${config.universalMessage} ${config.autoRenewMessage}`
-          : config.dontAutoRenewMessage}
+        {buildLetterMessage({ config, isAutoRenew })}
       </div>
     ),
   } satisfies WithText,

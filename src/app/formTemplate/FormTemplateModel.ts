@@ -19,11 +19,18 @@ const FormTemplateSchema = new mongoose.Schema<FormTemplateDoc>(
   {
     templateId: { type: String, required: true, unique: true, index: true },
     templateName: { type: String, required: true },
+    saId: { type: String, default: "", index: true },
     dataType: { type: String, required: true },
     pageSize: { type: String, required: true, enum: ["LETTER", "LEGAL"] },
     slots: { type: [FormTemplateSlotSchema], required: true, default: [] },
   },
   { timestamps: true },
+);
+
+// Name is unique per owner. Partial so legacy templates without an owner can share names.
+FormTemplateSchema.index(
+  { templateName: 1, saId: 1 },
+  { unique: true, partialFilterExpression: { saId: { $gt: "" } } },
 );
 
 // The model name determines the Mongo collection. It predates the "Letter" rename, so

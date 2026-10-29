@@ -80,9 +80,9 @@ src/app/<feature>/<Feature>Types.tsx   data type, slot keys, contract, sample da
 8. Editor components: prop functions end in `Action`; delete handlers take a `slotId`.
 9. Do not use `useEffect` + `setState` for client checks; use `useIsClient()` for client-only rendering (`PDFViewer`, `usePDF`).
 
-## Printing many pages (batch module, provisional)
+## Printing many pages (batch module)
 
-This is design guidance for the unbuilt batch module. Confirm it against the real implementation once it exists and update this skill.
+First implementation: `src/app/prepayLetters/renewalLetters/useRenewalLetterPdf.tsx`. It renders one `FormBatchDocument` per batch row with `pdf(...).toBlob()`, saves into a folder picked once (File System Access API, Chromium) or falls back to one anchor download per file. Rendering is unchunked (largest batch is about 1600 letters, not yet measured) and one failed file is reported by name without stopping the rest. `src/lib/pdf/FormPage.tsx` holds the shared slot loop used by both `FormDocument` and `FormBatchDocument`. The guidance below was written before it was built, so the chunking advice is still unverified.
 
 - Reuse templates and contracts unchanged. Do not fork a data type for batch use.
 - `FormDocument` renders exactly one `Page`. A batch needs a sibling that maps `dataItems` to many pages. Extract the per-page slot loop into a shared function used by both, so the single and batch paths cannot drift.

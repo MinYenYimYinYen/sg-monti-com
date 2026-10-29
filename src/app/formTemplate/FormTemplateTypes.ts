@@ -26,10 +26,18 @@ export type FormTemplateSlotDoc = {
 /**
  * `TDataType` defaults to `string` so the generic template module never depends on a
  * feature. Code that holds the registry narrows it to `FormDataType`.
+ *
+ * Natural key: `templateName + saId`. `templateId` is a slug derived from both on the
+ * server at save time. An empty `templateId` means the draft has never been saved.
  */
 export type FormTemplateDoc<TDataType extends string = string> = {
   templateId: string;
   templateName: string;
+  /**
+   * The author's `saId` (from the auth token). Empty on templates saved before ownership
+   * existed; nobody owns those, so nobody can overwrite or delete them.
+   */
+  saId: string;
   /** Key of the registered form data type this template consumes. */
   dataType: TDataType;
   pageSize: "LETTER" | "LEGAL";

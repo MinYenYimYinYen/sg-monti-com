@@ -21,6 +21,9 @@ describe("buildServicePriceRows", () => {
     });
     expect(rows).toHaveLength(SERVICE_COUNT);
     expect(rows[0]!.label).toBe("Early Spring Visit");
+    // Prints the long name, not the short name ("Mosq May"), as on the customer's letter.
+    expect(rows.map((row) => row.label)).toContain("Mosquito Reduction - End of May");
+    expect(rows.map((row) => row.label)).not.toContain("Mosq May");
   });
 
   it("rolls up to one row per program when the count exceeds the threshold", () => {
@@ -74,7 +77,7 @@ describe("buildServicePriceRows", () => {
         customer: sampleCustomer,
         thresholdForProgramRollup,
       }).map((row) => row.label);
-      expect(labels.join("|")).not.toContain("Tree & Shrub");
+      expect(labels.join("|")).not.toContain("Pest Control");
     }
   });
 });

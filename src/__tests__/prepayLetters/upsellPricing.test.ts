@@ -72,9 +72,9 @@ describe("priceUpsell", () => {
 
     expect(priced).not.toBeNull();
     expect(priced!.description).toBe("Some Upsell Program");
-    expect(priced!.services.map((s) => s.name)).toEqual([
-      "Some Upsell 1",
-      "Some Upsell 2",
+    expect(priced!.services.map((s) => s.longName)).toEqual([
+      "Some Upsell - First Visit",
+      "Some Upsell - Second Visit",
     ]);
     for (const service of priced!.services) {
       expect(service.price).toBe(150);

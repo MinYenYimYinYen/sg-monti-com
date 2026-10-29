@@ -73,6 +73,7 @@ const customerContactSection: NavSection = {
   navItems: [
     { title: "Prepay Letters", href: "/prepayLetters/config", roles: ["admin", "office"] },
     { title: "QuickSend", href: "/quickSend", roles: ["admin", "office"] },
+    { title: "Form Templates", href: "/formTemplate", roles: ["admin", "office"] },
   ],
 };
 

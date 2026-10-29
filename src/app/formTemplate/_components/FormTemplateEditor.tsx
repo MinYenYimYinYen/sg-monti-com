@@ -37,17 +37,6 @@ import {
   AccordionTrigger,
 } from "@/style/components/accordion";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/style/components/alert-dialog";
-import {
   Tabs,
   TabsContent,
   TabsList,
@@ -58,8 +47,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/style/components/popover";
-import type { FormTemplateDoc, FormTemplateSlotDoc } from "@/app/formTemplate/FormTemplateTypes";
-import { Braces, Minus, Plus, FileText, Move, Eye, Save } from "lucide-react";
+import type { FormTemplateSlotDoc } from "@/app/formTemplate/FormTemplateTypes";
+import { Braces, Minus, Plus, FileText, Move, Eye } from "lucide-react";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { SamplePdfDownload } from "./SamplePdfDownload";
 
@@ -103,17 +92,6 @@ function makeSlotForKey(
   };
 }
 
-/** Creates a blank new template for the given data type. */
-function makeNewTemplate(dataType: string): FormTemplateDoc {
-  return {
-    templateId: `tpl_${Date.now()}`,
-    templateName: "New Template",
-    dataType,
-    pageSize: "LEGAL",
-    slots: [],
-  };
-}
-
 type FormTemplateEditorProps = {
   /** Registered form data types. Injected so this module never imports a feature. */
   dataTypeRegistry: Record<string, FormDataTypeDescriptor>;
@@ -131,11 +109,9 @@ export function FormTemplateEditor({ dataTypeRegistry }: FormTemplateEditorProps
     label: registered.label,
   }));
   const draft = useSelector(formTemplateSelect.draft);
-  const templates = useSelector(formTemplateSelect.templates);
   const previewScale = useSelector(formTemplateSelect.previewScale);
   const previewMode = useSelector(formTemplateSelect.previewMode);
   const allEdges = useSelector(formTemplateSelect.draftSlotEdges);
-  const isDirty = useSelector(formTemplateSelect.isDirty);
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<LeftTab>("config");
@@ -148,45 +124,9 @@ export function FormTemplateEditor({ dataTypeRegistry }: FormTemplateEditorProps
   // Map of slotId → accordion item DOM element for scroll-into-view
   const accordionItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  // If no draft, show template selector / new template button
-  if (!draft) {
-    return (
-      <div className="flex flex-col gap-4 p-6 h-full overflow-y-auto">
-        <h2 className="text-lg font-semibold">Form Template Editor</h2>
-
-        {templates.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <Label>Load existing template</Label>
-            <Select
-              onValueChange={(templateId) => {
-                const found = templates.find((t) => t.templateId === templateId);
-                if (found) dispatch(formTemplateActions.setDraft(found));
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a template..." />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map((t) => (
-                  <SelectItem key={t.templateId} value={t.templateId}>
-                    {t.templateName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        <Button
-          variant="primary"
-          intensity="solid"
-          onClick={() => dispatch(formTemplateActions.setDraft(makeNewTemplate(dataTypeOptions[0].value)))}
-        >
-          New Template
-        </Button>
-      </div>
-    );
-  }
+  // The page guarantees a draft (blank form) once the user is known; this is the brief
+  // moment before it is created.
+  if (!draft) return null;
 
   const descriptor = dataTypeRegistry[draft.dataType];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -245,24 +185,6 @@ export function FormTemplateEditor({ dataTypeRegistry }: FormTemplateEditorProps
         el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }, 50);
     }
-  }
-
-  function handleSaveTemplate() {
-    dispatch(
-      formTemplateActions.upsert({
-        params: { template: activeDraft },
-        config: { loadingMsg: "Saving template..." },
-      }),
-    );
-  }
-
-  function handleDeleteTemplate() {
-    dispatch(
-      formTemplateActions.deleteOne({
-        params: { templateId: activeDraft.templateId },
-        config: { loadingMsg: "Deleting template..." },
-      }),
-    );
   }
 
   return (
@@ -341,43 +263,6 @@ export function FormTemplateEditor({ dataTypeRegistry }: FormTemplateEditorProps
               </div>
             </div>
 
-            <hr className="border-border" />
-
-            <div className="flex flex-col gap-2">
-              <Button variant="primary" intensity="solid" onClick={handleSaveTemplate}>
-                Save Template
-              </Button>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" intensity="ghost">
-                    Delete Template
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete "{draft.templateName}"?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete the template. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteTemplate}>
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-
-              <Button
-                variant="outline"
-                intensity="ghost"
-                onClick={() => dispatch(formTemplateActions.clearDraft())}
-              >
-                Close
-              </Button>
-            </div>
           </TabsContent>
 
           {/* ── Add Fields tab ── */}
@@ -546,20 +431,6 @@ export function FormTemplateEditor({ dataTypeRegistry }: FormTemplateEditorProps
           </Button>
 
           <div className="flex-1" />
-
-          {/* Unsaved changes indicator */}
-          {isDirty && (
-            <Button
-              size="sm"
-              variant="primary"
-              intensity="soft"
-              onClick={handleSaveTemplate}
-              title="Save unsaved changes"
-            >
-              <Save className="h-3 w-3 mr-1" />
-              Save changes
-            </Button>
-          )}
 
           {/* Print Sample PDF download */}
           {isClient && (

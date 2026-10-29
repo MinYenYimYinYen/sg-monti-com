@@ -6,6 +6,10 @@ import { TRange } from "@/lib/primatives/tRange/TRange";
 import { FlagRule } from "@/app/flagRule/FlagRuleTypes";
 import { evaluateAllRules, FlagRuleResult } from "@/app/flagRule/flagRuleEngine";
 import { RenewalFlagIds } from "@/app/globalSettings/_lib/GlobalSettingsTypes";
+import {
+  getBillingAddressBlock,
+  getServiceAddressBlock,
+} from "@/app/realGreen/customer/_lib/hooks/addressFunc";
 
 export class CustomerUtils {
   constructor(
@@ -14,6 +18,16 @@ export class CustomerUtils {
   ) {}
   public get taxRate(): number {
     return this.customer.taxRate;
+  }
+
+  /** Mailing block for the service address: display name, street, then city, state, ZIP+4. */
+  public get serviceAddressBlock(): string {
+    return getServiceAddressBlock(this.customer);
+  }
+
+  /** Mailing block for the billing address, with the billing name lines. Service block when not billed separately. */
+  public get billingAddressBlock(): string {
+    return getBillingAddressBlock(this.customer);
   }
 
   public get programs() {

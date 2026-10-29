@@ -122,18 +122,15 @@ const formTemplateSlice = createSlice({
       } else {
         state.templates.push(saved);
       }
-      // Keep draft in sync with the saved version
-      if (state.draft?.templateId === saved.templateId) {
-        state.draft = saved;
-      }
+      // The saved doc (with its server-derived templateId) becomes the active entity,
+      // so Save As switches to the new copy and the dirty state clears.
+      state.draft = saved;
     });
 
     builder.addCase(deleteOne.fulfilled, (state, action) => {
-      const deleted = action.payload;
-      state.templates = state.templates.filter(
-        (t) => t.templateId !== deleted.templateId,
-      );
-      if (state.draft?.templateId === deleted.templateId) {
+      const { templateId } = action.meta.arg.params;
+      state.templates = state.templates.filter((t) => t.templateId !== templateId);
+      if (state.draft?.templateId === templateId) {
         state.draft = null;
       }
     });

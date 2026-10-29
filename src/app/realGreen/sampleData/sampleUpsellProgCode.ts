@@ -37,15 +37,15 @@ export const sampleUpsellProgCode: ProgCode = generateCustomer({
         {
           servCode: {
             servCodeId: "S-UPSELL-1",
-            name: "Some Upsell 1",
-            longName: "Some Upsell 1",
+            name: "Upsell Visit 1",
+            longName: "Some Upsell - First Visit",
           },
         },
         {
           servCode: {
             servCodeId: "S-UPSELL-2",
-            name: "Some Upsell 2",
-            longName: "Some Upsell 2",
+            name: "Upsell Visit 2",
+            longName: "Some Upsell - Second Visit",
           },
         },
       ],
