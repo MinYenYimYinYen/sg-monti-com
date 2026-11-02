@@ -33,6 +33,11 @@ type RenewalLettersState = {
   combinedGroups: string[][];
   /** Rows ticked in the table. A combined row is identified by its first member's key. */
   checkedRowIds: string[];
+  /**
+   * The customer picked in Find Customer. The text being typed is local to that input, so
+   * searching never changes which customers can be found.
+   */
+  selectedCustId: number | null;
 };
 
 const initialState: RenewalLettersState = {
@@ -41,6 +46,7 @@ const initialState: RenewalLettersState = {
   loadedSeason: null,
   combinedGroups: [],
   checkedRowIds: [],
+  selectedCustId: null,
 };
 
 const renewalLettersSlice = createSlice({
@@ -49,6 +55,9 @@ const renewalLettersSlice = createSlice({
   reducers: {
     setSelectedTemplateId: (state, action: PayloadAction<string | null>) => {
       state.selectedTemplateId = action.payload;
+    },
+    setSelectedCustId: (state, action: PayloadAction<number | null>) => {
+      state.selectedCustId = action.payload;
     },
     setPdfStatus: (state, action: PayloadAction<PdfRunStatus>) => {
       state.pdfStatus = action.payload;

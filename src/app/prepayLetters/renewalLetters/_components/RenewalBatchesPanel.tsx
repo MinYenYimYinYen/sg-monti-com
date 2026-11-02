@@ -15,6 +15,7 @@ import { Download } from "lucide-react";
 import { useRenewalLetterPdf } from "../useRenewalLetterPdf";
 import { cn } from "@/style/utils";
 import { RenewalFlagFilterWarning } from "./RenewalFlagFilterWarning";
+import { RenewalSelectedCustomerPanel } from "./RenewalSelectedCustomerPanel";
 
 // Counts only. Batches can hold thousands of customers, so no customer rows render here.
 
@@ -164,6 +165,7 @@ export function RenewalBatchesPanel() {
   const checkedRows = useSelector(renewalLettersSelect.checkedRows);
   const loadedSeason = useSelector(renewalLettersSelect.loadedSeason);
   const isSeasonStale = useSelector(renewalLettersSelect.isSeasonStale);
+  const selectedCustomer = useSelector(renewalLettersSelect.selectedCustomer);
 
   if (!config) {
     return (
@@ -200,6 +202,9 @@ export function RenewalBatchesPanel() {
       </div>
     );
   }
+
+  // After the guards above, so a stale season never shows letters built from the wrong customers.
+  if (selectedCustomer) return <RenewalSelectedCustomerPanel />;
 
   const lettersToPrint = rows.reduce((sum, row) => sum + row.customerCount, 0);
 

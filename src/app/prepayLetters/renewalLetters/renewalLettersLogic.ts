@@ -6,6 +6,7 @@ import type { UpsellPriority } from "@/app/prepayLetters/upsellPriorities/upsell
 import { chooseUpsell } from "@/app/prepayLetters/upsellPriorities/upsellPrioritiesLogic";
 import type { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
 import { buildBatches, getStepLabel, getStepRuleKey, type Batch } from "./renewalBatches";
+import { buildDisplayBatches, type DisplayBatch } from "./renewalBatchCombining";
 import {
   BILLING_RULE_KEYS,
   LEVEL_NAMES,
@@ -62,6 +63,56 @@ type BuildRenewalBatchesParams = {
 /** Copy, never in place: the input is a memoized selector result. */
 export function sortCustomersByCustId(customers: Customer[]): Customer[] {
   return [...customers].sort((a, b) => a.custId - b.custId);
+}
+
+/** Why an account has no letter: set aside as confirmed, or no rule claimed it. */
+export type CustomerLetterStatus = "letter" | "confirmed" | "missed";
+
+export type CustomerLetterRole = "master" | "subAccount" | "customer";
+
+export type CustomerLetter = {
+  customer: Customer;
+  role: CustomerLetterRole;
+  status: CustomerLetterStatus;
+  /** Null unless status is "letter". Same shape the batch table downloads. */
+  row: DisplayBatch | null;
+};
+
+type BuildCustomerLettersParams = {
+  /** In display order. The caller decides the order, this only derives each account's role. */
+  accounts: Customer[];
+  priorities: UpsellPriority[];
+  config: PrepayConfig;
+  company: Company;
+};
+
+function getCustomerLetterRole(customer: Customer): CustomerLetterRole {
+  if (customer.isMasterAcct) return "master";
+  // RealGreen leaves masterAcctId at -1 for a customer that is not in a group.
+  return customer.masterAcctId > 0 ? "subAccount" : "customer";
+}
+
+/**
+ * One entry per account, in the order given. Each account runs through the same waterfall as
+ * the batch table, alone, so its categories and upsell match what a batch print would give it.
+ * A lone customer lands in at most one batch, so each entry has one row or none.
+ */
+export function buildCustomerLetters({
+  accounts,
+  priorities,
+  config,
+  company,
+}: BuildCustomerLettersParams): CustomerLetter[] {
+  return accounts.map((account): CustomerLetter => {
+    const result = buildRenewalBatches({ customers: [account], priorities, config, company });
+    const [row] = buildDisplayBatches({ batches: result.batches, combinedGroups: [] });
+    const status: CustomerLetterStatus = row
+      ? "letter"
+      : result.confirmedCount > 0
+        ? "confirmed"
+        : "missed";
+    return { customer: account, role: getCustomerLetterRole(account), status, row: row ?? null };
+  });
 }
 
 function pathLabelOf(steps: { label: string }[]): string {

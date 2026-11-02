@@ -14,6 +14,7 @@ import { useRenewalLetterPdf } from "../useRenewalLetterPdf";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import type { CustomerContextMode } from "@/app/realGreen/customer/slices/customerSlices";
 import { RenewalFlagFilterWarning } from "./RenewalFlagFilterWarning";
+import { RenewalCustomerFinder } from "./RenewalCustomerFinder";
 import { Button } from "@/style/components/button";
 import { Label } from "@/style/components/label";
 import { cn } from "@/style/utils";
@@ -204,6 +205,8 @@ export function RenewalSettingsPanel() {
       <Button className="w-full" onClick={refreshCustomers} disabled={!canRefresh || !config}>
         Get Customers
       </Button>
+
+      <RenewalCustomerFinder />
 
       <Button
         className="w-full"

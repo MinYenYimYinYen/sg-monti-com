@@ -91,6 +91,23 @@ export function buildPdfFileNames({
   });
 }
 
+/**
+ * File names for single-customer downloads, e.g. `12345 2027 renewal.pdf`. No timestamp, on
+ * purpose: these are mostly reprints, so saving again to a folder replaces the earlier copy.
+ */
+export function buildCustomerPdfFileNames({
+  season,
+  rows,
+}: {
+  season: number;
+  rows: DisplayBatch[];
+}): string[] {
+  return rows.map((row) => {
+    const custId = row.letters[0]?.customer.custId;
+    return `${custId === undefined ? "unknown" : custId} ${season} renewal.pdf`;
+  });
+}
+
 /** Folder saving needs the File System Access API (Chromium, secure context). */
 export function canPickFolder(target: object): boolean {
   // Takes `object`, not a type with an optional property: TypeScript rejects `window` for a

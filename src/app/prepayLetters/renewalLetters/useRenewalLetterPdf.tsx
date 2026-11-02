@@ -12,7 +12,10 @@ import { prepayConfigSelect } from "@/app/prepayLetters/config/prepayConfigSelec
 import type { DisplayBatch } from "./renewalBatchCombining";
 import { renewalLettersSelect } from "./renewalLettersSelect";
 import { IDLE_PDF_STATUS, renewalLettersActions } from "./renewalLettersSlice";
-import { buildPdfFileNames, canPickFolder } from "./renewalPdfLogic";
+import { buildCustomerPdfFileNames, buildPdfFileNames, canPickFolder } from "./renewalPdfLogic";
+
+/** "customer" names files by custId, for reprints. "batch" names them by category and time. */
+export type PdfFileNameMode = "batch" | "customer";
 
 // Minimal local types: the File System Access API is not in every TypeScript DOM lib.
 type WritableFile = { write: (blob: Blob) => Promise<void>; close: () => Promise<void> };
@@ -65,7 +68,13 @@ export function useRenewalLetterPdf() {
   const store = useStore<AppState>();
   const isClient = useIsClient();
 
-  const downloadRows = async ({ rows }: { rows: DisplayBatch[] }) => {
+  const downloadRows = async ({
+    rows,
+    fileNameMode = "batch",
+  }: {
+    rows: DisplayBatch[];
+    fileNameMode?: PdfFileNameMode;
+  }) => {
     if (!isClient || rows.length === 0) return;
     const state = store.getState();
     if (renewalLettersSelect.isPdfRunning(state)) return;
@@ -88,11 +97,10 @@ export function useRenewalLetterPdf() {
         });
       }
 
-      const fileNames = buildPdfFileNames({
-        season: config.season,
-        rows,
-        timestamp: new Date(),
-      });
+      const fileNames =
+        fileNameMode === "customer"
+          ? buildCustomerPdfFileNames({ season: config.season, rows })
+          : buildPdfFileNames({ season: config.season, rows, timestamp: new Date() });
       const browserWindow = window as FolderPickerWindow;
       let folder: FolderHandle | null = null;
       if (rows.length > 1 && canPickFolder(browserWindow) && browserWindow.showDirectoryPicker) {

@@ -1,13 +1,16 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { AppState } from "@/store";
+import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { companySelect } from "@/app/realGreen/company/companySlice";
 import { prepayConfigSelect } from "@/app/prepayLetters/config/prepayConfigSelect";
 import { upsellPrioritiesSelect } from "@/app/prepayLetters/upsellPriorities/upsellPrioritiesSelect";
 import { formTemplateSelect } from "@/app/formTemplate/formTemplateSelect";
 import {
+  buildCustomerLetters,
   buildRenewalBatches,
   sortCustomersByCustId,
+  type CustomerLetter,
   type RenewalBatchesResult,
 } from "./renewalLettersLogic";
 import { IDLE_PDF_STATUS, type PdfRunStatus } from "./renewalLettersSlice";
@@ -57,6 +60,94 @@ const selectBatches = createSelector(
   (customers, priorities, config, company): RenewalBatchesResult | null => {
     if (!config || !company) return null;
     return buildRenewalBatches({ customers, priorities, config, company });
+  },
+);
+
+// `?? null` covers state created before the field existed (hot reload).
+const selectSelectedCustId = (state: AppState): number | null =>
+  state.renewalLetters.selectedCustId ?? null;
+
+export type CustomerLookupOption = { custId: number; displayName: string };
+
+/**
+ * Branches off the same list the batches use, and the typed text never reaches it, so
+ * searching cannot narrow what can be found. Already in custId order.
+ */
+const selectLookupCustomers = createSelector(
+  [selectCustomersByCustId],
+  (customers): CustomerLookupOption[] =>
+    customers.map((customer) => ({ custId: customer.custId, displayName: customer.displayName })),
+);
+
+/** Null when nothing is picked or the picked customer is no longer loaded. */
+const selectSelectedCustomer = createSelector(
+  [selectCustomersByCustId, selectSelectedCustId],
+  (customers, custId) => customers.find((customer) => customer.custId === custId) ?? null,
+);
+
+const EMPTY_CUSTOMERS: Customer[] = [];
+
+/**
+ * The custId of the selected customer's group master: itself when it is the master, else its
+ * masterAcctId. Null when it is not in a group (RealGreen leaves masterAcctId at -1).
+ */
+const selectSelectedGroupMasterId = createSelector([selectSelectedCustomer], (customer) => {
+  if (!customer) return null;
+  if (customer.isMasterAcct) return customer.custId;
+  return customer.masterAcctId > 0 ? customer.masterAcctId : null;
+});
+
+/**
+ * Null when the master is not loaded. A master need not have services, so it can be absent
+ * from the renewal customers, and it is deliberately not fetched: it would not get a letter.
+ */
+const selectSelectedMasterAccount = createSelector(
+  [selectCustomersByCustId, selectSelectedGroupMasterId],
+  (customers, masterId) =>
+    masterId === null
+      ? null
+      : (customers.find((customer) => customer.custId === masterId && customer.isMasterAcct) ??
+        null),
+);
+
+/**
+ * Every loaded member of the selected customer's group, including the selected one when it
+ * is a sub-account. Empty when the customer is not in a group.
+ */
+const selectSelectedSubAccounts = createSelector(
+  [selectCustomersByCustId, selectSelectedGroupMasterId],
+  (customers, masterId) =>
+    masterId === null
+      ? EMPTY_CUSTOMERS
+      : customers.filter((customer) => !customer.isMasterAcct && customer.masterAcctId === masterId),
+);
+
+/** Master first when loaded, then the members. Falls back to the selection alone with no group. */
+const selectSelectedGroupAccounts = createSelector(
+  [
+    selectSelectedCustomer,
+    selectSelectedMasterAccount,
+    selectSelectedSubAccounts,
+    selectSelectedGroupMasterId,
+  ],
+  (customer, master, subAccounts, masterId): Customer[] => {
+    if (!customer) return EMPTY_CUSTOMERS;
+    if (masterId === null) return [customer];
+    return master ? [master, ...subAccounts] : subAccounts;
+  },
+);
+
+/** Null under the same conditions as `selectBatches`: no open config, or no company. */
+const selectSelectedCustomerLetters = createSelector(
+  [
+    selectSelectedGroupAccounts,
+    upsellPrioritiesSelect.priorities,
+    prepayConfigSelect.parsedDraft,
+    companySelect.company,
+  ],
+  (accounts, priorities, config, company): CustomerLetter[] | null => {
+    if (accounts.length === 0 || !config || !company) return null;
+    return buildCustomerLetters({ accounts, priorities, config, company });
   },
 );
 
@@ -150,4 +241,11 @@ export const renewalLettersSelect = {
   selectedTemplate: selectSelectedTemplate,
   prepayLetterTemplates: selectPrepayLetterTemplates,
   batches: selectBatches,
+  selectedCustId: selectSelectedCustId,
+  lookupCustomers: selectLookupCustomers,
+  selectedCustomer: selectSelectedCustomer,
+  selectedGroupMasterId: selectSelectedGroupMasterId,
+  selectedMasterAccount: selectSelectedMasterAccount,
+  selectedSubAccounts: selectSelectedSubAccounts,
+  selectedCustomerLetters: selectSelectedCustomerLetters,
 };
