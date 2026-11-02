@@ -116,6 +116,9 @@ export async function proxy(request: NextRequest) {
   // Match ALL Next.js API routes (*/api or /api/*), not just /auth/api
   const isApi = pathname.includes("/api");
   const isStatic = pathname.startsWith("/_next") || pathname === "/favicon.ico";
+  const isOpen = AUTH_CONST.OPEN_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
   const isAppliedPage = pathname === "/auth/applied";
   const isChangePasswordPage = pathname === "/auth/changePassword";
 
@@ -126,7 +129,7 @@ export async function proxy(request: NextRequest) {
   // 2. LOGIC GATES (Order Matters!)
 
   // GATE A: Infrastructure (Always Allow)
-  if (isApi || isStatic) {
+  if (isApi || isStatic || isOpen) {
     return nextWithHeaders(request, user, newAccessToken);
   }
 

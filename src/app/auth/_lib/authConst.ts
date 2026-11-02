@@ -47,4 +47,8 @@ export const AUTH_CONST = {
   },
   // All routes starting with these paths are public
   PUBLIC_PATHS: ["/auth"],
+  // Reachable by everyone, signed in or not, with no auth redirects. Unlike
+  // PUBLIC_PATHS, signed-in users are not bounced home. Needed for pages that
+  // third parties (e.g. Intuit app review) must be able to open.
+  OPEN_PATHS: ["/legal"],
 } as const;
