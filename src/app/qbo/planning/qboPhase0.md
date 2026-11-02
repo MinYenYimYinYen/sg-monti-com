@@ -18,6 +18,7 @@ Non-goals: this is NOT a QBO suite. No classes, no locations, no bank feeds (QBO
 | 5 | `qboPhase5.md` | CSV import, formats, mappings, skips, duplicate detection |
 | 6 | `qboPhase6.md` | Posting, row statuses, faults, locking |
 | 7 | `qboPhase7.md` | Production cutover |
+| - | `qboQuestionnaire.md` | Intuit questionnaire answers tracked as build commitments |
 
 ## Decision Log
 
@@ -73,6 +74,21 @@ Non-goals: this is NOT a QBO suite. No classes, no locations, no bank feeds (QBO
 
 ### Access
 - `office` and `admin` may import. Enforced in API handler `roles` only, not in the UI.
+
+### Intuit onboarding decisions (made while completing the production questionnaire)
+- **Questionnaire answers are commitments.** They are recorded in `qboQuestionnaire.md` with a checkbox per answer; recheck them against what was built before submitting or going live.
+- **Intuit URLs:** host domain `sgmonti.com`; Launch URL `https://sgmonti.com/auth/login`; Disconnect URL `https://sgmonti.com/auth/logout`; Connect/Reconnect URL `https://sgmonti.com/auth/login?from=/qbo/connection`. The questionnaire assumes customer-facing apps; ours is internal, so these point at existing auth pages.
+- **Public pages (built):** `/legal/terms` (EULA) and `/legal/privacy`. Pages that must be reachable without login use `AUTH_CONST.OPEN_PATHS` in `src/app/auth/_lib/authConst.ts` (checked in `proxy.ts` before the auth gates). It also holds `/auth/logout`.
+- **Logout page (built):** `/auth/logout` signs the user out and redirects to `/auth/login`.
+- **OAuth endpoints** are hardcoded as constants from Intuit's discovery document (authorization `https://appcenter.intuit.com/connect/oauth2`, token `https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer`, revocation `https://developer.api.intuit.com/v2/oauth2/tokens/revoke`), with a comment naming the document. Sandbox and production use the same OAuth endpoints; only the accounting API base URL and client keys differ. Disconnect also calls the revocation endpoint.
+- **Token refresh:** only when access tokens expire (proactively just before expiry, once more after a 401). One retry on auth failure, never a loop. `invalid_grant` and an expired refresh token are final: clear tokens, show "reconnect required", disable posting, keep rows `pending`.
+- **CSRF `state`:** one-time, expires after about 10 minutes, deleted on first use. The callback verifies an admin session itself, because `proxy.ts` skips auth for `/api` paths.
+- **Token encryption:** AES-256-GCM (not bcrypt), as the privacy policy states.
+- **No CDC:** reference data uses full paginated queries.
+- **Core features only:** no classes, locations, inventory or projects. Intended to be independent of QuickBooks edition; not yet verified against Intuit's docs.
+- **Secrets:** QBO client ID, client secret and encryption key live only in env vars, never with a `NEXT_PUBLIC_` prefix, and never in logs, error responses or the browser (questionnaire commitment).
+- **Data use:** mirrored QBO data stays behind login with role checks and is used only for the company's own purposes (questionnaire commitment).
+- **Logging:** every QBO call is logged per call, including `intuit_tid`, and recallable in an admin viewer (see `qboPhase2.md`). Failed import rows keep the `intuit_tid` so a user can quote it to Intuit support.
 
 ## Folder Layout (planned)
 

@@ -23,7 +23,8 @@ Move from the sandbox to the real company safely, and make sure the connection d
 - [ ] Environment safeguard: show a clear banner when `QBO_ENVIRONMENT` is `sandbox`, so nobody mistakes sandbox for the real books.
 - [ ] Status page warning when the refresh token is within about 30 days of expiry, with a Reconnect button. Verify the current maximum refresh-token lifetime in Intuit's docs.
 - [ ] Handle a revoked grant gracefully: the status shows "reconnect required" and posting is disabled, rows remain `pending`.
-- [ ] Short runbook: how to reconnect, how to re-sync, what to do with `failed` and `unknown` rows.
+- [ ] Short runbook: how to reconnect, how to re-sync, what to do with `failed` and `unknown` rows, and how to find a call in `/qbo/log` by `intuit_tid` to send to Intuit support.
+- [ ] Walk through `qboQuestionnaire.md` and tick each answer only after verifying the built behavior matches. Correct any answer that no longer matches before submitting the production-keys form.
 
 ## Done Criteria
 

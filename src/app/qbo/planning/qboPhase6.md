@@ -56,6 +56,8 @@ Post pending rows to QBO as credit card `Purchase` transactions in batches, repo
 - [ ] Confirm a query can find purchases by `DocNumber` (needed for reconciliation); if not, find the best filterable field.
 - [ ] Confirm the `DocNumber` length limit (expected 21).
 - [ ] Provoke a validation fault (use an inactive vendor/account) and record the real Fault payload.
+- [ ] Provoke a syntax error (a deliberately malformed request body) and record the real response. The questionnaire answered Yes to "tested that the app handles API errors, including syntax and validation errors", so this and the validation test must actually run.
+- [ ] Confirm the `intuit_tid` header is present on success and failure responses and appears in the QBO log and on the failed row.
 - [ ] Confirm the vendor name length limit and behavior for names that collide with a customer or employee.
 - [ ] Post a batch of 30 and one with a deliberately bad row; confirm partial success and `bId` matching.
 
