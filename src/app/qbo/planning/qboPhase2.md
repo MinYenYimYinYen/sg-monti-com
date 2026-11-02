@@ -32,7 +32,8 @@ A working, admin-initiated connection to the single QBO company, with safe autom
 ### Connection routes
 - RPC ops (admin only): `status`, `startConnect` (returns the Intuit authorize URL with a CSRF `state` stored server-side), `disconnect`.
 - OAuth callback is a browser GET redirect from Intuit, so it is a plain `GET` route handler, an exception to the POST-only RPC pattern. It validates `state`, receives `code` and `realmId`, exchanges the code, stores tokens, redirects back to the admin page.
-- Admin page: shows connected/not connected, company name, refresh-token expiry, Connect/Reconnect/Disconnect.
+- Admin page: shows connected/not connected, company name, refresh-token expiry, Connect/Reconnect/Disconnect. **Fixed path: `/qbo/connection`.** The Intuit Connect/Reconnect URL sends users through login with `from=/qbo/connection` (see `qboPhase1.md`), so do not move it.
+- **Callback auth:** the callback path (`/qbo/connection/api/callback`) contains `/api`, so `src/proxy.ts` lets it through without a login check (the `isApi` gate). The handler therefore cannot rely on the proxy. It must itself verify a signed-in `admin` session and validate the stored one-time `state` before exchanging the code, and it must reject anything else.
 
 ## Your Tasks
 

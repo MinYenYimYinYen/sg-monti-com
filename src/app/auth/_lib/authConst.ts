@@ -49,6 +49,8 @@ export const AUTH_CONST = {
   PUBLIC_PATHS: ["/auth"],
   // Reachable by everyone, signed in or not, with no auth redirects. Unlike
   // PUBLIC_PATHS, signed-in users are not bounced home. Needed for pages that
-  // third parties (e.g. Intuit app review) must be able to open.
-  OPEN_PATHS: ["/legal"],
+  // third parties (e.g. Intuit app review) must be able to open. /auth/logout is
+  // here because it falls under the public /auth prefix, which would otherwise
+  // redirect a signed-in user home before they could be signed out.
+  OPEN_PATHS: ["/legal", "/auth/logout"],
 } as const;

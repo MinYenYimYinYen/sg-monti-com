@@ -67,6 +67,8 @@ The system follows a **"Defense in Depth"** strategy:
 3.  Redux resets state.
 4.  `NavBar` updates to show "Login" button.
 
+**Logout page** (`/auth/logout`): runs the same `useAuth.logout` on load, then hard-redirects to `/auth/login`. It is registered with Intuit as the QuickBooks Disconnect URL. It is listed in `AUTH_CONST.OPEN_PATHS` (checked in `proxy.ts` before the auth gates) because, being under the public `/auth` prefix, a signed-in user would otherwise be redirected home before it could run.
+
 ## 4. Usage Guide
 
 ### Protecting a Client Page
