@@ -7,7 +7,6 @@ const PrepayConfigSchema = new mongoose.Schema<PrepayConfig>(
     configId: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
     saId: { type: String, required: true, index: true },
-    selectionMode: { type: String, enum: ["single", "batch"], required: true },
     season: { type: Number, required: true },
     stdPrepayDiscPercent: { type: Number, required: true },
     upsellPrepayDiscPercent: { type: Number, required: true },

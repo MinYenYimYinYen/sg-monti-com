@@ -36,9 +36,6 @@ export type PrepayConfig = {
   /** The author's `saId` (from the JWT token), not their display `userName`. */
   saId: string;
 
-  // customer selection
-  selectionMode: "single" | "batch";
-
   // math
   showCreditBalance: boolean;
   showRemitBalance: boolean;

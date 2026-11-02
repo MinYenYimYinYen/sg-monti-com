@@ -13,7 +13,6 @@ import {
   SheetTitle,
 } from "@/style/components/sheet";
 import { Input } from "@/style/components/input";
-import { Badge } from "@/style/components/badge";
 import { ScrollArea } from "@/style/components/scroll-area";
 
 type Props = {
@@ -73,9 +72,6 @@ export function PrepayConfigOpenSheet({ open, onCloseAction }: Props) {
                   {config.displayName}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
-                    {config.selectionMode}
-                  </Badge>
                   <span className="text-[10px] text-muted-foreground">
                     Season {config.season}
                   </span>

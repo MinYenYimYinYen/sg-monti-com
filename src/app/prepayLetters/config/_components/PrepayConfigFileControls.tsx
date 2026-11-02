@@ -22,7 +22,6 @@ import { Button } from "@/style/components/button";
 import type { PrepayConfig } from "../prepayConfigTypes";
 
 const BLANK_CONFIG: Omit<PrepayConfig, "configId" | "name" | "saId"> = {
-  selectionMode: "batch",
   season: new Date().getFullYear(),
   stdPrepayDiscPercent: 0,
   upsellPrepayDiscPercent: 0,

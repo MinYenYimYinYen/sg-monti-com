@@ -17,15 +17,18 @@ export function RenewalFlagsDisplay() {
   const flagDocMap = useSelector(flagSelect.flagDocMap);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
-          These flags drive customer filtering for auto-renew and don&apos;t-auto-renew
-          letter batches. They are configured globally and affect other modules.
-        </p>
+    <div className="space-y-3 rounded-md border border-accent/30 bg-accent/10 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="text-sm font-semibold text-foreground">Renewal Flags</h2>
+          <p className="text-xs text-muted-foreground">
+            These flags are configured in Global Settings, not in this config. They drive customer
+            filtering for auto-renew and don&apos;t-auto-renew letter batches and affect other modules.
+          </p>
+        </div>
         <Link
           href="/globalSettings"
-          className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0 ml-3"
+          className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
         >
           Edit in Global Settings
           <ExternalLink className="h-3 w-3" />
