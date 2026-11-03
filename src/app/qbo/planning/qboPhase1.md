@@ -13,7 +13,7 @@ Obtain sandbox credentials so the connection can be built and tested without tou
 - [x] Make sure you have a sandbox company (Intuit creates one with the developer account). Note it for Phase 2 testing.
 - [x] Add env vars to `.env.local`: `QBO_CLIENT_ID`, `QBO_CLIENT_SECRET`, `QBO_REDIRECT_URI`, `QBO_ENVIRONMENT=sandbox`.
 - [x] Generate a random 32-byte key for `QBO_TOKEN_ENCRYPTION_KEY` (for example `openssl rand -base64 32`) and add it to `.env.local`.
-- [ ] Add the same five env vars in Vercel (Preview scope for sandbox values; Production scope later in Phase 7).
+- [x] Add the same five env vars in Vercel (Preview scope for sandbox values; Production scope later in Phase 7).
 - [ ] In the sandbox company, create a credit card account and a couple of vendors/expense accounts so Phase 3 has data to read (or use the sandbox defaults).
 - [ ] Check your app's pricing tier and API call limits in the developer portal. Expected to be a non-issue for monthly imports, but confirm.
 - [x] Deploy the legal pages (built in `src/app/legal/`) to production, then open both URLs in a private/incognito window while signed out and confirm they load without a login redirect:
