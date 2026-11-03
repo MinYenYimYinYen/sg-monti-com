@@ -66,6 +66,7 @@ import { formTemplateReducer } from "@/app/formTemplate/formTemplateSlice";
 import { renewalLettersReducer } from "@/app/prepayLetters/renewalLetters/renewalLettersSlice";
 import { routeNoteReducer } from "@/app/routeNotes/routeNoteSlice";
 import { urgentReducer } from "@/app/pace/priorities/urgentSlice";
+import { qboConnectionReducer } from "@/app/qbo/connection/qboConnectionSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -134,6 +135,7 @@ const rootReducer = combineReducers({
   renewalLetters: renewalLettersReducer,
   routeNotes: routeNoteReducer,
   paceUrgent: urgentReducer,
+  qboConnection: qboConnectionReducer,
   topic: topicReducer,
 });
 

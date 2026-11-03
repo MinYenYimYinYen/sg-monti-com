@@ -109,11 +109,17 @@ const bizPlanSection: NavSection = {
   ],
 };
 
+const quickBooksSection: NavSection = {
+  title: "QuickBooks",
+  navItems: [{ title: "Connection", href: "/qbo/connection", roles: ["admin"] }],
+};
+
 const menuSections = [
   schedulingSection,
   customerContactSection,
   realGreenParams,
   bizPlanSection,
+  quickBooksSection,
 ];
 
 export default function NavMenu() {

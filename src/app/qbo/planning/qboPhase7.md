@@ -10,7 +10,7 @@ Move from the sandbox to the real company safely, and make sure the connection d
 - [ ] Wait for approval and copy the **Production** Client ID and Client Secret.
 - [ ] Register the production Redirect URI `https://sgmonti.com/qbo/connection/api/callback` in the Intuit app's production settings. Set `QBO_REDIRECT_URI` to exactly the same value.
 - [ ] Confirm the host domain (`sgmonti.com`) and the Launch (`/auth/login`), Disconnect (`/auth/logout`) and Connect/Reconnect (`/auth/login?from=/qbo/connection`) URLs are entered in the Intuit app, as in `qboPhase1.md`.
-- [ ] Set Vercel Production env vars: `QBO_CLIENT_ID`, `QBO_CLIENT_SECRET`, `QBO_REDIRECT_URI`, `QBO_ENVIRONMENT=production`, and a **new** `QBO_TOKEN_ENCRYPTION_KEY` for production.
+- [ ] Set Vercel Production env vars: `QBO_CLIENT_ID`, `QBO_CLIENT_SECRET`, `QBO_REDIRECT_URI`, `QBO_ENVIRONMENT=production`, and the **same** `QBO_TOKEN_ENCRYPTION_KEY` as `.env.local`. Dev and production share one MongoDB, so both must decrypt the same token document. (An earlier version of this plan said to use a new key; that only works if the two environments use separate databases.)
 - [ ] Make sure the person who connects is an admin on the real QuickBooks company.
 - [ ] Connect the app to the real company from the Connect page and run the status smoke test.
 - [ ] Run the Phase 3 sync and check the vendors and accounts against QBO.

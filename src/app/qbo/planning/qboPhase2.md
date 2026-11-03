@@ -51,7 +51,7 @@ The RealGreen `rgApiLog` only stores call counts per endpoint, so it cannot be r
 - RPC ops (admin only): `status`, `startConnect` (returns the Intuit authorize URL with a CSRF `state` stored server-side), `disconnect`.
 - OAuth callback is a browser GET redirect from Intuit, so it is a plain `GET` route handler, an exception to the POST-only RPC pattern. It validates `state` (one-time, expires after about 10 minutes, deleted on first use; a missing, mismatched, expired or reused `state` is a CSRF error and is rejected), receives `code` and `realmId`, exchanges the code, stores tokens, redirects back to the admin page.
 - Admin page: shows connected/not connected, company name, refresh-token expiry, Connect/Reconnect/Disconnect. **Fixed path: `/qbo/connection`.** The Intuit Connect/Reconnect URL sends users through login with `from=/qbo/connection` (see `qboPhase1.md`), so do not move it.
-- **Callback auth:** the callback path (`/qbo/connection/api/callback`) contains `/api`, so `src/proxy.ts` lets it through without a login check (the `isApi` gate). The handler therefore cannot rely on the proxy. It must itself verify a signed-in `admin` session and validate the stored one-time `state` before exchanging the code, and it must reject anything else.
+- **Callback auth:** the callback path (`/qbo/connection/api/callback`) contains `/api`, so `src/proxy.ts` lets it through without a login check (the `isApi` gate). The handler therefore cannot rely on the proxy. **Decision (built):** the callback cannot verify a login session at all. Intuit redirects the browser here cross-site, and the auth cookies are `SameSite=strict`, so they are not sent. Instead, `startConnect` (an authenticated admin RPC) stores a one-time `state` together with the admin's `userName`. The callback consumes that state atomically (`findOneAndDelete`), rejects missing, unknown, reused or expired values, takes the connecting user from the state record, and re-checks that this user is still an `admin` before exchanging the code. It then returns a small HTML page that navigates to `/qbo/connection`, so the final hop is same-site and the login cookies are sent (a plain 302 would likely land on the login page).
 
 ## Your Tasks
 
@@ -61,14 +61,14 @@ The RealGreen `rgApiLog` only stores call counts per endpoint, so it cannot be r
 
 ## Our Tasks
 
-- [ ] `connection/types/QboConnectionTypes.ts`, `models/QboConnectionModel.ts`
-- [ ] Pure helpers: encrypt/decrypt, `isExpiringSoon`, authorize-URL builder
+- [x] `connection/types/QboConnectionTypes.ts`, `models/QboConnectionModel.ts` (plus `QboOAuthStateModel.ts`)
+- [x] Pure helpers: encrypt/decrypt (`_lib/auth/qboCrypto.ts`), `isExpiringSoon`, authorize-URL builder (`_lib/auth/qboOAuthUtils.ts`)
 - [ ] `_lib/api/qboHttp.ts`, `qboApi.ts`, `createQboRpcHandler.ts`
 - [ ] Atomic refresh in a server function, with `invalid_grant` and expired-refresh-token handling
 - [ ] `qboApiLog/` module: types, model with TTL index, `redact` helper, `AsyncLocalStorage` capture of `intuit_tid`, `/qbo/log` viewer
 - [ ] Optional: "Contact support" link on the connection page (see `qboQuestionnaire.md` open question)
-- [ ] Contract + route (`status`, `startConnect`, `disconnect`) and `GET` callback route
-- [ ] Admin page with `PageLayout` and correct scroll context
+- [x] Contract + route (`status`, `startConnect`, `disconnect`) and `GET` callback route (built, untested against Intuit)
+- [x] Admin page with `PageLayout` and correct scroll context (connect, disconnect and status only; no smoke test yet)
 - [ ] Smoke test: `companyinfo` call
 
 ## Done Criteria
