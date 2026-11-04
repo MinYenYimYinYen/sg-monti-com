@@ -25,14 +25,15 @@ Non-goals: this is not a QBO suite. No classes, locations, bank feeds, refund or
 ## Key Decisions
 
 ### Transactions
-- Entity: QBO `Purchase` with `PaymentType: "CreditCard"`. `AccountRef` is the credit card account, `EntityRef` is the vendor, with one `AccountBasedExpenseLineDetail` line (expense account plus optional memo as line `Description`).
+- Entity: QBO `Purchase` with `PaymentType: "CreditCard"`. `AccountRef` is the credit card account, `EntityRef` is the vendor, with one `AccountBasedExpenseLineDetail` line (the expense account). The optional memo goes in the purchase's `PrivateNote`, which Intuit documents as the Memo field on the Expense form. (An earlier version of this plan used the line `Description`.)
 - `TxnDate` is the transaction date, not the posted date. The Chase `Memo` column is ignored; the user may type a memo on any row.
 
 ### Types (decided: no remap pipeline)
 - QBO entities use **Intuit's own type definitions and PascalCase names** (`DisplayName`, `SyncToken`, `AccountRef`). We do not use the `Raw` / `Core` / `Doc` / `Props` layering from RealGreen, and we do not write `remap*` functions. We are not extending these types, and Intuit's shapes are stable (we pin `minorversion`). This intentionally deviates from the type-suffix table in `AGENTS.md`. Do not "fix" it.
 - **Write out every field Intuit documents, and comment out the ones we do not use.** That keeps the full surface visible in the code, so nobody has to dig through Intuit's documentation again if requirements change. Fields we read, write, or must echo back (such as `Id` and `SyncToken`) stay uncommented.
 - Types for our own data (import rows, mappings, card assignments, the token store) follow the normal `Doc` / `Props` / no-suffix convention. The deviation applies only to QBO entities.
-- Types are built from definitions the user pastes from Intuit's API reference (it is rendered by JavaScript, so it cannot be fetched). The index of available pages, with build status, is `../typeReferences/availableReferences.md`. Record the pinned `minorversion` in `qboApi` once chosen. The reference page was on minor version 75 when this plan was written; confirm before pinning.
+- Types are built from definitions the user pastes from Intuit's API reference (it is rendered by JavaScript, so it cannot be fetched). The index of available pages, with build status, is `../typeReferences/availableReferences.md`. The pinned `minorversion` is 75 (`qboConst.minorVersion`), confirmed by the user as the version the reference pages were on.
+- Shapes Intuit names without defining (addresses, phone, email, website, name-value pairs, months) were written from sample JSON into `_lib/types/QboContactTypes.ts`. Intuit has no page for `Line` either, so `QboPurchaseLine` also comes from samples.
 
 ### Loading reference data (decided: no mirror, revisit if needed)
 - Vendors and accounts are loaded from the QBO API each session, the way RealGreen loads things like tax codes, and held in the Redux slice. No Mongo mirror and no sync job.
@@ -40,6 +41,7 @@ Non-goals: this is not a QBO suite. No classes, locations, bank feeds, refund or
 - Rationale: one company, so API quota is not a concern, and the loads are cheap. A mirror adds a sync job, staleness and a second source of truth.
 - Vendors are the likely pressure point (there are many). If load time proves painful, add a mirror then. The slice and selector shapes should not need to change.
 - Consequence: the posting pre-flight check (vendor and account still active) runs against the session's loaded data, and a fault from QBO is the final authority.
+- **Privacy: the Vendor type stays faithful to Intuit, but the server loader sends the browser only what the mapping screen needs** (`Id`, `SyncToken`, `DisplayName`, `Active`, `CompanyName`). A Vendor response also carries addresses, phone numbers, emails, the masked `TaxIdentifier` and `Balance`, and none of that belongs in the Redux store. The same rule applies to CompanyInfo (its `EmployerId` is the company's EIN) and Preferences: only chosen summary fields reach the browser.
 
 ### Adding a QBO entity (workflow and pattern; `account/` is the reference)
 
@@ -78,7 +80,9 @@ Non-goals: this is not a QBO suite. No classes, locations, bank feeds, refund or
 ### Logging (questionnaire commitment)
 - One record per QBO call, including OAuth token and revoke calls, capturing the `intuit_tid` response header, status, outcome, and fault details. Never store tokens, `Authorization` headers or the client secret (a tested `redact` helper enforces this).
 - Records are written with an awaited `insertMany` at the end of the request, because an unawaited write can be lost when a Vercel function ends. A logging failure must never fail the real operation.
-- Retention (proposed 90 days for successes, 365 for failures) and viewer access (admin only) are unconfirmed.
+- **Built (`src/app/qbo/apiLog/`).** `qboHttp` records every attempt (retries after a 401 or 429 included, since each has its own `intuit_tid`). The three OAuth calls record themselves. `createQboRpcHandler` wraps each op in `withQboApiLog`, and the OAuth callback route opens the bracket itself. A call made outside any bracket is written immediately.
+- **Retention (confirmed):** 90 days for successes, 365 days for failures and network errors, set per record in `expireAt`. This is the one `Date` field in the module, because Mongo's TTL index needs a real Date. Fault text is truncated and passed through `redact`; request and response bodies and headers are never stored.
+- Viewer access (admin only) is still unconfirmed. The viewer itself is Phase F.
 
 ### Import behavior
 - **Every CSV row is persisted with a status**, including skipped rows. A transaction that appears in a CSV must be logged. Statuses: `pending`, `skipped`, `posting`, `posted`, `failed`, `unknown`.
@@ -94,9 +98,19 @@ Non-goals: this is not a QBO suite. No classes, locations, bank feeds, refund or
 ### Posting behavior
 - Batches of up to 30 items, at most 40 batch requests per minute per realm. Items are independent and execution order must not be assumed, so a vendor must be created before the purchases that use it, not in the same batch.
 - Results are matched by `bId` (our row ID). Partial success is expected and reported per row.
-- `DocNumber` (shown as Ref no. on the QBO expense form) holds a short marker derived from the row hash (max 21 chars). It is how we find our own transactions again.
+- `DocNumber` (shown as Ref no. on the QBO expense form) holds a short marker derived from the row hash (max 21 chars). It is how we find our own transactions again. **The marker design is deferred until we are getting ready to write an expense.** What we know now, from Intuit's pages:
+  - For Cash and CreditCard purchases a duplicate `DocNumber` is rejected (error 6140) unless the URI carries `include=allowduplicatedocnum`. Identical rows in one file would therefore collide, so the marker needs a per-row-occurrence part.
+  - Whether a custom `DocNumber` is honored at all depends on a company preference. The Purchase page names `VendorAndPurchasesPrefs.UseCustomTxnNumbers`, the errors page names `SalesFormsPrefs.CustomTxnNumbers`, and the Preferences sample on Intuit's page shows only the second. Read the live Preferences before designing the marker.
+  - Leading idea: a deterministic marker (prefix, a fragment of the row hash, and the occurrence number), re-derivable from the row, so a retry after an `unknown` outcome is rejected by QuickBooks as a duplicate if the first attempt actually landed.
+- Pre-flight warning, worth building: Preferences carries `AccountingInfoPrefs.BookCloseDate` (live value 2023-12-31), so we can warn before posting a purchase dated on or before it. Whether QuickBooks actually refuses such a purchase (error 6210) is not proven, and Intuit's errors page says the API cannot tell you whether books are closed. The warning is cheap, and the 6210 whole-batch stop stays as the real safeguard.
 - A timeout or network error after sending leaves the outcome unknown. Mark rows `unknown`, not `failed`, and reconcile by querying for the `DocNumber` markers before any retry.
 - Validation faults are per row: the row is `failed`, shows the message, and stays editable and retryable. Error 610 does not say which reference is inactive, so re-load vendors and accounts and ask the user to re-pick. A duplicate vendor name (error 6240) offers to map to the existing vendor instead.
+- Error codes from Intuit's errors page, and what each means for posting:
+  - **Per row:** 610 and 2500 (a reference is inactive; 610 can also mean a deleted transaction), 6240 (duplicate vendor name), 6140 (duplicate `DocNumber`), 2020 (a required field such as `Line` is missing), 6000 (business validation).
+  - **Stops the whole batch, because every row would fail the same way:** 6210 (account period closed), 6190 (subscription ended or billing problem), 120 (authorization failure). Rows stay `pending`.
+  - **Not expected, because we never update:** 5010 (stale `SyncToken`). Seeing it would mean a bug.
+  - **Never retried:** a 500 "Unsupported Operation" means non-UTF-8 characters in the payload, which is a bug to fix rather than retry.
+- A batch item that fails carries a `Fault` with no top-level `time`. The success body of a create or update item is not on Intuit's Batch page (see `UNVERIFIED` in `QboCommonTypes.ts`), so confirm it during staged write 1.
 - Posted rows are locked in our app. Corrections happen in QBO.
 
 ## Phases
@@ -111,11 +125,11 @@ Remaining odds and ends: the Intuit pricing tier and API call limits check, and 
 
 ### Phase B: Reliable read layer and the first vertical slice
 Build `qboHttp` (the single fetch chokepoint, modeled on `rgHttp`), `qboApi` (typed endpoint registry), and `createQboRpcHandler`. Add atomic refresh with `invalid_grant` handling, and the per-call log with `intuit_tid` capture. Prove it with a `companyinfo` smoke test on the connection page, then build **Account** end to end as the pattern-setting slice: types, contract, route, slice, thunks, hook, selectors, following the `data-module` skill and the RealGreen folder structure.
-**Status:** token access with atomic refresh, `qboHttp`, `qboApi` (query endpoint only), `qboQuery`, `createQboRpcHandler` (delegates only), and the Account module with its `/sandbox/qboTest` tab are written but not yet exercised against live QuickBooks. Not built: the per-call log (deliberately deferred; early calls go unlogged), the `companyinfo` smoke test, and the unit tests.
+**Status:** token access with atomic refresh, `qboHttp`, `qboApi` (query endpoint only), `qboQuery`, `createQboRpcHandler` and the Account module with its `/sandbox/qboTest` tab are built. The Account load has run against live QuickBooks (285 accounts; query syntax, account types and classification confirmed). The smoke test ("Test connection" on the connection page, reading CompanyInfo and Preferences through their Read endpoints) and the per-call log (`apiLog/`) have run live: both Read responses had the assumed shape, and `qboapilogs` holds records with an `intuit_tid`, status, timing and a 90-day `expireAt` for the Accounts load and both smoke-test calls, with no sensitive data. The types for CompanyInfo, Preferences, Vendor, Purchase and the batch envelope are written (see `../typeReferences/availableReferences.md`). Not yet proven live: the token refresh path (it runs the first time a call is made after the access token expires, and the log will then show `oauthToken` records), and the failure and retry logging paths. Still to do: tests for `qboTokenUtils`, `qboHttpUtils` and `qboAccountUtils`.
 **Why now:** failure handling, token refresh and logging are cheapest to get right while only reads are possible. Account is a read-heavy entity, so it establishes the pattern (query pagination, types written from Intuit's definitions, session-loaded slice) before we repeat it.
 
 ### Phase C: Remaining reference data
-Vendor, then any other entity types we need (`Purchase`, the batch envelope, `Line`, the `*Ref` types), built from pasted Intuit definitions using the Account pattern. Phase C is read-only: the `createVendor` write operation is added in Phase E, but keep the Vendor slice shaped so optimistic updates on create slot in without rework.
+Vendor and Purchase read modules (both built, not yet run live), plus the batch envelope, `Line` and the `*Ref` types, built from pasted Intuit definitions using the Account pattern. Phase C is read-only: the `createVendor` write operation and posting are added in Phase E, but the Vendor slice is shaped so optimistic updates on create slot in without rework. Purchase differs from the other reference loads: it is loaded for a user-chosen date range (at most 366 days) because a company can hold years of purchases, and it replaces the held list on each load.
 **Why separate:** with the pattern settled, these are mostly mechanical. Vendor is the highest-volume list, so it is where we find out whether the no-mirror decision holds.
 
 ### Phase D: CSV import and mapping (local only)
@@ -129,7 +143,7 @@ Vendor creation (the `createVendor` contract op, thunk and optimistic slice upda
 2. Post a small file.
 3. Post a full month and compare totals against the card statement.
 
-Things to confirm during stage 1 because no sandbox is available: the shape of a successful `Purchase` inside `BatchItemResponse`, that `DocNumber` appears as Ref no., that duplicate `DocNumber` values are accepted, that purchases can be found by `DocNumber` for reconciliation, and the real fault payloads. Several of these (syntax and validation faults, `intuit_tid` presence) can be exercised with harmless reads or deliberately bad requests earlier. The questionnaire answer "tested that the app handles API errors, including syntax and validation errors" must be true before production approval.
+Things to confirm during stage 1 because no sandbox is available: the shape of a successful `Purchase` inside `BatchItemResponse`, that `DocNumber` appears as Ref no. (this depends on a company preference, so read Preferences first), that a repeated `DocNumber` is rejected with error 6140 (Intuit says it is, unless `allowduplicatedocnum` is sent, so test it by deliberately sending the same marker twice and deleting both afterwards), that purchases can be found by `DocNumber` for reconciliation, and the real fault payloads. Several of these (syntax and validation faults, `intuit_tid` presence) can be exercised with harmless reads or deliberately bad requests earlier. The questionnaire answer "tested that the app handles API errors, including syntax and validation errors" must be true before production approval.
 **Why last:** writes to real books are the only irreversible-ish step, so they come after the connection, the read layer and the import flow are proven.
 
 ### Phase F: Hardening and operations
@@ -144,6 +158,7 @@ Mirror the RealGreen folder structure (`types/`, `api/` with contract and route,
 src/app/qbo/
   planning/             this plan, questionnaire, sampleData/, archive/
   _lib/api/             qboHttp.ts, qboApi.ts, createQboRpcHandler.ts
+  apiLog/               QboApiLog types, model (per-outcome TTL), pure utils (redact, retention), server capture
   _lib/auth/            token crypto and refresh helpers (pure where possible)
   connection/           token model, connect/callback/status/disconnect, admin page
   account/              Intuit Account types, contract, route, slice, select, hook
@@ -163,18 +178,20 @@ src/app/qbo/
 
 ## Open Questions
 
-- Verified on the first live Account load (285 accounts): the `Active IN (true, false)` query syntax works and returns inactive accounts, every `AccountType` was recognized, and classification behaved as expected. Still to decide: whether `Classification === "Expense"` (which includes Cost of Goods Sold and Other Expense) is the right set for the mapping dropdown, and whether to pin minor version 75.
-- Does the vendor list load fast enough without a mirror? Decide when Vendor is built.
+- Verified on the first live Account load (285 accounts): the `Active IN (true, false)` query syntax works and returns inactive accounts, every `AccountType` was recognized, and classification behaved as expected. Still to decide: whether `Classification === "Expense"` (which includes Cost of Goods Sold and Other Expense) is the right set for the mapping dropdown. Minor version 75 is confirmed and pinned.
+- Verified live: the CompanyInfo and Preferences Read responses are `{ CompanyInfo: {...} }` and `{ Preferences: {...} }`, and `BookCloseDate` is present (2023-12-31).
+- `UNVERIFIED` until a live read or write: the `TxnDate >= '...' AND TxnDate <= '...'` query syntax used by the Purchase loader; whether QuickBooks refuses a purchase dated on or before `BookCloseDate`; the `DocNumber` preference (see "Posting behavior"); the success body of a batch create or update item; `QboMonth` beyond "January"; `BillableStatus` values beyond "NotBillable".
+- Deferred to just before writing: the `DocNumber` marker design.
+- Does the vendor list load fast enough without a mirror? The Vendor module is built; decide after the first live load of the Vendors tab (vendor count and load time).
 - Which QBO account types count as expense accounts for the mapping dropdown, and which accounts are the credit card accounts?
 - Naming convention for new vendors (for example `Amazon` rather than `AMAZON MKTPL*...`).
 - Initial wording for skip reasons in the UI.
 - More redacted samples: a Capital One return or fee, a Chase fee or adjustment, and a larger export from each bank to tune `merchantKey` normalization.
-- Log retention and log viewer access (see Logging).
+- Log viewer access (see Logging). Retention is settled.
 - Support contact on the connection page (see `qboQuestionnaire.md`).
 
 ## Where to Pick Up
 
-1. Run `npx tsc --noEmit` (the connection type and model changed, and a reducer key was added).
-2. Open `/sandbox/qboTest` as an `office` or `admin` user while the connection is live. The Accounts tab should list the chart of accounts. Fix whatever the first real response shows (query syntax, enum values, classification), then clear the `UNVERIFIED` markers and the matching Open Question.
-3. Finish Phase B: the `companyinfo` smoke test on the connection page, then the per-call log, then offer tests for the pure helpers (`qboTokenUtils`, `qboHttpUtils`, `qboAccountUtils`).
-4. Phase C: ask the user to paste Intuit's Vendor page and follow "Adding a QBO entity" above.
+1. Run `npx tsc --noEmit` (the connection contract and slice state changed, the API log module was added, and `qboHttp`, the OAuth calls and `createQboRpcHandler` now log).
+2. Finish Phase B: tests for the remaining pure helpers (`qboTokenUtils`, `qboHttpUtils`, `qboAccountUtils`). The refresh path is proven the first time a call runs after the access token has expired; check `qboapilogs` for `oauthToken` records then.
+3. Phase C: the Vendor module is written (loader that cuts each vendor down to `QboVendorSummary`, contract, route, slice, select, hook, and a Vendors tab on `/sandbox/qboTest`). Open the Vendors tab while connected. It answers the open question about whether the vendor list loads fast enough without a mirror: note the vendor count and how long the load takes (the newest `getAll` records in `qboapilogs` show the duration of each page). The Purchase read module is also written (a date-range loader, `QboPurchaseSummary`, and a Purchases tab with From and To dates; nothing loads until you press the button). Load a recent month on that tab: it checks the `TxnDate` range query syntax (`UNVERIFIED`), whether existing purchases show a Ref no. (which tells us about the `DocNumber` preference), and gives a month's net card total to compare against a statement. Then move to Phase D.

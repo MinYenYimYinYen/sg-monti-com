@@ -4,8 +4,9 @@ import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
 import { useQboTestDeps } from "@/app/sandbox/qboTest/useQboTestDeps";
 
-// Accounts is built. The other tabs are stubs for entities listed in
-// qbo/typeReferences/availableReferences.md; each gets built from pasted Intuit definitions.
+// Accounts, Vendors and Purchases are built. Purchases is not loaded by useQboTestDeps: it
+// needs a date range, so the tab loads on demand. A new entity from
+// qbo/typeReferences/availableReferences.md gets its tab here, built from pasted Intuit definitions.
 const TABS: readonly TabNavItem[] = [
   { label: "Accounts", href: "/sandbox/qboTest/account" },
   { label: "Vendors", href: "/sandbox/qboTest/vendor" },

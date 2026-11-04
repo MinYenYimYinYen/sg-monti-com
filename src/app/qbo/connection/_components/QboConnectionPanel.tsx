@@ -22,7 +22,8 @@ export function QboConnectionPanel() {
   const role = useSelector(authSelect.role);
   const status = useSelector(qboConnectionSelect.status);
   const revocationUnconfirmed = useSelector(qboConnectionSelect.revocationUnconfirmed);
-  const { disconnect, dismissRevocationNotice } = useQboConnection();
+  const testResult = useSelector(qboConnectionSelect.testResult);
+  const { disconnect, dismissRevocationNotice, testConnection } = useQboConnection();
   const [isStarting, setIsStarting] = useState(false);
 
   const handleConnect = async () => {
@@ -71,9 +72,11 @@ export function QboConnectionPanel() {
         />
         <QboConnectionCard
           status={status}
+          testResult={testResult}
           isStarting={isStarting}
           onConnectAction={handleConnect}
           onDisconnectAction={disconnect}
+          onTestAction={testConnection}
         />
       </div>
     </div>

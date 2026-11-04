@@ -11,11 +11,43 @@ import {
   parseTokenResponse,
 } from "@/app/qbo/_lib/auth/qboOAuthUtils";
 import { classifyRefreshFailure } from "@/app/qbo/_lib/auth/qboTokenUtils";
+import { recordQboCall } from "@/app/qbo/apiLog/_lib/qboApiLogServer";
 
 // Server only. Calls Intuit's OAuth endpoints. Request and response bodies carry codes and
 // tokens, so they are never logged or put in an error message. Only the HTTP status and
-// Intuit's `intuit_tid` reference are, so a failure can be quoted to Intuit support.
+// Intuit's `intuit_tid` reference are, so a failure can be quoted to Intuit support. Each call
+// also goes into the API log (status, timing and the OAuth `error` code, nothing else).
 const REQUEST_TIMEOUT_MS = 15_000;
+
+type OAuthLogKind = "oauthToken" | "oauthRevoke";
+
+function logOAuthCall({
+  kind,
+  pathTemplate,
+  startedAt,
+  httpStatus,
+  intuitTid,
+  errorCode,
+}: {
+  kind: OAuthLogKind;
+  pathTemplate: string;
+  startedAt: number;
+  httpStatus: number;
+  intuitTid: string | null;
+  errorCode: string | null;
+}) {
+  return recordQboCall({
+    kind,
+    method: "POST",
+    pathTemplate,
+    realmId: null,
+    httpStatus,
+    intuitTid,
+    durationMs: Date.now() - startedAt,
+    faultType: errorCode,
+    faultErrors: [],
+  });
+}
 
 export async function exchangeCodeForTokens({
   code,
@@ -30,6 +62,7 @@ export async function exchangeCodeForTokens({
     redirect_uri: config.redirectUri,
   });
 
+  const startedAt = Date.now();
   let res: Response;
   try {
     res = await fetch(QBO_OAUTH.TOKEN_URL, {
@@ -44,6 +77,14 @@ export async function exchangeCodeForTokens({
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch {
+    await logOAuthCall({
+      kind: "oauthToken",
+      pathTemplate: "token:authorization_code",
+      startedAt,
+      httpStatus: 0,
+      intuitTid: null,
+      errorCode: null,
+    });
     throw new AppError({
       message: "Could not reach Intuit to complete the connection.",
       type: "NETWORK_ERROR",
@@ -53,6 +94,14 @@ export async function exchangeCodeForTokens({
   }
 
   const intuitTid = res.headers.get("intuit_tid");
+  await logOAuthCall({
+    kind: "oauthToken",
+    pathTemplate: "token:authorization_code",
+    startedAt,
+    httpStatus: res.status,
+    intuitTid,
+    errorCode: null,
+  });
   if (!res.ok) {
     console.warn(
       `[QBO] Token exchange failed: HTTP ${res.status}, intuit_tid ${intuitTid ?? "none"}`,
@@ -87,6 +136,7 @@ export async function refreshAccessToken({
     refresh_token: refreshToken,
   });
 
+  const startedAt = Date.now();
   let res: Response;
   try {
     res = await fetch(QBO_OAUTH.TOKEN_URL, {
@@ -102,6 +152,14 @@ export async function refreshAccessToken({
     });
   } catch {
     console.warn("[QBO] Token refresh request could not be sent.");
+    await logOAuthCall({
+      kind: "oauthToken",
+      pathTemplate: "token:refresh_token",
+      startedAt,
+      httpStatus: 0,
+      intuitTid: null,
+      errorCode: null,
+    });
     return { outcome: "transient" };
   }
 
@@ -109,6 +167,14 @@ export async function refreshAccessToken({
   const json = (await res.json().catch(() => null)) as
     | (QboTokenResponseRaw & { error?: unknown })
     | null;
+  await logOAuthCall({
+    kind: "oauthToken",
+    pathTemplate: "token:refresh_token",
+    startedAt,
+    httpStatus: res.status,
+    intuitTid,
+    errorCode: !res.ok && typeof json?.error === "string" ? json.error : null,
+  });
 
   if (!res.ok) {
     const errorCode = typeof json?.error === "string" ? json.error : null;
@@ -136,6 +202,7 @@ export async function revokeToken({
   token: string;
   config: QboConfig;
 }): Promise<boolean> {
+  const startedAt = Date.now();
   try {
     const res = await fetch(QBO_OAUTH.REVOKE_URL, {
       method: "POST",
@@ -148,15 +215,32 @@ export async function revokeToken({
       cache: "no-store",
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
+    const intuitTid = res.headers.get("intuit_tid");
+    await logOAuthCall({
+      kind: "oauthRevoke",
+      pathTemplate: "revoke",
+      startedAt,
+      httpStatus: res.status,
+      intuitTid,
+      errorCode: null,
+    });
     if (!res.ok) {
       console.warn(
-        `[QBO] Token revocation failed: HTTP ${res.status}, intuit_tid ${res.headers.get("intuit_tid") ?? "none"}`,
+        `[QBO] Token revocation failed: HTTP ${res.status}, intuit_tid ${intuitTid ?? "none"}`,
       );
       return false;
     }
     return true;
   } catch {
     console.warn("[QBO] Token revocation request could not be sent.");
+    await logOAuthCall({
+      kind: "oauthRevoke",
+      pathTemplate: "revoke",
+      startedAt,
+      httpStatus: 0,
+      intuitTid: null,
+      errorCode: null,
+    });
     return false;
   }
 }

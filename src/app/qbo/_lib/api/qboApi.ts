@@ -4,12 +4,28 @@ import { qboHttp } from "@/app/qbo/_lib/api/qboHttp";
 // relative to /v3/company/<realmId>, which qboHttp adds. Only add an endpoint when a module
 // needs it. The read-before-write agreement in planning/qboPlan.md means no write endpoints
 // are registered until the write phase starts.
-export type QboApiPath = {
-  path: `/query?query=${string}`;
-  method: "GET";
-  body?: undefined;
-  pathTemplate: "/query";
-};
+//
+// `{realmId}` in a path is filled in by qboHttp. CompanyInfo and Preferences are single records,
+// so they use their Read endpoints (their Query examples on Intuit's pages show no envelope).
+export type QboApiPath =
+  | {
+      path: `/query?query=${string}`;
+      method: "GET";
+      body?: undefined;
+      pathTemplate: "/query";
+    }
+  | {
+      path: "/companyinfo/{realmId}";
+      method: "GET";
+      body?: undefined;
+      pathTemplate: "/companyinfo/{realmId}";
+    }
+  | {
+      path: "/preferences";
+      method: "GET";
+      body?: undefined;
+      pathTemplate: "/preferences";
+    };
 
 // This should only be used from within a local api route.
 export async function qboApi<T>(config: QboApiPath) {
@@ -17,6 +33,6 @@ export async function qboApi<T>(config: QboApiPath) {
 }
 
 /** Intuit's query language needs the statement URL-encoded inside the path. */
-export function qboQueryPath(select: string): QboApiPath["path"] {
+export function qboQueryPath(select: string): `/query?query=${string}` {
   return `/query?query=${encodeURIComponent(select)}`;
 }

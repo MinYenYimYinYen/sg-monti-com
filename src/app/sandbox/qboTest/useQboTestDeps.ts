@@ -1,6 +1,7 @@
 "use client";
 
 import { useQboAccount } from "@/app/qbo/account/useQboAccount";
+import { useQboVendor } from "@/app/qbo/vendor/useQboVendor";
 
 /**
  * Single orchestration point for the data the QuickBooks test tabs display.
@@ -9,4 +10,5 @@ import { useQboAccount } from "@/app/qbo/account/useQboAccount";
  */
 export function useQboTestDeps() {
   useQboAccount({ autoLoad: true });
+  useQboVendor({ autoLoad: true });
 }

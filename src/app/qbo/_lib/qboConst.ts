@@ -24,6 +24,16 @@ export const qboConst = {
   refreshWaitMaxMs: 10 * 1000,
   refreshWaitPollMs: 250,
 
+  // How long an API log record is kept. Failures live longer because they are the ones
+  // someone may need to quote to Intuit support. Proposed in qboPlan.md, confirmed by the user.
+  apiLogRetentionDays: { success: 90, failure: 365 },
+  // Fault text can name real vendors or amounts, so stored copies are cut short.
+  apiLogMaxFaultErrors: 5,
+  apiLogMaxFaultTextLength: 300,
+
+  // The widest date range a purchase load may cover. Keeps the browser payload reasonable.
+  purchaseMaxRangeDays: 366,
+
   requestTimeoutMs: 20 * 1000,
   // One entry per retry, so the array length is the retry limit. Only 429s are retried
   // for every method; network failures are retried for GET only (see qboHttp).

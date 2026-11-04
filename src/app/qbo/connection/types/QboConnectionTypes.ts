@@ -1,4 +1,6 @@
 import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
+import { QboCompanySummary } from "@/app/qbo/companyInfo/_lib/qboCompanyInfoUtils";
+import { QboPreferencesSummary } from "@/app/qbo/preferences/_lib/qboPreferencesUtils";
 
 export type QboEnvironment = "sandbox" | "production";
 
@@ -63,6 +65,18 @@ export type QboConnectionStatus = {
  */
 export type QboDisconnectResult = {
   revocationConfirmed: boolean;
+  status: QboConnectionStatus;
+};
+
+/**
+ * Result of the "Test connection" smoke test: live reads of CompanyInfo and Preferences, cut
+ * down to the fields that may reach the browser. `status` is re-read after the calls, so a token
+ * refresh they triggered shows in the new expiry.
+ */
+export type QboConnectionTestResult = {
+  company: QboCompanySummary;
+  preferences: QboPreferencesSummary;
+  testedAt: string;
   status: QboConnectionStatus;
 };
 

@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { createQboRpcHandler } from "@/app/qbo/_lib/api/createQboRpcHandler";
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { AppError } from "@/lib/errors/AppError";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
@@ -10,6 +10,7 @@ import {
   getConnectionStatus,
   startConnect,
 } from "@/app/qbo/connection/_lib/qboConnectionServer";
+import { testQboConnection } from "@/app/qbo/connection/_lib/qboConnectionTestServer";
 
 /** The proxy injects the caller's saId; the connection records who they are by userName. */
 async function getCurrentUserName(): Promise<string> {
@@ -58,6 +59,14 @@ const handlers: HandlerMap<QboConnectionContract> = {
       return { success: true, payload: await disconnectConnection() };
     },
   },
+
+  // A live read of CompanyInfo, so a QuickBooks failure is returned as an error message.
+  testConnection: {
+    roles: ["admin"],
+    handler: async () => {
+      return { success: true, payload: await testQboConnection() };
+    },
+  },
 };
 
-export const POST = createRpcHandler(handlers);
+export const POST = createQboRpcHandler(handlers);

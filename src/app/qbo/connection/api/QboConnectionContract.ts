@@ -2,6 +2,7 @@ import { ApiContract } from "@/lib/api/types/ApiContract";
 import { DataResponse } from "@/lib/api/types/responses";
 import {
   QboConnectionStatus,
+  QboConnectionTestResult,
   QboDisconnectResult,
 } from "@/app/qbo/connection/types/QboConnectionTypes";
 
@@ -17,5 +18,9 @@ export interface QboConnectionContract extends ApiContract {
   disconnect: {
     params: Record<string, never>;
     result: DataResponse<QboDisconnectResult>;
+  };
+  testConnection: {
+    params: Record<string, never>;
+    result: DataResponse<QboConnectionTestResult>;
   };
 }

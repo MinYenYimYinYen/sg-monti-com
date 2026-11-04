@@ -1,16 +1,32 @@
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { ApiContract } from "@/lib/api/types/ApiContract";
+import { withQboApiLog } from "@/app/qbo/apiLog/_lib/qboApiLogServer";
 
 /**
  * QBO-aware RPC handler factory. All QuickBooks route.ts files use this instead of
  * createRpcHandler, like createRealGreenRpcHandler.
  *
- * For now it only delegates. It exists as the seam for the per-call QBO API log (capture
- * `intuit_tid` into an AsyncLocalStorage list, then write it with one awaited insertMany in a
- * finally block). See "Logging" in planning/qboPlan.md. Routes already use it, so adding the
- * log later changes no route.
+ * Each op's handler runs inside a QBO API log bracket: every call to Intuit made during the
+ * op is recorded (see apiLog), and the records are written with one awaited insertMany when
+ * the op ends, whether it succeeded or threw. See "Logging" in planning/qboPlan.md.
  */
 export function createQboRpcHandler<T extends ApiContract>(handlers: HandlerMap<T>) {
-  return createRpcHandler(handlers);
+  const wrappedHandlers = Object.fromEntries(
+    Object.entries(handlers).map(([op, config]) => {
+      const { handler, ...rest } = config as {
+        handler: (params: any) => Promise<any>;
+        [key: string]: any;
+      };
+      return [
+        op,
+        {
+          ...rest,
+          handler: (params: any) => withQboApiLog({ operation: op, run: () => handler(params) }),
+        },
+      ];
+    }),
+  ) as HandlerMap<T>;
+
+  return createRpcHandler(wrappedHandlers);
 }

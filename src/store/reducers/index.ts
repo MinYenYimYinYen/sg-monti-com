@@ -68,6 +68,8 @@ import { routeNoteReducer } from "@/app/routeNotes/routeNoteSlice";
 import { urgentReducer } from "@/app/pace/priorities/urgentSlice";
 import { qboConnectionReducer } from "@/app/qbo/connection/qboConnectionSlice";
 import { qboAccountReducer } from "@/app/qbo/account/qboAccountSlice";
+import { qboVendorReducer } from "@/app/qbo/vendor/qboVendorSlice";
+import { qboPurchaseReducer } from "@/app/qbo/purchase/qboPurchaseSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -138,6 +140,8 @@ const rootReducer = combineReducers({
   paceUrgent: urgentReducer,
   qboConnection: qboConnectionReducer,
   qboAccount: qboAccountReducer,
+  qboVendor: qboVendorReducer,
+  qboPurchase: qboPurchaseReducer,
   topic: topicReducer,
 });
 

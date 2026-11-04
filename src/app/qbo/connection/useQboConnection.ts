@@ -28,5 +28,15 @@ export function useQboConnection() {
     dispatch(qboConnectionActions.dismissRevocationNotice());
   };
 
-  return { disconnect, dismissRevocationNotice };
+  // Forced: the test must always make a live call, never be deduplicated.
+  const testConnection = () => {
+    dispatch(
+      qboConnectionActions.testQboConnection({
+        params: {},
+        config: { force: true, loadingMsg: "Testing QuickBooks connection..." },
+      }),
+    );
+  };
+
+  return { disconnect, dismissRevocationNotice, testConnection };
 }

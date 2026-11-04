@@ -3,6 +3,8 @@ import { delay } from "@/lib/async/delay";
 import { getQboAccess } from "@/app/qbo/_lib/auth/qboTokenServer";
 import { buildQboUrl, describeFault, readFault } from "@/app/qbo/_lib/api/qboHttpUtils";
 import { qboConst } from "@/app/qbo/_lib/qboConst";
+import { recordQboCall } from "@/app/qbo/apiLog/_lib/qboApiLogServer";
+import { QboFaultError } from "@/app/qbo/_lib/types/QboCommonTypes";
 
 export type QboRequest = {
   path: string;
@@ -20,6 +22,10 @@ export type QboRequest = {
  *
  * Failures are always EXTERNAL_ERROR (or NETWORK_ERROR), never AUTH_ERROR: an AUTH_ERROR
  * would make the browser think the user's own session expired.
+ *
+ * Every attempt is logged (see apiLog), including retried ones, because each is a separate
+ * call to Intuit with its own intuit_tid. Only status, timing and fault fields are logged,
+ * never the request, the response body or any header.
  */
 export async function qboHttp<T>({ path, method, body, pathTemplate }: QboRequest): Promise<T> {
   let access = await getQboAccess();
@@ -35,6 +41,30 @@ export async function qboHttp<T>({ path, method, body, pathTemplate }: QboReques
       minorVersion: qboConst.minorVersion,
     });
 
+    const startedAt = Date.now();
+    const logAttempt = ({
+      httpStatus,
+      intuitTid,
+      faultType,
+      faultErrors,
+    }: {
+      httpStatus: number;
+      intuitTid: string | null;
+      faultType: string | null;
+      faultErrors: QboFaultError[];
+    }) =>
+      recordQboCall({
+        kind: "api",
+        method,
+        pathTemplate,
+        realmId: access.realmId,
+        httpStatus,
+        intuitTid,
+        durationMs: Date.now() - startedAt,
+        faultType,
+        faultErrors,
+      });
+
     let res: Response;
     try {
       res = await fetch(url, {
@@ -49,6 +79,7 @@ export async function qboHttp<T>({ path, method, body, pathTemplate }: QboReques
         signal: AbortSignal.timeout(qboConst.requestTimeoutMs),
       });
     } catch {
+      await logAttempt({ httpStatus: 0, intuitTid: null, faultType: null, faultErrors: [] });
       const waitMs = method === "GET" ? qboConst.networkRetryDelaysMs[networkRetries] : undefined;
       if (waitMs === undefined) {
         throw new AppError({
@@ -67,6 +98,8 @@ export async function qboHttp<T>({ path, method, body, pathTemplate }: QboReques
     const intuitTid = res.headers.get("intuit_tid");
 
     if (res.status === 401 && !refreshedAfter401) {
+      // The body is not read on a retried attempt, so there are no fault details to log.
+      await logAttempt({ httpStatus: 401, intuitTid, faultType: null, faultErrors: [] });
       refreshedAfter401 = true;
       access = await getQboAccess({ rejectedVersion: access.version });
       continue;
@@ -75,6 +108,7 @@ export async function qboHttp<T>({ path, method, body, pathTemplate }: QboReques
     if (res.status === 429) {
       const waitMs = qboConst.rateLimitRetryDelaysMs[rateLimitRetries];
       if (waitMs !== undefined) {
+        await logAttempt({ httpStatus: 429, intuitTid, faultType: null, faultErrors: [] });
         rateLimitRetries += 1;
         await delay(waitMs);
         continue;
@@ -82,9 +116,15 @@ export async function qboHttp<T>({ path, method, body, pathTemplate }: QboReques
     }
 
     const json: unknown = await res.json().catch(() => null);
+    const fault = res.ok ? null : readFault(json);
+    await logAttempt({
+      httpStatus: res.status,
+      intuitTid,
+      faultType: fault?.type ?? null,
+      faultErrors: fault?.errors ?? [],
+    });
 
     if (!res.ok) {
-      const fault = readFault(json);
       const detail = fault ? describeFault(fault) : null;
       throw new AppError({
         message: `QuickBooks error${detail ? `: ${detail}` : ` (HTTP ${res.status})`} (reference ${intuitTid ?? "none"}).`,

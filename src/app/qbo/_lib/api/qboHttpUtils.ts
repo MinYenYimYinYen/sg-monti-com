@@ -17,8 +17,10 @@ export function buildQboUrl({
   path: string;
   minorVersion: number;
 }): string {
-  const separator = path.includes("?") ? "&" : "?";
-  return `${baseUrl}/v3/company/${realmId}${path}${separator}minorversion=${minorVersion}`;
+  // CompanyInfo's Read path contains the company id itself, which the caller does not know.
+  const filledPath = path.replace("{realmId}", realmId);
+  const separator = filledPath.includes("?") ? "&" : "?";
+  return `${baseUrl}/v3/company/${realmId}${filledPath}${separator}minorversion=${minorVersion}`;
 }
 
 /** `where` is optional and must already be valid Intuit query syntax. */
