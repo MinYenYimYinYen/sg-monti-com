@@ -25,7 +25,7 @@ Confirmed: `.../all-entities/account`. The pattern is assumed (lowercase entity 
 
 | Entity | Status | Phase | Notes |
 |---|---|---|---|
-| Account | Built (read-only) | B | First end-to-end slice. Pattern-setter. Types in `account/types/QboAccountTypes.ts`, written against minor version 75. `AccountTypeEnum` was written from memory (not on the pasted page), so it is marked UNVERIFIED in the code. Displayed at `/sandbox/qboTest/account`. |
+| Account | Built (read-only) | B | First end-to-end slice. Pattern-setter. Types in `account/types/QboAccountTypes.ts`, written against minor version 75. `AccountTypeEnum` was written from memory (not on the pasted page) and checked against live data (285 accounts, all types recognized). Displayed at `/sandbox/qboTest/account`. |
 | Vendor | Planned | C | Read now, `createVendor` in Phase E. |
 | Purchase | Planned | C | Credit card expense. Likely documents `Line` and `AccountBasedExpenseLineDetail` inline. |
 | CompanyInfo | Planned | B | Smoke test on the connection page. |

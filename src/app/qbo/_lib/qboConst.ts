@@ -1,8 +1,8 @@
 import { QboEnvironment } from "@/app/qbo/connection/types/QboConnectionTypes";
 
 export const qboConst = {
-  // Pinned so Intuit's response shapes cannot change under us. Taken from the reference page
-  // the types were written against. Not yet confirmed as the version we want to stay on.
+  // Pinned so Intuit's response shapes cannot change under us. Decided: 75, the version the
+  // reference pages were written against. Raise it only on purpose, then recheck the types.
   minorVersion: 75,
 
   apiBaseUrl: {

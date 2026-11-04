@@ -6,8 +6,9 @@ import { QboReference } from "@/app/qbo/_lib/types/QboCommonTypes";
 // this app for now, so the create and update request shapes are not modeled.
 
 /**
- * UNVERIFIED: written from memory, because the Account page names AccountTypeEnum without
- * defining it. Check against Intuit's AccountTypeEnum page before relying on a value.
+ * Written from memory, because the Account page names AccountTypeEnum without defining it.
+ * Checked against live data (285 accounts, minor version 75): every type was recognized.
+ * Types our company does not use may be missing; check Intuit's AccountTypeEnum page if one appears.
  */
 export type QboAccountType =
   | "Bank"

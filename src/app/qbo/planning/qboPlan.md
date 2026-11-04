@@ -41,6 +41,30 @@ Non-goals: this is not a QBO suite. No classes, locations, bank feeds, refund or
 - Vendors are the likely pressure point (there are many). If load time proves painful, add a mirror then. The slice and selector shapes should not need to change.
 - Consequence: the posting pre-flight check (vendor and account still active) runs against the session's loaded data, and a fault from QBO is the final authority.
 
+### Adding a QBO entity (workflow and pattern; `account/` is the reference)
+
+**Bringing in Intuit's documentation**
+1. The user pastes the entity's reference page (rendered by JavaScript, so agents cannot fetch it). Ask for the Query operation page and any enum or shared-type pages the entity page names but does not define. Do not fill gaps silently.
+2. Write the type file from the paste: every documented field, unused ones commented out, optional fields marked `?` (sample responses omit them). Note the minor version in a comment.
+3. Anything written from memory or inferred is marked `UNVERIFIED` in a comment, and recorded in Open Questions below until checked against real data.
+4. Update the entity's row in `../typeReferences/availableReferences.md` (status, minor version, where it is displayed).
+
+**Files per entity** (`src/app/qbo/<entity>/`, camelCase folder, mirrors RealGreen minus the Raw/Core/Doc layers)
+- `types/Qbo<Entity>Types.ts`: Intuit's shape and PascalCase names. Shared pieces (`QboReference`, `QboCurrencyRef`, `QboModificationMetaData`, fault types) live in `_lib/types/QboCommonTypes.ts`.
+- `_lib/qbo<Entity>Server.ts`: server loader. Reads go through `qboQueryAll({ entity, where })`, which pages through Intuit's query (1000 per page, stops on a short page, throws past a page cap). Pass an explicit `where`; a bare query may return active records only, and we want inactive ones visible so a mapping that points at one can be flagged.
+- `_lib/qbo<Entity>Utils.ts`: pure helpers (filters, pickers). Selectors call these, so the logic is testable without a store.
+- `api/Qbo<Entity>Contract.ts` and `api/route.ts`: one op per action, roles `office` and `admin`, route built with `createQboRpcHandler` (never `createRpcHandler` directly; it is the seam for the call log).
+- `qbo<Entity>Slice.ts`: holds the entities as Intuit returned them (no `Doc` layer), one `createStandardThunk` per op, `fulfilled` replaces the array. Registered in `src/store/reducers/index.ts` as `qbo<Entity>`.
+- `qbo<Entity>Select.ts`: `<entities>` (everything, including inactive), `<entity>Map` keyed by Intuit `Id`, and any derived lists. Selectors return all records; filtering by `Active` is the caller's job when offering a choice.
+- `useQbo<Entity>.ts`: `useQbo<Entity>({ autoLoad })` dispatches the load with `staleTime: qboConst.referenceCacheTime` (15 minutes, so each session loads once) and returns `refresh` (forced reload). Actions only, per the data-module skill.
+
+**Endpoints and writes**
+- Only register an endpoint in `qboApi.ts` when a module needs it. No write endpoints exist yet (read before write). When the write phase starts, add them there with their `pathTemplate`.
+- Server code throws `AppError` with type `EXTERNAL_ERROR` or `NETWORK_ERROR`, never `AUTH_ERROR`, so the browser does not think the user's own login expired.
+
+**Where it is displayed**
+- `/sandbox/qboTest` is a tab layout (`src/app/sandbox/qboTest/`) for eyeballing live entities. `layout.tsx` calls `useQboTestDeps()` once, each tab is a thin `page.tsx` rendering one panel, and unbuilt entities are `QboTestStub` tabs. Add a tab and its hook call in `useQboTestDeps` when a new entity is built.
+
 ### Auth and connection (built)
 - OAuth 2.0 authorization-code flow, hand-rolled with `fetch` (no `intuit-oauth`, no `node-quickbooks`), like `rgHttp`.
 - Tokens are AES-256-GCM encrypted in MongoDB. The privacy policy promises encrypted storage; bcrypt cannot be used because we must recover the tokens.
@@ -87,6 +111,7 @@ Remaining odds and ends: the Intuit pricing tier and API call limits check, and 
 
 ### Phase B: Reliable read layer and the first vertical slice
 Build `qboHttp` (the single fetch chokepoint, modeled on `rgHttp`), `qboApi` (typed endpoint registry), and `createQboRpcHandler`. Add atomic refresh with `invalid_grant` handling, and the per-call log with `intuit_tid` capture. Prove it with a `companyinfo` smoke test on the connection page, then build **Account** end to end as the pattern-setting slice: types, contract, route, slice, thunks, hook, selectors, following the `data-module` skill and the RealGreen folder structure.
+**Status:** token access with atomic refresh, `qboHttp`, `qboApi` (query endpoint only), `qboQuery`, `createQboRpcHandler` (delegates only), and the Account module with its `/sandbox/qboTest` tab are written but not yet exercised against live QuickBooks. Not built: the per-call log (deliberately deferred; early calls go unlogged), the `companyinfo` smoke test, and the unit tests.
 **Why now:** failure handling, token refresh and logging are cheapest to get right while only reads are possible. Account is a read-heavy entity, so it establishes the pattern (query pagination, types written from Intuit's definitions, session-loaded slice) before we repeat it.
 
 ### Phase C: Remaining reference data
@@ -138,6 +163,7 @@ src/app/qbo/
 
 ## Open Questions
 
+- Verified on the first live Account load (285 accounts): the `Active IN (true, false)` query syntax works and returns inactive accounts, every `AccountType` was recognized, and classification behaved as expected. Still to decide: whether `Classification === "Expense"` (which includes Cost of Goods Sold and Other Expense) is the right set for the mapping dropdown, and whether to pin minor version 75.
 - Does the vendor list load fast enough without a mirror? Decide when Vendor is built.
 - Which QBO account types count as expense accounts for the mapping dropdown, and which accounts are the credit card accounts?
 - Naming convention for new vendors (for example `Amazon` rather than `AMAZON MKTPL*...`).
@@ -148,4 +174,7 @@ src/app/qbo/
 
 ## Where to Pick Up
 
-Next session: start Phase B. Build `qboHttp`, `qboApi` and `createQboRpcHandler`, then the Account slice as the pattern. Before building Account's types, ask the user to paste Intuit's Account entity and Query operation definitions, and confirm the minor version to pin.
+1. Run `npx tsc --noEmit` (the connection type and model changed, and a reducer key was added).
+2. Open `/sandbox/qboTest` as an `office` or `admin` user while the connection is live. The Accounts tab should list the chart of accounts. Fix whatever the first real response shows (query syntax, enum values, classification), then clear the `UNVERIFIED` markers and the matching Open Question.
+3. Finish Phase B: the `companyinfo` smoke test on the connection page, then the per-call log, then offer tests for the pure helpers (`qboTokenUtils`, `qboHttpUtils`, `qboAccountUtils`).
+4. Phase C: ask the user to paste Intuit's Vendor page and follow "Adding a QBO entity" above.
