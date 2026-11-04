@@ -32,8 +32,10 @@ If you need more context beyond these files, **stop and ask the user** before re
 2. **Replace `createGetCustDocsThunk` with `createGetCustDocsMirrorThunk`** for the
    target context. The slice itself (`createCustomerSlice`) is unchanged.
 
-3. **`runDeltaSync` is called automatically** by the mirror route before every query.
-   No changes needed to sync infrastructure.
+3. **The `mirrorSync` cron keeps the mirror current** (`runDeltaSync`, see
+   `src/app/vercelCron/mirrorSync/mirrorSync.readme.md`); the mirror route only syncs inline when
+   `syncFirst` is set. While a full sync is unfinished, mirror queries return a 409 error. No
+   changes needed to sync infrastructure.
 
 4. **Refresh thunks stay on the RealGreen pipeline.** `createRefreshCustomerThunk` is not
    migrated. Since a full mirror reload is ~5 seconds, per-customer refresh via the RealGreen

@@ -16,6 +16,12 @@ export type QboTokenSet = {
   refreshTokenExpiresAt: string;
 };
 
+export type QboRefreshOutcome =
+  | { outcome: "refreshed"; tokens: QboTokenSet }
+  | { outcome: "revoked" }
+  | { outcome: "transient" }
+  | { outcome: "rejected"; status: number; intuitTid: string | null };
+
 export type QboConfig = {
   clientId: string;
   clientSecret: string;

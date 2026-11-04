@@ -269,8 +269,10 @@ src/app/realGreen/customer/mirror/
 
 ## Delta Sync Reliability
 
-The mirror pipeline depends on `runDeltaSync` keeping the MongoDB collections current before
-each query. The sync uses RealGreen's `updated` date range filter to fetch only changed records.
+The mirror pipeline depends on `runDeltaSync` keeping the MongoDB collections current (run by the
+`mirrorSync` cron; inline before a query only when `syncFirst` is set). The sync uses RealGreen's
+`updated` date range filter to fetch only changed records. It cannot see records deleted in
+RealGreen; a full sync from the Sync Utilities page removes them.
 
 **The problem:** RealGreen does not return the `updated` field in search results, so we cannot
 know the exact timestamp of the most recently modified record. Storing `now` as `lastSyncedAt`
@@ -286,7 +288,8 @@ been updated. `lastSyncedAt` is set to `edge - 5 minutes` (comfort buffer) rathe
   confirmed by testing: editing any service field in the CRM also updates the parent program's
   `updated` timestamp, making the program Reporting endpoint a reliable proxy for service changes.
 
-See `sync/MirrorSyncRefactor.md` for the full algorithm and implementation details.
+See `src/app/vercelCron/mirrorSync/mirrorSync.readme.md` and the JSDoc in `sync/findSyncEdge.ts`
+for the algorithm and implementation details.
 
 ---
 

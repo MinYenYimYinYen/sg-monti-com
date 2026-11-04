@@ -27,6 +27,7 @@ Task-specific procedures live in `.claude/skills/` and load on demand. Use the m
 | RealGreen CallLog module and its sync | `call-log` | `src/app/realGreen/callLog/callLog.readme.md` |
 | Read live data from MongoDB (inspect, count, report on actual documents; read-only, bounded) | `mongo-read` | `.claude/skills/mongo-read/SKILL.md` |
 | Price Increase module (settings, season plans, results pipeline, flag write-back) | — | `src/app/priceIncrease/priceIncrease.readme.md` (read only the Required Reading for the relevant section) |
+| RealGreen mirror sync (delta sync, sync locks, chunked full sync, `/syncUtils` page, edge finding, adding a synced entity) | — | `src/app/vercelCron/mirrorSync/mirrorSync.readme.md`, then `src/app/vercelCron/expandedSyncPlan.md` |
 
 ## Styling
 

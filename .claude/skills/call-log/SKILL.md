@@ -6,7 +6,7 @@ description: Work on the RealGreen CallLog module - call log types, callLogSlice
 # CallLog Module
 
 Reference: `src/app/realGreen/callLog/callLog.readme.md` (about 140 lines; read it all, it is short).
-Wider sync architecture: `src/app/vercelCron/expandedSyncPlan.md`, `src/app/vercelCron/mirrorSync/mirrorSync.readme.md`, `src/app/realGreen/syncMetadata/realGreenSync.readme.md`.
+Wider sync architecture (locks, full sync, edge finding): `src/app/vercelCron/mirrorSync/mirrorSync.readme.md`, then `src/app/vercelCron/expandedSyncPlan.md` and `src/app/realGreen/syncMetadata/realGreenSync.readme.md`.
 
 ## Shape of the module
 
@@ -21,8 +21,8 @@ Wider sync architecture: `src/app/vercelCron/expandedSyncPlan.md`, `src/app/verc
 1. Delta sync fetches only records with `updated` since `lastSyncedAt`.
 2. The sync edge is computed from the returned data: `max(notes[].date) - 5 min` comfort buffer (covers RealGreen indexing lag). If no notes have dates, fall back to `syncStart - 5 min`. There is no Reporting endpoint for call logs, so do not use the customer/program binary-search edge finder here.
 3. Upserts are `bulkWrite` keyed by `callLogId`, and the whole `notes` array is replaced each time. RealGreen is the source of truth for notes. Re-upserting is idempotent; keep it that way.
-4. `syncCallLogs()` runs concurrently with the customer, program and service syncs inside `runDeltaSync()` (`src/app/realGreen/customer/sync/runDeltaSync.ts`), triggered by the `mirrorSync` cron.
-5. Switch points: remove `syncCallLogs()` from the `Promise.all` in `runDeltaSync.ts` to disable cron sync; POST `{ op: "syncCallLogs", force: true }` to `sync/api/route.ts` (admin only) to force a sync.
+4. `syncCallLogs()` runs as the `callLog` sync group, concurrently with the customer group, inside `runDeltaSync()` (`src/app/realGreen/customer/sync/runDeltaSync.ts`), triggered by the `mirrorSync` cron. It has its own lock (`src/app/realGreen/syncLock/`).
+5. Switch points: remove `syncCallLogGroup()` from the `Promise.all` in `runDeltaSync.ts` to disable cron sync. Run a delta or a full sync (wipe and reload, password-gated) from `/syncUtils/callLogs`. The legacy `sync/api/route.ts` `force` only upserts, takes no lock, and deletes nothing.
 
 ## Conventions that apply
 

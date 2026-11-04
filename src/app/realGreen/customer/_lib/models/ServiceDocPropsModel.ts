@@ -10,7 +10,8 @@ import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
 // Pre-merge checklist:
 //   1. Drop the ServiceDocProps MongoDB collection
 //   2. Delete this file
-// See customerSyncPlan.md for context.
+// Context: assignments moved to the standalone AssignmentModel (keyed by servId); service data
+// now lives in ServiceModel, populated by the sync.
 type ServiceDocProps = {
   servId: number;
   assignments: AssignmentDoc[];

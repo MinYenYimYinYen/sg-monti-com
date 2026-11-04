@@ -6,7 +6,7 @@ export interface CallLogContract extends ApiContract {
   /**
    * Fetches all call logs for a single customer directly from the RealGreen API.
    * Pass-through only — no Mongo persistence. Use for UI queries and sandbox exploration.
-   * Sync/persistence is handled separately in the callLog sync layer (see callLogSyncPlan.md).
+   * Sync/persistence is handled separately in the callLog sync layer (see callLog.readme.md).
    */
   getCallLogsForCustomer: {
     params: { custId: number };

@@ -12,17 +12,18 @@ import { CustStat } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 import { findSyncEdge, COMFORT_BUFFER_MS } from "@/app/realGreen/customer/sync/findSyncEdge";
 import { remapCallLogSearch } from "@/app/realGreen/callLog/_lib/remapCallLogSearch";
 import { fetchCallLogs, bulkUpsertCallLogs, findCallLogSyncEdge } from "@/app/realGreen/callLog/sync/callLogSyncFunc";
+import { getSyncSeasonWindow } from "@/app/realGreen/syncMetadata/syncWindow";
+import { SYNC_GROUPS, SyncGroup } from "@/app/realGreen/syncLock/syncGroups";
+import { releaseLock, tryAcquireLock } from "@/app/realGreen/syncLock/syncLockFunc";
+import { SyncedCount } from "@/app/realGreen/syncLock/SyncLockTypes";
 
 const ALL_CUST_STATS: CustStat[] = ["M", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
-const SEASON_FLOOR = new Date().getFullYear() - 7;
-const SEASON_CEIL = new Date().getFullYear() + 7;
-
-/**
- * ISO 8601 string for the earliest date we consider in the sync history.
- * Used as the `lo` bound for `findSyncEdge` on the initial full sync.
- */
-const HISTORY_FLOOR_ISO = `${SEASON_FLOOR}-01-01T00:00:00.000Z`;
+const {
+  floorYear: SEASON_FLOOR,
+  ceilYear: SEASON_CEIL,
+  historyFloorIso: HISTORY_FLOOR_ISO,
+} = getSyncSeasonWindow();
 
 // ---------------------------------------------------------------------------
 // Sync Result
@@ -41,6 +42,16 @@ type SyncResult = {
   lastSyncEdgeIterations: number;
   lastSyncBufferSeconds: number;
 };
+
+const ALL_DELTA_GROUPS: readonly SyncGroup[] = [SYNC_GROUPS.customerGroup, SYNC_GROUPS.callLog];
+
+/**
+ * `skipped` means another sync (or an unfinished full sync) holds a group's lock.
+ * Callers decide what that means: the cron treats it as a no-op, the mirror route as an error.
+ */
+export type DeltaSyncResult =
+  | { skipped: true; reason: string }
+  | { skipped: false; durationMs: number; syncedCounts: SyncedCount[] };
 
 // ---------------------------------------------------------------------------
 // Individual Sync Functions
@@ -204,48 +215,89 @@ async function syncServices(): Promise<SyncResult> {
  * `lastSyncedAt` is only advanced when records are fetched. Zero-record syncs
  * leave the metadata unchanged so the same window is re-queried next time.
  *
- * See MirrorSyncRefactor.md for full documentation of the algorithm.
+ * See src/app/vercelCron/mirrorSync/mirrorSync.readme.md and findSyncEdge.ts for the algorithm.
  *
- * Called at the start of every getMirrorCustomers request to ensure the mirror
- * collections are up to date before executing the query plan.
+ * Takes a lock per sync group and skips (returns `skipped: true`) when one is held, including
+ * while a full sync is unfinished. Called by the mirrorSync cron, by the Sync Utilities page,
+ * and by getMirrorCustomers only when `syncFirst` is set.
  */
-export async function runDeltaSync(): Promise<void> {
+export async function runDeltaSync(
+  { groups = ALL_DELTA_GROUPS }: { groups?: readonly SyncGroup[] } = {},
+): Promise<DeltaSyncResult> {
   await connectToMongoDB();
-  console.log("[mirror] Running delta sync before query...");
+
+  // Take every requested group's lease up front so a partially-locked run never starts.
+  const held: { group: SyncGroup; holderRunId: string }[] = [];
+  for (const group of groups) {
+    const lock = await tryAcquireLock({ group, operation: "delta" });
+    if (!lock.acquired) {
+      await Promise.all(held.map((lease) => releaseLock(lease)));
+      console.log(`[mirror] Delta sync skipped (${group}): ${lock.reason}`);
+      return { skipped: true, reason: lock.reason };
+    }
+    held.push({ group, holderRunId: lock.holderRunId });
+  }
+
+  console.log(`[mirror] Running delta sync (${groups.join(", ")})...`);
   const start = Date.now();
 
-  // Step 1: Run all four fetches + upserts + edge-finding concurrently.
-  const [customerResult, programResult, serviceResult, callLogResult] = await Promise.all([
-    syncCustomers(),
-    syncPrograms(),
-    syncServices(),
-    syncCallLogs(),
-  ]);
+  try {
+    const syncCustomerGroup = async (): Promise<SyncedCount[]> => {
+      // Step 1: Run the three entity fetches + upserts + edge-finding concurrently.
+      const [customerResult, programResult, serviceResult] = await Promise.all([
+        syncCustomers(),
+        syncPrograms(),
+        syncServices(),
+      ]);
 
-  // Step 2: Override service metadata with the program edge.
-  // The program Reporting endpoint is used as a proxy for service changes.
-  const serviceMetadata: SyncResult = {
-    ...serviceResult,
-    lastSyncedAt: programResult.lastSyncedAt,
-    lastSyncEdgeIterations: programResult.lastSyncEdgeIterations,
-    lastSyncBufferSeconds: programResult.lastSyncBufferSeconds,
-  };
+      // Step 2: Override service metadata with the program edge.
+      // The program Reporting endpoint is used as a proxy for service changes.
+      const serviceMetadata: SyncResult = {
+        ...serviceResult,
+        lastSyncedAt: programResult.lastSyncedAt,
+        lastSyncEdgeIterations: programResult.lastSyncEdgeIterations,
+        lastSyncBufferSeconds: programResult.lastSyncBufferSeconds,
+      };
 
-  // Step 3: Write all metadata at once — only for entities that fetched records.
-  await Promise.all([
-    customerResult.lastSyncCount > 0
-      ? setLastSyncedAt(SYNC_ENTITY_TYPES.customer, customerResult)
-      : Promise.resolve(),
-    programResult.lastSyncCount > 0
-      ? setLastSyncedAt(SYNC_ENTITY_TYPES.program, programResult)
-      : Promise.resolve(),
-    serviceResult.lastSyncCount > 0
-      ? setLastSyncedAt(SYNC_ENTITY_TYPES.service, serviceMetadata)
-      : Promise.resolve(),
-    callLogResult.lastSyncCount > 0
-      ? setLastSyncedAt(SYNC_ENTITY_TYPES.callLog, callLogResult)
-      : Promise.resolve(),
-  ]);
+      // Step 3: Write metadata — only for entities that fetched records.
+      await Promise.all([
+        customerResult.lastSyncCount > 0
+          ? setLastSyncedAt(SYNC_ENTITY_TYPES.customer, customerResult)
+          : Promise.resolve(),
+        programResult.lastSyncCount > 0
+          ? setLastSyncedAt(SYNC_ENTITY_TYPES.program, programResult)
+          : Promise.resolve(),
+        serviceResult.lastSyncCount > 0
+          ? setLastSyncedAt(SYNC_ENTITY_TYPES.service, serviceMetadata)
+          : Promise.resolve(),
+      ]);
 
-  console.log(`[mirror] Delta sync complete in ${Date.now() - start}ms`);
+      return [
+        { entityType: SYNC_ENTITY_TYPES.customer, synced: customerResult.lastSyncCount },
+        { entityType: SYNC_ENTITY_TYPES.program, synced: programResult.lastSyncCount },
+        { entityType: SYNC_ENTITY_TYPES.service, synced: serviceResult.lastSyncCount },
+      ];
+    };
+
+    const syncCallLogGroup = async (): Promise<SyncedCount[]> => {
+      const callLogResult = await syncCallLogs();
+      if (callLogResult.lastSyncCount > 0) {
+        await setLastSyncedAt(SYNC_ENTITY_TYPES.callLog, callLogResult);
+      }
+      return [{ entityType: SYNC_ENTITY_TYPES.callLog, synced: callLogResult.lastSyncCount }];
+    };
+
+    // Groups run concurrently, as the four entity syncs always have.
+    const groupResults = await Promise.all([
+      groups.includes(SYNC_GROUPS.customerGroup) ? syncCustomerGroup() : Promise.resolve([]),
+      groups.includes(SYNC_GROUPS.callLog) ? syncCallLogGroup() : Promise.resolve([]),
+    ]);
+    const syncedCounts = groupResults.flat();
+
+    const durationMs = Date.now() - start;
+    console.log(`[mirror] Delta sync complete in ${durationMs}ms`);
+    return { skipped: false, durationMs, syncedCounts };
+  } finally {
+    await Promise.all(held.map((lease) => releaseLock(lease)));
+  }
 }

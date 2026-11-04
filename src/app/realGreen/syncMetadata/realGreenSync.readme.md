@@ -108,7 +108,11 @@ The `syncMetadata` MongoDB collection tracks when each entity type was last sync
 ```typescript
 type SyncMetadata = CreatedUpdated & {
   entityType: SyncEntityType;  // natural key — e.g. "callLog"
-  lastSyncedAt: string;        // ISO 8601 timestamp of last successful sync
+  lastSyncedAt: string;        // ISO 8601 edge timestamp (edge - comfort buffer); absent after a full-sync wipe
+  lastSyncCount: number;       // diagnostics, see section 10
+  lastSyncEdgeIterations: number;
+  lastSyncBufferSeconds: number;
+  lastQueriedAt?: string;      // customer document only; read by the cron schedule
 };
 ```
 
@@ -119,9 +123,9 @@ All valid entity types are defined in `syncEntityTypes.ts`:
 ```typescript
 export const SYNC_ENTITY_TYPES = {
   callLog: "callLog",
-  // customer: "customer",   ← add here when customer sync is implemented
-  // program: "program",
-  // service: "service",
+  customer: "customer",
+  program: "program",
+  service: "service",
 } as const;
 ```
 
@@ -131,8 +135,11 @@ export const SYNC_ENTITY_TYPES = {
 // Returns lastSyncedAt for the entity, or null if never synced (triggers full load)
 getLastSyncedAt(entityType: SyncEntityType): Promise<string | null>
 
-// Persists the new lastSyncedAt after a successful sync
-setLastSyncedAt(entityType: SyncEntityType, lastSyncedAt: string): Promise<void>
+// Persists the checkpoint and diagnostics after a successful sync
+setLastSyncedAt(entityType, { lastSyncedAt, lastSyncCount, lastSyncEdgeIterations, lastSyncBufferSeconds }): Promise<void>
+
+// Unsets lastSyncedAt (full-sync wipe) so the next sync does a full load
+clearLastSyncedAt(entityTypes: readonly SyncEntityType[]): Promise<void>
 ```
 
 ### API Route
@@ -208,9 +215,10 @@ src/app/realGreen/callLog/
 | **Vercel Cron** | Automated, no user action | Requires Vercel deployment config |
 | **External scheduler** (AWS EventBridge, etc.) | Runs independently | Infrastructure complexity |
 
-**Current approach:** On-demand API route at `POST /realGreen/[entity]/sync/api`. Trigger with `{ op: "syncCallLogs" }` (delta) or `{ op: "syncCallLogs", force: true }` (full reload).
-
-**Future:** Wire to Vercel Cron once the sync is validated in production.
+**Current approach:** Vercel Cron runs `runDeltaSync()` on an activity-based schedule, and the
+Sync Utilities page (`/syncUtils`) runs delta or full syncs by hand. The per-entity
+`POST /realGreen/[entity]/sync/api` routes are legacy: `force` only upserts (it deletes nothing)
+and they take no lock. See `src/app/vercelCron/mirrorSync/mirrorSync.readme.md`.
 
 ---
 
@@ -222,8 +230,10 @@ The same delta-sync pattern applies to the customer pipeline:
 - The pagination loop is identical
 - The `bulkWrite` upsert strategy is identical
 
-The customer/program/service sync is implemented and active — it runs automatically before every
-mirror query (`runDeltaSync` in `src/app/realGreen/customer/sync/runDeltaSync.ts`).
+The customer/program/service sync is implemented and active. `runDeltaSync`
+(`src/app/realGreen/customer/sync/runDeltaSync.ts`) is called by the `mirrorSync` cron, not before
+each query (only `syncFirst` restores that). Deleted records need a full sync; see
+`src/app/vercelCron/mirrorSync/mirrorSync.readme.md`.
 
 ---
 
@@ -286,10 +296,11 @@ for detecting service changes.
 | `lastSyncEdgeIterations` | Binary search iterations used |
 | `lastSyncBufferSeconds` | Comfort buffer subtracted from the edge |
 
-See `src/app/realGreen/customer/sync/MirrorSyncRefactor.md` for full documentation.
+See `src/app/vercelCron/mirrorSync/mirrorSync.readme.md` and the JSDoc in `findSyncEdge.ts`.
 
 ### Metadata Write Pattern
 
-All three sync functions run concurrently. Each returns a `SyncResult` without writing to the DB.
-After all three complete, `runDeltaSync` writes all metadata at once — only for entities that
-fetched records (zero-record syncs leave `lastSyncedAt` unchanged).
+The customer, program and service syncs run concurrently. Each returns a `SyncResult` without
+writing metadata. After all three complete, `runDeltaSync` writes their metadata at once — only for
+entities that fetched records (zero-record syncs leave `lastSyncedAt` unchanged). Call logs run in
+parallel as a separate sync group and write their own metadata.

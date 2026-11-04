@@ -96,6 +96,7 @@ const realGreenParams: NavSection = {
       href: "/realGreen/progServ/servCode",
       roles: ["admin"],
     },
+    { title: "Sync Utilities", href: "/syncUtils/customers", roles: ["admin"] },
   ],
 };
 

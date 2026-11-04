@@ -33,6 +33,21 @@ export async function recordMirrorQuery(): Promise<void> {
 }
 
 /**
+ * Clears `lastSyncedAt` so the next sync of these entity types performs a full load.
+ *
+ * Unsets the field instead of deleting the document because the customer document also
+ * carries `lastQueriedAt`, which the cron schedule reads. A raw update skips schema
+ * validation, which is what allows the required `lastSyncedAt` to be absent.
+ */
+export async function clearLastSyncedAt(entityTypes: readonly SyncEntityType[]): Promise<void> {
+  await connectToMongoDB();
+  await SyncMetadataModel.updateMany(
+    { entityType: { $in: [...entityTypes] } },
+    { $unset: { lastSyncedAt: "" }, $set: { lastSyncCount: 0, lastSyncEdgeIterations: 0, lastSyncBufferSeconds: 0 } },
+  );
+}
+
+/**
  * Persists the `lastSyncedAt` timestamp and diagnostic fields for the given entity type.
  * Creates the document on first sync; updates it on subsequent syncs.
  *

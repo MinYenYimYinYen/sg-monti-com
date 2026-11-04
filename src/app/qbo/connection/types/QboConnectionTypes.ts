@@ -21,6 +21,8 @@ export type QboConnectionDoc = CreatedUpdated & {
   connectedByUserName: string;
   connectedAt: string;
   version: number;
+  /** ISO time until which one request holds the right to refresh. Blank or past means free. */
+  refreshLockUntil?: string;
 };
 
 /**

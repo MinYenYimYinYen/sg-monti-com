@@ -19,7 +19,7 @@ const COMFORT_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Fetches all call logs matching `rawSearch` from the RealGreen API using the
- * capped exponential batch fetch algorithm (see callLogSyncPlan.md Section 4).
+ * capped exponential batch fetch algorithm (see syncMetadata/realGreenSync.readme.md Section 3).
  *
  * Starts with 1 concurrent request, doubles each round up to MAX_CONCURRENT.
  * Terminates as soon as any page returns fewer than PAGE_SIZE records.

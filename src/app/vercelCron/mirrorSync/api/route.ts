@@ -73,8 +73,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
 
     const syncStart = Date.now();
-    await runDeltaSync();
+    const result = await runDeltaSync();
     const syncMs = Date.now() - syncStart;
+
+    // A held lock (running sync or full rebuild) is not a failure: the next tick catches up.
+    if (result.skipped) {
+      console.log(`[cron:customerSync] Skipped — ${result.reason}`);
+      return NextResponse.json({ synced: false, sinceLastQueryMin, reason: result.reason });
+    }
 
     console.log(`[cron:customerSync] Sync complete in ${syncMs}ms`);
 

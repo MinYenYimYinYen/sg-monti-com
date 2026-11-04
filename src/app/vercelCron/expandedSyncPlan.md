@@ -11,6 +11,7 @@ Before writing any code, read the following files in order:
 |---|---|
 | `src/app/vercelCron/expandedSyncPlan.md` | This document — strategy, switch points, principles |
 | `src/app/realGreen/syncMetadata/realGreenSync.readme.md` | General sync architecture (delta-sync loop, pagination algorithm, upsert strategy) |
+| `src/app/vercelCron/mirrorSync/mirrorSync.readme.md` | How the cron, locks, full sync and edge-finding work today |
 | `src/app/realGreen/customer/sync/runDeltaSync.ts` | The orchestrator — shows how all four current entities are wired together |
 | `src/app/realGreen/callLog/sync/callLogSyncFunc.ts` | Best template for a new entity — shows fetch, edge-finding, and upsert |
 | `src/app/realGreen/syncMetadata/syncEntityTypes.ts` | Registry of all entity types — add the new entity here |
@@ -87,6 +88,8 @@ flip between the mirror pipeline and the live RealGreen API.
 | Pipeline flag | `customerSlices.ts` → `PIPELINE` constant | Change `"mirror"` → `"realGreen"` per context |
 | Sync-before-query | `CustomerMirrorContract.ts` → `syncFirst?: boolean` | Set `syncFirst: true` in hook dispatch params |
 | Cron endpoint | `vercel.json` → `/vercelCron/mirrorSync/api` | Remove or disable the cron entry |
+| Manual delta / full sync | `/syncUtils` page (`syncUtils/api/route.ts`, admin) | Delta on demand; full sync wipes and reloads (see `mirrorSync.readme.md`) |
+| Unstick a sync | `/syncUtils` → Clear lock / Abandon run | Frees a stuck lease; Abandon discards an unfinished full sync |
 
 **Contexts permanently on mirror (no flag):** `"corruptedRecords"`, `"customerQuery"`
 
@@ -98,8 +101,9 @@ flip between the mirror pipeline and the live RealGreen API.
 
 | Switch point | Location | How to flip |
 |---|---|---|
-| Manual sync route | `callLog/sync/api/route.ts` | POST `{ op: "syncCallLogs" }` (admin only) |
-| Cron (via runDeltaSync) | `runDeltaSync.ts` → `syncCallLogs()` | Remove from `Promise.all` in orchestrator |
+| Manual delta / full sync | `/syncUtils/callLogs` page | Run Delta Sync, or Full Sync (wipes `CallLog`, reloads) |
+| Legacy sync route | `callLog/sync/api/route.ts` | POST `{ op: "syncCallLogs" }` (admin only). `force` only upserts: it does not delete and does not take the lock |
+| Cron (via runDeltaSync) | `runDeltaSync.ts` → `syncCallLogGroup` | Remove the call log group from the `Promise.all` in the orchestrator |
 
 **Note:** CallLog has no client-side pipeline flag yet — it was implemented directly into the
 mirror pipeline without a RealGreen API fallback. If a fallback is needed, it would require
@@ -131,7 +135,10 @@ Follow the pattern in `callLog/sync/callLogSyncFunc.ts` or `customer/sync/custom
 ### Step 3 — Add to `runDeltaSync()`
 
 Add a `sync[Entity]()` function and include it in the `Promise.all` in `runDeltaSync.ts`.
-Write metadata at the end alongside the other entities.
+Write metadata at the end alongside the other entities. Decide which sync group it belongs to
+(`syncLock/syncGroups.ts`), and add it to the full sync: a wipe in `wipeGroup`, a chunk in
+`buildFullSyncChunks`, and a case in `executeChunk` (`customer/sync/runFullSync.ts`). Delta sync
+cannot remove records deleted in RealGreen, so every synced entity needs a working full sync.
 
 ### Step 4 — Document the switch points
 
@@ -189,7 +196,8 @@ src/app/realGreen/[module]/
 
 **Notes:**
 - `api/route.ts` — live RealGreen reads (on-demand, single-entity or small queries)
-- `sync/api/route.ts` — admin-only sync trigger; not called by the UI
+- `sync/api/route.ts` — legacy admin-only sync trigger (upsert only, no lock). The Sync Utilities
+  page (`src/app/syncUtils/`) is the supported way to run syncs by hand
 - The `mirrorSync` cron calls `runDeltaSync()` directly, not the sync route
 - Not all modules will have all folders — add only what's needed
 

@@ -4,6 +4,8 @@ These are the answers given on Intuit's production-keys questionnaire. Each is a
 
 Status when written: nothing below is built yet. The answers describe the planned design.
 
+Phase numbers in the "Delivered by" columns use the original numbering (now in `archive/`). Map them to `qboPlan.md` as follows: original Phases 1 and 2 are now Phase A (connection) and Phase B (read layer, logging); original Phase 3 (reference data) is now Phases B and C; original Phase 6 (posting) is now Phase E; original Phase 7 (cutover and hardening) is now Phase F. The sandbox no longer exists, so the error-handling tests in the "Error handling and logging" section run against live data as described in `qboPlan.md` (Phase E).
+
 ## Token handling
 
 | Question | Answer | Delivered by | Built and verified |
@@ -33,9 +35,9 @@ Draft text submitted for the version-features answer: the app is a private inter
 |---|---|---|---|
 | Tested that the app handles API errors, including syntax and validation errors? | Yes | Phase 6 (sandbox tests below) | [ ] |
 | Captures the `intuit_tid` response header? | Yes: on every response, success or failure, including OAuth token and revoke calls | Phase 2 | [ ] |
-| Stores all error information in logs that can be shared for troubleshooting? | Yes: per-call QBO API log (see `qboPhase2.md`) with a viewer | Phases 2 and 7 | [ ] |
+| Stores all error information in logs that can be shared for troubleshooting? | Yes: per-call QBO API log (see Logging in `qboPlan.md`) with a viewer | Phases 2 and 7 | [ ] |
 
-The "tested" answer is only true after the Phase 6 sandbox tests run: a syntax error (malformed request body) and a validation error, with the real fault payloads recorded.
+The "tested" answer is only true after the error-handling tests run (Phase E in `qboPlan.md`; no sandbox, so against live data with harmless or deliberately bad requests): a syntax error (malformed request body) and a validation error, with the real fault payloads recorded.
 
 ## Security and data handling
 
@@ -56,9 +58,9 @@ Notes:
 ## Open questions
 
 - [ ] Support contact: the questionnaire asks whether customers can contact support from within the app. Record the answer given. If Yes, add a "Contact support" link (luke@sgmonti.com) to the connection page (Phase 2).
-- [ ] Log retention and log access: defaults below are unconfirmed (see `qboPhase2.md`).
+- [ ] Log retention and log access: defaults are unconfirmed (see Logging in `qboPlan.md`).
 
 ## Other answers recorded elsewhere
 
-- Host domain, Launch, Disconnect and Connect/Reconnect URLs: `qboPhase1.md`.
-- EULA and privacy policy URLs: `qboPhase1.md`; pages in `src/app/legal/`.
+- Host domain, Launch, Disconnect and Connect/Reconnect URLs: `qboPlan.md` (Auth and connection).
+- EULA and privacy policy URLs: `https://sgmonti.com/legal/terms` and `https://sgmonti.com/legal/privacy`; pages in `src/app/legal/`.

@@ -1,10 +1,16 @@
 import { AppError } from "@/lib/errors/AppError";
-import { QboConfig, QboTokenResponseRaw, QboTokenSet } from "@/app/qbo/_lib/auth/qboOAuthTypes";
+import {
+  QboConfig,
+  QboRefreshOutcome,
+  QboTokenResponseRaw,
+  QboTokenSet,
+} from "@/app/qbo/_lib/auth/qboOAuthTypes";
 import {
   QBO_OAUTH,
   buildBasicAuthHeader,
   parseTokenResponse,
 } from "@/app/qbo/_lib/auth/qboOAuthUtils";
+import { classifyRefreshFailure } from "@/app/qbo/_lib/auth/qboTokenUtils";
 
 // Server only. Calls Intuit's OAuth endpoints. Request and response bodies carry codes and
 // tokens, so they are never logged or put in an error message. Only the HTTP status and
@@ -62,6 +68,64 @@ export async function exchangeCodeForTokens({
 
   const json = (await res.json().catch(() => null)) as QboTokenResponseRaw | null;
   return parseTokenResponse({ body: json, now: new Date() });
+}
+
+/**
+ * Never throws. Intuit rotates the refresh token on every refresh, so a `refreshed` outcome
+ * carries the new pair and the caller must store it. The caller (qboTokenServer) holds the
+ * refresh lock, because reusing an old refresh token can make Intuit revoke the grant.
+ */
+export async function refreshAccessToken({
+  refreshToken,
+  config,
+}: {
+  refreshToken: string;
+  config: QboConfig;
+}): Promise<QboRefreshOutcome> {
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+
+  let res: Response;
+  try {
+    res = await fetch(QBO_OAUTH.TOKEN_URL, {
+      method: "POST",
+      headers: {
+        Authorization: buildBasicAuthHeader(config),
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
+      body,
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch {
+    console.warn("[QBO] Token refresh request could not be sent.");
+    return { outcome: "transient" };
+  }
+
+  const intuitTid = res.headers.get("intuit_tid");
+  const json = (await res.json().catch(() => null)) as
+    | (QboTokenResponseRaw & { error?: unknown })
+    | null;
+
+  if (!res.ok) {
+    const errorCode = typeof json?.error === "string" ? json.error : null;
+    const kind = classifyRefreshFailure({ status: res.status, errorCode });
+    console.warn(
+      `[QBO] Token refresh failed: HTTP ${res.status} (${kind}), intuit_tid ${intuitTid ?? "none"}`,
+    );
+    if (kind === "revoked") return { outcome: "revoked" };
+    if (kind === "transient") return { outcome: "transient" };
+    return { outcome: "rejected", status: res.status, intuitTid };
+  }
+
+  try {
+    return { outcome: "refreshed", tokens: parseTokenResponse({ body: json, now: new Date() }) };
+  } catch {
+    return { outcome: "rejected", status: res.status, intuitTid };
+  }
 }
 
 /** Never throws. Returns whether Intuit confirmed the revocation. */

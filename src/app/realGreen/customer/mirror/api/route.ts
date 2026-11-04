@@ -19,6 +19,8 @@ import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { StreamChunk } from "@/app/realGreen/customer/api/CustomerContract";
 import { runDeltaSync } from "@/app/realGreen/customer/sync/runDeltaSync";
 import { recordMirrorQuery } from "@/app/realGreen/syncMetadata/syncMetadataFunc";
+import { assertMirrorAvailable } from "@/app/realGreen/syncLock/syncLockFunc";
+import { AppError } from "@/lib/errors/AppError";
 
 // ---------------------------------------------------------------------------
 // Filter Translation
@@ -191,6 +193,10 @@ const handlers: HandlerMap<CustomerMirrorContract> = {
       console.log("[mirror] getMirrorCustomers handler triggered with plan steps:", plan.map(s => s.stepName));
       await connectToMongoDB();
 
+      // During a full sync the mirror is empty or partial; fail loudly instead of
+      // returning results that look like missing customers.
+      await assertMirrorAvailable();
+
       // Track query activity fire-and-forget — the Vercel Cron job reads lastQueriedAt
       // to determine how frequently to sync. No await: zero latency impact on the query.
       recordMirrorQuery().catch(() => {});
@@ -200,7 +206,10 @@ const handlers: HandlerMap<CustomerMirrorContract> = {
       // e.g. when the cron is not running or absolutely fresh data is required.
       if (syncFirst) {
         console.log("[mirror] syncFirst=true — running delta sync before query");
-        await runDeltaSync();
+        const syncResult = await runDeltaSync();
+        if (syncResult.skipped) {
+          throw new AppError({ message: syncResult.reason, type: "API_ERROR", statusCode: 409 });
+        }
       }
 
       const encoder = new TextEncoder();

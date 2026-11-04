@@ -67,6 +67,7 @@ import { renewalLettersReducer } from "@/app/prepayLetters/renewalLetters/renewa
 import { routeNoteReducer } from "@/app/routeNotes/routeNoteSlice";
 import { urgentReducer } from "@/app/pace/priorities/urgentSlice";
 import { qboConnectionReducer } from "@/app/qbo/connection/qboConnectionSlice";
+import { qboAccountReducer } from "@/app/qbo/account/qboAccountSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -136,6 +137,7 @@ const rootReducer = combineReducers({
   routeNotes: routeNoteReducer,
   paceUrgent: urgentReducer,
   qboConnection: qboConnectionReducer,
+  qboAccount: qboAccountReducer,
   topic: topicReducer,
 });
 

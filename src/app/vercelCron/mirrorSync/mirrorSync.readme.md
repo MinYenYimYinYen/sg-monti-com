@@ -9,6 +9,14 @@ based on user activity, rather than on a fixed interval.
 This replaces the previous approach of running `runDeltaSync()` inline before every mirror
 query (which blocked the query and eliminated most of the mirror's speed advantage).
 
+**Delta sync cannot see deletions.** A record deleted in RealGreen never appears in an
+`updated` window, so it stays in the mirror forever. The only fix is a **full sync**: wipe the
+collections and reload. That is a chunked, password-gated operation driven from the Sync
+Utilities page (`/syncUtils`, admin only). See [Full Sync](#full-sync-chunked).
+
+Related docs: `src/app/vercelCron/expandedSyncPlan.md` covers the strategy and the steps for
+adding a new synced entity.
+
 ---
 
 ## How It Works
@@ -29,6 +37,10 @@ On each tick, the cron endpoint:
 3. Calls `shouldSync(sinceLastQueryMs)` to determine whether to sync this tick
 4. If yes: runs `runDeltaSync()` and returns timing info
 5. If no: returns immediately (fast path — no DB writes, no RealGreen API calls)
+
+If `runDeltaSync()` reports `skipped` (a sync lock is held, or a full sync is unfinished) the
+cron returns `{ synced: false, reason }` with HTTP 200. A held lock is not a failure; the next
+tick catches up.
 
 ### Tier Schedule
 
@@ -60,6 +72,11 @@ of the first query — no manual intervention needed.
 
 See `src/app/realGreen/customer/sync/runDeltaSync.ts` for the orchestrator.
 
+`runDeltaSync({ groups? })` takes a lock per sync group (see [Locks](#locks)), runs the groups
+concurrently, and returns `{ skipped: true, reason }` or `{ skipped: false, durationMs, syncedCounts }`.
+It never throws because of a held lock; callers decide what a skip means (the cron ignores it, the
+mirror route turns it into an error).
+
 ---
 
 ## Sync Gap Safety
@@ -74,7 +91,39 @@ The delta sync algorithm is designed to never introduce gaps:
 - If the cron misses a tick (deployment gap, cold start), the next tick catches up by
   fetching everything since `lastSyncedAt`. The window just gets larger; no gap is created.
 
-See `src/app/realGreen/customer/sync/MirrorSyncRefactor.md` for the full algorithm.
+### Why not store `now`
+
+RealGreen does not return `updated` on customer or service search results, so the true edge
+cannot be read from the fetched records. Storing `now` would permanently miss records that were
+modified just before the window closed but were not yet indexed by RealGreen's search.
+
+### Edge finding (`customer/sync/findSyncEdge.ts`)
+
+Binary search on `POST /Reporting/[Entity]/Updated` (returns IDs only, no pagination) for the
+latest point after which nothing was updated, then subtract the comfort buffer. The algorithm,
+its constants (`GRANULARITY_MS`, `MAX_ITERATIONS`, `COMFORT_BUFFER_MS`) and the call-count math are
+documented in the file's JSDoc. Two behaviors worth knowing:
+
+- If the first check finds nothing updated in the whole window, `lastSyncedAt` is left unchanged.
+- With no previous `lastSyncedAt` (initial load or after a wipe), the lower bound is the start of
+  the oldest synced season (`getSyncSeasonWindow().historyFloorIso`, `syncMetadata/syncWindow.ts`).
+
+### Service proxy (and its fallback)
+
+`/Reporting/Service/Updated` does not exist, so services reuse the program edge. This rests on
+the observation that editing a service in the CRM also bumps the parent program's `updated`.
+If that ever stops being true, the fallback is a fixed buffer for services: stop overwriting the
+service `lastSyncedAt` with the program edge in `runDeltaSync`, and have `syncServices()` return
+`syncStart - FIXED_BUFFER_MS` (for example 10 minutes) instead.
+
+### Corrupted records
+
+RealGreen sometimes throws `"Nullable object must have a value."` for a page containing a
+corrupted record. The fetch functions recover with `binarySearchCorruptedRecord`, skip the bad
+record, and store the IDs of the records on either side in the `CorruptedSyncRecord` collection
+(one document per hit, grouped by a shared timestamp per sync). The sandbox page
+`/sandbox/corruptedRecords` shows them so the records can be found and fixed in the CRM.
+Service records whose production data fails to remap are skipped and logged in `bulkUpsertServices`.
 
 ---
 
@@ -91,6 +140,93 @@ When `true`, the mirror route runs `runDeltaSync()` inline before executing the 
 
 **To re-enable sync-before-query globally:** add `syncFirst: true` to the params in the
 relevant hook's dispatch call. One line of code restores the old behavior.
+
+If a lock is held when `syncFirst` runs, the route throws the operational 409 error from the lock
+reason instead of querying a mirror that may be mid-rebuild.
+
+---
+
+## Locks
+
+Source: `src/app/realGreen/syncLock/`. One document per **sync group** in the `SyncLock` collection:
+
+| Group | Entities | Why grouped |
+|---|---|---|
+| `customerGroup` | customer, program, service | Service borrows the program edge, and mirror queries join all three |
+| `callLog` | callLog | Independent; no mirror query reads it |
+
+- **Lease, not a flag.** Acquiring is one atomic `findOneAndUpdate` that succeeds only if there is
+  no holder or `expiresAt` has passed. `LOCK_LEASE_MS` is 15 minutes (longer than the route's
+  `maxDuration`, so a live request never loses its lease). A request killed without cleanup
+  frees the group when the lease expires.
+- **Release by owner.** `releaseLock` only clears the lease if `holderRunId` still matches, so a
+  slow run whose lease expired cannot free a lock another run has since taken.
+- **Delta sync** takes the lease for every requested group up front and skips (does not queue) if
+  any is held. The next cron tick catches up.
+- **Full-sync state outlives the lease.** The group document also stores `fullRun`, the persisted
+  state of an unfinished full sync. While it exists, delta syncs refuse to acquire the lock.
+- **Admin escape hatch.** `clearSyncLock` always frees the lease; with `abandonRun` it also discards
+  an unfinished full sync (afterwards a delta sync does a normal initial load).
+
+### Mirror queries during a rebuild
+
+`getMirrorCustomers` calls `assertMirrorAvailable()` first. While the customer group has an
+unfinished `fullRun` (or an active full-sync lease) it throws a 409 operational error, because
+the collections are empty or partial and an empty result would look like missing customers.
+Call logs are not covered; no mirror query depends on them. Cost: one indexed Mongo read per query.
+
+---
+
+## Full Sync (chunked)
+
+Entry point: the Sync Utilities page, `src/app/syncUtils/` (admin only; tabs for Customers and
+Call Logs; each tab has Run Delta Sync and Full Sync). Server logic: `customer/sync/runFullSync.ts`.
+API: `POST /syncUtils/api` (`getSyncStatus`, `runDeltaSync`, `startFullSync`, `runFullSyncChunk`,
+`clearSyncLock`), all admin-only.
+
+### Flow
+
+1. **Start** (`startFullSync`): the server verifies the password (re-entered in the dialog; checked
+   server-side, so calling the API directly cannot skip it), acquires the lock, persists the run,
+   **clears `lastSyncedAt` first**, then deletes the collections.
+2. **Chunks** (`runFullSyncChunk`, one HTTP request each, driven in order by the page):
+   - customers (no season, one chunk);
+   - programs, one chunk per season from `currentYear - 7` to `currentYear`, plus one chunk for all
+     future seasons (they are sparse; usually only next season is populated);
+   - services, same season chunks;
+   - **finalize**: finds the sync edges and writes the checkpoints.
+   Call logs have one data chunk and write their own checkpoint (their edge comes from the data).
+3. **Close**: after the last step the run is deleted from the lock document, which reopens the
+   mirror to queries and delta syncs.
+
+### Why it works this way
+
+- **Clear checkpoints before deleting.** If the request dies between the two, `lastSyncedAt` is
+  already null, so no delta sync can mistake a half-empty mirror for an up-to-date one.
+- **Chunks are separate requests** so total time is not bounded by one function's `maxDuration`
+  (800 s, the Pro plan ceiling with fluid compute; exported from `syncUtils/api/route.ts`). Each
+  chunk only has to fit one season's load, so growth in total history does not threaten the limit.
+- **Edges use the run's start time**, not now: `findSyncEdge(floor, run.startedAt)`. Anything that
+  changed while the full sync ran is re-fetched by the next delta. Service uses the program edge.
+- **Resume.** Progress is saved before and after each chunk. A failed or interrupted chunk is simply
+  run again; every write is an idempotent upsert. Chunks must run in order (`findChunkBlocker`).
+- **The wipe only runs from `startFullSync`.** A resume can never delete data, and the password
+  gate sits directly in front of the only destructive step.
+- A run whose wipe never completed deleted nothing and is replaced by a new start. Once the wipe
+  is done, starting over requires an explicit Abandon.
+
+### Errors
+
+Sync failures are rethrown as operational `AppError`s (`EXTERNAL_ERROR`, 502) naming the step and
+the underlying message, so the page can show them inline; the full stack goes to the server console.
+A held lock is a 409 with the reason. A platform timeout returns no JSON at all; the page tells the
+user to run the step again, and the lock frees when its lease expires.
+
+### Season window
+
+`getSyncSeasonWindow()` (`syncMetadata/syncWindow.ts`) is the single definition of the synced
+seasons (current year -7 to +7). Delta sync and full sync both read it so they always cover the
+same records.
 
 ---
 
@@ -147,14 +283,26 @@ vercel.json                   ← cron schedule config (project root)
 src/app/realGreen/syncMetadata/
   SyncMetadataTypes.ts        ← lastQueriedAt field
   SyncMetadataModel.ts        ← lastQueriedAt in schema
-  syncMetadataFunc.ts         ← recordMirrorQuery() helper
+  syncMetadataFunc.ts         ← recordMirrorQuery(), clearLastSyncedAt()
+  syncWindow.ts               ← getSyncSeasonWindow(): shared season window
+
+src/app/realGreen/syncLock/
+  syncGroups.ts               ← SYNC_GROUPS, entity membership, labels
+  SyncLockTypes.ts            ← lock doc, FullSyncRun / FullSyncChunk, client status types
+  SyncLockModel.ts            ← SyncLock collection
+  syncLockLogic.ts            ← pure: lease expiry, chunk planning, ordering checks
+  syncLockFunc.ts             ← acquire / release / force clear / assertMirrorAvailable
 
 src/app/realGreen/customer/mirror/
   CustomerMirrorContract.ts   ← syncFirst?: boolean param
-  api/route.ts                ← fire-and-forget recordMirrorQuery(), syncFirst gate
+  api/route.ts                ← assertMirrorAvailable(), recordMirrorQuery(), syncFirst gate
 
 src/app/realGreen/customer/sync/
-  runDeltaSync.ts             ← orchestrates all four entity syncs concurrently
+  runDeltaSync.ts             ← lock + concurrent entity syncs, returns DeltaSyncResult
+  runFullSync.ts              ← startFullSync (wipe) and runFullSyncChunk
+  findSyncEdge.ts             ← Reporting binary search
+
+src/app/syncUtils/            ← admin page, API route + contract, chunk-loop hook
 ```
 
 ---

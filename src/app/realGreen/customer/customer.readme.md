@@ -424,4 +424,4 @@ await refresh(customer.custId);
 
 ### Implementation Reference
 
-See `refreshCustomerImplementationPlan.md` in this directory for the full technical specification, including all files to create/modify and the key invariants that must be preserved.
+The `useRefreshCustomer` hook above was never created. Each context hook exposes its own `refreshCustomer(custId)` (see `hooks/useFullSeasonServices.ts`), which dispatches the refresh thunk (`createRefreshCustomerThunk` in `slices/customerSlices.ts`) and then replaces or removes the customer. Keep the invariants described above: same scheme as the original load, `custId` injected into every step, fixed optimizer values, and a single non-streamed response.

@@ -9,7 +9,8 @@ import { SyncEntityType } from "@/app/realGreen/syncMetadata/syncEntityTypes";
  * `lastSyncedAt` is the adjusted ISO 8601 timestamp stored for the next sync's window start
  * (edge timestamp minus comfort buffer). It is only updated when records were fetched.
  *
- * See realGreenSync.readme.md and MirrorSyncRefactor.md for the full sync architecture.
+ * See realGreenSync.readme.md and vercelCron/mirrorSync/mirrorSync.readme.md for the full sync
+ * architecture. `lastSyncedAt` is absent after a full-sync wipe, which makes the next sync a full load.
  */
 export type SyncMetadata = CreatedUpdated & {
   entityType: SyncEntityType;

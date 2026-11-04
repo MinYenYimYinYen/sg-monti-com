@@ -15,6 +15,7 @@ const QboConnectionSchema = new Schema<QboConnectionDoc>(
     connectedByUserName: { type: String, required: true },
     connectedAt: { type: String, required: true },
     version: { type: Number, required: true, default: 1 },
+    refreshLockUntil: { type: String, default: "" },
   },
   { timestamps: true },
 );

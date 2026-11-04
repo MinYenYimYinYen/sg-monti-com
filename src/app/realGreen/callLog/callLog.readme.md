@@ -120,11 +120,23 @@ is safe and idempotent.
 
 ### Orchestration
 
-`syncCallLogs()` runs concurrently with `syncCustomers()`, `syncPrograms()`, and
-`syncServices()` inside `runDeltaSync()` in `src/app/realGreen/customer/sync/runDeltaSync.ts`.
-The `mirrorSync` Vercel Cron job calls `runDeltaSync()` on an activity-based schedule.
+`syncCallLogs()` runs as the `callLog` sync group, concurrently with the customer group, inside
+`runDeltaSync()` in `src/app/realGreen/customer/sync/runDeltaSync.ts`. The `mirrorSync` Vercel Cron
+job calls `runDeltaSync()` on an activity-based schedule. Call logs have their own lock, so a call
+log sync and a customer full sync never block each other.
 
-See `src/app/vercelCron/expandedSyncPlan.md` for the full sync architecture.
+Delta sync cannot remove call logs deleted in RealGreen. The Call Logs tab of the Sync Utilities
+page (`/syncUtils/callLogs`) runs a password-gated full sync that wipes the `CallLog` collection
+and reloads it.
+
+See `src/app/vercelCron/mirrorSync/mirrorSync.readme.md` for locks and full sync, and
+`src/app/vercelCron/expandedSyncPlan.md` for the overall strategy.
+
+### Gotchas
+
+- `status` and the note `reason` already arrive as human-readable strings; there is no lookup
+  table (the planned `callLogStatus` and `callLogReason` modules were removed for that reason).
+- Call logs have no `/Reporting/.../Updated` endpoint. Their sync edge comes from the returned data.
 
 ---
 
@@ -136,8 +148,9 @@ This is intentional — the RealGreen `CallLogSearch` endpoint is too slow for U
 
 | Switch point | Location | How to flip |
 |---|---|---|
-| Disable cron sync | `runDeltaSync.ts` → `Promise.all` | Remove `syncCallLogs()` from the array |
-| Manual force-sync | `sync/api/route.ts` | POST `{ op: "syncCallLogs", force: true }` (admin only) |
+| Disable cron sync | `runDeltaSync.ts` → `Promise.all` | Remove `syncCallLogGroup()` from the array |
+| Manual delta / full sync | `/syncUtils/callLogs` | Run Delta Sync, or Full Sync (wipes, then reloads) |
+| Legacy sync route | `sync/api/route.ts` | POST `{ op: "syncCallLogs", force: true }` (admin only); upserts only, no lock |
 | Single-customer live fetch | `api/route.ts` | Already available — reads from RealGreen directly |
 
-The `sync/api/route.ts` admin route remains available for manual force-syncs and debugging.
+The `sync/api/route.ts` admin route remains available for debugging, but prefer the Sync Utilities page.
