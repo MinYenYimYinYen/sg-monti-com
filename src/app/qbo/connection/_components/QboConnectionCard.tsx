@@ -173,6 +173,18 @@ export function QboConnectionCard({
                 label="Account numbers"
                 value={formatFlag(testResult.preferences.useAccountNumbers)}
               />
+              <DetailRow
+                label="Custom purchase Ref no. allowed"
+                value={formatFlag(testResult.preferences.useCustomTxnNumbers)}
+              />
+              <DetailRow
+                label="Warn on duplicate check number"
+                value={formatFlag(testResult.preferences.warnDuplicateCheckNumber)}
+              />
+              <DetailRow
+                label="Other settings listed"
+                value={testResult.preferences.otherPrefNames.join(", ") || "None"}
+              />
             </dl>
           </div>
         )}

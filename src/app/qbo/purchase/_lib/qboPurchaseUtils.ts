@@ -102,7 +102,7 @@ export function validatePurchaseRange({
   return null;
 }
 
-/** Intuit query text for a range. Call validatePurchaseRange first. UNVERIFIED against live QuickBooks. */
+/** Intuit query text for a range. Call validatePurchaseRange first. Verified live: QuickBooks accepts this syntax. */
 export function buildPurchaseWhere(range: QboPurchaseRange): string {
   return `TxnDate >= '${range.startDate}' AND TxnDate <= '${range.endDate}'`;
 }

@@ -11,6 +11,7 @@ import {
   startConnect,
 } from "@/app/qbo/connection/_lib/qboConnectionServer";
 import { testQboConnection } from "@/app/qbo/connection/_lib/qboConnectionTestServer";
+import { inspectDocNumber } from "@/app/qbo/purchase/_lib/qboDocNumberInspectServer";
 
 /** The proxy injects the caller's saId; the connection records who they are by userName. */
 async function getCurrentUserName(): Promise<string> {
@@ -65,6 +66,14 @@ const handlers: HandlerMap<QboConnectionContract> = {
     roles: ["admin"],
     handler: async () => {
       return { success: true, payload: await testQboConnection() };
+    },
+  },
+
+  // A live read only. It looks up purchases by Ref no. and returns the raw CustomField.
+  inspectDocNumber: {
+    roles: ["admin"],
+    handler: async ({ docNumber }) => {
+      return { success: true, payload: await inspectDocNumber({ docNumber }) };
     },
   },
 };

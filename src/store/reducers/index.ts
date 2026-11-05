@@ -70,6 +70,9 @@ import { qboConnectionReducer } from "@/app/qbo/connection/qboConnectionSlice";
 import { qboAccountReducer } from "@/app/qbo/account/qboAccountSlice";
 import { qboVendorReducer } from "@/app/qbo/vendor/qboVendorSlice";
 import { qboPurchaseReducer } from "@/app/qbo/purchase/qboPurchaseSlice";
+import { importCCTxnMappingReducer } from "@/app/qbo/importCCTxn/importCCTxnMappingSlice";
+import { importRowReducer } from "@/app/qbo/importCCTxn/rows/importRowSlice";
+import { importPostReducer } from "@/app/qbo/importCCTxn/post/importPostSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -142,6 +145,9 @@ const rootReducer = combineReducers({
   qboAccount: qboAccountReducer,
   qboVendor: qboVendorReducer,
   qboPurchase: qboPurchaseReducer,
+  importCCTxnMapping: importCCTxnMappingReducer,
+  importRow: importRowReducer,
+  importPost: importPostReducer,
   topic: topicReducer,
 });
 

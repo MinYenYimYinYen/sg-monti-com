@@ -112,7 +112,10 @@ const bizPlanSection: NavSection = {
 
 const quickBooksSection: NavSection = {
   title: "QuickBooks",
-  navItems: [{ title: "Connection", href: "/qbo/connection", roles: ["admin"] }],
+  navItems: [
+    { title: "Connection", href: "/qbo/connection", roles: ["admin"] },
+    { title: "Import Credit Cards", href: "/qbo/importCCTxn", roles: ["admin", "office"] },
+  ],
 };
 
 const menuSections = [

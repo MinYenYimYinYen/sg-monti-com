@@ -13,6 +13,7 @@ import { useQboConnection } from "@/app/qbo/connection/useQboConnection";
 import { qboConnectionSelect } from "@/app/qbo/connection/qboConnectionSelect";
 import { QboConnectionNotices } from "@/app/qbo/connection/_components/QboConnectionNotices";
 import { QboConnectionCard } from "@/app/qbo/connection/_components/QboConnectionCard";
+import { QboDocNumberInspector } from "@/app/qbo/connection/_components/QboDocNumberInspector";
 import { QBO_CONNECTION_PAGE_PATH } from "@/app/qbo/_lib/auth/qboOAuthUtils";
 
 // The one place the status fetch is triggered (it forces a refresh), so keep the hook here only.
@@ -78,6 +79,7 @@ export function QboConnectionPanel() {
           onDisconnectAction={disconnect}
           onTestAction={testConnection}
         />
+        {status?.phase === "connected" && <QboDocNumberInspector />}
       </div>
     </div>
   );
