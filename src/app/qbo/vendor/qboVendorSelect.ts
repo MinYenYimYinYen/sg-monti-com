@@ -11,8 +11,13 @@ const selectVendorMap = createSelector([selectVendors], (vendors) =>
 
 const selectActiveVendors = createSelector([selectVendors], pickActiveVendors);
 
+const selectVendorCreateStatus = (state: AppState) => state.qboVendor.vendorCreateStatus;
+const selectVendorCreateResult = (state: AppState) => state.qboVendor.vendorCreateResult;
+
 export const qboVendorSelect = {
   vendors: selectVendors,
   vendorMap: selectVendorMap,
   activeVendors: selectActiveVendors,
+  vendorCreateStatus: selectVendorCreateStatus,
+  vendorCreateResult: selectVendorCreateResult,
 };

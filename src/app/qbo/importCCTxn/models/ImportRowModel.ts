@@ -22,6 +22,7 @@ const ImportRowSchema = new Schema<ImportRow>(
       enum: ["pending", "skipped", "posting", "posted", "failed", "unknown"],
     },
     skipReason: { type: String },
+    accountId: { type: String },
     possibleDuplicateOfHash: { type: String },
     importBatchId: { type: String, required: true },
     fileName: { type: String, required: true },

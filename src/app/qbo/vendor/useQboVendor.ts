@@ -29,5 +29,17 @@ export function useQboVendor({ autoLoad }: { autoLoad: boolean }) {
       }),
     );
 
-  return { refresh };
+  // Creates a real vendor in the live books. Admin only on the server. The dialog reads the
+  // outcome from the slice (vendorCreateStatus and vendorCreateResult), not from this call.
+  const createVendor = (displayName: string) =>
+    dispatch(
+      qboVendorActions.createQboVendor({
+        params: { displayName },
+        config: { loadingMsg: "Creating vendor in QuickBooks..." },
+      }),
+    );
+
+  const resetVendorCreate = () => dispatch(qboVendorActions.resetVendorCreate());
+
+  return { refresh, createVendor, resetVendorCreate };
 }

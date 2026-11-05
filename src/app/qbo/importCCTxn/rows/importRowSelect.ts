@@ -1,6 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
+import { countAutoSkipped, isRestorableSkip } from "@/app/qbo/importCCTxn/_lib/importSkipUtils";
 
 const selectOpenRows = (state: AppState) => state.importRow.openRows;
 const selectFile = (state: AppState) => state.importRow.file;
@@ -17,6 +18,13 @@ const selectPendingRows = createSelector([selectOpenRows], (openRows) =>
 const selectSkippedRows = createSelector([selectOpenRows], (openRows) =>
   openRows.filter((row) => row.status === "skipped"),
 );
+
+/** Skipped rows a person can bring back. Payments and refunds are not in this list. */
+const selectRestorableSkippedRows = createSelector([selectSkippedRows], (skippedRows) =>
+  skippedRows.filter(isRestorableSkip),
+);
+
+const selectAutoSkippedCount = createSelector([selectSkippedRows], countAutoSkipped);
 
 const selectRowsNeedingAttention = createSelector([selectOpenRows], (openRows) =>
   openRows.filter((row) => row.status === "failed" || row.status === "unknown"),
@@ -44,6 +52,8 @@ export const importRowSelect = {
   openRows: selectOpenRows,
   pendingRows: selectPendingRows,
   skippedRows: selectSkippedRows,
+  restorableSkippedRows: selectRestorableSkippedRows,
+  autoSkippedCount: selectAutoSkippedCount,
   rowsNeedingAttention: selectRowsNeedingAttention,
   postableRows: selectPostableRows,
   unknownRows: selectUnknownRows,

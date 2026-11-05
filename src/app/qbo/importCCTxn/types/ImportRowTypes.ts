@@ -25,6 +25,11 @@ export type ImportRow = Omit<ImportCsvRow, "rowNumber"> & {
   merchantKey: string;
   status: ImportRowStatus;
   skipReason?: ImportRowSkipReason;
+  /**
+   * The expense account chosen for this row alone. Absent means the merchant's default account.
+   * Never repeats the default: picking the default clears it.
+   */
+  accountId?: string;
   /** Set when the row matched a stored row's card, amount and date but not its hash. */
   possibleDuplicateOfHash?: string;
   importBatchId: string;
@@ -63,6 +68,55 @@ export type PostOutcome = "posted" | "failed" | "unknown" | "pending";
 export type PostResult = {
   row: ImportRow;
   outcome: PostOutcome;
+};
+
+/** A row that was not sent to QuickBooks, with why. Nothing was written for it. */
+export type BlockedRow = {
+  rowId: string;
+  description: string;
+  transactionDate: string;
+  amountCents: number;
+  problems: string[];
+};
+
+/**
+ * What one posting request did. `results` are the rows that were sent and settled. `blockedRows`
+ * failed the pre-flight at post time or were taken by someone else, so they were not sent.
+ * `notAttemptedRowIds` were not sent because the run stopped after a batch where not every row
+ * posted, and `stopReason` says why. All of these rows are still where they were.
+ */
+export type PostRowsResult = {
+  results: PostResult[];
+  blockedRows: BlockedRow[];
+  notAttemptedRowIds: string[];
+  stopReason: string | null;
+};
+
+export type BatchPreviewMessage = {
+  message: string;
+  count: number;
+};
+
+/**
+ * What posting a date range would send, computed without writing anything. `readyRowIds` is
+ * exactly what the confirmation posts, so what the user sees is what is sent.
+ */
+export type BatchPreview = {
+  startDate: string;
+  endDate: string;
+  readyRowIds: string[];
+  readyCount: number;
+  readyTotalCents: number;
+  /** Ready rows over the per-request cap. They stay pending; post again after this run. */
+  deferredCount: number;
+  /** QuickBooks batch requests this run will make. */
+  batchCount: number;
+  /** Ready rows whose description nobody has confirmed against the vendor. Never blocks. */
+  unconfirmedCount: number;
+  warnings: BatchPreviewMessage[];
+  blockedRows: BlockedRow[];
+  /** Rows anywhere that are unknown or stuck posting. They are not in this run. */
+  unsettledRowCount: number;
 };
 
 export type PossibleDuplicate = {

@@ -11,6 +11,8 @@ export type QboRequest = {
   method: "GET" | "POST";
   body?: unknown;
   pathTemplate: string;
+  /** Overrides qboConst.requestTimeoutMs, for a call that legitimately takes longer. */
+  timeoutMs?: number;
 };
 
 /**
@@ -27,7 +29,13 @@ export type QboRequest = {
  * call to Intuit with its own intuit_tid. Only status, timing and fault fields are logged,
  * never the request, the response body or any header.
  */
-export async function qboHttp<T>({ path, method, body, pathTemplate }: QboRequest): Promise<T> {
+export async function qboHttp<T>({
+  path,
+  method,
+  body,
+  pathTemplate,
+  timeoutMs,
+}: QboRequest): Promise<T> {
   let access = await getQboAccess();
   let refreshedAfter401 = false;
   let rateLimitRetries = 0;
@@ -76,7 +84,7 @@ export async function qboHttp<T>({ path, method, body, pathTemplate }: QboReques
         },
         body: body === undefined ? undefined : JSON.stringify(body),
         cache: "no-store",
-        signal: AbortSignal.timeout(qboConst.requestTimeoutMs),
+        signal: AbortSignal.timeout(timeoutMs ?? qboConst.requestTimeoutMs),
       });
     } catch {
       await logAttempt({ httpStatus: 0, intuitTid: null, faultType: null, faultErrors: [] });

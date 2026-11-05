@@ -36,6 +36,7 @@ const MerchantMappingSchema = new Schema<MerchantMapping>(
     vendorId: { type: String, required: true },
     defaultAccountId: { type: String, required: true },
     otherAccountIds: { type: [String], default: [] },
+    confirmedMerchants: { type: [String], default: [] },
   },
   { timestamps: true },
 );

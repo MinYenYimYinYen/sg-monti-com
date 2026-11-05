@@ -40,6 +40,12 @@ export interface ImportCCTxnMappingContract extends ApiContract {
     params: { merchantMapping: MerchantMapping };
     result: DataResponse<MerchantMapping>;
   };
+  // Confirms one full description next to the merchant's vendor. Never changes the vendor or
+  // accounts. Returns the whole mapping, so the browser replaces its copy.
+  confirmMerchant: {
+    params: { merchantKey: string; description: string };
+    result: DataResponse<MerchantMapping>;
+  };
   deleteMerchantMapping: {
     params: { merchantKey: string; ownerUserName: string | null };
     result: DataResponse<{ merchantKey: string; ownerUserName: string | null }>;

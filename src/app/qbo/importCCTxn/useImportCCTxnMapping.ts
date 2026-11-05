@@ -47,6 +47,21 @@ export function useImportCCTxnMapping({ autoLoad }: { autoLoad: boolean }) {
       }),
     );
 
+  // Ticking a description as seen next to the vendor. It never changes the vendor or accounts.
+  const confirmMerchant = ({
+    merchantKey,
+    description,
+  }: {
+    merchantKey: string;
+    description: string;
+  }) =>
+    dispatch(
+      importCCTxnMappingActions.confirmMerchant({
+        params: { merchantKey, description },
+        config: { loadingMsg: "Confirming..." },
+      }),
+    );
+
   const deleteMerchantMapping = ({
     merchantKey,
     ownerUserName,
@@ -81,6 +96,7 @@ export function useImportCCTxnMapping({ autoLoad }: { autoLoad: boolean }) {
     saveFormatAccount,
     saveCardAssignment,
     saveMerchantMapping,
+    confirmMerchant,
     deleteMerchantMapping,
     saveSkipRule,
     deleteSkipRule,

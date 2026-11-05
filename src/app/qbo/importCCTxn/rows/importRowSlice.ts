@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { ImportRowContract } from "@/app/qbo/importCCTxn/rows/api/ImportRowContract";
+import { importCCTxnMappingActions } from "@/app/qbo/importCCTxn/importCCTxnMappingSlice";
+import { importDecisionActions } from "@/app/qbo/importCCTxn/decisions/importDecisionSlice";
+import { applySkipRuleToRows } from "@/app/qbo/importCCTxn/_lib/importSkipUtils";
 import { ImportCsvRow } from "@/app/qbo/importCCTxn/types/ImportCCTxnTypes";
 import {
   ImportCommitResult,
@@ -29,6 +32,12 @@ const setRowSkip = createStandardThunk<ImportRowContract, "setRowSkip">({
   typePrefix: "importRow/setRowSkip",
   apiPath: API_PATH,
   opName: "setRowSkip",
+});
+
+const setRowAccount = createStandardThunk<ImportRowContract, "setRowAccount">({
+  typePrefix: "importRow/setRowAccount",
+  apiPath: API_PATH,
+  opName: "setRowAccount",
 });
 
 /**
@@ -108,6 +117,25 @@ const importRowSlice = createSlice({
       const index = state.openRows.findIndex((row) => row.rowId === saved.rowId);
       if (index !== -1) state.openRows[index] = saved;
     });
+    builder.addCase(setRowAccount.fulfilled, (state, action) => {
+      const saved = action.payload;
+      const index = state.openRows.findIndex((row) => row.rowId === saved.rowId);
+      if (index !== -1) state.openRows[index] = saved;
+    });
+    // A new "always skip this merchant" rule skips that merchant's pending rows on the server.
+    // Applying the same rule here keeps the open rows in step without a reload.
+    builder.addCase(importCCTxnMappingActions.upsertSkipRule.fulfilled, (state, action) => {
+      state.openRows = applySkipRuleToRows({ rows: state.openRows, skipRule: action.payload });
+    });
+    // The Map tab's batch save returns the rows it changed, and the skip rules it stored. Rows
+    // go in first, then the rules, the same order the server used.
+    builder.addCase(importDecisionActions.saveDecisions.fulfilled, (state, action) => {
+      const changedRows = new Map(action.payload.rows.map((row) => [row.rowId, row]));
+      state.openRows = state.openRows.map((row) => changedRows.get(row.rowId) ?? row);
+      for (const skipRule of action.payload.skipRules) {
+        state.openRows = applySkipRuleToRows({ rows: state.openRows, skipRule });
+      }
+    });
   },
 });
 
@@ -117,5 +145,6 @@ export const importRowActions = {
   commitImport,
   getOpenRows,
   setRowSkip,
+  setRowAccount,
 };
 export const importRowReducer = importRowSlice.reducer;

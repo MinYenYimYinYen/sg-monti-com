@@ -5,6 +5,7 @@ import { commitImport, previewImport } from "@/app/qbo/importCCTxn/_lib/importRo
 import {
   getImportingUserName,
   loadOpenImportRows,
+  setImportRowAccount,
   setImportRowSkip,
 } from "@/app/qbo/importCCTxn/_lib/importRowAccessServer";
 
@@ -34,6 +35,14 @@ const handlers: HandlerMap<ImportRowContract> = {
     roles: ["office", "admin"],
     handler: async ({ rowId, skipReason }) => {
       return { success: true, payload: await setImportRowSkip({ rowId, skipReason }) };
+    },
+  },
+  // Choosing an account is a mapping decision, not a write to QuickBooks, so office may do it.
+  // Posting is still admin only.
+  setRowAccount: {
+    roles: ["office", "admin"],
+    handler: async ({ rowId, accountId }) => {
+      return { success: true, payload: await setImportRowAccount({ rowId, accountId }) };
     },
   },
 };

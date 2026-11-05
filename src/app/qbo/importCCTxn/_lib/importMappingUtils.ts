@@ -7,6 +7,7 @@ import {
 } from "@/app/qbo/importCCTxn/types/ImportCCTxnMappingTypes";
 import { ImportFormatId } from "@/app/qbo/importCCTxn/types/ImportCCTxnTypes";
 import { importFormats } from "@/app/qbo/importCCTxn/_lib/importFormatRegistry";
+import { buildMerchantKey, collapseDescription } from "@/app/qbo/importCCTxn/_lib/importMerchantKey";
 
 // Pure helpers for the mapping data. Validators return a list of problems (empty means valid),
 // so the route can report every problem at once instead of the first one.
@@ -77,6 +78,15 @@ export function validateMerchantMapping(merchantMapping: MerchantMapping): strin
   if (!merchantMapping.defaultAccountId) problems.push("A default account is required.");
   if (merchantMapping.otherAccountIds.includes(merchantMapping.defaultAccountId)) {
     problems.push("The default account should not also be listed as an other account.");
+  }
+  // A confirmation is only meaningful for a description that belongs to this merchant's family,
+  // and it is stored in the collapsed form so the same description is never listed twice.
+  for (const confirmed of merchantMapping.confirmedMerchants) {
+    if (confirmed !== collapseDescription(confirmed) || confirmed.length === 0) {
+      problems.push(`Confirmed description "${confirmed}" is not in its collapsed form.`);
+    } else if (buildMerchantKey(confirmed) !== merchantMapping.merchantKey) {
+      problems.push(`Confirmed description "${confirmed}" does not belong to this merchant.`);
+    }
   }
   return problems;
 }

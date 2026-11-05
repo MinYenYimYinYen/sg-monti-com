@@ -1,39 +1,40 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { importMapSelect } from "@/app/qbo/importCCTxn/importMapSelect";
-import { MerchantMapRow } from "@/app/qbo/importCCTxn/_components/MerchantMapRow";
+import { importDecisionSelect } from "@/app/qbo/importCCTxn/decisions/importDecisionSelect";
+import { MapRowLine } from "@/app/qbo/importCCTxn/_components/MapRowLine";
+import { MapSaveBar } from "@/app/qbo/importCCTxn/_components/MapSaveBar";
 
+/**
+ * Every pending transaction on its own row, with the rows of one merchant side by side. The panel
+ * itself is the scroll context, and the save bar sticks to its top.
+ */
 export function MapPanel() {
-  const merchantGroups = useSelector(importMapSelect.merchantGroups);
-  const unmappedCount = useSelector(importMapSelect.unmappedCount);
+  const displayRowIds = useSelector(importDecisionSelect.displayRowIds);
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-5xl space-y-4 p-6">
-        {merchantGroups.length === 0 ? (
+      {displayRowIds.length === 0 ? (
+        <div className="p-6">
           <p className="text-sm text-muted-foreground">
-            Nothing to map. Import a file first; merchants with pending transactions appear here.
+            Nothing to map. Import a file first; transactions that are still pending appear here.
           </p>
-        ) : (
-          <>
+        </div>
+      ) : (
+        <>
+          <MapSaveBar />
+          <div className="space-y-2 p-6">
             <p className="text-sm text-muted-foreground">
-              {merchantGroups.length} merchant{merchantGroups.length === 1 ? "" : "s"} with pending
-              transactions, {unmappedCount} still to map. Suggestions are highlighted and listed
-              first; nothing is chosen for you.
+              Choosing a vendor or account on one transaction fills in the same merchant&apos;s other
+              transactions. Those are shaded and offer a tick to confirm. Nothing is saved until you
+              press Save.
             </p>
-            <div className="space-y-3">
-              {merchantGroups.map((group) => (
-                // The key includes the stored mapping, so a saved row restarts from what was stored.
-                <MerchantMapRow
-                  key={`${group.merchantKey}:${group.mapping?.vendorId ?? ""}:${group.mapping?.defaultAccountId ?? ""}`}
-                  merchantKey={group.merchantKey}
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+            {displayRowIds.map((rowId) => (
+              <MapRowLine key={rowId} rowId={rowId} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

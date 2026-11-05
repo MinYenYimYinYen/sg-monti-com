@@ -73,6 +73,7 @@ import { qboPurchaseReducer } from "@/app/qbo/purchase/qboPurchaseSlice";
 import { importCCTxnMappingReducer } from "@/app/qbo/importCCTxn/importCCTxnMappingSlice";
 import { importRowReducer } from "@/app/qbo/importCCTxn/rows/importRowSlice";
 import { importPostReducer } from "@/app/qbo/importCCTxn/post/importPostSlice";
+import { importDecisionReducer } from "@/app/qbo/importCCTxn/decisions/importDecisionSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -148,6 +149,7 @@ const rootReducer = combineReducers({
   importCCTxnMapping: importCCTxnMappingReducer,
   importRow: importRowReducer,
   importPost: importPostReducer,
+  importDecision: importDecisionReducer,
   topic: topicReducer,
 });
 

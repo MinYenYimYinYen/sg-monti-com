@@ -6,7 +6,11 @@ import { Button } from "@/style/components/button";
 import { AppState } from "@/store";
 import { importRowSelect } from "@/app/qbo/importCCTxn/rows/importRowSelect";
 import { useImportPost } from "@/app/qbo/importCCTxn/post/useImportPost";
+import { useImportRow } from "@/app/qbo/importCCTxn/rows/useImportRow";
 import { formatCents } from "@/app/qbo/importCCTxn/_lib/importFileUtils";
+import { DEFAULT_MANUAL_SKIP_REASON } from "@/app/qbo/importCCTxn/_lib/importSkipUtils";
+import { RowAccountPicker } from "@/app/qbo/importCCTxn/_components/RowAccountPicker";
+import { ConfirmMerchantCheckbox } from "@/app/qbo/importCCTxn/_components/ConfirmMerchantCheckbox";
 
 /** One postable or unsettled row. Key it on rowId and pass only the id. */
 export function PostRowLine({ rowId }: { rowId: string }) {
@@ -14,6 +18,7 @@ export function PostRowLine({ rowId }: { rowId: string }) {
     importRowSelect.openRows(state).find((openRow) => openRow.rowId === rowId),
   );
   const { previewPost, reconcileRow } = useImportPost();
+  const { setSkip } = useImportRow({ autoLoad: false });
 
   if (!row) return null;
   const needsReconcile = row.status === "unknown" || row.status === "posting";
@@ -28,6 +33,7 @@ export function PostRowLine({ rowId }: { rowId: string }) {
           </div>
         </div>
         <div className="text-sm font-medium text-foreground">{formatCents(row.amountCents)}</div>
+        {!needsReconcile && <RowAccountPicker row={row} />}
         {row.status !== "pending" && (
           <Badge variant={row.status === "failed" ? "destructive" : "secondary"} intensity="soft">
             {row.status}
@@ -38,11 +44,28 @@ export function PostRowLine({ rowId }: { rowId: string }) {
             Look in QuickBooks
           </Button>
         ) : (
-          <Button variant="primary" onClick={() => previewPost(row.rowId)}>
-            Review and post
-          </Button>
+          <>
+            {/* Only a pending row can be skipped. A failed row has already been tried. */}
+            {row.status === "pending" && (
+              <Button
+                variant="destructive"
+                intensity="soft"
+                onClick={() =>
+                  setSkip({ rowId: row.rowId, skipReason: DEFAULT_MANUAL_SKIP_REASON })
+                }
+              >
+                Skip
+              </Button>
+            )}
+            <Button variant="primary" onClick={() => previewPost(row.rowId)}>
+              Review and post
+            </Button>
+          </>
         )}
       </div>
+      {!needsReconcile && (
+        <ConfirmMerchantCheckbox merchantKey={row.merchantKey} description={row.description} />
+      )}
       {row.postMessage && <p className="text-xs text-muted-foreground">{row.postMessage}</p>}
     </div>
   );

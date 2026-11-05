@@ -2,6 +2,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { AppState } from "@/store";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { cardAssignmentKey } from "@/app/qbo/importCCTxn/_lib/importMappingUtils";
+import { sortSkipRules } from "@/app/qbo/importCCTxn/_lib/importSkipUtils";
 
 const selectAssignableUsers = (state: AppState) => state.importCCTxnMapping.assignableUsers;
 const selectFormatAccounts = (state: AppState) => state.importCCTxnMapping.formatAccounts;
@@ -28,6 +29,8 @@ const selectSkipRuleMap = createSelector([selectSkipRules], (skipRules) =>
   new Grouper(skipRules).toUniqueMap((s) => s.merchantKey),
 );
 
+const selectSortedSkipRules = createSelector([selectSkipRules], sortSkipRules);
+
 export const importCCTxnMappingSelect = {
   assignableUsers: selectAssignableUsers,
   formatAccounts: selectFormatAccounts,
@@ -38,4 +41,5 @@ export const importCCTxnMappingSelect = {
   merchantMappingMap: selectMerchantMappingMap,
   skipRules: selectSkipRules,
   skipRuleMap: selectSkipRuleMap,
+  sortedSkipRules: selectSortedSkipRules,
 };

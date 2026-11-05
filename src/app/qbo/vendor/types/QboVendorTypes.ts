@@ -69,11 +69,23 @@ export type QboVendorSummary = {
 };
 
 /**
- * The fields we would send to create a vendor (Phase E). Intuit's minimum is a DisplayName or
- * a name part. We always send DisplayName, because it is what the user picks and must be unique.
+ * The fields we send to create a vendor. Intuit's minimum is a DisplayName or a name part. We
+ * always send DisplayName, because it is what the user picks and must be unique. Intuit's page
+ * documents no default expense account, so there is none to send.
  */
 export type QboVendorCreate = {
   DisplayName: string;
   // CompanyName?: string;
   // PrintOnCheckName?: string; // Defaults to DisplayName when omitted.
 };
+
+/**
+ * What creating a vendor came to. `exists` means an active vendor already had that name, so the
+ * user can use it instead. `unavailable` carries a message for the user: the name is taken by
+ * something that is not an active vendor, or QuickBooks did not confirm and nothing was created.
+ * Anything else (a rejected request) is thrown as an error.
+ */
+export type QboVendorCreateResult =
+  | { status: "created"; vendor: QboVendorSummary }
+  | { status: "exists"; vendor: QboVendorSummary }
+  | { status: "unavailable"; message: string };

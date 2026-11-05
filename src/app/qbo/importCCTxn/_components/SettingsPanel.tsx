@@ -2,6 +2,7 @@
 
 import { importFormats } from "@/app/qbo/importCCTxn/_lib/importFormatRegistry";
 import { FormatAccountEditor } from "@/app/qbo/importCCTxn/_components/FormatAccountEditor";
+import { SkippedMerchantsCard } from "@/app/qbo/importCCTxn/_components/SkippedMerchantsCard";
 
 export function SettingsPanel() {
   return (
@@ -18,6 +19,7 @@ export function SettingsPanel() {
         {importFormats.map((format) => (
           <FormatAccountEditor key={format.id} formatId={format.id} label={format.label} />
         ))}
+        <SkippedMerchantsCard />
       </div>
     </div>
   );

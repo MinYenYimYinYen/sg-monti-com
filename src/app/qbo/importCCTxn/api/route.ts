@@ -24,6 +24,9 @@ import {
   validateMerchantMapping,
   validateSkipRule,
 } from "@/app/qbo/importCCTxn/_lib/importMappingUtils";
+import { skipPendingRowsForMerchant } from "@/app/qbo/importCCTxn/_lib/importRowAccessServer";
+import { validateConfirmation } from "@/app/qbo/importCCTxn/_lib/importConfirmUtils";
+import { storeMerchantMapping } from "@/app/qbo/importCCTxn/_lib/importMappingSaveServer";
 
 function failIfInvalid(problems: string[]): void {
   if (problems.length > 0) {
@@ -140,18 +143,31 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
     roles: ["office", "admin"],
     handler: async ({ merchantMapping }) => {
       failIfInvalid(validateMerchantMapping(merchantMapping));
+      // The browser sends the descriptions it is showing. See storeMerchantMapping for how the
+      // confirmed list is added to or started over.
+      const saved = await storeMerchantMapping({
+        merchantKey: merchantMapping.merchantKey,
+        ownerUserName: merchantMapping.ownerUserName,
+        vendorId: merchantMapping.vendorId,
+        defaultAccountId: merchantMapping.defaultAccountId,
+        otherAccountIds: merchantMapping.otherAccountIds,
+        confirmedMerchants: merchantMapping.confirmedMerchants,
+      });
+      return { success: true, payload: saved };
+    },
+  },
+  confirmMerchant: {
+    roles: ["office", "admin"],
+    handler: async ({ merchantKey, description }) => {
+      const { confirmedDescription, problem } = validateConfirmation({ merchantKey, description });
+      if (problem) failIfInvalid([problem]);
       await connectToMongoDB();
       const saved = await ImportMerchantMappingModel.findOneAndUpdate(
-        { merchantKey: merchantMapping.merchantKey, ownerUserName: merchantMapping.ownerUserName },
-        {
-          $set: {
-            vendorId: merchantMapping.vendorId,
-            defaultAccountId: merchantMapping.defaultAccountId,
-            otherAccountIds: merchantMapping.otherAccountIds,
-          },
-        },
-        { upsert: true, new: true },
+        { merchantKey, ownerUserName: null },
+        { $addToSet: { confirmedMerchants: confirmedDescription } },
+        { new: true },
       ).lean();
+      if (!saved) failIfInvalid(["That merchant has no vendor mapped yet."]);
       return { success: true, payload: cleanMongoObject(saved!) as MerchantMapping };
     },
   },
@@ -182,6 +198,12 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
         { $set: { reason: skipRule.reason } },
         { upsert: true, new: true },
       ).lean();
+      // The rule also covers rows imported before it existed. The browser applies the same
+      // change to its own copy of the rows (see importRowSlice), so it needs no reload.
+      await skipPendingRowsForMerchant({
+        merchantKey: skipRule.merchantKey,
+        skipReason: skipRule.reason,
+      });
       return { success: true, payload: cleanMongoObject(saved!) as SkipRule };
     },
   },

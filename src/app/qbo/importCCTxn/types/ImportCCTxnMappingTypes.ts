@@ -44,6 +44,12 @@ export type MerchantMapping = {
   defaultAccountId: string;
   /** Other expense accounts this merchant has been posted to; offered first in the dropdown. */
   otherAccountIds: string[];
+  /**
+   * Full descriptions (uppercased, whitespace collapsed) a person has seen next to this vendor.
+   * A row whose description is not listed still gets this mapping pre-filled, but is marked so a
+   * person can confirm it. Never blocks posting. Reset when the vendor changes.
+   */
+  confirmedMerchants: string[];
 };
 
 /** Natural key: merchantKey. "Always skip this merchant". */

@@ -5,11 +5,13 @@ import {
 } from "@/app/qbo/importCCTxn/types/ImportCCTxnTypes";
 import {
   collapseWhitespace,
+  parseIsoDate,
   parseLast4,
   parseMoneyToCents,
-  parseUsDateToIso,
 } from "@/app/qbo/importCCTxn/_lib/importCsvValues";
 
+// Capital One writes dates as YYYY-MM-DD (found when the first real export was imported; the
+// original sample file had US-style dates and was wrong). Chase writes MM/DD/YYYY.
 const CAPITAL_ONE_COLUMNS = [
   "Transaction Date",
   "Posted Date",
@@ -32,12 +34,12 @@ function parseCapitalOneRow(csvRow: Record<string, string>): FormatRowResult {
   if (!last4) errors.push(`Card No. "${rawCard}" is not a 4-digit card number`);
 
   const rawTransactionDate = csvRow["Transaction Date"] ?? "";
-  const transactionDate = parseUsDateToIso(rawTransactionDate);
-  if (!transactionDate) errors.push(`Transaction Date "${rawTransactionDate}" is not a valid MM/DD/YYYY date`);
+  const transactionDate = parseIsoDate(rawTransactionDate);
+  if (!transactionDate) errors.push(`Transaction Date "${rawTransactionDate}" is not a valid YYYY-MM-DD date`);
 
   const rawPostedDate = csvRow["Posted Date"] ?? "";
-  const postedDate = parseUsDateToIso(rawPostedDate);
-  if (!postedDate) errors.push(`Posted Date "${rawPostedDate}" is not a valid MM/DD/YYYY date`);
+  const postedDate = parseIsoDate(rawPostedDate);
+  if (!postedDate) errors.push(`Posted Date "${rawPostedDate}" is not a valid YYYY-MM-DD date`);
 
   const description = collapseWhitespace(csvRow["Description"] ?? "");
   if (!description) errors.push("Description is empty");

@@ -8,8 +8,9 @@ export function pickCreditCardAccounts(accounts: QboAccount[]): QboAccount[] {
 }
 
 /**
- * Classification covers Expense, Other Expense and Cost of Goods Sold. UNVERIFIED against
- * the real chart of accounts: Classification is absent on non-posting accounts.
+ * Classification covers Expense, Other Expense and Cost of Goods Sold. Checked against the real
+ * chart of accounts (285 accounts). Classification is absent on non-posting accounts, so those
+ * are dropped.
  */
 export function pickExpenseAccounts(accounts: QboAccount[]): QboAccount[] {
   return accounts.filter((account) => account.Classification === "Expense");

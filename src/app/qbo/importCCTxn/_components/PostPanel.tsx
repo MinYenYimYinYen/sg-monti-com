@@ -3,37 +3,13 @@
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
 import { Alert, AlertDescription, AlertTitle } from "@/style/components/alert";
-import { Button } from "@/style/components/button";
 import { importRowSelect } from "@/app/qbo/importCCTxn/rows/importRowSelect";
-import { importPostSelect } from "@/app/qbo/importCCTxn/post/importPostSelect";
-import { useImportPost } from "@/app/qbo/importCCTxn/post/useImportPost";
 import { PostRowLine } from "@/app/qbo/importCCTxn/_components/PostRowLine";
 import { PostConfirmDialog } from "@/app/qbo/importCCTxn/_components/PostConfirmDialog";
-import { formatCents } from "@/app/qbo/importCCTxn/_lib/importFileUtils";
-
-function LastResults() {
-  const lastResults = useSelector(importPostSelect.lastResults);
-  const { clearResults } = useImportPost();
-  if (lastResults.length === 0) return null;
-
-  return (
-    <div className="space-y-2 rounded-md border border-border bg-accent/10 p-4">
-      {lastResults.map((result) => (
-        <div key={result.row.rowId} className="text-sm text-foreground">
-          <span className="font-semibold">{result.row.description}</span>{" "}
-          {formatCents(result.row.amountCents)}: {result.outcome}
-          {result.row.qboPurchaseId && ` (QuickBooks Id ${result.row.qboPurchaseId})`}
-          {result.row.postMessage && (
-            <div className="text-xs text-muted-foreground">{result.row.postMessage}</div>
-          )}
-        </div>
-      ))}
-      <Button variant="primary" intensity="soft" onClick={clearResults}>
-        Dismiss
-      </Button>
-    </div>
-  );
-}
+import { BatchPostCard } from "@/app/qbo/importCCTxn/_components/BatchPostCard";
+import { BatchConfirmDialog } from "@/app/qbo/importCCTxn/_components/BatchConfirmDialog";
+import { PostRunResults } from "@/app/qbo/importCCTxn/_components/PostRunResults";
+import { SkippedRowsSection } from "@/app/qbo/importCCTxn/_components/SkippedRowsSection";
 
 export function PostPanel() {
   const role = useSelector(authSelect.role);
@@ -57,10 +33,11 @@ export function PostPanel() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl space-y-4 p-6">
         <p className="text-sm text-muted-foreground">
-          Posting creates real expenses in the live QuickBooks books, one row at a time for now.
-          You see exactly what will be sent before anything is written.
+          Posting creates real expenses in the live QuickBooks books. Post a whole date range, or
+          review a single row below. You see exactly what will be sent before anything is written.
         </p>
-        <LastResults />
+        <PostRunResults />
+        <BatchPostCard />
 
         {unknownRows.length > 0 && (
           <div className="space-y-2">
@@ -81,8 +58,11 @@ export function PostPanel() {
             <PostRowLine key={row.rowId} rowId={row.rowId} />
           ))}
         </div>
+
+        <SkippedRowsSection />
       </div>
       <PostConfirmDialog />
+      <BatchConfirmDialog />
     </div>
   );
 }

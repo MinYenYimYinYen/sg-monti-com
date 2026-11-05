@@ -75,9 +75,10 @@ export type QboBatchRequest<TItem> = {
 };
 
 /**
- * UNVERIFIED for successful writes: Intuit's page omits the success body of a create or update
- * item (its sample shows only faults and a query result). The entity is assumed to come back
- * under its own name, like every other response. Confirm during the first live write.
+ * Intuit's page omits the success body of a create or update item (its sample shows only faults
+ * and a query result). Verified by the first live write: the created entity comes back under its
+ * own name (a `Purchase` carrying its `Id`), next to the `bId`. Only creates are verified, not
+ * updates or deletes.
  */
 export type QboBatchItemResponse<TEntityPart extends Record<string, unknown>> = {
   bId: string;

@@ -107,6 +107,15 @@ export function buildPurchaseWhere(range: QboPurchaseRange): string {
   return `TxnDate >= '${range.startDate}' AND TxnDate <= '${range.endDate}'`;
 }
 
+/**
+ * Intuit query text to find a purchase by its Ref no. Verified live: an exact DocNumber query
+ * finds a purchase we posted. The value goes into the query text, so only pass a marker built
+ * by buildDocNumberMarker (letters, digits and a dash), never user input.
+ */
+export function buildDocNumberWhere(docNumber: string): string {
+  return `DocNumber = '${docNumber}'`;
+}
+
 /** Local calendar date as YYYY-MM-DD. toISOString would shift it to UTC, which can land on another day. */
 export function toIsoDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");

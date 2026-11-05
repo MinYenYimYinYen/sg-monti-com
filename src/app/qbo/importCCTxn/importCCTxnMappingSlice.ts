@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { ImportCCTxnMappingContract } from "@/app/qbo/importCCTxn/api/ImportCCTxnMappingContract";
+import { importDecisionActions } from "@/app/qbo/importCCTxn/decisions/importDecisionSlice";
 import {
   AssignableUser,
   CardAssignment,
@@ -54,6 +55,11 @@ const upsertMerchantMapping = createStandardThunk<
   typePrefix: "importCCTxnMapping/upsertMerchantMapping",
   apiPath: API_PATH,
   opName: "upsertMerchantMapping",
+});
+const confirmMerchant = createStandardThunk<ImportCCTxnMappingContract, "confirmMerchant">({
+  typePrefix: "importCCTxnMapping/confirmMerchant",
+  apiPath: API_PATH,
+  opName: "confirmMerchant",
 });
 const deleteMerchantMapping = createStandardThunk<
   ImportCCTxnMappingContract,
@@ -138,6 +144,15 @@ const importCCTxnMappingSlice = createSlice({
       if (index === -1) state.merchantMappings.push(saved);
       else state.merchantMappings[index] = saved;
     });
+    // The server returns the whole mapping, so the list of confirmed descriptions replaces ours.
+    builder.addCase(confirmMerchant.fulfilled, (state, action) => {
+      const saved = action.payload;
+      const index = state.merchantMappings.findIndex(
+        (m) => m.merchantKey === saved.merchantKey && m.ownerUserName === saved.ownerUserName,
+      );
+      if (index === -1) state.merchantMappings.push(saved);
+      else state.merchantMappings[index] = saved;
+    });
     builder.addCase(deleteMerchantMapping.fulfilled, (state, action) => {
       const deleted = action.payload;
       state.merchantMappings = state.merchantMappings.filter(
@@ -157,6 +172,22 @@ const importCCTxnMappingSlice = createSlice({
     builder.addCase(deleteSkipRule.fulfilled, (state, action) => {
       state.skipRules = state.skipRules.filter((s) => s.merchantKey !== action.payload.merchantKey);
     });
+
+    // The Map tab's batch save returns every mapping and skip rule it stored.
+    builder.addCase(importDecisionActions.saveDecisions.fulfilled, (state, action) => {
+      for (const saved of action.payload.merchantMappings) {
+        const index = state.merchantMappings.findIndex(
+          (m) => m.merchantKey === saved.merchantKey && m.ownerUserName === saved.ownerUserName,
+        );
+        if (index === -1) state.merchantMappings.push(saved);
+        else state.merchantMappings[index] = saved;
+      }
+      for (const saved of action.payload.skipRules) {
+        const index = state.skipRules.findIndex((s) => s.merchantKey === saved.merchantKey);
+        if (index === -1) state.skipRules.push(saved);
+        else state.skipRules[index] = saved;
+      }
+    });
   },
 });
 
@@ -168,6 +199,7 @@ export const importCCTxnMappingActions = {
   upsertCardAssignment,
   getMerchantMappings,
   upsertMerchantMapping,
+  confirmMerchant,
   deleteMerchantMapping,
   getSkipRules,
   upsertSkipRule,

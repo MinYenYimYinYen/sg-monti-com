@@ -24,6 +24,7 @@ export function OptionPicker({
   selectedLabel,
   placeholder,
   onSelectAction,
+  className,
 }: {
   options: PickerOption[];
   suggestedIds: Set<string>;
@@ -32,6 +33,8 @@ export function OptionPicker({
   selectedLabel: string | null;
   placeholder: string;
   onSelectAction: (id: string) => void;
+  /** Sizes the button. The default is a fixed width; pass "w-full" to fill a grid cell. */
+  className?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -74,7 +77,7 @@ export function OptionPicker({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-64 justify-between font-normal"
+          className={cn("w-64 justify-between font-normal", className)}
           aria-label={placeholder}
         >
           <span className={cn("truncate", !chosenLabel && "text-muted-foreground")}>

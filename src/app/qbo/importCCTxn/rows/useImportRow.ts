@@ -87,10 +87,27 @@ export function useImportRow({ autoLoad }: { autoLoad: boolean }) {
       }),
     );
 
+  // A null accountId clears the row's own choice, so it uses the merchant's default again.
+  const setAccount = ({ rowId, accountId }: { rowId: string; accountId: string | null }) =>
+    dispatch(
+      importRowActions.setRowAccount({
+        params: { rowId, accountId },
+        config: { loadingMsg: "Saving..." },
+      }),
+    );
+
   const setConfirmedDuplicateRowNumbers = (rowNumbers: number[]) =>
     dispatch(importRowActions.setConfirmedDuplicateRowNumbers(rowNumbers));
 
   const reset = () => dispatch(importRowActions.resetImport());
 
-  return { loadFile, refreshPreview, commit, setSkip, setConfirmedDuplicateRowNumbers, reset };
+  return {
+    loadFile,
+    refreshPreview,
+    commit,
+    setSkip,
+    setAccount,
+    setConfirmedDuplicateRowNumbers,
+    reset,
+  };
 }

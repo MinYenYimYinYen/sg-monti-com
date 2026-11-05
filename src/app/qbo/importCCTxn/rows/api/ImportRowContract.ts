@@ -25,4 +25,9 @@ export interface ImportRowContract extends ApiContract {
     params: { rowId: string; skipReason: ImportRowSkipReason | null };
     result: DataResponse<ImportRow>;
   };
+  // Null clears the row's own choice, so it uses the merchant's default account again.
+  setRowAccount: {
+    params: { rowId: string; accountId: string | null };
+    result: DataResponse<ImportRow>;
+  };
 }

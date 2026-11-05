@@ -35,6 +35,10 @@ export const qboConst = {
   purchaseMaxRangeDays: 366,
 
   requestTimeoutMs: 20 * 1000,
+  // A /batch of 30 creates can take far longer than a read. A timeout leaves every row in the
+  // request "unknown", so this is generous. A run stops after the first batch that does not
+  // fully post, so at most one batch can wait this long.
+  batchRequestTimeoutMs: 60 * 1000,
   // One entry per retry, so the array length is the retry limit. Only 429s are retried
   // for every method; network failures are retried for GET only (see qboHttp).
   rateLimitRetryDelaysMs: [1000, 2000] as number[],

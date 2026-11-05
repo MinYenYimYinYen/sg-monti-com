@@ -33,7 +33,10 @@ export function decideFromFault(fault: QboFault): PostDecision {
   return { outcome: "failed", purchaseId: null, message: text };
 }
 
-/** The success body of a batch create is UNVERIFIED; anything unexpected is "unknown". */
+/**
+ * A created item carries the Purchase with its Id (verified by the first live write). Anything
+ * unexpected is "unknown", never "posted", so the row is reconciled before any retry.
+ */
 export function readBatchOutcome({
   response,
   bId,

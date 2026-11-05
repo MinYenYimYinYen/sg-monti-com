@@ -42,7 +42,7 @@ export type QboNameValue = {
   Value: string;
 };
 
-/** UNVERIFIED: only "January" appears in the samples. The rest follow the calendar names. */
+/** The calendar month names, spelled out. */
 export type QboMonth =
   | "January"
   | "February"

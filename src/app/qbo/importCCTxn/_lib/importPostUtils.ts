@@ -14,8 +14,9 @@ const MARKER_HASH_LENGTH = 12;
 /**
  * The Ref no. we put on a posted purchase, derived from the stored row so a retry sends exactly
  * the same value and a purchase can be found again by it. "SG" + 12 hex characters of the row
- * hash + "-" + the occurrence number. Never sent with allowduplicatedocnum, so a repeat is
- * rejected by QuickBooks if it enforces uniqueness (UNVERIFIED: the company setting is off).
+ * hash + "-" + the occurrence number. Never sent with allowduplicatedocnum, so QuickBooks
+ * should reject a repeat (error 6140). Not tested live, on purpose: our own duplicate check
+ * and the atomic claim in importPostServer stop a posted row from being sent again.
  */
 export function buildDocNumberMarker({
   rowHash,
@@ -71,9 +72,12 @@ export function checkRowReadyToPost(input: PostCheckInput): PostCheck {
     if (!vendor) problems.push("The mapped vendor is not in QuickBooks.");
     else if (!vendor.Active) problems.push(`The vendor "${vendor.DisplayName}" is inactive.`);
 
-    if (!expenseAccount) problems.push("The mapped expense account is not in QuickBooks.");
+    if (!expenseAccount) problems.push("The expense account is not in QuickBooks.");
     else if (!expenseAccount.Active) {
       problems.push(`The expense account "${expenseAccount.FullyQualifiedName}" is inactive.`);
+    } else if (expenseAccount.Classification !== "Expense") {
+      // A row's own account is chosen in the browser, so the server checks the kind again.
+      problems.push(`"${expenseAccount.FullyQualifiedName}" is not an expense account.`);
     }
   }
 

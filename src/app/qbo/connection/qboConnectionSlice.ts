@@ -5,12 +5,9 @@ import {
   QboConnectionStatus,
   QboConnectionTestResult,
 } from "@/app/qbo/connection/types/QboConnectionTypes";
-import { QboDocNumberInspection } from "@/app/qbo/purchase/_lib/qboDocNumberInspectUtils";
 
 type QboConnectionState = {
   status: QboConnectionStatus | null;
-  // Last DocNumber diagnostic. A throwaway read for a design question, never stored server side.
-  docNumberInspection: QboDocNumberInspection | null;
   // Last smoke test result. It stays null if the test has not run or the last run failed.
   testResult: QboConnectionTestResult | null;
   // Set when a disconnect removed our tokens but Intuit did not confirm the revocation.
@@ -19,7 +16,6 @@ type QboConnectionState = {
 
 const initialState: QboConnectionState = {
   status: null,
-  docNumberInspection: null,
   testResult: null,
   revocationUnconfirmed: false,
 };
@@ -42,12 +38,6 @@ const testQboConnection = createStandardThunk<QboConnectionContract, "testConnec
   opName: "testConnection",
 });
 
-const inspectQboDocNumber = createStandardThunk<QboConnectionContract, "inspectDocNumber">({
-  typePrefix: "qboConnection/inspectDocNumber",
-  apiPath: "/qbo/connection/api",
-  opName: "inspectDocNumber",
-});
-
 const qboConnectionSlice = createSlice({
   name: "qboConnection",
   initialState,
@@ -64,12 +54,8 @@ const qboConnectionSlice = createSlice({
       state.testResult = action.payload;
       state.status = action.payload.status;
     });
-    builder.addCase(inspectQboDocNumber.fulfilled, (state, action) => {
-      state.docNumberInspection = action.payload;
-    });
     builder.addCase(disconnectQbo.fulfilled, (state, action) => {
       state.testResult = null;
-      state.docNumberInspection = null;
       state.status = action.payload.status;
       state.revocationUnconfirmed = !action.payload.revocationConfirmed;
     });
@@ -81,7 +67,6 @@ export const qboConnectionActions = {
   getQboStatus,
   disconnectQbo,
   testQboConnection,
-  inspectQboDocNumber,
 };
 
 export const qboConnectionReducer = qboConnectionSlice.reducer;

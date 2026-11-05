@@ -29,12 +29,20 @@ export type QboPurchaseLine = {
   // ProjectRef?: QboReference; // Appears on sample lines. Projects are not used.
 };
 
+/**
+ * Whether an expense can be passed on to a customer on a later invoice. QuickBooks defaults to
+ * "NotBillable" when the company does not use billable expenses, so we never send it.
+ */
+export type QboBillableStatus = "Billable" | "NotBillable" | "HasBeenBilled";
+
 export type QboAccountBasedExpenseLineDetail = {
   /** The expense account. Must be active, or QuickBooks rejects the purchase (errors 610 and 2500). */
   AccountRef: QboReference;
-  /** UNVERIFIED: only "NotBillable" appears in the samples. */
-  BillableStatus?: string;
-  /** Appears as { value: "NON" } in samples, which means not taxable. */
+  BillableStatus?: QboBillableStatus;
+  /**
+   * "NON" is QuickBooks' system id for non-taxable and "TAX" for taxable. A company outside the
+   * US or with a custom tax setup may use numeric ids that point at a TaxCode. We never send it.
+   */
   TaxCodeRef?: QboReference;
 };
 
