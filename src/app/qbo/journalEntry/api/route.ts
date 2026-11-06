@@ -1,0 +1,47 @@
+import { HandlerMap } from "@/lib/api/types/rpcUtils";
+import { createQboRpcHandler } from "@/app/qbo/_lib/api/createQboRpcHandler";
+import { QboJournalEntryContract } from "@/app/qbo/journalEntry/api/QboJournalEntryContract";
+import { postQboJournalEntries } from "@/app/qbo/journalEntry/_lib/qboJournalEntryServer";
+import { reconcileQboJournalEntries } from "@/app/qbo/journalEntry/_lib/qboJournalEntryReconcileServer";
+import { loadQboJournalEntryPostings } from "@/app/qbo/journalEntry/_lib/qboJournalEntryReadServer";
+import { getPostingUserName } from "@/app/qbo/journalEntry/_lib/qboJournalEntrySettleServer";
+
+/**
+ * One request posts at most 300 entries (10 batches). A batch that does not fully post stops the
+ * run, and one QuickBooks call times out at 60 seconds, so the normal run is far shorter. This
+ * is headroom, not an expectation. The platform plan may cap it lower.
+ */
+export const maxDuration = 300;
+
+// Writing journal entries to the real books is admin only (decided with the user). Widen the
+// roles deliberately, not by copying from another route.
+const handlers: HandlerMap<QboJournalEntryContract> = {
+  postMany: {
+    roles: ["admin"],
+    handler: async ({ entries }) => {
+      const postedByUserName = await getPostingUserName();
+      return {
+        success: true,
+        payload: await postQboJournalEntries({ entries, postedByUserName }),
+      };
+    },
+  },
+  reconcile: {
+    roles: ["admin"],
+    handler: async ({ docNumbers }) => {
+      const postedByUserName = await getPostingUserName();
+      return {
+        success: true,
+        payload: await reconcileQboJournalEntries({ docNumbers, postedByUserName }),
+      };
+    },
+  },
+  getByDateRange: {
+    roles: ["admin"],
+    handler: async ({ startDate, endDate }) => {
+      return { success: true, payload: await loadQboJournalEntryPostings({ startDate, endDate }) };
+    },
+  },
+};
+
+export const POST = createQboRpcHandler(handlers);

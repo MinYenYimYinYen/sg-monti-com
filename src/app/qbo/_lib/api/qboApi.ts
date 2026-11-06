@@ -3,8 +3,8 @@ import { qboHttp } from "@/app/qbo/_lib/api/qboHttp";
 // Typed registry of the QuickBooks endpoints we call, like rgApi for RealGreen. Paths are
 // relative to /v3/company/<realmId>, which qboHttp adds. Only add an endpoint when a module
 // needs it. The write phase started with the first live write (see planning/qboPlan.md).
-// There are two write endpoints: /batch (only the import posting code calls it) and /vendor
-// (only the vendor create code calls it).
+// There are two write endpoints: /batch (only the import posting code and the journal entry
+// posting code, qboJournalEntryServer, call it) and /vendor (only the vendor create code calls it).
 //
 // `{realmId}` in a path is filled in by qboHttp. CompanyInfo and Preferences are single records,
 // so they use their Read endpoints (their Query examples on Intuit's pages show no envelope).

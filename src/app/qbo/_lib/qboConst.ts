@@ -34,6 +34,19 @@ export const qboConst = {
   // The widest date range a purchase load may cover. Keeps the browser payload reasonable.
   purchaseMaxRangeDays: 366,
 
+  // Journal entries are posted through /batch, like purchases. Intuit allows 30 items per batch.
+  journalEntryBatchSize: 30,
+  // Entries one request may post or reconcile: 10 batches, inside the route's time limit.
+  journalEntryMaxPerRequest: 300,
+  // A posting stuck in "posting" is only reconciled after this long, because a younger one may
+  // still be in flight in another request.
+  journalEntryStuckPostingMs: 10 * 60 * 1000,
+  // UNVERIFIED: QuickBooks' DocNumber limit is believed to be 21 characters, but the JournalEntry
+  // page does not say. An entry over the limit is blocked before it is sent.
+  journalEntryDocNumberMaxLength: 21,
+  // The widest date range a stored-posting load may cover.
+  journalEntryMaxRangeDays: 366,
+
   requestTimeoutMs: 20 * 1000,
   // A /batch of 30 creates can take far longer than a read. A timeout leaves every row in the
   // request "unknown", so this is generous. A run stops after the first batch that does not

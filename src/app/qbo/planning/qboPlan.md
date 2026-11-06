@@ -16,7 +16,7 @@ Non-goals: this is not a QBO suite. No classes, locations, bank feeds, refund or
 ## Working Agreements
 
 - **Live data from the start.** We skipped the sandbox. The production Client ID and Secret are in use, and the connection works in dev and production.
-- **Read before write (the write phase has started).** Until then we only attempted reads against the real books. The first live write (one credit card expense) worked and was verified in QuickBooks. The user then decided to skip the small-file stage and post a full month next. Writes are allowed for posting credit card expenses (in batches) and for creating vendors, and only an admin can do either. Do not widen that (more roles, vendor updates, deleting or editing posted transactions) without the user asking for it.
+- **Read before write (the write phase has started).** Until then we only attempted reads against the real books. The first live write (one credit card expense) worked and was verified in QuickBooks. The user then decided to skip the small-file stage and post a full month next. Writes are allowed for posting credit card expenses (in batches), for creating vendors, and (added 2026-11-06 at the user's request) for creating journal entries, and only an admin can do any of them. Do not widen that (more roles, vendor updates, deleting or editing posted transactions) without the user asking for it.
 - **No deliberate duplicate test.** The user dropped the plan to send the same Ref no. twice to see QuickBooks reject it (error 6140). Our own duplicate check and the atomic row claim already stop a posted row from being sent again, and a deliberate test would create a second real entry. The 6140 rule stays untested and is treated as a backstop only.
 - **No default expense account on vendors.** QuickBooks has a "default expense category" on a vendor, but Intuit's Vendor page does not document it, so we do not read or write it. Our merchant mapping already remembers the default and other accounts used per merchant, which covers the same need inside this app.
 - **Dev and production share one MongoDB, one token document and one encryption key.** A token refresh from either environment rotates the token for both. `QBO_TOKEN_ENCRYPTION_KEY` must be identical in `.env.local` and Vercel Production.
@@ -233,6 +233,16 @@ src/app/qbo/
 6. **Then Phase F** (see above): refresh-token expiry warning, the revoked-grant experience, the `/qbo/log` viewer, and a short runbook for `failed` and `unknown` rows.
 
 ## Progress Log
+
+### Session of 2026-11-06 (JournalEntry module)
+
+**Built, not yet run. `npx tsc --noEmit` has not been run, and nothing has been tested or tried against live QuickBooks.** The `journalEntry/` module writes one or more journal entries through `/batch`, with a stored posting per entry so an uncertain outcome can be settled.
+- **Decisions (with the user):** `/batch` transport. `DocNumber` is required on every entry (it is how an outcome is verified). Admin only. No multicurrency, so `CurrencyRef` and `ExchangeRate` are never sent. Create only: update, delete and read-by-id are not built, and corrections happen in QuickBooks.
+- **Stored posting:** `JournalEntryPosting` in Mongo (`models/JournalEntryPostingModel.ts`), one per `DocNumber` (unique index), amounts in cents. Status is `pending`, `posting`, `posted`, `failed` or `unknown`. `verifiedAt` is set only when a separate read by `DocNumber` found exactly that entry (same date, line count and total on both sides). `posted` alone means QuickBooks answered with an `Id`.
+- **Flow** (`_lib/qboJournalEntryServer.ts`, `qboJournalEntryPreflightServer.ts`): validate, check accounts against fresh QuickBooks data (active; A/R needs a Customer, A/P needs a Vendor), refuse a `DocNumber` already in QuickBooks (it only rejects duplicates when `WarnDuplicateJournalNumber` is on), write ahead as pending, claim atomically, send batches of 30, stop after the first batch with any entry not posted. A thrown or timed out batch is `unknown`, never `failed`.
+- **Reconcile** (`qboJournalEntryReconcileServer.ts`): looks entries up by `DocNumber`. One matching entry settles as posted and verified. None settles as `failed` (safe to retry, because the `DocNumber` is unique). Several, or a mismatch, stay `unknown`. A `posted` entry that cannot be confirmed keeps its status with a note and is never flipped to failed.
+- **Operations** (all admin): `postMany`, `reconcile`, `getByDateRange`. Slice, selectors and `useQboJournalEntry` hold postings and the last post run. Registered as `qboJournalEntry` in `src/store/reducers/index.ts`. No screen uses the module yet.
+- **UNVERIFIED, check on the first live run:** (1) the success body of a JournalEntry batch create (assumed to carry `JournalEntry` with `Id`, as Purchase did); anything else becomes `unknown`. (2) The `DocNumber IN (...)` query. (3) The 21-character `DocNumber` limit (`qboConst.journalEntryDocNumberMaxLength`), which is not on Intuit's page. (4) Whether a custom `DocNumber` is kept for journal entries, as it was for purchases.
 
 ### Session of 2026-11-05 (Map tab redesign, UI and state)
 
