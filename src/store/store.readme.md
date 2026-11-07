@@ -15,11 +15,11 @@ This slice acts as a central registry. It uses Redux Toolkit's `addMatcher` to l
 
 * **UI State:** Tracks `loadingCount` and `loadingMessage`.
 * **Network Registry:**
-    * **`activeRequests`**: A list of currently executing thunks (e.g., `["employee/getAll"]`). Used for **Deduplication**.
-    * **`lastFetched`**: A timestamp map (e.g., `{"employee/getAll": 1735689000}`). Used for **Caching**.
+    * **`activeRequests`**: A list of in-flight request IDs, where an ID is `typePrefix-paramsHash` (e.g., `["employee/getEmployeeDocs-1rj8k2a"]`). Used for **Deduplication**. The same thunk with different params has a different ID, so both can run.
+    * **`lastFetched`**: A map of request ID to `Date.now()` in ms (e.g., `{"employee/getEmployeeDocs-1rj8k2a": 1735689000000}`). Used for **Caching**. It is stamped on `pending` as well as `fulfilled` (see Section 5).
 
 ### B. "Thin" Feature Slices
-**File:** `src/lib/features/[feature]/[feature]Slice.ts`
+**File:** `featureSlice.ts`, beside its feature (e.g., `src/app/realGreen/employee/employeeSlice.ts`)
 
 Feature slices are "thin." They only track the actual data. They **do not** track `loading`, `error`, or `status` fields, because the UI slice handles that. They also offload their fetch logic (when to run) to the `smartThunkOptions` helper.
 
@@ -38,6 +38,7 @@ type ThunkConfig = {
   force?: boolean;        // Bypass all checks (Refresh)
   staleTime?: number;     // Time-to-live in ms (e.g., 5000)
   silentError?: boolean;  // Suppress error toasts
+  successMsg?: string;    // Toast on fulfilled (shown by uiSlice)
 };
 
 // Nested structure prevents config props from leaking into API calls
@@ -57,8 +58,8 @@ type WithConfig<T> = {
 **File:** `src/store/reduxUtil/smartThunkOptions.ts`
 A helper function that generates the `condition` logic for `createAsyncThunk`. It connects the specific thunk to the global Traffic Controller.
 
-* **Concurrency:** If `activeRequests` includes this thunk type, the new request is cancelled (prevents double-fetching).
-* **Caching:** If `staleTime` is set and the data is fresh (checked against `lastFetched`), the request is cancelled.
+* **Concurrency:** If `activeRequests` includes this exact request ID (thunk type **and** params hash), the new request is cancelled (prevents double-fetching). Params are hashed by `hashParams.ts` (sorted keys, so key order does not matter).
+* **Caching:** If `staleTime` is set and the data for this request ID is fresh (checked against `lastFetched`), the request is cancelled.
 * **Force:** If `force: true` is passed, all checks are bypassed.
 * **Transform Params:** If `transformParams` is provided, it runs during the `condition` phase and caches the result in `arg.__transformedParams` for use in the payload creator.
 * **Custom Condition:** You can pass a `customCondition` function to inject specific logic (e.g., checking a specific ID cache). The `customCondition` has access to transformed params via `arg.__transformedParams`.
@@ -177,8 +178,66 @@ The `smartDispatchCondition` enforces the following priority:
 
 1.  **Force Rule:** Is `config.force: true`? -> **RUN**.
 2.  **Custom Condition:** Does `customCondition(arg, api)` return false? -> **CANCEL**.
-3.  **Concurrency Rule:** Is this thunk type already in `activeRequests`? -> **CANCEL**.
+3.  **Concurrency Rule:** Is this request ID (`typePrefix-paramsHash`, using `__transformedParams` when present) already in `activeRequests`? -> **CANCEL**.
 4.  **Cache Rule:**
     * Is `config.staleTime` > 0?
-    * AND is `(Now - lastFetched) < staleTime`? -> **CANCEL**.
+    * AND is `(Now - lastFetched[requestId]) < staleTime`? -> **CANCEL**.
 5.  **Default:** -> **RUN**.
+
+A cancelled dispatch dispatches nothing to the store. Its promise still **resolves** (to a `rejected` action with `meta.condition === true`), so never `.unwrap()` a mount-time dispatch.
+
+---
+
+## 5. Mount Safety: Why Dispatching from `useEffect` Is Safe
+
+Components and hooks can dispatch a load on every mount without coordinating. The guard state lives in the store, not in React, so it survives unmount/remount cycles and StrictMode double effects.
+
+| Situation | Result |
+|---|---|
+| Two components mount together, or StrictMode double effect | Second dispatch cancelled (ID already in `activeRequests`) |
+| Remount while the request is in flight | Cancelled |
+| Remount after it finished, within `staleTime` | Cancelled (`lastFetched` is fresh) |
+| Remount after it finished, past `staleTime` | Runs again (intended refresh) |
+| Remount with **no** `staleTime` | Runs again. **Always pass `staleTime` for mount-time loads** (`realGreenConst.paramTypesCacheTime` is the convention) |
+| Same thunk, different `params` | Both run |
+| `force: true` | Always runs, even if in flight. User-initiated refresh only, never in a mount effect |
+
+Mechanics that make this work:
+
+* **`condition` is synchronous.** RTK dispatches `pending` immediately after a synchronous `true`, so the next dispatch always sees the first one's `activeRequests` entry. An `async` condition lets two same-tick dispatches both pass.
+* **`pending` also stamps `lastFetched`.** This closes the gap where a re-render right after expiry slips past both the dedup check (not yet active) and the cache check (stale timestamp).
+* **Unmount does not cancel the request.** The data lands in the store for the next mount.
+* **Per-thunk loading:** `activeRequests` is populated even with `showLoading: false`. Read it with `state.ui.activeRequests.some((req) => req.startsWith("feature/thunk-"))`. See `uiSliceEnhancementPlan.md` for why component code reads state directly instead of using `uiSelect.isLoadingType`.
+
+Standard mount-time hook shape (see `src/app/realGreen/taxCode/useTaxCode.ts`):
+
+```typescript
+useEffect(() => {
+  if (autoLoad) {
+    dispatch(taxCodeActions.getTaxCodes({
+      params: {},
+      config: { loadingMsg: "Loading tax codes...", staleTime: realGreenConst.paramTypesCacheTime },
+    }));
+  }
+}, [autoLoad, dispatch]);
+```
+
+---
+
+## 6. Gotchas
+
+* **`params` must be a plain JSON object**, `{}` when empty. Falsy params make the request ID the bare `typePrefix`, which in-flight dedup (it matches `typePrefix-`) never finds. Date, Map and Set values all hash as `{}`; use ISO strings and arrays.
+* **A failed request blocks retries until `staleTime` expires.** `lastFetched` is stamped on `pending` and not cleared on `rejected`. Retry with `force: true`.
+* **`lastFetched` is never pruned**, and `resetUI` does not clear it. When you clear cached slice data, the matching `lastFetched` entries still say "fresh".
+* **`customCondition` is bypassed by `force`.**
+* **Do not set `dispatchConditionRejection: true`** on a smart thunk. A cancelled thunk would dispatch `rejected` with no `pending`, which decrements `loadingCount` for a request that never incremented it and removes the original's `activeRequests` entry.
+* **`condition` writes `arg.__transformedParams`.** The same `arg` object becomes `meta.arg` in `uiSlice`, so never dispatch a frozen arg (e.g. one read from Redux state).
+* **Avoid `typePrefix` values where one is a hyphen-prefix of another** (`a/get` and `a/get-all`). The "any params" loading check matches by `typePrefix-` prefix.
+* **`uiSlice` must be mounted at the key `ui`.** `smartThunkOptions` reads `state.ui`.
+* **A raw `createAsyncThunk` without a `WithConfig` arg** still drives the spinner but is never deduplicated or cached, and `uiSlice` dereferences `arg.config` without a guard in its fulfilled/rejected handlers. Use `createStandardThunk`.
+
+---
+
+## 7. Porting to Another Project
+
+`uiSlicePortingGuide.md` (same folder as `uiSlice.ts`) is a self-contained, agent-facing guide with portable source for all of these files, a setup checklist, and a verification test suite. Use it together with this readme.
