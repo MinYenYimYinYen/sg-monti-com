@@ -4,6 +4,7 @@ import { useQboAccount } from "@/app/qbo/account/useQboAccount";
 import { useQboCustomer } from "@/app/qbo/customer/useQboCustomer";
 import { useQboVendor } from "@/app/qbo/vendor/useQboVendor";
 import { useRgAccount } from "@/app/realGreen/rgAccount/useRgAccount";
+import { depositFieldMappingActions } from "@/app/javelin/depositMapping/depositFieldMappingSlice";
 import { AccountMappingNameType } from "@/app/account/AccountMappingTypes";
 import { accountMappingActions } from "@/app/account/accountMappingSlice";
 import { qboConst } from "@/app/qbo/_lib/qboConst";
@@ -31,6 +32,16 @@ export function useAccount({ autoLoad }: { autoLoad: boolean }) {
           },
         }),
       );
+      // The deposit fields are linked on the same page, so their links load with the rest.
+      dispatch(
+        depositFieldMappingActions.getDepositFieldMappings({
+          params: {},
+          config: {
+            loadingMsg: "Loading deposit account links...",
+            staleTime: qboConst.referenceCacheTime,
+          },
+        }),
+      );
     }
   }, [autoLoad, dispatch]);
 
@@ -43,6 +54,12 @@ export function useAccount({ autoLoad }: { autoLoad: boolean }) {
       accountMappingActions.getAccountMappings({
         params: {},
         config: { loadingMsg: "Loading account mappings...", force: true },
+      }),
+    );
+    dispatch(
+      depositFieldMappingActions.getDepositFieldMappings({
+        params: {},
+        config: { loadingMsg: "Loading deposit account links...", force: true },
       }),
     );
   };

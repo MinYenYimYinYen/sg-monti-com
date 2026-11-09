@@ -1,7 +1,7 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { baseGlobalSettings } from "@/app/globalSettings/_lib/baseGlobalSettings";
-import { emptyDepositAccountMap } from "@/app/javelin/depositSlice";
+import { emptyDepositAccountMap } from "@/app/javelin/JavelinTypes";
 
 const selectSettings = (state: AppState) => state.globalSettings.settings ?? baseGlobalSettings;
 

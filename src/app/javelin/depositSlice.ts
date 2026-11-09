@@ -1,31 +1,15 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { DepositAccountEntry, DepositAccountMap, DepositField, DepositRow, DepositState } from "@/app/javelin/JavelinTypes";
-
-function buildDepositPrefix(): string {
-  const now = new Date();
-  const yy = String(now.getFullYear()).slice(2);
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  return `${yy}${mm}${dd} WWDep-`;
-}
-
-export const emptyDepositAccountMap: DepositAccountMap = {
-  salesAmount: { qbName: "" },
-  refundAmount: { qbName: "" },
-  chargeBackAmount: { qbName: "" },
-  adjustmentAmount: { qbName: "" },
-  fees: { qbName: "" },
-  netDeposit: { qbName: "" },
-};
+import { DepositRow, DepositState } from "@/app/javelin/JavelinTypes";
+import { javelinActions } from "@/app/javelin/javelinSlice";
 
 const initialState: DepositState = {
   rows: [],
   fileName: "",
   warnings: [],
   errors: [],
-  journalNoPrefix: buildDepositPrefix(),
-  savedAccountMap: emptyDepositAccountMap,
-  liveAccountMap: emptyDepositAccountMap,
+  confirmedDocNumbers: [],
+  plan: [],
+  lastRun: null,
 };
 
 const depositSlice = createSlice({
@@ -34,6 +18,15 @@ const depositSlice = createSlice({
   reducers: {
     setRows(state, action: PayloadAction<DepositRow[]>) {
       state.rows = action.payload;
+      // A plan and its confirmations describe the rows they were made from.
+      state.plan = [];
+      state.confirmedDocNumbers = [];
+    },
+    toggleConfirmed(state, action: PayloadAction<string>) {
+      const docNumber = action.payload;
+      state.confirmedDocNumbers = state.confirmedDocNumbers.includes(docNumber)
+        ? state.confirmedDocNumbers.filter((confirmed) => confirmed !== docNumber)
+        : [...state.confirmedDocNumbers, docNumber];
     },
     setFileName(state, action: PayloadAction<string>) {
       state.fileName = action.payload;
@@ -44,22 +37,18 @@ const depositSlice = createSlice({
     setErrors(state, action: PayloadAction<string[]>) {
       state.errors = action.payload;
     },
-    setJournalNoPrefix(state, action: PayloadAction<string>) {
-      state.journalNoPrefix = action.payload;
+    clearLastRun(state) {
+      state.lastRun = null;
     },
-    setLiveAccountEntry(
-      state,
-      action: PayloadAction<{ field: DepositField; entry: DepositAccountEntry }>,
-    ) {
-      state.liveAccountMap[action.payload.field] = { ...action.payload.entry };
-    },
-    initAccountMap(state, action: PayloadAction<DepositAccountMap>) {
-      state.savedAccountMap = action.payload;
-      state.liveAccountMap = action.payload;
-    },
-    syncSavedAccountMap(state, action: PayloadAction<DepositAccountMap>) {
-      state.savedAccountMap = action.payload;
-    },
+  },
+  extraReducers: (builder) => {
+    // The deposit thunks live in javelinSlice because they share one contract and route.
+    builder.addCase(javelinActions.previewDeposits.fulfilled, (state, action) => {
+      state.plan = action.payload;
+    });
+    builder.addCase(javelinActions.postDeposits.fulfilled, (state, action) => {
+      state.lastRun = action.payload;
+    });
   },
 });
 

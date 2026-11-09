@@ -65,6 +65,7 @@ export function buildPostingContent({
         : {}),
     })),
     totalCents: sumSides(entry.lines).debitCents,
+    ...(entry.source ? { source: entry.source } : {}),
   };
 }
 

@@ -118,6 +118,35 @@ export type JournalEntryLineInput = {
   entityId?: string;
 };
 
+/**
+ * Where an entry came from, kept on our stored posting only. QuickBooks never sees it. The hash
+ * is of the source data (not the QBO lines), so remapping an account later cannot change an
+ * entry's identity. Optional on a posting: entries posted by hand have no source.
+ *
+ * - genLedger: one day's CRM General Ledger file. sourceLines are the CRM account names with
+ *   their net amounts, so history shows what the CRM said and not only where it landed.
+ * - deposit: one row of the WorkWave deposit export. sourceFields are its amounts in cents,
+ *   keyed by deposit field. occurrence numbers identical rows in one file, like credit card rows.
+ */
+export type JournalEntrySource =
+  | {
+      kind: "genLedger";
+      sourceHash: string;
+      fileName: string;
+      sourceLines: { crmAccount: string; netCents: number }[];
+    }
+  | {
+      kind: "deposit";
+      sourceHash: string;
+      occurrence: number;
+      fileName: string;
+      sourceFields: Record<string, number>;
+      /** What hit the bank. Shown as the amount of the last credit card payment entry. */
+      netDepositCents: number;
+    };
+
+export type JournalEntrySourceKind = JournalEntrySource["kind"];
+
 /** One entry the caller wants posted. DocNumber is required: it is how an uncertain outcome is verified. */
 export type JournalEntryInput = {
   docNumber: string;
@@ -125,6 +154,7 @@ export type JournalEntryInput = {
   txnDate: string;
   privateNote?: string;
   lines: JournalEntryLineInput[];
+  source?: JournalEntrySource;
 };
 
 /** A line as stored. The account name is kept so history reads without loading accounts. */
@@ -149,6 +179,7 @@ export type JournalEntryPostingContent = {
   lines: JournalEntryPostingLine[];
   /** The sum of the debit lines, which equals the sum of the credit lines. */
   totalCents: number;
+  source?: JournalEntrySource;
 };
 
 /**

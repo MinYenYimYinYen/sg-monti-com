@@ -1,61 +1,29 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
-import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
+import { sumPlanTotals } from "@/app/javelin/_lib/entryPlanUtils";
 
 const selectJavelinState = (state: AppState) => state.javelin;
 
-const selectFiles = createSelector(
-  [selectJavelinState],
-  (javelin) => javelin.files,
-);
+const selectFiles = (state: AppState) => selectJavelinState(state).files;
+const selectPlan = (state: AppState) => selectJavelinState(state).plan;
+const selectConfirmedDocNumbers = (state: AppState) => selectJavelinState(state).confirmedDocNumbers;
+const selectLastRun = (state: AppState) => selectJavelinState(state).lastRun;
+const selectLatest = (state: AppState) => selectJavelinState(state).latest;
+const selectMigrationReport = (state: AppState) => selectJavelinState(state).migrationReport;
 
-const selectJournalNoPrefix = createSelector(
-  [selectJavelinState],
-  (javelin) => javelin.journalNoPrefix,
-);
+const selectPostable = createSelector([selectPlan], sumPlanTotals);
 
-const selectSavedAccountMap = createSelector(
-  [selectJavelinState],
-  (javelin) => javelin.savedAccountMap,
-);
-
-const selectLiveAccountMap = createSelector(
-  [selectJavelinState],
-  (javelin) => javelin.liveAccountMap,
-);
-
-const selectHasUnsavedMappingChanges = createSelector(
-  [selectSavedAccountMap, selectLiveAccountMap],
-  (saved, live) => !deepEqual(saved, live, []),
-);
-
-const selectUnmappedAccounts = createSelector(
-  [selectFiles, selectLiveAccountMap],
-  (files, liveAccountMap) => {
-    const allAccounts = new Set<string>();
-    for (const file of files) {
-      for (const row of file.rows) {
-        allAccounts.add(row.account);
-      }
-    }
-    // Unmapped = no entry at all, or entry exists but qbName is empty
-    return [...allAccounts].filter(
-      (account) => !liveAccountMap[account]?.qbName,
-    );
-  },
-);
-
-const selectAllAccountsMapped = createSelector(
-  [selectUnmappedAccounts],
-  (unmapped) => unmapped.length === 0,
+const selectPossibleDuplicates = createSelector([selectPlan], (plan) =>
+  plan.filter((entry) => entry.status === "possibleDuplicate"),
 );
 
 export const javelinSelect = {
   files: selectFiles,
-  journalNoPrefix: selectJournalNoPrefix,
-  savedAccountMap: selectSavedAccountMap,
-  liveAccountMap: selectLiveAccountMap,
-  hasUnsavedMappingChanges: selectHasUnsavedMappingChanges,
-  unmappedAccounts: selectUnmappedAccounts,
-  allAccountsMapped: selectAllAccountsMapped,
+  plan: selectPlan,
+  confirmedDocNumbers: selectConfirmedDocNumbers,
+  lastRun: selectLastRun,
+  latest: selectLatest,
+  migrationReport: selectMigrationReport,
+  postable: selectPostable,
+  possibleDuplicates: selectPossibleDuplicates,
 };

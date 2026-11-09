@@ -26,6 +26,8 @@ const JournalEntryPostingSchema = new Schema<JournalEntryPosting>(
     privateNote: { type: String },
     lines: { type: [JournalEntryPostingLineSchema], required: true },
     totalCents: { type: Number, required: true },
+    // A union by kind (see JournalEntrySource), so it is stored as-is and typed in TypeScript.
+    source: { type: Schema.Types.Mixed },
     status: {
       type: String,
       required: true,
@@ -42,6 +44,9 @@ const JournalEntryPostingSchema = new Schema<JournalEntryPosting>(
 );
 JournalEntryPostingSchema.index({ txnDate: 1 });
 JournalEntryPostingSchema.index({ status: 1 });
+// "Latest entry of this kind" and duplicate lookup by source.
+JournalEntryPostingSchema.index({ "source.kind": 1, txnDate: -1 });
+JournalEntryPostingSchema.index({ "source.sourceHash": 1 });
 
 export const JournalEntryPostingModel = createModel<JournalEntryPosting>(
   "QboJournalEntryPosting",

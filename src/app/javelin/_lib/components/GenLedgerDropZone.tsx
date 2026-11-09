@@ -1,21 +1,16 @@
 "use client";
-import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { CSVDropzone } from "@/components/dropZone/dropZone";
 import { parseGenLedger } from "@/app/csv/generalLedger/genLedgerParser";
 import { genLedgerSanityChecks } from "@/app/javelin/_lib/genLedgerSanityChecks";
 import { javelinActions } from "@/app/javelin/javelinSlice";
-import { javelinSelect } from "@/app/javelin/javelinSelect";
-import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { GenLedgerFile } from "@/app/javelin/JavelinTypes";
-import { splitZeroNetRows } from "@/app/javelin/_lib/genLedgerTransform";
+import { splitZeroNetRows } from "@/app/javelin/_lib/genLedgerRows";
 
 const FILENAME_REGEX = /^\d{4}-\d{2}-\d{2}\.csv$/;
 
 export function GenLedgerDropZone() {
   const dispatch = useAppDispatch();
-  const savedAccountMap = useSelector(javelinSelect.savedAccountMap);
-  const genLedgerAccountMap = useSelector(globalSettingsSelect.genLedgerAccountMap);
 
   const handleFilesDrop = async (files: File[]) => {
     const assembledFiles: GenLedgerFile[] = [];
@@ -44,83 +39,36 @@ export function GenLedgerDropZone() {
       const parseResult = await parseGenLedger(file);
 
       if (!parseResult.success) {
-        assembledFiles.push({
-          fileName,
-          date,
-          rows: [],
-          warnings,
-          errors: parseResult.errors,
-        });
+        assembledFiles.push({ fileName, date, rows: [], warnings, errors: parseResult.errors });
         continue;
       }
 
-      // Zero-net accounts have no ledger line; removing them here keeps the table, the
-      // unmapped-account check, and the export consistent.
+      // Zero-net accounts have no ledger line. Removing them here keeps the list consistent
+      // with what the server will build.
       const { postingRows, zeroNetRows } = splitZeroNetRows(parseResult.data);
       const zeroNetWarnings =
         zeroNetRows.length > 0
-          ? [
-              `Excluded (nets to $0.00): ${zeroNetRows.map((row) => row.account).join(", ")}`,
-            ]
+          ? [`Excluded (nets to $0.00): ${zeroNetRows.map((row) => row.account).join(", ")}`]
           : [];
 
       assembledFiles.push({
         fileName,
         date,
         rows: postingRows,
-        warnings: [
-          ...warnings,
-          ...(parseResult.warnings ?? []),
-          ...zeroNetWarnings,
-        ],
+        warnings: [...warnings, ...(parseResult.warnings ?? []), ...zeroNetWarnings],
         errors: [],
       });
     }
 
     dispatch(javelinActions.setFiles(assembledFiles));
-
-    // Pre-populate liveAccountMap for all encountered accounts.
-    // For known accounts (in savedAccountMap or GlobalSettings), use the stored entry.
-    // For all accounts, auto-parse the account number from the CRM name if not already stored.
-    const combinedMap = { ...genLedgerAccountMap, ...savedAccountMap };
-    const seenAccounts = new Set<string>();
-
-    for (const file of assembledFiles) {
-      for (const row of file.rows) {
-        if (!seenAccounts.has(row.account)) {
-          seenAccounts.add(row.account);
-          const storedEntry = combinedMap[row.account];
-          const autoAccountNumber = row.account.split(" - ")[0].trim();
-
-          if (storedEntry?.qbName) {
-            // Known account — use stored entry, fill accountNumber if missing
-            dispatch(
-              javelinActions.setLiveAccountEntry({
-                crmName: row.account,
-                entry: {
-                  ...storedEntry,
-                  accountNumber: storedEntry.accountNumber ?? autoAccountNumber,
-                },
-              }),
-            );
-          }
-          // Unknown accounts are left unmapped (user fills in qbName via AccountNameCell)
-          // accountNumber will be seeded when the user saves the QB name
-        }
-      }
-    }
   };
 
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-2">
-        Files must be named <code>YYYY-MM-DD.csv</code> — the date becomes the journal entry date.
+        Files must be named <code>YYYY-MM-DD.csv</code>. The date becomes the journal entry date.
       </p>
-      <CSVDropzone
-        multiple={true}
-        onFilesDrop={handleFilesDrop}
-        className="h-32"
-      />
+      <CSVDropzone multiple={true} onFilesDrop={handleFilesDrop} className="h-32" />
     </div>
   );
 }

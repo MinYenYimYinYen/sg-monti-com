@@ -11,6 +11,7 @@ import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/style/components/table";
 import { AccountMappingRow } from "@/app/account/_components/AccountMappingRow";
+import { DepositFieldMappingSection } from "@/app/javelin/depositMapping/_components/DepositFieldMappingSection";
 import {
   AccountLinkFilter,
   countLinksByFilter,
@@ -112,6 +113,8 @@ function AccountMappingEditor() {
         {visibleLinks.length === 0 && (
           <p className="text-sm text-muted-foreground">No accounts match.</p>
         )}
+
+        <DepositFieldMappingSection />
       </div>
     </div>
   );

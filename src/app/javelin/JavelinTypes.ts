@@ -1,3 +1,9 @@
+import {
+  JournalEntryPostingLine,
+  PostJournalEntriesResult,
+} from "@/app/qbo/journalEntry/types/QboJournalEntryTypes";
+import type { JavelinMigrationReport } from "@/app/javelin/migration/JavelinMigrationTypes";
+
 export type GenLedgerRow = {
   account: string;
   totalNetAmount: number;
@@ -11,20 +17,71 @@ export type GenLedgerFile = {
   errors: string[];
 };
 
-/** Per-account mapping stored in GlobalSettings and the Javelin slice. */
+/**
+ * LEGACY. The old CSV-era mapping of a CRM account name to a QuickBooks account name, still held
+ * in GlobalSettings only so the mapping migration can read it. New code maps by QBO Id (see
+ * src/app/account). Remove with GlobalSettings.genLedgerAccountMap once the migration is verified.
+ */
 export type GenLedgerAccountEntry = {
   qbName: string;
-  /** Optional QB Name column value — customer/vendor name for this account line. */
+  /** Optional QB Name column value: customer/vendor name for this account line. */
   name?: string;
-  /** Optional QB AccountNo column value — auto-parsed from CRM account name, overridable. */
+  /** Optional QB AccountNo column value: auto-parsed from CRM account name, overridable. */
   accountNumber?: string;
 };
 
+/** What the browser sends for one day's ledger. The server derives everything else from it. */
+export type GenLedgerFileInput = Pick<GenLedgerFile, "fileName" | "date" | "rows">;
+
+/**
+ * - ready: will be posted.
+ * - duplicate: this exact source is already posted (or being posted), so it is never sent again.
+ * - possibleDuplicate: different content, but the same kind and date (and net deposit, for a
+ *   deposit) as an entry already posted. Posts only when the user confirms it.
+ * - blocked: cannot be posted until the problems are fixed (unmapped account, out of balance...).
+ * - empty: nothing to post (every line nets to zero).
+ */
+export type JavelinPlanStatus = "ready" | "duplicate" | "possibleDuplicate" | "blocked" | "empty";
+
+/** What posting one file or deposit row would do, computed on the server without writing anything. */
+export type JavelinPlanEntry = {
+  label: string;
+  txnDate: string;
+  docNumber: string | null;
+  status: JavelinPlanStatus;
+  problems: string[];
+  /** The stored entry this one duplicates or resembles. */
+  matchedDocNumber?: string;
+  lines: JournalEntryPostingLine[];
+  totalCents: number;
+  netDepositCents?: number;
+};
+
+export type JavelinLatestEntry = {
+  txnDate: string;
+  docNumber: string;
+  /** Deposits only: what hit the bank. */
+  netDepositCents?: number;
+};
+
+/** What was last posted, so the user knows which CSV data to export next. */
+export type JavelinLatest = {
+  genLedger: JavelinLatestEntry | null;
+  deposit: JavelinLatestEntry | null;
+  /** Entries whose outcome is unconfirmed. The dates above cannot be fully trusted until they are settled. */
+  unsettledDocNumbers: string[];
+};
+
+export type JavelinKind = "genLedger" | "deposit";
+
 export type JavelinState = {
   files: GenLedgerFile[];
-  journalNoPrefix: string;
-  savedAccountMap: Record<string, GenLedgerAccountEntry>;
-  liveAccountMap: Record<string, GenLedgerAccountEntry>;
+  /** Possible duplicates the user chose to post anyway. Cleared when new files are dropped. */
+  confirmedDocNumbers: string[];
+  plan: JavelinPlanEntry[];
+  lastRun: PostJournalEntriesResult | null;
+  latest: JavelinLatest | null;
+  migrationReport: JavelinMigrationReport | null;
 };
 
 // ─── Deposit Types ────────────────────────────────────────────────────────────
@@ -50,24 +107,31 @@ export type DepositRow = {
   netDeposit: number;
 };
 
-/** Per-field QB account mapping for deposits. Mirrors GenLedgerAccountEntry. */
+/** LEGACY per-field QB account mapping for deposits. See GenLedgerAccountEntry. */
 export type DepositAccountEntry = {
   qbName: string;
-  /** Optional account number prepended to qbName in the output CSV. */
   accountNumber?: string;
-  /** Optional vendor/customer name for the QB Name column. */
   name?: string;
 };
 
-/** QB account entry per deposit field. */
+/** LEGACY. QB account entry per deposit field, kept in GlobalSettings for the migration only. */
 export type DepositAccountMap = Record<DepositField, DepositAccountEntry>;
+
+export const emptyDepositAccountMap: DepositAccountMap = {
+  salesAmount: { qbName: "" },
+  refundAmount: { qbName: "" },
+  chargeBackAmount: { qbName: "" },
+  adjustmentAmount: { qbName: "" },
+  fees: { qbName: "" },
+  netDeposit: { qbName: "" },
+};
 
 export type DepositState = {
   rows: DepositRow[];
   fileName: string;
   warnings: string[];
   errors: string[];
-  journalNoPrefix: string;
-  savedAccountMap: DepositAccountMap;
-  liveAccountMap: DepositAccountMap;
+  confirmedDocNumbers: string[];
+  plan: JavelinPlanEntry[];
+  lastRun: PostJournalEntriesResult | null;
 };

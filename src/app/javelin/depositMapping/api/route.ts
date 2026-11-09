@@ -1,0 +1,59 @@
+import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { HandlerMap } from "@/lib/api/types/rpcUtils";
+import { AppError } from "@/lib/errors/AppError";
+import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
+import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { DepositFieldMappingContract } from "@/app/javelin/depositMapping/api/DepositFieldMappingContract";
+import { DepositFieldMappingModel } from "@/app/javelin/depositMapping/DepositFieldMappingModel";
+import { DEPOSIT_FIELDS } from "@/app/javelin/_lib/depositFields";
+
+function validationError(message: string): AppError {
+  return new AppError({ message, type: "VALIDATION_ERROR", statusCode: 400 });
+}
+
+const handlers: HandlerMap<DepositFieldMappingContract> = {
+  getAll: {
+    roles: ["admin"],
+    handler: async () => {
+      await connectToMongoDB();
+      const docs = await DepositFieldMappingModel.find().lean();
+      return { success: true, payload: cleanMongoArray(docs) };
+    },
+  },
+
+  upsert: {
+    roles: ["admin"],
+    handler: async ({ field, qboAccountId, defaultNameType, defaultNameId }) => {
+      if (!DEPOSIT_FIELDS.includes(field)) throw validationError("That is not a deposit field.");
+      if (typeof qboAccountId !== "string" || qboAccountId.length === 0) {
+        throw validationError("Choose a QuickBooks account.");
+      }
+      if (Boolean(defaultNameType) !== Boolean(defaultNameId)) {
+        throw validationError("A default name needs both its type and its QuickBooks Id.");
+      }
+      await connectToMongoDB();
+      // The name is unset when absent, so changing the linked account never keeps a stale name.
+      const update =
+        defaultNameType && defaultNameId
+          ? { $set: { field, qboAccountId, defaultNameType, defaultNameId } }
+          : { $set: { field, qboAccountId }, $unset: { defaultNameType: "", defaultNameId: "" } };
+      const doc = await DepositFieldMappingModel.findOneAndUpdate({ field }, update, {
+        upsert: true,
+        new: true,
+      }).lean();
+      return { success: true, payload: cleanMongoObject(doc!) };
+    },
+  },
+
+  remove: {
+    roles: ["admin"],
+    handler: async ({ field }) => {
+      if (!DEPOSIT_FIELDS.includes(field)) throw validationError("That is not a deposit field.");
+      await connectToMongoDB();
+      await DepositFieldMappingModel.deleteOne({ field });
+      return { success: true, payload: true };
+    },
+  },
+};
+
+export const POST = createRpcHandler(handlers);

@@ -19,6 +19,7 @@ import taxCodeReducer from "@/app/realGreen/taxCode/taxCodeSlice";
 import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
 import rgAccountReducer from "@/app/realGreen/rgAccount/rgAccountSlice";
 import { accountMappingReducer } from "@/app/account/accountMappingSlice";
+import { depositFieldMappingReducer } from "@/app/javelin/depositMapping/depositFieldMappingSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
 import centralDocPropsReducer from "@/app/csv/_lib/centralDocPropsSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
@@ -111,6 +112,7 @@ const rootReducer = combineReducers({
   zipCode: zipCodeReducer,
   rgAccount: rgAccountReducer,
   accountMapping: accountMappingReducer,
+  depositFieldMapping: depositFieldMappingReducer,
   equipment: equipmentReducer,
   equipmentPackage: equipmentPackageReducer,
   customer: customerReducer,
