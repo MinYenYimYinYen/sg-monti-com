@@ -7,6 +7,8 @@ import {
   QboVendorSummary,
 } from "@/app/qbo/vendor/types/QboVendorTypes";
 import { loadQboVendors } from "@/app/qbo/vendor/_lib/qboVendorServer";
+import { findFreshCustomerOrEmployeeName } from "@/app/qbo/_lib/qboNameServer";
+import { describeUsedNameEntity } from "@/app/qbo/_lib/qboNameUtils";
 import {
   classifyVendorCreateFailure,
   findVendorByName,
@@ -83,6 +85,16 @@ export async function createQboVendor({
 
   const existing = await findFreshVendor(name);
   if (existing) return describeExisting(existing);
+
+  // QuickBooks keeps one set of names across customers, vendors and employees, so a name held by
+  // a customer or an employee is refused. Say so now, before sending anything.
+  const heldByOther = await findFreshCustomerOrEmployeeName(name);
+  if (heldByOther) {
+    return {
+      status: "unavailable",
+      message: `"${heldByOther.name}" is already ${describeUsedNameEntity(heldByOther)} in QuickBooks, and every customer, vendor and employee needs a different name. Choose a different name.`,
+    };
+  }
 
   const body: QboVendorCreate = { DisplayName: name };
   let created: QboVendor | undefined;

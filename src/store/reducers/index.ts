@@ -17,6 +17,8 @@ import { serviceConditionReducer } from "@/app/realGreen/serviceCondition/_lib/s
 
 import taxCodeReducer from "@/app/realGreen/taxCode/taxCodeSlice";
 import zipCodeReducer from "@/app/realGreen/zipCode/zipCodeSlice";
+import rgAccountReducer from "@/app/realGreen/rgAccount/rgAccountSlice";
+import { accountMappingReducer } from "@/app/account/accountMappingSlice";
 import { customerReducer } from "@/store/reducers/customerReducers";
 import centralDocPropsReducer from "@/app/csv/_lib/centralDocPropsSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
@@ -69,6 +71,8 @@ import { urgentReducer } from "@/app/pace/priorities/urgentSlice";
 import { qboConnectionReducer } from "@/app/qbo/connection/qboConnectionSlice";
 import { qboAccountReducer } from "@/app/qbo/account/qboAccountSlice";
 import { qboVendorReducer } from "@/app/qbo/vendor/qboVendorSlice";
+import { qboCustomerReducer } from "@/app/qbo/customer/qboCustomerSlice";
+import { qboEmployeeReducer } from "@/app/qbo/employee/qboEmployeeSlice";
 import { qboPurchaseReducer } from "@/app/qbo/purchase/qboPurchaseSlice";
 import { qboJournalEntryReducer } from "@/app/qbo/journalEntry/qboJournalEntrySlice";
 import { importCCTxnMappingReducer } from "@/app/qbo/importCCTxn/importCCTxnMappingSlice";
@@ -105,6 +109,8 @@ const rootReducer = combineReducers({
   serviceCondition: serviceConditionReducer,
   taxCode: taxCodeReducer,
   zipCode: zipCodeReducer,
+  rgAccount: rgAccountReducer,
+  accountMapping: accountMappingReducer,
   equipment: equipmentReducer,
   equipmentPackage: equipmentPackageReducer,
   customer: customerReducer,
@@ -146,6 +152,8 @@ const rootReducer = combineReducers({
   qboConnection: qboConnectionReducer,
   qboAccount: qboAccountReducer,
   qboVendor: qboVendorReducer,
+  qboCustomer: qboCustomerReducer,
+  qboEmployee: qboEmployeeReducer,
   qboPurchase: qboPurchaseReducer,
   qboJournalEntry: qboJournalEntryReducer,
   importCCTxnMapping: importCCTxnMappingReducer,

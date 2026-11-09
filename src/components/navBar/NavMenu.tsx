@@ -115,6 +115,7 @@ const quickBooksSection: NavSection = {
   navItems: [
     { title: "Connection", href: "/qbo/connection", roles: ["admin"] },
     { title: "Import Credit Cards", href: "/qbo/importCCTxn", roles: ["admin", "office"] },
+    { title: "Account Mapping", href: "/account/mapping", roles: ["admin"] },
   ],
 };
 

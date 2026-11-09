@@ -35,6 +35,7 @@ export type RgApiPath =
   | { path: `/Employee/${string}`; method: "GET"; body?: undefined; pathTemplate: "/Employee/{employeeId}" }
   | { path: "/Employee/Active/true"; method: "GET"; body?: undefined; pathTemplate: "/Employee/Active/true" }
   | { path: "/Flag"; method: "GET"; body?: undefined; pathTemplate: "/Flag" }
+  | { path: "/GeneralLedger/Accounts"; method: "GET"; body?: undefined; pathTemplate: "/GeneralLedger/Accounts" }
   | { path: "/PrepayCodes/Available/true"; method: "GET"; body?: undefined; pathTemplate: "/PrepayCodes/Available/true" }
   | { path: "/PriceTable"; method: "GET"; body?: undefined; pathTemplate: "/PriceTable" }
   | { path: `/PriceTable/${string}/Detailed`; method: "GET"; body?: undefined; pathTemplate: "/PriceTable/{tableId}/Detailed" }

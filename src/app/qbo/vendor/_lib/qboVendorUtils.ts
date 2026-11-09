@@ -1,4 +1,5 @@
 import { QboVendor, QboVendorSummary } from "@/app/qbo/vendor/types/QboVendorTypes";
+import { normalizeQboName } from "@/app/qbo/_lib/qboNameUtils";
 
 // Pure helpers for vendors, free of fetch and the database so they can be tested.
 
@@ -29,7 +30,7 @@ export function pickActiveVendors(vendors: QboVendorSummary[]): QboVendorSummary
 
 /** Trims and collapses runs of whitespace, which also turns a pasted tab or line break into a space. */
 export function normalizeVendorName(name: string): string {
-  return name.trim().replace(/\s+/g, " ");
+  return normalizeQboName(name);
 }
 
 /** A message for the user, or null when the name may be sent. Intuit forbids a colon in a DisplayName. */

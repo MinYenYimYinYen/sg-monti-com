@@ -2,6 +2,8 @@
 
 import { useQboAccount } from "@/app/qbo/account/useQboAccount";
 import { useQboVendor } from "@/app/qbo/vendor/useQboVendor";
+import { useQboCustomer } from "@/app/qbo/customer/useQboCustomer";
+import { useQboEmployee } from "@/app/qbo/employee/useQboEmployee";
 import { useImportCCTxnMapping } from "@/app/qbo/importCCTxn/useImportCCTxnMapping";
 import { useImportRow } from "@/app/qbo/importCCTxn/rows/useImportRow";
 
@@ -12,6 +14,9 @@ import { useImportRow } from "@/app/qbo/importCCTxn/rows/useImportRow";
 export function useImportCCTxnDeps() {
   useQboAccount({ autoLoad: true });
   useQboVendor({ autoLoad: true });
+  // Customers and employees are loaded only so a new vendor name can be checked against them.
+  useQboCustomer({ autoLoad: true });
+  useQboEmployee({ autoLoad: true });
   useImportCCTxnMapping({ autoLoad: true });
   useImportRow({ autoLoad: true });
 }

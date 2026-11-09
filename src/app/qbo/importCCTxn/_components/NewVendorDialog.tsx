@@ -14,6 +14,8 @@ import {
 } from "@/style/components/dialog";
 import { qboVendorSelect } from "@/app/qbo/vendor/qboVendorSelect";
 import { useQboVendor } from "@/app/qbo/vendor/useQboVendor";
+import { qboMergedSelect } from "@/app/qbo/_lib/qboMergedSelect";
+import { describeUsedNameEntity, findUsedName } from "@/app/qbo/_lib/qboNameUtils";
 import {
   findVendorByName,
   normalizeVendorName,
@@ -36,6 +38,7 @@ export function NewVendorDialog({
   onCloseAction: () => void;
 }) {
   const vendors = useSelector(qboVendorSelect.vendors);
+  const usedNames = useSelector(qboMergedSelect.usedNames);
   const status = useSelector(qboVendorSelect.vendorCreateStatus);
   const result = useSelector(qboVendorSelect.vendorCreateResult);
   const { createVendor, resetVendorCreate } = useQboVendor({ autoLoad: false });
@@ -44,9 +47,13 @@ export function NewVendorDialog({
   const cleanName = normalizeVendorName(name);
   const problem = name.length > 0 ? validateVendorName(name) : null;
   const existing = findVendorByName({ vendors, displayName: name });
+  // A customer or employee holding the name blocks it just as a vendor does.
+  const usedName = findUsedName({ usedNames, name });
+  const heldByOther = usedName && usedName.entityType !== "Vendor" ? usedName : null;
   const isPending = status === "pending";
   const isSettled = status === "settled" && result !== null;
-  const canCreate = cleanName.length > 0 && !problem && !existing && !isPending && !isSettled;
+  const canCreate =
+    cleanName.length > 0 && !problem && !existing && !heldByOther && !isPending && !isSettled;
 
   const close = () => {
     resetVendorCreate();
@@ -112,6 +119,14 @@ export function NewVendorDialog({
           />
 
           {problem && <div className="text-sm text-destructive">{problem}</div>}
+
+          {!isSettled && heldByOther && (
+            <div className="rounded-md border border-border bg-secondary/10 p-3 text-sm text-foreground">
+              <span className="font-semibold">{heldByOther.name}</span> is already{" "}
+              {describeUsedNameEntity(heldByOther)} in QuickBooks. Every customer, vendor and
+              employee needs a different name.
+            </div>
+          )}
 
           {!isSettled && existing && (
             <div className="space-y-2 rounded-md border border-border bg-secondary/10 p-3 text-sm">
