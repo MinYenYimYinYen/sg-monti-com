@@ -11,7 +11,7 @@ import { accountSelect } from "@/app/account/accountSelect";
 import { MappingPicker } from "@/app/account/_components/MappingPicker";
 import { nameTypeForQboAccount } from "@/app/account/_lib/accountLinks";
 import { formatQboAccountLabel } from "@/app/account/_lib/accountMappingView";
-import { DEPOSIT_FIELD_LABELS } from "@/app/javelin/_lib/depositFields";
+import { DEPOSIT_LINK_LABELS } from "@/app/javelin/_lib/ckDepositFields";
 import { depositFieldMappingSelect } from "@/app/javelin/depositMapping/depositFieldMappingSelect";
 import { useDepositFieldMapping } from "@/app/javelin/depositMapping/useDepositFieldMapping";
 import { DepositFieldLink } from "@/app/javelin/depositMapping/DepositFieldMappingTypes";
@@ -19,7 +19,7 @@ import { LinkStatusBadge } from "@/app/javelin/depositMapping/_components/linkSt
 
 const noSuggestions = new Set<string>();
 
-/** One WorkWave deposit field and the QuickBooks account it posts to. Each change saves at once. */
+/** One deposit link (a WorkWave field or a check deposit account) and its QuickBooks account. Each change saves at once. */
 export function DepositFieldRow({ link }: { link: DepositFieldLink }) {
   const { field, qboAccount, status, nameType, defaultNameId } = link;
   const qboAccountOptions = useSelector(accountSelect.qboAccountOptions);
@@ -60,7 +60,7 @@ export function DepositFieldRow({ link }: { link: DepositFieldLink }) {
 
   return (
     <TableRow variant="alternating">
-      <TableCell className="font-medium">{DEPOSIT_FIELD_LABELS[field]}</TableCell>
+      <TableCell className="font-medium">{DEPOSIT_LINK_LABELS[field]}</TableCell>
       <TableCell noTruncate>
         <div className="space-y-1">
           <div className="flex items-center gap-1">

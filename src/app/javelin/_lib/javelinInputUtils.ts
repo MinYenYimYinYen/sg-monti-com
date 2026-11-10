@@ -1,5 +1,6 @@
 import { parseIsoDate } from "@/app/qbo/journalEntry/_lib/qboJournalEntryUtils";
 import { DEPOSIT_FIELDS } from "@/app/javelin/_lib/depositFields";
+import { nextIsoDate } from "@/app/javelin/_lib/latestUtils";
 
 // Pure. The browser sends parsed CSV data as JSON, so its shape is checked at runtime. The server
 // trusts nothing it can recompute, but it cannot recompute a malformed payload.
@@ -60,6 +61,51 @@ export function validateDepositRows(rows: unknown): string[] {
       if (typeof value !== "number" || !Number.isFinite(value)) {
         problems.push(`${where}: ${field} must be a number.`);
       }
+    }
+  });
+  return problems;
+}
+
+const MAX_CK_DEPOSIT_ROWS = 200;
+const MAX_CK_DEPOSIT_AMOUNT = 1_000_000_000;
+
+/**
+ * A typed-in deposit has no file to cross-check, so the checks are tight: a real date no more than
+ * a day after today (the day absorbs time zones), and an amount above zero in whole cents.
+ */
+export function validateCkDepositRows({
+  rows,
+  todayIso,
+}: {
+  rows: unknown;
+  todayIso: string;
+}): string[] {
+  if (!Array.isArray(rows) || rows.length === 0) return ["Enter at least one deposit."];
+  if (rows.length > MAX_CK_DEPOSIT_ROWS) {
+    return [`Enter at most ${MAX_CK_DEPOSIT_ROWS} deposits at a time.`];
+  }
+  const latestDate = nextIsoDate(todayIso);
+  const problems: string[] = [];
+  rows.forEach((row: unknown, rowIndex) => {
+    const where = `Row ${rowIndex + 1}`;
+    if (!isRecord(row)) {
+      problems.push(`${where}: is not valid.`);
+      return;
+    }
+    if (typeof row.date !== "string" || parseIsoDate(row.date) === null) {
+      problems.push(`${where}: the date must be a real date written YYYY-MM-DD.`);
+    } else if (row.date > latestDate) {
+      problems.push(`${where}: the date is in the future.`);
+    }
+    const amount = row.amount;
+    if (
+      typeof amount !== "number" ||
+      !Number.isFinite(amount) ||
+      amount <= 0 ||
+      amount >= MAX_CK_DEPOSIT_AMOUNT ||
+      Math.abs(amount * 100 - Math.round(amount * 100)) > 1e-6
+    ) {
+      problems.push(`${where}: the amount must be above zero, in dollars and cents.`);
     }
   });
   return problems;

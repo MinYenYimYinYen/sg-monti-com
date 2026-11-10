@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { depositSelect } from "@/app/javelin/depositSelect";
 import { depositActions } from "@/app/javelin/depositSlice";
+import { useJavelin } from "@/app/javelin/useJavelin";
 import { PlanEntryList } from "@/app/javelin/_lib/components/PlanEntryList";
 import { PostRunPanel } from "@/app/javelin/_lib/components/PostRunPanel";
 
@@ -18,6 +19,17 @@ export function DepositResultsTable() {
   const plan = useSelector(depositSelect.plan);
   const confirmedDocNumbers = useSelector(depositSelect.confirmedDocNumbers);
   const lastRun = useSelector(depositSelect.lastRun);
+  const fileName = useSelector(depositSelect.fileName);
+  const { previewDeposits } = useJavelin({ autoLoad: false });
+
+  const handleToggleConfirmed = (docNumber: string) => {
+    const nextConfirmed = confirmedDocNumbers.includes(docNumber)
+      ? confirmedDocNumbers.filter((confirmed) => confirmed !== docNumber)
+      : [...confirmedDocNumbers, docNumber];
+    dispatch(depositActions.toggleConfirmed(docNumber));
+    // The plan still says "possible duplicate" until it is made again with the confirmation.
+    previewDeposits({ rows, fileName, confirmedDocNumbers: nextConfirmed });
+  };
 
   return (
     <div>
@@ -51,7 +63,7 @@ export function DepositResultsTable() {
       <PlanEntryList
         plan={plan}
         confirmedDocNumbers={confirmedDocNumbers}
-        toggleConfirmedAction={(docNumber) => dispatch(depositActions.toggleConfirmed(docNumber))}
+        toggleConfirmedAction={handleToggleConfirmed}
       />
     </div>
   );

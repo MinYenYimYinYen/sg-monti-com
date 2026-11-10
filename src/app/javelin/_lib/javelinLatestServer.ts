@@ -18,6 +18,7 @@ async function latestPosted(kind: JavelinKind): Promise<JavelinLatestEntry | nul
     ...(posting.source?.kind === "deposit"
       ? { netDepositCents: posting.source.netDepositCents }
       : {}),
+    ...(posting.source?.kind === "ckDeposit" ? { amountCents: posting.source.amountCents } : {}),
   };
 }
 
@@ -28,11 +29,12 @@ async function latestPosted(kind: JavelinKind): Promise<JavelinLatestEntry | nul
  */
 export async function loadJavelinLatest(): Promise<JavelinLatest> {
   await connectToMongoDB();
-  const [genLedger, deposit, unsettled] = await Promise.all([
+  const [genLedger, deposit, ckDeposit, unsettled] = await Promise.all([
     latestPosted("genLedger"),
     latestPosted("deposit"),
+    latestPosted("ckDeposit"),
     JournalEntryPostingModel.find({
-      "source.kind": { $in: ["genLedger", "deposit"] },
+      "source.kind": { $in: ["genLedger", "deposit", "ckDeposit"] },
       status: { $in: ["unknown", "posting"] },
     })
       .select({ docNumber: 1 })
@@ -41,6 +43,7 @@ export async function loadJavelinLatest(): Promise<JavelinLatest> {
   return {
     genLedger,
     deposit,
+    ckDeposit,
     unsettledDocNumbers: unsettled.map((posting) => posting.docNumber),
   };
 }

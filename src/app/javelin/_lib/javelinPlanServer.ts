@@ -1,17 +1,26 @@
 import { PostJournalEntriesResult } from "@/app/qbo/journalEntry/types/QboJournalEntryTypes";
 import { postQboJournalEntries } from "@/app/qbo/journalEntry/_lib/qboJournalEntryServer";
 import { validationError } from "@/app/qbo/journalEntry/_lib/qboJournalEntrySettleServer";
-import { DepositRow, GenLedgerFileInput, JavelinKind, JavelinPlanEntry } from "@/app/javelin/JavelinTypes";
+import {
+  CkDepositRow,
+  DepositRow,
+  GenLedgerFileInput,
+  JavelinKind,
+  JavelinPlanEntry,
+} from "@/app/javelin/JavelinTypes";
 import { BuiltEntry, buildGenLedgerEntries } from "@/app/javelin/_lib/entryBuild";
 import { buildDepositEntries } from "@/app/javelin/_lib/depositEntryBuild";
+import { buildCkDepositEntries } from "@/app/javelin/_lib/ckDepositBuild";
 import { pickPostable, planEntries } from "@/app/javelin/_lib/entryPlanUtils";
 import {
+  validateCkDepositRows,
   validateConfirmedDocNumbers,
   validateDepositRows,
   validateGenLedgerFiles,
 } from "@/app/javelin/_lib/javelinInputUtils";
 import {
   loadAccountMap,
+  loadCkDepositLinks,
   loadDepositLinks,
   loadGenLedgerLinks,
   loadRelevantPostings,
@@ -76,6 +85,28 @@ export async function planDeposits({
   const [mappings, accountMap] = await Promise.all([loadDepositLinks(), loadAccountMap()]);
   const built = buildDepositEntries({ rows, fileName, mappings, accountMap });
   return classify({ kind: "deposit", built, confirmedDocNumbers });
+}
+
+export async function planCkDeposits({
+  rows,
+  confirmedDocNumbers,
+}: {
+  rows: CkDepositRow[];
+  confirmedDocNumbers: string[];
+}): Promise<Planned> {
+  throwIfAny([
+    ...validateCkDepositRows({ rows, todayIso: new Date().toISOString().slice(0, 10) }),
+    ...validateConfirmedDocNumbers(confirmedDocNumbers),
+  ]);
+  const [mappings, accountMap] = await Promise.all([loadCkDepositLinks(), loadAccountMap()]);
+  // The builder numbers equal deposits against what is already stored, so it needs those first.
+  const stored = await loadRelevantPostings({
+    kind: "ckDeposit",
+    docNumbers: [],
+    dates: [...new Set(rows.map((row) => row.date))],
+  });
+  const built = buildCkDepositEntries({ rows, stored, mappings, accountMap });
+  return classify({ kind: "ckDeposit", built, confirmedDocNumbers });
 }
 
 /** Posts the entries the plan calls ready. The posting server checks and locks them again. */

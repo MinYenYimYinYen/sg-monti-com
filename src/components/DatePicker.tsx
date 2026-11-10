@@ -51,6 +51,12 @@ export interface DatePickerProps extends VariantProps<typeof datePickerVariants>
   placeholder?: string;
   isInvalid?: boolean;
   allowedDates?: string[];
+  /**
+   * Leaves out the calendar button, so the field is plain text with the same typed-date parsing
+   * (1027, 10/27, today, fri...). Tab then goes straight to the next field, which fast entry needs.
+   */
+  hideCalendar?: boolean;
+  autoFocus?: boolean;
 }
 
 export function DatePicker({
@@ -61,6 +67,8 @@ export function DatePicker({
   isInvalid,
   size,
   allowedDates,
+  hideCalendar,
+  autoFocus,
 }: DatePickerProps) {
   // Track the previous value prop to detect external changes during render
   const [prevValue, setPrevValue] = useState(value);
@@ -152,14 +160,16 @@ export function DatePicker({
         onChange={handleInputChange}
         onBlur={handleBlur}
         onFocus={handleFocus}
+        autoFocus={autoFocus}
         placeholder={placeholder}
         className={cn(
           "w-full h-full truncate",
-          inputPaddingBySize[sizeKey],
+          !hideCalendar && inputPaddingBySize[sizeKey],
           isInvalid &&
             clsx("border-destructive focus-visible:border-destructive"),
         )}
       />
+      {!hideCalendar && (
       <Popover>
         <PopoverTrigger asChild>
           <Button
@@ -186,6 +196,7 @@ export function DatePicker({
           />
         </PopoverContent>
       </Popover>
+      )}
     </div>
   );
 }

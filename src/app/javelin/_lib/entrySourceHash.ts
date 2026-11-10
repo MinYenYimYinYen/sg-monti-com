@@ -30,6 +30,21 @@ export function computeGenLedgerHash({
   return createHash("sha256").update(fields.join(FIELD_SEPARATOR)).digest("hex");
 }
 
+/**
+ * One checking deposit: its date and total. Equal deposits on one date share a hash;
+ * occurrence tells them apart.
+ */
+export function computeCkDepositHash({
+  date,
+  amountCents,
+}: {
+  date: string;
+  amountCents: number;
+}): string {
+  const fields = ["ckDeposit", date, String(amountCents)];
+  return createHash("sha256").update(fields.join(FIELD_SEPARATOR)).digest("hex");
+}
+
 /** One WorkWave deposit row. Identical rows on one date share a hash; occurrence tells them apart. */
 export function computeDepositHash({
   date,

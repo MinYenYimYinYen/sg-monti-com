@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { describeLatest, nextIsoDate } from "@/app/javelin/_lib/latestUtils";
 import { JavelinLatest } from "@/app/javelin/JavelinTypes";
 
-const empty: JavelinLatest = { genLedger: null, deposit: null, unsettledDocNumbers: [] };
+const empty: JavelinLatest = {
+  genLedger: null,
+  deposit: null,
+  ckDeposit: null,
+  unsettledDocNumbers: [],
+};
 
 describe("nextIsoDate", () => {
   it("rolls over month and year ends without a time zone shift", () => {

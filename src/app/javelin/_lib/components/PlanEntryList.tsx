@@ -80,7 +80,8 @@ export function PlanEntryList({
                   />
                   <span>
                     An entry for this date was already posted ({entry.matchedDocNumber}) with
-                    different content. Post this one as well.
+                    different content, or for a check deposit the same total. Post this one as
+                    well.
                   </span>
                 </label>
               )}

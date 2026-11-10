@@ -8,7 +8,14 @@ import { JournalEntryPostingModel } from "@/app/qbo/journalEntry/models/JournalE
 import { JournalEntryPosting } from "@/app/qbo/journalEntry/types/QboJournalEntryTypes";
 import { DepositFieldMappingModel } from "@/app/javelin/depositMapping/DepositFieldMappingModel";
 import { DepositFieldMappingDoc } from "@/app/javelin/depositMapping/DepositFieldMappingTypes";
-import { DepositField, JavelinKind } from "@/app/javelin/JavelinTypes";
+import {
+  CkDepositLinkKey,
+  DepositField,
+  DepositLinkKey,
+  JavelinKind,
+} from "@/app/javelin/JavelinTypes";
+import { DEPOSIT_FIELDS } from "@/app/javelin/_lib/depositFields";
+import { CK_DEPOSIT_LINK_KEYS } from "@/app/javelin/_lib/ckDepositFields";
 import { LineTarget } from "@/app/javelin/_lib/entryBuild";
 import { StoredPostingRef } from "@/app/javelin/_lib/entryPlanUtils";
 
@@ -25,12 +32,27 @@ export async function loadGenLedgerLinks(): Promise<Map<string, LineTarget>> {
   return new Map(docs.map((doc) => [doc.rgAccountId, doc]));
 }
 
-export async function loadDepositLinks(): Promise<Map<DepositField, LineTarget>> {
+async function loadDepositLinkDocs(): Promise<DepositFieldMappingDoc[]> {
   await connectToMongoDB();
-  const docs = cleanMongoArray(
-    await DepositFieldMappingModel.find().lean(),
-  ) as DepositFieldMappingDoc[];
-  return new Map(docs.map((doc) => [doc.field, doc]));
+  return cleanMongoArray(await DepositFieldMappingModel.find().lean()) as DepositFieldMappingDoc[];
+}
+
+/** The WorkWave export columns only. The check deposit accounts share the collection but not this map. */
+export async function loadDepositLinks(): Promise<Map<DepositField, LineTarget>> {
+  const docs = await loadDepositLinkDocs();
+  const fieldDocs = docs.filter((doc): doc is DepositFieldMappingDoc & { field: DepositField } =>
+    DEPOSIT_FIELDS.includes(doc.field as DepositField),
+  );
+  return new Map(fieldDocs.map((doc) => [doc.field, doc]));
+}
+
+export async function loadCkDepositLinks(): Promise<Map<DepositLinkKey, LineTarget>> {
+  const docs = await loadDepositLinkDocs();
+  return new Map(
+    docs
+      .filter((doc) => CK_DEPOSIT_LINK_KEYS.includes(doc.field as CkDepositLinkKey))
+      .map((doc) => [doc.field, doc]),
+  );
 }
 
 /**

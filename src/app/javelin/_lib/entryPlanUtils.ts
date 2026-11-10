@@ -11,7 +11,7 @@ import {
 } from "@/app/qbo/journalEntry/_lib/qboJournalEntryUtils";
 import { checkEntryAgainstAccounts } from "@/app/qbo/journalEntry/_lib/qboJournalEntryPayloadUtils";
 import { JavelinPlanEntry } from "@/app/javelin/JavelinTypes";
-import { BuiltEntry } from "@/app/javelin/_lib/entryBuild";
+import { BuiltEntry, buildDocNumber } from "@/app/javelin/_lib/entryBuild";
 
 // Pure. Classifies each built entry against what is already stored, so duplicates are caught
 // before anything is sent. The unique docNumber index and the atomic claim in the posting
@@ -23,12 +23,16 @@ export type StoredPostingRef = Pick<JournalEntryPosting, "docNumber" | "status" 
 /** Statuses that mean the entry exists, or may exist, in QuickBooks. */
 const OCCUPIED_STATUSES: JournalEntryPosting["status"][] = ["posted", "posting", "unknown"];
 
-function isOccupied(posting: StoredPostingRef): boolean {
+export function isOccupied(posting: StoredPostingRef): boolean {
   return OCCUPIED_STATUSES.includes(posting.status);
 }
 
 function netDepositOf(posting: StoredPostingRef): number | null {
   return posting.source?.kind === "deposit" ? posting.source.netDepositCents : null;
+}
+
+function ckAmountOf(posting: StoredPostingRef): number | null {
+  return posting.source?.kind === "ckDeposit" ? posting.source.amountCents : null;
 }
 
 function describeLines({
@@ -46,8 +50,9 @@ function describeLines({
 
 /**
  * Looks for a stored entry of the same kind on the same date with different content. A general
- * ledger day matches on kind and date alone. A deposit also needs the same net deposit, because
- * several different deposits can land on one date.
+ * ledger day matches on kind and date alone. A credit card deposit also needs the same net
+ * deposit, because several different deposits can land on one date, and a check deposit the same
+ * total.
  */
 export function findLookalike({
   input,
@@ -62,6 +67,7 @@ export function findLookalike({
     if (!isOccupied(posting) || posting.docNumber === input.docNumber) return false;
     if (posting.source?.kind !== source.kind || posting.txnDate !== input.txnDate) return false;
     if (source.kind === "deposit") return netDepositOf(posting) === source.netDepositCents;
+    if (source.kind === "ckDeposit") return ckAmountOf(posting) === source.amountCents;
     return true;
   });
 }
@@ -130,6 +136,23 @@ export function planEntries({
         status: "possibleDuplicate",
         problems: [],
         matchedDocNumber: lookalike.docNumber,
+      };
+    }
+    // An equal check deposit earlier in this same batch is not stored yet, so the lookalike search
+    // cannot see it. Its occurrence number says it is there.
+    if (
+      input.source?.kind === "ckDeposit" &&
+      input.source.occurrence > 1 &&
+      !confirmedDocNumbers.has(input.docNumber)
+    ) {
+      return {
+        ...filled,
+        status: "possibleDuplicate",
+        problems: [],
+        matchedDocNumber: buildDocNumber({
+          hash: input.source.sourceHash,
+          occurrence: input.source.occurrence - 1,
+        }),
       };
     }
     return { ...filled, status: "ready", problems: [] };

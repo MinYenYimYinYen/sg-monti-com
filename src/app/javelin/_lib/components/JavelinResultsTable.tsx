@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { javelinSelect } from "@/app/javelin/javelinSelect";
 import { javelinActions } from "@/app/javelin/javelinSlice";
+import { useJavelin } from "@/app/javelin/useJavelin";
 import { PlanEntryList } from "@/app/javelin/_lib/components/PlanEntryList";
 import { PostRunPanel } from "@/app/javelin/_lib/components/PostRunPanel";
 
@@ -16,6 +17,21 @@ export function JavelinResultsTable() {
   const plan = useSelector(javelinSelect.plan);
   const confirmedDocNumbers = useSelector(javelinSelect.confirmedDocNumbers);
   const lastRun = useSelector(javelinSelect.lastRun);
+  const { previewGenLedger } = useJavelin({ autoLoad: false });
+
+  const handleToggleConfirmed = (docNumber: string) => {
+    const nextConfirmed = confirmedDocNumbers.includes(docNumber)
+      ? confirmedDocNumbers.filter((confirmed) => confirmed !== docNumber)
+      : [...confirmedDocNumbers, docNumber];
+    dispatch(javelinActions.toggleConfirmed(docNumber));
+    // The plan still says "possible duplicate" until it is made again with the confirmation.
+    previewGenLedger({
+      files: files
+        .filter((file) => file.errors.length === 0 && file.rows.length > 0)
+        .map(({ fileName, date, rows }) => ({ fileName, date, rows })),
+      confirmedDocNumbers: nextConfirmed,
+    });
+  };
 
   return (
     <div>
@@ -51,7 +67,7 @@ export function JavelinResultsTable() {
       <PlanEntryList
         plan={plan}
         confirmedDocNumbers={confirmedDocNumbers}
-        toggleConfirmedAction={(docNumber) => dispatch(javelinActions.toggleConfirmed(docNumber))}
+        toggleConfirmedAction={handleToggleConfirmed}
       />
     </div>
   );

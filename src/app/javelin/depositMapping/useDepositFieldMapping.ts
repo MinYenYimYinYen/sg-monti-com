@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { qboConst } from "@/app/qbo/_lib/qboConst";
 import { AccountMappingNameType } from "@/app/account/AccountMappingTypes";
-import { DepositField } from "@/app/javelin/JavelinTypes";
+import { DepositLinkKey } from "@/app/javelin/JavelinTypes";
 import { depositFieldMappingActions } from "@/app/javelin/depositMapping/depositFieldMappingSlice";
 
 /** Loads the deposit field links when `autoLoad` is set and exposes actions only. */
@@ -30,7 +30,7 @@ export function useDepositFieldMapping({ autoLoad }: { autoLoad: boolean }) {
     defaultNameType,
     defaultNameId,
   }: {
-    field: DepositField;
+    field: DepositLinkKey;
     qboAccountId: string;
     defaultNameType?: AccountMappingNameType;
     defaultNameId?: string;
@@ -42,7 +42,7 @@ export function useDepositFieldMapping({ autoLoad }: { autoLoad: boolean }) {
       }),
     );
 
-  const removeLink = (field: DepositField) =>
+  const removeLink = (field: DepositLinkKey) =>
     dispatch(
       depositFieldMappingActions.removeDepositFieldMapping({
         params: { field },

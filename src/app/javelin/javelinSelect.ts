@@ -9,7 +9,6 @@ const selectPlan = (state: AppState) => selectJavelinState(state).plan;
 const selectConfirmedDocNumbers = (state: AppState) => selectJavelinState(state).confirmedDocNumbers;
 const selectLastRun = (state: AppState) => selectJavelinState(state).lastRun;
 const selectLatest = (state: AppState) => selectJavelinState(state).latest;
-const selectMigrationReport = (state: AppState) => selectJavelinState(state).migrationReport;
 
 const selectPostable = createSelector([selectPlan], sumPlanTotals);
 
@@ -23,7 +22,6 @@ export const javelinSelect = {
   confirmedDocNumbers: selectConfirmedDocNumbers,
   lastRun: selectLastRun,
   latest: selectLatest,
-  migrationReport: selectMigrationReport,
   postable: selectPostable,
   possibleDuplicates: selectPossibleDuplicates,
 };

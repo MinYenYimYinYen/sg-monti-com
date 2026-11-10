@@ -12,6 +12,7 @@ import { Input } from "@/style/components/input";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/style/components/table";
 import { AccountMappingRow } from "@/app/account/_components/AccountMappingRow";
 import { DepositFieldMappingSection } from "@/app/javelin/depositMapping/_components/DepositFieldMappingSection";
+import { CkDepositMappingSection } from "@/app/javelin/depositMapping/_components/CkDepositMappingSection";
 import {
   AccountLinkFilter,
   countLinksByFilter,
@@ -115,6 +116,8 @@ function AccountMappingEditor() {
         )}
 
         <DepositFieldMappingSection />
+
+        <CkDepositMappingSection />
       </div>
     </div>
   );

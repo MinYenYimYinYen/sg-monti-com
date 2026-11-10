@@ -143,6 +143,16 @@ export type JournalEntrySource =
       sourceFields: Record<string, number>;
       /** What hit the bank. Shown as the amount of the last credit card payment entry. */
       netDepositCents: number;
+    }
+  | {
+      /**
+       * A checking deposit typed in by hand: its date and total. Nothing tells two equal deposits
+       * on one day apart, so occurrence numbers them (1 is the first; more is a possible duplicate).
+       */
+      kind: "ckDeposit";
+      sourceHash: string;
+      occurrence: number;
+      amountCents: number;
     };
 
 export type JournalEntrySourceKind = JournalEntrySource["kind"];

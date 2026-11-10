@@ -4,12 +4,12 @@ import {
   PostJournalEntriesResult,
 } from "@/app/qbo/journalEntry/types/QboJournalEntryTypes";
 import {
+  CkDepositRow,
   DepositRow,
   GenLedgerFileInput,
   JavelinLatest,
   JavelinPlanEntry,
 } from "@/app/javelin/JavelinTypes";
-import { JavelinMigrationReport } from "@/app/javelin/migration/JavelinMigrationTypes";
 
 // Every operation is admin only: posting writes to the real books, and the previews read them.
 // The browser sends parsed CSV data. The server rebuilds every entry from stored links, so the
@@ -24,6 +24,16 @@ export interface JavelinContract extends ApiContract {
     params: { rows: DepositRow[]; fileName: string; confirmedDocNumbers: string[] };
     result: DataResponse<JavelinPlanEntry[]>;
   };
+  // Typed-in checking deposits. A deposit equal to one already posted (or earlier in the batch)
+  // comes back as a possible duplicate, which posts only when its DocNumber is confirmed.
+  previewCkDeposits: {
+    params: { rows: CkDepositRow[]; confirmedDocNumbers: string[] };
+    result: DataResponse<JavelinPlanEntry[]>;
+  };
+  postCkDeposits: {
+    params: { rows: CkDepositRow[]; confirmedDocNumbers: string[] };
+    result: DataResponse<PostJournalEntriesResult>;
+  };
   // Re-runs the same plan on the server, then posts what is ready.
   postGenLedger: {
     params: { files: GenLedgerFileInput[]; confirmedDocNumbers: string[] };
@@ -37,10 +47,5 @@ export interface JavelinContract extends ApiContract {
   getLatest: {
     params: Record<string, never>;
     result: DataResponse<JavelinLatest>;
-  };
-  // Proposes QuickBooks Id links for the legacy name-based maps. apply=false writes nothing.
-  migrateMappings: {
-    params: { apply: boolean };
-    result: DataResponse<JavelinMigrationReport>;
   };
 }

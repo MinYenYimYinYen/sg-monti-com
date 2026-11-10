@@ -27,6 +27,11 @@ export function describeLatest({
       ? `Last general ledger entry: ${entry.txnDate}. Export the next ledger file from ${nextIsoDate(entry.txnDate)}.`
       : "No general ledger entries have been posted yet.";
   }
+  if (kind === "ckDeposit") {
+    if (!entry) return "No check deposit entries have been posted yet.";
+    const amount = entry.amountCents !== undefined ? `, ${formatCents(entry.amountCents)}` : "";
+    return `Last check deposit entry: ${entry.txnDate}${amount}. Enter deposits after that.`;
+  }
   if (!entry) return "No credit card deposit entries have been posted yet.";
   const amount = entry.netDepositCents !== undefined ? `, ${formatCents(entry.netDepositCents)} net` : "";
   return `Last credit card deposit entry: ${entry.txnDate}${amount}. Export deposits after that.`;

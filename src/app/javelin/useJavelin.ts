@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { DepositRow, GenLedgerFileInput } from "@/app/javelin/JavelinTypes";
+import { CkDepositRow, DepositRow, GenLedgerFileInput } from "@/app/javelin/JavelinTypes";
 import { javelinActions } from "@/app/javelin/javelinSlice";
 
 /**
@@ -93,13 +93,36 @@ export function useJavelin({ autoLoad }: { autoLoad: boolean }) {
     await refreshLatest();
   };
 
-  const migrateMappings = ({ apply }: { apply: boolean }) =>
+  const previewCkDeposits = ({
+    rows,
+    confirmedDocNumbers,
+  }: {
+    rows: CkDepositRow[];
+    confirmedDocNumbers: string[];
+  }) =>
     dispatch(
-      javelinActions.migrateJavelinMappings({
-        params: { apply },
-        config: { loadingMsg: apply ? "Applying account links..." : "Checking account links..." },
+      javelinActions.previewCkDeposits({
+        params: { rows, confirmedDocNumbers },
+        config: { loadingMsg: "Checking entries..." },
       }),
     );
+
+  const postCkDeposits = async ({
+    rows,
+    confirmedDocNumbers,
+  }: {
+    rows: CkDepositRow[];
+    confirmedDocNumbers: string[];
+  }) => {
+    // The slice drops the rows that posted, so only the banner needs refreshing afterwards.
+    await dispatch(
+      javelinActions.postCkDeposits({
+        params: { rows, confirmedDocNumbers },
+        config: { loadingMsg: "Posting journal entries to QuickBooks..." },
+      }),
+    );
+    await refreshLatest();
+  };
 
   return {
     refreshLatest,
@@ -107,6 +130,7 @@ export function useJavelin({ autoLoad }: { autoLoad: boolean }) {
     previewDeposits,
     postGenLedger,
     postDeposits,
-    migrateMappings,
+    previewCkDeposits,
+    postCkDeposits,
   };
 }

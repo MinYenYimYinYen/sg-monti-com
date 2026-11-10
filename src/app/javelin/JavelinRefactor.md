@@ -49,25 +49,27 @@ Project rules that bite here (see `AGENTS.md`): no `useMemo`/`useCallback`; func
 
 - **Storage**: `source` on `JournalEntryInput`, posting content and the Mongoose schema, with indexes on `{ "source.kind", txnDate }` and `source.sourceHash`.
 - **Pure logic** (`src/app/javelin/_lib/`): source hashing (`entrySourceHash.ts`), entry builders (`entryBuild.ts`, `depositEntryBuild.ts`), the plan classifier (`entryPlanUtils.ts`), input validation (`javelinInputUtils.ts`), banner wording (`latestUtils.ts`), shared deposit field rules (`depositFields.ts`).
-- **Server**: `javelinPlanServer.ts` (plan and post), `javelinContextServer.ts`, `javelinLatestServer.ts`, and the route `api/route.ts` with ops `previewGenLedger`, `previewDeposits`, `postGenLedger`, `postDeposits`, `getLatest`, `migrateMappings`. Posting goes through the existing `postQboJournalEntries`.
+- **Server**: `javelinPlanServer.ts` (plan and post), `javelinContextServer.ts`, `javelinLatestServer.ts`, and the route `api/route.ts` with ops `previewGenLedger`, `previewDeposits`, `postGenLedger`, `postDeposits`, `getLatest`. Posting goes through the existing `postQboJournalEntries`.
 - **Deposit field links**: `src/app/javelin/depositMapping/` (model, API, slice, selector, hook, UI). Rendered as a section of `/account/mapping`; `useAccount` loads it.
-- **Migration** (`src/app/javelin/migration/`): dry run and apply of the old name-based maps to QBO Id links.
-- **Redux**: `javelinSlice` (holds all thunks), `depositSlice`, selectors, `useJavelin`. `depositFieldMapping` reducer registered.
-- **UI**: admin gate, three tabs, `LatestBanner`, `PlanEntryList`, `PostRunPanel`, `PostConfirmDialog`, `MigrationPanel`, new headers, results tables and drop zones.
+- **Migration**: done and then **removed** (tab, `src/app/javelin/migration/`, API op, thunk, state, test). The old maps were applied to QBO Id links first.
+- **Check deposits (CK Deposits tab)**: typed-in date and total per row, no CSV. Source kind `ckDeposit` (hash of date and total). Debits the Checking Deposit Account, credits the RG Check Holding Acct. Occurrence is the lowest number not held by an occupied posting or an earlier row of the batch, so a second equal deposit posts as `-2` and is a **possible duplicate** that needs a confirm. New files: `ckDepositBuild.ts`, `ckDepositRows.ts`, `ckDepositFields.ts`, `ckDepositSlice.ts`, `ckDepositSelect.ts`, the `CkDeposit*` components, ops `previewCkDeposits` and `postCkDeposits`, `validateCkDepositRows`, `computeCkDepositHash`, and the banner line. The two account links share the deposit link collection, with a separate "Check deposit accounts" section. `DatePicker` got `hideCalendar` and `autoFocus`. Tab flow: date, amount, then the next row's date, with a row added when Tab leaves a filled amount on the last row. Routes are now `/javelin/ccDeposits` and `/javelin/ckDeposits`.
+- **Confirm checkbox gap (old item 5)**: fixed on all three tabs. Ticking the box re-runs the preview at once.
+- **Redux**: `javelinSlice` (holds all thunks), `depositSlice`, `ckDepositSlice`, selectors, `useJavelin`. `depositFieldMapping` and `ckDeposit` reducers registered.
+- **UI**: now a tab-routed page. `layout.tsx` (admin gate, `PageLayout`, `TabNav`), `useJavelinDeps`, thin pages for General Ledger (`/javelin`), Deposits and Settings (last). Settings renders the shared `AccountMappingPanel`, which includes the deposit field section (it now warns when a field is unlinked). Panels: `GenLedgerPanel`, `DepositsPanel`, plus `LatestBanner`, `PlanEntryList`, `PostRunPanel`, `PostConfirmDialog`, headers, results tables and drop zones.
 - **Removed**: `genLedgerTransform.ts`, `depositTransform.ts`, `AccountNameCell`, `AccountNumberCell`, `NameCell`, the old transform test.
-- **Tests**: 35 passing in `src/__tests__/javelin/` (hashing, builders, classifier, migration, banner wording).
+- **Tests**: 35 passing in `src/__tests__/javelin/` (hashing, builders, classifier, banner wording). The migration test was deleted with the migration, so the count is now lower. Re-run to confirm.
 - **Readme**: `javelin.readme.md` rewritten for the new flow.
 
 ### Verified
 
 - IDE lint: no errors on the changed files.
 - `npx vitest run src/__tests__/javelin`: 5 files, 35 tests pass.
-- The migration was run in the UI and applied. Production Mongo (read-only) holds **5** documents in `javelindepositfieldmappings`: `salesAmount`, `refundAmount`, `chargeBackAmount`, `fees`, `netDeposit`. All 23 general ledger accounts were already linked.
+- The migration was run in the UI and applied (before it was removed). Production Mongo (read-only) holds **5** documents in `javelindepositfieldmappings`: `salesAmount`, `refundAmount`, `chargeBackAmount`, `fees`, `netDeposit`. All 23 general ledger accounts were already linked.
 
 ### Not verified
 
 - **`npx tsc --noEmit` has not been run.** Shared types changed (`JavelinState`, `DepositState`, `JournalEntryInput`), exports moved out of `depositSlice`, and a reducer was registered. Run it first thing.
-- **The app has not been run.** No page, drop zone or dialog has been exercised in a browser.
+- **The app has not been run.** No page, drop zone or dialog has been exercised in a browser. That includes the new tab routes and the Settings tab.
 - **Nothing has been posted to QBO.** The DocNumber lookup (`DocNumber IN (...)`) is marked UNVERIFIED in `qboJournalEntryPayloadUtils.ts`.
 - A read of `qbojournalentryposting` returned 0, but that name was a guess. Mongoose pluralizes the model name `QboJournalEntryPosting`, so the real collection is probably `qbojournalentrypostings`. Check with `list_schema_objects` (see the `mongo-read` skill) before relying on "no postings yet".
 
@@ -76,17 +78,19 @@ Project rules that bite here (see `AGENTS.md`): no `useMemo`/`useCallback`; func
 In rough priority order:
 
 1. **Run `npx tsc --noEmit`** and fix whatever it finds.
-2. **Link `adjustmentAmount`** on `/account/mapping`. The migration skipped it (the old map had no QBO name for it), so any deposit with a nonzero adjustment shows Blocked until it is linked.
-3. **Check `110 - ACCOUNTS RECEIVABLE`** on `/account/mapping`. It needs a default customer, or entries touching it are blocked ("Needs customer").
+2. **Link `adjustmentAmount`** on the Settings tab (same panel as `/account/mapping`). The migration skipped it (the old map had no QBO name for it), so any deposit with a nonzero adjustment shows Blocked until it is linked. The deposit section now shows a warning for this.
+3. **Check `110 - ACCOUNTS RECEIVABLE`** on the Settings tab. It needs a default customer, or entries touching it are blocked ("Needs customer").
+3b. **Link the two check deposit accounts** on the Settings tab: Checking Deposit Account and RG Check Holding Acct. Until both are linked (to different QBO accounts), every check deposit shows Blocked. The section warns about it. If the holding account is a receivable type, it will also ask for a default customer.
 4. **First live post.** Post one small general ledger day. In QBO confirm it exists, balances, and carries the `SJ...` Ref no. Then run reconcile on it, which also checks the DocNumber lookup. Reload Javelin and confirm the banner shows that date.
-5. **Fix the confirm checkbox gap.** Ticking "post this possible duplicate" only changes `confirmedDocNumbers` in the slice. The plan still says `possibleDuplicate` and the Post button counts only `ready` entries, so the user must press **Check entries** again before it takes effect. Either re-run the preview on toggle, or make the button explain it. The server side is already correct: `postGenLedger` and `postDeposits` re-plan with the confirmed list.
+5. ~~Fix the confirm checkbox gap.~~ Done on all three tabs (the preview re-runs on toggle). Not exercised in a browser yet.
 6. **Add Reconcile (and Verify) buttons to the Javelin page.** Reconcile exists only as the QBO API operation (`useQboJournalEntry().reconcile`). The `LatestBanner` warns about unconfirmed entries but offers no way to settle them.
 7. **Decide who else may see Javelin.** It is admin only now because posting is. If non-admins should still see the preview and the banner, widen the roles on the preview and `getLatest` ops deliberately.
-8. **Add tests for `javelinInputUtils.ts`** (runtime validation of browser payloads). The pure helpers elsewhere are covered.
-9. **Cleanup after the user has checked the migration and a live post:** remove `genLedgerAccountMap` and `depositAccountMap` from GlobalSettings (type, model, `baseGlobalSettings`, selectors), then `GenLedgerAccountEntry`, `DepositAccountEntry`, `DepositAccountMap` and `emptyDepositAccountMap` from `JavelinTypes.ts`, and the **Migrate mappings** tab with `src/app/javelin/migration/`. Existing data in those fields can stay in the database.
+8. **Add tests.** `javelinInputUtils.ts` (including the new `validateCkDepositRows`) has none. The check deposit logic has none either, and it is pure and worth covering: `buildCkDepositEntries` (occurrence numbering against stored postings and earlier rows, a failed entry reusing its Ref no.), `planEntries` with a `ckDeposit` (occurrence above 1 is a possible duplicate, confirmed posts), `summarizeDraftRows`, `removePostedRows`, and the `ckDeposit` banner wording. Ask the user first, per the project rules.
+8b. **Open risk: the confirmed second deposit.** It posts as `-2`. If that post times out and ends `unknown`, the `-2` Ref no. is held, and checking again shows the row as a `-3` possible duplicate instead of the unsettled `-2`. Reconcile the unknown entry first (the banner warns about unsettled entries).
+9. **Cleanup, only after the user has tested end to end (including a live post):** remove `genLedgerAccountMap` and `depositAccountMap` from GlobalSettings (type, model, `baseGlobalSettings`, selectors in `globalSettingsSelect.ts`), then `GenLedgerAccountEntry`, `DepositAccountEntry`, `DepositAccountMap` and `emptyDepositAccountMap` from `JavelinTypes.ts`. Nothing reads these any more. Existing data in those fields can stay in the database. The user asked to hold this until the end-to-end test is done.
 
 Open questions to ask the user when relevant: whether zero-net days should ever be recorded (option B: a "skipped" posting with no QBO entry), and whether the `SJ` prefix is what they want long term.
 
 ## When we are all done
 
-**Update `src/app/javelin/javelin.readme.md`.** It was rewritten partway through this refactor, so it describes the intended end state, not necessarily the final code. Do a last pass against the finished code: the file map, the API table, the migration section (delete it if the migration tab is removed), the legacy-field notes, and the design decisions table. Then delete this file (`JavelinRefactor.md`), since it is only a handoff note.
+**Update `src/app/javelin/javelin.readme.md`.** It was rewritten partway through this refactor, so it describes the intended end state, not necessarily the final code. Do a last pass against the finished code: the file map, the API table, the "Legacy account maps" section (delete it once the GlobalSettings cleanup is done), the "When the WorkWave deposit export changes shape" section, and the design decisions table. Then delete this file (`JavelinRefactor.md`), since it is only a handoff note.

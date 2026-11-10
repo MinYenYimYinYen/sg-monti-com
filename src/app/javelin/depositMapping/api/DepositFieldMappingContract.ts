@@ -1,7 +1,7 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { DataResponse } from "@/lib/api/types/responses";
 import { AccountMappingNameType } from "@/app/account/AccountMappingTypes";
-import { DepositField } from "@/app/javelin/JavelinTypes";
+import { DepositLinkKey } from "@/app/javelin/JavelinTypes";
 import { DepositFieldMappingDoc } from "@/app/javelin/depositMapping/DepositFieldMappingTypes";
 
 export interface DepositFieldMappingContract extends ApiContract {
@@ -12,7 +12,7 @@ export interface DepositFieldMappingContract extends ApiContract {
   upsert: {
     // Omitting the default name clears any stored one, so relinking never keeps a stale name.
     params: {
-      field: DepositField;
+      field: DepositLinkKey;
       qboAccountId: string;
       defaultNameType?: AccountMappingNameType;
       defaultNameId?: string;
@@ -20,7 +20,7 @@ export interface DepositFieldMappingContract extends ApiContract {
     result: DataResponse<DepositFieldMappingDoc>;
   };
   remove: {
-    params: { field: DepositField };
+    params: { field: DepositLinkKey };
     result: DataResponse<boolean>;
   };
 }

@@ -40,6 +40,7 @@ import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFee
 import { inventoryReducer } from "@/app/inventory/inventorySlice";
 import javelinReducer from "@/app/javelin/javelinSlice";
 import depositReducer from "@/app/javelin/depositSlice";
+import ckDepositReducer from "@/app/javelin/ckDepositSlice";
 import { priorityServiceReducer } from "@/app/priorityService/priorityServiceSlice";
 import { plannedTimeOffReducer } from "@/app/plannedTimeOff/plannedTimeOffSlice";
 import { holidayReducer } from "@/app/holiday/holidaySlice";
@@ -123,6 +124,7 @@ const rootReducer = combineReducers({
   loadoutReport: loadoutReportReducer,
   javelin: javelinReducer,
   deposit: depositReducer,
+  ckDeposit: ckDepositReducer,
   priorityService: priorityServiceReducer,
   plannedTimeOff: plannedTimeOffReducer,
   holiday: holidayReducer,

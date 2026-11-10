@@ -2,7 +2,6 @@ import {
   JournalEntryPostingLine,
   PostJournalEntriesResult,
 } from "@/app/qbo/journalEntry/types/QboJournalEntryTypes";
-import type { JavelinMigrationReport } from "@/app/javelin/migration/JavelinMigrationTypes";
 
 export type GenLedgerRow = {
   account: string;
@@ -60,19 +59,22 @@ export type JavelinPlanEntry = {
 export type JavelinLatestEntry = {
   txnDate: string;
   docNumber: string;
-  /** Deposits only: what hit the bank. */
+  /** Credit card deposits only: what hit the bank. */
   netDepositCents?: number;
+  /** Check deposits only: the deposit total. */
+  amountCents?: number;
 };
 
 /** What was last posted, so the user knows which CSV data to export next. */
 export type JavelinLatest = {
   genLedger: JavelinLatestEntry | null;
   deposit: JavelinLatestEntry | null;
+  ckDeposit: JavelinLatestEntry | null;
   /** Entries whose outcome is unconfirmed. The dates above cannot be fully trusted until they are settled. */
   unsettledDocNumbers: string[];
 };
 
-export type JavelinKind = "genLedger" | "deposit";
+export type JavelinKind = "genLedger" | "deposit" | "ckDeposit";
 
 export type JavelinState = {
   files: GenLedgerFile[];
@@ -81,7 +83,6 @@ export type JavelinState = {
   plan: JavelinPlanEntry[];
   lastRun: PostJournalEntriesResult | null;
   latest: JavelinLatest | null;
-  migrationReport: JavelinMigrationReport | null;
 };
 
 // ─── Deposit Types ────────────────────────────────────────────────────────────
@@ -131,6 +132,36 @@ export type DepositState = {
   fileName: string;
   warnings: string[];
   errors: string[];
+  confirmedDocNumbers: string[];
+  plan: JavelinPlanEntry[];
+  lastRun: PostJournalEntriesResult | null;
+};
+
+// ─── Check Deposit Types ──────────────────────────────────────────────────────
+
+/**
+ * The two accounts a check deposit moves money between. They are not WorkWave export columns, so
+ * they are kept apart from DepositField: the CSV parser, hash and validation never see them.
+ */
+export type CkDepositLinkKey = "ckDepositAccount" | "ckHoldingAccount";
+
+/** Every key a deposit link can be stored under. */
+export type DepositLinkKey = DepositField | CkDepositLinkKey;
+
+/** What the browser sends for one checking deposit. */
+export type CkDepositRow = {
+  date: string; // ISO yyyy-MM-dd
+  amount: number;
+};
+
+/** A row as typed: the amount stays text so a half-typed number is not rewritten. */
+export type CkDepositDraftRow = {
+  date: string;
+  amount: string;
+};
+
+export type CkDepositState = {
+  rows: CkDepositDraftRow[];
   confirmedDocNumbers: string[];
   plan: JavelinPlanEntry[];
   lastRun: PostJournalEntriesResult | null;

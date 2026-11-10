@@ -32,16 +32,22 @@ const postDeposits = createStandardThunk<JavelinContract, "postDeposits">({
   opName: "postDeposits",
 });
 
+const previewCkDeposits = createStandardThunk<JavelinContract, "previewCkDeposits">({
+  typePrefix: "javelin/previewCkDeposits",
+  apiPath: API_PATH,
+  opName: "previewCkDeposits",
+});
+
+const postCkDeposits = createStandardThunk<JavelinContract, "postCkDeposits">({
+  typePrefix: "javelin/postCkDeposits",
+  apiPath: API_PATH,
+  opName: "postCkDeposits",
+});
+
 const getJavelinLatest = createStandardThunk<JavelinContract, "getLatest">({
   typePrefix: "javelin/getLatest",
   apiPath: API_PATH,
   opName: "getLatest",
-});
-
-const migrateJavelinMappings = createStandardThunk<JavelinContract, "migrateMappings">({
-  typePrefix: "javelin/migrateMappings",
-  apiPath: API_PATH,
-  opName: "migrateMappings",
 });
 
 const initialState: JavelinState = {
@@ -50,7 +56,6 @@ const initialState: JavelinState = {
   plan: [],
   lastRun: null,
   latest: null,
-  migrationReport: null,
 };
 
 const javelinSlice = createSlice({
@@ -83,9 +88,6 @@ const javelinSlice = createSlice({
     builder.addCase(getJavelinLatest.fulfilled, (state, action) => {
       state.latest = action.payload;
     });
-    builder.addCase(migrateJavelinMappings.fulfilled, (state, action) => {
-      state.migrationReport = action.payload;
-    });
   },
 });
 
@@ -95,8 +97,9 @@ export const javelinActions = {
   postGenLedger,
   previewDeposits,
   postDeposits,
+  previewCkDeposits,
+  postCkDeposits,
   getJavelinLatest,
-  migrateJavelinMappings,
 };
 
 const javelinReducer = javelinSlice.reducer;

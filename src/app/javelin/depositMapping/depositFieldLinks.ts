@@ -5,18 +5,20 @@ import {
 } from "@/app/account/_lib/accountLinks";
 import { QboAccount } from "@/app/qbo/account/types/QboAccountTypes";
 import { QboCustomerSummary } from "@/app/qbo/customer/types/QboCustomerTypes";
-import { DEPOSIT_FIELDS } from "@/app/javelin/_lib/depositFields";
+import { DepositLinkKey } from "@/app/javelin/JavelinTypes";
 import {
   DepositFieldLink,
   DepositFieldMappingDoc,
 } from "@/app/javelin/depositMapping/DepositFieldMappingTypes";
 
-/** One link per deposit field, in field order, with the same status rules as RealGreen account links. */
+/** One link per key, in the order given, with the same status rules as RealGreen account links. */
 export function resolveDepositFieldLinks({
+  keys,
   mappingDocs,
   qboAccountMap,
   customerMap,
 }: {
+  keys: DepositLinkKey[];
   mappingDocs: DepositFieldMappingDoc[];
   qboAccountMap: Map<string, QboAccount>;
   customerMap: Map<string, QboCustomerSummary>;
@@ -25,7 +27,7 @@ export function resolveDepositFieldLinks({
   // QBO accounts are loaded all at once, so an empty map means "not loaded yet".
   const qboLoaded = qboAccountMap.size > 0;
 
-  return DEPOSIT_FIELDS.map((field) => {
+  return keys.map((field) => {
     const mapping = mappingByField.get(field);
     const qboAccount = mapping ? (qboAccountMap.get(mapping.qboAccountId) ?? null) : null;
     const nameType = nameTypeForQboAccount(qboAccount);
