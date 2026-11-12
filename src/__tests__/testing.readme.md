@@ -142,3 +142,22 @@ it("returns correct net with 10% program discount and no prepay (CRM: $26.09)", 
 | `realGreen/customer/ServiceUtils.prepayNoDiscount.test.ts` | 14-service no-discount customer at 3% prepay, tax codes 6.875% + 1.4%: per-service and grand totals, half-cent tie rounding (CRM reference values) |
 | `realGreen/customer/ServiceUtils.prepayNoDiscount.customer2.test.ts` | 14-service no-discount customer at 3% prepay, tax codes 6.875% + 0.5%: per-tax-code rounding (166.74 → 12.29, not 12.30), per-service and grand totals (CRM reference values) |
 | `realGreen/priceTable/pricingFuncs.calculateTax.test.ts` | `calculateTax` (incl. per-tax-code rounding) and `calculatePrepayServTotal` pure functions |
+| `permission/hasCapability.test.ts` | `hasCapability`: public ops, identity-before-superuser order, unconfirmed superuser hint, exact capability lookup (no implication or wildcards), applied and kiosk-style users. Shared fixtures in `permission/permissionFixtures.ts` |
+| `permission/createFeatureCapabilities.test.ts` | `createFeatureCapabilities`: capability strings (native and external), public verbs, declaration validation, type inference |
+| `permission/evaluateCapability.test.ts` | `evaluateCapability` with mocked loaders: which database reads each decision makes, superuser confirmation, applied and kiosk users |
+| `auth/tokenUtils.test.ts` | Token payload building (kiosk never gets the superuser hint), round trip, legacy tokens without userName rejected |
+| `auth/userNameUtils.test.ts` | Username validation, regex escaping, case-insensitive literal match |
+| `permission/buildRegistry.test.ts` | `buildRegistry`: allCapabilities, the `has` unknown-string filter, `describe`, `byFeature`, public verbs excluded, duplicate feature keys and capability strings |
+| `permission/capabilityRegistry.drift.test.ts` | Every `*Capabilities.ts` under `src/app` is listed in `capabilityRegistry.ts`, and no registered feature lacks a declaration file. Scans the disk on each run |
+| `permission/superUserRequirement.test.ts` | The `'superUser'` requirement in `hasCapability` and `evaluateCapability`: passes only a confirmed superuser, cannot be granted, skips the capabilities read |
+| `permission/resolveEffective.test.ts` | Plain union of bundles and direct grants, de-duplication, order, no hierarchy, unknown strings dropped, missing bundle ignored |
+| `permission/userCapabilityLogic.test.ts`, `userCapabilityLogic.direct.test.ts` | `assignBundle` (strips covered direct grants), `removeBundle` (what is lost), `addDirect`, `removeDirect`. Exact containment, never mutates |
+| `permission/bundleLogic.test.ts` | `saveBundle`: key and registry validation, added and removed, holders, stripping newly covered direct grants (including repairing drift) |
+| `permission/assignmentGuards.test.ts` | `canAssign` (no escalation), `canManageCapabilitiesOf` (kiosk and superuser targets), warn-only `findMissingCompanions` |
+| `permission/capabilitySelectorLogic.test.ts` | `assignableCapabilities`, `redundantDirect`, `holdersByBundleKey`, `bundleRegistryDiff`. Fixtures in `permission/logicFixtures.ts` |
+| `auth/userValidation.test.ts` | `validateCreateUser`: field rules, untrusted input shapes (objects where text is expected), extra fields ignored, `saId` and email rules |
+| `auth/userCreation.test.ts` | `judgeBogusSaId` (fails closed), duplicate-key messages, `canResetPasswordOf` (admins cannot reset a superuser or kiosk), the no-password placeholder against real bcrypt |
+| `permission/userSummary.test.ts` | `toUserSummary` (explicit field copy, never the password hash), `sortUserSummaries`, `matchesUserSearch` |
+| `permission/capabilityLabels.test.ts` | `capabilityLabel` and `groupCapabilitiesByFeature` (stale strings kept separate) |
+| `permission/navGate.test.ts` | `isGateOpen`: the roles gate (legacy) and the capability gate, `superUser`, not shown until capabilities load |
+| `permission/bundleDraft.test.ts` | The bundle editor's working copy: `draftFromBundle`, toggle and set, `isDraftChanged` |

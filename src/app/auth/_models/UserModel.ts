@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { UserWithPW } from "@/app/auth/_types/User";
 import { ROLES } from "@/lib/api/types/roles";
+import { isValidEmail } from "@/app/auth/_lib/userValidation";
 
 export interface UserDoc extends UserWithPW, mongoose.Document {
 }
@@ -14,8 +15,8 @@ const UserSchema = new mongoose.Schema(
       index: true,
       validate: {
         validator: function (v: string) {
-          // Regular expression for basic email format validation
-          return /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(v);
+          // Same rule the create-user op checks up front, kept in one place
+          return isValidEmail(v);
         },
         message: (props: { value: string }) =>
           `${props.value} is not a valid email!`,
@@ -50,7 +51,7 @@ const UserSchema = new mongoose.Schema(
     },
     saId: {
       type: String,
-      default: null,
+      required: true,
       unique: true,
       index: true,
     },
@@ -58,6 +59,9 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // No defaults: absent means false, and the app never writes isSuperUser.
+    isSuperUser: { type: Boolean },
+    isKiosk: { type: Boolean },
   },
   {
     timestamps: true,

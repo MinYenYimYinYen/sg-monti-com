@@ -21,7 +21,7 @@ export async function assertCurrentUserPassword(password: string): Promise<void>
 
   const payload = verifyAccessToken(token.value);
   await connectToMongoDB();
-  const user = await UserModel.findOne({ saId: payload.saId }).lean();
+  const user = await UserModel.findOne({ userName: payload.userName }).lean();
   if (!user) {
     throw new AppError({ message: "User not found", type: "AUTH_ERROR", statusCode: 401 });
   }

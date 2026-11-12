@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { normalizeError } from "@/lib/errors/errorHandler";
 import { assertRole } from "@/app/auth/_lib/assertRole";
+import { assertCapability } from "@/app/auth/_lib/assertCapability";
+import { Role } from "@/lib/api/types/roles";
+import type { CapabilityRequirement } from "@/permission/PermissionTypes";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 
 /**
@@ -34,7 +37,13 @@ export function createRpcHandler<T extends ApiContract>(
       }
 
       // 3. Security Check
-      await assertRole(config.roles);
+      // An op declares `capability` (new) or `roles` (legacy). Neither fails closed.
+      const { capability, roles } = config as { capability?: CapabilityRequirement; roles?: Role[] };
+      if (capability !== undefined) {
+        await assertCapability(capability);
+      } else {
+        await assertRole(roles ?? []);
+      }
 
       // 4. Execution
       const result = await config.handler(params as any);

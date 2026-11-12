@@ -15,15 +15,28 @@ import { cookies } from "next/headers";
 import {
   signAccessToken,
   signRefreshToken,
+  buildTokenPayload,
+  tokenPayloadFromUser,
   verifyAccessToken,
   verifyRefreshToken,
 } from "@/app/auth/_lib/tokenUtils";
 import { AUTH_CONST } from "@/app/auth/_lib/authConst";
-import { CheckedId, TokenPayload } from "@/app/auth/_types/authTypes";
+import { CheckedId } from "@/app/auth/_types/authTypes";
 import PasswordResetRequestModel from "@/app/auth/_models/PasswordResetRequestModel";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
 import { ROLES } from "@/lib/api/types/roles";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { exactMatchIgnoreCase, isValidUserName, USER_NAME_RULE_MESSAGE } from "@/app/auth/_lib/userNameUtils";
+import { validateCreateUser } from "@/app/auth/_lib/userValidation";
+import {
+  canResetPasswordOf,
+  duplicateKeyField,
+  duplicateKeyMessage,
+  judgeBogusSaId,
+  NO_PASSWORD_PLACEHOLDER,
+} from "@/app/auth/_lib/userCreation";
+import { lookupEmployeeOutcome } from "@/app/auth/_lib/lookupEmployeeOutcome";
+import { loadVerifiedCaller } from "@/app/permission/_lib/capabilityLoaders";
 
 /**
  * 1. DEFINE HANDLERS
@@ -36,7 +49,7 @@ const handlers: HandlerMap<AuthContract> = {
     handler: async ({ saId }) => {
       await connectToMongoDB();
 
-      const alreadyExists = !!(await UserModel.findOne({ saId: { $regex: new RegExp(`^${saId}$`, "i") } }));
+      const alreadyExists = !!(await UserModel.findOne({ saId: { $regex: exactMatchIgnoreCase(saId) } }));
       // If exists locally, it's invalid for registration.
       // If not, check RealGreen.
       const rgEmployee = await rgApi<EmployeeRaw | null>({
@@ -65,6 +78,14 @@ const handlers: HandlerMap<AuthContract> = {
     handler: async (params) => {
       await connectToMongoDB();
       const { password, saId, ...rest } = params;
+
+      if (!isValidUserName(rest.userName)) {
+        throw new AppError({
+          message: USER_NAME_RULE_MESSAGE,
+          type: "VALIDATION_ERROR",
+          statusCode: 400,
+        });
+      }
 
       // 1. Re-Verify Eligibility (Trust No One)
       const alreadyExists = await UserModel.findOne({ saId });
@@ -97,7 +118,11 @@ const handlers: HandlerMap<AuthContract> = {
       // We force the role to "applied", pending manager approval
       // to prevent someone from POSTing role: 'admin'
       const newUser = await UserModel.create({
-        ...rest,
+        // Explicit fields, never ...rest: a client must not be able to set isSuperUser or isKiosk.
+        email: rest.email,
+        firstName: rest.firstName,
+        lastName: rest.lastName,
+        userName: rest.userName,
         saId,
         password: hashedPassword,
         role: "applied", // Default role
@@ -114,13 +139,68 @@ const handlers: HandlerMap<AuthContract> = {
       };
     },
   },
+  createUser: {
+    // Not a capability: it cannot be granted, so only a confirmed superuser (database, not the
+    // token claim) can create users.
+    capability: "superUser",
+    handler: async (params) => {
+      const check = validateCreateUser(params);
+      if (!check.ok) {
+        throw new AppError({ message: check.message, type: "VALIDATION_ERROR", statusCode: 400 });
+      }
+      const newUser = check.value;
+      await connectToMongoDB();
+
+      // Lookups elsewhere are case-insensitive, so "Luke" and "luke" must not coexist.
+      const [sameUserName, sameSaId] = await Promise.all([
+        UserModel.exists({ userName: { $regex: exactMatchIgnoreCase(newUser.userName) } }),
+        UserModel.exists({ saId: { $regex: exactMatchIgnoreCase(newUser.saId) } }),
+      ]);
+      if (sameUserName) {
+        throw new AppError({ message: duplicateKeyMessage("userName"), type: "VALIDATION_ERROR", statusCode: 400 });
+      }
+      if (sameSaId) {
+        throw new AppError({ message: duplicateKeyMessage("saId"), type: "VALIDATION_ERROR", statusCode: 400 });
+      }
+
+      // The made-up saId must not belong to a real employee. Fails closed if RealGreen can't say.
+      const verdict = judgeBogusSaId({ saId: newUser.saId, outcome: await lookupEmployeeOutcome(newUser.saId) });
+      if (!verdict.ok) {
+        throw new AppError({ message: verdict.message, type: "VALIDATION_ERROR", statusCode: 400 });
+      }
+
+      let created;
+      try {
+        created = await UserModel.create({
+          userName: newUser.userName,
+          email: newUser.email,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          saId: newUser.saId,
+          role: newUser.role,
+          // Absent means false, like every user that already exists.
+          ...(newUser.isKiosk ? { isKiosk: true } : {}),
+          password: NO_PASSWORD_PLACEHOLDER,
+        });
+      } catch (error) {
+        const field = duplicateKeyField(error);
+        if (field) {
+          throw new AppError({ message: duplicateKeyMessage(field), type: "VALIDATION_ERROR", statusCode: 400 });
+        }
+        throw error;
+      }
+
+      const { password: _password, ...safeUser } = created.toObject();
+      return { success: true, payload: cleanMongoObject(safeUser) as User };
+    },
+  },
   login: {
     roles: ["public"],
     handler: async ({ userName, password }) => {
       await connectToMongoDB();
 
       // 1. Find User
-      const userDoc = await UserModel.findOne({ userName: { $regex: new RegExp(`^${userName}$`, "i") } }).lean();
+      const userDoc = await UserModel.findOne({ userName: { $regex: exactMatchIgnoreCase(userName) } }).lean();
       if (!userDoc) {
         throw new AppError({
           message: "Invalid credentials",
@@ -141,11 +221,7 @@ const handlers: HandlerMap<AuthContract> = {
       }
 
       // 3. Generate Tokens
-      const payload: TokenPayload = {
-        role: user.role,
-        saId: user.saId,
-        mustChangePassword: user.mustChangePassword,
-      };
+      const payload = tokenPayloadFromUser(user);
       const accessToken = signAccessToken(payload);
       const refreshToken = signRefreshToken(payload);
 
@@ -208,11 +284,7 @@ const handlers: HandlerMap<AuthContract> = {
       // We reuse the payload from the refresh token (userId, role, saId)
       // Ideally, we should check if the user still exists/is active in DB here
       // but for sec90Feet, we can trust the signed refresh token for now.
-      const newPayload: TokenPayload = {
-        role: payload.role,
-        saId: payload.saId,
-        mustChangePassword: payload.mustChangePassword,
-      };
+      const newPayload = buildTokenPayload(payload);
       const newAccessToken = signAccessToken(newPayload);
 
       // 3. Set New Access Cookie
@@ -245,7 +317,7 @@ const handlers: HandlerMap<AuthContract> = {
       // Verify & Get User
       const payload = verifyAccessToken(token.value);
       await connectToMongoDB();
-      const user = await UserModel.findOne({ saId: payload.saId });
+      const user = await UserModel.findOne({ userName: payload.userName });
 
       if (!user) {
         throw new AppError({
@@ -255,7 +327,9 @@ const handlers: HandlerMap<AuthContract> = {
         });
       }
 
-      return { success: true, payload: cleanMongoObject(user.toObject()) };
+      // Never send the password hash to the client.
+      const { password: _password, ...safeUser } = user.toObject();
+      return { success: true, payload: cleanMongoObject(safeUser) };
     },
   },
   requestPasswordReset: {
@@ -264,7 +338,7 @@ const handlers: HandlerMap<AuthContract> = {
       await connectToMongoDB();
 
       // 1. Find User
-      const user = await UserModel.findOne({ userName: { $regex: new RegExp(`^${userName}$`, "i") } });
+      const user = await UserModel.findOne({ userName: { $regex: exactMatchIgnoreCase(userName) } });
 
       // Security: Always return success to prevent username enumeration
       if (!user) {
@@ -314,6 +388,17 @@ const handlers: HandlerMap<AuthContract> = {
           message: "User not found",
           type: "SERVER_ERROR",
           statusCode: 500,
+        });
+      }
+
+      // Only a superuser may reset a kiosk or superuser. Any admin could otherwise take
+      // one over, which would defeat the rule that superuser status is controlled in Compass.
+      const caller = await loadVerifiedCaller();
+      if (!canResetPasswordOf({ target: user, actorIsSuperUser: caller.isSuperUser })) {
+        throw new AppError({
+          message: "Only a superuser can reset the password of a kiosk or superuser.",
+          type: "AUTH_ERROR",
+          statusCode: 403,
         });
       }
 
@@ -408,7 +493,7 @@ const handlers: HandlerMap<AuthContract> = {
       const payload = verifyAccessToken(token.value);
 
       await connectToMongoDB();
-      const user = await UserModel.findOne({ saId: payload.saId }).lean();
+      const user = await UserModel.findOne({ userName: payload.userName }).lean();
 
       if (!user) {
         throw new AppError({
@@ -444,7 +529,7 @@ const handlers: HandlerMap<AuthContract> = {
       const payload = verifyAccessToken(token.value);
 
       await connectToMongoDB();
-      const user = await UserModel.findOne({ saId: payload.saId });
+      const user = await UserModel.findOne({ userName: payload.userName });
 
       if (!user) {
         throw new AppError({
@@ -463,11 +548,7 @@ const handlers: HandlerMap<AuthContract> = {
       await user.save();
 
       // 4. Issue New Tokens (without the flag)
-      const newPayload: TokenPayload = {
-        role: user.role,
-        saId: user.saId,
-        mustChangePassword: false,
-      };
+      const newPayload = tokenPayloadFromUser(user);
       const accessToken = signAccessToken(newPayload);
       const refreshToken = signRefreshToken(newPayload);
 

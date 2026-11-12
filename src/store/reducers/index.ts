@@ -57,6 +57,8 @@ import seasonIncreasesReducer from "@/app/priceIncrease/seasonIncreases/seasonIn
 import priceIncreaseSettingsReducer from "@/app/priceIncrease/settings/settingsSlice";
 import priceIncreaseConfigReducer from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
 import { topicReducer } from "@/app/knowledgeBase/topicSlice";
+import capabilityBundleReducer from "@/app/permission/capabilityBundle/capabilityBundleSlice";
+import userCapabilitiesReducer from "@/app/permission/userCapabilities/userCapabilitiesSlice";
 import { corruptedSyncRecordReducer } from "@/app/realGreen/customer/sync/corruptedRecords/corruptedSyncRecordSlice";
 import { prepayConfigReducer } from "@/app/prepayLetters/config/prepayConfigSlice";
 import { upsellPrioritiesReducer } from "@/app/prepayLetters/upsellPriorities/upsellPrioritiesSlice";
@@ -165,6 +167,8 @@ const rootReducer = combineReducers({
   importPost: importPostReducer,
   importDecision: importDecisionReducer,
   topic: topicReducer,
+  capabilityBundle: capabilityBundleReducer,
+  userCapabilities: userCapabilitiesReducer,
 });
 
 export default rootReducer;

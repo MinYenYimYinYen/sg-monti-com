@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { jwtVerify, JWTPayload } from "jose";
 import { AUTH_CONST } from "@/app/auth/_lib/authConst";
 import { TokenPayload } from "@/app/auth/_types/authTypes";
-import { signAccessToken } from "@/app/auth/_lib/tokenUtils";
+import { buildTokenPayload, signAccessToken } from "@/app/auth/_lib/tokenUtils";
 
 // -----------------------------------------------------------------------------
 // Configuration & Helpers
@@ -22,7 +22,8 @@ async function verifyAccessToken(
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, ENCODED_ACCESS_SECRET);
-    return payload as CustomJwtPayload;
+    // Tokens without userName predate the permission system: treat as signed out (forces re-login).
+    return payload.userName ? (payload as CustomJwtPayload) : null;
   } catch {
     return null;
   }
@@ -34,7 +35,8 @@ async function verifyRefreshToken(
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, ENCODED_REFRESH_SECRET);
-    return payload as CustomJwtPayload;
+    // Tokens without userName predate the permission system: treat as signed out (forces re-login).
+    return payload.userName ? (payload as CustomJwtPayload) : null;
   } catch {
     return null;
   }
@@ -49,11 +51,7 @@ async function tryRefreshToken(
   if (!refreshPayload) return null;
 
   // Generate new access token
-  const tokenPayload: TokenPayload = {
-    role: refreshPayload.role,
-    saId: refreshPayload.saId,
-    mustChangePassword: refreshPayload.mustChangePassword,
-  };
+  const tokenPayload: TokenPayload = buildTokenPayload(refreshPayload);
   const newAccessToken = signAccessToken(tokenPayload);
 
   return {

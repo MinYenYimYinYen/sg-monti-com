@@ -14,7 +14,7 @@ export interface AuthContract extends ApiContract {
     result: DataResponse<CheckedId>;
   };
 
-  // 2. Create the account
+  // 2. Create the user
   register: {
     params: UserWithPW; // Full payload including password
     result: DataResponse<User>; // Return safe user (no password)
@@ -93,5 +93,22 @@ export interface AuthContract extends ApiContract {
       password: string;
     };
     result: DataResponse<boolean>;
+  };
+
+  // 13. Create User (Superuser only)
+  // Makes a superuser-administration or kiosk user with a made-up saId and no usable
+  // password: the user signs in through the forgot-password flow. `isKiosk` must be false for
+  // a user who will become a superuser, since a kiosk is never treated as one.
+  createUser: {
+    params: {
+      userName: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      saId: string;
+      role: Role;
+      isKiosk: boolean;
+    };
+    result: DataResponse<User>;
   };
 }

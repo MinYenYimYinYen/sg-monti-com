@@ -20,6 +20,7 @@ type AuthState = {
   isInitialized: boolean;
   invalidCredentialsEntered: boolean;
   passwordResetRequestStatus: RequestStatus;
+  createUserStatus: RequestStatus;
 
   // Admin State
   pendingAdminActions: PendingAdminActions;
@@ -36,6 +37,7 @@ const initialState: AuthState = {
   isInitialized: false,
   invalidCredentialsEntered: false,
   passwordResetRequestStatus: "idle",
+  createUserStatus: "idle",
   pendingAdminActions: {
     appliedUsers: [],
     pendingResets: [],
@@ -139,6 +141,13 @@ const confirmPassword = createStandardThunk<AuthContract, "confirmPassword">({
   opName: "confirmPassword",
 });
 
+// L. Create User (Superuser)
+const createUser = createStandardThunk<AuthContract, "createUser">({
+  typePrefix: "auth/createUser",
+  apiPath: "/auth/api",
+  opName: "createUser",
+});
+
 // 3. SLICE
 const authSlice = createSlice({
   name: "auth",
@@ -160,6 +169,9 @@ const authSlice = createSlice({
     },
     resetPasswordResetStatus: (state) => {
       state.passwordResetRequestStatus = "idle";
+    },
+    resetCreateUserStatus: (state) => {
+      state.createUserStatus = "idle";
     },
   },
   extraReducers: (builder) => {
@@ -257,6 +269,17 @@ const authSlice = createSlice({
         state.user.mustChangePassword = false;
       }
     });
+
+    // Create User (superuser): the dialog reads this to show the result without checking the thunk.
+    builder.addCase(createUser.pending, (state) => {
+      state.createUserStatus = "pending";
+    });
+    builder.addCase(createUser.fulfilled, (state) => {
+      state.createUserStatus = "success";
+    });
+    builder.addCase(createUser.rejected, (state) => {
+      state.createUserStatus = "error";
+    });
   },
   selectors: {
     user: (state) => state.user,
@@ -265,6 +288,7 @@ const authSlice = createSlice({
     isInitialized: (state) => state.isInitialized,
     invalidCredentialsEntered: (state) => state.invalidCredentialsEntered,
     passwordResetRequestStatus: (state) => state.passwordResetRequestStatus,
+    createUserStatus: (state) => state.createUserStatus,
     registrationEligibility: (state) => state.registrationEligibility,
     checkedIds: (state) => state.checkedIds,
     adminPendingUsers: (state) => state.pendingAdminActions.appliedUsers,
@@ -285,6 +309,7 @@ export const authActions = {
   resolvePasswordReset,
   changePassword,
   confirmPassword,
+  createUser,
 };
 export const authSelect = { ...authSlice.selectors };
 export default authSlice.reducer;

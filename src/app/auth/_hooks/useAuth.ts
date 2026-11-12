@@ -100,6 +100,16 @@ export const useAuth = () => {
     );
   };
 
+  /** Superuser only. The new user has no password and signs in through forgot-password. */
+  const createUser = (params: AuthContract["createUser"]["params"]) => {
+    return dispatch(
+      authActions.createUser({
+        params,
+        config: { loadingMsg: "Creating user...", successMsg: "User created" },
+      }),
+    );
+  };
+
   const resetEligibility = () => {
     dispatch(authActions.resetEligibility());
   };
@@ -110,6 +120,10 @@ export const useAuth = () => {
 
   const resetPasswordResetStatus = () => {
     dispatch(authActions.resetPasswordResetStatus());
+  };
+
+  const resetCreateUserStatus = () => {
+    dispatch(authActions.resetCreateUserStatus());
   };
 
   /**
@@ -142,5 +156,7 @@ export const useAuth = () => {
     setInvalidCredentials,
     resetPasswordResetStatus,
     confirmPassword,
+    createUser,
+    resetCreateUserStatus,
   };
 };

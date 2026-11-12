@@ -1,10 +1,13 @@
-import { Role } from "@/lib/api/types/roles";
+import type { User } from "@/app/auth/_types/User";
 
-export type TokenPayload = {
-  role: Role;
-  saId: string;
-  mustChangePassword?: boolean;
-};
+/**
+ * The verified access-token claims: the server's picture of who is asking. isSuperUser is only
+ * a hint here; the server confirms it against the user document. ole goes away with roles.
+ */
+export type TokenPayload = Pick<
+  User,
+  "userName" | "saId" | "role" | "mustChangePassword" | "isSuperUser"
+>;
 
 export type CheckedId = {
   checked: boolean;

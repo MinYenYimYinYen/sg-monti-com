@@ -10,17 +10,18 @@ import {
 } from "@/style/components/dropdown-menu";
 import { Button } from "@/style/components/button";
 import Link from "next/link";
-import { Role } from "@/lib/api/types/roles";
+import type { OpGate } from "@/lib/api/types/rpcUtils";
+import { capabilityManagementCapabilities } from "@/app/permission/capabilityManagementCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { isGateOpen } from "@/permission/logic/navGate";
 import { Menu } from "lucide-react";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 
-type NavItem = {
-  title: string;
-  href: string;
-  roles: Role[];
-};
+// A nav entry carries the same gate as an RPC op: roles (legacy) or capability. Entries move to
+// capability with their routes, and removing roles from OpGate then flags any left behind.
+type NavItem = { title: string; href: string } & OpGate;
 
 type NavSection = {
   title: string;
@@ -119,25 +120,37 @@ const quickBooksSection: NavSection = {
   ],
 };
 
+const permissionSection: NavSection = {
+  title: "Permissions",
+  navItems: [
+    {
+      title: "Users and Bundles",
+      href: "/permission/users",
+      capability: capabilityManagementCapabilities.can.userCapabilities.read,
+    },
+  ],
+};
+
 const menuSections = [
   schedulingSection,
   customerContactSection,
   realGreenParams,
   bizPlanSection,
   quickBooksSection,
+  permissionSection,
 ];
 
 export default function NavMenu() {
   const isClient = useIsClient();
   const user = useSelector(authSelect.user);
-  const role = user?.role || "public";
+  const mine = useSelector(userCapabilitiesSelect.mine);
 
   if (!isClient) return null;
 
   const userSections = menuSections
     .map((section) => ({
       title: section.title,
-      navItems: section.navItems.filter((item) => item.roles.includes(role)),
+      navItems: section.navItems.filter((item) => isGateOpen({ gate: item, user, mine })),
     }))
     .filter((section) => section.navItems.length > 0);
 

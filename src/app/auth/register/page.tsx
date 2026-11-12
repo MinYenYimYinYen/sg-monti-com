@@ -14,6 +14,7 @@ import { FormGroup } from "@/components/FormGroup";
 import { InfoBox } from "@/style/componentsLegacy/InfoBox";
 import { Label } from "@/style/components/label";
 import { Button } from "@/style/components/button";
+import { isValidUserName, USER_NAME_RULE_MESSAGE } from "@/app/auth/_lib/userNameUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,6 +74,10 @@ export default function RegisterPage() {
   // STEP 2: Complete Registration
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidUserName(form.userName)) {
+      toast.error(USER_NAME_RULE_MESSAGE);
+      return;
+    }
     if (form.password !== form.confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -180,6 +185,8 @@ export default function RegisterPage() {
               required
               placeholder="Choose a username"
               autoComplete="username"
+              pattern="[A-Za-z0-9._\-]{3,32}"
+              title={USER_NAME_RULE_MESSAGE}
             />
           </FormGroup>
 

@@ -8,6 +8,10 @@ export interface User {
   role: Role;
   saId: string;
   mustChangePassword?: boolean;
+  /** Set in Compass only; no app route writes it. The server confirms it against the document. */
+  isSuperUser?: boolean;
+  /** Set only by the superuser-only create op. Shared-device account. */
+  isKiosk?: boolean;
 }
 
 export interface UserWithPW extends User {
