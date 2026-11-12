@@ -10,13 +10,18 @@ import { qboCustomerSelect } from "@/app/qbo/customer/qboCustomerSelect";
 import { qboVendorSelect } from "@/app/qbo/vendor/qboVendorSelect";
 import { accountSelect } from "@/app/account/accountSelect";
 import { useAccount } from "@/app/account/useAccount";
-import { AccountLinkStatus, RgAccountLink } from "@/app/account/AccountMappingTypes";
+import {
+  AccountLinkStatus,
+  RgAccountLink,
+} from "@/app/account/AccountMappingTypes";
 import { MappingPicker } from "@/app/account/_components/MappingPicker";
 import { nameTypeForQboAccount } from "@/app/account/_lib/accountLinks";
 import {
   formatQboAccountLabel,
   suggestedQboAccountIds,
 } from "@/app/account/_lib/accountMappingView";
+import { accountCapabilities } from "@/app/account/accountCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type StatusDisplay = {
   label: string;
@@ -28,15 +33,32 @@ const statusDisplay: Record<AccountLinkStatus, StatusDisplay> = {
   mapped: { label: "Mapped", variant: "accent", intensity: "soft" },
   unmapped: { label: "Unmapped", variant: "primary", intensity: "ghost" },
   unverified: { label: "Unverified", variant: "primary", intensity: "soft" },
-  inactive: { label: "QBO account inactive", variant: "destructive", intensity: "soft" },
-  missing: { label: "QBO account missing", variant: "destructive", intensity: "soft" },
-  needsName: { label: "Needs customer", variant: "destructive", intensity: "soft" },
+  inactive: {
+    label: "QBO account inactive",
+    variant: "destructive",
+    intensity: "soft",
+  },
+  missing: {
+    label: "QBO account missing",
+    variant: "destructive",
+    intensity: "soft",
+  },
+  needsName: {
+    label: "Needs customer",
+    variant: "destructive",
+    intensity: "soft",
+  },
 };
 
 const noSuggestions = new Set<string>();
+const { can } = accountCapabilities;
 
 /** One RealGreen account and the QuickBooks account it is linked to. Each change saves at once. */
 export function AccountMappingRow({ link }: { link: RgAccountLink }) {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.accountMappings.write);
+  const canDelete = allows(can.accountMappings.delete);
+
   const { rgAccount, qboAccount, status, nameType, defaultNameId } = link;
   const qboAccounts = useSelector(qboAccountSelect.accounts);
   const qboAccountMap = useSelector(qboAccountSelect.accountMap);
@@ -49,7 +71,8 @@ export function AccountMappingRow({ link }: { link: RgAccountLink }) {
   const { upsertMapping, removeMapping } = useAccount({ autoLoad: false });
 
   const mappedQboAccountId =
-    mappingDocs.find((doc) => doc.rgAccountId === rgAccount.rgAccountId)?.qboAccountId ?? "";
+    mappingDocs.find((doc) => doc.rgAccountId === rgAccount.rgAccountId)
+      ?.qboAccountId ?? "";
   // An inactive account is not an option, and a missing one is unknown. Show what is stored.
   const selectedLabel = qboAccount
     ? formatQboAccountLabel(qboAccount)
@@ -62,14 +85,19 @@ export function AccountMappingRow({ link }: { link: RgAccountLink }) {
   const isCustomer = nameType === "Customer";
   const nameOptions = isCustomer ? customerOptions : vendorOptions;
   const storedName = defaultNameId
-    ? (isCustomer ? customerMap.get(defaultNameId)?.FullyQualifiedName : vendorMap.get(defaultNameId)?.DisplayName) ??
-      `QuickBooks ${isCustomer ? "customer" : "vendor"} ${defaultNameId}`
+    ? ((isCustomer
+        ? customerMap.get(defaultNameId)?.FullyQualifiedName
+        : vendorMap.get(defaultNameId)?.DisplayName) ??
+      `QuickBooks ${isCustomer ? "customer" : "vendor"} ${defaultNameId}`)
     : null;
 
   const handleSelectAccount = (qboAccountId: string) => {
     // Keep the default name only when the new account takes the same kind of name.
-    const nextNameType = nameTypeForQboAccount(qboAccountMap.get(qboAccountId) ?? null);
-    const keepName = nextNameType !== null && nextNameType === nameType && defaultNameId;
+    const nextNameType = nameTypeForQboAccount(
+      qboAccountMap.get(qboAccountId) ?? null,
+    );
+    const keepName =
+      nextNameType !== null && nextNameType === nameType && defaultNameId;
     upsertMapping({
       rgAccountId: rgAccount.rgAccountId,
       qboAccountId,
@@ -88,7 +116,10 @@ export function AccountMappingRow({ link }: { link: RgAccountLink }) {
   };
 
   const handleClearName = () => {
-    upsertMapping({ rgAccountId: rgAccount.rgAccountId, qboAccountId: mappedQboAccountId });
+    upsertMapping({
+      rgAccountId: rgAccount.rgAccountId,
+      qboAccountId: mappedQboAccountId,
+    });
   };
 
   return (
@@ -113,6 +144,7 @@ export function AccountMappingRow({ link }: { link: RgAccountLink }) {
                 selectedLabel={selectedLabel}
                 placeholder="Choose account"
                 onSelectAction={handleSelectAccount}
+                disabled={!canWrite}
               />
             </div>
             <Button
@@ -120,7 +152,7 @@ export function AccountMappingRow({ link }: { link: RgAccountLink }) {
               intensity="ghost"
               size="icon"
               aria-label="Remove link"
-              disabled={!mappedQboAccountId}
+              disabled={!mappedQboAccountId || !canDelete}
               onClick={() => removeMapping(rgAccount.rgAccountId)}
             >
               <X />
@@ -135,8 +167,13 @@ export function AccountMappingRow({ link }: { link: RgAccountLink }) {
                   suggestedIds={noSuggestions}
                   value={defaultNameId ?? ""}
                   selectedLabel={storedName}
-                  placeholder={isCustomer ? "Choose default customer" : "Choose default vendor (optional)"}
+                  placeholder={
+                    isCustomer
+                      ? "Choose default customer"
+                      : "Choose default vendor (optional)"
+                  }
                   onSelectAction={handleSelectName}
+                  disabled={!canWrite}
                 />
               </div>
               {/* A customer is required on Accounts Receivable, so only the optional vendor can be cleared. */}
@@ -146,7 +183,7 @@ export function AccountMappingRow({ link }: { link: RgAccountLink }) {
                   intensity="ghost"
                   size="icon"
                   aria-label="Remove default vendor"
-                  disabled={!defaultNameId}
+                  disabled={!defaultNameId || !canWrite}
                   onClick={handleClearName}
                 >
                   <X />

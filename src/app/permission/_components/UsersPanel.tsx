@@ -22,6 +22,8 @@ export function UsersPanel() {
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
 
   const visibleUsers = users.filter((user) => matchesUserSearch({ user, search }));
+  // A user who was just deleted is still the selected name, so selection only counts while they exist.
+  const selectedUserExists = users.some((user) => user.userName === selectedUserName);
 
   return (
     <div className="flex h-full min-h-0">
@@ -63,7 +65,7 @@ export function UsersPanel() {
       </aside>
 
       <section className="h-full min-h-0 flex-1 overflow-y-auto">
-        {selectedUserName ? (
+        {selectedUserName && selectedUserExists ? (
           <UserCapabilityEditor key={selectedUserName} userName={selectedUserName} />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

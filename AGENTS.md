@@ -57,6 +57,10 @@ Task-specific procedures live in `.claude/skills/` and load on demand. Use the m
 - **String dates**: all dates are strings (ISO 8601).
 - **Types over interfaces**, except where an interface provides necessary functionality that types cannot.
 - **Always create models with `createModel(name, schema)`** from `@/lib/mongoose/createModel`, never `mongoose.model()` directly, to avoid `OverwriteModelError` on hot reload.
+- **Records that reference a person (deleting a user)**: ask "is this still useful to the team without them?"
+    - **Yes** (authored shared content such as templates and configs, and history such as who imported or posted): keep it when the user is deleted, and store the author's `saId` (the employee id), not `userName`. `saId` identifies the employee and outlives their login.
+    - **No** (access, pending resets, or an assignment of responsibility to a login, such as a card assignment): it stores `userName`, and `deleteUserReferences` (`src/app/auth/_lib/deleteUserReferences.ts`) must delete it. Add new ones there.
+    - Full table and reasoning: `src/lib/mongoose/mongo.readme.md` section 4.
 
 ### Type Naming Conventions
 

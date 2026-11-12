@@ -2,6 +2,7 @@
 import { AsyncLocalStorage } from "async_hooks";
 import { trimStringValues } from "@/lib/primatives/string/trimStringValues";
 import { AppError } from "@/lib/errors/AppError";
+import { parseRgBody } from "@/app/realGreen/_lib/api/parseRgBody";
 
 export const realGreenBaseUrl = "https://saapi.realgreen.com";
 const rgApiKey = process.env.RGAPI_KEY;
@@ -56,7 +57,7 @@ export async function rgHttp<T>(endpoint: string, config: RequestInit = {}, path
       });
     }
 
-    let data = await res.json();
+    let data = parseRgBody(await res.text());
 
     // The "Interceptor" Logic
     if (data) {

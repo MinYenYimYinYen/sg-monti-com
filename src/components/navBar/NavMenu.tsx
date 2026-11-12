@@ -18,6 +18,7 @@ import { Menu } from "lucide-react";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
 import { useIsClient } from "@/lib/hooks/useIsClient";
+import { accountCapabilities } from "@/app/account/accountCapabilities";
 
 // A nav entry carries the same gate as an RPC op: roles (legacy) or capability. Entries move to
 // capability with their routes, and removing roles from OpGate then flags any left behind.
@@ -72,9 +73,17 @@ const schedulingSection: NavSection = {
 const customerContactSection: NavSection = {
   title: "Customer Contact",
   navItems: [
-    { title: "Prepay Letters", href: "/prepayLetters/config", roles: ["admin", "office"] },
+    {
+      title: "Prepay Letters",
+      href: "/prepayLetters/config",
+      roles: ["admin", "office"],
+    },
     { title: "QuickSend", href: "/quickSend", roles: ["admin", "office"] },
-    { title: "Form Templates", href: "/formTemplate", roles: ["admin", "office"] },
+    {
+      title: "Form Templates",
+      href: "/formTemplate",
+      roles: ["admin", "office"],
+    },
   ],
 };
 
@@ -106,8 +115,16 @@ const bizPlanSection: NavSection = {
   navItems: [
     { title: "Product Forecast", href: "/bizPlan/products", roles: ["admin"] },
     { title: "Monthly Inventory", href: "/inventory", roles: ["admin"] },
-    { title: "Productivity", href: "/productivity", roles: ["admin", "office"] },
-    { title: "Customer Sanity Checks", href: "/sanity", roles: ["admin", "office"] },
+    {
+      title: "Productivity",
+      href: "/productivity",
+      roles: ["admin", "office"],
+    },
+    {
+      title: "Customer Sanity Checks",
+      href: "/sanity",
+      roles: ["admin", "office"],
+    },
   ],
 };
 
@@ -115,8 +132,16 @@ const quickBooksSection: NavSection = {
   title: "QuickBooks",
   navItems: [
     { title: "Connection", href: "/qbo/connection", roles: ["admin"] },
-    { title: "Import Credit Cards", href: "/qbo/importCCTxn", roles: ["admin", "office"] },
-    { title: "Account Mapping", href: "/account/mapping", roles: ["admin"] },
+    {
+      title: "Import Credit Cards",
+      href: "/qbo/importCCTxn",
+      roles: ["admin", "office"],
+    },
+    {
+      title: "Account Mapping",
+      href: "/account/mapping",
+      capability: accountCapabilities.can.accountMappings.read,
+    },
   ],
 };
 
@@ -150,7 +175,9 @@ export default function NavMenu() {
   const userSections = menuSections
     .map((section) => ({
       title: section.title,
-      navItems: section.navItems.filter((item) => isGateOpen({ gate: item, user, mine })),
+      navItems: section.navItems.filter((item) =>
+        isGateOpen({ gate: item, user, mine }),
+      ),
     }))
     .filter((section) => section.navItems.length > 0);
 

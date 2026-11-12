@@ -109,6 +109,14 @@ const userCapabilitiesSlice = createSlice({
     // A later login in the same tab must not see the previous user's capabilities.
     builder.addCase(authActions.logout.fulfilled, () => initialState);
 
+    // A deleted user leaves the list, and their assignments document goes with them (the server
+    // deletes it), so no stale holdings are shown.
+    builder.addCase(authActions.deleteUser.fulfilled, (state, action) => {
+      const { userName } = action.payload;
+      state.users = state.users.filter((user) => user.userName !== userName);
+      state.docs = state.docs.filter((doc) => doc.userName !== userName);
+    });
+
     // A user created from the Users screen appears in the list without a refetch.
     builder.addCase(authActions.createUser.fulfilled, (state, action) => {
       const created = toUserSummary(action.payload);

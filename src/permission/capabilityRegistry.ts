@@ -1,5 +1,9 @@
-import { buildRegistry, RegisteredCapability } from '@/permission/buildRegistry';
-import { capabilityManagementCapabilities } from '@/app/permission/capabilityManagementCapabilities';
+import {
+  buildRegistry,
+  RegisteredCapability,
+} from "@/permission/buildRegistry";
+import { capabilityManagementCapabilities } from "@/app/permission/capabilityManagementCapabilities";
+import { accountCapabilities } from "@/app/account/accountCapabilities";
 
 // The one place that lists every feature's capabilities, the way combineReducers lists slices.
 // To register a feature, import the result of its createFeatureCapabilities (kept beside the
@@ -12,8 +16,13 @@ import { capabilityManagementCapabilities } from '@/app/permission/capabilityMan
 // Starts with the permission module's own feature. Other features are added as they declare
 // capabilities (nothing blocks on that: every module that takes a registry is tested against
 // test-local ones).
-export const registeredFeatures = [capabilityManagementCapabilities] as const;
+export const registeredFeatures = [
+  capabilityManagementCapabilities,
+  accountCapabilities,
+] as const;
 
-export type RegisteredCapabilityString = RegisteredCapability<typeof registeredFeatures>;
+export type RegisteredCapabilityString = RegisteredCapability<
+  typeof registeredFeatures
+>;
 
 export const capabilityRegistry = buildRegistry(registeredFeatures);

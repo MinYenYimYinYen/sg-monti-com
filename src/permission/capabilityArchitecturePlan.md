@@ -40,8 +40,8 @@ Last verified: `npx tsc --noEmit` reports 0 errors and `npx vitest run` passes 1
 Nothing built here has run against real data. Before adding features on top, walk through it once. If something fails, bring the exact error text.
 
 1. **Make a superuser.** In Compass set `isSuperUser: true` on your user, then log out and in (old tokens lack the claim). Confirm the "Permissions" menu entry appears.
-2. **Create `superLuke`** from Users, Create User: `isKiosk` off, role `admin`, a made-up `saId`. **The made-up `saId` check is unconfirmed against live RealGreen.** The code accepts a `404` or an empty answer as "no such employee" and refuses anything else, and the error says exactly what RealGreen returned. If a genuinely unknown id is refused, send me that message and `judgeBogusSaId` (in `userCreation.ts`) gets a one-line change.
-3. **Give `superLuke` a password:** forgot-password, then resolve the reset from the admin inbox as a superuser. Set `isSuperUser` on `superLuke` in Compass.
+2. **Create `superLuke`** from Users, Create User. A regular user needs a real RealGreen employee id that is not already a user, and a kiosk cannot be a superuser, so either use a real employee id here or insert the document directly in Compass. The `saId` check fails closed and its message says exactly what RealGreen returned.
+3. **Set `isSuperUser` on `superLuke` in Compass.** The create op never sets it. The password was set in the dialog, so no forgot-password step is needed.
 4. **Bundles:** create a bundle (only the three `capabilityManagement` capabilities exist to pick from), save it, edit it, confirm the save preview.
 5. **Assign** the bundle to a user, check the "everything this user can do" list, then remove it and check the preview of what is lost. Try a direct capability, including one a held bundle already lists.
 6. **Check `getMine`:** log in as that user and confirm the resolved list loads. Log out and in as someone else and confirm the previous user's list is gone.

@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
+import { judgeUserDeletion } from "@/app/auth/_lib/userDeletion";
 import { capabilityBundleSelect } from "@/app/permission/capabilityBundle/capabilityBundleSelect";
 import { capabilityManagementCapabilities } from "@/app/permission/capabilityManagementCapabilities";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { useUserCapabilities } from "@/app/permission/userCapabilities/useUserCapabilities";
 import { CapabilityGroups } from "@/app/permission/_components/CapabilityGroups";
+import { DeleteUserDialog } from "@/app/permission/_components/DeleteUserDialog";
 import { Notice } from "@/app/permission/_components/Notice";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
 import { canAssign, canManageCapabilitiesOf } from "@/permission/logic/assignmentGuards";
@@ -57,6 +59,10 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
   const canManageTarget = canManageCapabilitiesOf({ target: summary, actorIsSuperUser });
   const canWrite = isGateOpen({ gate: { capability: can.userCapabilities.write }, user: authUser, mine });
   const editable = canManageTarget && canWrite;
+  // The same rule the server enforces (not yourself, not a superuser), so the button is only
+  // offered when the delete could go through.
+  const canDelete =
+    actorIsSuperUser && !!authUser && judgeUserDeletion({ actorUserName: authUser.userName, target: summary }).ok;
 
   const effective = effectiveByUserName[userName] ?? [];
   const redundant = redundantDirectByUserName[userName] ?? [];
@@ -100,13 +106,16 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
 
   return (
     <div className="max-w-3xl space-y-6 p-6">
-      <header className="space-y-1">
-        <h2 className="text-xl font-semibold text-foreground">
-          {summary.firstName} {summary.lastName}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          @{summary.userName} · SA ID {summary.saId} · role {summary.role}
-        </p>
+      <header className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold text-foreground">
+            {summary.firstName} {summary.lastName}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            @{summary.userName} · SA ID {summary.saId} · role {summary.role}
+          </p>
+        </div>
+        {canDelete && <DeleteUserDialog userName={summary.userName} />}
       </header>
 
       {!canManageTarget && (

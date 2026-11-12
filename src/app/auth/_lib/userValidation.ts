@@ -25,6 +25,36 @@ export const USER_ROLES: readonly Role[] = ROLES.filter((role) => role !== "publ
 
 const NAME_MAX_LENGTH = 50;
 
+// Matches the user model and the change-password page.
+export const MIN_PASSWORD_LENGTH = 4;
+// bcrypt silently ignores everything past 72 bytes, so a longer password would not be what the
+// user thinks it is.
+const PASSWORD_MAX_BYTES = 72;
+
+// Shown to administrators, so it speaks in characters. The limit is really in bytes, which only
+// differs for accented letters and symbols, hence the second sentence.
+export const PASSWORD_RULE_MESSAGE = `Password must be ${MIN_PASSWORD_LENGTH} to ${PASSWORD_MAX_BYTES} characters long. Accented letters and symbols can count as more than one.`;
+
+export function isValidPassword(password: string): boolean {
+  return password.length >= MIN_PASSWORD_LENGTH && new TextEncoder().encode(password).length <= PASSWORD_MAX_BYTES;
+}
+
+/**
+ * The form's password check: the confirmation exists only in the form, so this is the one place
+ * it is compared. Returns a message for the first problem, or null when the entry is good.
+ */
+export function checkPasswordEntry({
+  password,
+  confirmPassword,
+}: {
+  password: string;
+  confirmPassword: string;
+}): string | null {
+  if (!isValidPassword(password)) return PASSWORD_RULE_MESSAGE;
+  if (password !== confirmPassword) return "The password and its confirmation do not match.";
+  return null;
+}
+
 export type NewUser = {
   userName: string;
   email: string;
@@ -33,6 +63,10 @@ export type NewUser = {
   saId: string;
   role: Role;
   isKiosk: boolean;
+  /** Plain text, only until the handler hashes it. Never store or log this object. */
+  password: string;
+  /** The password is temporary: the user is sent to the change-password page at first login. */
+  mustChangePassword: boolean;
 };
 
 export type CreateUserCheck = { ok: true; value: NewUser } | { ok: false; message: string };
@@ -77,5 +111,24 @@ export function validateCreateUser(input: unknown): CreateUserCheck {
 
   if (typeof body.isKiosk !== "boolean") return refuse("isKiosk must be true or false.");
 
-  return { ok: true, value: { userName, email, firstName, lastName, saId, role: role as Role, isKiosk: body.isKiosk } };
+  // Not trimmed: spaces are part of a password.
+  const password = body.password;
+  if (typeof password !== "string" || !isValidPassword(password)) return refuse(PASSWORD_RULE_MESSAGE);
+
+  if (typeof body.mustChangePassword !== "boolean") return refuse("mustChangePassword must be true or false.");
+
+  return {
+    ok: true,
+    value: {
+      userName,
+      email,
+      firstName,
+      lastName,
+      saId,
+      role: role as Role,
+      isKiosk: body.isKiosk,
+      password,
+      mustChangePassword: body.mustChangePassword,
+    },
+  };
 }

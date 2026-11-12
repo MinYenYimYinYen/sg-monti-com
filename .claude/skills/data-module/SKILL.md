@@ -31,6 +31,7 @@ Read these (they are the source of truth; this skill only orders the steps):
 
 1. **Types** - `export type XDoc = CreatedUpdated & { ... }` (`CreatedUpdated` from `@/lib/mongoose/mongooseTypes`). Use a natural key (e.g. `seasonIncreasesId`), never `_id`. All dates are ISO 8601 strings. Prefer `type` over `interface`.
    - Suffixes: `Doc` = keys + metadata only; `Props` = hydration additions; no suffix = `Doc & Props`, the only shape UI consumes. Never pass a `Doc` to UI.
+   - If the entity records who made it or who it belongs to, decide which kind of person-reference it is (`src/lib/mongoose/mongo.readme.md` section 4) and note it in the Types file.
 2. **Model** - `new Schema<XDoc>({...}, { timestamps: true })`, unique index on the natural key, then `export const XModel = createModel<XDoc>("X", XSchema)` from `@/lib/mongoose/createModel`. Never call `mongoose.model()` directly. Keep the type in the Types file, not the Model file.
 3. **Contract** - `export interface XContract extends ApiContract { opName: { params: {...}; result: DataResponse<...> } }`. Use `Record<string, never>` for no params.
 4. **Route** - `const handlers: HandlerMap<XContract> = { opName: { roles: [...], handler: async (params) => {...} } }`.
@@ -51,3 +52,4 @@ Read these (they are the source of truth; this skill only orders the steps):
 - Prefer passing an id to a child and letting it `useSelector` + dispatch, over drilling callbacks. If a child gains the ability to dispatch a thunk that has no `transformParams`/`customCondition` guard, flag the duplicate-call risk and ask before proceeding.
 - Collection names describe the data (`groupAssignments`), never `items`/`entries`/`records`.
 - Multi-argument functions take a destructured object parameter.
+- Shared records (templates, configs) store the author's `saId` and are kept when a user is deleted. Records that only work with a login (access, assignments of responsibility) store `userName` and must be added to `deleteUserReferences`.

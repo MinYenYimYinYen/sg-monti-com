@@ -2,14 +2,19 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { authSelect } from "@/app/auth/authSlice";
 import { qboAccountSelect } from "@/app/qbo/account/qboAccountSelect";
 import { accountSelect } from "@/app/account/accountSelect";
 import { useAccount } from "@/app/account/useAccount";
 import { Alert, AlertDescription, AlertTitle } from "@/style/components/alert";
 import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/style/components/table";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/style/components/table";
 import { AccountMappingRow } from "@/app/account/_components/AccountMappingRow";
 import { DepositFieldMappingSection } from "@/app/javelin/depositMapping/_components/DepositFieldMappingSection";
 import { CkDepositMappingSection } from "@/app/javelin/depositMapping/_components/CkDepositMappingSection";
@@ -18,6 +23,8 @@ import {
   countLinksByFilter,
   filterRgAccountLinks,
 } from "@/app/account/_lib/accountMappingView";
+import { accountCapabilities } from "@/app/account/accountCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 
 const filterLabels: Record<AccountLinkFilter, string> = {
   all: "All",
@@ -26,25 +33,13 @@ const filterLabels: Record<AccountLinkFilter, string> = {
 };
 
 const filterOrder: AccountLinkFilter[] = ["all", "unmapped", "attention"];
-
-/** Admin only. The editor mounts only for admins, so nobody else triggers the loads. */
+const { can } = accountCapabilities;
 export function AccountMappingPanel() {
-  const role = useSelector(authSelect.role);
-
-  if (role !== "admin") {
-    return (
-      <div className="h-full overflow-y-auto">
-        <div className="p-6 max-w-2xl">
-          <Alert variant="destructive">
-            <AlertTitle>Admins only</AlertTitle>
-            <AlertDescription>Only an admin can manage account mappings.</AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    );
-  }
-
-  return <AccountMappingEditor />;
+  return (
+    <GatedPanel requirement={can.accountMappings.read}>
+      <AccountMappingEditor />
+    </GatedPanel>
+  );
 }
 
 function AccountMappingEditor() {
@@ -55,22 +50,27 @@ function AccountMappingEditor() {
   const [query, setQuery] = useState("");
 
   const counts = countLinksByFilter(rgAccountLinks);
-  const visibleLinks = filterRgAccountLinks({ links: rgAccountLinks, filter, query });
+  const visibleLinks = filterRgAccountLinks({
+    links: rgAccountLinks,
+    filter,
+    query,
+  });
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="space-y-4 p-6">
         <p className="text-sm text-muted-foreground">
-          Link each RealGreen account to the QuickBooks account it posts to. Several RealGreen
-          accounts can share one QuickBooks account. Each change is saved as soon as you make it.
+          Link each RealGreen account to the QuickBooks account it posts to.
+          Several RealGreen accounts can share one QuickBooks account. Each
+          change is saved as soon as you make it.
         </p>
 
         {qboAccounts.length === 0 && (
           <Alert variant="destructive">
             <AlertTitle>QuickBooks accounts are not loaded</AlertTitle>
             <AlertDescription>
-              Existing links cannot be verified yet. If this stays, check the QuickBooks
-              connection.
+              Existing links cannot be verified yet. If this stays, check the
+              QuickBooks connection.
             </AlertDescription>
           </Alert>
         )}

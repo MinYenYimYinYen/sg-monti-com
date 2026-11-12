@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
 import { ImportCCTxnMappingContract } from "@/app/qbo/importCCTxn/api/ImportCCTxnMappingContract";
 import { importDecisionActions } from "@/app/qbo/importCCTxn/decisions/importDecisionSlice";
+import { authActions } from "@/app/auth/authSlice";
 import {
   AssignableUser,
   CardAssignment,
@@ -171,6 +172,14 @@ const importCCTxnMappingSlice = createSlice({
     });
     builder.addCase(deleteSkipRule.fulfilled, (state, action) => {
       state.skipRules = state.skipRules.filter((s) => s.merchantKey !== action.payload.merchantKey);
+    });
+
+    // Deleting a user also deletes their card assignments on the server. The staff list is cached,
+    // so without this an open tab would keep offering the deleted user as a responsible user.
+    builder.addCase(authActions.deleteUser.fulfilled, (state, action) => {
+      const { userName } = action.payload;
+      state.assignableUsers = state.assignableUsers.filter((user) => user.userName !== userName);
+      state.cardAssignments = state.cardAssignments.filter((assignment) => assignment.userName !== userName);
     });
 
     // The Map tab's batch save returns every mapping and skip rule it stored.

@@ -5,6 +5,7 @@ import {
   duplicateKeyField,
   duplicateKeyMessage,
   judgeBogusSaId,
+  judgeRealSaId,
   NO_PASSWORD_PLACEHOLDER,
 } from "@/app/auth/_lib/userCreation";
 
@@ -45,6 +46,62 @@ describe("judgeBogusSaId", () => {
   it("does not treat a 404 from anything but RealGreen as 'no such employee'", () => {
     expect(
       judgeBogusSaId({ saId, outcome: { kind: "failed", errorType: "API_ERROR", statusCode: 404, message: "x" } }),
+    ).toMatchObject({ ok: false, reason: "lookupFailed" });
+  });
+});
+
+describe("judgeRealSaId", () => {
+  it("passes when RealGreen returns the employee, handing back RealGreen's own id", () => {
+    expect(judgeRealSaId({ saId: "1234", outcome: { kind: "returned", employeeId: "1234" } })).toEqual({
+      ok: true,
+      employeeId: "1234",
+    });
+  });
+
+  it("matches the id ignoring case and returns RealGreen's casing", () => {
+    expect(judgeRealSaId({ saId: "lholker", outcome: { kind: "returned", employeeId: "LHolker" } })).toEqual({
+      ok: true,
+      employeeId: "LHolker",
+    });
+  });
+
+  it.each([null, undefined, "", "   "])("refuses when RealGreen answers with no employee id (%j)", (employeeId) => {
+    expect(judgeRealSaId({ saId, outcome: { kind: "returned", employeeId } })).toMatchObject({
+      ok: false,
+      reason: "notAnEmployee",
+    });
+  });
+
+  it("refuses when RealGreen returns a different employee than the one asked about", () => {
+    expect(judgeRealSaId({ saId: "1234", outcome: { kind: "returned", employeeId: "9999" } })).toMatchObject({
+      ok: false,
+      reason: "notAnEmployee",
+    });
+  });
+
+  it("refuses a 404 from RealGreen as not an employee", () => {
+    expect(
+      judgeRealSaId({
+        saId,
+        outcome: { kind: "failed", errorType: "EXTERNAL_ERROR", statusCode: 404, message: "Not Found" },
+      }),
+    ).toMatchObject({ ok: false, reason: "notAnEmployee" });
+  });
+
+  it.each([
+    ["a network failure", { kind: "failed" as const, errorType: "NETWORK_ERROR", statusCode: 0, message: "Failed to connect to RealGreen" }],
+    ["a server error", { kind: "failed" as const, errorType: "EXTERNAL_ERROR", statusCode: 500, message: "Server Error" }],
+    ["a bad api key", { kind: "failed" as const, errorType: "EXTERNAL_ERROR", statusCode: 401, message: "Unauthorized" }],
+    ["an unknown error", { kind: "failed" as const, message: "boom" }],
+  ])("fails closed on %s, and says what came back", (_label, outcome) => {
+    const verdict = judgeRealSaId({ saId, outcome });
+    expect(verdict).toMatchObject({ ok: false, reason: "lookupFailed" });
+    expect(verdict.ok === false && verdict.message).toContain(outcome.message);
+  });
+
+  it("does not treat a 404 from anything but RealGreen as 'not an employee'", () => {
+    expect(
+      judgeRealSaId({ saId, outcome: { kind: "failed", errorType: "API_ERROR", statusCode: 404, message: "x" } }),
     ).toMatchObject({ ok: false, reason: "lookupFailed" });
   });
 });

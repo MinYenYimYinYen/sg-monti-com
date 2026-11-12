@@ -5,10 +5,13 @@ import { AccountMappingModel } from "@/app/account/AccountMappingModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { AppError } from "@/lib/errors/AppError";
+import { accountCapabilities } from "@/app/account/accountCapabilities";
 
+
+const { can } = accountCapabilities
 const handlers: HandlerMap<AccountMappingContract> = {
   getAll: {
-    roles: ["admin", "office"],
+    capability: can.accountMappings.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await AccountMappingModel.find().lean();
@@ -17,7 +20,7 @@ const handlers: HandlerMap<AccountMappingContract> = {
   },
 
   upsert: {
-    roles: ["admin"],
+    capability: can.accountMappings.write,
     handler: async ({ rgAccountId, qboAccountId, defaultNameType, defaultNameId }) => {
       if (Boolean(defaultNameType) !== Boolean(defaultNameId)) {
         throw new AppError({
@@ -44,7 +47,7 @@ const handlers: HandlerMap<AccountMappingContract> = {
   },
 
   remove: {
-    roles: ["admin"],
+    capability: can.accountMappings.delete,
     handler: async ({ rgAccountId }) => {
       await connectToMongoDB();
       await AccountMappingModel.deleteOne({ rgAccountId });

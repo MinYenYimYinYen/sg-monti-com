@@ -33,10 +33,15 @@ import {
   duplicateKeyField,
   duplicateKeyMessage,
   judgeBogusSaId,
-  NO_PASSWORD_PLACEHOLDER,
+  judgeRealSaId,
 } from "@/app/auth/_lib/userCreation";
 import { lookupEmployeeOutcome } from "@/app/auth/_lib/lookupEmployeeOutcome";
 import { loadVerifiedCaller } from "@/app/permission/_lib/capabilityLoaders";
+import { assertText } from "@/app/permission/_lib/assertText";
+import { UserCapabilitiesModel } from "@/app/permission/userCapabilities/UserCapabilitiesModel";
+import { assertCurrentUserPassword } from "@/app/syncUtils/_lib/verifyCurrentUserPassword";
+import { judgeUserDeletion } from "@/app/auth/_lib/userDeletion";
+import { deleteUserReferences } from "@/app/auth/_lib/deleteUserReferences";
 
 /**
  * 1. DEFINE HANDLERS
@@ -163,24 +168,40 @@ const handlers: HandlerMap<AuthContract> = {
         throw new AppError({ message: duplicateKeyMessage("saId"), type: "VALIDATION_ERROR", statusCode: 400 });
       }
 
-      // The made-up saId must not belong to a real employee. Fails closed if RealGreen can't say.
-      const verdict = judgeBogusSaId({ saId: newUser.saId, outcome: await lookupEmployeeOutcome(newUser.saId) });
-      if (!verdict.ok) {
-        throw new AppError({ message: verdict.message, type: "VALIDATION_ERROR", statusCode: 400 });
+      // Both checks fail closed if RealGreen can't say. A kiosk uses a made-up id that must not
+      // belong to a real employee; a regular user must use the person's real employee id.
+      const outcome = await lookupEmployeeOutcome(newUser.saId);
+      let saId = newUser.saId;
+      if (newUser.isKiosk) {
+        const verdict = judgeBogusSaId({ saId, outcome });
+        if (!verdict.ok) {
+          throw new AppError({ message: verdict.message, type: "VALIDATION_ERROR", statusCode: 400 });
+        }
+      } else {
+        const verdict = judgeRealSaId({ saId, outcome });
+        if (!verdict.ok) {
+          throw new AppError({ message: verdict.message, type: "VALIDATION_ERROR", statusCode: 400 });
+        }
+        // Stored with RealGreen's own casing, like a user who registered themselves.
+        saId = verdict.employeeId;
       }
+
+      const hashedPassword = await bcrypt.hash(newUser.password, 10);
 
       let created;
       try {
+        // Explicit fields, never a spread: newUser carries the plain-text password.
         created = await UserModel.create({
           userName: newUser.userName,
           email: newUser.email,
           firstName: newUser.firstName,
           lastName: newUser.lastName,
-          saId: newUser.saId,
+          saId,
           role: newUser.role,
           // Absent means false, like every user that already exists.
           ...(newUser.isKiosk ? { isKiosk: true } : {}),
-          password: NO_PASSWORD_PLACEHOLDER,
+          password: hashedPassword,
+          mustChangePassword: newUser.mustChangePassword,
         });
       } catch (error) {
         const field = duplicateKeyField(error);
@@ -192,6 +213,39 @@ const handlers: HandlerMap<AuthContract> = {
 
       const { password: _password, ...safeUser } = created.toObject();
       return { success: true, payload: cleanMongoObject(safeUser) as User };
+    },
+  },
+  deleteUser: {
+    // Not a capability: only a confirmed superuser (database, not the token claim) may delete.
+    capability: "superUser",
+    handler: async (params) => {
+      // The body is untrusted JSON, so both fields are checked for type before any query.
+      const userName = assertText({ value: params.userName, label: "User name" });
+      const password = assertText({ value: params.password, label: "Password" });
+
+      // Re-authentication, enforced here so calling the API directly cannot skip it.
+      await assertCurrentUserPassword(password);
+
+      await connectToMongoDB();
+      const caller = await loadVerifiedCaller();
+      const target = await UserModel.findOne({ userName }).select("userName isSuperUser").lean();
+      if (!target) {
+        throw new AppError({ message: "User not found.", type: "VALIDATION_ERROR", statusCode: 400 });
+      }
+
+      const verdict = judgeUserDeletion({ actorUserName: caller.userName, target });
+      if (!verdict.ok) {
+        throw new AppError({ message: verdict.message, type: "VALIDATION_ERROR", statusCode: 400 });
+      }
+
+      // Access goes first, the user last. If something fails part way, the user is left with
+      // less access, never an orphaned grant that a later user with the same name would inherit.
+      await UserCapabilitiesModel.deleteOne({ userName: target.userName });
+      await PasswordResetRequestModel.deleteMany({ userName: target.userName, status: "pending" });
+      await deleteUserReferences({ userName: target.userName });
+      await UserModel.deleteOne({ userName: target.userName });
+
+      return { success: true, payload: { userName: target.userName } };
     },
   },
   login: {

@@ -96,9 +96,11 @@ export interface AuthContract extends ApiContract {
   };
 
   // 13. Create User (Superuser only)
-  // Makes a superuser-administration or kiosk user with a made-up saId and no usable
-  // password: the user signs in through the forgot-password flow. `isKiosk` must be false for
-  // a user who will become a superuser, since a kiosk is never treated as one.
+  // Makes a regular user or a kiosk user, with a password set by the administrator.
+  // A regular user's saId must be a real RealGreen employee id that is not already a user.
+  // A kiosk's saId is made up and must NOT be a real employee id.
+  // Superuser status is never set here: it is a direct database edit (Compass) only.
+  // `mustChangePassword` makes the given password temporary (the user must change it at login).
   createUser: {
     params: {
       userName: string;
@@ -108,7 +110,22 @@ export interface AuthContract extends ApiContract {
       saId: string;
       role: Role;
       isKiosk: boolean;
+      password: string;
+      mustChangePassword: boolean;
     };
     result: DataResponse<User>;
+  };
+
+  // 14. Delete User (Superuser only)
+  // Removes the user, their capabilities document, their pending password resets and their
+  // credit card assignments (see deleteUserReferences). History that only records who did
+  // something is left alone. The caller re-enters their own password, checked on the server.
+  // A superuser or the caller themselves cannot be deleted.
+  deleteUser: {
+    params: {
+      userName: string;
+      password: string;
+    };
+    result: DataResponse<{ userName: string }>;
   };
 }

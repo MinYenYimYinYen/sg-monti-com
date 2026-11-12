@@ -4,7 +4,11 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/style/components/popover";
 import { cn } from "@/style/utils";
 import { PickerOption } from "@/app/account/_lib/accountMappingView";
 
@@ -20,6 +24,7 @@ export function MappingPicker({
   selectedLabel,
   placeholder,
   onSelectAction,
+  disabled,
 }: {
   options: PickerOption[];
   suggestedIds: Set<string>;
@@ -29,6 +34,7 @@ export function MappingPicker({
   selectedLabel: string | null;
   placeholder: string;
   onSelectAction: (id: string) => void;
+  disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -37,8 +43,11 @@ export function MappingPicker({
   const matchingOptions = needle
     ? options.filter((option) => option.label.toLowerCase().includes(needle))
     : options;
-  const suggestedOptions = matchingOptions.filter((option) => suggestedIds.has(option.id));
-  const chosenLabel = options.find((option) => option.id === value)?.label ?? selectedLabel;
+  const suggestedOptions = matchingOptions.filter((option) =>
+    suggestedIds.has(option.id),
+  );
+  const chosenLabel =
+    options.find((option) => option.id === value)?.label ?? selectedLabel;
 
   const handleOpenChange = (nextOpen: boolean) => {
     setIsOpen(nextOpen);
@@ -72,8 +81,11 @@ export function MappingPicker({
           variant="outline"
           className="w-full justify-between font-normal"
           aria-label={placeholder}
+          disabled={disabled}
         >
-          <span className={cn("truncate", !chosenLabel && "text-muted-foreground")}>
+          <span
+            className={cn("truncate", !chosenLabel && "text-muted-foreground")}
+          >
             {chosenLabel ?? placeholder}
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
@@ -92,7 +104,9 @@ export function MappingPicker({
               <div className="px-2 pt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Suggested
               </div>
-              {suggestedOptions.map((option) => renderOption(option, "suggested"))}
+              {suggestedOptions.map((option) =>
+                renderOption(option, "suggested"),
+              )}
               <div className="px-2 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 All
               </div>
@@ -100,7 +114,9 @@ export function MappingPicker({
           )}
           {matchingOptions.map((option) => renderOption(option, "all"))}
           {matchingOptions.length === 0 && (
-            <div className="px-2 py-3 text-sm text-muted-foreground">Nothing matches.</div>
+            <div className="px-2 py-3 text-sm text-muted-foreground">
+              Nothing matches.
+            </div>
           )}
         </div>
       </PopoverContent>

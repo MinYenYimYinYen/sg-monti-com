@@ -50,6 +50,47 @@ export function judgeBogusSaId({
   };
 }
 
+// ---------- a regular user's saId must be a real employee ----------
+export type RealSaIdVerdict =
+  | { ok: true; employeeId: string }
+  | { ok: false; reason: "notAnEmployee" | "lookupFailed"; message: string };
+
+/**
+ * A regular (non-kiosk) user's saId must belong to a real RealGreen employee, the mirror of
+ * judgeBogusSaId. Fails closed: only an employee whose id matches passes. The id RealGreen
+ * returns is handed back so the user is stored with RealGreen's own casing.
+ */
+export function judgeRealSaId({
+  saId,
+  outcome,
+}: {
+  saId: string;
+  outcome: EmployeeLookupOutcome;
+}): RealSaIdVerdict {
+  const notAnEmployee: RealSaIdVerdict = {
+    ok: false,
+    reason: "notAnEmployee",
+    message: `'${saId}' is not a RealGreen employee id. A regular user needs the person's real employee id.`,
+  };
+
+  if (outcome.kind === "returned") {
+    const employeeId = outcome.employeeId?.trim();
+    if (!employeeId) return notAnEmployee;
+    // The lookup is by id, so anything that does not match is not the employee asked about.
+    if (employeeId.toLowerCase() !== saId.toLowerCase()) return notAnEmployee;
+    return { ok: true, employeeId };
+  }
+
+  if (outcome.errorType === "EXTERNAL_ERROR" && outcome.statusCode === 404) return notAnEmployee;
+
+  const detail = [outcome.errorType, outcome.statusCode, outcome.message].filter((part) => part !== undefined).join(" ");
+  return {
+    ok: false,
+    reason: "lookupFailed",
+    message: `Could not confirm with RealGreen that '${saId}' is a real employee, so the user was not created (${detail}).`,
+  };
+}
+
 // ---------- no usable password until a reset ----------
 /**
  * Stored as the password of a user created without one. It is not a bcrypt hash, so

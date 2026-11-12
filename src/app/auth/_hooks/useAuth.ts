@@ -100,12 +100,22 @@ export const useAuth = () => {
     );
   };
 
-  /** Superuser only. The new user has no password and signs in through forgot-password. */
+  /** Superuser only. Creates a regular or kiosk user with the password the administrator sets. */
   const createUser = (params: AuthContract["createUser"]["params"]) => {
     return dispatch(
       authActions.createUser({
         params,
         config: { loadingMsg: "Creating user...", successMsg: "User created" },
+      }),
+    );
+  };
+
+  /** Superuser only. Deletes the user and their access; the superuser's own password is re-checked. */
+  const deleteUser = (params: AuthContract["deleteUser"]["params"]) => {
+    return dispatch(
+      authActions.deleteUser({
+        params,
+        config: { loadingMsg: "Deleting user...", successMsg: "User deleted" },
       }),
     );
   };
@@ -124,6 +134,10 @@ export const useAuth = () => {
 
   const resetCreateUserStatus = () => {
     dispatch(authActions.resetCreateUserStatus());
+  };
+
+  const resetDeleteUserStatus = () => {
+    dispatch(authActions.resetDeleteUserStatus());
   };
 
   /**
@@ -158,5 +172,7 @@ export const useAuth = () => {
     confirmPassword,
     createUser,
     resetCreateUserStatus,
+    deleteUser,
+    resetDeleteUserStatus,
   };
 };

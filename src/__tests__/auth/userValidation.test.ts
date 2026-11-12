@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isValidEmail, isValidSaId, validateCreateUser } from "@/app/auth/_lib/userValidation";
+import {
+  checkPasswordEntry,
+  isValidEmail,
+  isValidPassword,
+  isValidSaId,
+  PASSWORD_RULE_MESSAGE,
+  validateCreateUser,
+} from "@/app/auth/_lib/userValidation";
 
 const valid = {
   userName: "superLuke",
@@ -9,6 +16,8 @@ const valid = {
   saId: "ZZ-SUPER1",
   role: "admin",
   isKiosk: false,
+  password: "temp-pass-1",
+  mustChangePassword: false,
 };
 
 function validate(overrides: Record<string, unknown> = {}) {
@@ -33,6 +42,18 @@ describe("validateCreateUser: accepts", () => {
 
   it.each(["admin", "office", "tech", "applied"])("the %s role", (role) => {
     expect(validate({ role })).toMatchObject({ ok: true });
+  });
+
+  it("a temporary password the user must change", () => {
+    expect(validate({ mustChangePassword: true })).toMatchObject({ ok: true, value: { mustChangePassword: true } });
+  });
+
+  it("a password exactly at the minimum length", () => {
+    expect(validate({ password: "abcd" })).toMatchObject({ ok: true, value: { password: "abcd" } });
+  });
+
+  it("a password with surrounding spaces, unchanged (spaces are part of a password)", () => {
+    expect(validate({ password: "  pass  " })).toMatchObject({ ok: true, value: { password: "  pass  " } });
   });
 });
 
@@ -66,6 +87,21 @@ describe("validateCreateUser: refuses", () => {
   it.each(["true", 1, null, undefined])("a non-boolean isKiosk %j", (isKiosk) => {
     expect(validate({ isKiosk }).ok).toBe(false);
   });
+
+  it.each(["true", 1, null, undefined])("a non-boolean mustChangePassword %j", (mustChangePassword) => {
+    expect(validate({ mustChangePassword }).ok).toBe(false);
+  });
+
+  it.each([undefined, null, "", "abc", 1234, { $ne: null }, ["abcd"], "x".repeat(73), "é".repeat(37)])(
+    "the password %j",
+    (password) => {
+      expect(validate({ password })).toMatchObject({ ok: false, message: PASSWORD_RULE_MESSAGE });
+    },
+  );
+
+  it("a missing password even when the user must change it (a password is always required)", () => {
+    expect(validate({ password: undefined, mustChangePassword: true }).ok).toBe(false);
+  });
 });
 
 describe("validateCreateUser: untrusted input shapes", () => {
@@ -81,10 +117,37 @@ describe("validateCreateUser: untrusted input shapes", () => {
   });
 
   it("ignores extra fields, so isSuperUser cannot be set through this op", () => {
-    const result = validate({ isSuperUser: true, password: "x" });
+    const result = validate({ isSuperUser: true, confirmPassword: "temp-pass-1" });
     expect(result).toMatchObject({ ok: true });
     expect(result.ok && result.value).not.toHaveProperty("isSuperUser");
-    expect(result.ok && result.value).not.toHaveProperty("password");
+    expect(result.ok && result.value).not.toHaveProperty("confirmPassword");
+  });
+});
+
+describe("isValidPassword", () => {
+  it("counts the minimum in characters and the maximum in bytes (bcrypt reads 72 bytes)", () => {
+    expect(isValidPassword("abc")).toBe(false);
+    expect(isValidPassword("abcd")).toBe(true);
+    expect(isValidPassword("x".repeat(72))).toBe(true);
+    expect(isValidPassword("x".repeat(73))).toBe(false);
+    expect(isValidPassword("é".repeat(36))).toBe(true);
+    expect(isValidPassword("é".repeat(37))).toBe(false);
+  });
+});
+
+describe("checkPasswordEntry", () => {
+  it("accepts a matching, valid pair", () => {
+    expect(checkPasswordEntry({ password: "temp-pass-1", confirmPassword: "temp-pass-1" })).toBeNull();
+  });
+
+  it("refuses a password that breaks the rule before comparing", () => {
+    expect(checkPasswordEntry({ password: "abc", confirmPassword: "abc" })).toBe(PASSWORD_RULE_MESSAGE);
+  });
+
+  it("refuses a confirmation that differs, including by case or a trailing space", () => {
+    expect(checkPasswordEntry({ password: "temp-pass-1", confirmPassword: "Temp-pass-1" })).toContain("do not match");
+    expect(checkPasswordEntry({ password: "temp-pass-1", confirmPassword: "temp-pass-1 " })).toContain("do not match");
+    expect(checkPasswordEntry({ password: "temp-pass-1", confirmPassword: "" })).toContain("do not match");
   });
 });
 

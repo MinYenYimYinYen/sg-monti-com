@@ -155,8 +155,8 @@ it("returns correct net with 10% program discount and no prepay (CRM: $26.09)", 
 | `permission/bundleLogic.test.ts` | `saveBundle`: key and registry validation, added and removed, holders, stripping newly covered direct grants (including repairing drift) |
 | `permission/assignmentGuards.test.ts` | `canAssign` (no escalation), `canManageCapabilitiesOf` (kiosk and superuser targets), warn-only `findMissingCompanions` |
 | `permission/capabilitySelectorLogic.test.ts` | `assignableCapabilities`, `redundantDirect`, `holdersByBundleKey`, `bundleRegistryDiff`. Fixtures in `permission/logicFixtures.ts` |
-| `auth/userValidation.test.ts` | `validateCreateUser`: field rules, untrusted input shapes (objects where text is expected), extra fields ignored, `saId` and email rules |
-| `auth/userCreation.test.ts` | `judgeBogusSaId` (fails closed), duplicate-key messages, `canResetPasswordOf` (admins cannot reset a superuser or kiosk), the no-password placeholder against real bcrypt |
+| `auth/userValidation.test.ts` | `validateCreateUser`: field rules, untrusted input shapes (objects where text is expected), extra fields ignored, `saId` and email rules, password always required (length in characters, 72-byte cap, not trimmed), `mustChangePassword`; `isValidPassword`, `checkPasswordEntry` (confirmation match) |
+| `auth/userCreation.test.ts` | `judgeBogusSaId` and `judgeRealSaId` (both fail closed), duplicate-key messages, `canResetPasswordOf` (admins cannot reset a superuser or kiosk), the no-password placeholder against real bcrypt |
 | `permission/userSummary.test.ts` | `toUserSummary` (explicit field copy, never the password hash), `sortUserSummaries`, `matchesUserSearch` |
 | `permission/capabilityLabels.test.ts` | `capabilityLabel` and `groupCapabilitiesByFeature` (stale strings kept separate) |
 | `permission/navGate.test.ts` | `isGateOpen`: the roles gate (legacy) and the capability gate, `superUser`, not shown until capabilities load |

@@ -21,6 +21,7 @@ type AuthState = {
   invalidCredentialsEntered: boolean;
   passwordResetRequestStatus: RequestStatus;
   createUserStatus: RequestStatus;
+  deleteUserStatus: RequestStatus;
 
   // Admin State
   pendingAdminActions: PendingAdminActions;
@@ -38,6 +39,7 @@ const initialState: AuthState = {
   invalidCredentialsEntered: false,
   passwordResetRequestStatus: "idle",
   createUserStatus: "idle",
+  deleteUserStatus: "idle",
   pendingAdminActions: {
     appliedUsers: [],
     pendingResets: [],
@@ -148,6 +150,13 @@ const createUser = createStandardThunk<AuthContract, "createUser">({
   opName: "createUser",
 });
 
+// M. Delete User (Superuser)
+const deleteUser = createStandardThunk<AuthContract, "deleteUser">({
+  typePrefix: "auth/deleteUser",
+  apiPath: "/auth/api",
+  opName: "deleteUser",
+});
+
 // 3. SLICE
 const authSlice = createSlice({
   name: "auth",
@@ -172,6 +181,9 @@ const authSlice = createSlice({
     },
     resetCreateUserStatus: (state) => {
       state.createUserStatus = "idle";
+    },
+    resetDeleteUserStatus: (state) => {
+      state.deleteUserStatus = "idle";
     },
   },
   extraReducers: (builder) => {
@@ -280,6 +292,25 @@ const authSlice = createSlice({
     builder.addCase(createUser.rejected, (state) => {
       state.createUserStatus = "error";
     });
+
+    // Delete User (superuser): the dialog reads the status; the deleted user also leaves the
+    // admin inbox lists, which are loaded separately from the permission screens' user list.
+    builder.addCase(deleteUser.pending, (state) => {
+      state.deleteUserStatus = "pending";
+    });
+    builder.addCase(deleteUser.fulfilled, (state, action) => {
+      state.deleteUserStatus = "success";
+      const { userName } = action.payload;
+      state.pendingAdminActions.appliedUsers = state.pendingAdminActions.appliedUsers.filter(
+        (user) => user.userName !== userName,
+      );
+      state.pendingAdminActions.pendingResets = state.pendingAdminActions.pendingResets.filter(
+        (request) => request.userName !== userName,
+      );
+    });
+    builder.addCase(deleteUser.rejected, (state) => {
+      state.deleteUserStatus = "error";
+    });
   },
   selectors: {
     user: (state) => state.user,
@@ -289,6 +320,7 @@ const authSlice = createSlice({
     invalidCredentialsEntered: (state) => state.invalidCredentialsEntered,
     passwordResetRequestStatus: (state) => state.passwordResetRequestStatus,
     createUserStatus: (state) => state.createUserStatus,
+    deleteUserStatus: (state) => state.deleteUserStatus,
     registrationEligibility: (state) => state.registrationEligibility,
     checkedIds: (state) => state.checkedIds,
     adminPendingUsers: (state) => state.pendingAdminActions.appliedUsers,
@@ -310,6 +342,7 @@ export const authActions = {
   changePassword,
   confirmPassword,
   createUser,
+  deleteUser,
 };
 export const authSelect = { ...authSlice.selectors };
 export default authSlice.reducer;
