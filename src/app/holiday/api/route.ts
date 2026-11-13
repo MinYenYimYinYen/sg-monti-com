@@ -5,10 +5,13 @@ import { HolidayModel } from "@/app/holiday/HolidayModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { Holiday } from "@/app/holiday/holidayTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { holidayCapabilities } from "@/app/holiday/holidayCapabilities";
+
+const { can } = holidayCapabilities;
 
 const handlers: HandlerMap<HolidayContract> = {
   getAll: {
-    roles: ["admin", "office"],
+    capability: can.holidays.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await HolidayModel.find({}).lean();
@@ -16,7 +19,7 @@ const handlers: HandlerMap<HolidayContract> = {
     },
   },
   upsert: {
-    roles: ["admin", "office"],
+    capability: can.holidays.write,
     handler: async ({ doc }) => {
       await connectToMongoDB();
       const saved = await HolidayModel.findOneAndUpdate(
@@ -28,7 +31,7 @@ const handlers: HandlerMap<HolidayContract> = {
     },
   },
   deleteOne: {
-    roles: ["admin"],
+    capability: can.holidays.delete,
     handler: async ({ holidayId }) => {
       await connectToMongoDB();
       const deleted = await HolidayModel.findOneAndDelete({ holidayId }).lean();

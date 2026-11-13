@@ -7,10 +7,28 @@ import { CustomerContextMode } from "@/app/realGreen/customer/slices/customerSli
 
 const TLI_CONTEXTS: CustomerContextMode[] = ["lastSeasonProduction", "active"];
 
-export function useTliDeps() {
+export function useTliDeps({
+  canLoad = {},
+}: {
+  canLoad?: {
+    customers?: boolean;
+    progCodes?: boolean;
+    servCodes?: boolean;
+    employees?: boolean;
+  };
+} = {}) {
+  const {
+    customers: canLoadCustomers = true,
+    progCodes: canLoadProgCodes = true,
+    servCodes: canLoadServCodes = true,
+    employees: canLoadEmployees = true,
+  } = canLoad;
   useCustomerContext({ contexts: TLI_CONTEXTS });
-  useLastSeasonProduction({ autoLoad: true });
-  useActiveCustomers({ autoLoad: true });
-  useProgServ({ autoLoad: true });
-  useEmployee({ autoLoad: true });
+  useLastSeasonProduction({ autoLoad: true, canLoad: canLoadCustomers });
+  useActiveCustomers({ autoLoad: true, canLoad: canLoadCustomers });
+  useProgServ({
+    autoLoad: true,
+    canLoad: { progCodes: canLoadProgCodes, servCodes: canLoadServCodes },
+  });
+  useEmployee({ autoLoad: true, canLoad: canLoadEmployees });
 }

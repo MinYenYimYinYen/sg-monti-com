@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import { CapabilityMatrix } from "@/app/permission/_components/CapabilityMatrix";
 import { Notice } from "@/app/permission/_components/Notice";
+import { registryMatrix } from "@/app/permission/_lib/registryMatrix";
 import { capabilityBundleSelect } from "@/app/permission/capabilityBundle/capabilityBundleSelect";
 import { useCapabilityBundle } from "@/app/permission/capabilityBundle/useCapabilityBundle";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
@@ -10,17 +12,18 @@ import { FormGroup } from "@/components/FormGroup";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
 import { saveBundle } from "@/permission/logic/bundleLogic";
 import {
+  applyCellChange,
   BundleDraft,
   draftFromBundle,
   EMPTY_BUNDLE_DRAFT,
   isDraftChanged,
-  setDraftCapabilities,
   toggleDraftCapability,
 } from "@/permission/logic/bundleDraft";
+import { cellChange } from "@/permission/logic/capabilityMatrix";
+import { findMissingRequirements } from "@/permission/logic/requirementLogic";
 import { bundleRegistryDiff } from "@/permission/logic/capabilitySelectorLogic";
 import { capabilityLabel } from "@/permission/logic/capabilityLabels";
 import { Button } from "@/style/components/button";
-import { Checkbox } from "@/style/components/checkbox";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 
@@ -57,6 +60,12 @@ export function BundleEditor({ bundleKey, onDoneAction }: BundleEditorProps) {
   const keyTaken = isNew && !!bundlesByKey[draft.bundleKey];
   const holders = holdersByBundleKey[bundleKey] ?? [];
   const diff = stored ? bundleRegistryDiff({ bundle: stored, registry: capabilityRegistry }) : null;
+  // Warn-only: a bundle can deliberately omit something a capability needs, for example when a
+  // user holds the other part separately. Nothing is added or blocked.
+  const unmetRequirements = findMissingRequirements({
+    capabilities: draft.capabilities,
+    registry: capabilityRegistry,
+  });
 
   const canSave = result.ok && draft.name.trim() !== "" && changed && !keyTaken;
 
@@ -74,8 +83,6 @@ export function BundleEditor({ bundleKey, onDoneAction }: BundleEditorProps) {
     removeBundle({ bundleKey });
     onDoneAction();
   }
-
-  const featureEntries = Object.entries(capabilityRegistry.byFeature);
 
   return (
     <div className="max-w-3xl space-y-6 p-6">
@@ -119,70 +126,65 @@ export function BundleEditor({ bundleKey, onDoneAction }: BundleEditorProps) {
       {!isNew && diff && diff.stale.length > 0 && (
         <Notice tone="warning">
           This bundle lists {diff.stale.length} capabilit{diff.stale.length === 1 ? "y" : "ies"} that no longer
-          exist. They grant nothing, and saving removes them once you uncheck them below:{" "}
-          {diff.stale.join(", ")}
+          exist. They grant nothing. Remove them here and save:
+          <ul className="mt-1 space-y-1">
+            {diff.stale
+              .filter((capability) => draft.capabilities.includes(capability))
+              .map((capability) => (
+                <li key={capability} className="flex items-center gap-2">
+                  <span>{capability}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      setDraft((previous) => toggleDraftCapability({ draft: previous, capability, selected: false }))
+                    }
+                  >
+                    Remove
+                  </Button>
+                </li>
+              ))}
+          </ul>
+        </Notice>
+      )}
+      {unmetRequirements.length > 0 && (
+        <Notice>
+          Hints only (nothing is blocked or added automatically). Ticking a cell does not add what a capability
+          needs, so these are missing from the bundle now:
+          <ul className="mt-1 list-disc pl-5">
+            {unmetRequirements.map((unmet) => (
+              <li key={`${unmet.capability}|${unmet.missing}`}>
+                {capabilityLabel({ capability: unmet.capability, registry: capabilityRegistry })} needs{" "}
+                {capabilityLabel({ capability: unmet.missing, registry: capabilityRegistry })}.
+              </li>
+            ))}
+          </ul>
         </Notice>
       )}
       {draft.bundleKey !== "" && !result.ok && result.reason === "invalidKey" && (
         <Notice tone="warning">The key must start with a letter and use only letters, digits, _ or -.</Notice>
       )}
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Capabilities</h3>
-        {featureEntries.map(([featureKey, featureCapabilities]) => (
-          <fieldset key={featureKey} className="space-y-1 rounded-md border border-border bg-card p-3">
-            <div className="flex items-center justify-between">
-              <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {featureKey}
-              </legend>
-              <div className="flex gap-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    setDraft((previous) =>
-                      setDraftCapabilities({ draft: previous, capabilities: featureCapabilities, selected: true }),
-                    )
-                  }
-                >
-                  All
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    setDraft((previous) =>
-                      setDraftCapabilities({ draft: previous, capabilities: featureCapabilities, selected: false }),
-                    )
-                  }
-                >
-                  None
-                </Button>
-              </div>
-            </div>
-            {featureCapabilities.map((capability) => {
-              const id = `bundle-cap-${capability}`;
-              return (
-                <div key={capability} className="flex items-center gap-2">
-                  <Checkbox
-                    id={id}
-                    checked={draft.capabilities.includes(capability)}
-                    onCheckedChange={(checked) =>
-                      setDraft((previous) =>
-                        toggleDraftCapability({ draft: previous, capability, selected: checked === true }),
-                      )
-                    }
-                  />
-                  <Label htmlFor={id} className="text-sm font-normal">
-                    {capabilityLabel({ capability, registry: capabilityRegistry })}
-                  </Label>
-                </div>
-              );
-            })}
-          </fieldset>
-        ))}
+        <CapabilityMatrix
+          matrix={registryMatrix}
+          held={new Set(draft.capabilities)}
+          onToggleCellAction={({ cell, turnOn }) =>
+            setDraft((previous) =>
+              applyCellChange({
+                draft: previous,
+                change: cellChange({
+                  cell,
+                  held: new Set(previous.capabilities),
+                  turnOn,
+                  registry: capabilityRegistry,
+                }),
+              }),
+            )
+          }
+        />
       </section>
 
       {result.ok && !isNew && changed && (

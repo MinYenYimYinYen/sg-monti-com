@@ -35,7 +35,12 @@ import {
   FLAG_RULE_KIND_DESCRIPTIONS,
 } from "@/app/flagRule/FlagRuleTypes";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
+import { flagRuleCapabilities } from "@/app/flagRule/flagRuleCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { Notice } from "@/app/permission/_components/Notice";
 import { cn } from "@/style/utils";
+
+const { can } = flagRuleCapabilities;
 
 // ---------------------------------------------------------------------------
 // FlagPickerPopover — Popover + Checkbox list for selecting multiple flags
@@ -175,6 +180,9 @@ function FlagRuleForm({
   onDone: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.flagRules.write);
+  const canDelete = allows(can.flagRules.delete);
 
   const [label, setLabel] = useState(existingRule?.label ?? "");
   const [kind, setKind] = useState<FlagRuleKind>(existingRule?.kind ?? "XOR");
@@ -268,7 +276,7 @@ function FlagRuleForm({
 
         <div className="flex gap-2 items-center">
           <SaveButton
-            disabled={!canSave}
+            disabled={!canSave || !canWrite}
             status={saveStatus}
             onClick={handleSave}
             onSuccessComplete={handleSuccessComplete}
@@ -289,6 +297,7 @@ function FlagRuleForm({
                 intensity="soft"
                 className="w-full"
                 onClick={() => setShowDeleteConfirm(true)}
+                disabled={!canDelete}
               >
                 Delete Rule
               </Button>
@@ -302,6 +311,7 @@ function FlagRuleForm({
                     variant="destructive"
                     className="flex-1"
                     onClick={handleDelete}
+                    disabled={!canDelete}
                   >
                     Confirm Delete
                   </Button>
@@ -327,8 +337,19 @@ function FlagRuleForm({
 // ---------------------------------------------------------------------------
 
 export function FlagRuleCRUD() {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canRead = allows(can.flagRules.read);
+  const canWrite = allows(can.flagRules.write);
   const flagRules = useSelector(flagRuleSelect.all);
   const [selected, setSelected] = useState<string | "new" | null>(null);
+
+  if (!canRead) {
+    return (
+      <div className="p-4">
+        <Notice>You do not have access to flag rules.</Notice>
+      </div>
+    );
+  }
 
   const selectedRule =
     typeof selected === "string" && selected !== "new"
@@ -351,6 +372,7 @@ export function FlagRuleCRUD() {
             intensity="soft"
             className="w-full justify-start gap-2"
             onClick={() => setSelected("new")}
+            disabled={!canWrite}
           >
             <Plus className="w-4 h-4" />
             New Rule

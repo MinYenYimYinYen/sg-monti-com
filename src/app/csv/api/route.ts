@@ -2,14 +2,18 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { CSVContract } from "@/app/csv/api/csvContract";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
 
 // The saveAssignments operation has been moved to assignment/api/route.ts.
 // This file is kept as a placeholder for other CSV operations (deposits, general ledger).
 // The CSVContract still references saveAssignments for backward compatibility during migration.
 
+// This stub stores nothing and no screen calls it. It asks for the capability of the real op it
+// stood in for, so it can never be reached by someone the real op would refuse.
+const { can } = assignmentCapabilities;
 const handlers: HandlerMap<CSVContract> = {
   saveAssignments: {
-    roles: ["admin", "office"],
+    capability: can.serviceAssignments.write,
     handler: async ({ assignments }) => {
       // This handler is no longer used — saveAssignments is now handled by
       // assignment/api/route.ts via AssignmentContract.saveAssignments.

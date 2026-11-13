@@ -9,6 +9,10 @@ import { useProductivity } from "@/app/productivity/useProductivity";
 import { productivitySelect } from "@/app/productivity/productivitySelect";
 import { productivityActions } from "@/app/productivity/productivitySlice";
 import { PunchImportWidget } from "@/components/timeCardImport/PunchImportWidget";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { holidayCapabilities } from "@/app/holiday/holidayCapabilities";
+import { plannedTimeOffCapabilities } from "@/app/plannedTimeOff/plannedTimeOffCapabilities";
+import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
 
 const TABS: TabNavItem[] = [
   { label: "By Employee", href: "/productivity/byEmployee" },
@@ -17,7 +21,16 @@ const TABS: TabNavItem[] = [
 ];
 
 export default function ProductivityLayout({ children }: { children: React.ReactNode }) {
-  useProductivity();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  // Each load is gated by the capability its route needs, so a user holding only part of what the
+  // screen uses never fires a request that would be refused.
+  useProductivity({
+    canLoad: {
+      holidays: allows(holidayCapabilities.can.holidays.read),
+      absences: allows(plannedTimeOffCapabilities.can.absences.read),
+      assignments: allows(assignmentCapabilities.can.serviceAssignments.read),
+    },
+  });
 
   const dispatch = useAppDispatch();
   const doneDateRange = useSelector(productivitySelect.doneDateRange);

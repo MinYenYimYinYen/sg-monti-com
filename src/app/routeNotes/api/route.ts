@@ -5,10 +5,12 @@ import { RouteNoteModel } from "@/app/routeNotes/RouteNoteModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { routeNoteCapabilities } from "@/app/routeNotes/routeNoteCapabilities";
 
+const { can } = routeNoteCapabilities;
 const handlers: HandlerMap<RouteNoteContract> = {
   getByDateRange: {
-    roles: ["admin", "office"],
+    capability: can.routeNotes.read,
     handler: async ({ minDate, maxDate }) => {
       await connectToMongoDB();
       const docs = await RouteNoteModel.find({
@@ -18,7 +20,7 @@ const handlers: HandlerMap<RouteNoteContract> = {
     },
   },
   upsert: {
-    roles: ["admin", "office"],
+    capability: can.routeNotes.write,
     handler: async ({ doc }) => {
       await connectToMongoDB();
       const saved = await RouteNoteModel.findOneAndUpdate(
@@ -30,7 +32,7 @@ const handlers: HandlerMap<RouteNoteContract> = {
     },
   },
   deleteOne: {
-    roles: ["admin", "office"],
+    capability: can.routeNotes.delete,
     handler: async ({ routeNoteId }) => {
       await connectToMongoDB();
       const deleted = await RouteNoteModel.findOneAndDelete({ routeNoteId }).lean();

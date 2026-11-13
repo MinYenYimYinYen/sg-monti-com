@@ -5,6 +5,9 @@ import { previewBatch, previewPost } from "@/app/qbo/importCCTxn/_lib/importPost
 import { postRows } from "@/app/qbo/importCCTxn/_lib/importPostServer";
 import { reconcileRow } from "@/app/qbo/importCCTxn/_lib/importReconcileServer";
 import { getImportingUserName } from "@/app/qbo/importCCTxn/_lib/importRowAccessServer";
+import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+
+const { can } = importCCTxnCapabilities;
 
 /**
  * One request posts at most 300 rows (10 batches). A batch that does not fully post stops the
@@ -13,30 +16,31 @@ import { getImportingUserName } from "@/app/qbo/importCCTxn/_lib/importRowAccess
  */
 export const maxDuration = 300;
 
-// Posting to the real books is admin only for now (decided with the user at the start of the
-// write phase). Widen the roles deliberately, not by copying from the import route.
+// Posting to the real books was admin only (decided with the user at the start of the write
+// phase), so `expensePostings.write` is its own capability. Assign it deliberately, never by
+// copying what the import or mapping capabilities hold.
 const handlers: HandlerMap<ImportPostContract> = {
   previewPost: {
-    roles: ["admin"],
+    capability: can.expensePostings.read,
     handler: async ({ rowId }) => {
       return { success: true, payload: await previewPost({ rowId }) };
     },
   },
   previewBatch: {
-    roles: ["admin"],
+    capability: can.expensePostings.read,
     handler: async ({ startDate, endDate }) => {
       return { success: true, payload: await previewBatch({ startDate, endDate }) };
     },
   },
   postRows: {
-    roles: ["admin"],
+    capability: can.expensePostings.write,
     handler: async ({ rowIds }) => {
       const postedByUserName = await getImportingUserName();
       return { success: true, payload: await postRows({ rowIds, postedByUserName }) };
     },
   },
   reconcileRow: {
-    roles: ["admin"],
+    capability: can.expensePostings.write,
     handler: async ({ rowId }) => {
       const postedByUserName = await getImportingUserName();
       return { success: true, payload: await reconcileRow({ rowId, postedByUserName }) };

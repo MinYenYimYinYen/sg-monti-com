@@ -6,11 +6,15 @@ import { assignmentGroupActions } from "@/app/assignmentGroup/assignmentGroupSli
 import { AssignmentGroup } from "@/app/assignmentGroup/AssignmentGroupTypes";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
-export function useAssignmentGroup({ autoLoad }: { autoLoad?: boolean } = {}) {
+/** `canLoad` comes from the component (hooks do not select). Absent means allowed. */
+export function useAssignmentGroup({
+  autoLoad,
+  canLoad = true,
+}: { autoLoad?: boolean; canLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad) {
+    if (autoLoad && canLoad) {
       dispatch(
         assignmentGroupActions.getGroups({
           params: {},
@@ -18,7 +22,7 @@ export function useAssignmentGroup({ autoLoad }: { autoLoad?: boolean } = {}) {
         }),
       );
     }
-  }, [autoLoad, dispatch]);
+  }, [autoLoad, canLoad, dispatch]);
 
   const upsertGroup = (group: AssignmentGroup) =>
     dispatch(

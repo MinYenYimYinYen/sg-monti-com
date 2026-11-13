@@ -50,6 +50,11 @@ import {
   PopoverTrigger,
 } from "@/style/components/popover";
 import { Info } from "lucide-react";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
+import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+
+const { can } = productCapabilities;
 
 interface MasterEditPanelProps {
   master: ProductMaster;
@@ -58,7 +63,15 @@ interface MasterEditPanelProps {
 
 export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
   const { updateCategory, updateUnit, updateMasterSubProducts, updateMasterEquipmentPackages } = useProduct({});
-  useEquipmentPackage({ autoLoad: true });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWriteCategory = allows(can.productCategories.write);
+  const canWriteUnit = allows(can.productUnits.write);
+  const canWriteSubs = allows(can.subProductConfigs.write);
+  const canWritePackages = allows(can.masterEquipmentPackages.write);
+  useEquipmentPackage({
+    autoLoad: true,
+    canLoad: allows(equipmentCapabilities.can.equipmentPackages.read),
+  });
   const productSubs = useSelector(productSelect.productSubs);
   const allPackages = useSelector(equipmentPackageSelect.equipmentPackages);
 
@@ -290,7 +303,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                     size="sm"
                     variant="primary"
                     onClick={handleSaveCategory}
-                    disabled={!canSaveCategory}
+                    disabled={!canSaveCategory || !canWriteCategory}
                     status={categoryStatus}
                     onSuccessComplete={() => setCategoryStatus("idle")}
                   >
@@ -351,7 +364,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                     size="sm"
                     variant="primary"
                     onClick={handleSaveUnit}
-                    disabled={!canSaveUnit}
+                    disabled={!canSaveUnit || !canWriteUnit}
                     status={unitStatus}
                     onSuccessComplete={() => setUnitStatus("idle")}
                   >
@@ -491,6 +504,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                 </Button>
                 <SaveButton
                   onClick={handleSaveSubs}
+                  disabled={!canWriteSubs}
                   status={subsStatus}
                   onSuccessComplete={() => setSubsStatus("idle")}
                 >
@@ -677,6 +691,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
                       setPkgStatus("idle");
                     }
                   }}
+                  disabled={!canWritePackages}
                   status={pkgStatus}
                   onSuccessComplete={() => setPkgStatus("idle")}
                 >

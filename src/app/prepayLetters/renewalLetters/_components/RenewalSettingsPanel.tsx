@@ -11,6 +11,9 @@ import { renewalLettersSelect } from "../renewalLettersSelect";
 import { renewalLettersActions } from "../renewalLettersSlice";
 import { useRenewalCustomers } from "../useRenewalCustomers";
 import { useRenewalLetterPdf } from "../useRenewalLetterPdf";
+import { formTemplateCapabilities } from "@/app/formTemplate/formTemplateCapabilities";
+import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
 import type { CustomerContextMode } from "@/app/realGreen/customer/slices/customerSlices";
 import { RenewalFlagFilterWarning } from "./RenewalFlagFilterWarning";
@@ -68,7 +71,11 @@ export function RenewalSettingsPanel() {
 
   // The season comes from the open config, not globalSettings: next season's services exist
   // in the CRM before the global season is advanced.
-  const { refreshCustomers, canRefresh } = useRenewalCustomers({ seasonOverride: config?.season });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const { refreshCustomers, canRefresh } = useRenewalCustomers({
+    seasonOverride: config?.season,
+    canLoadGlobalSettings: allows(globalSettingsCapabilities.can.settings.read),
+  });
 
   // Picking replaces the open draft silently, exactly like the Open sheets on the other tabs.
   const pickConfig = (configId: string) => {
@@ -191,7 +198,7 @@ export function RenewalSettingsPanel() {
             )}
           </SelectContent>
         </Select>
-        {templates.length === 0 && (
+        {templates.length === 0 && allows(formTemplateCapabilities.can.formTemplates.read) && (
           <p className="text-xs text-muted-foreground">
             <Link href="/formTemplate" className="text-primary hover:underline">
               Create a Prepay Letter template

@@ -7,10 +7,12 @@ import {
   remapEmployees,
 } from "@/app/realGreen/employee/_lib/employeeServerFunc";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
+import { employeeCapabilities } from "@/app/realGreen/employee/employeeCapabilities";
 
+const { can } = employeeCapabilities;
 const handlers: HandlerMap<EmployeeContract> = {
   getAll: {
-    roles: ["office", "admin"], // 🔒 Secured
+    capability: can.employees.read,
     handler: async (_params) => {
       // "Two-Hop" Source: Calling RealGreen
       // If rgApi throws an error, it bubbles up to the POST catch block

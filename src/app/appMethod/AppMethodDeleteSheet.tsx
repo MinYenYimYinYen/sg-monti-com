@@ -28,6 +28,10 @@ import { getAffectedProducts, AffectedProduct } from "../realGreen/product/_lib/
 import { useAppMethod } from "./useAppMethod";
 import { appMethodSelect } from "./appMethodSelect";
 import { AlertTriangle, XCircle } from "lucide-react";
+import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = appMethodCapabilities;
 
 interface AppMethodDeleteSheetProps {
   method: AppMethod;
@@ -45,6 +49,8 @@ export function AppMethodDeleteSheet({
   const productMasters = useSelector(productSelect.productMasters);
   const allAppMethods = useSelector(appMethodSelect.appMethodDocs);
   const { deleteAppMethod, checkAppMethodDependencies } = useAppMethod({});
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canDelete = allows(can.appMethods.delete);
 
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -250,7 +256,7 @@ export function AppMethodDeleteSheet({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={isDeleting || isBlocked || !depsLoaded}
+            disabled={isDeleting || isBlocked || !depsLoaded || !canDelete}
           >
             {isDeleting ? "Deleting…" : "Delete Method"}
           </Button>

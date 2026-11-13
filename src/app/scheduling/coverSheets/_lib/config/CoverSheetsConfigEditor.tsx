@@ -21,9 +21,16 @@ import { MultiSelectTrigger } from "@/components/multiselect/MultiSelectTrigger"
 import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent";
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { flagCapabilities } from "@/app/realGreen/flag/flagCapabilities";
+
+const { can } = globalSettingsCapabilities;
 
 export function CoverSheetsConfigEditor() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWriteSettings = allows(can.settings.write);
   const {
     localCoverSheetsConfig,
     setLocalCoverSheetsConfig,
@@ -32,8 +39,9 @@ export function CoverSheetsConfigEditor() {
     cancelChanges,
   } = useGlobalSettings({
     autoLoad: true,
+    canLoad: allows(can.settings.read),
   });
-  useFlag({ autoLoad: true });
+  useFlag({ autoLoad: true, canLoad: allows(flagCapabilities.can.flags.read) });
 
   const flagDocs = useSelector(flagSelect.flagDocs);
   const flagDocMap = useSelector(flagSelect.flagDocMap);
@@ -81,7 +89,8 @@ export function CoverSheetsConfigEditor() {
                   status={saveStatus}
                   onSuccessComplete={() => setSaveStatus("idle")}
                   variant={"primary"}
-                  disabled={!canUpdate}
+                  disabled={!canUpdate || !canWriteSettings}
+                  title={canWriteSettings ? undefined : "You do not have access to save settings"}
                   onClick={() =>
                     updateSettings({
                       coverSheetsConfig: localCoverSheetsConfig,

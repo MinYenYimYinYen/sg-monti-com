@@ -112,6 +112,35 @@ export function addDirect({
   return { ok: true, capabilities: [...user.capabilities, known] };
 }
 
+export type AddDirectManyResult =
+  | { ok: true; capabilities: Capability[] }
+  | { ok: false; reason: Extract<AddDirectResult, { ok: false }>["reason"]; capability: string };
+
+/**
+ * Adds several direct grants in one step, so a capability and what it needs are stored together.
+ * Each is checked like a single addDirect; the first refusal refuses the whole list and names
+ * the capability, so nothing is half-applied.
+ */
+export function addDirectMany({
+  user,
+  capabilities,
+  bundles,
+  registry,
+}: {
+  user: Holdings;
+  capabilities: readonly string[];
+  bundles: readonly BundleGrants[];
+  registry: KnownCapabilities;
+}): AddDirectManyResult {
+  let current = user;
+  for (const capability of new Set(capabilities)) {
+    const result = addDirect({ user: current, capability, bundles, registry });
+    if (!result.ok) return { ok: false, reason: result.reason, capability };
+    current = { ...current, capabilities: result.capabilities };
+  }
+  return { ok: true, capabilities: [...current.capabilities] };
+}
+
 export type RemoveDirectResult =
   | { ok: true; capabilities: Capability[] }
   | { ok: false; reason: "notDirect" };

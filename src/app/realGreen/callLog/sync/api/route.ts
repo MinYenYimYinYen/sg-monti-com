@@ -6,10 +6,12 @@ import { fetchCallLogs, bulkUpsertCallLogs, findCallLogSyncEdge } from "@/app/re
 import { getLastSyncedAt, setLastSyncedAt } from "@/app/realGreen/syncMetadata/syncMetadataFunc";
 import { SYNC_ENTITY_TYPES } from "@/app/realGreen/syncMetadata/syncEntityTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { callLogCapabilities } from "@/app/realGreen/callLog/callLogCapabilities";
 
+const { can } = callLogCapabilities;
 const handlers: HandlerMap<CallLogSyncContract> = {
   syncCallLogs: {
-    roles: ["admin"],
+    capability: can.callLogSync.write,
     handler: async ({ force }) => {
       await connectToMongoDB();
 

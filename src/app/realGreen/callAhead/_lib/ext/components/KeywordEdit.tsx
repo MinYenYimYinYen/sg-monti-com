@@ -7,6 +7,10 @@ import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 import { useSelector } from "react-redux";
 import { keywordSelect } from "@/app/realGreen/callAhead/selectors/keywordSelect";
 import React, { useState } from "react";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { callAheadCapabilities } from "@/app/realGreen/callAhead/callAheadCapabilities";
+
+const { can } = callAheadCapabilities;
 
 interface KeywordEditProps {
   keywordId: string;
@@ -14,6 +18,9 @@ interface KeywordEditProps {
 
 export function KeywordEdit({ keywordId }: KeywordEditProps) {
   const { upsertKeyword, deleteKeyword } = useCallAhead({ autoLoad: false });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.keywords.write);
+  const canDelete = allows(can.keywords.delete);
   const keywordMap = useSelector(keywordSelect.keywordMap);
   const keyword = keywordMap.get(keywordId);
 
@@ -33,7 +40,7 @@ export function KeywordEdit({ keywordId }: KeywordEditProps) {
   }
 
   const hasChanges = editedMessage.trim() !== keyword.message;
-  const canSave = hasChanges && editedMessage.trim().length > 0;
+  const canSave = hasChanges && editedMessage.trim().length > 0 && canWrite;
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -83,7 +90,7 @@ export function KeywordEdit({ keywordId }: KeywordEditProps) {
         <Button
           variant="destructive"
           onClick={() => setShowDeleteConfirm(true)}
-          disabled={saveStatus === "saving" || saveStatus === "success"}
+          disabled={!canDelete || saveStatus === "saving" || saveStatus === "success"}
         >
           Delete
         </Button>

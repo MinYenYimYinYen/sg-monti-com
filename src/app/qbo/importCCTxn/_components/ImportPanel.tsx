@@ -4,6 +4,9 @@ import { useSelector } from "react-redux";
 import { CheckCircle2 } from "lucide-react";
 import { CSVDropzone } from "@/components/dropZone/dropZone";
 import { Button } from "@/style/components/button";
+import { Notice } from "@/app/permission/_components/Notice";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
 import { importRowSelect } from "@/app/qbo/importCCTxn/rows/importRowSelect";
 import { importCCTxnSelect } from "@/app/qbo/importCCTxn/importCCTxnSelect";
 import { useImportRow } from "@/app/qbo/importCCTxn/rows/useImportRow";
@@ -35,7 +38,9 @@ export function ImportPanel() {
   const parsedRows = useSelector(importCCTxnSelect.parsedRows);
   const fileCards = useSelector(importCCTxnSelect.fileCards);
   const unassignedCards = useSelector(importCCTxnSelect.unassignedCards);
-  const canCommit = useSelector(importCCTxnSelect.canCommit);
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canImport = allows(importCCTxnCapabilities.can.importRows.write);
+  const canCommit = useSelector(importCCTxnSelect.canCommit) && canImport;
   const confirmedDuplicateRowNumbers = useSelector(importRowSelect.confirmedDuplicateRowNumbers);
   // The layout already loads the data. autoLoad is off here so this only supplies actions.
   const { loadFile, commit, reset } = useImportRow({ autoLoad: false });
@@ -54,9 +59,13 @@ export function ImportPanel() {
       <div className="mx-auto max-w-4xl space-y-6 p-6">
         <CommitResultNotice />
 
-        {file.stage === "idle" && (
-          <CSVDropzone className="h-40" onFileDrop={loadFile} />
-        )}
+        {file.stage === "idle" &&
+          (canImport ? (
+            <CSVDropzone className="h-40" onFileDrop={loadFile} />
+          ) : (
+            // The dropzone has no disabled state, and a dropped file asks the server to preview it.
+            <Notice>You can view the imported transactions, but you cannot import a file.</Notice>
+          ))}
 
         {file.stage === "errors" && (
           <>

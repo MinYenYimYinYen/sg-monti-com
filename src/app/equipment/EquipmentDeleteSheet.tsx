@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import {
   Sheet,
   SheetContent,
@@ -19,6 +20,10 @@ import { api } from "@/lib/api/api";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { DataResponse } from "@/lib/api/types/responses";
 import { EquipmentContract } from "@/app/equipment/api/EquipmentContract";
+import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = equipmentCapabilities;
 
 interface EquipmentDeleteSheetProps {
   equipment: EquipmentDoc;
@@ -34,6 +39,7 @@ export function EquipmentDeleteSheet({
   onDeleteComplete,
 }: EquipmentDeleteSheetProps) {
   const { deleteEquipment } = useEquipment({});
+  const mayDelete = useSelector(userCapabilitiesSelect.allows)(can.equipmentDefinitions.delete);
   const [dependentPackageIds, setDependentPackageIds] = useState<string[]>([]);
   const [isLoadingDeps, setIsLoadingDeps] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -136,7 +142,7 @@ export function EquipmentDeleteSheet({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={isDeleting || isLoadingDeps}
+            disabled={isDeleting || isLoadingDeps || !mayDelete}
           >
             {isDeleting
               ? "Deleting…"

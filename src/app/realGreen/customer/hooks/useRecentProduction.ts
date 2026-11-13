@@ -49,7 +49,17 @@ function buildRecentProductionPlan(season: number, dateRange: TRange<string>) {
     .build();
 }
 
-export function useRecentProduction(dateRange: TRange<string> | null) {
+/**
+ * `canLoad` (the mirror read) and `canRefreshLive` (the live single-customer refresh) come from the
+ * component, because hooks expose actions only and do not select. Both default to allowed.
+ */
+export function useRecentProduction(
+  dateRange: TRange<string> | null,
+  {
+    canLoad = true,
+    canRefreshLive = true,
+  }: { canLoad?: boolean; canRefreshLive?: boolean } = {},
+) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
@@ -57,7 +67,7 @@ export function useRecentProduction(dateRange: TRange<string> | null) {
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!season || !isValidDateRange || !dateRange) return;
+    if (!canLoad || !season || !isValidDateRange || !dateRange) return;
 
     if (PIPELINE.recentProduction === "mirror") {
       const plan = buildRecentProductionPlan(season, dateRange);
@@ -67,10 +77,10 @@ export function useRecentProduction(dateRange: TRange<string> | null) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(recentProductionGetDocs({ params: { schemeName: "recentProduction", season, schemeParams: { dateRange } } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     }
-  }, [dateRange, dispatch, isValidDateRange, season]);
+  }, [canLoad, dateRange, dispatch, isValidDateRange, season]);
 
   const refresh = () => {
-    if (!season || !isValidDateRange || !dateRange) return;
+    if (!canLoad || !season || !isValidDateRange || !dateRange) return;
 
     if (PIPELINE.recentProduction === "mirror") {
       const plan = buildRecentProductionPlan(season, dateRange);
@@ -83,7 +93,7 @@ export function useRecentProduction(dateRange: TRange<string> | null) {
   };
 
   const refreshCustomer = async (custId: number) => {
-    if (!season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
+    if (!canRefreshLive || !season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
     setRefreshingCustIds((prev) => new Set(prev).add(custId));
     try {
       const result = await dispatch(

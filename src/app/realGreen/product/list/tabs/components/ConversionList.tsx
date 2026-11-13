@@ -17,6 +17,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/style/components/table";
+import { useSelector } from "react-redux";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
+
+const { can } = productCapabilities;
 
 interface ConversionListProps {
   conversions: UnitConversion[];
@@ -30,6 +35,7 @@ interface ConversionRowProps {
 }
 
 function ConversionRow({ conversion, onSave }: ConversionRowProps) {
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.unitConversions.write);
   const [unitLabel, setUnitLabel] = useState(conversion.unitLabel);
   const [conversionFactor, setConversionFactor] = useState(
     conversion.conversionFactor.toString(),
@@ -106,7 +112,7 @@ function ConversionRow({ conversion, onSave }: ConversionRowProps) {
           <SaveButton
             size="sm"
             onClick={handleSave}
-            disabled={!hasChanges || !isValid}
+            disabled={!hasChanges || !isValid || !canWrite}
             status={status}
             onSuccessComplete={() => setStatus("idle")}
           >

@@ -5,10 +5,12 @@ import { GroupSequenceModel } from "@/app/pace/groupSequence/GroupSequenceModel"
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { paceCapabilities } from "@/app/pace/paceCapabilities";
 
+const { can } = paceCapabilities;
 const handlers: HandlerMap<GroupSequenceContract> = {
   getSequences: {
-    roles: ["admin", "office", "tech"],
+    capability: can.groupSequences.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await GroupSequenceModel.find({}).lean();
@@ -23,7 +25,7 @@ const handlers: HandlerMap<GroupSequenceContract> = {
   },
 
   upsertSequence: {
-    roles: ["admin", "office"],
+    capability: can.groupSequences.write,
     handler: async (sequence) => {
       await connectToMongoDB();
       const saved = await GroupSequenceModel.findOneAndUpdate(
@@ -36,7 +38,7 @@ const handlers: HandlerMap<GroupSequenceContract> = {
   },
 
   deleteSequence: {
-    roles: ["admin", "office"],
+    capability: can.groupSequences.delete,
     handler: async ({ sequenceId }) => {
       await connectToMongoDB();
       await GroupSequenceModel.deleteOne({ sequenceId });

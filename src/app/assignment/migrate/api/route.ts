@@ -5,6 +5,9 @@ import { DataResponse } from "@/lib/api/types/responses";
 import { ServiceDocPropsModel } from "@/app/realGreen/customer/_lib/models/ServiceDocPropsModel";
 import { AssignmentModel } from "@/app/assignment/AssignmentModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
+
+const { can } = assignmentCapabilities;
 
 interface MigrateAssignmentsContract extends ApiContract {
   migrateAssignments: {
@@ -15,7 +18,8 @@ interface MigrateAssignmentsContract extends ApiContract {
 
 const handlers: HandlerMap<MigrateAssignmentsContract> = {
   migrateAssignments: {
-    roles: ["admin"],
+    // One-time and overwrites each service's stored assignments, so it has its own capability.
+    capability: can.legacyAssignmentMigration.write,
     handler: async () => {
       await connectToMongoDB();
 

@@ -110,6 +110,55 @@ describe("createFeatureCapabilities: key format", () => {
     ).not.toThrow();
   });
 });
+
+describe("createFeatureCapabilities: requires", () => {
+  const resources = { widgets: { shape: "collection", verbs: ["read", "write"] } } as const;
+
+  it("accepts a requirement on a declared resource.verb", () => {
+    expect(() =>
+      createFeatureCapabilities({
+        key: "widgets",
+        resources,
+        requires: { "widgets.write": ["other.things.read"] },
+      }),
+    ).not.toThrow();
+  });
+
+  it.each(["widgets", "widgets.delete", "gadgets.read", "widgets.write.extra", ""])(
+    "rejects a requires key that is not a declared resource.verb: %j",
+    (requirementKey) => {
+      expect(() =>
+        createFeatureCapabilities({
+          key: "widgets",
+          resources,
+          requires: { [requirementKey]: ["other.things.read"] },
+        }),
+      ).toThrow("requires lists unknown capability");
+    },
+  );
+
+  it("rejects a requirement attached to a public verb, which grants nothing", () => {
+    expect(() =>
+      createFeatureCapabilities({
+        key: "widgets",
+        resources,
+        public: { widgets: ["read"] },
+        requires: { "widgets.read": ["other.things.read"] },
+      }),
+    ).toThrow("public verb");
+  });
+
+  it("rejects an empty requirement string", () => {
+    expect(() =>
+      createFeatureCapabilities({
+        key: "widgets",
+        resources,
+        requires: { "widgets.write": [""] as never },
+      }),
+    ).toThrow("empty capability");
+  });
+});
+
 // Compile-time checks: they are no-ops at runtime and are enforced by `npx tsc --noEmit`.
 describe("createFeatureCapabilities: type inference", () => {
   it("infers literal capability strings", () => {

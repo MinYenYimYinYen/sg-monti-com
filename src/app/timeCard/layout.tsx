@@ -10,6 +10,12 @@ import { timeCardSelect } from "@/app/timeCard/timeCardSelect";
 import { useTimeCard } from "@/app/timeCard/useTimeCard";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { timeCardCapabilities } from "@/app/timeCard/timeCardCapabilities";
+import { employeeCapabilities } from "@/app/realGreen/employee/employeeCapabilities";
+
+const { can } = timeCardCapabilities;
 
 const NAV_LINKS = [
   { label: "Import", href: "/timeCard/import" },
@@ -19,8 +25,12 @@ const NAV_LINKS = [
 export default function TimeCardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const lastImportedDate = useSelector(timeCardSelect.lastImportedDate);
-  const { fetchLastImportedDate } = useTimeCard();
-  useEmployee({ autoLoad: true });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const { fetchLastImportedDate } = useTimeCard({ canLoad: allows(can.punches.read) });
+  useEmployee({
+    autoLoad: true,
+    canLoad: allows(employeeCapabilities.can.employees.read),
+  });
 
   useEffect(() => {
     fetchLastImportedDate();
@@ -61,7 +71,7 @@ export default function TimeCardLayout({ children }: { children: ReactNode }) {
 
       {/* Page content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-        {children}
+        <GatedPanel requirement={can.punches.read}>{children}</GatedPanel>
       </div>
     </div>
   );

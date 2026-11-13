@@ -5,6 +5,8 @@ import { useSelector } from "react-redux";
 import { inventorySelect, sumCountsToAppUnits } from "@/app/inventory/inventorySelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { authSelect } from "@/app/auth/authSlice";
+import { inventoryCapabilities } from "@/app/inventory/inventoryCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { useInventory } from "@/app/inventory/useInventory";
 import { InventoryCheckDoc, InventoryCheckEntry } from "@/app/inventory/InventoryTypes";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
@@ -20,7 +22,10 @@ import {
   DialogTitle,
 } from "@/style/components/dialog";
 
+const { can } = inventoryCapabilities;
+
 export function SaveInventoryButton() {
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.inventoryChecks.write);
   const session = useSelector(inventorySelect.session);
   const allProductsMap = useSelector(productSelect.allProductsMap);
   const userName = useSelector(authSelect.user)?.userName ?? "";
@@ -33,7 +38,7 @@ export function SaveInventoryButton() {
     (id) => (session.counts[id]?.length ?? 0) > 0,
   );
 
-  const isDisabled = submittableIds.length === 0;
+  const isDisabled = submittableIds.length === 0 || !canWrite;
 
   const handleSave = async () => {
     const entries: InventoryCheckEntry[] = submittableIds.flatMap((productId) => {
@@ -91,7 +96,12 @@ export function SaveInventoryButton() {
             >
               Cancel
             </Button>
-            <Button variant="accent" intensity="solid" onClick={handleSave}>
+            <Button
+              variant="accent"
+              intensity="solid"
+              disabled={!canWrite}
+              onClick={handleSave}
+            >
               Save
             </Button>
           </DialogFooter>

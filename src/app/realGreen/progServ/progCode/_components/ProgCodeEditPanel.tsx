@@ -25,6 +25,10 @@ import { Input } from "@/style/components/input";
 import { Switch } from "@/style/components/switch";
 import { PriceTable } from "@/app/realGreen/priceTable/_types/PriceTableTypes";
 import { AppState } from "@/store";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
+
+const { can } = progServCapabilities;
 
 const NONE_VALUE = "__none__";
 
@@ -55,6 +59,8 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
   const progCodeMap = useSelector(progServSelect.progCodeMap);
   const priceTables = useSelector(priceTableSelect.priceTables);
   const unsavedProgCodeChanges = useSelector(selectUnsavedProgCodeChanges);
+  // The fields only change a draft in the store. Saving the draft is the write, so it is the control that is gated.
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.progCodeDocProps.write);
 
   const progCode = progCodeMap.get(progCodeId);
   if (!progCode) return null;
@@ -231,7 +237,12 @@ export function ProgCodeEditPanel({ progCodeId }: ProgCodeEditPanelProps) {
           <Button variant="secondary" intensity="ghost" onClick={handleRevert}>
             Revert
           </Button>
-          <Button variant="primary" intensity="solid" onClick={handleSave}>
+          <Button
+            variant="primary"
+            intensity="solid"
+            onClick={handleSave}
+            disabled={!canWrite}
+          >
             Save Changes
           </Button>
         </CardFooter>

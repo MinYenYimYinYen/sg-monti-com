@@ -16,10 +16,12 @@ import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
 import ServCodeDocPropsModel from "@/app/realGreen/progServ/_lib/models/ServCodeDocPropsModel";
 import { ProgCodeDocPropsModel } from "@/app/realGreen/progServ/_lib/models/ProgCodeDocPropsModel";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
+import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
 
+const { can } = progServCapabilities;
 const handlers: HandlerMap<ProgServContract> = {
   getProgCodes: {
-    roles: ["office", "admin"],
+    capability: can.progCodes.read,
     handler: async () => {
       const rawProgCodes = await rgApi<ProgCodeRaw[]>({
         path: "/ProgramCode",
@@ -43,7 +45,7 @@ const handlers: HandlerMap<ProgServContract> = {
     },
   },
   getServCodes: {
-    roles: ["office", "admin"],
+    capability: can.servCodes.read,
     handler: async () => {
       const rawServCodes = await rgApi<ServCodeRaw[]>({
         path: "/ServiceCode",
@@ -61,7 +63,7 @@ const handlers: HandlerMap<ProgServContract> = {
   },
 
   saveServCodeChanges: {
-    roles: ["admin"],
+    capability: can.servCodeDocProps.write,
     handler: async (params) => {
       const { unsavedChanges } = params;
 
@@ -87,7 +89,7 @@ const handlers: HandlerMap<ProgServContract> = {
   },
 
   saveProgCodeChanges: {
-    roles: ["admin"],
+    capability: can.progCodeDocProps.write,
     handler: async (params) => {
       const { unsavedChanges } = params;
 

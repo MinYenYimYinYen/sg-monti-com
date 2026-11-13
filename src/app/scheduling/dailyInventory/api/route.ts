@@ -5,10 +5,13 @@ import { LoadoutDocModel } from "@/app/scheduling/dailyInventory/models/LoadoutD
 import { cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { LoadoutDoc } from "@/app/loadout/LoadoutTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
+
+const { can } = schedulingCapabilities;
 
 const handlers: HandlerMap<LoadoutContract> = {
   upsertLoadout: {
-    roles: ["admin", "office", "tech"],
+    capability: can.loadouts.write,
     handler: async ({ loadout }) => {
       await connectToMongoDB();
       const upsertResult = await LoadoutDocModel.findOneAndUpdate(
@@ -23,7 +26,7 @@ const handlers: HandlerMap<LoadoutContract> = {
     },
   },
   getLoadouts: {
-    roles: ["admin", "office", "tech"],
+    capability: can.loadouts.read,
     handler: async ({ dateRange }) => {
       await connectToMongoDB();
       const { min, max } = dateRange;
@@ -41,7 +44,7 @@ const handlers: HandlerMap<LoadoutContract> = {
   },
 
   getLoadout: {
-    roles: ["admin", "office", "tech"],
+    capability: can.loadouts.read,
     handler: async ({ employeeId, routeDate }) => {
       await connectToMongoDB();
       const loadout = await LoadoutDocModel.findOne({
@@ -58,7 +61,7 @@ const handlers: HandlerMap<LoadoutContract> = {
   },
 
   getLoadoutKeys: {
-    roles: ["admin", "office", "tech"],
+    capability: can.loadouts.read,
     handler: async ({ dateRange }) => {
       await connectToMongoDB();
       const { min, max } = dateRange;

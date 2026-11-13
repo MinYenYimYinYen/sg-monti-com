@@ -30,6 +30,10 @@ import {
   AccordionTrigger,
 } from "@/style/components/accordion";
 import { cn } from "@/style/utils";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { timeCardCapabilities } from "@/app/timeCard/timeCardCapabilities";
+
+const { can } = timeCardCapabilities;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -367,6 +371,8 @@ export function PunchImportPanel() {
   const saveStatus = useSelector(timeCardImportSelect.saveStatus);
   const punches = useSelector(timeCardImportSelect.all);
   const skippedIds = useSelector(timeCardImportSelect.skippedPunchIdsSet);
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.punches.write);
 
   const handleFileDrop = async (file: File) => {
     dispatch(timeCardImportActions.setSaveStatus("idle"));
@@ -616,7 +622,8 @@ export function PunchImportPanel() {
                   <div className="flex items-center gap-3">
                     <SaveButton
                       status={saveStatus}
-                      disabled={importableCount === 0}
+                      disabled={importableCount === 0 || !canWrite}
+                      title={canWrite ? undefined : "You do not have access to import punches"}
                       onClick={handleImport}
                       onSuccessComplete={() => dispatch(timeCardImportActions.setSaveStatus("idle"))}
                     >

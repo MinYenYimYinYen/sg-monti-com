@@ -1,6 +1,5 @@
 import type { User } from "@/app/auth/_types/User";
 import type { Capability } from "@/permission/PermissionTypes";
-import type { KnownCapabilities } from "@/permission/logic/permissionLogicTypes";
 
 // ---------- who may assign what ----------
 export type CanAssignResult = { allowed: true } | { allowed: false; missing: Capability[] };
@@ -39,48 +38,4 @@ export function canManageCapabilitiesOf({
   actorIsSuperUser: boolean;
 }): boolean {
   return !isProtectedUser(target) || actorIsSuperUser;
-}
-
-// ---------- warn-only companions ----------
-// A hint for the editors, never a rule: nothing blocks, adds or implies a capability. Many users
-// who can write need to read, so an editor can point out when a list has one without the other.
-const COMPANION_VERBS: Record<string, readonly string[]> = {
-  write: ["read"],
-  delete: ["read"],
-  readAny: ["read"],
-  writeAny: ["readAny"],
-  deleteAny: ["readAny", "delete"],
-};
-
-export type MissingCompanion = { capability: Capability; missing: Capability };
-
-/**
- * For each capability in a flat list, the companion capabilities the registry declares but the
- * list lacks. A companion the feature never declared is not reported. Pass the effective list
- * (bundles plus direct) so a companion held through a bundle counts.
- */
-export function findMissingCompanions({
-  capabilities,
-  registry,
-}: {
-  capabilities: readonly Capability[];
-  registry: KnownCapabilities;
-}): MissingCompanion[] {
-  const held = new Set<string>(capabilities);
-  const warnings: MissingCompanion[] = [];
-
-  for (const capability of capabilities) {
-    if (!registry.has(capability)) continue;
-    const verbSeparator = capability.lastIndexOf(".");
-    const prefix = capability.slice(0, verbSeparator);
-    const verb = capability.slice(verbSeparator + 1);
-
-    for (const companionVerb of COMPANION_VERBS[verb] ?? []) {
-      const companion = `${prefix}.${companionVerb}`;
-      if (registry.has(companion) && !held.has(companion)) {
-        warnings.push({ capability, missing: companion as Capability });
-      }
-    }
-  }
-  return warnings;
 }

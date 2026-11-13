@@ -14,10 +14,33 @@ import MastersTab from "@/app/realGreen/product/list/tabs/MastersTab";
 import SubsTab from "@/app/realGreen/product/list/tabs/SubsTab";
 import ConversionsTab from "@/app/realGreen/product/list/tabs/ConversionsTab";
 import { ProductsFooter } from "@/app/realGreen/product/list/tabs/components/ProductsFooter";
+import { useSelector } from "react-redux";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
+import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
+
+const { can } = productCapabilities;
 
 export default function ListProducts() {
-  useProduct({ autoLoad: true });
-  useUnitConfig({ autoLoad: true });
+  return (
+    <GatedPanel requirement={can.products.read}>
+      <ProductList />
+    </GatedPanel>
+  );
+}
+
+function ProductList() {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canLoadUnitConversions = allows(can.unitConversions.read);
+  useProduct({
+    autoLoad: true,
+    canLoad: {
+      unitConversions: canLoadUnitConversions,
+      appMethods: allows(appMethodCapabilities.can.appMethods.read),
+    },
+  });
+  useUnitConfig({ autoLoad: true, canLoad: canLoadUnitConversions });
 
   return (
     <Container variant={"scroll-shell"}>

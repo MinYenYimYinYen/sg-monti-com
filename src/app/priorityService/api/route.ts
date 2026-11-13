@@ -8,10 +8,13 @@ import {
 } from "@/lib/mongoose/cleanMongoObj";
 import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { priorityServiceCapabilities } from "@/app/priorityService/priorityServiceCapabilities";
+
+const { can } = priorityServiceCapabilities;
 
 const handlers: HandlerMap<PriorityServiceContract> = {
   getAll: {
-    roles: ["admin", "office"],
+    capability: can.priorityServices.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await PriorityServiceModel.find({}).lean();
@@ -27,7 +30,7 @@ const handlers: HandlerMap<PriorityServiceContract> = {
     },
   },
   upsert: {
-    roles: ["admin", "office"],
+    capability: can.priorityServices.write,
     handler: async ({ doc }) => {
       await connectToMongoDB();
       // Explicitly unset the inactive date field so switching between "single date"
@@ -48,7 +51,7 @@ const handlers: HandlerMap<PriorityServiceContract> = {
     },
   },
   deleteOne: {
-    roles: ["admin", "office"],
+    capability: can.priorityServices.delete,
     handler: async ({ servId }) => {
       await connectToMongoDB();
       const deleted = await PriorityServiceModel.findOneAndDelete({

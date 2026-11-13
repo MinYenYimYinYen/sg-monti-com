@@ -12,13 +12,14 @@ import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
  * configured renewal flag IDs on mount. Call this wherever renewal flag
  * data needs to be available (e.g., useNavBarDeps).
  */
-export function useRenewalFlagIds() {
+export function useRenewalFlagIds({ canLoad = true }: { canLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
   const renewalFlagIds = useSelector(globalSettingsSelect.renewalFlagIds);
   const flagIdsInState = useSelector(custFlagSelect.flagIdsInState);
 
   // Hydrate globalSettings if not yet loaded
   useEffect(() => {
+    if (!canLoad) return;
     dispatch(
       globalSettingsActions.getSettings({
         params: {},
@@ -28,7 +29,7 @@ export function useRenewalFlagIds() {
         },
       }),
     );
-  }, [dispatch]);
+  }, [canLoad, dispatch]);
 
   // Load custFlag data for any configured renewal flag IDs not yet in state
   useEffect(() => {

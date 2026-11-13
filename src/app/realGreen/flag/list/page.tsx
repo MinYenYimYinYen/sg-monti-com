@@ -6,8 +6,18 @@ import { Flag } from "@/app/realGreen/flag/FlagTypes";
 import EntitySelector from "@/components/EntitySelector";
 import { useSelector } from "react-redux";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { flagCapabilities } from "@/app/realGreen/flag/flagCapabilities";
 
 export default function ListFlags() {
+  return (
+    <GatedPanel requirement={flagCapabilities.can.flags.read}>
+      <FlagList />
+    </GatedPanel>
+  );
+}
+
+function FlagList() {
   useFlag({ autoLoad: true });
   const flagDocs = useSelector(flagSelect.flagDocs);
   const [selected, setSelected] = useState<Flag | null>(null);

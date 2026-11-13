@@ -22,6 +22,11 @@ import { Holiday } from "@/app/holiday/holidayTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { cn } from "@/style/utils";
 import { format, parseISO } from "date-fns";
+import { holidayCapabilities } from "@/app/holiday/holidayCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = holidayCapabilities;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -90,6 +95,9 @@ function HolidayForm({
   onDone: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.holidays.write);
+  const canDelete = allows(can.holidays.delete);
 
   const [description, setDescription] = useState(existingDoc?.description ?? "");
   const [dateRange, setDateRange] = useState<TRange<string>>(
@@ -102,6 +110,7 @@ function HolidayForm({
   const isEditMode = !!existingDoc;
 
   const canSave =
+    canWrite &&
     description.trim() !== "" &&
     dateRange.min !== "" &&
     dateRange.max !== "" &&
@@ -200,6 +209,7 @@ function HolidayForm({
                 variant="destructive"
                 intensity="soft"
                 className="w-full"
+                disabled={!canDelete}
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 Delete Holiday
@@ -213,6 +223,7 @@ function HolidayForm({
                   <Button
                     variant="destructive"
                     className="flex-1"
+                    disabled={!canDelete}
                     onClick={handleDelete}
                   >
                     Confirm Delete
@@ -239,7 +250,17 @@ function HolidayForm({
 // ---------------------------------------------------------------------------
 
 export default function HolidayPage() {
+  return (
+    <GatedPanel requirement={can.holidays.read}>
+      <HolidayWorkspace />
+    </GatedPanel>
+  );
+}
+
+// Split from the page so the mount load never fires for a user without `read`.
+function HolidayWorkspace() {
   useHoliday({ autoLoad: true });
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.holidays.write);
 
   const holidays = useSelector(holidaySelect.all);
   const [selected, setSelected] = useState<string | "new" | null>(null);
@@ -265,6 +286,7 @@ export default function HolidayPage() {
             variant="primary"
             intensity="soft"
             className="w-full justify-start gap-2"
+            disabled={!canWrite}
             onClick={() => setSelected("new")}
           >
             <Plus className="w-4 h-4" />

@@ -44,12 +44,18 @@ function buildPriorityServiceCustomersPlan(season: number, servIds: number[]) {
     .build();
 }
 
-export function usePriorityServiceCustomers() {
+/**
+ * `canLoad` comes from the component, because hooks expose actions only and do not select. It
+ * defaults to allowed so callers that do not gate can omit it.
+ */
+export function usePriorityServiceCustomers({
+  canLoad = true,
+}: { canLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
   const season = useSelector(globalSettingsSelect.season);
 
   const loadByServIds = (servIds: number[], config?: LoadConfig) => {
-    if (!season || !servIds.length) return;
+    if (!canLoad || !season || !servIds.length) return;
 
     if (PIPELINE.priorityService === "mirror") {
       const plan = buildPriorityServiceCustomersPlan(season, servIds);

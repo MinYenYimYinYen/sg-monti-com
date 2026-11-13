@@ -44,11 +44,19 @@ function buildFullSeasonServicesPlan(season: number) {
     .build();
 }
 
+/**
+ * `canLoad` (the mirror read) and `canRefreshLive` (the live single-customer refresh) come from the
+ * component, because hooks expose actions only and do not select. Both default to allowed.
+ */
 export function useFullSeasonServices({
   autoLoad = false,
   seasonOverride,
+  canLoad = true,
+  canRefreshLive = true,
 }: {
   autoLoad?: boolean;
+  canLoad?: boolean;
+  canRefreshLive?: boolean;
   /** Override the season used for the query. Defaults to globalSettings.season. */
   seasonOverride?: number;
 } = {}) {
@@ -59,7 +67,7 @@ export function useFullSeasonServices({
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!autoLoad || !season) return;
+    if (!autoLoad || !canLoad || !season) return;
 
     if (PIPELINE.fullSeasonServices === "mirror") {
       const plan = buildFullSeasonServicesPlan(season);
@@ -69,10 +77,10 @@ export function useFullSeasonServices({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(fullSeasonServicesGetDocs({ params: { schemeName: "fullSeasonServices", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     }
-  }, [autoLoad, dispatch, season]);
+  }, [autoLoad, canLoad, dispatch, season]);
 
   const refresh = () => {
-    if (!season) return;
+    if (!season || !canLoad) return;
 
     if (PIPELINE.fullSeasonServices === "mirror") {
       const plan = buildFullSeasonServicesPlan(season);
@@ -85,7 +93,7 @@ export function useFullSeasonServices({
   };
 
   const refreshCustomer = async (custId: number) => {
-    if (!season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
+    if (!canRefreshLive || !season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
     setRefreshingCustIds((prev) => new Set(prev).add(custId));
     try {
       const result = await dispatch(

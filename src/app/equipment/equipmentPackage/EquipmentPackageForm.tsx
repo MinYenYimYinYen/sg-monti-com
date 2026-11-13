@@ -20,6 +20,10 @@ import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentP
 import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipmentPackage";
 import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 import { EquipmentPackageDeleteSheet } from "@/app/equipment/equipmentPackage/EquipmentPackageDeleteSheet";
+import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = equipmentCapabilities;
 
 interface EquipmentPackageFormProps {
   equipmentPackage?: EquipmentPackageDoc;
@@ -29,6 +33,9 @@ export function EquipmentPackageForm({ equipmentPackage }: EquipmentPackageFormP
   const { upsertEquipmentPackage } = useEquipmentPackage({});
   const { deselectCard } = useCardStack();
   const equipmentDocs = useSelector(equipmentSelect.equipmentDocs);
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const mayWrite = allows(can.equipmentPackages.write);
+  const mayDelete = allows(can.equipmentPackages.delete);
 
   const [packageId, setPackageId] = useState(equipmentPackage?.packageId ?? "");
   const [description, setDescription] = useState(equipmentPackage?.description ?? "");
@@ -147,7 +154,7 @@ export function EquipmentPackageForm({ equipmentPackage }: EquipmentPackageFormP
           {/* Actions */}
           <div className="flex gap-2 items-center pt-1">
             <SaveButton
-              disabled={!canSave}
+              disabled={!canSave || !mayWrite}
               status={saveStatus}
               onClick={handleSave}
               onSuccessComplete={handleSuccessComplete}
@@ -169,6 +176,7 @@ export function EquipmentPackageForm({ equipmentPackage }: EquipmentPackageFormP
                   variant="destructive"
                   intensity="soft"
                   onClick={() => setDeleteSheetOpen(true)}
+                  disabled={!mayDelete}
                   className="w-full"
                 >
                   Delete Package

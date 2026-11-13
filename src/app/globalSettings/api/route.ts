@@ -5,10 +5,13 @@ import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { GlobalSettingsModel } from "@/app/globalSettings/_lib/GlobalSettingsModel";
 import { baseGlobalSettings } from "@/app/globalSettings/_lib/baseGlobalSettings";
 import { cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
+import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+
+const { can } = globalSettingsCapabilities;
 
 const handlers: HandlerMap<GlobalSettingsContract> = {
   updateSettings: {
-    roles: ["admin"],
+    capability: can.settings.write,
     handler: async (params) => {
       await connectToMongoDB();
 
@@ -27,7 +30,7 @@ const handlers: HandlerMap<GlobalSettingsContract> = {
     },
   },
   getSettings: {
-    roles: ["admin", "office", "tech"],
+    capability: can.settings.read,
     handler: async () => {
       await connectToMongoDB();
       const result = await GlobalSettingsModel.findOne().lean();

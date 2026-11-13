@@ -18,6 +18,11 @@ import { Separator } from "@/style/components/separator";
 import { useEmployeeAvailability } from "@/app/employeeAvailability/useEmployeeAvailability";
 import { employeeAvailabilitySelect } from "@/app/employeeAvailability/employeeAvailabilitySelect";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
+import { employeeAvailabilityCapabilities } from "@/app/employeeAvailability/employeeAvailabilityCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { Notice } from "@/app/permission/_components/Notice";
+
+const { can } = employeeAvailabilityCapabilities;
 
 // ---------------------------------------------------------------------------
 // EmployeeAvailabilitySheet
@@ -33,6 +38,10 @@ export function EmployeeAvailabilitySheet({
   onCloseAction,
 }: EmployeeAvailabilitySheetProps) {
   const { upsert, deleteOne } = useEmployeeAvailability();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canRead = allows(can.availabilityConstraints.read);
+  const canWrite = allows(can.availabilityConstraints.write);
+  const canDelete = allows(can.availabilityConstraints.delete);
   const availabilityByEmployeeId = useSelector(employeeAvailabilitySelect.byEmployeeId);
   const existingDoc = availabilityByEmployeeId.get(employee.employeeId);
 
@@ -74,6 +83,14 @@ export function EmployeeAvailabilitySheet({
         </SheetHeader>
 
         <div className="space-y-5 mt-6">
+          {/* Without read, the stored dates never load, so a save would overwrite them blind. */}
+          {!canRead && (
+            <Notice tone="warning">
+              You do not have access to the stored availability constraints, so the current dates
+              are not shown.
+            </Notice>
+          )}
+
           {/* Start Date */}
           <FormGroup>
             <Label>Start Date</Label>
@@ -106,6 +123,7 @@ export function EmployeeAvailabilitySheet({
               status={saveStatus}
               onClick={handleSave}
               onSuccessComplete={handleSuccessComplete}
+              disabled={!canWrite}
             >
               Save
             </SaveButton>
@@ -123,6 +141,7 @@ export function EmployeeAvailabilitySheet({
                   variant="destructive"
                   intensity="soft"
                   className="w-full"
+                  disabled={!canDelete}
                   onClick={() => setShowDeleteConfirm(true)}
                 >
                   Remove All Constraints
@@ -136,6 +155,7 @@ export function EmployeeAvailabilitySheet({
                     <Button
                       variant="destructive"
                       className="flex-1"
+                      disabled={!canDelete}
                       onClick={handleDelete}
                     >
                       Confirm

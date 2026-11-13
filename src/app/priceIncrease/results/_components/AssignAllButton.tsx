@@ -20,7 +20,10 @@ import { useAuth } from "@/app/auth/_hooks/useAuth";
 import { authActions, authSelect } from "@/app/auth/authSlice";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { CustFlagAdd } from "@/app/realGreen/custFlag/_lib/CustFlagTypes";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
 
+const { can } = custFlagCapabilities;
 const ACTIVE_STATUSES = ["9"];
 
 // ---------------------------------------------------------------------------
@@ -122,7 +125,15 @@ export function AssignAllButton() {
     ...(manualFlagId !== null ? [manualFlagId] : []),
   ];
 
-  const { addFlags } = useCustFlag({ flagIds, custStatuses: ACTIVE_STATUSES });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canAssign = allows(can.flagAssignments.write);
+  const canLoad = allows(can.customerFlags.read);
+
+  const { addFlags } = useCustFlag({
+    flagIds,
+    custStatuses: ACTIVE_STATUSES,
+    canLoad,
+  });
   const { confirmPassword } = useAuth();
 
   const [open, setOpen] = useState(false);
@@ -135,7 +146,8 @@ export function AssignAllButton() {
   const [assignedCount, setAssignedCount] = useState(0);
 
   const preflight = analyzeResults(results);
-  const isDisabled = preflight.conflictCount > 0 || preflight.eligibleCount === 0;
+  const isDisabled =
+    preflight.conflictCount > 0 || preflight.eligibleCount === 0 || !canAssign;
 
   function handleOpen() {
     setStep("preflight");
@@ -207,7 +219,12 @@ export function AssignAllButton() {
             {preflight.conflictCount} conflict{preflight.conflictCount !== 1 ? "s" : ""} must be resolved in RealGreen first
           </span>
         )}
-        {preflight.conflictCount === 0 && preflight.eligibleCount === 0 && (
+        {!canAssign && (
+          <span className="text-xs text-foreground/40">
+            You do not have access to assign flags
+          </span>
+        )}
+        {canAssign && preflight.conflictCount === 0 && preflight.eligibleCount === 0 && (
           <span className="text-xs text-foreground/40">No customers need flag assignment</span>
         )}
       </div>

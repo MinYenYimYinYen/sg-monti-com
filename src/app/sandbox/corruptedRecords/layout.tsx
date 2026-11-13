@@ -7,6 +7,12 @@ import { TabNav, TabNavItem } from "@/components/PageLayout/TabNav";
 import { useDeps } from "@/app/sandbox/corruptedRecords/useDeps";
 import { corruptedSyncRecordSelect } from "@/app/realGreen/customer/sync/corruptedRecords/corruptedSyncRecordSelect";
 import { corruptedSyncRecordActions } from "@/app/realGreen/customer/sync/corruptedRecords/corruptedSyncRecordSlice";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { customerCapabilities } from "@/app/realGreen/customer/customerCapabilities";
+import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
+
+const { can } = customerCapabilities;
 
 const TABS: TabNavItem[] = [
   { label: "ServId Context",            href: "/sandbox/corruptedRecords/servIdContext" },
@@ -20,7 +26,15 @@ const ROOT_HREF = "/sandbox/corruptedRecords";
 const SEASON_OPTIONS = [2024, 2025, 2026, 2027];
 
 export default function CorruptedRecordsLayout({ children }: { children: React.ReactNode }) {
-  useDeps();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  useDeps({
+    canLoad: {
+      corruptedSyncRecords: allows(can.corruptedSyncRecords.read),
+      customers: allows(can.customers.read),
+      progCodes: allows(progServCapabilities.can.progCodes.read),
+      servCodes: allows(progServCapabilities.can.servCodes.read),
+    },
+  });
 
   const dispatch = useAppDispatch();
   const selectedSeason = useSelector(corruptedSyncRecordSelect.selectedSeason);
@@ -47,7 +61,9 @@ export default function CorruptedRecordsLayout({ children }: { children: React.R
         }
         right={<TabNav items={TABS} rootHref={ROOT_HREF} />}
       />
-      <PageLayout.Body>{children}</PageLayout.Body>
+      <PageLayout.Body>
+        <GatedPanel requirement={can.corruptedSyncRecords.read}>{children}</GatedPanel>
+      </PageLayout.Body>
     </PageLayout>
   );
 }

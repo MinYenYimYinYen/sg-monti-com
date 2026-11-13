@@ -11,6 +11,9 @@ import { getEncryptionKey, getQboConfig } from "@/app/qbo/_lib/auth/qboConfig";
 import { encryptSecret } from "@/app/qbo/_lib/auth/qboCrypto";
 import { exchangeCodeForTokens } from "@/app/qbo/_lib/auth/qboOAuthServer";
 import { evaluateOAuthState, isValidRealmId } from "@/app/qbo/_lib/auth/qboOAuthUtils";
+import { capabilityLoaders } from "@/app/permission/_lib/capabilityLoaders";
+import { evaluateCapability } from "@/permission/evaluateCapability";
+import { qboConnectionCapabilities } from "@/app/qbo/connection/qboConnectionCapabilities";
 
 type CallbackParams = {
   code: string | null;
@@ -35,9 +38,9 @@ async function discardState(state: string | null): Promise<void> {
 /**
  * Completes the OAuth round trip. Intuit redirects the browser here from another site, so
  * no login cookie is available (they are SameSite=strict). Authority comes from the
- * one-time `state` created by an authenticated admin in startConnect: it is deleted on
- * first use, expires after about 10 minutes, and names the admin who started it. The admin
- * role is checked again here in case it was removed since.
+ * one-time `state` created by an authorized user in startConnect: it is deleted on first
+ * use, expires after about 10 minutes, and names the user who started it. That user's
+ * connection write capability is checked again here in case it was removed since.
  *
  * Returns a result for the redirect page. Never throws, and never logs tokens or the code.
  */
@@ -61,9 +64,15 @@ export async function handleOAuthCallback(params: CallbackParams): Promise<QboCa
     if (!evaluation.ok) return { result: "error", reason: evaluation.reason };
 
     const user = await UserModel.findOne({ userName: evaluation.userName }).lean();
-    if (!user || user.role !== "admin") {
-      return { result: "error", reason: "invalid_state" };
-    }
+    if (!user) return { result: "error", reason: "invalid_state" };
+    // Not an RPC, so there is no cookie to verify: the stored state names the user, and the same
+    // decision an RPC op makes is evaluated for them (superuser confirmed against the document).
+    const decision = await evaluateCapability({
+      required: qboConnectionCapabilities.can.connection.write,
+      identity: { userName: user.userName, isSuperUser: user.isSuperUser },
+      loaders: capabilityLoaders,
+    });
+    if (decision !== "allowed") return { result: "error", reason: "invalid_state" };
     if (!isValidRealmId(realmId)) {
       return { result: "error", reason: "missing_params" };
     }

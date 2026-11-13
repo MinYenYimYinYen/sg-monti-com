@@ -8,10 +8,35 @@ import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { ProgCodeListPanel } from "./_components/ProgCodeListPanel";
 import { ProgCodeEditPanel } from "./_components/ProgCodeEditPanel";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
+import { priceTableCapabilities } from "@/app/realGreen/priceTable/priceTableCapabilities";
+
+const { can } = progServCapabilities;
 
 export default function ProgCodePage() {
-  useProgServ({ autoLoad: true });
-  usePriceTable({ autoLoad: true });
+  return (
+    <GatedPanel requirement={can.progCodes.read}>
+      <ProgCodes />
+    </GatedPanel>
+  );
+}
+
+function ProgCodes() {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  useProgServ({
+    autoLoad: true,
+    canLoad: {
+      progCodes: allows(can.progCodes.read),
+      // The program list shows how many service codes each program has.
+      servCodes: allows(can.servCodes.read),
+    },
+  });
+  usePriceTable({
+    autoLoad: true,
+    canLoad: allows(priceTableCapabilities.can.priceTables.read),
+  });
 
   const progCodes = useSelector(progServSelect.progCodes);
   const [selectedProgCodeId, setSelectedProgCodeId] = useState<string | null>(null);

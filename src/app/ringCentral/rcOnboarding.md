@@ -107,14 +107,14 @@ A CSR answers calls inside sgmonti.com. While the call runs, AI identifies the c
 
 Built with the `data-module` skill as its own module, separate from the call flow. Files in `src/app/knowledgeBase/`: `TopicTypes.ts`, `TopicModel.ts`, `api/TopicContract.ts`, `api/route.ts`, `topicSlice.ts`, `topicSelect.ts`, `useTopics.ts`. The reducer is registered as `topic` in `src/store/reducers/index.ts`.
 
-- **Operations:** `getAll` (admin, office), `upsert` and `remove` (admin only).
+- **Operations:** `getAll`, `upsert` and `remove`, each gated by a capability (`knowledgeBase.topics.read`, `.write`, `.delete`), not by role. See `src/permission/migration/fullyMigratedFolders.md`.
 - **Selectors:** `docs`, `docsByKey`, and `classifierCandidates`, which exposes only `topicKey` and `description` so the classifier input cannot include guidance.
 - **Not built yet:**
   - Any UI, including the editor for writing topics and the CSR side panel.
   - The classification step (Claude call).
   - Seed topics.
   - Validation of `topicKey` format.
-- **Open:** whether `office` should be able to edit topics, or only `admin` (currently admin only).
+- **Open:** who should be able to edit topics. That is now a choice of who is assigned `knowledgeBase.topics.write`.
 - **Not yet verified:** the module has been linted but not run against Mongo or called from the browser.
 
 #### Status of the call-flow work (2026-10-28)

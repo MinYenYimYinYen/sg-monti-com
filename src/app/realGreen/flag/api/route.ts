@@ -7,10 +7,12 @@ import {
   remapFlags,
 } from "@/app/realGreen/flag/_lib/flagServerFunc";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
+import { flagCapabilities } from "@/app/realGreen/flag/flagCapabilities";
 
+const { can } = flagCapabilities;
 const handlers: HandlerMap<FlagContract> = {
   getAll: {
-    roles: ["office", "admin"],
+    capability: can.flags.read,
     handler: async () => {
       const rawFlags = await rgApi<FlagRaw[]>({
         path: "/Flag",

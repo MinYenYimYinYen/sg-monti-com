@@ -6,13 +6,20 @@ import { serviceEtaActions } from "@/app/scheduling/eta/serviceEtaSlice";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { ServiceTechNotesPopover } from "@/components/ServiceTechNotesPopover";
+import { useSelector } from "react-redux";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
 
 type EtaServiceRowProps = {
   service: Service;
 };
 
+const { can } = schedulingCapabilities;
+
 export function EtaServiceRow({ service }: EtaServiceRowProps) {
   const dispatch = useAppDispatch();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.serviceEtas.write);
   const customer = service.x.customer;
   const address = customer.address;
 
@@ -111,6 +118,7 @@ export function EtaServiceRow({ service }: EtaServiceRowProps) {
         <input
           value={etaValue}
           onChange={(e) => setEtaValue(e.target.value)}
+          disabled={!canWrite}
           className="border rounded px-2 py-1 text-sm bg-card w-28"
         />
       ) : (
@@ -123,6 +131,8 @@ export function EtaServiceRow({ service }: EtaServiceRowProps) {
           status={saveStatus}
           onClick={handleSave}
           onSuccessComplete={handleSuccessComplete}
+          disabled={!canWrite}
+          title={canWrite ? undefined : "You do not have access to save ETAs"}
           variant="primary"
           intensity="soft"
           size="sm"

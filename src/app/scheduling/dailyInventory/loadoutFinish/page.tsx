@@ -10,10 +10,13 @@ import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart
 import { loadoutSelect } from "@/app/loadout/loadoutSelect";
 import { useLoadout } from "@/app/loadout/useLoadout";
 import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 
 
 export default function LoadoutFinishPage() {
-  useLoadoutFormDeps();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  useLoadoutFormDeps({ canLoad: schedulingCanLoad(allows) });
   const router = useRouter();
   const { getFinishFormLoadout } = useLoadout();
 

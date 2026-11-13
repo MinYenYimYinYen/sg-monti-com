@@ -3,11 +3,18 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { upsellPrioritiesActions } from "./upsellPrioritiesSlice";
 import type { UpsellPrioritiesDraft } from "./upsellPrioritiesTypes";
 
-export function useUpsellPriorities({ autoLoad }: { autoLoad?: boolean } = {}) {
+/**
+ * `canLoad` comes from the component, because hooks expose actions only and do not select. It
+ * defaults to allowed so write-only callers can omit it.
+ */
+export function useUpsellPriorities({
+  autoLoad,
+  canLoad = true,
+}: { autoLoad?: boolean; canLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad) {
+    if (autoLoad && canLoad) {
       dispatch(
         upsellPrioritiesActions.getUpsellPriorities({
           params: {},
@@ -15,7 +22,7 @@ export function useUpsellPriorities({ autoLoad }: { autoLoad?: boolean } = {}) {
         }),
       );
     }
-  }, [autoLoad, dispatch]);
+  }, [autoLoad, canLoad, dispatch]);
 
   const saveUpsellPriorities = (upsellPriorities: UpsellPrioritiesDraft) =>
     dispatch(

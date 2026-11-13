@@ -26,13 +26,22 @@ import {
 import { ShieldAlert, Trash2 } from "lucide-react";
 import { ProductRuleDoc } from "@/app/realGreen/progServ/_lib/types/ProductRule";
 import { getRuleId } from "@/app/realGreen/progServ/_lib/slice/progServActions";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
+import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
 
 type ServCodeEditPanelProps = {
   servCodeId: string;
 };
 
 export function ServCodeEditPanel({ servCodeId }: ServCodeEditPanelProps) {
-  useProduct({ autoLoad: true });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const productCanLoad = {
+    products: allows(productCapabilities.can.products.read),
+    unitConversions: allows(productCapabilities.can.unitConversions.read),
+    appMethods: allows(appMethodCapabilities.can.appMethods.read),
+  };
+  useProduct({ autoLoad: true, canLoad: productCanLoad });
 
   const { updateServCode } = useProgServ({});
   const {
@@ -42,7 +51,7 @@ export function ServCodeEditPanel({ servCodeId }: ServCodeEditPanelProps) {
     updateRuleOperator,
     addProductRuleProductMaster,
     removeProductRuleProductMaster,
-  } = useProductRules({ servCodeId });
+  } = useProductRules({ servCodeId, canLoad: productCanLoad });
 
   const servCodeDoc = useSelector(servCodeLookup.docById(servCodeId));
   const productMasters = useSelector(productSelect.productMasters);

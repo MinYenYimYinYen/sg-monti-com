@@ -5,6 +5,9 @@ import { Info, X } from "lucide-react";
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 import { DeleteGroupDialog } from "@/app/pace/setup/groups/_components/DeleteGroupDialog";
+import { useSelector } from "react-redux";
+import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type GroupNavItemProps = {
   group: AssignmentGroup;
@@ -15,6 +18,9 @@ type GroupNavItemProps = {
 
 export function GroupNavItem({ group, isSelected, onSelectAction, onDeletedAction }: GroupNavItemProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const canDelete = useSelector(userCapabilitiesSelect.allows)(
+    assignmentGroupCapabilities.can.assignmentGroups.delete,
+  );
 
   return (
     <>
@@ -71,7 +77,8 @@ export function GroupNavItem({ group, isSelected, onSelectAction, onDeletedActio
             e.stopPropagation();
             setDeleteOpen(true);
           }}
-          className="p-0.5 rounded text-muted-foreground/0 group-hover/item:text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+          disabled={!canDelete}
+          className="p-0.5 rounded text-muted-foreground/0 group-hover/item:text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0 disabled:pointer-events-none"
           title="Delete ServCode Group"
         >
           <X className="w-3 h-3" />

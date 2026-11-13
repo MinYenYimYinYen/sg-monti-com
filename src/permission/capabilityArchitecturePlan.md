@@ -26,7 +26,7 @@ Last verified: `npx tsc --noEmit` reports 0 errors and `npx vitest run` passes 1
 - **`AuthIdentity` was dropped as a duplicate of `User`.** `TokenPayload` is a `Pick<User, ...>` (still including `role`) and is the server's verified identity. The client passes the `User` from the store.
 - **`'superUser'` requirement:** passes only a confirmed superuser (database, not the token claim) and cannot be granted. It gates bundle edits and `createUser`.
 - **`capability:` is optional on `OpGate` only until the migration is done.** The end state is that every RPC contract declares its capability and the role concept is gone. Deleting the `roles` variant of `OpGate` is the completeness check, because the compiler then lists every op and nav entry not yet migrated. Until then backward compatibility stays, so master's behavior does not change.
-- **No hierarchy between capabilities.** `x.write` does not grant `x.read`. Nothing is implied or expanded, and redundancy is exact string containment. `findMissingCompanions` only warns.
+- **No hierarchy between capabilities at runtime.** `x.write` does not grant `x.read`. Nothing is implied or expanded when access is decided, and redundancy is exact string containment. **Declared requirements** (see 5c) are an assignment-time aid only: the admin screens offer what a capability needs when it is picked and warn when it is missing, and what is stored is exactly what the admin chose.
 - **Bundles are data, users reference them, and only a superuser edits bundles.** Saving a bundle removes newly covered direct grants from its holders. A non-superuser can only assign capabilities they hold (`canAssign`). Only a superuser may change a kiosk or superuser (`canManageCapabilitiesOf`) or reset their password (`canResetPasswordOf`).
 - **Layout:** pure logic in `src/permission/` (client-safe, no `src/app` imports). Data modules under `src/app/permission/`, because Next serves `route.ts` only from `src/app`. The permission module's own declaration is under `src/app`, so the drift test finds it.
 - **Terminology:** "account" means the QBO and RealGreen accounting accounts in this app. A person who logs in is a **user**.
@@ -91,7 +91,8 @@ Read in this order, and stop when you have enough.
 |---|---|
 | Bundles are data | A `capabilityBundle` data module. A bundle is a named list of capabilities (`baseline`, `office`, `tech`, `admin`). Only a superuser edits bundles. |
 | Users reference bundles | A user holds bundle keys plus optional direct (custom) capabilities. Bundles are not copied onto the user. |
-| No hierarchy | `x.write` does not grant `x.read`. The runtime check stays a plain set lookup (`hasCapability`). Nothing anywhere expands or infers capabilities. |
+| No hierarchy at runtime | `x.write` does not grant `x.read`. The runtime check stays a plain set lookup (`hasCapability`). Nothing expands or infers capabilities when access is decided. |
+| Requirements are assignment-time only | A capability can declare what it needs (`requires`, plus the verb companions). The editors offer those when it is picked and warn when one is missing. They are stored as ordinary capabilities, so the stored list is still the whole truth. See 5c. |
 | Resolve is a plain union | A user's effective capabilities are the union of their bundles' capabilities and their direct capabilities, de-duplicated. Nothing is added. |
 | Stored exactly as picked | Bundles and user documents store exactly what the admin chose. There is no expanded form, so the stored list is the whole truth. |
 | Roles are not runtime checks | A bundle is only a list. There is no "is admin" check and no bypass. The only bypass is the confirmed superuser. |
@@ -177,7 +178,9 @@ Every function is pure and takes the registry (and bundles) as parameters. All o
 | `removeBundle` | Returns what the user loses, for the confirmation UI |
 | `addDirect` | Refuses a capability already effective through a bundle, and unknown strings |
 | `saveBundle` | Validates against the registry, and reports which holders' direct grants become redundant |
-| `findMissingCompanions` | Optional and warn-only. Reports that a list has `x.write` without `x.read`, and similar. It never blocks and never adds anything. |
+| `expandRequirements`, `findMissingRequirements`, `planDirectAdd` (`requirementLogic.ts`) | Assignment-time only. Expand what picked capabilities need (transitive, cycle-safe), warn about what a held list lacks, and plan a direct add for a user. They never block and never change what the runtime check decides. Replaced `findMissingCompanions`. See 5c. |
+| `addDirectMany` | Adds several direct grants in one result. The first refusal refuses the whole list, so a capability and what it needs are stored together or not at all. |
+| `selectWithRequirements` (`bundleDraft.ts`) | Bundle editor: ticking a capability also ticks what it needs. Only newly ticked capabilities are expanded. |
 | `canAssign` | A non-superuser can only assign capabilities they hold |
 
 Selectors built on them:
@@ -207,6 +210,19 @@ Until every route has moved, both gates coexist.
 ### The `'superUser'` requirement
 
 `CapabilityRequirement` is `Capability | 'public' | 'superUser'`. `'superUser'` passes only a confirmed superuser, and it is not a capability, so it can never be granted. It gates superuser-only ops, such as editing bundles. Because of it, `bundles` declares only `read`, and nobody can be given bundle-edit rights by a mistaken grant. `evaluateCapability` skips the capabilities read for it.
+
+## 5c. Declared requirements (built)
+
+A feature can say what holding one of its capabilities also needs. The reason is the admin's memory: a screen often loads data owned by other features, and nobody should have to remember the list.
+
+- **Declaration:** `requires` on `createFeatureCapabilities`, keyed `resource.verb`, listing other capabilities as the owning feature's typed `can` constants, so a rename breaks the build. Example: `requires: { 'accountMappings.read': [qboCan.accounts.read, ...] }`. `createFeatureCapabilities` rejects a key that is not a declared `resource.verb` or is a public verb. `buildRegistry` rejects a requirement that names a capability the registry lacks, and one that names itself.
+- **Verb companions are built in.** write and delete need read, readAny needs read, writeAny needs readAny, deleteAny needs readAny and delete. They apply only to verbs the feature declared, and nobody lists them. This replaced `findMissingCompanions`'s hard-coded map (same rules, one mechanism).
+- **`registry.requirementsOf(capability)`** returns one level: companions plus declared. `expandRequirements` walks it transitively with a visited set, so a cycle cannot loop.
+- **Assignment time, never runtime.** `hasCapability`, `resolveEffective` and `evaluateCapability` do not read requirements. A user holding `x.write` without `x.read` is allowed and fails read ops.
+- **Bundle editor:** ticking a capability, or All for a feature, also ticks what it needs. Each can be unticked. Only newly ticked capabilities are expanded, so an unticked requirement is not forced back. A warn-only notice lists unmet requirements.
+- **User editor:** picking a direct capability previews "Also add what this needs" with a default-on checkbox. `addDirect` now takes `capabilities: string[]` and the server stores them in one write (`addDirectMany`). A requirement the user already holds, or that a non-superuser actor does not hold, is not offered (the latter is named in a notice). Untick the box to add only the picked capability. Removing a capability never cascades.
+- **Warn-only hint** on the user editor reads the effective list, so a requirement held through a bundle counts.
+- **Keeping it true:** requirements are the union of everything the capability's screens load. When a screen starts loading another feature's data, update `requires`. The migration checklist has this step. A drift test cannot check it, because loads live in hooks.
 
 ## 6. Who may do what
 
@@ -269,7 +285,7 @@ The branch rules in `permissionPlan.md` section 6a still apply.
 
 ## 9. Open items
 
-- **`findMissingCompanions` is warn-only.** This was proposed and not explicitly confirmed. Change it if you want a stricter rule.
+- **Requirements are warn-only and never enforced** (5c). A bundle or user can hold a capability without what it needs. Change this only if a stricter rule is wanted.
 - **Capability management feature shape (decided):** `bundles` declares only `read` (edits are `'superUser'`), and `userCapabilities` declares `read` and `write`. Revisit if a non-superuser should ever be allowed to edit bundles.
 - **Bundle delete rule:** "cannot delete a bundle in use" is assumed. A forced delete that detaches holders is possible later.
 - **Registry union type cost:** if distributing the union over many features slows the compiler, fall back to plain `Capability` strings.

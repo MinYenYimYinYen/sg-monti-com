@@ -11,7 +11,8 @@ import {
   JavelinPlanEntry,
 } from "@/app/javelin/JavelinTypes";
 
-// Every operation is admin only: posting writes to the real books, and the previews read them.
+// Posting writes to the real books and the previews read them, so the posts and the previews hold
+// different capabilities (see javelinCapabilities.ts).
 // The browser sends parsed CSV data. The server rebuilds every entry from stored links, so the
 // lines it posts are never taken from the browser.
 export interface JavelinContract extends ApiContract {

@@ -4,10 +4,13 @@ import { PriceIncreaseSettingsContract } from "@/app/priceIncrease/settings/api/
 import { PriceIncreaseSettingsModel } from "@/app/priceIncrease/settings/PriceIncreaseSettingsModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
+
+const { can } = priceIncreaseCapabilities;
 
 const handlers: HandlerMap<PriceIncreaseSettingsContract> = {
   getAll: {
-    roles: ["admin", "office"],
+    capability: can.increaseSettings.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await PriceIncreaseSettingsModel.find().lean();
@@ -16,7 +19,7 @@ const handlers: HandlerMap<PriceIncreaseSettingsContract> = {
   },
 
   upsert: {
-    roles: ["admin"],
+    capability: can.increaseSettings.write,
     handler: async (params) => {
       await connectToMongoDB();
       const { settingsId, ...rest } = params;
@@ -30,7 +33,7 @@ const handlers: HandlerMap<PriceIncreaseSettingsContract> = {
   },
 
   setActive: {
-    roles: ["admin"],
+    capability: can.increaseSettings.write,
     handler: async ({ settingsId }) => {
       await connectToMongoDB();
       // Deactivate all, then activate the target
@@ -44,7 +47,7 @@ const handlers: HandlerMap<PriceIncreaseSettingsContract> = {
   },
 
   remove: {
-    roles: ["admin"],
+    capability: can.increaseSettings.delete,
     handler: async ({ settingsId }) => {
       await connectToMongoDB();
       await PriceIncreaseSettingsModel.deleteOne({ settingsId });

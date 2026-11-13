@@ -5,11 +5,21 @@ import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { ProductUnitConfig } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { unitConfigActions } from "@/app/realGreen/product/unitConfig/unitConfigSlice";
 
-export function useUnitConfig({ autoLoad }: { autoLoad?: boolean }) {
+/**
+ * `canLoad` comes from the component, because hooks expose actions only and do not select. It
+ * defaults to allowed so write-only callers and callers in other folders can omit it.
+ */
+export function useUnitConfig({
+  autoLoad,
+  canLoad = true,
+}: {
+  autoLoad?: boolean;
+  canLoad?: boolean;
+}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad) {
+    if (autoLoad && canLoad) {
       dispatch(
         unitConfigActions.getAllUnitConfigs({
           params: {},
@@ -20,9 +30,10 @@ export function useUnitConfig({ autoLoad }: { autoLoad?: boolean }) {
         }),
       );
     }
-  }, [autoLoad, dispatch]);
+  }, [autoLoad, canLoad, dispatch]);
 
-  const refresh = () =>
+  const refresh = () => {
+    if (!canLoad) return;
     dispatch(
       unitConfigActions.getAllUnitConfigs({
         params: {},
@@ -32,6 +43,7 @@ export function useUnitConfig({ autoLoad }: { autoLoad?: boolean }) {
         },
       }),
     );
+  };
 
   const saveConfig = (config: ProductUnitConfig) => {
     dispatch(unitConfigActions.updateConfig(config))

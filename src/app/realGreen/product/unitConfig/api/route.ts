@@ -12,10 +12,12 @@ import {
   ProductUnitConfigStorage,
 } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { AppError } from "@/lib/errors/AppError";
+import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
 
+const { can } = productCapabilities;
 const handlers: HandlerMap<UnitConfigContract> = {
   getAll: {
-    roles: ["office", "admin"],
+    capability: can.unitConversions.read,
     handler: async () => {
       await connectToMongoDB();
 
@@ -32,7 +34,7 @@ const handlers: HandlerMap<UnitConfigContract> = {
   },
 
   saveConfig: {
-    roles: ["office", "admin"],
+    capability: can.unitConversions.write,
     handler: async ({ config }) => {
       await connectToMongoDB();
 

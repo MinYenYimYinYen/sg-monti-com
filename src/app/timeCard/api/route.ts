@@ -6,10 +6,13 @@ import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { Punch } from "@/app/timeCard/TimeCardTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { WriteError } from "mongodb";
+import { timeCardCapabilities } from "@/app/timeCard/timeCardCapabilities";
+
+const { can } = timeCardCapabilities;
 
 const handlers: HandlerMap<TimeCardContract> = {
   importPunches: {
-    roles: ["admin", "office"],
+    capability: can.punches.write,
     handler: async ({ punches }) => {
       await connectToMongoDB();
 
@@ -37,7 +40,7 @@ const handlers: HandlerMap<TimeCardContract> = {
   },
 
   getPunches: {
-    roles: ["admin", "office", "tech"],
+    capability: can.punches.read,
     handler: async ({ employeeIds, dateRange }) => {
       await connectToMongoDB();
 
@@ -58,7 +61,7 @@ const handlers: HandlerMap<TimeCardContract> = {
   },
 
   getLastImportedDate: {
-    roles: ["admin", "office", "tech"],
+    capability: can.punches.read,
     handler: async (_params) => {
       await connectToMongoDB();
 

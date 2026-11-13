@@ -8,6 +8,8 @@ import { prepayConfigActions } from "../prepayConfigSlice";
 import { authSelect } from "@/app/auth/authSlice";
 import { usePrepayConfig } from "../usePrepayConfig";
 import { PrepayConfigOpenSheet } from "./PrepayConfigOpenSheet";
+import { prepayLettersCapabilities } from "../../prepayLettersCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { EntityFileControls } from "@/components/EntityFileControls/EntityFileControls";
 import { DropdownMenuItem } from "@/style/components/dropdown-menu";
 import {
@@ -20,6 +22,8 @@ import {
 } from "@/style/components/dialog";
 import { Button } from "@/style/components/button";
 import type { PrepayConfig } from "../prepayConfigTypes";
+
+const { can } = prepayLettersCapabilities;
 
 const BLANK_CONFIG: Omit<PrepayConfig, "configId" | "name" | "saId"> = {
   season: new Date().getFullYear(),
@@ -44,6 +48,9 @@ export function PrepayConfigFileControls() {
   const isDirty = useSelector(prepayConfigSelect.isDirty);
   const ownConfigNames = useSelector(prepayConfigSelect.ownConfigNames);
   const currentSaId = useSelector(authSelect.user)?.saId;
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.prepayConfigs.write);
+  const canDelete = allows(can.prepayConfigs.delete);
   const { saveConfig, deleteConfig } = usePrepayConfig();
 
   const [openSheetVisible, setOpenSheetVisible] = useState(false);
@@ -82,7 +89,10 @@ export function PrepayConfigFileControls() {
       <EntityFileControls
         activeName={activeName}
         isDirty={isDirty}
-        canSave={!!draft?.name}
+        canSave={canWrite && !!draft?.name}
+        // Save As is a write too, and EntityFileControls has no disabled state for it, so it is
+        // hidden without `write`.
+        supportsMultiple={canWrite}
         existingNames={ownConfigNames}
         onSaveAction={handleSave}
         onSaveAsAction={handleSaveAs}
@@ -91,7 +101,7 @@ export function PrepayConfigFileControls() {
         extraMenuItems={
           <DropdownMenuItem
             onSelect={() => setDeleteConfirmOpen(true)}
-            disabled={!draft?.configId}
+            disabled={!canDelete || !draft?.configId}
             className="text-destructive focus:text-destructive"
           >
             Delete…
@@ -111,7 +121,7 @@ export function PrepayConfigFileControls() {
             <Button size="sm" variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
               Cancel
             </Button>
-            <Button size="sm" variant="destructive" onClick={handleDelete}>
+            <Button size="sm" variant="destructive" disabled={!canDelete} onClick={handleDelete}>
               Delete
             </Button>
           </DialogFooter>

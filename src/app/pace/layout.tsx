@@ -18,6 +18,13 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
+import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+import { employeeAvailabilityCapabilities } from "@/app/employeeAvailability/employeeAvailabilityCapabilities";
+import { holidayCapabilities } from "@/app/holiday/holidayCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -39,8 +46,35 @@ const selectMainDate = (state: AppState): string => state.pace.mainDate;
 // Layout
 // ---------------------------------------------------------------------------
 
+const { can } = paceCapabilities;
+
+/**
+ * The scenario read is the gate for the whole shell: the header selector, the engine and every
+ * tab depend on the scenarios. The Season Plan tab adds its own read on top (see its page).
+ */
 export default function PaceLayout({ children }: { children: React.ReactNode }) {
-  usePaceDeps();
+  return (
+    <GatedPanel requirement={can.assignmentScenarios.read}>
+      <PaceShell>{children}</PaceShell>
+    </GatedPanel>
+  );
+}
+
+// Separate from the gate so the deps hook is only ever called for a user who holds the read.
+function PaceShell({ children }: { children: React.ReactNode }) {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  // Each load is gated by the capability its route needs, so a user holding only part of what the
+  // engine uses never fires a request that would be refused.
+  usePaceDeps({
+    canLoad: {
+      assignmentGroups: allows(assignmentGroupCapabilities.can.assignmentGroups.read),
+      groupSequences: allows(can.groupSequences.read),
+      seasonPlans: allows(can.seasonPlans.read),
+      holidays: allows(holidayCapabilities.can.holidays.read),
+      availability: allows(employeeAvailabilityCapabilities.can.availabilityConstraints.read),
+      assignments: allows(assignmentCapabilities.can.serviceAssignments.read),
+    },
+  });
   const dispatch = useAppDispatch();
   const mainDate = useSelector(selectMainDate);
   const activeSeasonPlan = useSelector(paceSeasonPlanSelect.activeSeasonPlan);

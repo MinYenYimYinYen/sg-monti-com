@@ -5,10 +5,13 @@ import { PlannedTimeOffModel } from "@/app/plannedTimeOff/PlannedTimeOffModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { plannedTimeOffCapabilities } from "@/app/plannedTimeOff/plannedTimeOffCapabilities";
+
+const { can } = plannedTimeOffCapabilities;
 
 const handlers: HandlerMap<PlannedTimeOffContract> = {
   getAll: {
-    roles: ["admin", "office"],
+    capability: can.absences.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await PlannedTimeOffModel.find({}).lean();
@@ -16,7 +19,7 @@ const handlers: HandlerMap<PlannedTimeOffContract> = {
     },
   },
   upsert: {
-    roles: ["admin", "office"],
+    capability: can.absences.write,
     handler: async ({ doc }) => {
       await connectToMongoDB();
       const saved = await PlannedTimeOffModel.findOneAndUpdate(
@@ -28,7 +31,7 @@ const handlers: HandlerMap<PlannedTimeOffContract> = {
     },
   },
   deleteOne: {
-    roles: ["admin", "office"],
+    capability: can.absences.delete,
     handler: async ({ plannedTimeOffId }) => {
       await connectToMongoDB();
       const deleted = await PlannedTimeOffModel.findOneAndDelete({ plannedTimeOffId }).lean();

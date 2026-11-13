@@ -11,9 +11,16 @@ import { priceIncreaseConfigActions } from "@/app/priceIncrease/config/_lib/pric
 import { priceIncreaseSettingsActions } from "@/app/priceIncrease/settings/settingsSlice";
 import { PriceIncreaseSettingsDoc } from "@/app/priceIncrease/settings/PriceIncreaseSettingsTypes";
 import { SettingsSheet } from "@/app/priceIncrease/config/_components/SettingsSheet";
+import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = priceIncreaseCapabilities;
 
 export function SettingsSection() {
   const dispatch = useAppDispatch();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.increaseSettings.write);
+  const canDelete = allows(can.increaseSettings.delete);
   const storedSettings = useSelector(priceIncreaseSettingsSelect.storedSettings);
   const seasonDocs = useSelector(seasonIncreasesSelect.docs);
   const deleteConfirmId = useSelector(priceIncreaseConfigSelect.settingsDeleteConfirmId);
@@ -74,7 +81,7 @@ export function SettingsSection() {
     <section>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-foreground">Price Increase Settings</h2>
-        <Button size="sm" variant="primary" intensity="soft" onClick={handleNew}>
+        <Button size="sm" variant="primary" intensity="soft" disabled={!canWrite} onClick={handleNew}>
           <Plus className="w-3.5 h-3.5" />
           New
         </Button>
@@ -115,6 +122,7 @@ export function SettingsSection() {
                   size="sm"
                   variant="accent"
                   intensity="ghost"
+                  disabled={!canWrite}
                   onClick={() => handleSetActive(doc.settingsId)}
                 >
                   Set Active
@@ -134,6 +142,7 @@ export function SettingsSection() {
                     size="sm"
                     variant="destructive"
                     intensity="solid"
+                    disabled={!canDelete}
                     onClick={() => handleDeleteExecute(doc.settingsId)}
                   >
                     Confirm
@@ -152,6 +161,7 @@ export function SettingsSection() {
                   size="sm"
                   variant="destructive"
                   intensity="ghost"
+                  disabled={!canDelete}
                   onClick={() => handleDeleteConfirm(doc.settingsId)}
                 >
                   Delete

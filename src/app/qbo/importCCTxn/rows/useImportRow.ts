@@ -7,13 +7,20 @@ import { ImportCsvRow } from "@/app/qbo/importCCTxn/types/ImportCCTxnTypes";
 
 /**
  * Loads the open import rows when `autoLoad` is set and exposes actions only. The importer's
- * data is read with useSelector(importRowSelect...).
+ * data is read with useSelector(importRowSelect...). `canLoad` comes from the layout, because hooks
+ * expose actions only and do not select.
  */
-export function useImportRow({ autoLoad }: { autoLoad: boolean }) {
+export function useImportRow({
+  autoLoad,
+  canLoad = true,
+}: {
+  autoLoad: boolean;
+  canLoad?: boolean;
+}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad) {
+    if (autoLoad && canLoad) {
       dispatch(
         importRowActions.getOpenRows({
           params: {},
@@ -21,7 +28,7 @@ export function useImportRow({ autoLoad }: { autoLoad: boolean }) {
         }),
       );
     }
-  }, [autoLoad, dispatch]);
+  }, [autoLoad, canLoad, dispatch]);
 
   // Parses in the browser, then asks the server what the import would do. A parse failure is
   // kept in state and shown to the user; nothing is sent to the server.

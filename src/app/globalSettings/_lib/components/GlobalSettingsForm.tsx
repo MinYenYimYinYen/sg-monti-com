@@ -17,6 +17,8 @@ import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { globalSettingsActions } from "@/app/globalSettings/_lib/globalSettingsSlice";
 import type { RenewalFlagIds } from "@/app/globalSettings/_lib/GlobalSettingsTypes";
+import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import {
   Select,
   SelectContent,
@@ -34,9 +36,11 @@ const RENEWAL_FLAG_FIELDS: { key: keyof RenewalFlagIds; label: string; descripti
 ];
 
 const NONE_VALUE = "none";
+const { can } = globalSettingsCapabilities;
 
 function RenewalFlagsSection() {
   const dispatch = useAppDispatch();
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.settings.write);
   const flagDocs = useSelector(flagSelect.flagDocs);
   const renewalFlagIds = useSelector(globalSettingsSelect.renewalFlagIds);
   const currentSettings = useSelector(globalSettingsSelect.settings);
@@ -80,6 +84,7 @@ function RenewalFlagsSection() {
               <Select
                 value={renewalFlagIds[key]?.toString() ?? NONE_VALUE}
                 onValueChange={(value) => handleChange(key, value)}
+                disabled={!canWrite}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="None" />
@@ -107,6 +112,7 @@ function RenewalFlagsSection() {
 // ─── Main Form ────────────────────────────────────────────────────────────────
 
 export function GlobalSettingsForm() {
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.settings.write);
   const {
     updateSettings,
     canUpdate,
@@ -149,7 +155,7 @@ export function GlobalSettingsForm() {
             <SaveButton
               onClick={handleSave}
               status={status}
-              disabled={!canUpdate}
+              disabled={!canUpdate || !canWrite}
               variant="primary"
               intensity="solid"
             >
@@ -166,7 +172,7 @@ export function GlobalSettingsForm() {
                 id="season"
                 value={localSeason ?? ""}
                 onChange={handleSeasonChange}
-                disabled={localSeason === undefined}
+                disabled={localSeason === undefined || !canWrite}
                 className="w-32"
               />
             </div>

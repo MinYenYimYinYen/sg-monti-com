@@ -34,10 +34,12 @@ import { UnitModel } from "@/app/realGreen/product/_lib/models/UnitModel";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { AppMethodModel } from "@/app/appMethod/AppMethodModel";
 import { WATER_PRODUCT_ID } from "@/app/equipment/waterProduct";
+import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
 
+const { can } = productCapabilities;
 const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescript-eslint/no-explicit-any
   getAll: {
-    roles: ["office", "admin"],
+    capability: can.products.read,
     handler: async () => {
       const rawProducts = await rgApi<ProductRaw[]>({
         path: "/Products",
@@ -170,7 +172,7 @@ const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescri
   },
 
   saveCategory: {
-    roles: ["admin"],
+    capability: can.productCategories.write,
     handler: async (params) => {
       await connectToMongoDB();
       const result = await ProductCategoryModel.findOneAndUpdate(
@@ -190,7 +192,7 @@ const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescri
   },
 
   saveMasterSubProducts: {
-    roles: ["admin"],
+    capability: can.subProductConfigs.write,
     handler: async (params) => {
       const { masterId, subProductConfigDocs } = params;
       let result;
@@ -228,7 +230,7 @@ const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescri
   },
 
   saveUnit: {
-    roles: ["admin"],
+    capability: can.productUnits.write,
     handler: async (params) => {
       await connectToMongoDB();
       const { unit } = params;
@@ -249,7 +251,7 @@ const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescri
   },
 
   saveMasterEquipmentPackages: {
-    roles: ["admin"],
+    capability: can.masterEquipmentPackages.write,
     handler: async (params) => {
       const { masterId, equipmentPackageIds, defaultPackageId } = params;
       await connectToMongoDB();

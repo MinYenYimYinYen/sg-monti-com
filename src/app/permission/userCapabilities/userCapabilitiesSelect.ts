@@ -2,7 +2,7 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { capabilityBundleSelect } from "@/app/permission/capabilityBundle/capabilityBundleSelect";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
-import { findMissingCompanions } from "@/permission/logic/assignmentGuards";
+import { findMissingRequirements } from "@/permission/logic/requirementLogic";
 import type { UserGrants } from "@/permission/logic/permissionLogicTypes";
 import {
   assignableCapabilities,
@@ -107,14 +107,14 @@ const selectRedundantDirectByUserName = createSelector(
     ),
 );
 
-/** Warn-only hints (a write without its read). Nothing blocks and nothing is added. */
-const selectMissingCompanionsByUserName = createSelector(
+/** Warn-only hints (a capability held without something it needs). Nothing blocks and nothing is added. */
+const selectMissingRequirementsByUserName = createSelector(
   [selectEffectiveByUserName],
   (effectiveByUserName) =>
     Object.fromEntries(
       Object.entries(effectiveByUserName).map(([userName, capabilities]) => [
         userName,
-        findMissingCompanions({ capabilities, registry: capabilityRegistry }),
+        findMissingRequirements({ capabilities, registry: capabilityRegistry }),
       ]),
     ),
 );
@@ -135,6 +135,6 @@ export const userCapabilitiesSelect = {
   effectiveByUserName: selectEffectiveByUserName,
   assignableByUserName: selectAssignableByUserName,
   redundantDirectByUserName: selectRedundantDirectByUserName,
-  missingCompanionsByUserName: selectMissingCompanionsByUserName,
+  missingRequirementsByUserName: selectMissingRequirementsByUserName,
   holdersByBundleKey: selectHoldersByBundleKey,
 };

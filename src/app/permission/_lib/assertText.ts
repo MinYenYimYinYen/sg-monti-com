@@ -10,3 +10,11 @@ export function assertText({ value, label }: { value: unknown; label: string }):
   }
   return value;
 }
+
+/** A non-empty list where every entry passes assertText. */
+export function assertTextList({ value, label }: { value: unknown; label: string }): string[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new AppError({ message: `${label} is required.`, type: "VALIDATION_ERROR", statusCode: 400 });
+  }
+  return value.map((entry) => assertText({ value: entry, label }));
+}

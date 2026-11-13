@@ -5,6 +5,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { prepayConfigSelect, prepayLetterVarParsers } from "../prepayConfigSelect";
 import { prepayConfigActions } from "../prepayConfigSlice";
 import { authSelect } from "@/app/auth/authSlice";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { RenewalFlagsDisplay } from "./RenewalFlagsDisplay";
 import { FormGroup } from "@/components/FormGroup";
 import { Input } from "@/style/components/input";
@@ -35,9 +36,11 @@ export function PrepayConfigPage() {
   const dispatch = useAppDispatch();
   const draft = useSelector(prepayConfigSelect.draft);
   const currentSaId = useSelector(authSelect.user)?.saId;
-  const role = useSelector(authSelect.role);
+  // A superuser may open any config for editing, as the admin role could before. Saving still
+  // writes the caller's own copy (the server derives the id from name + saId).
+  const isSuperUser = useSelector(userCapabilitiesSelect.allows)("superUser");
 
-  const isOwner = !draft?.saId || draft.saId === currentSaId || role === "admin";
+  const isOwner = !draft?.saId || draft.saId === currentSaId || isSuperUser;
   const isReadOnly = !isOwner;
 
   if (!draft) {

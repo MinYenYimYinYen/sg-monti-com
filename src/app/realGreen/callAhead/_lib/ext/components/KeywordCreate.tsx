@@ -6,9 +6,14 @@ import { useCallAhead } from "@/app/realGreen/callAhead/useCallAhead";
 import { useSelector } from "react-redux";
 import { keywordSelect } from "@/app/realGreen/callAhead/selectors/keywordSelect";
 import { useMemo, useState } from "react";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { callAheadCapabilities } from "@/app/realGreen/callAhead/callAheadCapabilities";
+
+const { can } = callAheadCapabilities;
 
 export function KeywordCreate() {
   const { upsertKeyword } = useCallAhead({ autoLoad: false });
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.keywords.write);
   const keywordMap = useSelector(keywordSelect.keywordMap);
 
   const [keywordId, setKeywordId] = useState("");
@@ -18,8 +23,8 @@ export function KeywordCreate() {
   const canSave = useMemo(() => {
     const validLength = keywordId.trim().length > 0 && message.trim().length > 0;
     const notExists = keywordMap.get(keywordId) === undefined;
-    return validLength && notExists;
-  }, [keywordMap, keywordId, message]);
+    return validLength && notExists && canWrite;
+  }, [keywordMap, keywordId, message, canWrite]);
 
   const handleSave = async () => {
     if (!canSave) return;

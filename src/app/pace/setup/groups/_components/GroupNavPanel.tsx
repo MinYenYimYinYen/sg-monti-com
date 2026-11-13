@@ -13,6 +13,11 @@ import { SequenceDialog } from "@/app/pace/setup/groups/_components/SequenceDial
 import { DeleteSequenceDialog } from "@/app/pace/setup/groups/_components/DeleteSequenceDialog";
 import { useGroupSequence } from "@/app/pace/groupSequence/useGroupSequence";
 import { SequenceWithGroups } from "@/app/pace/setup/setupSelect";
+import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = paceCapabilities;
 
 type GroupNavPanelProps = {
   selectedGroupId: string | null;
@@ -23,6 +28,9 @@ export function GroupNavPanel({ selectedGroupId, onGroupDeletedAction }: GroupNa
   const dispatch = useAppDispatch();
   const sequencesWithGroups = useSelector(setupSelect.sequencesWithGroups);
   const standaloneGroups = useSelector(setupSelect.standaloneGroups);
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWriteGroups = allows(assignmentGroupCapabilities.can.assignmentGroups.write);
+  const canWriteSequences = allows(can.groupSequences.write);
 
   const [newGroupOpen, setNewGroupOpen] = useState(false);
   const [newSequenceOpen, setNewSequenceOpen] = useState(false);
@@ -39,14 +47,16 @@ export function GroupNavPanel({ selectedGroupId, onGroupDeletedAction }: GroupNa
         <div className="shrink-0 flex items-center gap-1.5 px-3 py-2 border-b border-border bg-card">
           <button
             onClick={() => setNewGroupOpen(true)}
-            className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-medium bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
+            disabled={!canWriteGroups}
+            className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-medium bg-primary/15 text-primary hover:bg-primary/25 transition-colors disabled:opacity-40"
           >
             <Plus className="w-3 h-3" />
             Group
           </button>
           <button
             onClick={() => setNewSequenceOpen(true)}
-            className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-medium bg-accent/15 text-accent hover:bg-accent/25 transition-colors"
+            disabled={!canWriteSequences}
+            className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-medium bg-accent/15 text-accent hover:bg-accent/25 transition-colors disabled:opacity-40"
           >
             <Plus className="w-3 h-3" />
             Sequence
@@ -144,6 +154,9 @@ function SequenceNavSection({
   onGroupDeleted,
 }: SequenceNavSectionProps) {
   const { upsertSequence } = useGroupSequence();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.groupSequences.write);
+  const canDelete = allows(can.groupSequences.delete);
   const [labelValue, setLabelValue] = useState(sequenceWithGroups.label);
   const [daysSinceValue, setDaysSinceValue] = useState(
     sequenceWithGroups.daysSince > 0 ? String(sequenceWithGroups.daysSince) : "",
@@ -189,6 +202,7 @@ function SequenceNavSection({
             value={labelValue}
             onChange={(e) => setLabelValue(e.target.value)}
             onBlur={handleLabelBlur}
+            disabled={!canWrite}
             className="flex-1 min-w-0 text-[10px] font-semibold text-foreground bg-transparent border-0 outline-none focus:bg-card focus:ring-1 focus:ring-primary rounded px-0.5 py-0"
             title="Sequence name (click to edit)"
           />
@@ -201,6 +215,7 @@ function SequenceNavSection({
               value={daysSinceValue}
               onChange={(e) => setDaysSinceValue(e.target.value)}
               onBlur={handleDaysSinceBlur}
+              disabled={!canWrite}
               placeholder="0d"
               className="w-8 text-[9px] text-muted-foreground bg-transparent border-0 outline-none focus:bg-card focus:ring-1 focus:ring-primary rounded px-0.5 py-0 text-center"
               title="Days between rounds"
@@ -212,14 +227,16 @@ function SequenceNavSection({
           <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/seq:opacity-100 transition-opacity">
             <button
               onClick={onEdit}
-              className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
+              disabled={!canWrite}
+              className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors disabled:opacity-40"
               title="Edit sequence"
             >
               <Pencil className="w-3 h-3" />
             </button>
             <button
               onClick={() => setDeleteOpen(true)}
-              className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              disabled={!canDelete}
+              className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
               title="Delete sequence"
             >
               <X className="w-3 h-3" />

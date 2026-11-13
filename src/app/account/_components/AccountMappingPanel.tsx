@@ -16,8 +16,11 @@ import {
   TableRow,
 } from "@/style/components/table";
 import { AccountMappingRow } from "@/app/account/_components/AccountMappingRow";
-import { DepositFieldMappingSection } from "@/app/javelin/depositMapping/_components/DepositFieldMappingSection";
-import { CkDepositMappingSection } from "@/app/javelin/depositMapping/_components/CkDepositMappingSection";
+import { DepositMappingSections } from "@/app/javelin/depositMapping/_components/DepositMappingSections";
+import { depositMappingCapabilities } from "@/app/javelin/depositMapping/depositMappingCapabilities";
+import { quickbooksCapabilities } from "@/app/qbo/quickbooksCapabilities";
+import { rgAccountCapabilities } from "@/app/realGreen/rgAccount/rgAccountCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import {
   AccountLinkFilter,
   countLinksByFilter,
@@ -43,7 +46,19 @@ export function AccountMappingPanel() {
 }
 
 function AccountMappingEditor() {
-  useAccount({ autoLoad: true });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  // Each load is gated by the capability its route needs, so a user holding only part of what this
+  // page uses never fires a request that would be refused.
+  useAccount({
+    autoLoad: true,
+    canLoad: {
+      depositLinks: allows(depositMappingCapabilities.can.depositFieldLinks.read),
+      qboAccounts: allows(quickbooksCapabilities.can.accounts.read),
+      qboCustomers: allows(quickbooksCapabilities.can.customers.read),
+      qboVendors: allows(quickbooksCapabilities.can.vendors.read),
+      rgAccounts: allows(rgAccountCapabilities.can.rgAccounts.read),
+    },
+  });
   const rgAccountLinks = useSelector(accountSelect.rgAccountLinks);
   const qboAccounts = useSelector(qboAccountSelect.accounts);
   const [filter, setFilter] = useState<AccountLinkFilter>("all");
@@ -115,9 +130,7 @@ function AccountMappingEditor() {
           <p className="text-sm text-muted-foreground">No accounts match.</p>
         )}
 
-        <DepositFieldMappingSection />
-
-        <CkDepositMappingSection />
+        <DepositMappingSections />
       </div>
     </div>
   );

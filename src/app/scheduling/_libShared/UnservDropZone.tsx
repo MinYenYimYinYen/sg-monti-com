@@ -1,14 +1,17 @@
 "use client";
 import { useViewport } from "@/lib/hooks/useViewport";
 import { useSelector } from "react-redux";
-import { authSelect } from "@/app/auth/authSlice";
 import { useCSV } from "@/app/csv/_lib/useCSV";
 import { CSVDropzone } from "@/components/dropZone/dropZone";
+import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = assignmentCapabilities;
 
 export function UnservDropZone() {
   const { isNarrow } = useViewport();
-  const role = useSelector(authSelect.role);
-  const canUpload = ["admin", "office"].includes(role ?? "");
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canUpload = allows(can.serviceAssignments.write);
   const { parseAssignments } = useCSV();
 
   if (!canUpload || isNarrow) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capabilityLabel, groupCapabilitiesByFeature } from "@/permission/logic/capabilityLabels";
+import { capabilityLabel, groupCapabilitiesByGroup } from "@/permission/logic/capabilityLabels";
 import { flagCan, registry, widgetCan } from "./logicFixtures";
 
 describe("capabilityLabel", () => {
@@ -16,35 +16,39 @@ describe("capabilityLabel", () => {
   });
 });
 
-describe("groupCapabilitiesByFeature", () => {
-  it("groups by feature, features alphabetical, capabilities in the order given", () => {
-    const { features, unknown } = groupCapabilitiesByFeature({
+describe("groupCapabilitiesByGroup", () => {
+  it("groups by group, groups alphabetical by name, capabilities in the order given", () => {
+    const { groups, unknown } = groupCapabilitiesByGroup({
       capabilities: [widgetCan.widgets.write, flagCan.custFlags.read, widgetCan.widgets.read],
       registry,
     });
-    expect(features).toEqual([
-      { featureKey: "custFlag", capabilities: [flagCan.custFlags.read] },
-      { featureKey: "widgetManagement", capabilities: [widgetCan.widgets.write, widgetCan.widgets.read] },
+    expect(groups).toEqual([
+      { groupKey: "custFlag", groupName: "custFlag", capabilities: [flagCan.custFlags.read] },
+      {
+        groupKey: "widgetManagement",
+        groupName: "widgetManagement",
+        capabilities: [widgetCan.widgets.write, widgetCan.widgets.read],
+      },
     ]);
     expect(unknown).toEqual([]);
   });
 
   it("returns unknown strings separately instead of dropping them", () => {
-    const { features, unknown } = groupCapabilitiesByFeature({
+    const { groups, unknown } = groupCapabilitiesByGroup({
       capabilities: [flagCan.custFlags.read, "old.thing.read" as never],
       registry,
     });
-    expect(features).toHaveLength(1);
+    expect(groups).toHaveLength(1);
     expect(unknown).toEqual(["old.thing.read"]);
   });
 
   it("is empty for no capabilities", () => {
-    expect(groupCapabilitiesByFeature({ capabilities: [], registry })).toEqual({ features: [], unknown: [] });
+    expect(groupCapabilitiesByGroup({ capabilities: [], registry })).toEqual({ groups: [], unknown: [] });
   });
 
   it("can group the whole registry", () => {
-    const { features, unknown } = groupCapabilitiesByFeature({ capabilities: registry.allCapabilities, registry });
-    expect(features.map((feature) => feature.featureKey)).toEqual(["custFlag", "widgetManagement"]);
+    const { groups, unknown } = groupCapabilitiesByGroup({ capabilities: registry.allCapabilities, registry });
+    expect(groups.map((group) => group.groupKey)).toEqual(["custFlag", "widgetManagement"]);
     expect(unknown).toEqual([]);
   });
 });

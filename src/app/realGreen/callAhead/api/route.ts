@@ -16,10 +16,12 @@ import {
 import { AppError } from "@/lib/errors/AppError";
 import { CallAheadKeyword } from "@/app/realGreen/callAhead/_lib/ext/CallAheadExtTypes";
 import { CallAheadDocPropsModel } from "@/app/realGreen/callAhead/models/CallAheadDocPropsModel";
+import { callAheadCapabilities } from "@/app/realGreen/callAhead/callAheadCapabilities";
 
+const { can } = callAheadCapabilities;
 const handlers: HandlerMap<CallAheadContract> = {
   getAll: {
-    roles: ["office", "admin"],
+    capability: can.callAheads.read,
     handler: async () => {
       const rawCallAheads = await rgApi<CallAheadRaw[]>({
         path: "/CallAhead",
@@ -36,7 +38,7 @@ const handlers: HandlerMap<CallAheadContract> = {
   },
 
   upsertDocProps: {
-    roles: ["office", "admin"],
+    capability: can.callAheadDocProps.write,
     handler: async ({ docProps }) => {
       await connectToMongoDB();
 
@@ -50,7 +52,7 @@ const handlers: HandlerMap<CallAheadContract> = {
   },
 
   getKeywords: {
-    roles: ["office", "admin"],
+    capability: can.keywords.read,
     handler: async () => {
       await connectToMongoDB();
       const keywordResults = await CallAheadKeywordModel.find().lean();
@@ -60,7 +62,7 @@ const handlers: HandlerMap<CallAheadContract> = {
   },
 
   upsertKeyword: {
-    roles: ["office", "admin"],
+    capability: can.keywords.write,
     handler: async ({ keyword }) => {
       await connectToMongoDB();
       const upsertResult = await CallAheadKeywordModel.findOneAndUpdate(
@@ -74,7 +76,7 @@ const handlers: HandlerMap<CallAheadContract> = {
   },
 
   deleteKeyword: {
-    roles: ["office", "admin"],
+    capability: can.keywords.delete,
     handler: async ({ keywordId }) => {
       await connectToMongoDB();
       const deleteResult = await CallAheadKeywordModel.findOneAndDelete(

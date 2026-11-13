@@ -3,23 +3,36 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSelector } from "react-redux";
-import { authSelect } from "@/app/auth/authSlice";
 import { api } from "@/lib/api/api";
 import { handleError } from "@/lib/errors/errorHandler";
 import { AppError } from "@/lib/errors/AppError";
 import { DataResponse } from "@/lib/api/types/responses";
-import { Alert, AlertDescription, AlertTitle } from "@/style/components/alert";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { qboConnectionCapabilities } from "@/app/qbo/connection/qboConnectionCapabilities";
 import { useQboConnection } from "@/app/qbo/connection/useQboConnection";
 import { qboConnectionSelect } from "@/app/qbo/connection/qboConnectionSelect";
 import { QboConnectionNotices } from "@/app/qbo/connection/_components/QboConnectionNotices";
 import { QboConnectionCard } from "@/app/qbo/connection/_components/QboConnectionCard";
 import { QBO_CONNECTION_PAGE_PATH } from "@/app/qbo/_lib/auth/qboOAuthUtils";
 
-// The one place the status fetch is triggered (it forces a refresh), so keep the hook here only.
+const { can } = qboConnectionCapabilities;
+
+// Separate from the workspace so the status load (which fires on mount) only ever runs for a user
+// who holds the read.
 export function QboConnectionPanel() {
+  return (
+    <GatedPanel requirement={can.connection.read}>
+      <QboConnectionWorkspace />
+    </GatedPanel>
+  );
+}
+
+// The one place the status fetch is triggered (it forces a refresh), so keep the hook here only.
+function QboConnectionWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const role = useSelector(authSelect.role);
+  const allows = useSelector(userCapabilitiesSelect.allows);
   const status = useSelector(qboConnectionSelect.status);
   const revocationUnconfirmed = useSelector(qboConnectionSelect.revocationUnconfirmed);
   const testResult = useSelector(qboConnectionSelect.testResult);
@@ -46,19 +59,6 @@ export function QboConnectionPanel() {
     router.replace(QBO_CONNECTION_PAGE_PATH);
   };
 
-  if (role !== "admin") {
-    return (
-      <div className="h-full overflow-y-auto">
-        <div className="p-6 max-w-2xl">
-          <Alert variant="destructive">
-            <AlertTitle>Admins only</AlertTitle>
-            <AlertDescription>Only an admin can manage the QuickBooks connection.</AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-6 max-w-2xl space-y-4">
@@ -74,6 +74,8 @@ export function QboConnectionPanel() {
           status={status}
           testResult={testResult}
           isStarting={isStarting}
+          canConnect={allows(can.connection.write)}
+          canDisconnect={allows(can.connectionRevocation.write)}
           onConnectAction={handleConnect}
           onDisconnectAction={disconnect}
           onTestAction={testConnection}

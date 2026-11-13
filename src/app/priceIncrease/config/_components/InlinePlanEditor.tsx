@@ -9,6 +9,10 @@ import { Label } from "@/style/components/label";
 import { priceIncreaseConfigSelect } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSelect";
 import { priceIncreaseConfigActions } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
 import { seasonIncreasesActions } from "@/app/priceIncrease/seasonIncreases/seasonIncreasesSlice";
+import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = priceIncreaseCapabilities;
 
 type InlinePlanEditorProps = {
   /** Called after a new plan is saved, with the new seasonIncreasesId to auto-select */
@@ -17,6 +21,7 @@ type InlinePlanEditorProps = {
 
 export function InlinePlanEditor({ onPlanSavedAction }: InlinePlanEditorProps) {
   const dispatch = useAppDispatch();
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.increasePlans.write);
   const draft = useSelector(priceIncreaseConfigSelect.inlinePlanDraft);
   const isOpen = useSelector(priceIncreaseConfigSelect.inlinePlanIsOpen);
   const isNew = useSelector(priceIncreaseConfigSelect.inlinePlanIsNew);
@@ -139,7 +144,7 @@ export function InlinePlanEditor({ onPlanSavedAction }: InlinePlanEditorProps) {
           variant="primary"
           intensity="solid"
           onClick={handleSave}
-          disabled={!canSave}
+          disabled={!canWrite || !canSave}
         >
           Save Plan
         </Button>

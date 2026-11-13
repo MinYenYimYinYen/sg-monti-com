@@ -60,16 +60,22 @@ function buildPrintedCustomersPlan(season: number) {
     .build();
 }
 
+/**
+ * `canLoad` (the mirror read) and `canRefreshLive` (the live single-customer refresh) come from the
+ * component, because hooks expose actions only and do not select. Both default to allowed.
+ */
 export function usePrintedCustomers({
   autoLoad = false,
-}: { autoLoad?: boolean } = {}) {
+  canLoad = true,
+  canRefreshLive = true,
+}: { autoLoad?: boolean; canLoad?: boolean; canRefreshLive?: boolean } = {}) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!autoLoad || !season) {
+    if (!autoLoad || !canLoad || !season) {
       return;
     }
 
@@ -81,10 +87,10 @@ export function usePrintedCustomers({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(printedCustomersGetDocs({ params: { schemeName: "printedCustomers", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } }));
     }
-  }, [autoLoad, dispatch, season]);
+  }, [autoLoad, canLoad, dispatch, season]);
 
   const refresh = () => {
-    if (!season) return;
+    if (!season || !canLoad) return;
 
     if (PIPELINE.printed === "mirror") {
       const plan = buildPrintedCustomersPlan(season);
@@ -97,7 +103,7 @@ export function usePrintedCustomers({
   };
 
   const refreshCustomer = async (custId: number) => {
-    if (!season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
+    if (!canRefreshLive || !season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
     setRefreshingCustIds((prev) => new Set(prev).add(custId));
     try {
       const result = await dispatch(

@@ -34,6 +34,11 @@ import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus"
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { CustomerQueryBuilder } from "@/app/realGreen/customer/mirror/CustomerQueryBuilder";
 import { AppState } from "@/store";
+import { priorityServiceCapabilities } from "@/app/priorityService/priorityServiceCapabilities";
+import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = priorityServiceCapabilities;
 
 const ELIGIBLE_STATUSES = getServiceStatuses(["active", "asap", "printed"]);
 
@@ -47,7 +52,10 @@ export function PriorityServiceForm({
   existingDoc,
   onDone,
 }: PriorityServiceFormProps) {
-  useGlobalSettings({ autoLoad: true });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.priorityServices.write);
+  const canDelete = allows(can.priorityServices.delete);
+  useGlobalSettings({ autoLoad: true, canLoad: allows(globalSettingsCapabilities.can.settings.read) });
 
   const season = useSelector(globalSettingsSelect.season);
 
@@ -194,6 +202,7 @@ export function PriorityServiceForm({
   };
 
   const canSave = (): boolean => {
+    if (!canWrite) return false;
     const servId = getEffectiveServId();
     if (!servId) return false;
     if (dateMode === "single" && !singleDate) return false;
@@ -409,6 +418,7 @@ export function PriorityServiceForm({
                 variant="destructive"
                 intensity="soft"
                 className="w-full"
+                disabled={!canDelete}
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 Remove Priority Flag
@@ -423,6 +433,7 @@ export function PriorityServiceForm({
                   <Button
                     variant="destructive"
                     className="flex-1"
+                    disabled={!canDelete}
                     onClick={handleDelete}
                   >
                     Confirm Delete

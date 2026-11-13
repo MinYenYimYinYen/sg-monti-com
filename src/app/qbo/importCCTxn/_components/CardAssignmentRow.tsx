@@ -11,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/style/components/select";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
 import { importCCTxnMappingSelect } from "@/app/qbo/importCCTxn/importCCTxnMappingSelect";
 import { useImportCCTxnMapping } from "@/app/qbo/importCCTxn/useImportCCTxnMapping";
 import { ImportFormatId } from "@/app/qbo/importCCTxn/types/ImportCCTxnTypes";
@@ -29,6 +31,9 @@ export function CardAssignmentRow({
   rowCount: number;
 }) {
   const assignableUsers = useSelector(importCCTxnMappingSelect.assignableUsers);
+  const canAssign = useSelector(userCapabilitiesSelect.allows)(
+    importCCTxnCapabilities.can.cardAssignments.write,
+  );
   const { saveCardAssignment } = useImportCCTxnMapping({ autoLoad: false });
 
   const [userName, setUserName] = useState("");
@@ -72,7 +77,7 @@ export function CardAssignmentRow({
         onChange={(event) => setCardholderName(event.target.value)}
       />
 
-      <Button variant="primary" disabled={!userName} onClick={handleSave}>
+      <Button variant="primary" disabled={!canAssign || !userName} onClick={handleSave}>
         Save
       </Button>
     </div>

@@ -16,7 +16,13 @@ import { PlannedTimeOffSheet } from "@/app/plannedTimeOff/calendar/PlannedTimeOf
 import { UnplannedAbsenceSheet } from "@/app/plannedTimeOff/calendar/UnplannedAbsenceSheet";
 import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
 import { Holiday } from "@/app/holiday/holidayTypes";
+import { holidayCapabilities } from "@/app/holiday/holidayCapabilities";
+import { plannedTimeOffCapabilities } from "@/app/plannedTimeOff/plannedTimeOffCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { cn } from "@/style/utils";
+
+const { can } = plannedTimeOffCapabilities;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -74,6 +80,7 @@ type CalendarCellProps = {
   ptoEntries: PlannedTimeOff[];
   holidayInfo: HolidayInfo | null;
   employeeNameMap: Map<string, string>;
+  canWrite: boolean;
   onAdd: (date: string) => void;
   onEdit: (pto: PlannedTimeOff) => void;
 };
@@ -84,6 +91,7 @@ function CalendarCell({
   ptoEntries,
   holidayInfo,
   employeeNameMap,
+  canWrite,
   onAdd,
   onEdit,
 }: CalendarCellProps) {
@@ -130,7 +138,8 @@ function CalendarCell({
         </div>
         <button
           onClick={() => onAdd(date)}
-          className="p-0.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors shrink-0"
+          disabled={!canWrite}
+          className="p-0.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors shrink-0 disabled:pointer-events-none disabled:opacity-40"
           title="Add planned time off"
         >
           <Plus className="w-3 h-3" />
@@ -166,8 +175,20 @@ function CalendarCell({
 // ---------------------------------------------------------------------------
 
 export default function TimeOffCalendarPage() {
+  return (
+    <GatedPanel requirement={can.absences.read}>
+      <TimeOffCalendarWorkspace />
+    </GatedPanel>
+  );
+}
+
+// Split from the page so the mount loads never fire for a user without `read`.
+function TimeOffCalendarWorkspace() {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.absences.write);
   usePlannedTimeOff({ autoLoad: true });
-  useHoliday({ autoLoad: true });
+  // The calendar draws holidays too, which is a different feature's read (see `requires`).
+  useHoliday({ autoLoad: true, canLoad: allows(holidayCapabilities.can.holidays.read) });
   useEmployee({ autoLoad: true });
 
   const allPto = useSelector(plannedTimeOffSelect.all);
@@ -275,6 +296,7 @@ export default function TimeOffCalendarPage() {
             variant="destructive"
             intensity="soft"
             size="sm"
+            disabled={!canWrite}
             onClick={() => {
               setSheetDefaultDate(format(new Date(), "yyyy-MM-dd"));
               setUnplannedSheetOpen(true);
@@ -312,6 +334,7 @@ export default function TimeOffCalendarPage() {
                     ptoEntries={ptoByDate.get(date) ?? []}
                     holidayInfo={holidayByDate.get(date) ?? null}
                     employeeNameMap={employeeNameMap}
+                    canWrite={canWrite}
                     onAdd={handleAdd}
                     onEdit={handleEdit}
                   />

@@ -15,6 +15,8 @@ import {
 import { importPostSelect } from "@/app/qbo/importCCTxn/post/importPostSelect";
 import { useImportPost } from "@/app/qbo/importCCTxn/post/useImportPost";
 import { formatCents } from "@/app/qbo/importCCTxn/_lib/importFileUtils";
+import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 function Line({ label, value }: { label: string; value: string }) {
   return (
@@ -31,6 +33,9 @@ function Line({ label, value }: { label: string; value: string }) {
  */
 export function PostConfirmDialog() {
   const preview = useSelector(importPostSelect.preview);
+  const canPost = useSelector(userCapabilitiesSelect.allows)(
+    importCCTxnCapabilities.can.expensePostings.write,
+  );
   const { postRow, closePreview } = useImportPost();
 
   if (!preview) return null;
@@ -83,7 +88,9 @@ export function PostConfirmDialog() {
         <AlertDialogFooter>
           <AlertDialogCancel>{summary ? "Cancel" : "Close"}</AlertDialogCancel>
           {summary && (
-            <AlertDialogAction onClick={() => postRow(preview.rowId)}>Post</AlertDialogAction>
+            <AlertDialogAction disabled={!canPost} onClick={() => postRow(preview.rowId)}>
+              Post
+            </AlertDialogAction>
           )}
         </AlertDialogFooter>
       </AlertDialogContent>

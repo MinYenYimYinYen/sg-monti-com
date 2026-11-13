@@ -3,6 +3,10 @@
 import { Database, Phone } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { syncUtilsCapabilities } from "@/app/syncUtils/syncUtilsCapabilities";
+
+const { can } = syncUtilsCapabilities;
 
 const TABS: readonly TabNavItem[] = [
   { label: "Customers", href: "/syncUtils/customers", icon: Database },
@@ -22,7 +26,9 @@ export default function SyncUtilsLayout({ children }: { children: React.ReactNod
         left={<span className="text-sm font-semibold text-foreground">Sync Utilities</span>}
         right={<TabNav items={TABS} rootHref={ROOT_HREF} />}
       />
-      <PageLayout.Body>{children}</PageLayout.Body>
+      <PageLayout.Body>
+        <GatedPanel requirement={can.syncStatus.read}>{children}</GatedPanel>
+      </PageLayout.Body>
     </PageLayout>
   );
 }

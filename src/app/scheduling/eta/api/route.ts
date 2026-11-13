@@ -5,10 +5,13 @@ import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { ServiceEta } from "@/app/scheduling/eta/EtaTypes";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
+
+const { can } = schedulingCapabilities;
 
 const handlers: HandlerMap<ServiceEtaContract> = {
   getServiceEtas: {
-    roles: ["admin", "office", "tech"],
+    capability: can.serviceEtas.read,
     handler: async ({ servIds }) => {
       await connectToMongoDB();
       const docs = await ServiceEtaModel.find({
@@ -19,7 +22,7 @@ const handlers: HandlerMap<ServiceEtaContract> = {
     },
   },
   saveServiceEta: {
-    roles: ["admin", "office"],
+    capability: can.serviceEtas.write,
     handler: async ({ servId, eta }) => {
       await connectToMongoDB();
       await ServiceEtaModel.findOneAndUpdate(

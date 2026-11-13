@@ -9,19 +9,59 @@ import {
   SkipRule,
 } from "@/app/qbo/importCCTxn/types/ImportCCTxnMappingTypes";
 
-/** Loads all four mapping lists when `autoLoad` is set (cached) and exposes actions only. */
-export function useImportCCTxnMapping({ autoLoad }: { autoLoad: boolean }) {
+/** Which mapping lists the caller may load. Absent means allowed, so write-only callers can skip it. */
+type CanLoad = {
+  formatAccounts?: boolean;
+  cardAssignments?: boolean;
+  merchantMappings?: boolean;
+  skipRules?: boolean;
+};
+
+/**
+ * Loads the four mapping lists when `autoLoad` is set (cached) and exposes actions only.
+ * `canLoad` comes from the layout, because hooks expose actions only and do not select. A list the
+ * user may not read is skipped, so no refused request and no error toast.
+ */
+export function useImportCCTxnMapping({
+  autoLoad,
+  canLoad = {},
+}: {
+  autoLoad: boolean;
+  canLoad?: CanLoad;
+}) {
+  const {
+    formatAccounts: canLoadFormatAccounts = true,
+    cardAssignments: canLoadCardAssignments = true,
+    merchantMappings: canLoadMerchantMappings = true,
+    skipRules: canLoadSkipRules = true,
+  } = canLoad;
   const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (!autoLoad) return;
     const config = { loadingMsg: "Loading import mappings...", staleTime: qboConst.referenceCacheTime };
-    dispatch(importCCTxnMappingActions.getAssignableUsers({ params: {}, config }));
-    dispatch(importCCTxnMappingActions.getFormatAccounts({ params: {}, config }));
-    dispatch(importCCTxnMappingActions.getCardAssignments({ params: {}, config }));
-    dispatch(importCCTxnMappingActions.getMerchantMappings({ params: {}, config }));
-    dispatch(importCCTxnMappingActions.getSkipRules({ params: {}, config }));
-  }, [autoLoad, dispatch]);
+    // The assignable users are the choices for a card assignment, so they follow that read.
+    if (canLoadCardAssignments) {
+      dispatch(importCCTxnMappingActions.getAssignableUsers({ params: {}, config }));
+      dispatch(importCCTxnMappingActions.getCardAssignments({ params: {}, config }));
+    }
+    if (canLoadFormatAccounts) {
+      dispatch(importCCTxnMappingActions.getFormatAccounts({ params: {}, config }));
+    }
+    if (canLoadMerchantMappings) {
+      dispatch(importCCTxnMappingActions.getMerchantMappings({ params: {}, config }));
+    }
+    if (canLoadSkipRules) {
+      dispatch(importCCTxnMappingActions.getSkipRules({ params: {}, config }));
+    }
+  }, [
+    autoLoad,
+    canLoadFormatAccounts,
+    canLoadCardAssignments,
+    canLoadMerchantMappings,
+    canLoadSkipRules,
+    dispatch,
+  ]);
 
   const saveFormatAccount = (formatAccount: FormatAccount) =>
     dispatch(

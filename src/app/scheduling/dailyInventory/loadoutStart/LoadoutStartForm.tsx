@@ -12,9 +12,15 @@ import { loadoutHelper } from "@/app/scheduling/dailyInventory/components/loadou
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
 import { cn, md } from "@/style/utils";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
+
+const { can } = schedulingCapabilities;
 
 export function LoadoutStartForm() {
   const dispatch = useDispatch();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.loadouts.write);
   const router = useRouter();
   const { updateLoadout } = useLoadoutStartForm();
   const { upsertLoadout } = useLoadout();
@@ -110,7 +116,8 @@ export function LoadoutStartForm() {
           <div onClick={() => dispatch(loadoutStartActions.setShouldShowAllStartLoadoutIssues(true))}>
             <SaveButton
               status={saveStatus}
-              disabled={!canSubmit}
+              disabled={!canSubmit || !canWrite}
+              title={canWrite ? undefined : "You do not have access to save loadouts"}
               onClick={handleSave}
               onSuccessComplete={() => setSaveStatus("idle")}
             >

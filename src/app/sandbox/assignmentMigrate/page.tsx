@@ -1,6 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useSelector } from "react-redux";
+import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = assignmentCapabilities;
 
 type MigrateStatus = "idle" | "pending" | "success" | "error";
 
@@ -10,6 +15,8 @@ type MigrateResult = {
 };
 
 export default function AssignmentMigratePage() {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canMigrate = allows(can.legacyAssignmentMigration.write);
   const [status, setStatus] = useState<MigrateStatus>("idle");
   const [result, setResult] = useState<MigrateResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -62,7 +69,8 @@ export default function AssignmentMigratePage() {
         <button
           className="rounded bg-primary text-primary-foreground py-2 px-5 font-medium disabled:opacity-50"
           onClick={runMigration}
-          disabled={status === "pending" || status === "success"}
+          disabled={status === "pending" || status === "success" || !canMigrate}
+          title={canMigrate ? undefined : "You do not have access to run this migration"}
         >
           {status === "pending" ? "Migrating…" : "Run Migration"}
         </button>

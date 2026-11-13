@@ -8,9 +8,15 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { ServCodeListPanel } from "./ServCodeListPanel";
 import { ServCodeEditPanel } from "./ServCodeEditPanel";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
+
+const { can } = progServCapabilities;
 
 export function ServCodeTab() {
   const { saveServCodeChanges } = useProgServ({});
+  // The edit panel only changes a draft in the store. Saving the draft is the write, so it is the control that is gated.
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.servCodeDocProps.write);
   const servCodes = useSelector(progServSelect.servCodes);
   const unsavedChanges = useSelector(servCodeLookup.unsavedChanges);
 
@@ -37,7 +43,7 @@ export function ServCodeTab() {
         </p>
         <SaveButton
           className="w-[12rem]"
-          disabled={unsavedChanges.length === 0}
+          disabled={unsavedChanges.length === 0 || !canWrite}
           status={saveStatus}
           onClick={handleSave}
           onSuccessComplete={() => setSaveStatus("idle")}

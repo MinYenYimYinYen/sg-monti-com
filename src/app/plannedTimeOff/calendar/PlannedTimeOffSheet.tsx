@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import {
   Sheet,
@@ -25,8 +26,12 @@ import {
 } from "@/style/components/select";
 import { plannedTimeOffActions } from "@/app/plannedTimeOff/plannedTimeOffSlice";
 import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
+import { plannedTimeOffCapabilities } from "@/app/plannedTimeOff/plannedTimeOffCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+
+const { can } = plannedTimeOffCapabilities;
 
 // ---------------------------------------------------------------------------
 // PlannedTimeOffSheet
@@ -46,6 +51,9 @@ export function PlannedTimeOffSheet({
   onCloseAction,
 }: PlannedTimeOffSheetProps) {
   const dispatch = useAppDispatch();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.absences.write);
+  const canDelete = allows(can.absences.delete);
 
   const [search, setSearch] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(
@@ -68,6 +76,7 @@ export function PlannedTimeOffSheet({
   });
 
   const canSave =
+    canWrite &&
     selectedEmployeeId !== "" &&
     dateRange.min !== "" &&
     dateRange.max !== "" &&
@@ -199,6 +208,7 @@ export function PlannedTimeOffSheet({
                   variant="destructive"
                   intensity="soft"
                   className="w-full"
+                  disabled={!canDelete}
                   onClick={() => setShowDeleteConfirm(true)}
                 >
                   Remove Time Off
@@ -212,6 +222,7 @@ export function PlannedTimeOffSheet({
                     <Button
                       variant="destructive"
                       className="flex-1"
+                      disabled={!canDelete}
                       onClick={handleDelete}
                     >
                       Confirm Delete

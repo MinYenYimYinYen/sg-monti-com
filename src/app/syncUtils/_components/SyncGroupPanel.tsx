@@ -8,11 +8,16 @@ import { useSyncGroup } from "@/app/syncUtils/_lib/useSyncGroup";
 import { isWipeComplete, formatDuration } from "@/app/syncUtils/_lib/syncUtilsLogic";
 import { FullSyncDialog } from "@/app/syncUtils/_components/FullSyncDialog";
 import { FullSyncChecklist } from "@/app/syncUtils/_components/FullSyncChecklist";
+import { useSelector } from "react-redux";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { syncUtilsCapabilities } from "@/app/syncUtils/syncUtilsCapabilities";
 
 type SyncGroupPanelProps = {
   group: SyncGroup;
   title: string;
 };
+
+const { can } = syncUtilsCapabilities;
 
 /**
  * Sync controls for one group. A lock without an active run (a request that died) is shown
@@ -32,6 +37,10 @@ export function SyncGroupPanel({ group, title }: SyncGroupPanelProps) {
     refresh,
   } = useSyncGroup(group);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canDeltaSync = allows(can.deltaSync.write);
+  const canFullSync = allows(can.fullSync.write);
+  const canClearLock = allows(can.syncLocks.write);
 
   const isBusy = busy !== "idle";
   const lock = status?.lock ?? null;
@@ -107,7 +116,14 @@ export function SyncGroupPanel({ group, title }: SyncGroupPanelProps) {
               A {lock.operation} sync lock expired at <span className="font-mono text-xs">{lock.expiresAt}</span>{" "}
               without finishing, so the request probably died. New syncs can take over automatically.
             </span>
-            <Button variant="outline" intensity="ghost" size="sm" onClick={() => clearLock(false)}>
+            <Button
+              variant="outline"
+              intensity="ghost"
+              size="sm"
+              onClick={() => clearLock(false)}
+              disabled={!canClearLock}
+              title={canClearLock ? undefined : "You do not have access to clear sync locks"}
+            >
               Clear lock
             </Button>
           </div>
@@ -119,7 +135,8 @@ export function SyncGroupPanel({ group, title }: SyncGroupPanelProps) {
             variant="primary"
             intensity="solid"
             onClick={runDelta}
-            disabled={isBusy || lockedElsewhere || liveRun !== null}
+            disabled={isBusy || lockedElsewhere || liveRun !== null || !canDeltaSync}
+            title={canDeltaSync ? undefined : "You do not have access to run a delta sync"}
           >
             {busy === "delta" ? (
               <>
@@ -134,7 +151,8 @@ export function SyncGroupPanel({ group, title }: SyncGroupPanelProps) {
             variant="destructive"
             intensity="soft"
             onClick={() => setDialogOpen(true)}
-            disabled={isBusy || lockedElsewhere || liveRun !== null}
+            disabled={isBusy || lockedElsewhere || liveRun !== null || !canFullSync}
+            title={canFullSync ? undefined : "You do not have access to run a full sync"}
           >
             Full Sync...
           </Button>
@@ -192,11 +210,25 @@ export function SyncGroupPanel({ group, title }: SyncGroupPanelProps) {
                 : "The last full sync did not clear the mirror. Nothing was deleted."}
             </span>
             {runStarted && (
-              <Button variant="primary" intensity="solid" size="sm" onClick={resumeFull} disabled={lockedElsewhere}>
+              <Button
+                variant="primary"
+                intensity="solid"
+                size="sm"
+                onClick={resumeFull}
+                disabled={lockedElsewhere || !canFullSync}
+                title={canFullSync ? undefined : "You do not have access to run a full sync"}
+              >
                 Resume
               </Button>
             )}
-            <Button variant="outline" intensity="ghost" size="sm" onClick={() => clearLock(true)}>
+            <Button
+              variant="outline"
+              intensity="ghost"
+              size="sm"
+              onClick={() => clearLock(true)}
+              disabled={!canClearLock}
+              title={canClearLock ? undefined : "You do not have access to abandon a full sync"}
+            >
               Abandon run
             </Button>
           </div>

@@ -11,6 +11,9 @@ import {
   startConnect,
 } from "@/app/qbo/connection/_lib/qboConnectionServer";
 import { testQboConnection } from "@/app/qbo/connection/_lib/qboConnectionTestServer";
+import { qboConnectionCapabilities } from "@/app/qbo/connection/qboConnectionCapabilities";
+
+const { can } = qboConnectionCapabilities;
 
 /** The proxy injects the caller's saId; the connection records who they are by userName. */
 async function getCurrentUserName(): Promise<string> {
@@ -35,17 +38,17 @@ async function getCurrentUserName(): Promise<string> {
   return user.userName;
 }
 
-// Connection management is admin only. Tokens never appear in any result.
+// Connection management was admin only. Tokens never appear in any result.
 const handlers: HandlerMap<QboConnectionContract> = {
   status: {
-    roles: ["admin"],
+    capability: can.connection.read,
     handler: async () => {
       return { success: true, payload: await getConnectionStatus() };
     },
   },
 
   startConnect: {
-    roles: ["admin"],
+    capability: can.connection.write,
     handler: async () => {
       const userName = await getCurrentUserName();
       const authorizeUrl = await startConnect({ userName });
@@ -53,8 +56,9 @@ const handlers: HandlerMap<QboConnectionContract> = {
     },
   },
 
+  // Its own capability: it stops every QuickBooks screen until someone reconnects.
   disconnect: {
-    roles: ["admin"],
+    capability: can.connectionRevocation.write,
     handler: async () => {
       return { success: true, payload: await disconnectConnection() };
     },
@@ -62,7 +66,7 @@ const handlers: HandlerMap<QboConnectionContract> = {
 
   // A live read of CompanyInfo, so a QuickBooks failure is returned as an error message.
   testConnection: {
-    roles: ["admin"],
+    capability: can.connection.read,
     handler: async () => {
       return { success: true, payload: await testQboConnection() };
     },

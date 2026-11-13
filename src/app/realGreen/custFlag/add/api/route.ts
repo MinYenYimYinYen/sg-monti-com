@@ -3,10 +3,12 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { CustFlagAddContract } from "@/app/realGreen/custFlag/add/CustFlagAddContract";
 import { CustFlagAdd } from "@/app/realGreen/custFlag/_lib/CustFlagTypes";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
+import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
 
+const { can } = custFlagCapabilities;
 const handlers: HandlerMap<CustFlagAddContract> = {
   addCustFlag: {
-    roles: ["office", "admin"],
+    capability: can.flagAssignments.write,
     handler: async ({ custIds, flagId }) => {
       // Translate app conventions → RealGreen field names
       await rgApi<boolean>({

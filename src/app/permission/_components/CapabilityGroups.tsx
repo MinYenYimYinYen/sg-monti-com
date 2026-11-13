@@ -3,7 +3,7 @@
 import { X } from "lucide-react";
 import { Button } from "@/style/components/button";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
-import { capabilityLabel, groupCapabilitiesByFeature } from "@/permission/logic/capabilityLabels";
+import { capabilityLabel, groupCapabilitiesByGroup } from "@/permission/logic/capabilityLabels";
 import type { Capability } from "@/permission/PermissionTypes";
 
 type CapabilityGroupsProps = {
@@ -13,21 +13,21 @@ type CapabilityGroupsProps = {
   onRemoveAction?: (capability: Capability) => void;
 };
 
-/** Capabilities grouped by the feature that declares them. Stale strings are shown, not hidden. */
+/** Capabilities grouped as the admin screens list them. Stale strings are shown, not hidden. */
 export function CapabilityGroups({ capabilities, emptyText, onRemoveAction }: CapabilityGroupsProps) {
   if (capabilities.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyText}</p>;
   }
 
-  const { features, unknown } = groupCapabilitiesByFeature({ capabilities, registry: capabilityRegistry });
+  const { groups, unknown } = groupCapabilitiesByGroup({ capabilities, registry: capabilityRegistry });
 
   return (
     <div className="space-y-3">
-      {features.map((feature) => (
-        <div key={feature.featureKey}>
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{feature.featureKey}</h4>
+      {groups.map((group) => (
+        <div key={group.groupKey}>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group.groupName}</h4>
           <ul className="mt-1 space-y-1">
-            {feature.capabilities.map((capability) => (
+            {group.capabilities.map((capability) => (
               <CapabilityRow key={capability} capability={capability} onRemoveAction={onRemoveAction} />
             ))}
           </ul>

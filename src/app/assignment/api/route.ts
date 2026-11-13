@@ -7,10 +7,13 @@ import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { WriteError } from "mongodb";
+import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
+
+const { can } = assignmentCapabilities;
 
 const handlers: HandlerMap<AssignmentContract> = {
   getByServIds: {
-    roles: ["office", "admin", "tech"],
+    capability: can.serviceAssignments.read,
     handler: async ({ servIds }) => {
       await connectToMongoDB();
       if (!servIds.length) return { success: true, payload: [] };
@@ -20,7 +23,7 @@ const handlers: HandlerMap<AssignmentContract> = {
   },
 
   getBySchedDate: {
-    roles: ["office", "admin", "tech"],
+    capability: can.serviceAssignments.read,
     handler: async ({ schedDate }) => {
       await connectToMongoDB();
       const docs = await AssignmentModel.find({
@@ -31,7 +34,7 @@ const handlers: HandlerMap<AssignmentContract> = {
   },
 
   getAvailableDates: {
-    roles: ["office", "admin", "tech"],
+    capability: can.serviceAssignments.read,
     handler: async ({ season }) => {
       await connectToMongoDB();
       const minDate = `${season}-01-01`;
@@ -53,7 +56,7 @@ const handlers: HandlerMap<AssignmentContract> = {
   },
 
   getBySchedDateRange: {
-    roles: ["office", "admin", "tech"],
+    capability: can.serviceAssignments.read,
     handler: async ({ dateRange }) => {
       await connectToMongoDB();
       const docs = await AssignmentModel.find({
@@ -64,7 +67,7 @@ const handlers: HandlerMap<AssignmentContract> = {
   },
 
   saveAssignments: {
-    roles: ["admin", "office"],
+    capability: can.serviceAssignments.write,
     handler: async ({ assignments }) => {
       await connectToMongoDB();
 

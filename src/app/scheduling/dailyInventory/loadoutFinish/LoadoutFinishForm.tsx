@@ -15,9 +15,15 @@ import { SubProductFinishInput } from "./components/SubProductFinishInput";
 import { AdditionalProductsFinishSection } from "./components/AdditionalProductsFinishSection";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { cn, md } from "@/style/utils";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
+
+const { can } = schedulingCapabilities;
 
 export function LoadoutFinishForm() {
   const appDispatch = useAppDispatch();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.loadouts.write);
   const router = useRouter();
   const { setShouldShowAllFinishLoadoutIssues } = useLoadoutFinishForm();
   const { upsertLoadout } = useLoadout();
@@ -135,7 +141,8 @@ export function LoadoutFinishForm() {
 
           <SaveButton
             status={saveStatus}
-            disabled={!canSubmit}
+            disabled={!canSubmit || !canWrite}
+            title={canWrite ? undefined : "You do not have access to save loadouts"}
             onClick={handleSave}
             onSuccessComplete={() => setSaveStatus("idle")}
           >

@@ -4,10 +4,12 @@ import { TaxCodeContract } from "@/app/realGreen/taxCode/api/TaxCodeContract";
 import { TaxCodeRaw } from "@/app/realGreen/taxCode/TaxCodeTypes";
 import { extendTaxCodes, remapTaxCodes } from "../_lib/taxCodeServerFunc";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
+import { taxCodeCapabilities } from "@/app/realGreen/taxCode/taxCodeCapabilities";
 
+const { can } = taxCodeCapabilities;
 const handlers: HandlerMap<TaxCodeContract> = {
   getAll: {
-    roles: ["office", "admin"],
+    capability: can.taxCodes.read,
     handler: async () => {
       const rawTaxCodes = await rgApi<TaxCodeRaw[]>({
         path: "/Tax",

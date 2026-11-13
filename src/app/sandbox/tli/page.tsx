@@ -8,9 +8,21 @@ import { ProgramLink } from "@/app/realGreen/customer/components/ProgramLink";
 import { TliDone } from "@/app/sandbox/tli/TliDone";
 import { TliInstructions } from "@/app/sandbox/tli/TliInstructions";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { customerCapabilities } from "@/app/realGreen/customer/customerCapabilities";
+import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
+import { employeeCapabilities } from "@/app/realGreen/employee/employeeCapabilities";
 
 export default function TliPage() {
-  useTliDeps();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  useTliDeps({
+    canLoad: {
+      customers: allows(customerCapabilities.can.customers.read),
+      progCodes: allows(progServCapabilities.can.progCodes.read),
+      servCodes: allows(progServCapabilities.can.servCodes.read),
+      employees: allows(employeeCapabilities.can.employees.read),
+    },
+  });
   const mismatches = useSelector(tliSelect.mismatches);
   const loadingCount = useSelector(uiSelect.loadingCount);
   const [visitedIds, setVisitedIds] = useState<Set<number>>(new Set());

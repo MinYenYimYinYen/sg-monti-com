@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { AlertTriangle } from "lucide-react";
+import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { DataGridColumnHeader } from "@/components/DataGrid/DataGridColumnHeader";
 import { Number } from "@/components/Number";
@@ -10,6 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popo
 import { Button } from "@/style/components/button";
 import { EmployeeReliabilityRow, SuspiciousZeroDay } from "@/app/productivity/reliabilitySelect";
 import { plannedTimeOffActions } from "@/app/plannedTimeOff/plannedTimeOffSlice";
+import { plannedTimeOffCapabilities } from "@/app/plannedTimeOff/plannedTimeOffCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 // ---------------------------------------------------------------------------
 // SuspiciousDayEntry — inline form for recording an unplanned absence
@@ -22,11 +25,13 @@ type SuspiciousDayEntryProps = {
 
 function SuspiciousDayEntry({ day, employeeId }: SuspiciousDayEntryProps) {
   const dispatch = useAppDispatch();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWriteAbsences = allows(plannedTimeOffCapabilities.can.absences.write);
   const [expanded, setExpanded] = useState(false);
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
 
-  const canSave = note.trim().length > 0;
+  const canSave = canWriteAbsences && note.trim().length > 0;
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -77,6 +82,7 @@ function SuspiciousDayEntry({ day, employeeId }: SuspiciousDayEntryProps) {
             intensity="soft"
             size="sm"
             className="text-xs h-6 px-2 shrink-0"
+            disabled={!canWriteAbsences}
             onClick={() => setExpanded(true)}
           >
             Record Absence

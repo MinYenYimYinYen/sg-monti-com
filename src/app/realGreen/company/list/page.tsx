@@ -13,8 +13,18 @@ import {
 import { Container } from "@/components/Containers";
 import { companyFunc } from "../_lib/companyFunc";
 import { clsx } from "clsx";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { companyCapabilities } from "@/app/realGreen/company/companyCapabilities";
 
 export default function CompanyListPage() {
+  return (
+    <GatedPanel requirement={companyCapabilities.can.companies.read}>
+      <CompanyList />
+    </GatedPanel>
+  );
+}
+
+function CompanyList() {
   // 1. Use the hook to ensure data is loaded
   useCompany({ autoLoad: true });
 

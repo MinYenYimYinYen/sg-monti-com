@@ -7,6 +7,9 @@ import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj"
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { AppError } from "@/lib/errors/AppError";
 import { headers } from "next/headers";
+import { formTemplateCapabilities } from "../formTemplateCapabilities";
+
+const { can } = formTemplateCapabilities;
 
 /** Reads the current user's saId from the proxy-injected header. */
 async function getCurrentUserSaId(): Promise<string> {
@@ -34,7 +37,7 @@ function makeTemplateId({ templateName, saId }: { templateName: string; saId: st
 
 const handlers: HandlerMap<FormTemplateContract> = {
   getAll: {
-    roles: ["admin", "office"],
+    capability: can.formTemplates.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await FormTemplateModel.find({}).lean();
@@ -47,7 +50,7 @@ const handlers: HandlerMap<FormTemplateContract> = {
   },
 
   upsert: {
-    roles: ["admin", "office"],
+    capability: can.formTemplates.write,
     handler: async ({ template }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
@@ -65,7 +68,7 @@ const handlers: HandlerMap<FormTemplateContract> = {
   },
 
   deleteOne: {
-    roles: ["admin", "office"],
+    capability: can.formTemplates.delete,
     handler: async ({ templateId }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();

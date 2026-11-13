@@ -45,14 +45,22 @@ function buildMultiSeasonProductionPlan(season: number) {
     .build();
 }
 
-export function useMultiSeasonProduction() {
+/**
+ * `canLoad` (the mirror read) and `canRefreshLive` (the live single-customer refresh) come from the
+ * component, because hooks expose actions only and do not select. Both default to allowed. The
+ * returned `canLoad` also needs a season, so it is the AND of the two.
+ */
+export function useMultiSeasonProduction({
+  canLoad: mayLoad = true,
+  canRefreshLive = true,
+}: { canLoad?: boolean; canRefreshLive?: boolean } = {}) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   const load = () => {
-    if (!season) return;
+    if (!mayLoad || !season) return;
 
     if (PIPELINE.multiSeasonProduction === "mirror") {
       const plan = buildMultiSeasonProductionPlan(season);
@@ -65,7 +73,7 @@ export function useMultiSeasonProduction() {
   };
 
   const refreshCustomer = async (custId: number) => {
-    if (!season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
+    if (!canRefreshLive || !season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
     setRefreshingCustIds((prev) => new Set(prev).add(custId));
     try {
       const result = await dispatch(
@@ -92,5 +100,5 @@ export function useMultiSeasonProduction() {
 
   const isRefreshingCustomer = (custId: number) => refreshingCustIds.has(custId);
 
-  return { load, refreshCustomer, isRefreshingCustomer, canLoad: !!season };
+  return { load, refreshCustomer, isRefreshingCustomer, canLoad: mayLoad && !!season };
 }

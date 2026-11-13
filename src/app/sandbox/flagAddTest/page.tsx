@@ -8,14 +8,26 @@ import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { custFlagActions } from "@/app/realGreen/custFlag/_lib/custFlagSlice";
+import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
+import { flagCapabilities } from "@/app/realGreen/flag/flagCapabilities";
+import { employeeCapabilities } from "@/app/realGreen/employee/employeeCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = custFlagCapabilities;
 
 // Hard-coded test customer numbers
 const MY_CUST_ID = 4073100;
 const FORREST_CUST_ID = 3835113;
 
 export default function FlagAddTestPage() {
-  useFlag({ autoLoad: true });
-  useEmployee({ autoLoad: true });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  // These buttons put real flags on real RealGreen customers, which cannot be undone from here.
+  const canAssign = allows(can.flagAssignments.write);
+  useFlag({ autoLoad: true, canLoad: allows(flagCapabilities.can.flags.read) });
+  useEmployee({
+    autoLoad: true,
+    canLoad: allows(employeeCapabilities.can.employees.read),
+  });
 
   const dispatch = useAppDispatch();
   const flagDocs = useSelector(flagSelect.flagDocs);
@@ -95,7 +107,7 @@ export default function FlagAddTestPage() {
         </div>
         <button
           className="w-full rounded bg-primary text-white py-2 px-4 font-medium disabled:opacity-40"
-          disabled={selectedFlagId === null}
+          disabled={selectedFlagId === null || !canAssign}
           onClick={handleSingle}
         >
           Test Single Add (my account)
@@ -106,7 +118,7 @@ export default function FlagAddTestPage() {
         </div>
         <button
           className="w-full rounded bg-primary text-white py-2 px-4 font-medium disabled:opacity-40"
-          disabled={selectedFlagId === null}
+          disabled={selectedFlagId === null || !canAssign}
           onClick={handleMulti}
         >
           Test Multi Add (my + Forrest)
@@ -117,7 +129,7 @@ export default function FlagAddTestPage() {
         </div>
         <button
           className="w-full rounded bg-destructive text-white py-2 px-4 font-medium disabled:opacity-40"
-          disabled={selectedFlagId === null}
+          disabled={selectedFlagId === null || !canAssign}
           onClick={() => {
             if (selectedFlagId === null) return;
             console.log("[FlagAddTest] Dispatching invalid custId (-1):", { custIds: [-1], flagId: selectedFlagId });
@@ -132,7 +144,7 @@ export default function FlagAddTestPage() {
         </div>
         <button
           className="w-full rounded bg-destructive text-white py-2 px-4 font-medium disabled:opacity-40"
-          disabled={selectedFlagId === null}
+          disabled={selectedFlagId === null || !canAssign}
           onClick={() => {
             if (selectedFlagId === null) return;
             console.log("[FlagAddTest] Dispatching mixed (-1 + my account):", { custIds: [-1, MY_CUST_ID], flagId: selectedFlagId });

@@ -28,6 +28,10 @@ import { useEquipment } from "@/app/equipment/useEquipment";
 import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import { EquipmentDeleteSheet } from "@/app/equipment/EquipmentDeleteSheet";
 import { Checkbox } from "@/style/components/checkbox";
+import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = equipmentCapabilities;
 
 interface EquipmentFormProps {
   equipment?: EquipmentDoc;
@@ -37,6 +41,9 @@ export function EquipmentForm({ equipment }: EquipmentFormProps) {
   const { upsertEquipment } = useEquipment({});
   const { deselectCard } = useCardStack();
   const appMethods = useSelector(appMethodSelect.appMethodDocs);
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const mayWrite = allows(can.equipmentDefinitions.write);
+  const mayDelete = allows(can.equipmentDefinitions.delete);
 
   const [equipmentId, setEquipmentId] = useState(equipment?.equipmentId ?? "");
   const [description, setDescription] = useState(equipment?.description ?? "");
@@ -202,7 +209,7 @@ export function EquipmentForm({ equipment }: EquipmentFormProps) {
           {/* Actions */}
           <div className="flex gap-2 items-center pt-1">
             <SaveButton
-              disabled={!canSave}
+              disabled={!canSave || !mayWrite}
               status={saveStatus}
               onClick={handleSave}
               onSuccessComplete={handleSuccessComplete}
@@ -224,6 +231,7 @@ export function EquipmentForm({ equipment }: EquipmentFormProps) {
                   variant="destructive"
                   intensity="soft"
                   onClick={() => setDeleteSheetOpen(true)}
+                  disabled={!mayDelete}
                   className="w-full"
                 >
                   Delete Equipment

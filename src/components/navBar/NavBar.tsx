@@ -11,12 +11,16 @@ import NavMenu from "./NavMenu";
 import { GlobalConfigMenu } from "./GlobalConfigMenu";
 import { UserPopover } from "./UserPopover";
 import { useNavBarDeps } from "./useNavBarDeps";
+import { authCapabilities } from "@/app/auth/authCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = authCapabilities;
 
 export default function NavBar() {
   useNavBarDeps();
   const isAuthenticated = useSelector(authSelect.isAuthenticated);
   const isInitialized = useSelector(authSelect.isInitialized);
-  const user = useSelector(authSelect.user);
+  const allows = useSelector(userCapabilitiesSelect.allows);
 
   // Admin State
   const pendingUsers = useSelector(authSelect.adminPendingUsers);
@@ -48,7 +52,7 @@ export default function NavBar() {
             </Button>
           ) : isAuthenticated ? (
             <>
-              {user?.role === "admin" && (
+              {allows(can.accessRequests.read) && (
                 <>
                   <Button
                     variant="accent"

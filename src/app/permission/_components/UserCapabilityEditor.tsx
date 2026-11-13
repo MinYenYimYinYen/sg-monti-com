@@ -12,14 +12,18 @@ import { CapabilityGroups } from "@/app/permission/_components/CapabilityGroups"
 import { DeleteUserDialog } from "@/app/permission/_components/DeleteUserDialog";
 import { Notice } from "@/app/permission/_components/Notice";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
+import type { Capability } from "@/permission/PermissionTypes";
 import { canAssign, canManageCapabilitiesOf } from "@/permission/logic/assignmentGuards";
-import { capabilityLabel, groupCapabilitiesByFeature } from "@/permission/logic/capabilityLabels";
+import { planDirectAdd } from "@/permission/logic/requirementLogic";
+import { capabilityLabel, groupCapabilitiesByGroup } from "@/permission/logic/capabilityLabels";
 import { isGateOpen } from "@/permission/logic/navGate";
 import {
   assignBundle as previewAssignBundle,
   removeBundle as previewRemoveBundle,
 } from "@/permission/logic/userCapabilityLogic";
 import { Button } from "@/style/components/button";
+import { Checkbox } from "@/style/components/checkbox";
+import { Label } from "@/style/components/label";
 import {
   Select,
   SelectContent,
@@ -41,7 +45,7 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
   const effectiveByUserName = useSelector(userCapabilitiesSelect.effectiveByUserName);
   const assignableByUserName = useSelector(userCapabilitiesSelect.assignableByUserName);
   const redundantDirectByUserName = useSelector(userCapabilitiesSelect.redundantDirectByUserName);
-  const missingCompanionsByUserName = useSelector(userCapabilitiesSelect.missingCompanionsByUserName);
+  const missingRequirementsByUserName = useSelector(userCapabilitiesSelect.missingRequirementsByUserName);
   const bundles = useSelector(capabilityBundleSelect.docs);
   const bundlesByKey = useSelector(capabilityBundleSelect.byBundleKey);
   const { assignBundle, removeBundle, addDirect, removeDirect } = useUserCapabilities();
@@ -49,6 +53,7 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
   const [bundleToAssign, setBundleToAssign] = useState("");
   const [bundleToRemove, setBundleToRemove] = useState<string | null>(null);
   const [capabilityToAdd, setCapabilityToAdd] = useState("");
+  const [alsoAddRequirements, setAlsoAddRequirements] = useState(true);
 
   const summary = users.find((candidate) => candidate.userName === userName);
   const holdings = holdingsByUserName[userName];
@@ -66,7 +71,7 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
 
   const effective = effectiveByUserName[userName] ?? [];
   const redundant = redundantDirectByUserName[userName] ?? [];
-  const companions = missingCompanionsByUserName[userName] ?? [];
+  const unmetRequirements = missingRequirementsByUserName[userName] ?? [];
 
   // Mirrors the server's no-escalation rule so the pickers only offer what the caller may hand out.
   const bundleOptions = bundles
@@ -77,7 +82,7 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
     }));
   const assignable = assignableByUserName[userName] ?? [];
   const grantable = actorIsSuperUser ? assignable : assignable.filter((capability) => actorCapabilities.includes(capability));
-  const { features: grantableByFeature } = groupCapabilitiesByFeature({
+  const { groups: grantableByGroup } = groupCapabilitiesByGroup({
     capabilities: grantable,
     registry: capabilityRegistry,
   });
@@ -99,8 +104,24 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
     setBundleToRemove(null);
   }
 
+  // What picking this capability would add. It stays a preview until Add: the stored grants are
+  // exactly the capabilities sent, with what they need included only when the box is ticked.
+  const addPlan = capabilityToAdd
+    ? planDirectAdd({
+        capability: capabilityToAdd as Capability,
+        effective,
+        actorIsSuperUser,
+        actorCapabilities,
+        registry: capabilityRegistry,
+      })
+    : null;
+  const alsoNeeded = addPlan ? addPlan.capabilities.slice(1) : [];
+
   function handleAddDirect() {
-    addDirect({ userName, capability: capabilityToAdd });
+    addDirect({
+      userName,
+      capabilities: alsoAddRequirements && addPlan ? addPlan.capabilities : [capabilityToAdd],
+    });
     setCapabilityToAdd("");
   }
 
@@ -229,39 +250,70 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
           }
         />
         {editable && (
-          <div className="flex items-center gap-2">
-            <Select value={capabilityToAdd} onValueChange={setCapabilityToAdd}>
-              <SelectTrigger>
-                <SelectValue placeholder={grantable.length === 0 ? "Nothing left to add" : "Add a capability..."} />
-              </SelectTrigger>
-              <SelectContent>
-                {grantableByFeature.map((feature) => (
-                  <SelectGroup key={feature.featureKey}>
-                    <SelectLabel>{feature.featureKey}</SelectLabel>
-                    {feature.capabilities.map((capability) => (
-                      <SelectItem key={capability} value={capability}>
-                        {capabilityLabel({ capability, registry: capabilityRegistry })}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button size="sm" disabled={!capabilityToAdd} onClick={handleAddDirect}>
-              Add
-            </Button>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Select value={capabilityToAdd} onValueChange={setCapabilityToAdd}>
+                <SelectTrigger>
+                  <SelectValue placeholder={grantable.length === 0 ? "Nothing left to add" : "Add a capability..."} />
+                </SelectTrigger>
+                <SelectContent>
+                  {grantableByGroup.map((group) => (
+                    <SelectGroup key={group.groupKey}>
+                      <SelectLabel>{group.groupName}</SelectLabel>
+                      {group.capabilities.map((capability) => (
+                        <SelectItem key={capability} value={capability}>
+                          {capabilityLabel({ capability, registry: capabilityRegistry })}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button size="sm" disabled={!capabilityToAdd} onClick={handleAddDirect}>
+                Add
+              </Button>
+            </div>
+            {addPlan && alsoNeeded.length > 0 && (
+              <div className="space-y-1 rounded-md border border-border bg-accent/10 p-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="also-add-requirements"
+                    checked={alsoAddRequirements}
+                    onCheckedChange={(checked) => setAlsoAddRequirements(checked === true)}
+                  />
+                  <Label htmlFor="also-add-requirements" className="text-sm font-normal">
+                    Also add what this needs ({alsoNeeded.length})
+                  </Label>
+                </div>
+                <ul className="list-disc pl-8 text-sm text-muted-foreground">
+                  {alsoNeeded.map((capability) => (
+                    <li key={capability}>{capabilityLabel({ capability, registry: capabilityRegistry })}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {addPlan && addPlan.unassignable.length > 0 && (
+              <Notice tone="warning">
+                This also needs capabilities you do not hold, so you cannot add them:
+                <ul className="mt-1 list-disc pl-5">
+                  {addPlan.unassignable.map((capability) => (
+                    <li key={capability}>{capabilityLabel({ capability, registry: capabilityRegistry })}</li>
+                  ))}
+                </ul>
+              </Notice>
+            )}
           </div>
         )}
       </section>
 
-      {companions.length > 0 && (
+      {unmetRequirements.length > 0 && (
         <Notice>
           Hints only (nothing is blocked or added automatically):
           <ul className="mt-1 list-disc pl-5">
-            {companions.map((companion) => (
-              <li key={`${companion.capability}|${companion.missing}`}>
-                {capabilityLabel({ capability: companion.capability, registry: capabilityRegistry })} is held without{" "}
-                {capabilityLabel({ capability: companion.missing, registry: capabilityRegistry })}.
+            {unmetRequirements.map((unmet) => (
+              <li key={`${unmet.capability}|${unmet.missing}`}>
+                {capabilityLabel({ capability: unmet.capability, registry: capabilityRegistry })} is held without{" "}
+                {capabilityLabel({ capability: unmet.missing, registry: capabilityRegistry })}.
               </li>
             ))}
           </ul>

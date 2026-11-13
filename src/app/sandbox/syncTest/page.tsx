@@ -1,6 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useSelector } from "react-redux";
+import { callLogCapabilities } from "@/app/realGreen/callLog/callLogCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = callLogCapabilities;
 
 type SyncStatus = "idle" | "pending" | "success" | "error";
 
@@ -10,6 +15,8 @@ type SyncResult = {
 };
 
 export default function SyncTestPage() {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canSync = allows(can.callLogSync.write);
   const [status, setStatus] = useState<SyncStatus>("idle");
   const [result, setResult] = useState<SyncResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -60,14 +67,14 @@ export default function SyncTestPage() {
           <button
             className="rounded bg-primary text-primary-foreground py-2 px-5 font-medium disabled:opacity-50"
             onClick={() => runSync(true)}
-            disabled={status === "pending"}
+            disabled={status === "pending" || !canSync}
           >
             Full Sync
           </button>
           <button
             className="rounded bg-accent/20 text-foreground border border-accent/30 py-2 px-5 font-medium disabled:opacity-50"
             onClick={() => runSync(false)}
-            disabled={status === "pending"}
+            disabled={status === "pending" || !canSync}
           >
             Delta Sync
           </button>

@@ -16,6 +16,9 @@ import { toLockStatus } from "@/app/realGreen/syncLock/syncLockLogic";
 import { runDeltaSync } from "@/app/realGreen/customer/sync/runDeltaSync";
 import { runFullSyncChunk, startFullSync } from "@/app/realGreen/customer/sync/runFullSync";
 import { assertCurrentUserPassword } from "@/app/syncUtils/_lib/verifyCurrentUserPassword";
+import { syncUtilsCapabilities } from "@/app/syncUtils/syncUtilsCapabilities";
+
+const { can } = syncUtilsCapabilities;
 
 /**
  * Seconds. Pro plan with fluid compute allows up to 800. Each full-sync chunk is its own
@@ -67,12 +70,12 @@ async function buildGroupStatus(group: SyncGroup): Promise<SyncGroupStatus> {
 
 const handlers: HandlerMap<SyncUtilsContract> = {
   getSyncStatus: {
-    roles: ["admin"],
+    capability: can.syncStatus.read,
     handler: async ({ group }) => ({ success: true, payload: await buildGroupStatus(group) }),
   },
 
   runDeltaSync: {
-    roles: ["admin"],
+    capability: can.deltaSync.write,
     handler: async ({ group }) => {
       try {
         const result = await runDeltaSync({ groups: [group] });
@@ -93,7 +96,7 @@ const handlers: HandlerMap<SyncUtilsContract> = {
   },
 
   startFullSync: {
-    roles: ["admin"],
+    capability: can.fullSync.write,
     handler: async ({ group, password }) => {
       await assertCurrentUserPassword(password);
       return { success: true, payload: await startFullSync(group) };
@@ -101,7 +104,7 @@ const handlers: HandlerMap<SyncUtilsContract> = {
   },
 
   runFullSyncChunk: {
-    roles: ["admin"],
+    capability: can.fullSync.write,
     handler: async ({ group, chunkKey }) => ({
       success: true,
       payload: await runFullSyncChunk({ group, chunkKey }),
@@ -109,7 +112,7 @@ const handlers: HandlerMap<SyncUtilsContract> = {
   },
 
   clearSyncLock: {
-    roles: ["admin"],
+    capability: can.syncLocks.write,
     handler: async ({ group, abandonRun }) => {
       await forceClearLock({ group, abandonRun });
       return { success: true, payload: null };

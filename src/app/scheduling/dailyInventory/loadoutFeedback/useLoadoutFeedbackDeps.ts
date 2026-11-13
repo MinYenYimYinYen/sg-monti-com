@@ -15,31 +15,49 @@ import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig"
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { assignmentActions } from "@/app/assignment/assignmentSlice";
 import { assignmentSelect } from "@/app/assignment/assignmentSelect";
+import { SchedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 
+/**
+ * `canLoad` comes from the page, because hooks expose actions only and do not select. Every hook
+ * is still called on every render, in the same order: a flag only turns its load off.
+ */
 export function useLoadoutFeedbackDeps({
   employeeId,
   routeDate,
   showLoading,
+  canLoad,
 }: {
   employeeId: string;
   routeDate: string;
   showLoading: boolean;
+  canLoad: SchedulingCanLoad;
 }) {
   const dispatch = useAppDispatch();
-  const { loadByServIds } = useByAssignmentCustomers();
+  const { loadByServIds } = useByAssignmentCustomers({ canLoad: canLoad.customers });
   useCustomerContext({ contexts: ["byAssignment"] });
-  useProduct({ autoLoad: true });
-  useAppMethod({ autoLoad: true });
-  useEquipment({ autoLoad: true });
-  useEquipmentPackage({ autoLoad: true });
-  useProgServ({ autoLoad: true });
-  useUnitConfig({ autoLoad: true });
-  useEmployee({ autoLoad: true });
+  useProduct({
+    autoLoad: true,
+    canLoad: {
+      products: canLoad.products,
+      unitConversions: canLoad.unitConversions,
+      appMethods: canLoad.appMethods,
+    },
+  });
+  useAppMethod({ autoLoad: true, canLoad: canLoad.appMethods });
+  useEquipment({ autoLoad: true, canLoad: canLoad.equipment });
+  useEquipmentPackage({ autoLoad: true, canLoad: canLoad.equipmentPackages });
+  useProgServ({
+    autoLoad: true,
+    canLoad: { progCodes: canLoad.progCodes, servCodes: canLoad.servCodes },
+  });
+  useUnitConfig({ autoLoad: true, canLoad: canLoad.unitConversions });
+  useEmployee({ autoLoad: true, canLoad: canLoad.employees });
 
-  useGlobalSettings({ autoLoad: true });
+  useGlobalSettings({ autoLoad: true, canLoad: canLoad.globalSettings });
   const season = useSelector(globalSettingsSelect.season);
 
   useEffect(() => {
+    if (!canLoad.assignments) return;
     if (!employeeId || !routeDate) return;
     if (!season) return;
     dispatch(
@@ -52,7 +70,7 @@ export function useLoadoutFeedbackDeps({
         },
       }),
     );
-  }, [employeeId, routeDate, season, dispatch, showLoading]);
+  }, [canLoad.assignments, employeeId, routeDate, season, dispatch, showLoading]);
 
   const assignedServIds = useSelector(
     assignmentSelect.servIdsByEmployeeAndSchedDate(employeeId, routeDate),

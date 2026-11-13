@@ -6,11 +6,18 @@ import { paceAssignmentGroupActions } from "@/app/pace/assignmentGroup/assignmen
 import { AssignmentGroupDoc } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
-export function usePaceAssignmentGroup({ autoLoad }: { autoLoad?: boolean } = {}) {
+/**
+ * `canLoad` comes from the component, because hooks expose actions only and do not select. It
+ * defaults to allowed so write-only callers can omit it.
+ */
+export function usePaceAssignmentGroup({
+  autoLoad,
+  canLoad = true,
+}: { autoLoad?: boolean; canLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad) {
+    if (autoLoad && canLoad) {
       dispatch(
         paceAssignmentGroupActions.getGroups({
           params: {},
@@ -18,7 +25,7 @@ export function usePaceAssignmentGroup({ autoLoad }: { autoLoad?: boolean } = {}
         }),
       );
     }
-  }, [autoLoad, dispatch]);
+  }, [autoLoad, canLoad, dispatch]);
 
   const upsertGroup = (assignmentGroupDoc: AssignmentGroupDoc) =>
     dispatch(

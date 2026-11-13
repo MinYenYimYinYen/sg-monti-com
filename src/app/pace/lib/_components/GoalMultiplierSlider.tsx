@@ -10,6 +10,8 @@ import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignment
 import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { ChevronDown } from "lucide-react";
+import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,6 +60,10 @@ export function GoalMultiplierSlider({ assignmentGroupId }: GoalMultiplierSlider
   const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
   const activeScenario = useSelector(assignmentPlanSelect.activeScenario);
   const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
+  // Apply only changes the local plans. Apply & Save writes the active scenario.
+  const canWriteScenario = useSelector(userCapabilitiesSelect.allows)(
+    paceCapabilities.can.assignmentScenarios.write,
+  );
 
   // Resolve the active group IDs: prop takes precedence over Redux selection
   const selectedGroupIds: string[] = assignmentGroupId ? [assignmentGroupId] : reduxGroupIds;
@@ -297,6 +303,7 @@ export function GoalMultiplierSlider({ assignmentGroupId }: GoalMultiplierSlider
             {activeScenario && (
               <button
                 onClick={handleApplyAndSave}
+                disabled={!canWriteScenario}
                 className="h-6 px-2 rounded text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
                 title="Bake multiplier into stored goals for selected groups and save to database"
               >

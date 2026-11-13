@@ -25,11 +25,18 @@ import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelecto
  * // Call reload() on button click or when plan changes
  * ```
  */
-export function useCustomerQuery({ plan }: { plan: CustomerQueryPlan }) {
+export function useCustomerQuery({
+  plan,
+  canLoad = true,
+}: {
+  plan: CustomerQueryPlan;
+  canLoad?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const activeContexts = useSelector(centralSelect.context);
 
   const reload = () => {
+    if (!canLoad) return;
     // Step 1: Clear the customerQuery source slice's docs
     dispatch(customerQueryCustomerActions.clearDocs());
 

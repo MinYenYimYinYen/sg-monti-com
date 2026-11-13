@@ -20,7 +20,7 @@ export function useUserCapabilities() {
     );
 
   const addDirect = (params: Params<"addDirect">) =>
-    dispatch(userCapabilitiesActions.addDirectCapability({ params, config: { loadingMsg: "Adding capability..." } }));
+    dispatch(userCapabilitiesActions.addDirectCapability({ params, config: { loadingMsg: "Adding capabilities..." } }));
 
   const removeDirect = (params: Params<"removeDirect">) =>
     dispatch(

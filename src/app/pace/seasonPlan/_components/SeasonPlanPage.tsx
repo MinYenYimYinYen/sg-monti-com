@@ -6,6 +6,9 @@ import { seasonPlanPageSelect } from "@/app/pace/seasonPlan/seasonPlanPageSelect
 import { usePaceSeasonPlan } from "@/app/pace/seasonPlan/useSeasonPlan";
 import { SeasonPlan } from "@/app/pace/seasonPlan/SeasonPlanTypes";
 import { Plus, Trash2, Check, Copy } from "lucide-react";
+import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { SeasonPlanForm } from "@/app/pace/seasonPlan/_components/SeasonPlanForm";
 import {
   FormState,
@@ -15,7 +18,21 @@ import {
   nowISO,
 } from "@/app/pace/seasonPlan/_components/seasonPlanHelpers";
 
+const { can } = paceCapabilities;
+
 export function SeasonPlanPage() {
+  return (
+    <GatedPanel requirement={can.seasonPlans.read}>
+      <SeasonPlanWorkspace />
+    </GatedPanel>
+  );
+}
+
+function SeasonPlanWorkspace() {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  // Activating a plan and opening the editor are writes. Only removing a plan deletes.
+  const canWrite = allows(can.seasonPlans.write);
+  const canDelete = allows(can.seasonPlans.delete);
   const seasonPlans = useSelector(seasonPlanPageSelect.seasonPlans);
   const { upsertSeasonPlan, deleteSeasonPlan, activateSeasonPlan } = usePaceSeasonPlan({
     autoLoad: true,
@@ -97,7 +114,8 @@ export function SeasonPlanPage() {
             setEditingPlan(null);
             setMode("create");
           }}
-          className="flex items-center gap-1.5 h-8 px-3 rounded text-xs font-semibold bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
+          disabled={!canWrite}
+          className="flex items-center gap-1.5 h-8 px-3 rounded text-xs font-semibold bg-primary/15 text-primary hover:bg-primary/25 transition-colors disabled:opacity-40"
         >
           <Plus className="w-3.5 h-3.5" />
           New Plan
@@ -110,7 +128,8 @@ export function SeasonPlanPage() {
             <p className="text-sm text-muted-foreground">No season plans yet.</p>
             <button
               onClick={() => setMode("create")}
-              className="flex items-center gap-1.5 h-8 px-4 rounded text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              disabled={!canWrite}
+              className="flex items-center gap-1.5 h-8 px-4 rounded text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
             >
               <Plus className="w-3.5 h-3.5" />
               Create First Plan
@@ -151,6 +170,7 @@ export function SeasonPlanPage() {
                   {!plan.isActive && (
                     <button
                       onClick={() => activateSeasonPlan(plan.name)}
+                      disabled={!canWrite}
                       className="h-7 px-2.5 rounded text-[10px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
                     >
                       Activate
@@ -163,6 +183,7 @@ export function SeasonPlanPage() {
                     }}
                     className="h-7 w-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
                     title="Copy plan"
+                    disabled={!canWrite}
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </button>
@@ -171,7 +192,8 @@ export function SeasonPlanPage() {
                       setEditingPlan(plan);
                       setMode("edit");
                     }}
-                    className="h-7 px-2.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
+                    disabled={!canWrite}
+                    className="h-7 px-2.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors disabled:opacity-40"
                   >
                     Edit
                   </button>
@@ -182,7 +204,8 @@ export function SeasonPlanPage() {
                           deleteSeasonPlan(plan.name);
                           setConfirmDeleteName(null);
                         }}
-                        className="h-7 px-2 rounded text-[10px] text-destructive font-semibold hover:bg-destructive/10 transition-colors"
+                        disabled={!canDelete}
+                        className="h-7 px-2 rounded text-[10px] text-destructive font-semibold hover:bg-destructive/10 transition-colors disabled:opacity-40"
                       >
                         Delete
                       </button>
@@ -198,6 +221,7 @@ export function SeasonPlanPage() {
                       onClick={() => setConfirmDeleteName(plan.name)}
                       className="h-7 w-7 flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                       title="Delete plan"
+                      disabled={!canDelete}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

@@ -15,8 +15,21 @@ import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 import { useEquipment } from "@/app/equipment/useEquipment";
 import { EquipmentForm } from "@/app/equipment/EquipmentForm";
 import { EquipmentDoc } from "@/app/equipment/EquipmentTypes";
+import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+
+const { can } = equipmentCapabilities;
 
 export function EquipmentCRUD() {
+  return (
+    <GatedPanel requirement={can.equipmentDefinitions.read}>
+      <EquipmentEditor />
+    </GatedPanel>
+  );
+}
+
+// Mounts only once the read gate is open, so its load never fires for a user who may not read.
+function EquipmentEditor() {
   useEquipment({ autoLoad: true });
   const equipmentDocs = useSelector(equipmentSelect.equipmentDocs);
 

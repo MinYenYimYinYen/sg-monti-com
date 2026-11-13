@@ -5,6 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import React from "react";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
+
+const { can } = schedulingCapabilities;
 
 export default function DailyInventoryLayout({
   children,
@@ -30,7 +34,9 @@ export default function DailyInventoryLayout({
           </Link>
         )}
       </div>
-      <ScrollArea className="flex-1">{children}</ScrollArea>
+      <ScrollArea className="flex-1">
+        <GatedPanel requirement={can.loadouts.read}>{children}</GatedPanel>
+      </ScrollArea>
     </Container>
   );
 }

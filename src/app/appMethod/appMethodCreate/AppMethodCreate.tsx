@@ -31,6 +31,10 @@ import { loadSavedAppMethod } from "./loadSavedAppMethod";
 import { AppDispatch } from "@/store";
 import { AppMethodDeleteSheet } from "../AppMethodDeleteSheet";
 import { SolveForSelector } from "./components/SolveForSelector";
+import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = appMethodCapabilities;
 
 interface AppMethodCreateProps {
   method?: AppMethod;
@@ -42,6 +46,9 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const { deselectCard} = useCardStack();
   const { upsertAppMethod } = useAppMethod({});
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.appMethods.write);
+  const canDelete = allows(can.appMethods.delete);
   const {
     productType,
     setProductType,
@@ -183,7 +190,7 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
           {/* Save Actions */}
           <div className="flex gap-2 items-center">
             <SaveButton
-              disabled={!canSave}
+              disabled={!canSave || !canWrite}
               status={saveStatus}
               onClick={handleSave}
               onSuccessComplete={handleSuccessComplete}
@@ -204,6 +211,7 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
                 <Button
                   variant="destructive"
                   intensity={"soft"}
+                  disabled={!canDelete}
                   onClick={() => setDeleteSheetOpen(true)}
                   className="w-full"
                 >

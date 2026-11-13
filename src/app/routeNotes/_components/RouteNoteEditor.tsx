@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useSelector } from "react-redux";
 import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
+import { routeNoteCapabilities } from "@/app/routeNotes/routeNoteCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { MentionEditor } from "@/components/MentionEditor/MentionEditor";
 import {
   Dialog,
@@ -24,6 +27,8 @@ import { MentionEditorUtils } from "@/components/MentionEditor/MentionEditorUtil
 // No parsers needed for an empty var set.
 const EMPTY_VARS = {} as Record<string, never>;
 const EMPTY_PARSERS = {} as Record<string, never>;
+
+const { can } = routeNoteCapabilities;
 
 // ---------------------------------------------------------------------------
 // Props
@@ -56,6 +61,9 @@ export function RouteNoteEditor({
   onSaveAction,
   onDeleteAction,
 }: RouteNoteEditorProps) {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.routeNotes.write);
+  const canDelete = allows(can.routeNotes.delete);
   const isNew = note === null;
   const schedDate = note?.schedDate ?? defaults.schedDate;
   const employeeId = note?.employeeId ?? defaults.employeeId;
@@ -180,6 +188,8 @@ export function RouteNoteEditor({
               variant="destructive"
               intensity="soft"
               onClick={handleDelete}
+              disabled={!canDelete}
+              title={canDelete ? undefined : "You do not have access to delete notes"}
               className="mr-auto"
             >
               Delete
@@ -192,7 +202,8 @@ export function RouteNoteEditor({
             variant="primary"
             intensity="solid"
             onClick={handleSave}
-            disabled={!noteHtml.trim()}
+            disabled={!noteHtml.trim() || !canWrite}
+            title={canWrite ? undefined : "You do not have access to save notes"}
           >
             Save
           </Button>

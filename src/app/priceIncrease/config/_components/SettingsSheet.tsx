@@ -21,9 +21,16 @@ import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seaso
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { FlagRounding } from "@/app/priceIncrease/settings/PriceIncreaseSettingsTypes";
 import { InlinePlanEditor } from "@/app/priceIncrease/config/_components/InlinePlanEditor";
+import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = priceIncreaseCapabilities;
 
 export function SettingsSheet() {
   const dispatch = useAppDispatch();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.increaseSettings.write);
+  const canWritePlans = allows(can.increasePlans.write);
   const draft = useSelector(priceIncreaseConfigSelect.settingsDraft);
   const isOpen = useSelector(priceIncreaseConfigSelect.settingsSheetOpen);
   const isDirty = useSelector(priceIncreaseConfigSelect.settingsIsDirty);
@@ -151,6 +158,7 @@ export function SettingsSheet() {
                   size="icon"
                   variant="primary"
                   intensity="soft"
+                  disabled={!canWritePlans}
                   onClick={handleNewPlan}
                   title="Create new plan"
                 >
@@ -284,7 +292,7 @@ export function SettingsSheet() {
             variant="primary"
             intensity="solid"
             onClick={handleSave}
-            disabled={!draft.label || !draft.progCodeId || !draft.seasonIncreasesId}
+            disabled={!canWrite || !draft.label || !draft.progCodeId || !draft.seasonIncreasesId}
           >
             Save
           </Button>

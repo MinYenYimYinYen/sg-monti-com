@@ -5,10 +5,12 @@ import { PrepayDoc, PrepayRaw } from "@/app/realGreen/prepay/PrepayTypes";
 import { extendPrepays, remapPrepays } from "@/app/realGreen/prepay/_lib/prepayServerFunc";
 import { DataResponse } from "@/lib/api/types/responses";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
+import { prepayCapabilities } from "@/app/realGreen/prepay/prepayCapabilities";
 
+const { can } = prepayCapabilities;
 const handlers: HandlerMap<PrepayContract> = {
   getAll: {
-    roles: ["office", "admin"],
+    capability: can.prepays.read,
     handler: async () => {
       const rawPrepays = await rgApi<PrepayRaw[]>({
         path: "/PrepayCodes/Available/true",

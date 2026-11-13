@@ -3,6 +3,7 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { CustFlagContract } from "@/app/realGreen/custFlag/api/CustFlagContract";
 import { CustFlagRefreshResult, FlagIdCustIds } from "@/app/realGreen/custFlag/_lib/CustFlagTypes";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
+import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
 
 export type CustFlagIdsSearch = {
   flagID: number;
@@ -22,9 +23,10 @@ type RgCustomerFlag = {
   };
 };
 
+const { can } = custFlagCapabilities;
 const handlers: HandlerMap<CustFlagContract> = {
   loadFlagIdCustIds: {
-    roles: ["office", "admin", "tech"],
+    capability: can.customerFlags.read,
     handler: async ({ searches }) => {
       const promises = searches.map((search) =>
         rgApi<number[]>({
@@ -45,7 +47,7 @@ const handlers: HandlerMap<CustFlagContract> = {
   },
 
   refreshCustFlags: {
-    roles: ["office", "admin", "tech"],
+    capability: can.customerFlags.read,
     handler: async ({ custId, flagIdsInState }) => {
       // Fetch all flags currently on this customer from RealGreen
       const allFlags = await rgApi<RgCustomerFlag[]>({

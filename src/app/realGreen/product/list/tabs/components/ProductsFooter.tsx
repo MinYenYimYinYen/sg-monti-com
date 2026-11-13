@@ -5,23 +5,38 @@ import { AppMethodCRUD } from "@/app/appMethod/AppMethodCRUD";
 import { EquipmentCRUD } from "@/app/equipment/EquipmentCRUD";
 import { EquipmentPackageCRUD } from "@/app/equipment/equipmentPackage/EquipmentPackageCRUD";
 import React, { useState } from "react";
+import { useSelector } from "react-redux";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
+import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
 
 export function ProductsFooter() {
   const [isAppMethodCRUDOpen, setIsAppMethodCRUDOpen] = useState(false);
   const [isEquipmentCRUDOpen, setIsEquipmentCRUDOpen] = useState(false);
   const [isPackageCRUDOpen, setIsPackageCRUDOpen] = useState(false);
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canOpenAppMethods = allows(appMethodCapabilities.can.appMethods.read);
+  const canOpenEquipment = allows(equipmentCapabilities.can.equipmentDefinitions.read);
+  const canOpenPackages = allows(equipmentCapabilities.can.equipmentPackages.read);
 
+  // A badge a user cannot read is hidden, so no one opens a modal that only says they have no access.
   return (
     <FooterPortal>
-      <Badge variant={"outline"} onClick={() => setIsAppMethodCRUDOpen(true)}>
-        Application Methods
-      </Badge>
-      <Badge variant={"outline"} onClick={() => setIsEquipmentCRUDOpen(true)}>
-        Equipment
-      </Badge>
-      <Badge variant={"outline"} onClick={() => setIsPackageCRUDOpen(true)}>
-        Equipment Packages
-      </Badge>
+      {canOpenAppMethods && (
+        <Badge variant={"outline"} onClick={() => setIsAppMethodCRUDOpen(true)}>
+          Application Methods
+        </Badge>
+      )}
+      {canOpenEquipment && (
+        <Badge variant={"outline"} onClick={() => setIsEquipmentCRUDOpen(true)}>
+          Equipment
+        </Badge>
+      )}
+      {canOpenPackages && (
+        <Badge variant={"outline"} onClick={() => setIsPackageCRUDOpen(true)}>
+          Equipment Packages
+        </Badge>
+      )}
 
       <Modal
         title="Application Methods"

@@ -2,6 +2,8 @@
 
 import { useSelector } from "react-redux";
 import { qboAccountSelect } from "@/app/qbo/account/qboAccountSelect";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
 import { importMapSelect } from "@/app/qbo/importCCTxn/importMapSelect";
 import { importCCTxnMappingSelect } from "@/app/qbo/importCCTxn/importCCTxnMappingSelect";
 import { useImportRow } from "@/app/qbo/importCCTxn/rows/useImportRow";
@@ -29,13 +31,17 @@ export function RowAccountPicker({
   const mapping = useSelector(importCCTxnMappingSelect.merchantMappingMap).get(row.merchantKey) ?? null;
   const accountChoices = useSelector(importMapSelect.accountChoices);
   const accountMap = useSelector(qboAccountSelect.accountMap);
+  const canChooseAccount = useSelector(userCapabilitiesSelect.allows)(
+    importCCTxnCapabilities.can.importRows.write,
+  );
   const { setAccount } = useImportRow({ autoLoad: false });
 
   // Without a mapping there is no vendor or default yet. The Map tab comes first.
   if (!mapping) return null;
 
   const accountId = resolveRowAccountId({ rowAccountId: row.accountId, mapping }) ?? "";
-  const isEditable = row.status === "pending" || row.status === "failed";
+  // Without the write, the account is shown as text instead of a picker that would be refused.
+  const isEditable = canChooseAccount && (row.status === "pending" || row.status === "failed");
 
   const handleSelect = (selectedAccountId: string) => {
     setAccount({

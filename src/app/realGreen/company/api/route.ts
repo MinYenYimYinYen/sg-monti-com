@@ -4,10 +4,12 @@ import { CompanyContract } from "@/app/realGreen/company/api/CompanyContract";
 import { CompanyRaw } from "@/app/realGreen/company/_lib/CompanyTypes";
 import { remapCompany } from "@/app/realGreen/company/_lib/serverCompanyFunc";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
+import { companyCapabilities } from "@/app/realGreen/company/companyCapabilities";
 
+const { can } = companyCapabilities;
 const handlers: HandlerMap<CompanyContract> = {
   getAll: {
-    roles: ["office", "admin"],
+    capability: can.companies.read,
     handler: async () => {
       const rawCompanies = await rgApi<CompanyRaw[]>({
         path: "/Company",

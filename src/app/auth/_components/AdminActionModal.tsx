@@ -16,6 +16,10 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/style/components/tabs";
+import { authCapabilities } from "@/app/auth/authCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = authCapabilities;
 
 interface AdminActionModalProps {
   isOpen: boolean;
@@ -110,6 +114,8 @@ function PendingUsersList({ users }: { users: User[] }) {
 }
 
 function RoleSelector({ onApprove }: { onApprove: (role: Role) => void }) {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.accessRequests.write);
   const [selectedRole, setSelectedRole] = useState<Role>("tech");
 
   return (
@@ -117,6 +123,7 @@ function RoleSelector({ onApprove }: { onApprove: (role: Role) => void }) {
       <select
         value={selectedRole}
         onChange={(e) => setSelectedRole(e.target.value as Role)}
+        disabled={!canWrite}
         className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:border-primary focus:outline-none"
       >
         {ROLES.filter((r) => r !== "applied" && r !== "public").map((role) => (
@@ -125,7 +132,7 @@ function RoleSelector({ onApprove }: { onApprove: (role: Role) => void }) {
           </option>
         ))}
       </select>
-      <Button size="sm" onClick={() => onApprove(selectedRole)}>
+      <Button size="sm" disabled={!canWrite} onClick={() => onApprove(selectedRole)}>
         Approve
       </Button>
     </div>
@@ -134,6 +141,8 @@ function RoleSelector({ onApprove }: { onApprove: (role: Role) => void }) {
 
 function PendingResetsList({ requests }: { requests: PasswordResetRequest[] }) {
   const { resolvePasswordReset } = useAuth();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.accessRequests.write);
   const [tempPassword, setTempPassword] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -175,7 +184,7 @@ function PendingResetsList({ requests }: { requests: PasswordResetRequest[] }) {
               />
               <Button
                 size="sm"
-                disabled={!tempPassword}
+                disabled={!tempPassword || !canWrite}
                 onClick={() => {
                   resolvePasswordReset({
                     userName: req.userName,
@@ -202,6 +211,7 @@ function PendingResetsList({ requests }: { requests: PasswordResetRequest[] }) {
             <Button
               size="sm"
               variant="outline"
+              disabled={!canWrite}
               onClick={() => setActiveId(req.userName)}
             >
               Reset Password

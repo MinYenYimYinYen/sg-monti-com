@@ -5,6 +5,9 @@ import { AssignmentPlan, GroupAssignment, Scenario } from "@/app/pace/assignment
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { paceCapabilities } from "@/app/pace/paceCapabilities";
+
+const { can } = paceCapabilities;
 
 // ---------------------------------------------------------------------------
 // Migration helper — transforms old-format plans to new format.
@@ -62,7 +65,7 @@ function migrateScenario(raw: Record<string, unknown>): Scenario {
 
 const handlers: HandlerMap<AssignmentPlanContract> = {
   getScenarios: {
-    roles: ["admin", "office", "tech"],
+    capability: can.assignmentScenarios.read,
     handler: async () => {
       await connectToMongoDB();
       const raw = await ScenarioModel.find().lean() as unknown as Record<string, unknown>[];
@@ -72,7 +75,7 @@ const handlers: HandlerMap<AssignmentPlanContract> = {
   },
 
   upsertScenario: {
-    roles: ["admin"],
+    capability: can.assignmentScenarios.write,
     handler: async ({ name, createdAt, updatedAt, isActive, plans }) => {
       await connectToMongoDB();
       const result: Scenario = await ScenarioModel.findOneAndUpdate(
@@ -85,7 +88,7 @@ const handlers: HandlerMap<AssignmentPlanContract> = {
   },
 
   deleteScenario: {
-    roles: ["admin"],
+    capability: can.assignmentScenarios.delete,
     handler: async ({ name }) => {
       await connectToMongoDB();
       await ScenarioModel.deleteOne({ name });
@@ -94,7 +97,7 @@ const handlers: HandlerMap<AssignmentPlanContract> = {
   },
 
   activateScenario: {
-    roles: ["admin"],
+    capability: can.assignmentScenarios.write,
     handler: async ({ name }) => {
       await connectToMongoDB();
       await ScenarioModel.updateMany({}, { isActive: false });

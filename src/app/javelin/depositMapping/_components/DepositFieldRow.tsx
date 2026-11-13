@@ -16,11 +16,18 @@ import { depositFieldMappingSelect } from "@/app/javelin/depositMapping/depositF
 import { useDepositFieldMapping } from "@/app/javelin/depositMapping/useDepositFieldMapping";
 import { DepositFieldLink } from "@/app/javelin/depositMapping/DepositFieldMappingTypes";
 import { LinkStatusBadge } from "@/app/javelin/depositMapping/_components/linkStatusBadge";
+import { depositMappingCapabilities } from "@/app/javelin/depositMapping/depositMappingCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 const noSuggestions = new Set<string>();
+const { can } = depositMappingCapabilities;
 
 /** One deposit link (a WorkWave field or a check deposit account) and its QuickBooks account. Each change saves at once. */
 export function DepositFieldRow({ link }: { link: DepositFieldLink }) {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.depositFieldLinks.write);
+  const canDelete = allows(can.depositFieldLinks.delete);
+
   const { field, qboAccount, status, nameType, defaultNameId } = link;
   const qboAccountOptions = useSelector(accountSelect.qboAccountOptions);
   const customerOptions = useSelector(accountSelect.customerOptions);
@@ -72,6 +79,7 @@ export function DepositFieldRow({ link }: { link: DepositFieldLink }) {
                 selectedLabel={selectedLabel}
                 placeholder="Choose account"
                 onSelectAction={handleSelectAccount}
+                disabled={!canWrite}
               />
             </div>
             <Button
@@ -79,7 +87,7 @@ export function DepositFieldRow({ link }: { link: DepositFieldLink }) {
               intensity="ghost"
               size="icon"
               aria-label="Remove link"
-              disabled={!mappedQboAccountId}
+              disabled={!mappedQboAccountId || !canDelete}
               onClick={() => removeLink(field)}
             >
               <X />
@@ -105,6 +113,7 @@ export function DepositFieldRow({ link }: { link: DepositFieldLink }) {
                       defaultNameId: nameId,
                     })
                   }
+                  disabled={!canWrite}
                 />
               </div>
               {/* A customer is required on Accounts Receivable, so only the optional vendor can be cleared. */}
@@ -114,7 +123,7 @@ export function DepositFieldRow({ link }: { link: DepositFieldLink }) {
                   intensity="ghost"
                   size="icon"
                   aria-label="Remove default vendor"
-                  disabled={!defaultNameId}
+                  disabled={!defaultNameId || !canWrite}
                   onClick={() => upsertLink({ field, qboAccountId: mappedQboAccountId })}
                 >
                   <X />

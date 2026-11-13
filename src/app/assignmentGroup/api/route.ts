@@ -5,10 +5,13 @@ import { AssignmentGroupModel } from "@/app/assignmentGroup/AssignmentGroupModel
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+
+const { can } = assignmentGroupCapabilities;
 
 const handlers: HandlerMap<AssignmentGroupContract> = {
   getGroups: {
-    roles: ["admin", "office", "tech"],
+    capability: can.assignmentGroups.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await AssignmentGroupModel.find({}).lean();
@@ -17,7 +20,7 @@ const handlers: HandlerMap<AssignmentGroupContract> = {
   },
 
   upsertGroup: {
-    roles: ["admin", "office"],
+    capability: can.assignmentGroups.write,
     handler: async (group) => {
       await connectToMongoDB();
       const saved = await AssignmentGroupModel.findOneAndUpdate(
@@ -30,7 +33,7 @@ const handlers: HandlerMap<AssignmentGroupContract> = {
   },
 
   deleteGroup: {
-    roles: ["admin", "office"],
+    capability: can.assignmentGroups.delete,
     handler: async ({ groupId }) => {
       await connectToMongoDB();
       await AssignmentGroupModel.deleteOne({ groupId });

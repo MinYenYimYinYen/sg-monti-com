@@ -14,37 +14,57 @@ import { assignmentActions } from "@/app/assignment/assignmentSlice";
 import { assignmentSelect } from "@/app/assignment/assignmentSelect";
 import { useByAssignmentCustomers } from "@/app/realGreen/customer/hooks/useByAssignmentCustomers";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
+import { SchedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 
-export function useLoadoutPageDeps({ routeDate }: { routeDate: string | null }) {
+/**
+ * `canLoad` comes from the page, because hooks expose actions only and do not select. Every hook
+ * is still called on every render, in the same order: a flag only turns its load off.
+ */
+export function useLoadoutPageDeps({
+  routeDate,
+  canLoad,
+}: {
+  routeDate: string | null;
+  canLoad: SchedulingCanLoad;
+}) {
   const dispatch = useAppDispatch();
-  const { loadByServIds } = useByAssignmentCustomers();
+  const { loadByServIds } = useByAssignmentCustomers({ canLoad: canLoad.customers });
 
   useCustomerContext({ contexts: ["byAssignment"] });
-  useEmployee({ autoLoad: true });
-  useEquipment({ autoLoad: true });
-  useEquipmentPackage({ autoLoad: true });
-  useProgServ({ autoLoad: true });
-  useProduct({ autoLoad: true });
-  useUnitConfig({ autoLoad: true });
+  useEmployee({ autoLoad: true, canLoad: canLoad.employees });
+  useEquipment({ autoLoad: true, canLoad: canLoad.equipment });
+  useEquipmentPackage({ autoLoad: true, canLoad: canLoad.equipmentPackages });
+  useProgServ({
+    autoLoad: true,
+    canLoad: { progCodes: canLoad.progCodes, servCodes: canLoad.servCodes },
+  });
+  useProduct({
+    autoLoad: true,
+    canLoad: {
+      products: canLoad.products,
+      unitConversions: canLoad.unitConversions,
+      appMethods: canLoad.appMethods,
+    },
+  });
+  useUnitConfig({ autoLoad: true, canLoad: canLoad.unitConversions });
 
-
-  useGlobalSettings({ autoLoad: true });
+  useGlobalSettings({ autoLoad: true, canLoad: canLoad.globalSettings });
   const season = useSelector(globalSettingsSelect.season);
 
   // Fetch available dates for the date picker on mount (once season is known)
   useEffect(() => {
-    if (!season) return;
+    if (!canLoad.assignments || !season) return;
     dispatch(
       assignmentActions.getAvailableDates({
         params: { season },
         config: { staleTime: realGreenConst.paramTypesCacheTime },
       }),
     );
-  }, [dispatch, season]);
+  }, [canLoad.assignments, dispatch, season]);
 
   // When routeDate changes, fetch all assignments for that date
   useEffect(() => {
-    if (!routeDate || !season) return;
+    if (!canLoad.assignments || !routeDate || !season) return;
     dispatch(
       assignmentActions.getBySchedDate({
         params: { schedDate: routeDate },
@@ -54,7 +74,7 @@ export function useLoadoutPageDeps({ routeDate }: { routeDate: string | null }) 
         },
       }),
     );
-  }, [dispatch, routeDate, season]);
+  }, [canLoad.assignments, dispatch, routeDate, season]);
 
   // Once we have servIds for the date, fetch the full customer/service data
   const servIdsForDate = useSelector(assignmentSelect.servIdsForDate(routeDate ?? ""));

@@ -1,13 +1,17 @@
 import { buildRegistry } from "@/permission/buildRegistry";
 import type { BundleGrants, UserGrants } from "@/permission/logic/permissionLogicTypes";
-import { custFlagCapabilities, widgetCapabilities } from "./permissionFixtures";
+import { custFlagCapabilities, reportCapabilities, widgetCapabilities } from "./permissionFixtures";
 
 // Test registry: custFlag.read/write (realGreen) and widgetManagement widgets read/write/delete
 // plus preferences read/write/delete/readAny.
 export const registry = buildRegistry([custFlagCapabilities, widgetCapabilities]);
 
+// The same plus `reports`, whose capabilities declare `requires` on the other two features.
+export const registryWithReports = buildRegistry([custFlagCapabilities, widgetCapabilities, reportCapabilities]);
+
 export const flagCan = custFlagCapabilities.can;
 export const widgetCan = widgetCapabilities.can;
+export const reportCan = reportCapabilities.can;
 
 /** Reads only. */
 export const baselineBundle: BundleGrants = {

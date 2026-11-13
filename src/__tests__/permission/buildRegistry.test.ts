@@ -20,7 +20,7 @@ describe("buildRegistry: allCapabilities", () => {
   it("is empty for no features", () => {
     const empty = buildRegistry([]);
     expect(empty.allCapabilities).toEqual([]);
-    expect(empty.byFeature).toEqual({});
+    expect(empty.byGroup).toEqual([]);
     expect(empty.has("custFlag.custFlags.realGreen.read")).toBe(false);
   });
 
@@ -73,7 +73,13 @@ describe("buildRegistry: has (the unknown-string filter)", () => {
 describe("buildRegistry: describe", () => {
   it("breaks a native capability into its parts, with no source", () => {
     const description = registry.describe("widgetManagement.preferences.readAny");
-    expect(description).toEqual({ featureKey: "widgetManagement", resourceKey: "preferences", verb: "readAny" });
+    expect(description).toEqual({
+      featureKey: "widgetManagement",
+      resourceKey: "preferences",
+      verb: "readAny",
+      groupKey: "widgetManagement",
+      groupName: "widgetManagement",
+    });
     expect(description).not.toHaveProperty("source");
   });
 
@@ -83,6 +89,8 @@ describe("buildRegistry: describe", () => {
       resourceKey: "custFlags",
       source: "realGreen",
       verb: "write",
+      groupKey: "custFlag",
+      groupName: "custFlag",
     });
   });
 
@@ -92,11 +100,15 @@ describe("buildRegistry: describe", () => {
   });
 });
 
-describe("buildRegistry: byFeature", () => {
-  it("groups capabilities by feature key", () => {
-    expect(Object.keys(registry.byFeature)).toEqual(["custFlag", "widgetManagement"]);
-    expect(registry.byFeature.custFlag).toEqual(custFlagCapabilities.capabilities);
-    expect(registry.byFeature.widgetManagement).toEqual(widgetCapabilities.capabilities);
+describe("buildRegistry: byGroup", () => {
+  it("makes a bare feature a group of one, named by its key", () => {
+    expect(registry.byGroup.map((group) => group.key)).toEqual(["custFlag", "widgetManagement"]);
+    expect(registry.byGroup[0]).toEqual({
+      key: "custFlag",
+      name: "custFlag",
+      capabilities: custFlagCapabilities.capabilities,
+    });
+    expect(registry.byGroup[1].capabilities).toEqual(widgetCapabilities.capabilities);
   });
 
   it("keeps a feature whose capabilities are all public, with an empty list", () => {
@@ -105,7 +117,7 @@ describe("buildRegistry: byFeature", () => {
       resources: { notices: { shape: "collection", verbs: ["read"] } },
       public: { notices: ["read"] },
     });
-    expect(buildRegistry([allPublic]).byFeature).toEqual({ notices: [] });
+    expect(buildRegistry([allPublic]).byGroup).toEqual([{ key: "notices", name: "notices", capabilities: [] }]);
   });
 });
 

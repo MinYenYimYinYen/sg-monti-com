@@ -8,6 +8,10 @@ import { Input } from "@/style/components/input";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { UnsavedServCodeChanges } from "@/app/realGreen/progServ/_lib/types/ProgServState";
 import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
+
+const { can } = progServCapabilities;
 
 type ServCodeCallAheadRowProps = {
   servCodeId: string;
@@ -29,6 +33,7 @@ function buildDocProps(doc: ServCodeDoc): UnsavedServCodeChanges["original"] {
 export function ServCodeCallAheadRow({ servCodeId }: ServCodeCallAheadRowProps) {
   const { updateServCode, saveServCodeChanges } = useProgServ({});
   const doc = useSelector(servCodeLookup.docById(servCodeId));
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.servCodeDocProps.write);
 
   const [tag, setTag] = useState(doc?.callAheadTag ?? "");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -81,7 +86,7 @@ export function ServCodeCallAheadRow({ servCodeId }: ServCodeCallAheadRowProps) 
       <SaveButton
         status={saveStatus}
         onClick={handleSave}
-        disabled={!hasChanges}
+        disabled={!hasChanges || !canWrite}
         onSuccessComplete={handleSuccessComplete}
       >
         Save

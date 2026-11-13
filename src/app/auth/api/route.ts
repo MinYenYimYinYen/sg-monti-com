@@ -24,7 +24,6 @@ import { AUTH_CONST } from "@/app/auth/_lib/authConst";
 import { CheckedId } from "@/app/auth/_types/authTypes";
 import PasswordResetRequestModel from "@/app/auth/_models/PasswordResetRequestModel";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
-import { ROLES } from "@/lib/api/types/roles";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { exactMatchIgnoreCase, isValidUserName, USER_NAME_RULE_MESSAGE } from "@/app/auth/_lib/userNameUtils";
 import { validateCreateUser } from "@/app/auth/_lib/userValidation";
@@ -42,15 +41,21 @@ import { UserCapabilitiesModel } from "@/app/permission/userCapabilities/UserCap
 import { assertCurrentUserPassword } from "@/app/syncUtils/_lib/verifyCurrentUserPassword";
 import { judgeUserDeletion } from "@/app/auth/_lib/userDeletion";
 import { deleteUserReferences } from "@/app/auth/_lib/deleteUserReferences";
+import { authCapabilities } from "@/app/auth/authCapabilities";
+
+const { can } = authCapabilities;
 
 /**
  * 1. DEFINE HANDLERS
- * Enforces strict typing: You MUST define 'roles' and 'handler'
+ * Enforces strict typing: You MUST define a gate ('capability') and 'handler'
  * for every operation in AuthContract.
+ *
+ * 'public' ops need no capability. Those that act on the signed-in user (checkAuth, refresh,
+ * confirmPassword, changePassword) verify the cookie themselves and refuse a missing session.
  */
 const handlers: HandlerMap<AuthContract> = {
   checkEligibility: {
-    roles: ["public"],
+    capability: "public",
     handler: async ({ saId }) => {
       await connectToMongoDB();
 
@@ -79,7 +84,7 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   register: {
-    roles: ["public"],
+    capability: "public",
     handler: async (params) => {
       await connectToMongoDB();
       const { password, saId, ...rest } = params;
@@ -249,7 +254,7 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   login: {
-    roles: ["public"],
+    capability: "public",
     handler: async ({ userName, password }) => {
       await connectToMongoDB();
 
@@ -308,7 +313,7 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   logout: {
-    roles: ["public"],
+    capability: "public",
     handler: async () => {
       const cookieStore = await cookies();
       cookieStore.delete(AUTH_CONST.COOKIE.ACCESS_TOKEN);
@@ -317,7 +322,7 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   refresh: {
-    roles: ["public"],
+    capability: "public",
     handler: async () => {
       const cookieStore = await cookies();
       const refreshToken = cookieStore.get(AUTH_CONST.COOKIE.REFRESH_TOKEN);
@@ -354,7 +359,7 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   checkAuth: {
-    roles: ["public"], // We verify manually
+    capability: "public", // We verify manually
     handler: async () => {
       const cookieStore = await cookies();
       const token = cookieStore.get(AUTH_CONST.COOKIE.ACCESS_TOKEN);
@@ -387,7 +392,7 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   requestPasswordReset: {
-    roles: ["public"],
+    capability: "public",
     handler: async ({ userName }) => {
       await connectToMongoDB();
 
@@ -418,7 +423,7 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   resolvePasswordReset: {
-    roles: ["admin"],
+    capability: can.accessRequests.write,
     handler: async ({ userName, tempPassword }) => {
       await connectToMongoDB();
 
@@ -472,7 +477,7 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   getPendingActions: {
-    roles: ["admin"],
+    capability: can.accessRequests.read,
     handler: async () => {
       await connectToMongoDB();
 
@@ -502,7 +507,8 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   approveUser: {
-    roles: ["admin"],
+    // Sets a role, which still gates every route not yet migrated, so this can make someone an admin.
+    capability: can.accessRequests.write,
     handler: async ({ userName, role }) => {
       await connectToMongoDB();
 
@@ -530,8 +536,8 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   confirmPassword: {
-    // Allow any authenticated role to confirm their password
-    roles: [...ROLES, "applied"],
+    // Any signed-in user, applied users included. The handler verifies the cookie itself.
+    capability: "public",
     handler: async ({ password }) => {
       const cookieStore = await cookies();
       const token = cookieStore.get(AUTH_CONST.COOKIE.ACCESS_TOKEN);
@@ -565,8 +571,8 @@ const handlers: HandlerMap<AuthContract> = {
     },
   },
   changePassword: {
-    // Allow any authenticated role to change their password
-    roles: [...ROLES, "applied"],
+    // Any signed-in user, applied users included. The handler verifies the cookie itself.
+    capability: "public",
     handler: async ({ newPassword }) => {
       const cookieStore = await cookies();
       const token = cookieStore.get(AUTH_CONST.COOKIE.ACCESS_TOKEN);

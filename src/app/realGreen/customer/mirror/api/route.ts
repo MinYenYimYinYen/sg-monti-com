@@ -21,6 +21,7 @@ import { runDeltaSync } from "@/app/realGreen/customer/sync/runDeltaSync";
 import { recordMirrorQuery } from "@/app/realGreen/syncMetadata/syncMetadataFunc";
 import { assertMirrorAvailable } from "@/app/realGreen/syncLock/syncLockFunc";
 import { AppError } from "@/lib/errors/AppError";
+import { customerCapabilities } from "@/app/realGreen/customer/customerCapabilities";
 
 // ---------------------------------------------------------------------------
 // Filter Translation
@@ -186,9 +187,10 @@ async function executePlan(
 // Route Handler
 // ---------------------------------------------------------------------------
 
+const { can } = customerCapabilities;
 const handlers: HandlerMap<CustomerMirrorContract> = {
   getMirrorCustomers: {
-    roles: ["admin", "office", "tech"],
+    capability: can.customers.read,
     handler: async ({ plan, syncFirst }) => {
       console.log("[mirror] getMirrorCustomers handler triggered with plan steps:", plan.map(s => s.stepName));
       await connectToMongoDB();

@@ -5,9 +5,12 @@ import type { PrepayConfig } from "../prepayConfigTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { assertRole } from "@/app/auth/_lib/assertRole";
+import { loadVerifiedCaller } from "@/app/permission/_lib/capabilityLoaders";
 import { AppError } from "@/lib/errors/AppError";
 import { headers } from "next/headers";
+import { prepayLettersCapabilities } from "@/app/prepayLetters/prepayLettersCapabilities";
+
+const { can } = prepayLettersCapabilities;
 
 /** Reads the current user's saId from the proxy-injected header. */
 async function getCurrentUserSaId(): Promise<string> {
@@ -33,19 +36,18 @@ function makeConfigId(name: string, saId: string): string {
   return `pc__${slug(saId)}__${slug(name)}`;
 }
 
-/** Returns true if the current request's user has the admin role. */
-async function isCurrentUserAdmin(): Promise<boolean> {
-  try {
-    await assertRole(["admin"]);
-    return true;
-  } catch {
-    return false;
-  }
+/**
+ * The one override of ownership: a confirmed superuser may delete anyone's config. Verified from
+ * the cookie and the user document, never from an identity header.
+ */
+async function isCurrentUserSuperUser(): Promise<boolean> {
+  const caller = await loadVerifiedCaller();
+  return caller.isSuperUser;
 }
 
 const handlers: HandlerMap<PrepayConfigContract> = {
   getConfigs: {
-    roles: ["admin", "office", "tech"],
+    capability: can.prepayConfigs.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await PrepayConfigModel.find().lean();
@@ -54,7 +56,7 @@ const handlers: HandlerMap<PrepayConfigContract> = {
   },
 
   saveConfig: {
-    roles: ["admin", "office", "tech"],
+    capability: can.prepayConfigs.write,
     handler: async ({ config }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
@@ -80,7 +82,7 @@ const handlers: HandlerMap<PrepayConfigContract> = {
   },
 
   deleteConfig: {
-    roles: ["admin", "office", "tech"],
+    capability: can.prepayConfigs.delete,
     handler: async ({ configId }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
@@ -94,8 +96,8 @@ const handlers: HandlerMap<PrepayConfigContract> = {
         });
       }
 
-      const isAdmin = await isCurrentUserAdmin();
-      if (!isAdmin && existing.saId !== saId) {
+      const isSuperUser = await isCurrentUserSuperUser();
+      if (!isSuperUser && existing.saId !== saId) {
         throw new AppError({
           message: "You do not own this config",
           type: "AUTH_ERROR",

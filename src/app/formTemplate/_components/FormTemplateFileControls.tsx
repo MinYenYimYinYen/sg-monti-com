@@ -8,6 +8,8 @@ import { formTemplateActions } from "../formTemplateSlice";
 import { makeNewTemplate } from "../formTemplateFactory";
 import { useFormTemplate } from "../useFormTemplate";
 import { authSelect } from "@/app/auth/authSlice";
+import { formTemplateCapabilities } from "../formTemplateCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { FormTemplateOpenSheet } from "./FormTemplateOpenSheet";
 import { EntityFileControls } from "@/components/EntityFileControls/EntityFileControls";
 import { DropdownMenuItem } from "@/style/components/dropdown-menu";
@@ -21,6 +23,8 @@ import {
 } from "@/style/components/dialog";
 import { Button } from "@/style/components/button";
 
+const { can } = formTemplateCapabilities;
+
 type FormTemplateFileControlsProps = {
   /** Data type used for New. Injected so this module never imports the registry. */
   defaultDataType: string;
@@ -33,13 +37,18 @@ export function FormTemplateFileControls({ defaultDataType }: FormTemplateFileCo
   const isDirty = useSelector(formTemplateSelect.isDirty);
   const existingNames = useSelector(formTemplateSelect.existingNames);
   const currentSaId = useSelector(authSelect.user)?.saId ?? "";
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.formTemplates.write);
+  const canDeleteTemplates = allows(can.formTemplates.delete);
   const { saveTemplate, deleteTemplate } = useFormTemplate();
 
   const [openSheetVisible, setOpenSheetVisible] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
-  // Only the owner can delete. The API enforces this; the UI just avoids offering it.
-  const canDelete = !!draft?.templateId && !!currentSaId && draft.saId === currentSaId;
+  // Only the owner can delete. The API enforces this; the UI just avoids offering it. Ownership
+  // is separate from the `delete` capability: the owner still needs both.
+  const canDelete =
+    canDeleteTemplates && !!draft?.templateId && !!currentSaId && draft.saId === currentSaId;
 
   const handleNew = () => {
     dispatch(
@@ -70,7 +79,10 @@ export function FormTemplateFileControls({ defaultDataType }: FormTemplateFileCo
       <EntityFileControls
         activeName={activeName}
         isDirty={isDirty}
-        canSave={!!draft?.templateName.trim()}
+        canSave={canWrite && !!draft?.templateName.trim()}
+        // Save As is a write too, and EntityFileControls has no disabled state for it, so
+        // it is hidden without `write`.
+        supportsMultiple={canWrite}
         existingNames={existingNames}
         onSaveAction={handleSave}
         onSaveAsAction={handleSaveAs}
@@ -99,7 +111,12 @@ export function FormTemplateFileControls({ defaultDataType }: FormTemplateFileCo
             <Button size="sm" variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
               Cancel
             </Button>
-            <Button size="sm" variant="destructive" onClick={handleDelete}>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={!canDelete}
+              onClick={handleDelete}
+            >
               Delete
             </Button>
           </DialogFooter>

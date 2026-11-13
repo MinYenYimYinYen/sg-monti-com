@@ -1,4 +1,4 @@
-import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
+import { useProduct, ProductCanLoad } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { progServActions } from "@/app/realGreen/progServ/_lib/slice/progServSlice";
 import { ProductRuleDoc } from "@/app/realGreen/progServ/_lib/types/ProductRule";
@@ -6,11 +6,13 @@ import { getRuleId } from "@/app/realGreen/progServ/_lib/slice/progServActions";
 
 type UseProductRulesProps = {
   servCodeId: string;
+  /** Passed through to `useProduct`, which this hook loads the product masters with. */
+  canLoad?: ProductCanLoad;
 };
 
-export function useProductRules({ servCodeId }: UseProductRulesProps) {
+export function useProductRules({ servCodeId, canLoad }: UseProductRulesProps) {
   const dispatch = useAppDispatch();
-  useProduct({ autoLoad: true });
+  useProduct({ autoLoad: true, canLoad });
 
   const addProductRule = () => {
     dispatch(progServActions.addProductRule({ servCodeId }));

@@ -14,6 +14,9 @@ import {
   AccordionTrigger,
 } from "@/style/components/accordion";
 import { CallLog, CallLogNote } from "@/app/realGreen/callLog/CallLogTypes";
+import { callLogCapabilities } from "@/app/realGreen/callLog/callLogCapabilities";
+import { customerCapabilities } from "@/app/realGreen/customer/customerCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 export default function CallLogDevPage() {
   const [inputValue, setInputValue] = useState("");
@@ -28,8 +31,16 @@ export default function CallLogDevPage() {
     })
     .build();
 
-  const { lookup } = useSingleCustomer({ queryPlan: callLogDevPlan });
-  const { refreshForCustomer } = useCallLog({ custId: custId ?? undefined });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const { lookup } = useSingleCustomer({
+    queryPlan: callLogDevPlan,
+    canLoad: allows(customerCapabilities.can.customers.read),
+    canRefreshLive: allows(customerCapabilities.can.liveCustomers.read),
+  });
+  const { refreshForCustomer } = useCallLog({
+    custId: custId ?? undefined,
+    canLoad: allows(callLogCapabilities.can.callLogs.read),
+  });
 
   const customer = useSelector(singleCustSelect.customer);
   const callLogsByCustId = useSelector(callLogSelect.callLogsByCustId);

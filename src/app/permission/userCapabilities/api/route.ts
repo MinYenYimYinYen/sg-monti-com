@@ -10,7 +10,7 @@ import {
 } from "@/app/permission/userCapabilities/api/assignmentHelpers";
 import { capabilityManagementCapabilities } from "@/app/permission/capabilityManagementCapabilities";
 import { loadActor } from "@/app/permission/_lib/capabilityLoaders";
-import { assertText } from "@/app/permission/_lib/assertText";
+import { assertText, assertTextList } from "@/app/permission/_lib/assertText";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { AppError } from "@/lib/errors/AppError";
@@ -18,7 +18,7 @@ import { Capability } from "@/permission/PermissionTypes";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
 import { canAssign } from "@/permission/logic/assignmentGuards";
 import { toUserSummary } from "@/permission/logic/userSummary";
-import { addDirect, assignBundle, removeBundle, removeDirect } from "@/permission/logic/userCapabilityLogic";
+import { addDirectMany, assignBundle, removeBundle, removeDirect } from "@/permission/logic/userCapabilityLogic";
 
 const { can } = capabilityManagementCapabilities;
 
@@ -105,23 +105,23 @@ const handlers: HandlerMap<UserCapabilitiesContract> = {
   addDirect: {
     capability: can.userCapabilities.write,
     handler: async (params) => {
-      const capability = assertText({ value: params.capability, label: "Capability" });
+      const capabilities = assertTextList({ value: params.capabilities, label: "Capabilities" });
       const { actor, userName, holdings, bundles } = await loadAssignmentContext({ userName: params.userName });
 
-      const result = addDirect({ user: holdings, capability, bundles, registry: capabilityRegistry });
+      const result = addDirectMany({ user: holdings, capabilities, bundles, registry: capabilityRegistry });
       if (!result.ok) {
         const messages = {
-          unknownCapability: "That capability does not exist.",
-          alreadyDirect: "The user already holds this capability directly.",
-          coveredByBundle: "A bundle the user holds already grants this capability.",
+          unknownCapability: "That capability does not exist",
+          alreadyDirect: "The user already holds this capability directly",
+          coveredByBundle: "A bundle the user holds already grants this capability",
         };
-        throw refusal(messages[result.reason]);
+        throw refusal(`${messages[result.reason]}: ${result.capability}.`);
       }
 
       const allowed = canAssign({
         actorIsSuperUser: actor.isSuperUser,
         actorCapabilities: actor.capabilities,
-        granting: [capability as Capability],
+        granting: capabilities as Capability[],
       });
       if (!allowed.allowed) throw notPermitted(allowed.missing);
 

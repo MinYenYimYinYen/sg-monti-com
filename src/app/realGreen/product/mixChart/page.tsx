@@ -34,6 +34,11 @@ import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfi
 import { ProductsFooter } from "@/app/realGreen/product/list/tabs/components/ProductsFooter";
 import { solverSelect } from "@/app/appMethod/appMethodCreate/selectors/solverSelect";
 import { useSelector as useReduxSelector } from "react-redux";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
+import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
+import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
 
 const DEFAULT_CONFIG: MixChartConfig = {
   equipment: null,
@@ -43,8 +48,26 @@ const DEFAULT_CONFIG: MixChartConfig = {
 };
 
 export default function MixChartPage() {
-  useProduct({ autoLoad: true });
-  useEquipment({ autoLoad: true });
+  return (
+    <GatedPanel requirement={productCapabilities.can.products.read}>
+      <MixChart />
+    </GatedPanel>
+  );
+}
+
+function MixChart() {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  useProduct({
+    autoLoad: true,
+    canLoad: {
+      unitConversions: allows(productCapabilities.can.unitConversions.read),
+      appMethods: allows(appMethodCapabilities.can.appMethods.read),
+    },
+  });
+  useEquipment({
+    autoLoad: true,
+    canLoad: allows(equipmentCapabilities.can.equipmentDefinitions.read),
+  });
   const isClient = useIsClient();
 
   // Chart config — the full mix definition

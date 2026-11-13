@@ -12,9 +12,12 @@ import {
   cleanMongoObject,
 } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { assertRole } from "@/app/auth/_lib/assertRole";
+import { loadVerifiedCaller } from "@/app/permission/_lib/capabilityLoaders";
 import { AppError } from "@/lib/errors/AppError";
 import { headers } from "next/headers";
+import { quickSendCapabilities } from "@/app/quickSend/quickSendCapabilities";
+
+const { can } = quickSendCapabilities;
 
 /** Reads the current user's saId from the proxy-injected header. */
 async function getCurrentUserSaId(): Promise<string> {
@@ -48,14 +51,13 @@ function makeGroupId(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
-/** Helper: checks if the current request's user has the admin role. */
-async function isCurrentUserAdmin(): Promise<boolean> {
-  try {
-    await assertRole(["admin"]);
-    return true;
-  } catch {
-    return false;
-  }
+/**
+ * The one override of ownership: a confirmed superuser may delete or move anyone's template.
+ * Verified from the cookie and the user document, never from an identity header.
+ */
+async function isCurrentUserSuperUser(): Promise<boolean> {
+  const caller = await loadVerifiedCaller();
+  return caller.isSuperUser;
 }
 
 /**
@@ -74,7 +76,7 @@ function normalizeTemplate(doc: StoredTemplateDoc): StoredTemplateDoc {
 
 const handlers: HandlerMap<StoredTemplatesContract> = {
   getTemplates: {
-    roles: ["admin", "office", "tech"],
+    capability: can.storedTemplates.read,
     handler: async () => {
       await connectToMongoDB();
 
@@ -85,7 +87,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   getGroups: {
-    roles: ["admin", "office", "tech"],
+    capability: can.templateGroups.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await TemplateGroupModel.find().lean();
@@ -95,7 +97,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   saveTemplate: {
-    roles: ["admin", "office", "tech"],
+    capability: can.storedTemplates.write,
     handler: async ({ template }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
@@ -121,7 +123,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   deleteTemplate: {
-    roles: ["admin", "office", "tech"],
+    capability: can.storedTemplates.delete,
     handler: async ({ templateId }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
@@ -135,8 +137,8 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
         });
       }
 
-      const isAdmin = await isCurrentUserAdmin();
-      if (!isAdmin && existing.saId !== saId) {
+      const isSuperUser = await isCurrentUserSuperUser();
+      if (!isSuperUser && existing.saId !== saId) {
         throw new AppError({
           message: "You do not own this template",
           type: "AUTH_ERROR",
@@ -150,7 +152,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   createGroup: {
-    roles: ["admin", "office", "tech"],
+    capability: can.templateGroups.write,
     handler: async ({ name }) => {
       await connectToMongoDB();
       const groupId = makeGroupId(name);
@@ -171,7 +173,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   renameGroup: {
-    roles: ["admin"],
+    capability: can.templateGroups.write,
     handler: async ({ groupId, newName }) => {
       await connectToMongoDB();
 
@@ -198,7 +200,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   deleteGroup: {
-    roles: ["admin"],
+    capability: can.templateGroups.delete,
     handler: async ({ groupId }) => {
       await connectToMongoDB();
 
@@ -229,7 +231,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   moveTemplate: {
-    roles: ["admin", "office", "tech"],
+    capability: can.storedTemplates.write,
     handler: async ({ templateId, groupId }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
@@ -243,8 +245,8 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
         });
       }
 
-      const isAdmin = await isCurrentUserAdmin();
-      if (!isAdmin && existing.saId !== saId) {
+      const isSuperUser = await isCurrentUserSuperUser();
+      if (!isSuperUser && existing.saId !== saId) {
         throw new AppError({
           message: "You do not own this template",
           type: "AUTH_ERROR",

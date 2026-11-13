@@ -57,6 +57,8 @@ type QboConnectionCardProps = {
   status: QboConnectionStatus | null;
   testResult: QboConnectionTestResult | null;
   isStarting: boolean;
+  canConnect: boolean;
+  canDisconnect: boolean;
   onConnectAction: () => void;
   onDisconnectAction: () => void;
   onTestAction: () => void;
@@ -66,12 +68,14 @@ export function QboConnectionCard({
   status,
   testResult,
   isStarting,
+  canConnect: mayConnect,
+  canDisconnect,
   onConnectAction,
   onDisconnectAction,
   onTestAction,
 }: QboConnectionCardProps) {
   const isConnected = status?.phase === "connected";
-  const canConnect = status !== null && status.configProblem === null;
+  const canConnect = mayConnect && status !== null && status.configProblem === null;
 
   return (
     <Card>
@@ -122,7 +126,7 @@ export function QboConnectionCard({
           {status && status.phase !== "notConnected" && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" intensity="soft">
+                <Button variant="destructive" intensity="soft" disabled={!canDisconnect}>
                   Disconnect
                 </Button>
               </AlertDialogTrigger>

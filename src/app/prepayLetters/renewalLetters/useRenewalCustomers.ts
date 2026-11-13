@@ -58,9 +58,12 @@ function buildRenewalCustomersPlan(season: number) {
  * The season override exists because next season's services are created in the CRM before
  * globalSettings.season is advanced.
  */
-export function useRenewalCustomers({ seasonOverride }: { seasonOverride?: number } = {}) {
+export function useRenewalCustomers({
+  seasonOverride,
+  canLoadGlobalSettings = true,
+}: { seasonOverride?: number; canLoadGlobalSettings?: boolean } = {}) {
   const dispatch = useAppDispatch();
-  useGlobalSettings({ autoLoad: true });
+  useGlobalSettings({ autoLoad: true, canLoad: canLoadGlobalSettings });
   const globalSeason = useSelector(globalSettingsSelect.season);
   const season = seasonOverride ?? globalSeason;
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());

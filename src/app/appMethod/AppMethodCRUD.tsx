@@ -19,8 +19,21 @@ import { appMethodSelect } from "./appMethodSelect";
 import { useAppMethod } from "./useAppMethod";
 import { AppMethodCreate } from "./appMethodCreate/AppMethodCreate";
 import { useFormFieldValues } from "@/app/appMethod/appMethodCreate/useFormFieldValues";
+import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+
+const { can } = appMethodCapabilities;
 
 export function AppMethodCRUD() {
+  return (
+    <GatedPanel requirement={can.appMethods.read}>
+      <AppMethodEditor />
+    </GatedPanel>
+  );
+}
+
+// Mounts only once the read gate is open, so its load never fires for a user who may not read.
+function AppMethodEditor() {
   useAppMethod({ autoLoad: true });
   const appMethods = useSelector(appMethodSelect.appMethodDocs);
   const {resetForm} = useFormFieldValues()

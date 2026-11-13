@@ -41,11 +41,21 @@ async function loadDeclarations(): Promise<FoundDeclaration[]> {
 }
 
 describe("capabilityRegistry", () => {
-  // Widened to string: with real entries the literal key types would reject a found key.
-  const registeredKeys: string[] = registeredFeatures.map((feature) => feature.declaration.key);
+  // A combined group lists the features it includes through each resource's `origin`, so the
+  // feature keys come from there. A feature registered on its own has no origins and is its own
+  // key. Widened to string: with real entries the literal key types would reject a found key.
+  const registeredGroupKeys: string[] = registeredFeatures.map((feature) => feature.declaration.key);
+  const registeredKeys: string[] = registeredFeatures.flatMap((feature) => [
+    ...new Set(
+      Object.values(feature.declaration.resources).map(
+        (resource: { origin?: { featureKey: string } }) => resource.origin?.featureKey ?? feature.declaration.key,
+      ),
+    ),
+  ]);
 
-  it("builds without a duplicate feature key or capability string", () => {
+  it("builds without a duplicate group key, feature key or capability string", () => {
     expect(() => capabilityRegistry.allCapabilities).not.toThrow();
+    expect(new Set(registeredGroupKeys).size).toBe(registeredGroupKeys.length);
     expect(new Set(registeredKeys).size).toBe(registeredKeys.length);
   });
 

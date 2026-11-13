@@ -20,6 +20,11 @@ import {
 import { ChevronDown } from "lucide-react";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProductSingle } from "@/app/realGreen/product/_lib/types/ProductSingleTypes";
+import { useSelector } from "react-redux";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
+
+const { can } = productCapabilities;
 
 interface SingleEditPanelProps {
   product: ProductSingle;
@@ -28,6 +33,9 @@ interface SingleEditPanelProps {
 
 export function SingleEditPanel({ product, productName }: SingleEditPanelProps) {
   const { updateCategory, updateUnit } = useProduct({});
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWriteCategory = allows(can.productCategories.write);
+  const canWriteUnit = allows(can.productUnits.write);
 
   const [newCategoryName, setNewCategoryName] = useState(product.category);
   const [categoryStatus, setCategoryStatus] = useState<SaveStatus>("idle");
@@ -104,7 +112,7 @@ export function SingleEditPanel({ product, productName }: SingleEditPanelProps) 
               size="sm"
               variant="primary"
               onClick={handleSaveCategory}
-              disabled={!canSaveCategory}
+              disabled={!canSaveCategory || !canWriteCategory}
               status={categoryStatus}
               onSuccessComplete={() => setCategoryStatus("idle")}
             >
@@ -167,7 +175,7 @@ export function SingleEditPanel({ product, productName }: SingleEditPanelProps) 
               size="sm"
               variant="primary"
               onClick={handleSaveUnit}
-              disabled={!canSaveUnit}
+              disabled={!canSaveUnit || !canWriteUnit}
               status={unitStatus}
               onSuccessComplete={() => setUnitStatus("idle")}
             >

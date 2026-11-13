@@ -35,6 +35,12 @@ import {
   textHasSeedOrPreEm,
 } from "@/app/scheduling/coverSheets/[routeDate]/seedConditions";
 import {PDFNumber} from "@/lib/pdf/_components/PDFNumber";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
+import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
+
+const { can } = schedulingCapabilities;
 
 export type RouteDatePageProps = {
   params: Promise<{
@@ -44,7 +50,8 @@ export type RouteDatePageProps = {
 
 export default function RouteDatePage({ params }: RouteDatePageProps) {
   const loadingCount = useSelector(uiSelect.loadingCount);
-  useCoverSheetDeps();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  useCoverSheetDeps({ canLoad: schedulingCanLoad(allows) });
 
   const isClient = useIsClient();
   const { routeDate: encodedRouteDate } = use(params);
@@ -84,6 +91,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
   if (!isClient || !serviceByEmployee) return null;
 
   return (
+    <GatedPanel requirement={can.serviceEtas.read}>
     <Container variant={"scroll-shell"}>
       <div className="text-lg font-semibold">{routeDate}</div>
 
@@ -111,6 +119,7 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
         </TabsContent>
       </Tabs>
     </Container>
+    </GatedPanel>
   );
 }
 

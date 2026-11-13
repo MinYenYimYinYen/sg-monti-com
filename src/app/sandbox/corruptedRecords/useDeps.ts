@@ -15,9 +15,27 @@ import { corruptedSyncRecordSelect } from "@/app/realGreen/customer/sync/corrupt
  * - "corruptedRecords": neighbor services around each corrupted gap (ServId Context tab)
  * - "customerQuery": ad-hoc customer queries (Employee Corrupted? tab, Programs Without Services tab)
  */
-export function useDeps() {
-  useCorruptedSyncRecord();
-  useProgServ({ autoLoad: true });
+export function useDeps({
+  canLoad = {},
+}: {
+  canLoad?: {
+    corruptedSyncRecords?: boolean;
+    customers?: boolean;
+    progCodes?: boolean;
+    servCodes?: boolean;
+  };
+} = {}) {
+  const {
+    corruptedSyncRecords: canLoadCorruptedSyncRecords = true,
+    customers: canLoadCustomers = true,
+    progCodes: canLoadProgCodes = true,
+    servCodes: canLoadServCodes = true,
+  } = canLoad;
+  useCorruptedSyncRecord({ canLoad: canLoadCorruptedSyncRecords });
+  useProgServ({
+    autoLoad: true,
+    canLoad: { progCodes: canLoadProgCodes, servCodes: canLoadServCodes },
+  });
   useCustomerContext({ contexts: ["corruptedRecords", "customerQuery", "active"] });
 
   // Collect all neighbor servIds from the service-type corrupted records
@@ -34,5 +52,5 @@ export function useDeps() {
     return [...ids];
   }, [serviceRecords]);
 
-  useCorruptedRecordsCustomers(neighborServIds);
+  useCorruptedRecordsCustomers(neighborServIds, { canLoad: canLoadCustomers });
 }

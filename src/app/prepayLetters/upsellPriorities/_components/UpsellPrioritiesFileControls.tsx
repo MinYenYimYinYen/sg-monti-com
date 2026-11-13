@@ -8,6 +8,8 @@ import { upsellPrioritiesSelect } from "../upsellPrioritiesSelect";
 import { upsellPrioritiesActions } from "../upsellPrioritiesSlice";
 import { useUpsellPriorities } from "../useUpsellPriorities";
 import { UpsellPrioritiesOpenSheet } from "./UpsellPrioritiesOpenSheet";
+import { prepayLettersCapabilities } from "../../prepayLettersCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { EntityFileControls } from "@/components/EntityFileControls/EntityFileControls";
 import { DropdownMenuItem } from "@/style/components/dropdown-menu";
 import {
@@ -20,6 +22,8 @@ import {
 } from "@/style/components/dialog";
 import { Button } from "@/style/components/button";
 
+const { can } = prepayLettersCapabilities;
+
 export function UpsellPrioritiesFileControls() {
   const dispatch = useAppDispatch();
   const draft = useSelector(upsellPrioritiesSelect.draft);
@@ -27,6 +31,9 @@ export function UpsellPrioritiesFileControls() {
   const isDirty = useSelector(upsellPrioritiesSelect.isDirty);
   const ownNames = useSelector(upsellPrioritiesSelect.ownNames);
   const currentSaId = useSelector(authSelect.user)?.saId;
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.upsellPriorities.write);
+  const canDelete = allows(can.upsellPriorities.delete);
   const { saveUpsellPriorities, deleteUpsellPriorities } = useUpsellPriorities();
 
   const [openSheetVisible, setOpenSheetVisible] = useState(false);
@@ -65,7 +72,10 @@ export function UpsellPrioritiesFileControls() {
       <EntityFileControls
         activeName={activeName}
         isDirty={isDirty}
-        canSave={!!draft?.name && (!draft.saId || draft.saId === currentSaId)}
+        canSave={canWrite && !!draft?.name && (!draft.saId || draft.saId === currentSaId)}
+        // Save As is a write too, and EntityFileControls has no disabled state for it, so it is
+        // hidden without `write`.
+        supportsMultiple={canWrite}
         existingNames={ownNames}
         onSaveAction={handleSave}
         onSaveAsAction={handleSaveAs}
@@ -74,7 +84,7 @@ export function UpsellPrioritiesFileControls() {
         extraMenuItems={
           <DropdownMenuItem
             onSelect={() => setDeleteConfirmOpen(true)}
-            disabled={!draft?.upsellPrioritiesId || draft.saId !== currentSaId}
+            disabled={!canDelete || !draft?.upsellPrioritiesId || draft.saId !== currentSaId}
             className="text-destructive focus:text-destructive"
           >
             Delete…
@@ -94,7 +104,7 @@ export function UpsellPrioritiesFileControls() {
             <Button size="sm" variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
               Cancel
             </Button>
-            <Button size="sm" variant="destructive" onClick={handleDelete}>
+            <Button size="sm" variant="destructive" disabled={!canDelete} onClick={handleDelete}>
               Delete
             </Button>
           </DialogFooter>

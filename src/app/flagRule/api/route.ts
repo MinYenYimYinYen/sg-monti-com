@@ -5,10 +5,12 @@ import { FlagRule } from "@/app/flagRule/FlagRuleTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { flagRuleCapabilities } from "@/app/flagRule/flagRuleCapabilities";
 
+const { can } = flagRuleCapabilities;
 const handlers: HandlerMap<FlagRuleContract> = {
   getAll: {
-    roles: ["admin", "office"],
+    capability: can.flagRules.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await FlagRuleModel.find({}).lean();
@@ -16,7 +18,7 @@ const handlers: HandlerMap<FlagRuleContract> = {
     },
   },
   upsert: {
-    roles: ["admin", "office"],
+    capability: can.flagRules.write,
     handler: async ({ flagRule }) => {
       await connectToMongoDB();
       const saved = await FlagRuleModel.findOneAndUpdate(
@@ -28,7 +30,7 @@ const handlers: HandlerMap<FlagRuleContract> = {
     },
   },
   deleteOne: {
-    roles: ["admin"],
+    capability: can.flagRules.delete,
     handler: async ({ flagRuleId }) => {
       await connectToMongoDB();
       const deleted = await FlagRuleModel.findOneAndDelete({ flagRuleId }).lean();

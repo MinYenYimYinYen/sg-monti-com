@@ -4,11 +4,29 @@ import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { CallAheadDocProps } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 
-export function useCallAhead({ autoLoad }: { autoLoad: boolean }) {
+/** Which of the loads this hook fires the caller may make. Absent means allowed, so write-only callers can skip it. */
+type CanLoad = {
+  callAheads?: boolean;
+  keywords?: boolean;
+};
+
+/**
+ * `canLoad` comes from the component, because hooks expose actions only and do not select. A load
+ * the user may not make is skipped, so a user holding only one of the two reads gets no refused
+ * request and no error toast.
+ */
+export function useCallAhead({
+  autoLoad,
+  canLoad = {},
+}: {
+  autoLoad: boolean;
+  canLoad?: CanLoad;
+}) {
+  const { callAheads: canLoadCallAheads = true, keywords: canLoadKeywords = true } = canLoad;
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad) {
+    if (autoLoad && canLoadCallAheads) {
       dispatch(
         callAheadActions.getCallAheads({
           params: {},
@@ -18,6 +36,8 @@ export function useCallAhead({ autoLoad }: { autoLoad: boolean }) {
           },
         }),
       );
+    }
+    if (autoLoad && canLoadKeywords) {
       dispatch(
         callAheadActions.getKeywords({
           params: {},
@@ -28,21 +48,25 @@ export function useCallAhead({ autoLoad }: { autoLoad: boolean }) {
         }),
       );
     }
-  }, [autoLoad, dispatch]);
+  }, [autoLoad, canLoadCallAheads, canLoadKeywords, dispatch]);
 
   const refresh = () => {
-    dispatch(
-      callAheadActions.getCallAheads({
-        params: {},
-        config: { loadingMsg: "Loading call aheads...", force: true },
-      }),
-    );
-    dispatch(
-      callAheadActions.getKeywords({
-        params: {},
-        config: { loadingMsg: "Loading keywords...", force: true },
-      }),
-    );
+    if (canLoadCallAheads) {
+      dispatch(
+        callAheadActions.getCallAheads({
+          params: {},
+          config: { loadingMsg: "Loading call aheads...", force: true },
+        }),
+      );
+    }
+    if (canLoadKeywords) {
+      dispatch(
+        callAheadActions.getKeywords({
+          params: {},
+          config: { loadingMsg: "Loading keywords...", force: true },
+        }),
+      );
+    }
   };
 
   const upsertDocProps = (docProps: CallAheadDocProps) => {

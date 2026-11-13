@@ -9,35 +9,57 @@ import {
   UnsavedServCodeChanges,
 } from "@/app/realGreen/progServ/_lib/types/ProgServState";
 
-export function useProgServ({ autoLoad = false }: { autoLoad?: boolean }) {
+/** Which of the two loads this hook fires the caller may make. Absent means allowed, so write-only callers and callers in other folders can skip it. */
+type CanLoad = {
+  progCodes?: boolean;
+  servCodes?: boolean;
+};
+
+/**
+ * `canLoad` comes from the component, because hooks expose actions only and do not select. A load
+ * the user may not make is skipped, so a user holding one of the two reads gets no refused request
+ * and no error toast.
+ */
+export function useProgServ({
+  autoLoad = false,
+  canLoad = {},
+}: {
+  autoLoad?: boolean;
+  canLoad?: CanLoad;
+}) {
+  const { progCodes: canLoadProgCodes = true, servCodes: canLoadServCodes = true } = canLoad;
   const dispatch = useAppDispatch();
 
   const load = useCallback(
     ({ force = false }: { force?: boolean }) => {
       if (autoLoad) {
-        dispatch(
-          progServActions.getProgCodeDocs({
-            params: {},
-            config: {
-              staleTime: realGreenConst.paramTypesCacheTime,
-              loadingMsg: "Loading program codes...",
-              force,
-            },
-          }),
-        );
-        dispatch(
-          progServActions.getServCodeDocs({
-            params: {},
-            config: {
-              staleTime: realGreenConst.paramTypesCacheTime,
-              loadingMsg: "Loading service codes...",
-              force,
-            },
-          }),
-        );
+        if (canLoadProgCodes) {
+          dispatch(
+            progServActions.getProgCodeDocs({
+              params: {},
+              config: {
+                staleTime: realGreenConst.paramTypesCacheTime,
+                loadingMsg: "Loading program codes...",
+                force,
+              },
+            }),
+          );
+        }
+        if (canLoadServCodes) {
+          dispatch(
+            progServActions.getServCodeDocs({
+              params: {},
+              config: {
+                staleTime: realGreenConst.paramTypesCacheTime,
+                loadingMsg: "Loading service codes...",
+                force,
+              },
+            }),
+          );
+        }
       }
     },
-    [autoLoad, dispatch],
+    [autoLoad, canLoadProgCodes, canLoadServCodes, dispatch],
   );
 
   useEffect(() => {

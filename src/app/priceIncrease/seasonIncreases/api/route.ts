@@ -4,10 +4,13 @@ import { SeasonIncreasesContract } from "@/app/priceIncrease/seasonIncreases/api
 import { SeasonIncreasesModel } from "@/app/priceIncrease/seasonIncreases/SeasonIncreasesModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
+
+const { can } = priceIncreaseCapabilities;
 
 const handlers: HandlerMap<SeasonIncreasesContract> = {
   getAll: {
-    roles: ["admin", "office"],
+    capability: can.increasePlans.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await SeasonIncreasesModel.find().lean();
@@ -16,7 +19,7 @@ const handlers: HandlerMap<SeasonIncreasesContract> = {
   },
 
   upsert: {
-    roles: ["admin"],
+    capability: can.increasePlans.write,
     handler: async (params) => {
       await connectToMongoDB();
       const { seasonIncreasesId, ...rest } = params;
@@ -30,7 +33,7 @@ const handlers: HandlerMap<SeasonIncreasesContract> = {
   },
 
   remove: {
-    roles: ["admin"],
+    capability: can.increasePlans.delete,
     handler: async ({ seasonIncreasesId }) => {
       await connectToMongoDB();
       await SeasonIncreasesModel.deleteOne({ seasonIncreasesId });

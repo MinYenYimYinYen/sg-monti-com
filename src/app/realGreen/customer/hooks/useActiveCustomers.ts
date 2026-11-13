@@ -12,14 +12,23 @@ import {
 } from "@/app/realGreen/customer/slices/customerSlices";
 import { buildActiveCustomersPlan } from "@/app/realGreen/customer/hooks/buildActiveCustomersPlan";
 
-export function useActiveCustomers({ autoLoad = false }: { autoLoad?: boolean } = {}) {
+/**
+ * `canLoad` (the mirror read) and `canRefreshLive` (the live single-customer refresh) come from the
+ * component, because hooks expose actions only and do not select. Both default to allowed so
+ * callers that do not gate can omit them.
+ */
+export function useActiveCustomers({
+  autoLoad = false,
+  canLoad = true,
+  canRefreshLive = true,
+}: { autoLoad?: boolean; canLoad?: boolean; canRefreshLive?: boolean } = {}) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!autoLoad || !season) return;
+    if (!autoLoad || !canLoad || !season) return;
 
     if (PIPELINE.active === "mirror") {
       const plan = buildActiveCustomersPlan(season);
@@ -29,10 +38,10 @@ export function useActiveCustomers({ autoLoad = false }: { autoLoad?: boolean } 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(activeCustomersGetDocs({ params: { schemeName: "activeCustomers", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     }
-  }, [autoLoad, dispatch, season]);
+  }, [autoLoad, canLoad, dispatch, season]);
 
   const refresh = () => {
-    if (!season) return;
+    if (!season || !canLoad) return;
 
     if (PIPELINE.active === "mirror") {
       const plan = buildActiveCustomersPlan(season);
@@ -45,7 +54,7 @@ export function useActiveCustomers({ autoLoad = false }: { autoLoad?: boolean } 
   };
 
   const refreshCustomer = async (custId: number) => {
-    if (!season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
+    if (!canRefreshLive || !season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
     setRefreshingCustIds((prev) => new Set(prev).add(custId));
     try {
       const result = await dispatch(

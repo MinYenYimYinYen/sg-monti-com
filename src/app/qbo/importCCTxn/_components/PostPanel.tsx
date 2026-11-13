@@ -1,8 +1,8 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { authSelect } from "@/app/auth/authSlice";
-import { Alert, AlertDescription, AlertTitle } from "@/style/components/alert";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
 import { importRowSelect } from "@/app/qbo/importCCTxn/rows/importRowSelect";
 import { PostRowLine } from "@/app/qbo/importCCTxn/_components/PostRowLine";
 import { PostConfirmDialog } from "@/app/qbo/importCCTxn/_components/PostConfirmDialog";
@@ -11,23 +11,19 @@ import { BatchConfirmDialog } from "@/app/qbo/importCCTxn/_components/BatchConfi
 import { PostRunResults } from "@/app/qbo/importCCTxn/_components/PostRunResults";
 import { SkippedRowsSection } from "@/app/qbo/importCCTxn/_components/SkippedRowsSection";
 
+// The preview is the read: it asks QuickBooks what a post would do and sends nothing. The Post
+// buttons inside need `expensePostings.write` on top (see PostConfirmDialog and BatchConfirmDialog).
 export function PostPanel() {
-  const role = useSelector(authSelect.role);
+  return (
+    <GatedPanel requirement={importCCTxnCapabilities.can.expensePostings.read}>
+      <PostWorkspace />
+    </GatedPanel>
+  );
+}
+
+function PostWorkspace() {
   const postableRows = useSelector(importRowSelect.postableRows);
   const unknownRows = useSelector(importRowSelect.unknownRows);
-
-  if (role !== "admin") {
-    return (
-      <div className="h-full overflow-y-auto">
-        <div className="max-w-2xl p-6">
-          <Alert variant="destructive">
-            <AlertTitle>Admins only</AlertTitle>
-            <AlertDescription>Only an admin can post to QuickBooks.</AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-full overflow-y-auto">

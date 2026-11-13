@@ -15,6 +15,10 @@ import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seaso
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { FlagRounding, PriceIncreaseSettingsDoc } from "@/app/priceIncrease/settings/PriceIncreaseSettingsTypes";
 import { InlinePlanEditor } from "@/app/priceIncrease/config/_components/InlinePlanEditor";
+import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = priceIncreaseCapabilities;
 
 const ROUNDING_OPTIONS: { value: FlagRounding; label: string; description: string }[] = [
   { value: "round", label: "Round", description: "Nearest flag — least aggressive on average" },
@@ -29,6 +33,9 @@ const ROUNDING_OPTIONS: { value: FlagRounding; label: string; description: strin
  */
 export function ActiveSettingsPanel() {
   const dispatch = useAppDispatch();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.increaseSettings.write);
+  const canWritePlans = allows(can.increasePlans.write);
   const activeSettings = useSelector(priceIncreaseSettingsSelect.activeSettings);
   const draft = useSelector(priceIncreaseConfigSelect.settingsDraft);
   const isDirty = useSelector(priceIncreaseConfigSelect.settingsIsDirty);
@@ -111,7 +118,7 @@ export function ActiveSettingsPanel() {
             variant="primary"
             intensity="solid"
             onClick={handleSave}
-            disabled={!isDirty || !draft.label || !draft.progCodeId || !draft.seasonIncreasesId}
+            disabled={!canWrite || !isDirty || !draft.label || !draft.progCodeId || !draft.seasonIncreasesId}
           >
             Save
           </Button>
@@ -180,6 +187,7 @@ export function ActiveSettingsPanel() {
               size="icon"
               variant="primary"
               intensity="soft"
+              disabled={!canWritePlans}
               onClick={handleNewPlan}
               title="Create new plan"
             >

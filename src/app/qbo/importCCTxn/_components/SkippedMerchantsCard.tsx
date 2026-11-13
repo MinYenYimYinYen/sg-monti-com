@@ -3,6 +3,8 @@
 import { useSelector } from "react-redux";
 import { Badge } from "@/style/components/badge";
 import { Button } from "@/style/components/button";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
 import { importCCTxnMappingSelect } from "@/app/qbo/importCCTxn/importCCTxnMappingSelect";
 import { useImportCCTxnMapping } from "@/app/qbo/importCCTxn/useImportCCTxnMapping";
 import { skipReasonLabels } from "@/app/qbo/importCCTxn/_lib/importFileUtils";
@@ -13,6 +15,9 @@ import { skipReasonLabels } from "@/app/qbo/importCCTxn/_lib/importFileUtils";
  */
 export function SkippedMerchantsCard() {
   const skipRules = useSelector(importCCTxnMappingSelect.sortedSkipRules);
+  const canDelete = useSelector(userCapabilitiesSelect.allows)(
+    importCCTxnCapabilities.can.skipRules.delete,
+  );
   const { deleteSkipRule } = useImportCCTxnMapping({ autoLoad: false });
 
   return (
@@ -41,6 +46,7 @@ export function SkippedMerchantsCard() {
               <Button
                 variant="destructive"
                 intensity="soft"
+                disabled={!canDelete}
                 onClick={() => deleteSkipRule(skipRule.merchantKey)}
               >
                 Remove

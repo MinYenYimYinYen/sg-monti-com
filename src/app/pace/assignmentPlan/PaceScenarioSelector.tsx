@@ -6,6 +6,10 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { Save, Trash2, ChevronDown } from "lucide-react";
+import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = paceCapabilities;
 
 /**
  * Scenario dropdown + Save / Save As controls for the pace module's assignment plans.
@@ -23,6 +27,11 @@ export function PaceScenarioSelector() {
   const scenarios = useSelector(assignmentPlanSelect.scenarios);
   const isDirty = useSelector(assignmentPlanSelect.isDirty);
   const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
+
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  // Save, Save As and switching the active scenario all write a scenario. Only removing one deletes.
+  const canWrite = allows(can.assignmentScenarios.write);
+  const canDelete = allows(can.assignmentScenarios.delete);
 
   const inactiveScenarios = scenarios.filter((s) => !s.isActive);
 
@@ -120,7 +129,8 @@ export function PaceScenarioSelector() {
               >
                 <button
                   onClick={() => handleActivate(scenario.name)}
-                  className="flex-1 text-left text-[10px] text-foreground truncate"
+                  disabled={!canWrite}
+                  className="flex-1 text-left text-[10px] text-foreground truncate disabled:opacity-40"
                 >
                   {scenario.name}
                 </button>
@@ -131,6 +141,7 @@ export function PaceScenarioSelector() {
                   <>
                     <button
                       onClick={() => handleDelete(scenario.name)}
+                      disabled={!canDelete}
                       className="text-[9px] text-destructive font-semibold hover:underline shrink-0"
                     >
                       Del
@@ -145,6 +156,7 @@ export function PaceScenarioSelector() {
                 ) : (
                   <button
                     onClick={() => setConfirmDeleteName(scenario.name)}
+                    disabled={!canDelete}
                     className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
                     title="Delete scenario"
                   >
@@ -168,6 +180,7 @@ export function PaceScenarioSelector() {
         {activeScenario && isDirty && (
           <button
             onClick={handleSave}
+            disabled={!canWrite}
             className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
             title="Save changes to active scenario"
           >
@@ -195,7 +208,7 @@ export function PaceScenarioSelector() {
             />
             <button
               onClick={handleSaveAs}
-              disabled={!saveAsName.trim()}
+              disabled={!saveAsName.trim() || !canWrite}
               className="h-6 px-2 rounded text-[10px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Save
@@ -213,6 +226,7 @@ export function PaceScenarioSelector() {
         ) : (
           <button
             onClick={() => setShowSaveAs(true)}
+            disabled={!canWrite}
             className="flex items-center gap-1 h-6 px-2 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
             title="Save as new scenario"
           >

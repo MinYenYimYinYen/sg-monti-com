@@ -143,21 +143,28 @@ it("returns correct net with 10% program discount and no prepay (CRM: $26.09)", 
 | `realGreen/customer/ServiceUtils.prepayNoDiscount.customer2.test.ts` | 14-service no-discount customer at 3% prepay, tax codes 6.875% + 0.5%: per-tax-code rounding (166.74 → 12.29, not 12.30), per-service and grand totals (CRM reference values) |
 | `realGreen/priceTable/pricingFuncs.calculateTax.test.ts` | `calculateTax` (incl. per-tax-code rounding) and `calculatePrepayServTotal` pure functions |
 | `permission/hasCapability.test.ts` | `hasCapability`: public ops, identity-before-superuser order, unconfirmed superuser hint, exact capability lookup (no implication or wildcards), applied and kiosk-style users. Shared fixtures in `permission/permissionFixtures.ts` |
-| `permission/createFeatureCapabilities.test.ts` | `createFeatureCapabilities`: capability strings (native and external), public verbs, declaration validation, type inference |
+| `permission/createFeatureCapabilities.test.ts` | `createFeatureCapabilities`: capability strings (native and external), public verbs, declaration validation (including `requires`), type inference |
 | `permission/evaluateCapability.test.ts` | `evaluateCapability` with mocked loaders: which database reads each decision makes, superuser confirmation, applied and kiosk users |
 | `auth/tokenUtils.test.ts` | Token payload building (kiosk never gets the superuser hint), round trip, legacy tokens without userName rejected |
 | `auth/userNameUtils.test.ts` | Username validation, regex escaping, case-insensitive literal match |
-| `permission/buildRegistry.test.ts` | `buildRegistry`: allCapabilities, the `has` unknown-string filter, `describe`, `byFeature`, public verbs excluded, duplicate feature keys and capability strings |
+| `permission/buildRegistry.test.ts` | `buildRegistry`: allCapabilities, the `has` unknown-string filter, `describe`, `byGroup` (a bare feature is a group of one), public verbs excluded, duplicate feature keys and capability strings |
 | `permission/capabilityRegistry.drift.test.ts` | Every `*Capabilities.ts` under `src/app` is listed in `capabilityRegistry.ts`, and no registered feature lacks a declaration file. Scans the disk on each run |
 | `permission/superUserRequirement.test.ts` | The `'superUser'` requirement in `hasCapability` and `evaluateCapability`: passes only a confirmed superuser, cannot be granted, skips the capabilities read |
 | `permission/resolveEffective.test.ts` | Plain union of bundles and direct grants, de-duplication, order, no hierarchy, unknown strings dropped, missing bundle ignored |
 | `permission/userCapabilityLogic.test.ts`, `userCapabilityLogic.direct.test.ts` | `assignBundle` (strips covered direct grants), `removeBundle` (what is lost), `addDirect`, `removeDirect`. Exact containment, never mutates |
 | `permission/bundleLogic.test.ts` | `saveBundle`: key and registry validation, added and removed, holders, stripping newly covered direct grants (including repairing drift) |
-| `permission/assignmentGuards.test.ts` | `canAssign` (no escalation), `canManageCapabilitiesOf` (kiosk and superuser targets), warn-only `findMissingCompanions` |
+| `permission/assignmentGuards.test.ts` | `canAssign` (no escalation), `canManageCapabilitiesOf` (kiosk and superuser targets) |
+| `permission/requirementLogic.test.ts` | `registry.requirementsOf` (verb companions and declared `requires`, forward references, unknown and self-requiring declarations throw), `expandRequirements` (transitive, cycle-safe), warn-only `findMissingRequirements` |
+| `permission/requirementLogic.assign.test.ts` | `planDirectAdd` (what a direct add also offers, skipping held and unassignable requirements), `addDirectMany` (all-or-nothing), `selectWithRequirements` (bundle editor ticks). Registry with `requires` in `logicFixtures.ts` (`registryWithReports`) |
 | `permission/capabilitySelectorLogic.test.ts` | `assignableCapabilities`, `redundantDirect`, `holdersByBundleKey`, `bundleRegistryDiff`. Fixtures in `permission/logicFixtures.ts` |
 | `auth/userValidation.test.ts` | `validateCreateUser`: field rules, untrusted input shapes (objects where text is expected), extra fields ignored, `saId` and email rules, password always required (length in characters, 72-byte cap, not trimmed), `mustChangePassword`; `isValidPassword`, `checkPasswordEntry` (confirmation match) |
 | `auth/userCreation.test.ts` | `judgeBogusSaId` and `judgeRealSaId` (both fail closed), duplicate-key messages, `canResetPasswordOf` (admins cannot reset a superuser or kiosk), the no-password placeholder against real bcrypt |
 | `permission/userSummary.test.ts` | `toUserSummary` (explicit field copy, never the password hash), `sortUserSummaries`, `matchesUserSearch` |
-| `permission/capabilityLabels.test.ts` | `capabilityLabel` and `groupCapabilitiesByFeature` (stale strings kept separate) |
+| `permission/capabilityLabels.test.ts` | `capabilityLabel` and `groupCapabilitiesByGroup` (stale strings kept separate) |
+| `permission/combineCapabilities.test.ts` | `mergeRecords` (rename, throw on duplicate) and `combineCapabilities`: strings stay the features' own through `origin`, same-named resources do not clash, `requires` re-keyed, nested groups, a feature in a group and also on its own is rejected |
+| `permission/capabilityMatrix.test.ts` | `buildMatrix` (one row per group in registry order, columns, a grouped feature's resources side by side) and `cellChange` (companions, no `requires` expansion). Fixtures in `matrixFixtures.ts` |
+| `permission/capabilityMatrixUser.test.ts` | `cellState` and `planUserCell`: bundle-locked members, the actor's no-escalation limit |
+| `permission/matrixFilter.test.ts` | `matchesRowFilter`: text over name, description and member keys, used/unused toggle |
+| `permission/matrixHelpers.test.ts` | `applyCellChange` on a bundle draft, `summarizeMembers`, `cellKey` |
 | `permission/navGate.test.ts` | `isGateOpen`: the roles gate (legacy) and the capability gate, `superUser`, not shown until capabilities load |
 | `permission/bundleDraft.test.ts` | The bundle editor's working copy: `draftFromBundle`, toggle and set, `isDraftChanged` |

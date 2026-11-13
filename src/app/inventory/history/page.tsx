@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { authSelect } from "@/app/auth/authSlice";
+import { inventoryCapabilities } from "@/app/inventory/inventoryCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { inventorySelect } from "@/app/inventory/inventorySelect";
 import { useInventoryDeps } from "@/app/inventory/useInventoryDeps";
 import { HistoryCheckDetail } from "@/app/inventory/history/_components/HistoryCheckDetail";
@@ -22,18 +23,21 @@ import { ChevronLeft, CalendarDays, ChevronDown } from "lucide-react";
 // ---------------------------------------------------------------------------
 let savedDisplayMode: "decimal" | "subUnits" = "decimal";
 
+const { can } = inventoryCapabilities;
+
 export default function InventoryHistoryPage() {
+  return (
+    <GatedPanel requirement={can.inventoryChecks.read}>
+      <InventoryHistoryWorkspace />
+    </GatedPanel>
+  );
+}
+
+// Split from the page so the mount loads never fire for a user without `read`.
+function InventoryHistoryWorkspace() {
   useInventoryDeps();
 
-  const role = useSelector(authSelect.role);
   const router = useRouter();
-
-  // Admin gate
-  useEffect(() => {
-    if (role && role !== "admin") {
-      router.replace("/");
-    }
-  }, [role, router]);
 
   const hydratedChecks = useSelector(inventorySelect.hydratedChecks);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -48,10 +52,6 @@ export default function InventoryHistoryPage() {
     Math.max(0, hydratedChecks.length - 1),
   );
   const selectedCheck = hydratedChecks[safeIndex] ?? null;
-
-  if (role && role !== "admin") {
-    return null;
-  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">

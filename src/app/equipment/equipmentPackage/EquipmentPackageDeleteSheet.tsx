@@ -17,6 +17,10 @@ import { Label } from "@/style/components/label";
 import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
 import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipmentPackage";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
+import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = equipmentCapabilities;
 
 interface EquipmentPackageDeleteSheetProps {
   equipmentPackage: EquipmentPackageDoc;
@@ -33,6 +37,7 @@ export function EquipmentPackageDeleteSheet({
 }: EquipmentPackageDeleteSheetProps) {
   const { deleteEquipmentPackage } = useEquipmentPackage({});
   const productMasters = useSelector(productSelect.productMasters);
+  const mayDelete = useSelector(userCapabilitiesSelect.allows)(can.equipmentPackages.delete);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Find masters that reference this package
@@ -119,7 +124,7 @@ export function EquipmentPackageDeleteSheet({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={isDeleting}
+            disabled={isDeleting || !mayDelete}
           >
             {isDeleting
               ? "Deleting…"

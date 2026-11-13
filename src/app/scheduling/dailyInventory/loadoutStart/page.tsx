@@ -10,9 +10,12 @@ import { loadoutStartSelect } from "@/app/scheduling/dailyInventory/loadoutStart
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { useLoadoutFormDeps } from "@/app/scheduling/dailyInventory/_lib/useLoadoutFormDeps";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 
 export default function LoadoutStartPage() {
-  useLoadoutFormDeps();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  useLoadoutFormDeps({ canLoad: schedulingCanLoad(allows) });
   const router = useRouter();
   const tech = useSelector(loadoutStartSelect.tech);
   const routeDate = useSelector(loadoutStartSelect.routeDate);

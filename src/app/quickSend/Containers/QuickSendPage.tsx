@@ -28,6 +28,12 @@ import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
 import { usePrepay } from "@/app/realGreen/prepay/usePrepay";
 import { useZipCode } from "@/app/realGreen/zipCode/useZipCode";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
+import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { quickSendCapabilities } from "@/app/quickSend/quickSendCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+
+const { can } = quickSendCapabilities;
 
 /** Converts HTML to plain text while preserving paragraph/line-break structure.
  *  Tables are rendered as tab-separated rows so columns survive a plain-text paste. */
@@ -64,14 +70,35 @@ function htmlToPlainText(html: string): string {
  * The editor column can be collapsed to a narrow strip (auto-collapses on template load).
  */
 export function QuickSend() {
+  return (
+    <GatedPanel requirement={can.storedTemplates.read}>
+      <QuickSendWorkspace />
+    </GatedPanel>
+  );
+}
+
+function QuickSendWorkspace() {
   const dispatch = useAppDispatch();
-  useStoredTemplates({ autoLoad: true });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  // Each load is gated by the capability its route needs, so a user holding only part of what this
+  // screen uses never fires a request that would be refused. The RealGreen loads are not gated yet
+  // (those features are not declared).
+  useStoredTemplates({
+    autoLoad: true,
+    canLoad: {
+      templates: allows(can.storedTemplates.read),
+      groups: allows(can.templateGroups.read),
+    },
+  });
   useCustomerContext({ contexts: ["single"] });
   useProgServ({ autoLoad: true });
   usePriceTable({ autoLoad: true });
   usePrepay({ autoLoad: true });
   useZipCode({ autoLoad: true });
-  useGlobalSettings({ autoLoad: true });
+  useGlobalSettings({
+    autoLoad: true,
+    canLoad: allows(globalSettingsCapabilities.can.settings.read),
+  });
 
   const sections = useSelector(qsSelect.sections);
   const activeSectionId = useSelector(qsSelect.activeSectionId);

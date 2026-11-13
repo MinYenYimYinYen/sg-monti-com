@@ -1,17 +1,20 @@
 "use client";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { authSelect } from "@/app/auth/authSlice";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { javelinCapabilities } from "@/app/javelin/javelinCapabilities";
 import { Button } from "@/style/components/button";
 import { javelinSelect } from "@/app/javelin/javelinSelect";
 import { javelinActions } from "@/app/javelin/javelinSlice";
 import { useJavelin } from "@/app/javelin/useJavelin";
 import { PostConfirmDialog } from "@/app/javelin/_lib/components/PostConfirmDialog";
 
-/** Preview checks the files against stored links and postings. Posting is admin only. */
+const { can } = javelinCapabilities;
+
+/** Preview checks the files against stored links and postings. Posting needs its own capability. */
 export function JavelinHeader() {
   const dispatch = useAppDispatch();
-  const role = useSelector(authSelect.role);
+  const canPost = useSelector(userCapabilitiesSelect.allows)(can.journalEntryPostings.write);
   const files = useSelector(javelinSelect.files);
   const confirmedDocNumbers = useSelector(javelinSelect.confirmedDocNumbers);
   const postable = useSelector(javelinSelect.postable);
@@ -32,7 +35,7 @@ export function JavelinHeader() {
         Check entries
       </Button>
 
-      {role === "admin" && (
+      {canPost && (
         <PostConfirmDialog
           count={postable.count}
           totalCents={postable.totalCents}
@@ -42,8 +45,8 @@ export function JavelinHeader() {
         />
       )}
 
-      {role !== "admin" && (
-        <span className="text-sm text-muted-foreground">Only an admin can post to QuickBooks.</span>
+      {!canPost && (
+        <span className="text-sm text-muted-foreground">You cannot post to QuickBooks.</span>
       )}
 
       <Button

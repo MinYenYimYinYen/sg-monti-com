@@ -24,6 +24,8 @@ import { AddSequenceDropdown } from "@/app/pace/setup/employees/_components/AddS
 import { CopyAssignmentDialog } from "@/app/pace/setup/employees/_components/CopyAssignmentDialog";
 import { GroupAssignment } from "@/app/pace/assignmentPlan/AssignmentPlanTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
+import { employeeAvailabilityCapabilities } from "@/app/employeeAvailability/employeeAvailabilityCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type EmployeeAssignmentPanelProps = {
   employeeId: string;
@@ -40,6 +42,12 @@ export function EmployeeAssignmentPanel({
   const employeeMap = useSelector(employeeSelect.employeeMap);
   const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
   const assignmentsByEmployeeId = useSelector(assignmentPlanSelect.assignmentsByEmployeeId);
+  // Reordering, removing and copying groups only change the local plans until a scenario is saved
+  // (gated in the scenario selector), so they are not gated here. The availability sheet is its own
+  // feature and loads and saves through its own capabilities.
+  const canOpenAvailability = useSelector(userCapabilitiesSelect.allows)(
+    employeeAvailabilityCapabilities.can.availabilityConstraints.read,
+  );
 
   const [availabilityEmployee, setAvailabilityEmployee] = useState<Employee | null>(null);
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
@@ -133,7 +141,8 @@ export function EmployeeAssignmentPanel({
             )}
             <button
               onClick={() => setAvailabilityEmployee(employee)}
-              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
+              disabled={!canOpenAvailability}
+              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors disabled:opacity-40"
               title="Edit availability"
             >
               <CalendarClock className="w-3.5 h-3.5" />

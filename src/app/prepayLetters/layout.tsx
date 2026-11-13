@@ -7,6 +7,12 @@ import { PrepayConfigFileControls } from "./config/_components/PrepayConfigFileC
 import { UpsellPrioritiesFileControls } from "./upsellPriorities/_components/UpsellPrioritiesFileControls";
 import { ListOrdered, Mail, Settings2 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useSelector } from "react-redux";
+import { prepayLettersCapabilities } from "./prepayLettersCapabilities";
+import { formTemplateCapabilities } from "@/app/formTemplate/formTemplateCapabilities";
+import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -26,8 +32,31 @@ const RENEWAL_HREF = "/prepayLetters/renewalLetters";
 // Layout
 // ---------------------------------------------------------------------------
 
+const { can } = prepayLettersCapabilities;
+
+/**
+ * The config read is the gate for the whole module (it is the nav entry's capability). The Upsells
+ * tab adds its own read on top (see its page). The renewals tab reads configs, upsell lists and
+ * form templates, which `requires` lists.
+ */
 export default function PrepayLettersLayout({ children }: { children: React.ReactNode }) {
-  usePrepayLettersDeps();
+  return (
+    <GatedPanel requirement={can.prepayConfigs.read}>
+      <PrepayLettersShell>{children}</PrepayLettersShell>
+    </GatedPanel>
+  );
+}
+
+// Separate from the gate so the deps hook is only ever called for a user who holds the read.
+function PrepayLettersShell({ children }: { children: React.ReactNode }) {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  usePrepayLettersDeps({
+    canLoad: {
+      upsellPriorities: allows(can.upsellPriorities.read),
+      formTemplates: allows(formTemplateCapabilities.can.formTemplates.read),
+      globalSettings: allows(globalSettingsCapabilities.can.settings.read),
+    },
+  });
   const pathname = usePathname();
   const isUpsellTab = pathname.startsWith(UPSELL_HREF);
   const isRenewalTab = pathname.startsWith(RENEWAL_HREF);

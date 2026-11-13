@@ -1,17 +1,20 @@
 "use client";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
-import { authSelect } from "@/app/auth/authSlice";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { javelinCapabilities } from "@/app/javelin/javelinCapabilities";
 import { Button } from "@/style/components/button";
 import { ckDepositSelect } from "@/app/javelin/ckDepositSelect";
 import { ckDepositActions } from "@/app/javelin/ckDepositSlice";
 import { useJavelin } from "@/app/javelin/useJavelin";
 import { PostConfirmDialog } from "@/app/javelin/_lib/components/PostConfirmDialog";
 
-/** Check entries asks the server what each deposit would do. Posting is admin only. */
+const { can } = javelinCapabilities;
+
+/** Check entries asks the server what each deposit would do. Posting needs its own capability. */
 export function CkDepositHeader() {
   const dispatch = useAppDispatch();
-  const role = useSelector(authSelect.role);
+  const canPost = useSelector(userCapabilitiesSelect.allows)(can.journalEntryPostings.write);
   const summary = useSelector(ckDepositSelect.summary);
   const confirmedDocNumbers = useSelector(ckDepositSelect.confirmedDocNumbers);
   const postable = useSelector(ckDepositSelect.postable);
@@ -30,7 +33,7 @@ export function CkDepositHeader() {
         Check entries
       </Button>
 
-      {role === "admin" && (
+      {canPost && (
         <PostConfirmDialog
           count={postable.count}
           totalCents={postable.totalCents}
@@ -40,8 +43,8 @@ export function CkDepositHeader() {
         />
       )}
 
-      {role !== "admin" && (
-        <span className="text-sm text-muted-foreground">Only an admin can post to QuickBooks.</span>
+      {!canPost && (
+        <span className="text-sm text-muted-foreground">You cannot post to QuickBooks.</span>
       )}
 
       <Button

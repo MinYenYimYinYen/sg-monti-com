@@ -35,6 +35,22 @@ export const publicWidgetCapabilities = createFeatureCapabilities({
   public: { widgets: ["read"] },
 });
 
+/**
+ * A feature whose screens load other features' data: reports.read needs widgets and flags, and
+ * exports.read needs reports (so a chain reaches widgets and flags). Used for `requires`.
+ */
+export const reportCapabilities = createFeatureCapabilities({
+  key: "reports",
+  resources: {
+    reports: { shape: "collection", verbs: ["read", "write"] },
+    exports: { shape: "collection", verbs: ["read"] },
+  },
+  requires: {
+    "reports.read": [widgetCapabilities.can.widgets.read, custFlagCapabilities.can.custFlags.read],
+    "exports.read": ["reports.reports.read"],
+  },
+});
+
 export function makeTokenPayload(overrides: Partial<TokenPayload> = {}): TokenPayload {
   return {
     role: "office",

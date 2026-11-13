@@ -18,12 +18,15 @@ import {
   TabsContent,
 } from "@/style/components/tabs";
 import { TRange } from "@/lib/primatives/tRange/TRange";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 
 export default function LoadoutReportPage() {
   const dispatch = useAppDispatch();
   const dateRange = useSelector(loadoutReportSelect.dateRange);
+  const allows = useSelector(userCapabilitiesSelect.allows);
 
-  useLoadoutReportDeps();
+  useLoadoutReportDeps({ canLoad: schedulingCanLoad(allows) });
 
   const handleDateRangeChange = (value: TRange<string>) => {
     dispatch(loadoutReportActions.setDateRange(value));

@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
-import { authSelect } from "@/app/auth/authSlice";
+import { inventoryCapabilities } from "@/app/inventory/inventoryCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { inventorySelect } from "@/app/inventory/inventorySelect";
 import { inventoryActions } from "@/app/inventory/inventorySlice";
 import { useInventory } from "@/app/inventory/useInventory";
@@ -105,19 +105,21 @@ function ProductListAccordion({
   );
 }
 
+const { can } = inventoryCapabilities;
+
 export default function InventoryPage() {
+  return (
+    <GatedPanel requirement={can.inventoryChecks.read}>
+      <InventoryWorkspace />
+    </GatedPanel>
+  );
+}
+
+// Split from the page so the mount loads never fire for a user without `read`.
+function InventoryWorkspace() {
   useInventoryDeps();
 
   const dispatch = useAppDispatch();
-  const role = useSelector(authSelect.role);
-  const router = useRouter();
-
-  // Admin gate
-  useEffect(() => {
-    if (role && role !== "admin") {
-      router.replace("/");
-    }
-  }, [role, router]);
 
   const activeProducts = useSelector(inventorySelect.activeProducts);
   const predictions = useSelector(inventorySelect.predictions);
@@ -189,10 +191,6 @@ export default function InventoryPage() {
       savedScrollTop = scrollRef.current.scrollTop;
     }
   };
-
-  if (role && role !== "admin") {
-    return null;
-  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">

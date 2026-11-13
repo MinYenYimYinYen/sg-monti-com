@@ -5,10 +5,12 @@ import { EmployeeAvailabilityModel } from "@/app/employeeAvailability/EmployeeAv
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { EmployeeAvailability } from "@/app/employeeAvailability/EmployeeAvailabilityTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { employeeAvailabilityCapabilities } from "@/app/employeeAvailability/employeeAvailabilityCapabilities";
 
+const { can } = employeeAvailabilityCapabilities;
 const handlers: HandlerMap<EmployeeAvailabilityContract> = {
   getAll: {
-    roles: ["admin", "office"],
+    capability: can.availabilityConstraints.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await EmployeeAvailabilityModel.find({}).lean();
@@ -16,7 +18,7 @@ const handlers: HandlerMap<EmployeeAvailabilityContract> = {
     },
   },
   upsert: {
-    roles: ["admin", "office"],
+    capability: can.availabilityConstraints.write,
     handler: async ({ doc }) => {
       await connectToMongoDB();
       const saved = await EmployeeAvailabilityModel.findOneAndUpdate(
@@ -28,7 +30,7 @@ const handlers: HandlerMap<EmployeeAvailabilityContract> = {
     },
   },
   deleteOne: {
-    roles: ["admin", "office"],
+    capability: can.availabilityConstraints.delete,
     handler: async ({ employeeId }) => {
       await connectToMongoDB();
       const deleted = await EmployeeAvailabilityModel.findOneAndDelete({ employeeId }).lean();

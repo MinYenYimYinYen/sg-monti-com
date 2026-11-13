@@ -6,12 +6,17 @@ import { authActions, authSelect } from "@/app/auth/authSlice";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { userCapabilitiesActions } from "@/app/permission/userCapabilities/userCapabilitiesSlice";
 import { PERMISSION_STALE_MS } from "@/app/permission/_lib/permissionConst";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { authCapabilities } from "@/app/auth/authCapabilities";
+
+const { can } = authCapabilities;
 
 export default function AuthInitializer({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
   const isInitialized = useSelector(authSelect.isInitialized);
   const isAuthenticated = useSelector(authSelect.isAuthenticated);
-  const user = useSelector(authSelect.user);
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canReadAccessRequests = allows(can.accessRequests.read);
 
   // 1. Check Auth on Mount
   useEffect(() => {
@@ -38,9 +43,10 @@ export default function AuthInitializer({ children }: { children: ReactNode }) {
     }
   }, [dispatch, isAuthenticated]);
 
-  // 3. Fetch Admin Actions if Admin
+  // 3. Fetch the pending approvals and password resets for whoever may read them. This runs again
+  // once the user's capabilities have loaded, which is after login.
   useEffect(() => {
-    if (isAuthenticated && user?.role === "admin") {
+    if (isAuthenticated && canReadAccessRequests) {
       dispatch(
         authActions.getPendingActions({
           params: {},
@@ -48,7 +54,7 @@ export default function AuthInitializer({ children }: { children: ReactNode }) {
         }),
       );
     }
-  }, [dispatch, isAuthenticated, user?.role]);
+  }, [dispatch, isAuthenticated, canReadAccessRequests]);
 
   return <>{children}</>;
 }

@@ -5,10 +5,12 @@ import { SeasonPlan } from "@/app/pace/seasonPlan/SeasonPlanTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { paceCapabilities } from "@/app/pace/paceCapabilities";
 
+const { can } = paceCapabilities;
 const handlers: HandlerMap<SeasonPlanContract> = {
   getSeasonPlans: {
-    roles: ["admin", "office", "tech"],
+    capability: can.seasonPlans.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await SeasonPlanModel.find().lean();
@@ -17,7 +19,7 @@ const handlers: HandlerMap<SeasonPlanContract> = {
   },
 
   upsertSeasonPlan: {
-    roles: ["admin", "office"],
+    capability: can.seasonPlans.write,
     handler: async (seasonPlan) => {
       await connectToMongoDB();
       const result = await SeasonPlanModel.findOneAndUpdate(
@@ -30,7 +32,7 @@ const handlers: HandlerMap<SeasonPlanContract> = {
   },
 
   deleteSeasonPlan: {
-    roles: ["admin"],
+    capability: can.seasonPlans.delete,
     handler: async ({ name }) => {
       await connectToMongoDB();
       await SeasonPlanModel.deleteOne({ name });
@@ -39,7 +41,7 @@ const handlers: HandlerMap<SeasonPlanContract> = {
   },
 
   activateSeasonPlan: {
-    roles: ["admin", "office"],
+    capability: can.seasonPlans.write,
     handler: async ({ name }) => {
       await connectToMongoDB();
       await SeasonPlanModel.updateMany({}, { isActive: false });

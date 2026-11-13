@@ -13,6 +13,10 @@ import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent"
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 import { Toggle } from "@/style/components/toggle";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { callAheadCapabilities } from "@/app/realGreen/callAhead/callAheadCapabilities";
+
+const { can } = callAheadCapabilities;
 
 const notificationTypeLabels: Record<NotificationType, string> = {
   [NotificationType.Text]: "Text",
@@ -25,6 +29,7 @@ const allNotificationTypes = Object.values(NotificationType);
 
 export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
   const { upsertDocProps } = useCallAhead({ autoLoad: false });
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.callAheadDocProps.write);
   const docMap = useSelector(callAheadSelect.callAheadDocMap);
   const doc = docMap.get(callAheadId);
   const keywords = useSelector(keywordSelect.keywords);
@@ -57,7 +62,7 @@ export function DocPropsConfig({ callAheadId }: { callAheadId: number }) {
       JSON.stringify([...doc.notificationTypes].sort()) ||
     eta !== doc.hasEta;
 
-  const canSave = hasChanges;
+  const canSave = hasChanges && canWrite;
 
   const handleSave = async () => {
     if (!canSave) return;

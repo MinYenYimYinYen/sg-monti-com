@@ -5,7 +5,10 @@ import { CustomerIncreaseResult, getAssignFlagBlockReason } from "@/app/priceInc
 import { useCustFlag } from "@/app/realGreen/custFlag/_lib/useCustFlag";
 import { useSelector } from "react-redux";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
 
+const { can } = custFlagCapabilities;
 const ACTIVE_STATUSES = ["9"];
 
 type AssignFlagButtonProps = {
@@ -28,10 +31,18 @@ export function AssignFlagButton({ result }: AssignFlagButtonProps) {
     ...(manualFlagId !== null ? [manualFlagId] : []),
   ];
 
-  const { addFlag } = useCustFlag({ flagIds, custStatuses: ACTIVE_STATUSES });
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canAssign = allows(can.flagAssignments.write);
+  const canLoad = allows(can.customerFlags.read);
+
+  const { addFlag } = useCustFlag({
+    flagIds,
+    custStatuses: ACTIVE_STATUSES,
+    canLoad,
+  });
 
   const blockReason = getAssignFlagBlockReason(result);
-  const isDisabled = blockReason !== null;
+  const isDisabled = blockReason !== null || !canAssign;
 
   function handleClick() {
     if (!result.resolvedFlag) return;
@@ -42,7 +53,12 @@ export function AssignFlagButton({ result }: AssignFlagButtonProps) {
     <button
       onClick={handleClick}
       disabled={isDisabled}
-      title={blockReason ?? `Assign ${result.resolvedFlag?.desc ?? "flag"}`}
+      title={
+        blockReason ??
+        (canAssign
+          ? `Assign ${result.resolvedFlag?.desc ?? "flag"}`
+          : "You do not have access to assign flags")
+      }
       className="ml-0.5 flex items-center text-foreground/30 hover:text-primary/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
     >
       <Flag className="h-3 w-3" />

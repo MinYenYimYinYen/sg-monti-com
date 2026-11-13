@@ -7,6 +7,9 @@ import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj"
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { AppError } from "@/lib/errors/AppError";
 import { headers } from "next/headers";
+import { prepayLettersCapabilities } from "@/app/prepayLetters/prepayLettersCapabilities";
+
+const { can } = prepayLettersCapabilities;
 
 /** Reads the current user's saId from the proxy-injected header. */
 async function getCurrentUserSaId(): Promise<string> {
@@ -34,7 +37,7 @@ function makeUpsellPrioritiesId({ name, saId }: { name: string; saId: string }):
 
 const handlers: HandlerMap<UpsellPrioritiesContract> = {
   getUpsellPriorities: {
-    roles: ["admin", "office", "tech"],
+    capability: can.upsellPriorities.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await UpsellPrioritiesModel.find().lean();
@@ -43,7 +46,7 @@ const handlers: HandlerMap<UpsellPrioritiesContract> = {
   },
 
   saveUpsellPriorities: {
-    roles: ["admin", "office", "tech"],
+    capability: can.upsellPriorities.write,
     handler: async ({ upsellPriorities }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
@@ -68,7 +71,7 @@ const handlers: HandlerMap<UpsellPrioritiesContract> = {
   },
 
   deleteUpsellPriorities: {
-    roles: ["admin", "office", "tech"],
+    capability: can.upsellPriorities.delete,
     handler: async ({ upsellPrioritiesId }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();

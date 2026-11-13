@@ -22,9 +22,16 @@ import { NotificationType } from "@/app/realGreen/callAhead/_lib/CallAheadTypes"
 import { PrenotifyByType } from "@/app/scheduling/prenotify/_lib/PrenotifyByType";
 import { PromiseDisplay } from "@/app/scheduling/prenotify/_lib/PromiseDisplay";
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
+import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
+
+const { can } = schedulingCapabilities;
 
 export default function Prenotify() {
-  usePrenotify();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  usePrenotify({ canLoad: schedulingCanLoad(allows) });
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const prenotifications = useSelector(prenotifySelect.prenotifications);
   const summaries = useSelector(prenotifySelect.summaries);
@@ -43,6 +50,7 @@ export default function Prenotify() {
     useState<NotificationType>(selectedPrenotifies[0]?.[0] ?? "");
 
   return (
+    <GatedPanel requirement={can.serviceEtas.read}>
     <Container variant={"scroll-shell"}>
       <h1 className={"shrink-0 text-2xl font-bold"}>Prenotify</h1>
       <div className={"shrink-0 mb-2"}>
@@ -153,5 +161,6 @@ export default function Prenotify() {
         />
       </FooterPortal>
     </Container>
+    </GatedPanel>
   );
 }

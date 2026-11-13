@@ -21,6 +21,13 @@ export type UserOwnedVerb = Verb | AnyVerb;
 /** Data that lives outside our native app data. Absent on a resource means native. */
 export type DataSource = 'realGreen' | 'qbo';
 
+/**
+ * Set only by combineCapabilities. A group renames its resources to keep them unique, and the
+ * origin is what keeps the capability string the one the owning feature declared, so stored
+ * grants and handlers keep matching.
+ */
+export type ResourceOrigin = { featureKey: string; resourceKey: string };
+
 // ---------- Resources ----------
 // `shape` (how data is stored) and `source` (where it lives) are separate axes.
 // `verbs` is required and lists every capability the feature can grant, so the declaration
@@ -29,18 +36,21 @@ export type CollectionResource = {
   shape: 'collection';
   source?: DataSource;
   verbs: readonly [Verb, ...Verb[]];
+  origin?: ResourceOrigin;
 };
 
 export type SingletonResource = {
   shape: 'singleton';
   source?: DataSource;
   verbs: readonly [SingletonVerb, ...SingletonVerb[]];
+  origin?: ResourceOrigin;
 };
 
 // Native only: per-user config never lives in RealGreen or QBO.
 export type UserOwnedResource = {
   shape: 'userOwned';
   verbs: readonly [UserOwnedVerb, ...UserOwnedVerb[]];
+  origin?: ResourceOrigin;
 };
 
 export type Resource = CollectionResource | SingletonResource | UserOwnedResource;
@@ -48,8 +58,20 @@ export type Resource = CollectionResource | SingletonResource | UserOwnedResourc
 export type FeatureCapabilities = {
   key: string;
   resources: Record<string, Resource>;
+  /** Heading in the admin screens. Set on a combined group, defaults to the key. */
+  name?: string;
+  /** What assigning this means, shown beside the heading. Set on a combined group. */
+  description?: string;
   /** Verbs that need no login, by resource key. They resolve to 'public' and grant nothing. */
   public?: Record<string, readonly Verb[]>;
+  /**
+   * What holding a capability also needs, keyed `resource.verb` and listing other capabilities
+   * (use the `can` constants of the feature that owns them, so a rename breaks the build). This
+   * never grants anything at runtime: the admin screens offer these when a capability is
+   * assigned, and the editors warn when one is missing. A verb's own companions (write and
+   * delete need read) are implied and need not be listed.
+   */
+  requires?: Record<string, readonly Capability[]>;
 };
 
 // ---------- Derived capability strings ----------
@@ -127,7 +149,8 @@ export function buildCapability({
   verb: string;
 }): string {
   const source = 'source' in resource && resource.source ? `.${resource.source}` : '';
-  return `${featureKey}.${resourceKey}${source}.${verb}`;
+  const { origin } = resource;
+  return `${origin?.featureKey ?? featureKey}.${origin?.resourceKey ?? resourceKey}${source}.${verb}`;
 }
 
 // A dot in a key would corrupt the feature.resource.verb format, so keys are plain identifiers.
@@ -140,7 +163,7 @@ export function isValidKey(key: string): boolean {
 
 /** Fails fast at module load so a bad declaration never reaches an admin or a handler. */
 function assertValidDeclaration(declaration: FeatureCapabilities): void {
-  const { key, resources, public: publicVerbs = {} } = declaration;
+  const { key, resources, public: publicVerbs = {}, requires = {} } = declaration;
 
   if (!KEY_PATTERN.test(key)) throw new Error(`Invalid feature key '${key}': use letters, digits, _ or - (no dots)`);
   for (const resourceKey of Object.keys(resources)) {
@@ -156,6 +179,22 @@ function assertValidDeclaration(declaration: FeatureCapabilities): void {
       if (!(resource.verbs as readonly string[]).includes(verb)) {
         throw new Error(`${key}: public lists undeclared verb '${resourceKey}.${verb}'`);
       }
+    }
+  }
+
+  for (const [requirementKey, required] of Object.entries(requires)) {
+    const parts = requirementKey.split('.');
+    const resource = parts.length === 2 ? resources[parts[0]] : undefined;
+    if (!resource || !(resource.verbs as readonly string[]).includes(parts[1])) {
+      throw new Error(`${key}: requires lists unknown capability '${requirementKey}' (use resource.verb)`);
+    }
+    // A public verb grants nothing, so there is nothing to attach requirements to.
+    if ((publicVerbs[parts[0]] as readonly string[] | undefined)?.includes(parts[1])) {
+      throw new Error(`${key}: requires lists the public verb '${requirementKey}'`);
+    }
+    // Widened to string: the type forbids an empty entry, but a hand-built declaration can hold one.
+    if (required.some((requiredCapability) => typeof requiredCapability !== 'string' || (requiredCapability as string) === '')) {
+      throw new Error(`${key}: requires '${requirementKey}' lists an empty capability`);
     }
   }
 }

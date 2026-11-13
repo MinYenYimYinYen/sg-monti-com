@@ -16,6 +16,9 @@ import { paceGroupSequenceSelect } from "@/app/pace/groupSequence/groupSequenceS
 import { usePaceAssignmentGroup } from "@/app/pace/assignmentGroup/useAssignmentGroup";
 import { useGroupSequence } from "@/app/pace/groupSequence/useGroupSequence";
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
+import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type SequenceMembership =
   | { mode: "standalone" }
@@ -37,6 +40,7 @@ export function GroupDialog({ group, open, onCloseAction, onCreatedGroupIdAction
   const sequences = useSelector(paceGroupSequenceSelect.sequences);
   const { upsertGroup } = usePaceAssignmentGroup();
   const { upsertSequence } = useGroupSequence();
+  const allows = useSelector(userCapabilitiesSelect.allows);
 
   // ServCode selection — disabled in edit mode
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
@@ -89,7 +93,11 @@ export function GroupDialog({ group, open, onCloseAction, onCreatedGroupIdAction
     onCloseAction();
   }
 
-  const canSave = isEditMode ? true : selectedIds.size > 0;
+  // Adding the group to an existing sequence also saves that sequence, so it needs both writes.
+  const canWrite =
+    allows(assignmentGroupCapabilities.can.assignmentGroups.write) &&
+    (membership.mode === "standalone" || allows(paceCapabilities.can.groupSequences.write));
+  const canSave = canWrite && (isEditMode ? true : selectedIds.size > 0);
   const autoLabel = [...selectedIds].sort().join("+");
 
   return (

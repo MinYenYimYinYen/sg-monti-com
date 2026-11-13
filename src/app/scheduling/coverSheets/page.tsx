@@ -12,11 +12,18 @@ import { CoverSheetCard } from "@/app/scheduling/coverSheets/_lib/components/Cov
 import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/coverSheetsSelect";
 import Link from "next/link";
 import { UnservDropZone } from "@/app/scheduling/_libShared/UnservDropZone";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
+import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
 
 type ViewState = "countSizeRev" | "servCodes" | "products";
 
+const { can } = schedulingCapabilities;
+
 export default function CoverSheetsPage() {
-  useCoverSheetDeps();
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  useCoverSheetDeps({ canLoad: schedulingCanLoad(allows) });
   const servicesByDateAndEmployee = useSelector(
     coverSheetsSelect.servicesByDateAndEmployee,
   );
@@ -25,6 +32,7 @@ export default function CoverSheetsPage() {
   const [view, setView] = useState<ViewState>("countSizeRev");
 
   return (
+    <GatedPanel requirement={can.serviceEtas.read}>
     <Container variant={"page"} className={"flex flex-col gap-4"}>
       <div className={"flex justify-between items-center"}>
         <div className={"text-2xl font-bold"}>Cover Sheets</div>
@@ -88,5 +96,6 @@ export default function CoverSheetsPage() {
         </Modal>
       </FooterPortal>
     </Container>
+    </GatedPanel>
   );
 }

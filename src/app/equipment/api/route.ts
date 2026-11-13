@@ -6,10 +6,12 @@ import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { EquipmentModel } from "@/app/equipment/EquipmentModel";
 import { EquipmentPackageModel } from "@/app/equipment/equipmentPackage/EquipmentPackageModel";
 import { EquipmentDoc } from "@/app/equipment/EquipmentTypes";
+import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
 
+const { can } = equipmentCapabilities;
 const handlers: HandlerMap<EquipmentContract> = {
   getAll: {
-    roles: ["admin", "office", "tech"],
+    capability: can.equipmentDefinitions.read,
     handler: async () => {
       await connectToMongoDB();
       const findResult = await EquipmentModel.find().lean();
@@ -18,7 +20,7 @@ const handlers: HandlerMap<EquipmentContract> = {
     },
   },
   upsert: {
-    roles: ["admin", "office"],
+    capability: can.equipmentDefinitions.write,
     handler: async ({ equipment }) => {
       await connectToMongoDB();
       const upsertResult = await EquipmentModel.findOneAndUpdate(
@@ -31,7 +33,9 @@ const handlers: HandlerMap<EquipmentContract> = {
     },
   },
   deleteOne: {
-    roles: ["admin", "office"],
+    // With clearReferences this also pulls the equipment out of every package, and putting it back
+    // does not restore them.
+    capability: can.equipmentDefinitions.delete,
     handler: async ({ equipment, clearReferences }) => {
       await connectToMongoDB();
 
@@ -47,7 +51,7 @@ const handlers: HandlerMap<EquipmentContract> = {
     },
   },
   checkDependencies: {
-    roles: ["admin", "office"],
+    capability: can.equipmentDefinitions.delete,
     handler: async ({ equipmentId }) => {
       await connectToMongoDB();
       const packages = await EquipmentPackageModel.find(

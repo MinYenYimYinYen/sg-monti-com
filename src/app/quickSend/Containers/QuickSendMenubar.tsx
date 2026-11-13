@@ -16,11 +16,15 @@ import {
 } from "@/style/components/menubar";
 import { TooltipProvider } from "@/style/components/tooltip";
 import { authSelect } from "@/app/auth/authSlice";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { quickSendCapabilities } from "../quickSendCapabilities";
 import { quickSendActions } from "../quickSendSlice";
 import { qsSelect } from "../quickSendSelect";
 import { storedTemplatesSelect } from "../storedTemplates/storedTemplatesSelect";
 import { useStoredTemplates } from "../storedTemplates/useStoredTemplates";
 import type { StoredTemplateDoc } from "../storedTemplates/StoredTemplateTypes";
+
+const { can } = quickSendCapabilities;
 
 // ── Inline dialogs ────────────────────────────────────────────────────────────
 
@@ -210,7 +214,7 @@ export function QuickSendMenubar() {
   const storedTemplates = useStoredTemplates();
 
   const currentUser = useSelector(authSelect.user);
-  const role = useSelector(authSelect.role);
+  const allows = useSelector(userCapabilitiesSelect.allows);
   const sections = useSelector(qsSelect.sections);
   const programConfigs = useSelector(qsSelect.programConfigs);
   const globalPrepayId = useSelector(qsSelect.effectiveGlobalPrepayId);
@@ -225,8 +229,15 @@ export function QuickSendMenubar() {
   );
 
   const currentUserSaId = currentUser?.saId ?? null;
-  const isAdmin = role === "admin";
+  // A superuser may move or delete any template, as the admin role could before. The server
+  // enforces the same rule; this only decides which controls are offered.
+  const isSuperUser = allows("superUser");
+  const canWriteTemplates = allows(can.storedTemplates.write);
+  const canDeleteTemplates = allows(can.storedTemplates.delete);
+  const canWriteGroups = allows(can.templateGroups.write);
+  const canDeleteGroups = allows(can.templateGroups.delete);
   const isOwner = !!currentUserSaId && currentUserSaId === loadedTemplateSaId;
+  const canChangeLoadedTemplate = isOwner || isSuperUser;
   const isOtherUsersTemplate =
     !!loadedTemplateSaId && !!currentUserSaId && loadedTemplateSaId !== currentUserSaId;
 
@@ -340,18 +351,21 @@ export function QuickSendMenubar() {
               <MenubarSeparator />
 
               <MenubarItem
-                disabled={!loadedTemplateName || !currentUserSaId}
+                disabled={!canWriteTemplates || !loadedTemplateName || !currentUserSaId}
                 onSelect={(e) => { e.preventDefault(); handleSave(); }}
               >
                 Save
               </MenubarItem>
 
-              <MenubarItem onSelect={(e) => { e.preventDefault(); setSaveAsOpen(true); }}>
+              <MenubarItem
+                disabled={!canWriteTemplates}
+                onSelect={(e) => { e.preventDefault(); setSaveAsOpen(true); }}
+              >
                 Save As…
               </MenubarItem>
 
-              {/* Move to Group — only when a template is loaded and user is owner/admin */}
-              {loadedTemplateId && (isOwner || isAdmin) && (
+              {/* Move to Group — only when a template is loaded and the user owns it (or is a superuser) */}
+              {loadedTemplateId && canWriteTemplates && canChangeLoadedTemplate && (
                 <MenubarSub>
                   <MenubarSubTrigger>Move to Group</MenubarSubTrigger>
                   <MenubarSubContent>
@@ -377,7 +391,7 @@ export function QuickSendMenubar() {
               <MenubarSeparator />
 
               <MenubarItem
-                disabled={!isOwner && !isAdmin}
+                disabled={!canDeleteTemplates || !canChangeLoadedTemplate}
                 className="text-destructive focus:text-destructive"
                 onSelect={(e) => { e.preventDefault(); setDeleteOpen(true); }}
               >
@@ -447,11 +461,14 @@ export function QuickSendMenubar() {
           <MenubarMenu>
             <MenubarTrigger className="text-sm">Groups</MenubarTrigger>
             <MenubarContent>
-              <MenubarItem onSelect={(e) => { e.preventDefault(); setCreateGroupOpen(true); }}>
+              <MenubarItem
+                disabled={!canWriteGroups}
+                onSelect={(e) => { e.preventDefault(); setCreateGroupOpen(true); }}
+              >
                 Create New Group…
               </MenubarItem>
 
-              {groups.length > 0 && isAdmin && (
+              {groups.length > 0 && canWriteGroups && (
                 <MenubarSub>
                   <MenubarSubTrigger>Rename Group</MenubarSubTrigger>
                   <MenubarSubContent>
@@ -472,7 +489,7 @@ export function QuickSendMenubar() {
                 </MenubarSub>
               )}
 
-              {groups.length > 0 && isAdmin && (
+              {groups.length > 0 && canDeleteGroups && (
                 <MenubarSub>
                   <MenubarSubTrigger className="text-destructive focus:text-destructive">
                     Delete Group

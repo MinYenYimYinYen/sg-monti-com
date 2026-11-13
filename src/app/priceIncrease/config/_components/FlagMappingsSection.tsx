@@ -13,9 +13,13 @@ import { globalSettingsActions } from "@/app/globalSettings/_lib/globalSettingsS
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { FlagPicker } from "@/app/priceIncrease/config/_components/FlagPicker";
+import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 export function FlagMappingsSection() {
   const dispatch = useAppDispatch();
+  // These three are saved onto the global settings document, so its write is what they need.
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(globalSettingsCapabilities.can.settings.write);
   const draft = useSelector(priceIncreaseConfigSelect.flagMappingsDraft);
   const isValid = useSelector(priceIncreaseConfigSelect.flagMappingsIsValid);
   const isDirty = useSelector(priceIncreaseConfigSelect.flagMappingsIsDirty);
@@ -76,7 +80,7 @@ export function FlagMappingsSection() {
           variant={saveVariant}
           intensity="solid"
           onClick={handleSave}
-          disabled={!isValid || !isDirty}
+          disabled={!canWrite || !isValid || !isDirty}
         >
           Save Changes
         </Button>
@@ -119,6 +123,7 @@ export function FlagMappingsSection() {
                         <Checkbox
                           id={`exempt-flag-${flag.flagId}`}
                           checked={exemptFlagIds.includes(flag.flagId)}
+                          disabled={!canWrite}
                           onCheckedChange={() => handleExemptToggle(flag.flagId)}
                         />
                         <Label
@@ -141,6 +146,7 @@ export function FlagMappingsSection() {
           <select
             id="manual-flag"
             value={manualFlagId ?? ""}
+            disabled={!canWrite}
             onChange={(e) => handleManualChange(e.target.value)}
             className="flex h-9 w-full rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >

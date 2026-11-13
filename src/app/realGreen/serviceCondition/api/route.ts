@@ -7,10 +7,12 @@ import {
   remapServiceConditions,
 } from "@/app/realGreen/serviceCondition/_lib/ServiceConditionServerFunc";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
+import { serviceConditionCapabilities } from "@/app/realGreen/serviceCondition/serviceConditionCapabilities";
 
+const { can } = serviceConditionCapabilities;
 const handlers: HandlerMap<ServiceConditionContract> = {
   getServiceConditions: {
-    roles: ["office", "admin", "tech"],
+    capability: can.serviceConditions.read,
     handler: async ({ serviceIds }) => {
       const raw = await rgApi<ServiceConditionRaw[]>({
         path: "/ServiceConditions/Search",

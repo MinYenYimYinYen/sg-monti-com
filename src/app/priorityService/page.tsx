@@ -21,6 +21,12 @@ import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { usePriorityServiceCustomers } from "@/app/realGreen/customer/hooks/usePriorityServiceCustomers";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { CustomerQueryBuilder } from "@/app/realGreen/customer/mirror/CustomerQueryBuilder";
+import { priorityServiceCapabilities } from "@/app/priorityService/priorityServiceCapabilities";
+import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = priorityServiceCapabilities;
 
 // ---------------------------------------------------------------------------
 // Single-customer lookup plan for the "New Entry" form.
@@ -61,6 +67,17 @@ function buildSingleCustomerPlan(season: number) {
 // ---------------------------------------------------------------------------
 
 export default function PriorityServicePage() {
+  return (
+    <GatedPanel requirement={can.priorityServices.read}>
+      <PriorityServiceWorkspace />
+    </GatedPanel>
+  );
+}
+
+// Split from the page so the mount loads never fire for a user without `read`.
+function PriorityServiceWorkspace() {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.priorityServices.write);
   const { loadByServIds: loadPriorityServiceCustomers } = usePriorityServiceCustomers();
 
   // Load priority service docs
@@ -73,8 +90,9 @@ export default function PriorityServicePage() {
   // ProgServ needed to resolve servCode names in the form dropdowns
   useProgServ({ autoLoad: true });
 
-  // Global settings needed for the single-customer plan (season)
-  useGlobalSettings({ autoLoad: true });
+  // Global settings needed for the single-customer plan (season). A different feature's read (see
+  // `requires`).
+  useGlobalSettings({ autoLoad: true, canLoad: allows(globalSettingsCapabilities.can.settings.read) });
 
   const docs = useSelector(priorityServiceSelect.docs);
   const priorityServiceMap = useSelector(priorityServiceSelect.priorityServiceMap);
@@ -129,6 +147,7 @@ export default function PriorityServicePage() {
             variant="primary"
             intensity="soft"
             className="w-full justify-start gap-2"
+            disabled={!canWrite}
             onClick={() => {
               // Clear any previously looked-up single customer before opening the new form
               if (lookupCustomer) {

@@ -19,6 +19,11 @@ import {
 } from "@/style/components/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
+import { useSelector } from "react-redux";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
+
+const { can } = productCapabilities;
 
 interface EditAttributesPanelProps {
   categoryId: number;
@@ -34,6 +39,9 @@ export function EditAttributesPanel({
   productName,
 }: EditAttributesPanelProps) {
   const { updateCategory, updateUnit } = useProduct({});
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWriteCategory = allows(can.productCategories.write);
+  const canWriteUnit = allows(can.productUnits.write);
 
   const [newCategoryName, setNewCategoryName] = React.useState(categoryName);
   const [categoryStatus, setCategoryStatus] = React.useState<SaveStatus>("idle");
@@ -109,7 +117,7 @@ export function EditAttributesPanel({
               size="sm"
               variant="primary"
               onClick={handleSaveCategory}
-              disabled={!canSaveCategory}
+              disabled={!canSaveCategory || !canWriteCategory}
               status={categoryStatus}
               onSuccessComplete={() => setCategoryStatus("idle")}
             >
@@ -169,7 +177,7 @@ export function EditAttributesPanel({
               size="sm"
               variant="primary"
               onClick={handleSaveUnit}
-              disabled={!canSaveUnit}
+              disabled={!canSaveUnit || !canWriteUnit}
               status={unitStatus}
               onSuccessComplete={() => setUnitStatus("idle")}
             >

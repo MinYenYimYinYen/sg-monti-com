@@ -5,11 +5,12 @@ import { DiscountDoc, DiscountRaw } from "@/app/realGreen/discount/DiscountTypes
 import { extendDiscounts, remapDiscounts } from "@/app/realGreen/discount/_lib/discountServerFunc";
 import { DataResponse } from "@/lib/api/types/responses";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
+import { discountCapabilities } from "@/app/realGreen/discount/discountCapabilities";
 
-
+const { can } = discountCapabilities;
 const handlers: HandlerMap<DiscountContract> = {
   getAll: {
-    roles: ["office", "admin"],
+    capability: can.discounts.read,
     handler: async () => {
       const rawDiscounts = await rgApi<DiscountRaw[]>({
         path: "/DiscountCode",

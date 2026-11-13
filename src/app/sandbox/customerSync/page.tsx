@@ -1,6 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useSelector } from "react-redux";
+import { customerCapabilities } from "@/app/realGreen/customer/customerCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = customerCapabilities;
 
 type SyncStatus = "idle" | "pending" | "success" | "error";
 
@@ -49,6 +54,8 @@ const ENTITY_CONFIG: Record<
 
 function EntitySyncPanel({ entity }: { entity: Entity }) {
   const config = ENTITY_CONFIG[entity];
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canSync = allows(can.customerSync.write);
   const [state, setState] = useState<EntitySyncState>(initialEntityState);
 
   const runSync = async (force: boolean) => {
@@ -96,14 +103,14 @@ function EntitySyncPanel({ entity }: { entity: Entity }) {
         <button
           className="rounded bg-primary text-primary-foreground py-1.5 px-4 text-sm font-medium disabled:opacity-50"
           onClick={() => runSync(true)}
-          disabled={status === "pending"}
+          disabled={status === "pending" || !canSync}
         >
           Full Sync
         </button>
         <button
           className="rounded bg-accent/20 text-foreground border border-accent/30 py-1.5 px-4 text-sm font-medium disabled:opacity-50"
           onClick={() => runSync(false)}
-          disabled={status === "pending"}
+          disabled={status === "pending" || !canSync}
         >
           Delta Sync
         </button>

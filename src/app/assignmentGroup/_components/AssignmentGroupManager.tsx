@@ -10,6 +10,11 @@ import { createSelector } from "@reduxjs/toolkit";
 import { AssignmentGroup } from "@/app/assignmentGroup/AssignmentGroupTypes";
 import { Button } from "@/style/components/button";
 import { Plus, Trash2, Pencil, Check, X } from "lucide-react";
+import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+import { GatedPanel } from "@/app/permission/_components/GatedPanel";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+
+const { can } = assignmentGroupCapabilities;
 
 // Inline selector: remaining unscheduled price per servCode (actionable services only).
 // Mirrors paceCrawlerSelect.activePoolPriceByServCode without the cross-module dependency.
@@ -148,6 +153,9 @@ type GroupRowProps = {
 };
 
 function GroupRow({ group, onDelete, onUpdateLabel }: GroupRowProps) {
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.assignmentGroups.write);
+  const canDelete = allows(can.assignmentGroups.delete);
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(group.label);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -194,7 +202,8 @@ function GroupRow({ group, onDelete, onUpdateLabel }: GroupRowProps) {
             <span className="text-xs font-semibold text-foreground truncate">{group.label}</span>
             <button
               onClick={() => { setEditingLabel(true); setLabelDraft(group.label); }}
-              className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors shrink-0"
+              disabled={!canWrite}
+              className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors shrink-0 disabled:opacity-50 disabled:pointer-events-none"
               title="Edit label"
             >
               <Pencil className="w-3 h-3" />
@@ -230,7 +239,8 @@ function GroupRow({ group, onDelete, onUpdateLabel }: GroupRowProps) {
         ) : (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            disabled={!canDelete}
+            className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 disabled:pointer-events-none"
             title="Delete group"
           >
             <Trash2 className="w-3 h-3" />
@@ -346,7 +356,17 @@ function NewGroupForm({ existingGroupServCodeIds, onSave, onCancel }: NewGroupFo
 // ---------------------------------------------------------------------------
 
 export function AssignmentGroupManager() {
+  return (
+    <GatedPanel requirement={can.assignmentGroups.read}>
+      <AssignmentGroupEditor />
+    </GatedPanel>
+  );
+}
+
+function AssignmentGroupEditor() {
   const groups = useSelector(assignmentGroupSelect.groups);
+  const allows = useSelector(userCapabilitiesSelect.allows);
+  const canWrite = allows(can.assignmentGroups.write);
   const { upsertGroup, deleteGroup } = useAssignmentGroup();
   const [showNewForm, setShowNewForm] = useState(false);
 
@@ -383,7 +403,8 @@ export function AssignmentGroupManager() {
         </span>
         <button
           onClick={() => setShowNewForm((v) => !v)}
-          className="flex items-center gap-1 text-[10px] text-primary hover:bg-primary/10 rounded px-1.5 py-0.5 transition-colors"
+          disabled={!canWrite}
+          className="flex items-center gap-1 text-[10px] text-primary hover:bg-primary/10 rounded px-1.5 py-0.5 transition-colors disabled:opacity-50 disabled:pointer-events-none"
         >
           <Plus className="w-3 h-3" />
           New Group

@@ -6,7 +6,8 @@ import { Plus } from "lucide-react";
 import { Button } from "@/style/components/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/style/components/tooltip";
 import { AppState } from "@/store";
-import { authSelect } from "@/app/auth/authSlice";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { quickbooksCapabilities } from "@/app/qbo/quickbooksCapabilities";
 import { qboVendorSelect } from "@/app/qbo/vendor/qboVendorSelect";
 import { importMapSelect } from "@/app/qbo/importCCTxn/importMapSelect";
 import { importCCTxnMappingSelect } from "@/app/qbo/importCCTxn/importCCTxnMappingSelect";
@@ -32,7 +33,10 @@ export function MapRowVendorPicker({ rowId }: { rowId: string }) {
   const vendorChoices = useSelector(importMapSelect.vendorChoices);
   const vendorMap = useSelector(qboVendorSelect.vendorMap);
   const merchantMappings = useSelector(importCCTxnMappingSelect.merchantMappings);
-  const role = useSelector(authSelect.role);
+  // Creating a vendor writes to the live books, so it follows the QuickBooks vendor write.
+  const canCreateVendor = useSelector(userCapabilitiesSelect.allows)(
+    quickbooksCapabilities.can.vendors.write,
+  );
   const { pickVendor } = useImportDecision();
   const [isNewVendorOpen, setIsNewVendorOpen] = useState(false);
 
@@ -62,7 +66,7 @@ export function MapRowVendorPicker({ rowId }: { rowId: string }) {
         placeholder="Vendor"
         onSelectAction={choose}
       />
-      {role === "admin" && (
+      {canCreateVendor && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

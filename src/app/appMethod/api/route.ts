@@ -8,10 +8,13 @@ import { AppMethodModel } from "@/app/appMethod/AppMethodModel";
 import { EquipmentModel } from "@/app/equipment/EquipmentModel";
 import { AppMethodDoc } from "@/app/appMethod/AppMethodTypes";
 import { EquipmentDoc } from "@/app/equipment/EquipmentTypes";
+import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
+
+const { can } = appMethodCapabilities;
 
 const handlers: HandlerMap<AppMethodContract> = {
   getAll: {
-    roles: ["admin", "office", "tech"],
+    capability: can.appMethods.read,
     handler: async () => {
       await connectToMongoDB();
       const findResult = await AppMethodModel.find().lean();
@@ -20,7 +23,7 @@ const handlers: HandlerMap<AppMethodContract> = {
     },
   },
   upsert: {
-    roles: ["admin", "office"],
+    capability: can.appMethods.write,
     handler: async ({ appMethod }) => {
       await connectToMongoDB();
       // Ensure new boolean fields have defaults for backward compat
@@ -38,7 +41,9 @@ const handlers: HandlerMap<AppMethodContract> = {
     },
   },
   deleteOne: {
-    roles: ["admin", "office"],
+    // With clearReferences this also edits equipment and product packages, and re-adding the method
+    // does not restore them.
+    capability: can.appMethods.delete,
     handler: async ({ appMethod, clearReferences }) => {
       await connectToMongoDB();
 
@@ -75,7 +80,7 @@ const handlers: HandlerMap<AppMethodContract> = {
     },
   },
   checkDependencies: {
-    roles: ["admin", "office"],
+    capability: can.appMethods.delete,
     handler: async ({ appMethodId }) => {
       await connectToMongoDB();
 

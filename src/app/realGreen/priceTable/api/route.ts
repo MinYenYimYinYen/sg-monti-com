@@ -6,10 +6,12 @@ import {
   fetchRGPriceTableDocs,
 } from "@/app/realGreen/priceTable/_lib/priceTableServerFunc";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { priceTableCapabilities } from "@/app/realGreen/priceTable/priceTableCapabilities";
 
+const { can } = priceTableCapabilities;
 const handlers: HandlerMap<PriceTableContract> = {
   getPriceTableDocs: {
-    roles: ["office", "admin"],
+    capability: can.priceTables.read,
     handler: async () => {
       const mongoCachedPriceTableDocs = await fetchMongoPriceTableDocs(0.5);
       if (mongoCachedPriceTableDocs) {

@@ -4,10 +4,12 @@ import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
 import { CallLogContract } from "@/app/realGreen/callLog/api/CallLogContract";
 import { CallLogRaw } from "@/app/realGreen/callLog/CallLogTypes";
 import { remapCallLogs } from "@/app/realGreen/callLog/_lib/callLogServerFunc";
+import { callLogCapabilities } from "@/app/realGreen/callLog/callLogCapabilities";
 
+const { can } = callLogCapabilities;
 const handlers: HandlerMap<CallLogContract> = {
   getCallLogsForCustomer: {
-    roles: ["office", "admin"],
+    capability: can.callLogs.read,
     handler: async ({ custId }) => {
       const rawLogs = await rgApi<CallLogRaw[]>({
         path: `/CallLog/Customer/${custId}`,

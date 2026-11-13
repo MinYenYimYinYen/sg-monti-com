@@ -6,6 +6,9 @@ import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { DepositFieldMappingContract } from "@/app/javelin/depositMapping/api/DepositFieldMappingContract";
 import { DepositFieldMappingModel } from "@/app/javelin/depositMapping/DepositFieldMappingModel";
 import { DEPOSIT_LINK_KEYS } from "@/app/javelin/_lib/ckDepositFields";
+import { depositMappingCapabilities } from "@/app/javelin/depositMapping/depositMappingCapabilities";
+
+const { can } = depositMappingCapabilities;
 
 function validationError(message: string): AppError {
   return new AppError({ message, type: "VALIDATION_ERROR", statusCode: 400 });
@@ -13,7 +16,7 @@ function validationError(message: string): AppError {
 
 const handlers: HandlerMap<DepositFieldMappingContract> = {
   getAll: {
-    roles: ["admin"],
+    capability: can.depositFieldLinks.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await DepositFieldMappingModel.find().lean();
@@ -22,7 +25,7 @@ const handlers: HandlerMap<DepositFieldMappingContract> = {
   },
 
   upsert: {
-    roles: ["admin"],
+    capability: can.depositFieldLinks.write,
     handler: async ({ field, qboAccountId, defaultNameType, defaultNameId }) => {
       if (!DEPOSIT_LINK_KEYS.includes(field)) throw validationError("That is not a deposit account.");
       if (typeof qboAccountId !== "string" || qboAccountId.length === 0) {
@@ -46,7 +49,7 @@ const handlers: HandlerMap<DepositFieldMappingContract> = {
   },
 
   remove: {
-    roles: ["admin"],
+    capability: can.depositFieldLinks.delete,
     handler: async ({ field }) => {
       if (!DEPOSIT_LINK_KEYS.includes(field)) throw validationError("That is not a deposit account.");
       await connectToMongoDB();

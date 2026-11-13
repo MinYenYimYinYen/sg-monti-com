@@ -3,11 +3,18 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { formTemplateActions } from "./formTemplateSlice";
 import type { FormTemplateDoc } from "./FormTemplateTypes";
 
-export function useFormTemplate({ autoLoad }: { autoLoad?: boolean } = {}) {
+/**
+ * `canLoad` comes from the component, because hooks expose actions only and do not select. It
+ * defaults to allowed so callers in other folders can omit it.
+ */
+export function useFormTemplate({
+  autoLoad,
+  canLoad = true,
+}: { autoLoad?: boolean; canLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad) {
+    if (autoLoad && canLoad) {
       dispatch(
         formTemplateActions.getAll({
           params: {},
@@ -15,7 +22,7 @@ export function useFormTemplate({ autoLoad }: { autoLoad?: boolean } = {}) {
         }),
       );
     }
-  }, [autoLoad, dispatch]);
+  }, [autoLoad, canLoad, dispatch]);
 
   const saveTemplate = (template: FormTemplateDoc) =>
     dispatch(

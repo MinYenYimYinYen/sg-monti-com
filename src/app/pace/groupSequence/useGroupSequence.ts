@@ -6,11 +6,18 @@ import { paceGroupSequenceActions } from "@/app/pace/groupSequence/groupSequence
 import { GroupSequence } from "@/app/pace/groupSequence/GroupSequenceTypes";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
-export function useGroupSequence({ autoLoad }: { autoLoad?: boolean } = {}) {
+/**
+ * `canLoad` comes from the component, because hooks expose actions only and do not select. It
+ * defaults to allowed so write-only callers can omit it.
+ */
+export function useGroupSequence({
+  autoLoad,
+  canLoad = true,
+}: { autoLoad?: boolean; canLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad) {
+    if (autoLoad && canLoad) {
       dispatch(
         paceGroupSequenceActions.getSequences({
           params: {},
@@ -18,7 +25,7 @@ export function useGroupSequence({ autoLoad }: { autoLoad?: boolean } = {}) {
         }),
       );
     }
-  }, [autoLoad, dispatch]);
+  }, [autoLoad, canLoad, dispatch]);
 
   const upsertSequence = (sequence: GroupSequence) =>
     dispatch(

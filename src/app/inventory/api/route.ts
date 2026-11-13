@@ -8,10 +8,13 @@ import {
 } from "@/lib/mongoose/cleanMongoObj";
 import { InventoryCheckDoc } from "@/app/inventory/InventoryTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { inventoryCapabilities } from "@/app/inventory/inventoryCapabilities";
+
+const { can } = inventoryCapabilities;
 
 const handlers: HandlerMap<InventoryContract> = {
   getInventoryChecks: {
-    roles: ["admin"],
+    capability: can.inventoryChecks.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await InventoryCheckModel.find({})
@@ -24,7 +27,7 @@ const handlers: HandlerMap<InventoryContract> = {
     },
   },
   saveInventoryCheck: {
-    roles: ["admin"],
+    capability: can.inventoryChecks.write,
     handler: async ({ check }) => {
       await connectToMongoDB();
       // Upsert — replaces the existing check for this date if one exists

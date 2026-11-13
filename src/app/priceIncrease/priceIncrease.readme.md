@@ -166,7 +166,7 @@ type SeasonIncreasesDoc = CreatedUpdated & {
 
 - No `isActive` field. The active plan is whichever doc the active settings reference by `seasonIncreasesId` (`seasonIncreasesSelect.activeDoc`).
 - `season` is always `index + 2` and is recomputed by `InlinePlanEditor` on save; the UI never lets the user edit it.
-- API ops: `getAll`, `upsert`, `remove`. Roles: read `admin|office`, write `admin`.
+- API ops: `getAll`, `upsert`, `remove`. Capabilities: `priceIncrease.increasePlans.read`, `.write`, `.delete` (declared in `priceIncreaseCapabilities.ts`).
 
 ### 2.2 `PriceIncreaseSettingsDoc` (collection `PriceIncreaseSettings`)
 
@@ -189,7 +189,7 @@ type PriceIncreaseSettingsDoc = CreatedUpdated & {
 };
 ```
 
-- API ops: `getAll`, `upsert`, `setActive` (deactivates all, activates one), `remove`.
+- API ops: `getAll`, `upsert`, `setActive` (deactivates all, activates one), `remove`. Capabilities: `priceIncrease.increaseSettings.read`, `.write` (`upsert` and `setActive`), `.delete`.
 - The slice state key is `storedSettings`; selectors are `priceIncreaseSettingsSelect.storedSettings` and `.activeSettings`. These expose **persisted** state only. UI and results must read `priceIncreaseConfigSelect.settings` instead (section 4.1).
 
 ### 2.3 `GlobalSettings` fields

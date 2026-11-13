@@ -36,8 +36,9 @@ export interface UserCapabilitiesContract extends ApiContract {
     params: { userName: string; bundleKey: string };
     result: DataResponse<UserCapabilitiesDoc>;
   };
+  /** Adds one or more direct grants in a single write, so a capability and what it needs stay together. */
   addDirect: {
-    params: { userName: string; capability: string };
+    params: { userName: string; capabilities: string[] };
     result: DataResponse<UserCapabilitiesDoc>;
   };
   removeDirect: {

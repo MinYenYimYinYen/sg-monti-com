@@ -13,22 +13,37 @@ import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { dateRanges } from "@/lib/primatives/dates/dateStrings";
 import { useCustomerContext } from "@/app/realGreen/customer/hooks/useCustomerContext";
+import { SchedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 
-export function useLoadoutReportDeps() {
+/**
+ * `canLoad` comes from the page, because hooks expose actions only and do not select. Every hook
+ * is still called on every render, in the same order: a flag only turns its load off.
+ */
+export function useLoadoutReportDeps({ canLoad }: { canLoad: SchedulingCanLoad }) {
   const dateRange = useSelector(loadoutReportSelect.dateRange);
   useCustomerContext({contexts: ["recentProduction"]})
 
-  useGlobalSettings({ autoLoad: true });
-  useProduct({ autoLoad: true });
-  useAppMethod({ autoLoad: true });
-  useEquipment({ autoLoad: true });
-  useEquipmentPackage({ autoLoad: true });
-  useProgServ({ autoLoad: true });
-  useUnitConfig({ autoLoad: true });
-  useEmployee({ autoLoad: true });
+  useGlobalSettings({ autoLoad: true, canLoad: canLoad.globalSettings });
+  useProduct({
+    autoLoad: true,
+    canLoad: {
+      products: canLoad.products,
+      unitConversions: canLoad.unitConversions,
+      appMethods: canLoad.appMethods,
+    },
+  });
+  useAppMethod({ autoLoad: true, canLoad: canLoad.appMethods });
+  useEquipment({ autoLoad: true, canLoad: canLoad.equipment });
+  useEquipmentPackage({ autoLoad: true, canLoad: canLoad.equipmentPackages });
+  useProgServ({
+    autoLoad: true,
+    canLoad: { progCodes: canLoad.progCodes, servCodes: canLoad.servCodes },
+  });
+  useUnitConfig({ autoLoad: true, canLoad: canLoad.unitConversions });
+  useEmployee({ autoLoad: true, canLoad: canLoad.employees });
 
   // Load completed services for the date range via recentProduction scheme
-  useRecentProduction(dateRange);
+  useRecentProduction(dateRange, { canLoad: canLoad.customers });
 
   // Load all finished loadout docs for the date range
   const { getLoadouts } = useLoadout();

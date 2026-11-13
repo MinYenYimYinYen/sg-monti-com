@@ -17,6 +17,8 @@ import { useGroupSequence } from "@/app/pace/groupSequence/useGroupSequence";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
 import { SequenceWithGroups } from "@/app/pace/setup/setupSelect";
+import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type DeleteSequenceDialogProps = {
   sequenceWithGroups: SequenceWithGroups;
@@ -36,6 +38,9 @@ export function DeleteSequenceDialog({
   const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
   const employeeMap = useSelector(employeeSelect.employeeMap);
   const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
+  const canDelete = useSelector(userCapabilitiesSelect.allows)(
+    paceCapabilities.can.groupSequences.delete,
+  );
 
   const [assignmentChoice, setAssignmentChoice] = useState<AssignmentChoice>("keep");
 
@@ -184,6 +189,7 @@ export function DeleteSequenceDialog({
             variant="destructive"
             intensity="solid"
             size="sm"
+            disabled={!canDelete}
             onClick={() => { void handleConfirm(); }}
           >
             Delete Sequence

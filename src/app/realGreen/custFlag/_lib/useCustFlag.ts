@@ -6,17 +6,26 @@ import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useSelector } from "react-redux";
 import { CustFlagAdd } from "@/app/realGreen/custFlag/_lib/CustFlagTypes";
 
+/**
+ * `canLoad` comes from the component, because hooks expose actions only and do not select. It
+ * defaults to allowed so callers that do not gate (or only write) can omit it. It guards the
+ * loads and reloads, not `addFlag` and `addFlags`: the controls that call those are disabled by
+ * the write capability.
+ */
 export function useCustFlag({
   flagIds,
   custStatuses,
+  canLoad = true,
 }: {
   flagIds: number[];
   custStatuses: string[];
+  canLoad?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const flagIdsInState = useSelector(custFlagSelect.flagIdsInState);
 
   useEffect(() => {
+    if (!canLoad) return;
     const flagsToLoad = flagIds.filter((id) => !flagIdsInState.includes(id));
     if (flagsToLoad.length) {
       dispatch(
@@ -34,7 +43,7 @@ export function useCustFlag({
         }),
       );
     }
-  }, [custStatuses, dispatch, flagIds, flagIdsInState]);
+  }, [canLoad, custStatuses, dispatch, flagIds, flagIdsInState]);
 
   /**
    * Reloads custIds all flagIds.
@@ -42,6 +51,7 @@ export function useCustFlag({
    * we want to reload all flagIds to get the latest data.
    * */
   const reloadFlagIds = () => {
+    if (!canLoad) return;
     dispatch(
       custFlagActions.loadFlagIdCustIds({
         params: {
@@ -65,6 +75,7 @@ export function useCustFlag({
    * flagId to get the latest data.
    * */
   const reloadFlagId = (flagId: number) => {
+    if (!canLoad) return;
     dispatch(
       custFlagActions.loadFlagIdCustIds({
         params: {

@@ -6,14 +6,16 @@ import { fetchServices, bulkUpsertServices } from "@/app/realGreen/customer/sync
 import { getLastSyncedAt, setLastSyncedAt } from "@/app/realGreen/syncMetadata/syncMetadataFunc";
 import { SYNC_ENTITY_TYPES } from "@/app/realGreen/syncMetadata/syncEntityTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
+import { customerCapabilities } from "@/app/realGreen/customer/customerCapabilities";
 
 // 7-year window in each direction: captures historical data and pre-planned future seasons.
 const SEASON_FLOOR = new Date().getFullYear() - 7;
 const SEASON_CEIL = new Date().getFullYear() + 7;
 
+const { can } = customerCapabilities;
 const handlers: HandlerMap<ServiceSyncContract> = {
   syncServices: {
-    roles: ["admin"],
+    capability: can.customerSync.write,
     handler: async ({ force }) => {
       await connectToMongoDB();
 

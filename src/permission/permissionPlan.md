@@ -55,7 +55,7 @@ Roles are gone. **Superseded wording:** presets are now data bundles (admin, off
 
 ### Assignment-time rules
 
-**Superseded:** there is no hierarchy between capabilities. The runtime check is a plain set lookup, and nothing is implied or added at assignment or resolve time. `x.write` does not grant `x.read`. The old implication rules (write and delete imply read, and so on) are dropped. At most, an editor may show a warn-only note when a list has `x.write` without `x.read` (`findMissingCompanions` in `capabilityArchitecturePlan.md`).
+**Superseded:** there is no hierarchy between capabilities at runtime. The runtime check is a plain set lookup, and nothing is implied or added when access is decided or resolved. `x.write` does not grant `x.read`. The old implication rules (write and delete imply read, and so on) are dropped. Instead, declared requirements are an assignment-time aid: the editors offer what a capability needs and warn when it is missing (see 5c in `capabilityArchitecturePlan.md`).
 
 Still open from this section:
 
