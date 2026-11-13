@@ -8,7 +8,6 @@ import { qboJournalEntryCapabilities } from "@/app/qbo/journalEntry/qboJournalEn
 import { qboPurchaseCapabilities } from "@/app/qbo/purchase/qboPurchaseCapabilities";
 import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
 import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
-import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
 import { authCapabilities } from "@/app/auth/authCapabilities";
 import { employeeAvailabilityCapabilities } from "@/app/employeeAvailability/employeeAvailabilityCapabilities";
 import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
@@ -95,7 +94,6 @@ const scheduling = combineCapabilities({
   description: "Features related to routing",
   features: [
     assignmentCapabilities,
-    assignmentGroupCapabilities,
     employeeAvailabilityCapabilities,
     holidayCapabilities,
     paceCapabilities,
@@ -152,3 +150,13 @@ const siteAdmin = combineCapabilities({
     capabilityManagementCapabilities,
   ],
 });
+
+export const allCombinedCapabilities = [
+  realGreenMetadata,
+  products,
+  realGreenCustomers,
+  scheduling,
+  accounting,
+  customerContact,
+  siteAdmin,
+] as const;
