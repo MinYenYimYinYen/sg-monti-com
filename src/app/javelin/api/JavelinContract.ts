@@ -12,7 +12,7 @@ import {
 } from "@/app/javelin/JavelinTypes";
 
 // Posting writes to the real books and the previews read them, so the posts and the previews hold
-// different capabilities (see javelinCapabilities.ts).
+// different capabilities (journalEntryPlans and qboJournalEntries, in src/permission/groups/accounting.ts).
 // The browser sends parsed CSV data. The server rebuilds every entry from stored links, so the
 // lines it posts are never taken from the browser.
 export interface JavelinContract extends ApiContract {

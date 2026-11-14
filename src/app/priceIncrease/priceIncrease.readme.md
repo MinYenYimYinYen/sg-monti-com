@@ -166,7 +166,7 @@ type SeasonIncreasesDoc = CreatedUpdated & {
 
 - No `isActive` field. The active plan is whichever doc the active settings reference by `seasonIncreasesId` (`seasonIncreasesSelect.activeDoc`).
 - `season` is always `index + 2` and is recomputed by `InlinePlanEditor` on save; the UI never lets the user edit it.
-- API ops: `getAll`, `upsert`, `remove`. Capabilities: `priceIncrease.increasePlans.read`, `.write`, `.delete` (declared in `priceIncreaseCapabilities.ts`).
+- API ops: `getAll`, `upsert`, `remove`. Capabilities: `increasePlans.read`, `.write`, `.delete` (declared in `src/permission/groups/accounting.ts`).
 
 ### 2.2 `PriceIncreaseSettingsDoc` (collection `PriceIncreaseSettings`)
 

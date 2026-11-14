@@ -8,7 +8,7 @@ import {
   ReconcileJournalEntriesResult,
 } from "@/app/qbo/journalEntry/types/QboJournalEntryTypes";
 
-// Posting writes to the real books, so it has its own capability (see qboJournalEntryCapabilities).
+// Posting writes to the real books, so it has its own capability (qboJournalEntries.write).
 export interface QboJournalEntryContract extends ApiContract {
   // The only write to QuickBooks. Posts in batches of 30 and stops after the first batch in
   // which any entry did not post. DocNumber is required on every entry.
