@@ -1,16 +1,16 @@
 import type { FormDataTypeDescriptor } from "@/app/formTemplate/formDataContract";
 import {
-  samplePrepayLetterData,
   prepayLetterContract,
   prepayLetterFormImage,
 } from "@/app/prepayLetters/template/PrepayLetterTypes";
+import { samplePrepayLetterData } from "@/app/prepayLetters/template/sampleData/samplePrepayLetterData";
 
 /**
  * Registry of all supported form data types. This is the one place that knows about
  * the features; `formTemplate` itself is generic and never imports a feature.
  *
  * To add a new data type:
- * 1. Define the data type, `xxxContract`, and `sampleXxxData` in the feature.
+ * 1. Define the data type and `xxxContract` in the feature, and `sampleXxxData` in its `sampleData/` folder.
  * 2. Add an entry here.
  * 3. The editor and any batch module pick it up from this registry.
  */

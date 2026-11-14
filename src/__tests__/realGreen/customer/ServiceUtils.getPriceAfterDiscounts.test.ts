@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
-import {
-  sampleServiceDiscount,
-  sampleServiceDiscount2,
-  sampleProgramDiscount,
-} from "@/app/realGreen/sampleData/sampleDiscounts";
+import { makeCustomer } from "@/_builders/makeCustomer";
+import { makeDiscount } from "@/_builders/makeDiscount";
+import { DiscountType } from "@/app/realGreen/discount/DiscountTypes";
+
+const customerDiscount = makeDiscount({ discountType: DiscountType.PERCENT, isPermanent: true, amount: 5 });
+const programDiscount = makeDiscount({ discountType: DiscountType.PERCENT, amount: 10 });
+const serviceDollarDiscount = makeDiscount({ discountType: DiscountType.DOLLAR, amount: 15 });
+const servicePercentDiscount = makeDiscount({ discountType: DiscountType.PERCENT, amount: 5 });
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -17,11 +19,11 @@ describe("ServiceUtils.getPriceAfterDiscounts", () => {
    * Expected: 100 - 15 = 85
    */
   it("applies a service-level dollar discount when only the service has a discount", () => {
-    const customer = generateCustomer({
+    const customer = makeCustomer({
       programs: [{
         services: [{
           core: { price: 100 },
-          discount: sampleServiceDiscount, // $15 DOLLAR
+          discount: serviceDollarDiscount, // $15 DOLLAR
         }],
       }],
     });
@@ -36,9 +38,9 @@ describe("ServiceUtils.getPriceAfterDiscounts", () => {
    * Expected: 150 - round(150 × 0.10 × 100)/100 = 150 - 15 = 135
    */
   it("applies a program-level percent discount when only the program has a discount", () => {
-    const customer = generateCustomer({
+    const customer = makeCustomer({
       programs: [{
-        discount: sampleProgramDiscount, // 10% PERCENT
+        discount: programDiscount, // 10% PERCENT
         services: [{
           core: { price: 150 },
         }],
@@ -53,7 +55,7 @@ describe("ServiceUtils.getPriceAfterDiscounts", () => {
    * Scenario 3: Both service-level and program-level discounts are present (they stack).
    * Service: $150, service discount: 5% PERCENT, program discount: 10% PERCENT.
    *
-   * applicableDiscounts should contain exactly [sampleServiceDiscount2, sampleProgramDiscount]
+   * applicableDiscounts should contain exactly [servicePercentDiscount, programDiscount]
    * in that order (service first, then program).
    *
    * applyDiscounts sums each discount individually (rounded per-discount):
@@ -63,12 +65,12 @@ describe("ServiceUtils.getPriceAfterDiscounts", () => {
    * Expected price: 150 - 22.50 = 127.50
    */
   it("stacks service-level and program-level discounts when both are present", () => {
-    const customer = generateCustomer({
+    const customer = makeCustomer({
       programs: [{
-        discount: sampleProgramDiscount, // 10% PERCENT
+        discount: programDiscount, // 10% PERCENT
         services: [{
           core: { price: 150 },
-          discount: sampleServiceDiscount2, // 5% PERCENT
+          discount: servicePercentDiscount, // 5% PERCENT
         }],
       }],
     });
@@ -76,8 +78,8 @@ describe("ServiceUtils.getPriceAfterDiscounts", () => {
 
     // Confirm the correct discounts are collected — service first, then program.
     expect(service.x.applicableDiscounts).toEqual([
-      sampleServiceDiscount2,
-      sampleProgramDiscount,
+      servicePercentDiscount,
+      programDiscount,
     ]);
 
     expect(service.x.getPriceAfterDiscounts("price")).toBe(127.5);
@@ -88,19 +90,20 @@ describe("ServiceUtils.getPriceAfterDiscounts", () => {
    * appear in applicableDiscounts — it is advisory only (default for new programs).
    */
   it("does not include the customer-level discount in applicableDiscounts", () => {
-    const customer = generateCustomer({
+    const customer = makeCustomer({
+      discount: customerDiscount,
       programs: [{
-        discount: sampleProgramDiscount, // 10% PERCENT
+        discount: programDiscount, // 10% PERCENT
         services: [{
           core: { price: 150 },
-          discount: sampleServiceDiscount2, // 5% PERCENT
+          discount: servicePercentDiscount, // 5% PERCENT
         }],
       }],
     });
     const service = customer.programs[0]!.services[0]!;
 
     const discountIds = service.x.applicableDiscounts.map((d) => d.discountId);
-    expect(discountIds).not.toContain("CUST-DISC-5");
+    expect(discountIds).not.toContain(customerDiscount.discountId);
     expect(service.x.applicableDiscounts).toHaveLength(2);
   });
 });

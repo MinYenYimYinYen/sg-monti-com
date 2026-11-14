@@ -1,39 +1,57 @@
-import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
-import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
-import { sampleBillingAddress, sampleServiceAddress } from "./sampleAddress";
-import { sampleCustomerDiscount, sampleProgramDiscount, sampleServiceDiscount, sampleServiceDiscount2 } from "./sampleDiscounts";
+import { makeAddress } from "@/_builders/makeAddress";
+import { makeCustomer } from "@/_builders/makeCustomer";
+import { makeDiscount } from "@/_builders/makeDiscount";
+import { makeTaxCode } from "@/_builders/makeTaxCode";
 import { BILLING_TYPE } from "@/app/realGreen/_lib/subTypes/BillingType";
-/**
- * A sample TaxCode for use in tests and previews.
- * Represents a 7.375% tax rate — matches the CRM reference data used in pricing tests.
- *
- * Note: taxRate is a whole-number percentage (7.375 = 7.375%), consistent with
- * all other percentage values in the pricing system (discounts, prepay, etc.).
- */
-export const sampleTaxCode = {
-  taxCodeId: "TX-7375",
-  taxRate: 7.375,
-  available: true,
-  createdAt: "",
-  updatedAt: "",
-};
+import { DiscountType } from "@/app/realGreen/discount/DiscountTypes";
+import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
+
+// The discount ids must stay distinct: makeCustomer wires each discount to its owner by id.
+const customerDiscount = makeDiscount({
+  discountId: "CUST-DISC-5",
+  discountType: DiscountType.PERCENT,
+  isPermanent: true,
+  amount: 5,
+  description: "5% Customer Discount",
+});
+
+const programDiscount = makeDiscount({
+  discountId: "PROG-DISC-10",
+  discountType: DiscountType.PERCENT,
+  amount: 10,
+  description: "10% Program Discount",
+});
+
+const serviceDollarDiscount = makeDiscount({
+  discountId: "SERV-DISC-15",
+  discountType: DiscountType.DOLLAR,
+  amount: 15,
+  description: "$15 Service Discount",
+});
+
+const servicePercentDiscount = makeDiscount({
+  discountId: "SERV-DISC-5",
+  discountType: DiscountType.PERCENT,
+  amount: 5,
+  description: "5% Service Discount",
+});
 
 /**
- * The canonical sample customer for previews and tests.
+ * The sample customer for the prepay letter preview and the prepay tests.
  *
  * Structure:
- *   - John Doe, custId 10001, status "9" (active), size 15
+ *   - John Doe, custId 10001, status "9" (active), size 15, tax 7.375%
  *   - 4 programs:
  *       1. Lawn Care (3 services: Early Spring, Spring, Summer)
  *       2. Insect Control with 10% program discount (2 services)
  *       3. Mosquito Reduction (4 services)
- *       4. Pest Control, installment-billed (2 services) — excluded from prepay pricing
+ *       4. Pest Control, installment-billed (2 services), excluded from prepay pricing
  *   - Customer-level 5% discount
  *   - $30 credit balance (netBalance -30; negative means the customer holds a credit)
  *   - Service-level $15 discount on first Lawn Care service
  *   - Service-level 5% discount on first Insect Control service
  */
-export const sampleCustomer: Customer = generateCustomer({
+export const sampleCustomer: Customer = makeCustomer({
   core: {
     custId: 10001,
     displayName: "John Doe",
@@ -43,11 +61,32 @@ export const sampleCustomer: Customer = generateCustomer({
     status: "9",
     size: 15,
     netBalance: -30,
-    address: sampleServiceAddress,
-    billingAddress: sampleBillingAddress,
+    address: makeAddress({
+      addressLine1: "456 Oak Ave",
+      city: "Springfield",
+      state: "MN",
+      zip: "55001",
+      formattedAddress: "456 Oak Ave\r\n Springfield, MN 55001-5678",
+      formattedZip: "55001-5678",
+      houseNumber: "456",
+      streetName: "Oak",
+      streetSuffix: "Ave",
+    }),
+    billingAddress: makeAddress({
+      addressLine1: "123 Sesame St",
+      city: "Springfield",
+      state: "MN",
+      zip: "55001",
+      // Same shape RealGreen returns: CRLF, and a leading space on the city line.
+      formattedAddress: "123 Sesame St\r\n Springfield, MN 55001-1234",
+      formattedZip: "55001-1234",
+      houseNumber: "123",
+      streetName: "Sesame",
+      streetSuffix: "St",
+    }),
   },
-  taxCodes: [sampleTaxCode],
-  discount: sampleCustomerDiscount,
+  taxCodes: [makeTaxCode({ taxCodeId: "TX-7375", taxRate: 7.375 })],
+  discount: customerDiscount,
   programs: [
     // ─── Program 1: Lawn Care ─────────────────────────────────────────────
     {
@@ -57,7 +96,7 @@ export const sampleCustomer: Customer = generateCustomer({
         {
           core: { servId: 1, price: 100, season: 2026 },
           servCode: { servCodeId: "S01", name: "Early Spr Visit", longName: "Early Spring Visit" },
-          discount: sampleServiceDiscount,
+          discount: serviceDollarDiscount,
         },
         {
           core: { servId: 2, price: 100, season: 2026 },
@@ -74,12 +113,12 @@ export const sampleCustomer: Customer = generateCustomer({
     {
       core: { progId: 2, price: 300, season: 2026, isRenewed: true, isProgram: true, progDefId: 2 },
       progCode: { progCodeId: "PC2", description: "Insect Control Program", progDefId: 2 },
-      discount: sampleProgramDiscount,
+      discount: programDiscount,
       services: [
         {
           core: { servId: 101, price: 150, season: 2026 },
           servCode: { servCodeId: "S04", name: "Insect Visit", longName: "Lawn Insect Control" },
-          discount: sampleServiceDiscount2,
+          discount: servicePercentDiscount,
         },
         {
           core: { servId: 102, price: 150, season: 2026 },
@@ -87,7 +126,6 @@ export const sampleCustomer: Customer = generateCustomer({
         },
       ],
     },
-
     // ─── Program 3: Mosquito Reduction ────────────────────────────────────
     {
       core: { progId: 3, price: 200, season: 2026, isRenewed: false, isProgram: true, progDefId: 3 },

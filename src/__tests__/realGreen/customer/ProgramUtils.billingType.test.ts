@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
+import { makeCustomer } from "@/_builders/makeCustomer";
 import { BILLING_TYPE } from "@/app/realGreen/_lib/subTypes/BillingType";
 
 function makeProgramWithBillingType(billingType: string) {
-  const customer = generateCustomer({
+  const customer = makeCustomer({
     programs: [
       {
         core: { billingType },
@@ -53,7 +53,7 @@ describe("ProgramUtils billing type getters", () => {
 
 describe("ServiceUtils billing type getters", () => {
   it("delegates to the service's program", () => {
-    const customer = generateCustomer({
+    const customer = makeCustomer({
       programs: [
         {
           core: { billingType: BILLING_TYPE.Installment },

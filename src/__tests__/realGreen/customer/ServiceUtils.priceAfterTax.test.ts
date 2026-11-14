@@ -1,10 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
-import {
-  sampleServiceDiscount2,
-  sampleProgramDiscount,
-} from "@/app/realGreen/sampleData/sampleDiscounts";
-import type { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
+import { makeCustomer } from "@/_builders/makeCustomer";
+import { makeDiscount } from "@/_builders/makeDiscount";
+import { makeTaxCode } from "@/_builders/makeTaxCode";
+import { DiscountType } from "@/app/realGreen/discount/DiscountTypes";
 
 // ---------------------------------------------------------------------------
 // CRM reference data (Prepay Calculator screenshots, $27.00 per service, taxRate 7.375%)
@@ -12,16 +10,8 @@ import type { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 
 const TAX_RATE = 7.375;
 
-/** Builds a minimal TaxCode for the given rate. */
-function makeTaxCode(rate: number): TaxCode {
-  return {
-    taxCodeId: `TX-${rate}`,
-    taxRate: rate,
-    available: true,
-    createdAt: "",
-    updatedAt: "",
-  };
-}
+const programDiscount = makeDiscount({ discountType: DiscountType.PERCENT, amount: 10 });
+const servicePercentDiscount = makeDiscount({ discountType: DiscountType.PERCENT, amount: 5 });
 
 // ---------------------------------------------------------------------------
 // Tests — wiring: ServiceUtils.priceAfterTax delegates to calculatePrepayServTotal
@@ -33,8 +23,8 @@ describe("ServiceUtils.priceAfterTax", () => {
    * Expected net per service: $29.00 (CRM screenshot 1)
    */
   it("returns correct net with no discount and no prepay (CRM: $29.00)", () => {
-    const customer = generateCustomer({
-      taxCodes: [makeTaxCode(TAX_RATE)],
+    const customer = makeCustomer({
+      taxCodes: [makeTaxCode({ taxRate: TAX_RATE })],
       programs: [{
         services: [{ core: { price: 27.00 } }],
       }],
@@ -49,10 +39,10 @@ describe("ServiceUtils.priceAfterTax", () => {
    * Expected net per service: $26.09 (CRM screenshot 2)
    */
   it("returns correct net with 10% program discount and no prepay (CRM: $26.09)", () => {
-    const customer = generateCustomer({
-      taxCodes: [makeTaxCode(TAX_RATE)],
+    const customer = makeCustomer({
+      taxCodes: [makeTaxCode({ taxRate: TAX_RATE })],
       programs: [{
-        discount: sampleProgramDiscount,
+        discount: programDiscount,
         services: [{ core: { price: 27.00 } }],
       }],
     });
@@ -66,12 +56,12 @@ describe("ServiceUtils.priceAfterTax", () => {
    * Expected net per service: $27.54 (CRM screenshot 3)
    */
   it("returns correct net with 5% discount and no prepay (CRM: $27.54)", () => {
-    const customer = generateCustomer({
-      taxCodes: [makeTaxCode(TAX_RATE)],
+    const customer = makeCustomer({
+      taxCodes: [makeTaxCode({ taxRate: TAX_RATE })],
       programs: [{
         services: [{
           core: { price: 27.00 },
-          discount: sampleServiceDiscount2, // 5% PERCENT
+          discount: servicePercentDiscount, // 5% PERCENT
         }],
       }],
     });
@@ -85,8 +75,8 @@ describe("ServiceUtils.priceAfterTax", () => {
    * Expected net per service: $27.54 (CRM screenshot 4)
    */
   it("returns correct net with no discount and 5% prepay (CRM: $27.54)", () => {
-    const customer = generateCustomer({
-      taxCodes: [makeTaxCode(TAX_RATE)],
+    const customer = makeCustomer({
+      taxCodes: [makeTaxCode({ taxRate: TAX_RATE })],
       programs: [{
         services: [{ core: { price: 27.00 } }],
       }],

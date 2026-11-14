@@ -8,15 +8,11 @@ import prepayLetterFormImageSrc from "./prepayLetterForm.jpg";
 import type { Company } from "@/app/realGreen/company/_lib/CompanyTypes";
 import type { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import type { PrepayConfig } from "@/app/prepayLetters/config/prepayConfigTypes";
-import { sampleCustomer } from "@/app/realGreen/sampleData/sampleCustomer";
-import { sampleCompany } from "@/app/realGreen/sampleData/sampleCompany";
-import { samplePrepayConfig } from "@/app/realGreen/sampleData/samplePrepayConfig";
 import type { SlotOptionSchema } from "@/app/formTemplate/slotOptionSchema";
 import { formatNumber } from "@/components/Number";
 import { PDFNumber } from "@/lib/pdf/_components/PDFNumber";
 import { SquarePDFIcon } from "@/lib/pdf/_components/pdfIcons";
 import type { ProgCode } from "@/app/realGreen/progServ/_lib/types/ProgCodeTypes";
-import { sampleUpsellProgCode } from "@/app/realGreen/sampleData/sampleUpsellProgCode";
 import {
   buildInstallmentNotice,
   calculatePrepayTotals,
@@ -1603,13 +1599,3 @@ export const prepayLetterContract = {
     ),
   } satisfies WithText,
 } satisfies FormDataContract<PrepayLetterData, PrepayLetterSlot>;
-
-// ─── Sample Data ──────────────────────────────────────────────────────────────
-
-export const samplePrepayLetterData: PrepayLetterData = {
-  company: sampleCompany,
-  customer: sampleCustomer,
-  config: samplePrepayConfig,
-  isAutoRenew: true,
-  upsell: sampleUpsellProgCode,
-};

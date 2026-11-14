@@ -12,7 +12,7 @@ These readmes are long. Read only the section you need (use the headings), not t
 | Type pipeline, remap/extend/base files, RealGreen type boundary, API infrastructure | `src/app/realGreen/realGreen.readme.md` |
 | Context-tree selectors, search schemes, `optimizerKey`, bad-record recovery, PIPELINE flag, single-customer refresh | `src/app/realGreen/customer/customer.readme.md` |
 | Central aggregator slice, merge strategy, hooks architecture | `src/app/realGreen/customer/slices/mergeSlice.readme.md` |
-| Building test data | `src/app/realGreen/sampleData/samples.readme.md` (and the `write-tests` skill) |
+| Building test data | `../../../src/_builders/builders.readme.md` (and the `write-tests` skill) |
 | Hydration details | `src/app/realGreen/customer/selectors/howToHydrate.md` |
 
 **The readmes lag the code in places. Verify file paths and names against the source before relying on them.** Known drift: `customer.readme.md` describes `selectors/contextSelectors.ts` and `_lib/types/SliceTypes.ts`, which no longer exist at those paths (see rules 4 and 7). AGENTS.md has also referenced a `streaming.readme.md` that does not exist in the repo; use the "Handling Bad Records" and "Pipeline Flag System" sections of `customer.readme.md` instead.
@@ -34,4 +34,4 @@ Key code locations (verified):
 6. **Search schemes**: give every step a unique `optimizerKey` when two steps in one scheme share a `stepName`, or the optimizer mixes pagination and batch-size strategies and crashes.
 7. **Single-customer refresh** re-runs the *same* scheme as the original load (not `singleCustomer`) with `custId` injected into every step and fixed optimizer values, via the per-context `<context>Refresh` thunk made by `createRefreshCustomerThunk` in `customerSlices.ts`. It always uses the RealGreen API regardless of `PIPELINE`. The readme describes a `useRefreshCustomer` hook that was never created; the current pattern is the hook's own `refreshCustomer(custId)` (see `useFullSeasonServices.ts`), which dispatches the refresh thunk and then `replaceCustomer(...)` or `removeCustomer(custId)` when the result is empty.
 8. **RealGreen routes** use `createRealGreenRpcHandler`, not `createRpcHandler`, and call `rgApi` / `rgSearchApi`, never raw `fetch`. See the `api-route` skill.
-9. In tests, build entities only with `generateCustomer`. Never construct `Customer`, `Program` or `Service` by hand.
+9. In tests, build entities only with `makeCustomer` and the other `make*` builders in `src/_builders`. Never construct `Customer`, `Program` or `Service` by hand.

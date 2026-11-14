@@ -1,39 +1,50 @@
 import { describe, it, expect } from "vitest";
-import { sampleCustomer } from "@/app/realGreen/sampleData/sampleCustomer";
-import { samplePrepayConfig } from "@/app/realGreen/sampleData/samplePrepayConfig";
-import { sampleUpsellProgCode } from "@/app/realGreen/sampleData/sampleUpsellProgCode";
+import { makeCustomer } from "@/_builders/makeCustomer";
+import { makePrepayConfig } from "@/_builders/makePrepayConfig";
+import { makeTaxCode } from "@/_builders/makeTaxCode";
+import { makeUpsellProgCode } from "@/__tests__/prepayLetters/prepayTestHelpers";
 import {
   getBalanceAdjustment,
   getTotalDue,
 } from "@/app/prepayLetters/pricing/balanceAdjustment";
 import { getStubTotals } from "@/app/prepayLetters/pricing/stubTotals";
 
-const bothOn = {
-  ...samplePrepayConfig,
+const bothOn = makePrepayConfig({
   showCreditBalance: true,
   showRemitBalance: true,
-};
+  stdPrepayDiscPercent: 5,
+  upsellPrepayDiscPercent: 10,
+});
 const bothOff = {
-  ...samplePrepayConfig,
+  ...bothOn,
   showCreditBalance: false,
   showRemitBalance: false,
 };
+const upsell = makeUpsellProgCode();
 
-function withBalance(netBalance: number) {
-  return { ...sampleCustomer, netBalance };
+/** One $100 service, so the stub totals have something to price. */
+function makeCustomerWithBalance(netBalance: number) {
+  return makeCustomer({
+    core: { size: 15, netBalance },
+    taxCodes: [makeTaxCode({ taxRate: 7.375 })],
+    programs: [{ services: [{ core: { price: 100 } }] }],
+  });
 }
 
 describe("getBalanceAdjustment", () => {
   it("negative balance is a credit when showCreditBalance is on", () => {
     expect(
-      getBalanceAdjustment({ customer: withBalance(-25), config: bothOn }),
+      getBalanceAdjustment({
+        customer: makeCustomerWithBalance(-25),
+        config: bothOn,
+      }),
     ).toEqual({ creditBalance: 25, remitBalance: 0 });
   });
 
   it("negative balance is ignored when showCreditBalance is off", () => {
     expect(
       getBalanceAdjustment({
-        customer: withBalance(-25),
+        customer: makeCustomerWithBalance(-25),
         config: { ...bothOn, showCreditBalance: false },
       }),
     ).toEqual({ creditBalance: 0, remitBalance: 0 });
@@ -41,14 +52,17 @@ describe("getBalanceAdjustment", () => {
 
   it("positive balance is a remit balance when showRemitBalance is on", () => {
     expect(
-      getBalanceAdjustment({ customer: withBalance(40), config: bothOn }),
+      getBalanceAdjustment({
+        customer: makeCustomerWithBalance(40),
+        config: bothOn,
+      }),
     ).toEqual({ creditBalance: 0, remitBalance: 40 });
   });
 
   it("positive balance is ignored when showRemitBalance is off", () => {
     expect(
       getBalanceAdjustment({
-        customer: withBalance(40),
+        customer: makeCustomerWithBalance(40),
         config: { ...bothOn, showRemitBalance: false },
       }),
     ).toEqual({ creditBalance: 0, remitBalance: 0 });
@@ -56,7 +70,10 @@ describe("getBalanceAdjustment", () => {
 
   it("zero balance never applies", () => {
     expect(
-      getBalanceAdjustment({ customer: withBalance(0), config: bothOn }),
+      getBalanceAdjustment({
+        customer: makeCustomerWithBalance(0),
+        config: bothOn,
+      }),
     ).toEqual({ creditBalance: 0, remitBalance: 0 });
   });
 });
@@ -82,21 +99,21 @@ describe("getStubTotals with balances", () => {
   for (const totalsSource of ["current", "upsell"] as const) {
     it(`${totalsSource}: total includes credit and remit, other fields unchanged`, () => {
       const base = getStubTotals({
-        customer: withBalance(0),
+        customer: makeCustomerWithBalance(0),
         config: bothOff,
-        upsell: sampleUpsellProgCode,
+        upsell,
         totalsSource,
       });
       const credit = getStubTotals({
-        customer: withBalance(-10),
+        customer: makeCustomerWithBalance(-10),
         config: bothOn,
-        upsell: sampleUpsellProgCode,
+        upsell,
         totalsSource,
       });
       const remit = getStubTotals({
-        customer: withBalance(10),
+        customer: makeCustomerWithBalance(10),
         config: bothOn,
-        upsell: sampleUpsellProgCode,
+        upsell,
         totalsSource,
       });
       expect(credit.total).toBeCloseTo(base.total - 10, 2);

@@ -189,7 +189,7 @@ type PriceIncreaseSettingsDoc = CreatedUpdated & {
 };
 ```
 
-- API ops: `getAll`, `upsert`, `setActive` (deactivates all, activates one), `remove`. Capabilities: `priceIncrease.increaseSettings.read`, `.write` (`upsert` and `setActive`), `.delete`.
+- API ops: `getAll`, `upsert`, `setActive` (deactivates all, activates one), `remove`. Capabilities: `increaseSettings.read`, `.write` (`upsert` and `setActive`), `.delete` (declared in `src/permission/groups/accounting.ts`).
 - The slice state key is `storedSettings`; selectors are `priceIncreaseSettingsSelect.storedSettings` and `.activeSettings`. These expose **persisted** state only. UI and results must read `priceIncreaseConfigSelect.settings` instead (section 4.1).
 
 ### 2.3 `GlobalSettings` fields

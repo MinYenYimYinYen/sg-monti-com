@@ -1,7 +1,7 @@
 import { QboPurchase, QboPurchaseSummary } from "@/app/qbo/purchase/types/QboPurchaseTypes";
 
 // Shared builders for the purchase helper tests. Entities here are QBO shapes, not RealGreen
-// ones, so they are built by hand rather than with generateCustomer.
+// ones, so they are built by hand rather than with makeCustomer.
 
 export function makePurchase(overrides: Partial<QboPurchase> = {}): QboPurchase {
   return {

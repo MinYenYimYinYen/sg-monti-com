@@ -65,7 +65,7 @@ src/app/<feature>/<Feature>Types.tsx   data type, slot keys, contract, sample da
 2. Define `<Feature>Data` (everything a renderer may need, fully hydrated) and a slot-key union `<Feature>Slot`.
 3. Define option types with `SlotOptionSchema<T>` (reuse a shared `textOptionSchema` style). Add `type WithText = FieldDescriptorWithOptions<<Feature>Data, TextOptions>` shorthands.
 4. Write the contract: each key has `label`, `optionSchema?`, `render` (react-pdf) and `previewRender` (DOM, multiply sizes by `scale`). End with `satisfies FormDataContract<<Feature>Data, <Feature>Slot>` so a missing key fails to compile. Each descriptor uses `satisfies WithText` etc.
-5. Export `sample<Feature>Data` built with the shared sample-data helpers (`generateCustomer` for customers, never hand-built entities). If there is a scan of the blank form, import it statically (not from `public/`) and export it.
+5. Export `sample<Feature>Data` from the feature's `sampleData/` folder (for example `src/app/prepayLetters/template/sampleData/`), built with the `make*` builders in `src/_builders` (`makeCustomer` for customers, never hand-built entities). If there is a scan of the blank form, import it statically (not from `public/`) and export it.
 6. Add one entry to `FORM_DATA_TYPE_REGISTRY` in `src/app/formDataTypes/formDataTypeRegistry.ts`. Nothing else changes; the editor picks it up.
 
 ## Rules that cause silent breakage

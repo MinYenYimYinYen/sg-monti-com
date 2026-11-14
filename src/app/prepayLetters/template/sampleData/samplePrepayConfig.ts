@@ -1,6 +1,7 @@
+import { makePrepayConfig } from "@/_builders/makePrepayConfig";
 import type { PrepayConfig } from "@/app/prepayLetters/config/prepayConfigTypes";
 
-export const samplePrepayConfig: PrepayConfig = {
+export const samplePrepayConfig: PrepayConfig = makePrepayConfig({
   configId: "sample-config",
   name: "Sample Config",
   saId: "sample-sa",
@@ -17,4 +18,4 @@ export const samplePrepayConfig: PrepayConfig = {
   universalMessage: "This is a universal message.",
   currentServicesHeader: "This is a Current Services Header",
   upsellServicesHeader: "This is an Upsell Services Header",
-};
+});

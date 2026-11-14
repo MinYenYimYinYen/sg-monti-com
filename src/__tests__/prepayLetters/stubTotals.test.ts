@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
-import { sampleCustomer } from "@/app/realGreen/sampleData/sampleCustomer";
-import { samplePrepayConfig } from "@/app/realGreen/sampleData/samplePrepayConfig";
+import { makeCustomer } from "@/_builders/makeCustomer";
+import { makePrepayConfig } from "@/_builders/makePrepayConfig";
+import { makePriceTable } from "@/_builders/makePriceTable";
+import { makeProgCode } from "@/_builders/makeProgCode";
 import {
-  sampleUpsellPriceTable,
-  sampleUpsellProgCode,
-} from "@/app/realGreen/sampleData/sampleUpsellProgCode";
+  makeLetterCustomer,
+  makeUpsellProgCode,
+} from "@/__tests__/prepayLetters/prepayTestHelpers";
 import { BILLING_TYPE } from "@/app/realGreen/_lib/subTypes/BillingType";
 import {
   calculatePrepayTotals,
@@ -16,11 +17,15 @@ import { getStubTotals } from "@/app/prepayLetters/pricing/stubTotals";
 import { buildIntentionLines } from "@/app/prepayLetters/pricing/intentionLines";
 
 // Balances are covered in balanceAdjustment.test.ts; these tests are about prepay math.
-const config = {
-  ...samplePrepayConfig,
+const config = makePrepayConfig({
+  stdPrepayDiscPercent: 5,
+  upsellPrepayDiscPercent: 10,
   showCreditBalance: false,
   showRemitBalance: false,
-};
+});
+
+const customer = makeLetterCustomer();
+const upsell = makeUpsellProgCode();
 
 function formatMoney(amount: number): string {
   return amount.toLocaleString("en-US", {
@@ -30,66 +35,47 @@ function formatMoney(amount: number): string {
 }
 
 const currentTotals = calculatePrepayTotals({
-  programs: getPrepayPrograms(sampleCustomer),
+  programs: getPrepayPrograms(customer),
   prepayPercent: config.stdPrepayDiscPercent,
 });
 const combinedTotals = getUpsellLetterPricing({
-  customer: sampleCustomer,
-  upsell: sampleUpsellProgCode,
+  customer,
+  upsell,
   prepayPercent: config.upsellPrepayDiscPercent,
 })!.combinedTotals;
 
 describe("getStubTotals", () => {
   it("current: current services at the standard prepay percent", () => {
     expect(
-      getStubTotals({
-        customer: sampleCustomer,
-        config,
-        upsell: sampleUpsellProgCode,
-        totalsSource: "current",
-      }),
+      getStubTotals({ customer, config, upsell, totalsSource: "current" }),
     ).toEqual(currentTotals);
   });
 
   it("upsell: current plus upsell at the upsell prepay percent", () => {
     expect(
-      getStubTotals({
-        customer: sampleCustomer,
-        config,
-        upsell: sampleUpsellProgCode,
-        totalsSource: "upsell",
-      }),
+      getStubTotals({ customer, config, upsell, totalsSource: "upsell" }),
     ).toEqual(combinedTotals);
   });
 
   it("upsell falls back to current when there is no upsell", () => {
     expect(
-      getStubTotals({
-        customer: sampleCustomer,
-        config,
-        upsell: null,
-        totalsSource: "upsell",
-      }),
+      getStubTotals({ customer, config, upsell: null, totalsSource: "upsell" }),
     ).toEqual(currentTotals);
   });
 
   it("upsell falls back to current when the upsell cannot be priced", () => {
-    // Built through generateCustomer: ProgCode.x is bound to the data it was built
+    // Built through makeProgCode: ProgCode.x is bound to the data it was built
     // with, so spreading a new priceTable onto a copy would not change its pricing.
-    const unpriceable = generateCustomer({
-      programs: [
-        {
-          progCode: {
-            description: "Empty Chart",
-            priceTable: { ...sampleUpsellPriceTable, ranges: [] },
-          },
-          services: [{ servCode: { name: "Visit" } }],
-        },
-      ],
-    }).programs[0]!.progCode;
+    const unpriceable = makeProgCode({
+      progCode: {
+        description: "Empty Chart",
+        priceTable: makePriceTable({ ranges: [] }),
+      },
+      servCodes: [{ name: "Visit" }],
+    });
     expect(
       getStubTotals({
-        customer: sampleCustomer,
+        customer,
         config,
         upsell: unpriceable,
         totalsSource: "upsell",
@@ -100,11 +86,7 @@ describe("getStubTotals", () => {
 
 describe("buildIntentionLines", () => {
   it("renders all three lines with checkboxes for a customer with an upsell and no autopay", () => {
-    const lines = buildIntentionLines({
-      customer: sampleCustomer,
-      config,
-      upsell: sampleUpsellProgCode,
-    });
+    const lines = buildIntentionLines({ customer, config, upsell });
 
     expect(lines.map((line) => line.key)).toEqual([
       "addUpsell",
@@ -118,11 +100,7 @@ describe("buildIntentionLines", () => {
   });
 
   it("omits the upsell line when there is no upsell", () => {
-    const lines = buildIntentionLines({
-      customer: sampleCustomer,
-      config,
-      upsell: null,
-    });
+    const lines = buildIntentionLines({ customer, config, upsell: null });
 
     expect(lines.map((line) => line.key)).toEqual([
       "prepayCurrent",
@@ -131,14 +109,18 @@ describe("buildIntentionLines", () => {
   });
 
   it("replaces the automatic payment checkbox with a statement when any program is autopay", () => {
-    const customer = generateCustomer({
+    const autopayCustomer = makeCustomer({
       programs: [
         { core: { billingType: BILLING_TYPE.RegularInvoice }, services: [] },
         { core: { billingType: BILLING_TYPE.AutoCreditCard }, services: [] },
       ],
     });
 
-    const lines = buildIntentionLines({ customer, config, upsell: null });
+    const lines = buildIntentionLines({
+      customer: autopayCustomer,
+      config,
+      upsell: null,
+    });
     const autoLine = lines.find((line) => line.key === "payAutomatically")!;
 
     expect(autoLine.hasCheckbox).toBe(false);

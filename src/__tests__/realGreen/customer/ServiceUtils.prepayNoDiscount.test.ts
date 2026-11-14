@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
+import { makeCustomer } from "@/_builders/makeCustomer";
+import { makeTaxCode } from "@/_builders/makeTaxCode";
 import {
   calculatePrepayTotals,
   getPrepayPrograms,
 } from "@/app/prepayLetters/pricing/installmentSegregation";
-import type { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 
 // ---------------------------------------------------------------------------
 // CRM reference data: one customer with 14 services, no service/program/customer
@@ -18,15 +18,6 @@ import type { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 
 const PREPAY_PERCENT = 3;
 
-function makeTaxCode({ taxCodeId, taxRate }: { taxCodeId: string; taxRate: number }): TaxCode {
-  return {
-    taxCodeId,
-    taxRate,
-    available: true,
-    createdAt: "",
-    updatedAt: "",
-  };
-}
 
 type CrmServiceRow = {
   price: number;
@@ -52,7 +43,7 @@ function buildCustomer() {
   const servicesOf = (count: number, price: number) =>
     Array.from({ length: count }, () => ({ core: { price } }));
 
-  return generateCustomer({
+  return makeCustomer({
     taxCodes: [
       makeTaxCode({ taxCodeId: "S68", taxRate: 6.875 }),
       makeTaxCode({ taxCodeId: "HET", taxRate: 1.4 }),

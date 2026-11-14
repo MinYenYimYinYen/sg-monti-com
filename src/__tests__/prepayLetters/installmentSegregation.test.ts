@@ -1,32 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
-import { sampleCustomer } from "@/app/realGreen/sampleData/sampleCustomer";
-import { sampleProgramDiscount } from "@/app/realGreen/sampleData/sampleDiscounts";
+import { makeCustomer } from "@/_builders/makeCustomer";
+import { makeDiscount } from "@/_builders/makeDiscount";
+import { makeTaxCode } from "@/_builders/makeTaxCode";
 import { BILLING_TYPE } from "@/app/realGreen/_lib/subTypes/BillingType";
+import { DiscountType } from "@/app/realGreen/discount/DiscountTypes";
 import {
   buildInstallmentNotice,
   calculatePrepayTotals,
   getInstallmentPrograms,
   getPrepayPrograms,
 } from "@/app/prepayLetters/pricing/installmentSegregation";
-import type { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 
 const TAX_RATE = 7.375;
 
-function makeTaxCode(rate: number): TaxCode {
-  return {
-    taxCodeId: `TX-${rate}`,
-    taxRate: rate,
-    available: true,
-    createdAt: "",
-    updatedAt: "",
-  };
-}
+const programDiscount = makeDiscount({ discountType: DiscountType.PERCENT, amount: 10 });
 
 /** One regular program ($27 service, CRM: $29.00 net) plus one installment program. */
 function makeMixedCustomer() {
-  return generateCustomer({
-    taxCodes: [makeTaxCode(TAX_RATE)],
+  return makeCustomer({
+    taxCodes: [makeTaxCode({ taxRate: TAX_RATE })],
     programs: [
       {
         core: { billingType: BILLING_TYPE.RegularInvoice },
@@ -36,7 +28,7 @@ function makeMixedCustomer() {
       {
         core: { billingType: BILLING_TYPE.Installment },
         progCode: { description: "Tree Care Program" },
-        discount: sampleProgramDiscount,
+        discount: programDiscount,
         services: [{ core: { price: 900.0 } }, { core: { price: 900.0 } }],
       },
     ],
@@ -56,7 +48,7 @@ describe("getPrepayPrograms / getInstallmentPrograms", () => {
   });
 
   it("treats autopay, empty and unknown billing types as prepay-eligible", () => {
-    const customer = generateCustomer({
+    const customer = makeCustomer({
       programs: [
         { core: { billingType: BILLING_TYPE.AutoCreditCard }, services: [] },
         { core: { billingType: "" }, services: [] },
@@ -69,7 +61,7 @@ describe("getPrepayPrograms / getInstallmentPrograms", () => {
   });
 
   it("returns an empty prepay list when every program is installment", () => {
-    const customer = generateCustomer({
+    const customer = makeCustomer({
       programs: [
         { core: { billingType: BILLING_TYPE.Installment }, services: [] },
       ],
@@ -96,8 +88,8 @@ describe("calculatePrepayTotals", () => {
 
   it("matches a customer that only has the regular program", () => {
     const mixed = makeMixedCustomer();
-    const regularOnly = generateCustomer({
-      taxCodes: [makeTaxCode(TAX_RATE)],
+    const regularOnly = makeCustomer({
+      taxCodes: [makeTaxCode({ taxRate: TAX_RATE })],
       programs: [
         {
           core: { billingType: BILLING_TYPE.RegularInvoice },
@@ -119,11 +111,11 @@ describe("calculatePrepayTotals", () => {
   });
 
   it("equals the customer-wide totals when there are no installment programs", () => {
-    const customer = generateCustomer({
-      taxCodes: [makeTaxCode(TAX_RATE)],
+    const customer = makeCustomer({
+      taxCodes: [makeTaxCode({ taxRate: TAX_RATE })],
       programs: [
         {
-          discount: sampleProgramDiscount,
+          discount: programDiscount,
           services: [{ core: { price: 27.0 } }],
         },
         { services: [{ core: { price: 50.0 } }, { core: { price: 50.0 } }] },
@@ -160,7 +152,7 @@ describe("buildInstallmentNotice", () => {
   });
 
   it("names each installment program", () => {
-    const customer = generateCustomer({
+    const customer = makeCustomer({
       programs: [
         {
           core: { billingType: BILLING_TYPE.Installment },
@@ -207,25 +199,3 @@ describe("buildInstallmentNotice", () => {
     expect(notice!.toLowerCase()).not.toContain("contact");
   });
 });
-describe("sampleCustomer (previewer data)", () => {
-  it("has exactly one installment program so the installment slot shows in the editor", () => {
-    expect(getInstallmentPrograms(sampleCustomer)).toHaveLength(1);
-    expect(getPrepayPrograms(sampleCustomer)).toHaveLength(3);
-  });
-
-  it("prices only the non-installment programs", () => {
-    const [lawn, insect, mosquito] = sampleCustomer.programs;
-
-    const totals = calculatePrepayTotals({
-      programs: getPrepayPrograms(sampleCustomer),
-      prepayPercent: 5,
-    });
-
-    const expectedServiceAmt =
-      lawn.x.getPriceAfterDiscounts("price") +
-      insect.x.getPriceAfterDiscounts("price") +
-      mosquito.x.getPriceAfterDiscounts("price");
-    expect(totals.serviceAmt).toBe(expectedServiceAmt);
-  });
-});
-

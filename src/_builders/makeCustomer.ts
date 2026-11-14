@@ -1,5 +1,5 @@
 /**
- * generateCustomer — sample/test entity generator for the realGreen CSP tree.
+ * makeCustomer — test entity builder for the realGreen Customer/Program/Service tree.
  *
  * Produces a fully hydrated Customer using the exact same 3-phase construction
  * as makeCustomersSelector in centralSelectors.ts. The output is structurally
@@ -22,19 +22,19 @@
  * ─── Usage ───────────────────────────────────────────────────────────────────
  *
  *   // Minimal — all defaults
- *   const customer = generateCustomer();
+ *   const customer = makeCustomer();
  *
  *   // With tax and a program discount
- *   const customer = generateCustomer({
- *     taxCodes: [{ taxCodeId: "TX1", taxRate: 7.375, available: true, createdAt: "", updatedAt: "" }],
+ *   const customer = makeCustomer({
+ *     taxCodes: [makeTaxCode({ taxRate: 7.375 })],
  *     programs: [{
- *       discount: sampleProgramDiscount,
+ *       discount: makeDiscount({ amount: 10 }),
  *       services: [{ core: { price: 27.00 } }],
  *     }],
  *   });
  *
- *   // Prepay letter preview
- *   const customer = generateCustomer({
+ *   // Several programs
+ *   const customer = makeCustomer({
  *     core: { custId: 10001, displayName: "John Doe", status: "9" },
  *     programs: [
  *       { progCode: { description: "Lawn Care" }, services: [{ core: { price: 100 } }] },
@@ -135,7 +135,7 @@ export type ProgCodeSpec = Partial<Pick<ProgCode,
 >>;
 
 /** Spec for generating a single Service. */
-export type GenerateServiceSpec = {
+export type MakeServiceSpec = {
   /** Raw Core field overrides — scalar values, no externalities. */
   core?: Partial<ServiceCore>;
   /** ServCode overrides — name, productRules, etc. */
@@ -145,37 +145,37 @@ export type GenerateServiceSpec = {
 };
 
 /** Spec for generating a single Program (with its services). */
-export type GenerateProgramSpec = {
+export type MakeProgramSpec = {
   /** Raw Core field overrides — scalar values, no externalities. */
   core?: Partial<ProgramCore>;
   /** ProgCode overrides — description, progDefId, etc. */
   progCode?: ProgCodeSpec;
   /** Services within this program — array length = number of services. */
-  services?: GenerateServiceSpec[];
+  services?: MakeServiceSpec[];
 } & {
   [K in keyof ProgramExternalProps]?: ProgramExternalProps[K];
 };
 
 /** Spec for generating a Customer (with its programs). */
-export type GenerateCustomerSpec = {
+export type MakeCustomerSpec = {
   /** Raw Core field overrides — scalar values, no externalities. */
   core?: Partial<CustomerCore>;
   /** Programs on this customer — array length = number of programs. */
-  programs?: GenerateProgramSpec[];
+  programs?: MakeProgramSpec[];
 } & {
   [K in keyof CustomerExternalProps]?: CustomerExternalProps[K];
 };
 
 // ─── Compile-time coverage checks ────────────────────────────────────────────
 //
-// These assertions fail at compile time if GenerateCustomerSpec/
-// GenerateProgramSpec/GenerateServiceSpec is missing any key from the
+// These assertions fail at compile time if MakeCustomerSpec/
+// MakeProgramSpec/MakeServiceSpec is missing any key from the
 // corresponding ExternalProps type. Add the missing key to the spec type
 // to resolve the error.
 
-type _CheckCustomerCoverage = Exclude<keyof CustomerExternalProps, keyof GenerateCustomerSpec> extends never ? true : never;
-type _CheckProgramCoverage = Exclude<keyof ProgramExternalProps, keyof GenerateProgramSpec> extends never ? true : never;
-type _CheckServiceCoverage = Exclude<keyof ServiceExternalProps, keyof GenerateServiceSpec> extends never ? true : never;
+type _CheckCustomerCoverage = Exclude<keyof CustomerExternalProps, keyof MakeCustomerSpec> extends never ? true : never;
+type _CheckProgramCoverage = Exclude<keyof ProgramExternalProps, keyof MakeProgramSpec> extends never ? true : never;
+type _CheckServiceCoverage = Exclude<keyof ServiceExternalProps, keyof MakeServiceSpec> extends never ? true : never;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _c1: _CheckCustomerCoverage = true;
@@ -249,13 +249,13 @@ function buildProgCodeFromSpec(
 // ─── Main generator ───────────────────────────────────────────────────────────
 
 /**
- * Generates a fully hydrated Customer using the same 3-phase construction
+ * Builds a fully hydrated Customer using the same 3-phase construction
  * as makeCustomersSelector in centralSelectors.ts.
  *
- * All params are optional — calling generateCustomer() with no args produces
+ * All params are optional — calling makeCustomer() with no args produces
  * a valid Customer with all base/null defaults.
  */
-export function generateCustomer(spec: GenerateCustomerSpec = {}): Customer {
+export function makeCustomer(overrides: MakeCustomerSpec = {}): Customer {
   const {
     core: customerCore = {},
     taxCodes = [],
@@ -266,7 +266,7 @@ export function generateCustomer(spec: GenerateCustomerSpec = {}): Customer {
     promise: customerPromise = null,
     promiseIssues: customerPromiseIssues = [],
     programs: programSpecs = [],
-  } = spec;
+  } = overrides;
 
   // Derive taxRate and taxIds from the provided TaxCode objects
   const taxRate = taxCodes.reduce((sum, t) => sum + t.taxRate, 0);

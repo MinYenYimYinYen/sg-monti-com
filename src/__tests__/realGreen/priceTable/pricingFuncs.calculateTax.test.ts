@@ -1,10 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateTax, calculatePrepayServTotal } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
-import {
-  sampleServiceDiscount,
-  sampleServiceDiscount2,
-  sampleProgramDiscount,
-} from "@/app/realGreen/sampleData/sampleDiscounts";
+import { makeDiscount } from "@/_builders/makeDiscount";
+import { DiscountType } from "@/app/realGreen/discount/DiscountTypes";
 
 // ---------------------------------------------------------------------------
 // CRM reference data (Prepay Calculator screenshots, 3 services × $27.00, taxRate 7.375%)
@@ -17,6 +14,9 @@ import {
 // ---------------------------------------------------------------------------
 
 const TAX_RATE = 7.375; // percent
+
+const tenPercentDiscount = makeDiscount({ discountType: DiscountType.PERCENT, amount: 10 });
+const fivePercentDiscount = makeDiscount({ discountType: DiscountType.PERCENT, amount: 5 });
 
 // ---------------------------------------------------------------------------
 // calculateTax — pure rounding rule
@@ -106,7 +106,7 @@ describe("calculatePrepayServTotal", () => {
     expect(
       calculatePrepayServTotal({
         price: 27.00,
-        discounts: [sampleProgramDiscount],
+        discounts: [tenPercentDiscount],
         prepayPercent: 0,
         taxRates: [TAX_RATE],
       }),
@@ -125,7 +125,7 @@ describe("calculatePrepayServTotal", () => {
     expect(
       calculatePrepayServTotal({
         price: 27.00,
-        discounts: [sampleServiceDiscount2], // 5% PERCENT — same math as sampleProgramDiscount at 5%
+        discounts: [fivePercentDiscount], // 5% PERCENT — same math as a program discount at 5%
         prepayPercent: 0,
         taxRates: [TAX_RATE],
       }),
@@ -165,7 +165,7 @@ describe("calculatePrepayServTotal", () => {
     expect(
       calculatePrepayServTotal({
         price: 27.00,
-        discounts: [sampleServiceDiscount2], // 5% PERCENT
+        discounts: [fivePercentDiscount], // 5% PERCENT
         prepayPercent: 5,
         taxRates: [TAX_RATE],
       }),

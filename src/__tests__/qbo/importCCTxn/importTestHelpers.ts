@@ -5,7 +5,7 @@ import { MerchantMapping } from "@/app/qbo/importCCTxn/types/ImportCCTxnMappingT
 import { ImportRow } from "@/app/qbo/importCCTxn/types/ImportRowTypes";
 
 // Shared builders for the QBO import tests. These are QBO and import shapes, not RealGreen
-// entities, so they are built by hand rather than with generateCustomer.
+// entities, so they are built by hand rather than with makeCustomer.
 
 /** SHA-256 of the real charge posted in staged write 1, which QuickBooks holds as SGdec8e4a35041-1. */
 export const REAL_ROW_HASH = "dec8e4a35041ae180f01cf971b65f95b7ca9041aa4297228d10de1545ae56b91";

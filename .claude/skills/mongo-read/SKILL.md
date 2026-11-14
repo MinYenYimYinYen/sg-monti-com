@@ -52,7 +52,7 @@ db.getCollection("users").countDocuments({})
 - **`users`: never return the `password` field.** Every `users` query must project `{password: 0}` (or an inclusion projection that does not list `password`). Never filter on `password`, never print it, and never echo it if it appears in output from another path. Do not use `preview_table_data` on `users`, because it cannot exclude fields.
   - Safe fields: `userName`, `email`, `firstName`, `lastName`, `role`, `saId`, `mustChangePassword`, `createdAt`, `updatedAt`.
 - `passwordresetrequests`, `employees`, `customers`, `punches`, `rgapilogs` hold PII, credentials-adjacent data, or raw API traffic. Project only the fields needed, summarize rather than dump, and do not reproduce tokens, API keys, or full customer contact details in the report.
-- Do not paste production values into code, tests, fixtures, or docs. Tests build entities with `generateCustomer` (see the `write-tests` skill).
+- Do not paste production values into code, tests, fixtures, or docs. Tests build entities with the `make*` builders in `src/_builders` (see the `write-tests` skill).
 
 ## Output handling
 

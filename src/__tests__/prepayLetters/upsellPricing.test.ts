@@ -1,11 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { generateCustomer } from "@/app/realGreen/sampleData/generateCustomer";
-import { sampleCustomer } from "@/app/realGreen/sampleData/sampleCustomer";
-import { sampleCustomerDiscount } from "@/app/realGreen/sampleData/sampleDiscounts";
+import { makeCustomer } from "@/_builders/makeCustomer";
+import { makeDiscount } from "@/_builders/makeDiscount";
+import { makePriceTable } from "@/_builders/makePriceTable";
+import { makeProgCode } from "@/_builders/makeProgCode";
+import { makeTaxCode } from "@/_builders/makeTaxCode";
 import {
-  sampleUpsellPriceTable,
-  sampleUpsellProgCode,
-} from "@/app/realGreen/sampleData/sampleUpsellProgCode";
+  makeLetterCustomer,
+  makeUpsellProgCode,
+} from "@/__tests__/prepayLetters/prepayTestHelpers";
+import { DiscountType } from "@/app/realGreen/discount/DiscountTypes";
 import {
   calculatePrepayTotals,
   getPrepayPrograms,
@@ -16,56 +19,39 @@ import {
   priceUpsell,
 } from "@/app/prepayLetters/pricing/upsellPricing";
 import { calculatePrepayServTotal } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
-import type { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 
 const TAX_RATE = 7.375;
 const UPSELL_PERCENT = 10;
+const UPSELL_PRICE = 150;
 
-function makeTaxCode(rate: number): TaxCode {
-  return {
-    taxCodeId: `TX-${rate}`,
-    taxRate: rate,
-    available: true,
-    createdAt: "",
-    updatedAt: "",
-  };
-}
+const customerDiscount = makeDiscount({
+  discountType: DiscountType.PERCENT,
+  isPermanent: true,
+  amount: 5,
+});
 
-/** A customer of size 15 with the standard tax rate, optionally with the 5% customer discount. */
-function makeCustomer({ withDiscount }: { withDiscount: boolean }) {
-  return generateCustomer({
+// Two services at 150 each.
+const upsell = makeUpsellProgCode({
+  description: "Some Upsell Program",
+  price: UPSELL_PRICE,
+  serviceLongNames: ["Some Upsell - First Visit", "Some Upsell - Second Visit"],
+});
+
+/** A customer of size 15 with the standard tax rate, optionally with a 5% customer discount. */
+function makeSizedCustomer({ withDiscount }: { withDiscount: boolean }) {
+  return makeCustomer({
     core: { size: 15 },
-    taxCodes: [makeTaxCode(TAX_RATE)],
-    discount: withDiscount ? sampleCustomerDiscount : null,
+    taxCodes: [makeTaxCode({ taxRate: TAX_RATE })],
+    discount: withDiscount ? customerDiscount : null,
   });
-}
-
-/** A ProgCode with one service, built through generateCustomer, with the given price table. */
-function makeProgCode({
-  priceTable,
-  serviceCount,
-}: {
-  priceTable: typeof sampleUpsellPriceTable | null;
-  serviceCount: number;
-}) {
-  return generateCustomer({
-    programs: [
-      {
-        progCode: { description: "Test Program", priceTable },
-        services: Array.from({ length: serviceCount }, () => ({
-          servCode: { name: "Visit" },
-        })),
-      },
-    ],
-  }).programs[0]!.progCode;
 }
 
 describe("priceUpsell", () => {
   it("applies the customer discount at runtime: 150 -> 142.50 -> prepay 14.25 -> tax 9.46 -> 137.71", () => {
-    const customer = makeCustomer({ withDiscount: true });
+    const customer = makeSizedCustomer({ withDiscount: true });
 
     const priced = priceUpsell({
-      progCode: sampleUpsellProgCode,
+      progCode: upsell,
       customer,
       prepayPercent: UPSELL_PERCENT,
     });
@@ -89,17 +75,17 @@ describe("priceUpsell", () => {
   });
 
   it("matches calculatePrepayServTotal for every service (single source of truth)", () => {
-    const customer = makeCustomer({ withDiscount: true });
+    const customer = makeSizedCustomer({ withDiscount: true });
 
     const priced = priceUpsell({
-      progCode: sampleUpsellProgCode,
+      progCode: upsell,
       customer,
       prepayPercent: UPSELL_PERCENT,
     })!;
 
     const perService = calculatePrepayServTotal({
-      price: 150,
-      discounts: [sampleCustomerDiscount],
+      price: UPSELL_PRICE,
+      discounts: [customerDiscount],
       prepayPercent: UPSELL_PERCENT,
       taxRates: [TAX_RATE],
     });
@@ -107,10 +93,10 @@ describe("priceUpsell", () => {
   });
 
   it("applies no discount and no asterisk when the customer has no discount", () => {
-    const customer = makeCustomer({ withDiscount: false });
+    const customer = makeSizedCustomer({ withDiscount: false });
 
     const priced = priceUpsell({
-      progCode: sampleUpsellProgCode,
+      progCode: upsell,
       customer,
       prepayPercent: 0,
     })!;
@@ -122,14 +108,16 @@ describe("priceUpsell", () => {
     expect(priced.totals.serviceAmt).toBeCloseTo(300, 2);
     expect(priced.totals.prepayDisc).toBe(0);
   });
-
   it("returns null when the program has no price table", () => {
-    const progCode = makeProgCode({ priceTable: null, serviceCount: 1 });
+    const progCode = makeProgCode({
+      progCode: { priceTable: null },
+      servCodes: [{ name: "Visit" }],
+    });
 
     expect(
       priceUpsell({
         progCode,
-        customer: makeCustomer({ withDiscount: true }),
+        customer: makeSizedCustomer({ withDiscount: true }),
         prepayPercent: UPSELL_PERCENT,
       }),
     ).toBeNull();
@@ -137,29 +125,26 @@ describe("priceUpsell", () => {
 
   it("returns null when the price table has no ranges", () => {
     const progCode = makeProgCode({
-      priceTable: { ...sampleUpsellPriceTable, ranges: [] },
-      serviceCount: 1,
+      progCode: { priceTable: makePriceTable({ ranges: [] }) },
+      servCodes: [{ name: "Visit" }],
     });
 
     expect(
       priceUpsell({
         progCode,
-        customer: makeCustomer({ withDiscount: true }),
+        customer: makeSizedCustomer({ withDiscount: true }),
         prepayPercent: UPSELL_PERCENT,
       }),
     ).toBeNull();
   });
 
   it("returns null when the program has no services", () => {
-    const progCode = makeProgCode({
-      priceTable: sampleUpsellPriceTable,
-      serviceCount: 0,
-    });
+    const progCode = makeUpsellProgCode({ serviceLongNames: [] });
 
     expect(
       priceUpsell({
         progCode,
-        customer: makeCustomer({ withDiscount: true }),
+        customer: makeSizedCustomer({ withDiscount: true }),
         prepayPercent: UPSELL_PERCENT,
       }),
     ).toBeNull();
@@ -168,8 +153,8 @@ describe("priceUpsell", () => {
   it("returns null for an installment program (never priced on the letter)", () => {
     expect(
       priceUpsell({
-        progCode: { ...sampleUpsellProgCode, isInstallment: true },
-        customer: makeCustomer({ withDiscount: true }),
+        progCode: { ...upsell, isInstallment: true },
+        customer: makeSizedCustomer({ withDiscount: true }),
         prepayPercent: UPSELL_PERCENT,
       }),
     ).toBeNull();
@@ -177,10 +162,12 @@ describe("priceUpsell", () => {
 });
 
 describe("getUpsellLetterPricing", () => {
+  const customer = makeLetterCustomer();
+
   it("returns null when there is no upsell, so no upsell slot renders", () => {
     expect(
       getUpsellLetterPricing({
-        customer: sampleCustomer,
+        customer,
         upsell: null,
         prepayPercent: UPSELL_PERCENT,
       }),
@@ -189,13 +176,13 @@ describe("getUpsellLetterPricing", () => {
 
   it("applies the upsell percent to every current and proposed service", () => {
     const pricing = getUpsellLetterPricing({
-      customer: sampleCustomer,
-      upsell: sampleUpsellProgCode,
+      customer,
+      upsell,
       prepayPercent: UPSELL_PERCENT,
     })!;
 
     const currentAtUpsellPercent = calculatePrepayTotals({
-      programs: getPrepayPrograms(sampleCustomer),
+      programs: getPrepayPrograms(customer),
       prepayPercent: UPSELL_PERCENT,
     });
 
@@ -206,16 +193,17 @@ describe("getUpsellLetterPricing", () => {
         second: pricing.upsell.totals,
       }),
     );
+    // Two upsell services at 150, less the customer's 5% discount.
     expect(pricing.combinedTotals.serviceAmt).toBeCloseTo(
       currentAtUpsellPercent.serviceAmt + 285,
       2,
     );
   });
 
-  it("prices the sample upsell for the sample customer (size 15, 5% discount)", () => {
+  it("prices the upsell with the customer's size and discount", () => {
     const pricing = getUpsellLetterPricing({
-      customer: sampleCustomer,
-      upsell: sampleUpsellProgCode,
+      customer,
+      upsell,
       prepayPercent: UPSELL_PERCENT,
     })!;
 
