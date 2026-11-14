@@ -5,9 +5,7 @@ import { LoadoutDocModel } from "@/app/scheduling/dailyInventory/models/LoadoutD
 import { cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { LoadoutDoc } from "@/app/loadout/LoadoutTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
-
-const { can } = schedulingCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<LoadoutContract> = {
   upsertLoadout: {

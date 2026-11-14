@@ -17,10 +17,8 @@ import { Label } from "@/style/components/label";
 import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
 import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipmentPackage";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = equipmentCapabilities;
 
 interface EquipmentPackageDeleteSheetProps {
   equipmentPackage: EquipmentPackageDoc;

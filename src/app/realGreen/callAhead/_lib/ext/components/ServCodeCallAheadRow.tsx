@@ -9,9 +9,7 @@ import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { UnsavedServCodeChanges } from "@/app/realGreen/progServ/_lib/types/ProgServState";
 import { ServCodeDoc } from "@/app/realGreen/progServ/_lib/types/ServCodeTypes";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
-
-const { can } = progServCapabilities;
+import { can } from "@/permission/can";
 
 type ServCodeCallAheadRowProps = {
   servCodeId: string;

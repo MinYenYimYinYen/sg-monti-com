@@ -2,7 +2,7 @@
 
 import { useSelector } from "react-redux";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { importRowSelect } from "@/app/qbo/importCCTxn/rows/importRowSelect";
 import { PostRowLine } from "@/app/qbo/importCCTxn/_components/PostRowLine";
 import { PostConfirmDialog } from "@/app/qbo/importCCTxn/_components/PostConfirmDialog";
@@ -15,7 +15,7 @@ import { SkippedRowsSection } from "@/app/qbo/importCCTxn/_components/SkippedRow
 // buttons inside need `expensePostings.write` on top (see PostConfirmDialog and BatchConfirmDialog).
 export function PostPanel() {
   return (
-    <GatedPanel requirement={importCCTxnCapabilities.can.expensePostings.read}>
+    <GatedPanel requirement={can.ccExpensePlans.read}>
       <PostWorkspace />
     </GatedPanel>
   );

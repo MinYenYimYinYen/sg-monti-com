@@ -15,9 +15,7 @@ import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { loadVerifiedCaller } from "@/app/permission/_lib/capabilityLoaders";
 import { AppError } from "@/lib/errors/AppError";
 import { headers } from "next/headers";
-import { quickSendCapabilities } from "@/app/quickSend/quickSendCapabilities";
-
-const { can } = quickSendCapabilities;
+import { can } from "@/permission/can";
 
 /** Reads the current user's saId from the proxy-injected header. */
 async function getCurrentUserSaId(): Promise<string> {
@@ -76,7 +74,7 @@ function normalizeTemplate(doc: StoredTemplateDoc): StoredTemplateDoc {
 
 const handlers: HandlerMap<StoredTemplatesContract> = {
   getTemplates: {
-    capability: can.storedTemplates.read,
+    capability: can.quickSendTemplates.read,
     handler: async () => {
       await connectToMongoDB();
 
@@ -87,7 +85,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   getGroups: {
-    capability: can.templateGroups.read,
+    capability: can.quickSendTemplateGroups.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await TemplateGroupModel.find().lean();
@@ -97,7 +95,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   saveTemplate: {
-    capability: can.storedTemplates.write,
+    capability: can.quickSendTemplates.write,
     handler: async ({ template }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
@@ -123,7 +121,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   deleteTemplate: {
-    capability: can.storedTemplates.delete,
+    capability: can.quickSendTemplates.delete,
     handler: async ({ templateId }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();
@@ -152,7 +150,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   createGroup: {
-    capability: can.templateGroups.write,
+    capability: can.quickSendTemplateGroups.write,
     handler: async ({ name }) => {
       await connectToMongoDB();
       const groupId = makeGroupId(name);
@@ -173,7 +171,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   renameGroup: {
-    capability: can.templateGroups.write,
+    capability: can.quickSendTemplateGroups.write,
     handler: async ({ groupId, newName }) => {
       await connectToMongoDB();
 
@@ -200,7 +198,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   deleteGroup: {
-    capability: can.templateGroups.delete,
+    capability: can.quickSendTemplateGroups.delete,
     handler: async ({ groupId }) => {
       await connectToMongoDB();
 
@@ -231,7 +229,7 @@ const handlers: HandlerMap<StoredTemplatesContract> = {
   },
 
   moveTemplate: {
-    capability: can.storedTemplates.write,
+    capability: can.quickSendTemplates.write,
     handler: async ({ templateId, groupId }) => {
       await connectToMongoDB();
       const saId = await getCurrentUserSaId();

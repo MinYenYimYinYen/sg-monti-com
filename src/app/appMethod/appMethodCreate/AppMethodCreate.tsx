@@ -31,10 +31,8 @@ import { loadSavedAppMethod } from "./loadSavedAppMethod";
 import { AppDispatch } from "@/store";
 import { AppMethodDeleteSheet } from "../AppMethodDeleteSheet";
 import { SolveForSelector } from "./components/SolveForSelector";
-import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = appMethodCapabilities;
 
 interface AppMethodCreateProps {
   method?: AppMethod;

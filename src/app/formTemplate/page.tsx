@@ -12,12 +12,10 @@ import { FormTemplateFileControls } from "./_components/FormTemplateFileControls
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { authSelect } from "@/app/auth/authSlice";
 import { FORM_DATA_TYPE_REGISTRY } from "@/app/formDataTypes/formDataTypeRegistry";
-import { formTemplateCapabilities } from "./formTemplateCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 
 const DEFAULT_DATA_TYPE = Object.keys(FORM_DATA_TYPE_REGISTRY)[0];
-
-const { can } = formTemplateCapabilities;
 
 export default function FormTemplatePage() {
   return (

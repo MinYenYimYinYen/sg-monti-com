@@ -16,9 +16,7 @@ import { toLockStatus } from "@/app/realGreen/syncLock/syncLockLogic";
 import { runDeltaSync } from "@/app/realGreen/customer/sync/runDeltaSync";
 import { runFullSyncChunk, startFullSync } from "@/app/realGreen/customer/sync/runFullSync";
 import { assertCurrentUserPassword } from "@/app/syncUtils/_lib/verifyCurrentUserPassword";
-import { syncUtilsCapabilities } from "@/app/syncUtils/syncUtilsCapabilities";
-
-const { can } = syncUtilsCapabilities;
+import { can } from "@/permission/can";
 
 /**
  * Seconds. Pro plan with fluid compute allows up to 800. Each full-sync chunk is its own

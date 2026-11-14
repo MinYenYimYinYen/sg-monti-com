@@ -7,9 +7,7 @@ import {
   remapServiceConditions,
 } from "@/app/realGreen/serviceCondition/_lib/ServiceConditionServerFunc";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
-import { serviceConditionCapabilities } from "@/app/realGreen/serviceCondition/serviceConditionCapabilities";
-
-const { can } = serviceConditionCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<ServiceConditionContract> = {
   getServiceConditions: {
     capability: can.serviceConditions.read,

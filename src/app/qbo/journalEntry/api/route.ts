@@ -5,9 +5,7 @@ import { postQboJournalEntries } from "@/app/qbo/journalEntry/_lib/qboJournalEnt
 import { reconcileQboJournalEntries } from "@/app/qbo/journalEntry/_lib/qboJournalEntryReconcileServer";
 import { loadQboJournalEntryPostings } from "@/app/qbo/journalEntry/_lib/qboJournalEntryReadServer";
 import { getPostingUserName } from "@/app/qbo/journalEntry/_lib/qboJournalEntrySettleServer";
-import { qboJournalEntryCapabilities } from "@/app/qbo/journalEntry/qboJournalEntryCapabilities";
-
-const { can } = qboJournalEntryCapabilities;
+import { can } from "@/permission/can";
 
 /**
  * One request posts at most 300 entries (10 batches). A batch that does not fully post stops the
@@ -21,7 +19,7 @@ export const maxDuration = 300;
 // what another feature's capability holds.
 const handlers: HandlerMap<QboJournalEntryContract> = {
   postMany: {
-    capability: can.journalEntryPostings.write,
+    capability: can.qboJournalEntries.write,
     handler: async ({ entries }) => {
       const postedByUserName = await getPostingUserName();
       return {
@@ -31,7 +29,7 @@ const handlers: HandlerMap<QboJournalEntryContract> = {
     },
   },
   reconcile: {
-    capability: can.journalEntryPostings.write,
+    capability: can.qboJournalEntries.write,
     handler: async ({ docNumbers }) => {
       const postedByUserName = await getPostingUserName();
       return {
@@ -41,7 +39,7 @@ const handlers: HandlerMap<QboJournalEntryContract> = {
     },
   },
   getByDateRange: {
-    capability: can.postingHistory.read,
+    capability: can.journalEntryHistory.read,
     handler: async ({ startDate, endDate }) => {
       return { success: true, payload: await loadQboJournalEntryPostings({ startDate, endDate }) };
     },

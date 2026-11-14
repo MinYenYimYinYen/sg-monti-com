@@ -17,10 +17,7 @@ import { ProductsFooter } from "@/app/realGreen/product/list/tabs/components/Pro
 import { useSelector } from "react-redux";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
-import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
-
-const { can } = productCapabilities;
+import { can } from "@/permission/can";
 
 export default function ListProducts() {
   return (
@@ -37,7 +34,7 @@ function ProductList() {
     autoLoad: true,
     canLoad: {
       unitConversions: canLoadUnitConversions,
-      appMethods: allows(appMethodCapabilities.can.appMethods.read),
+      appMethods: allows(can.appMethods.read),
     },
   });
   useUnitConfig({ autoLoad: true, canLoad: canLoadUnitConversions });

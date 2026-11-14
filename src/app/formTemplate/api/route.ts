@@ -7,9 +7,7 @@ import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj"
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { AppError } from "@/lib/errors/AppError";
 import { headers } from "next/headers";
-import { formTemplateCapabilities } from "../formTemplateCapabilities";
-
-const { can } = formTemplateCapabilities;
+import { can } from "@/permission/can";
 
 /** Reads the current user's saId from the proxy-injected header. */
 async function getCurrentUserSaId(): Promise<string> {

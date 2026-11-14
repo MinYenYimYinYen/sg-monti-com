@@ -5,9 +5,7 @@ import { SeasonPlan } from "@/app/pace/seasonPlan/SeasonPlanTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
-
-const { can } = paceCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<SeasonPlanContract> = {
   getSeasonPlans: {
     capability: can.seasonPlans.read,

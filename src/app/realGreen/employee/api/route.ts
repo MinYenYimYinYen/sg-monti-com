@@ -7,9 +7,7 @@ import {
   remapEmployees,
 } from "@/app/realGreen/employee/_lib/employeeServerFunc";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
-import { employeeCapabilities } from "@/app/realGreen/employee/employeeCapabilities";
-
-const { can } = employeeCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<EmployeeContract> = {
   getAll: {
     capability: can.employees.read,

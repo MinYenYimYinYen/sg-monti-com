@@ -14,7 +14,7 @@ import { Button } from "@/style/components/button";
 import { paceSeasonPlanSelect } from "@/app/pace/seasonPlan/seasonPlanSelect";
 import { usePaceSeasonPlan } from "@/app/pace/seasonPlan/useSeasonPlan";
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type GroupScheduleDialogProps = {
@@ -36,7 +36,7 @@ export function GroupScheduleDialog({ group, open, onCloseAction }: GroupSchedul
 
   // The group's dates live in the active season plan, so setting them writes that plan.
   const canWrite = useSelector(userCapabilitiesSelect.allows)(
-    paceCapabilities.can.seasonPlans.write,
+    can.seasonPlans.write,
   );
 
   const isValid =

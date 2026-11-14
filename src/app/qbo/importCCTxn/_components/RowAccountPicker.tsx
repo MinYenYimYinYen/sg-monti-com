@@ -3,7 +3,7 @@
 import { useSelector } from "react-redux";
 import { qboAccountSelect } from "@/app/qbo/account/qboAccountSelect";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { importMapSelect } from "@/app/qbo/importCCTxn/importMapSelect";
 import { importCCTxnMappingSelect } from "@/app/qbo/importCCTxn/importCCTxnMappingSelect";
 import { useImportRow } from "@/app/qbo/importCCTxn/rows/useImportRow";
@@ -32,7 +32,7 @@ export function RowAccountPicker({
   const accountChoices = useSelector(importMapSelect.accountChoices);
   const accountMap = useSelector(qboAccountSelect.accountMap);
   const canChooseAccount = useSelector(userCapabilitiesSelect.allows)(
-    importCCTxnCapabilities.can.importRows.write,
+    can.ccImportRows.write,
   );
   const { setAccount } = useImportRow({ autoLoad: false });
 

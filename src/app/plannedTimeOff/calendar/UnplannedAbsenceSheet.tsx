@@ -24,11 +24,9 @@ import {
   SelectValue,
 } from "@/style/components/select";
 import { plannedTimeOffActions } from "@/app/plannedTimeOff/plannedTimeOffSlice";
-import { plannedTimeOffCapabilities } from "@/app/plannedTimeOff/plannedTimeOffCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
-
-const { can } = plannedTimeOffCapabilities;
 
 // ---------------------------------------------------------------------------
 // UnplannedAbsenceSheet
@@ -46,7 +44,7 @@ export function UnplannedAbsenceSheet({
   onCloseAction,
 }: UnplannedAbsenceSheetProps) {
   const dispatch = useAppDispatch();
-  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.absences.write);
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.employeeAbsences.write);
 
   const [search, setSearch] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");

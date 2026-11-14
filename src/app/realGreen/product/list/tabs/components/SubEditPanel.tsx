@@ -22,9 +22,7 @@ import { baseNumId } from "@/app/realGreen/_lib/realGreenConst";
 import { ProductSub } from "@/app/realGreen/product/_lib/types/ProductSubTypes";
 import { useSelector } from "react-redux";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
-
-const { can } = productCapabilities;
+import { can } from "@/permission/can";
 
 interface SubEditPanelProps {
   product: ProductSub;

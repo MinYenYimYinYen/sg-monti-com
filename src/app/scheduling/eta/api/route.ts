@@ -5,9 +5,7 @@ import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { ServiceEta } from "@/app/scheduling/eta/EtaTypes";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
-
-const { can } = schedulingCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<ServiceEtaContract> = {
   getServiceEtas: {

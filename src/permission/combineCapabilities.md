@@ -32,7 +32,7 @@ It takes resolved features and returns one resolved feature (`{ declaration, can
 
 - **Resources** are merged into one object. Each key is renamed `<featureKey>_<resourceKey>` (`customer_customers`) so two features that both own a `customers` resource cannot clash. This is a real case: `quickbooks` and `customer` both have `customers` and `employees`, and `javelin` and `qboJournalEntry` both have `journalEntryPostings`.
 - **`origin`** is set on every merged resource: `{ featureKey, resourceKey }`, the feature's own names. `buildCapability` builds the string from the origin when there is one, so **the string never changes**: `customer.customers.realGreen.read` stays exactly that. Stored grants, bundles and route gates keep matching. This is the invariant everything else depends on.
-- **`requires`** and **`public`** are merged the same way, with their keys renamed to match.
+- **`public`** is merged the same way, with its keys renamed to match.
 - **`can`** is nested by the owning feature (`group.can.customer.customers.read`), not flat by resource, because a flat shape would collide on the same names. Enforcement code does not use it. It keeps importing its own feature's `can`.
 - **`mergeRecords`** is the helper behind all of the above: merge two or more records, rename each one's keys, and **throw on a duplicate** instead of overwriting.
 - **Groups can nest.** An existing `origin` is kept, so a group inside a group still produces the original strings. The admin sees only the outer group.
@@ -44,7 +44,7 @@ It takes resolved features and returns one resolved feature (`{ declaration, can
 - `byGroup`: `{ key, name, description?, capabilities }[]` in list order. This is what the screens iterate. It replaced `byFeature`.
 - `describe(capability)` returns the owning `featureKey`, `resourceKey`, `source` and `verb`, plus `groupKey` and `groupName`.
 - **A bare feature is a group of one**, named by its key. That is what lets groups be written one at a time while the app keeps working.
-- `allCapabilities`, `has` and `requirementsOf` are unchanged, so every logic function that takes a registry is untouched.
+- `allCapabilities` and `has` are unchanged, so every logic function that takes a registry is untouched.
 - Labels inside a group put the owning feature first when it differs from the group (`zipCode > zipCodes (realGreen) · read`), because two features in one group can have equally named resources.
 
 ## How to write a group
@@ -66,7 +66,7 @@ There is no code-level marker for a capability whose op cannot be undone (an `ir
 `CapabilityMatrix` (bundle editor now, user editor next) draws the registry as a table: one row per group in registry order, one column per verb (read, write, delete, then the Any verbs), a checkbox with the verb under it in each cell. No header row.
 
 - A cell toggles **every member of the row that has that verb**. A partly held cell shows a minus and a click completes it. Only a fully held cell turns off.
-- Ticking write also ticks the same capability's read, and clearing read clears what depends on it (the built-in verb companions). A declared `requires` is **not** expanded by a cell.
+- Ticking write also ticks the same capability's read, and clearing read clears what depends on it (the built-in verb companions, within one resource).
 - The row header is the group name and an info button. The popover shows the description and the members (feature, resource, verbs). A bare feature is a row of one with the same popover.
 - The filter above the table is a text box (name, description, member feature and resource keys) and an All / Unused / Used toggle. It only chooses which rows are drawn. A partly held row counts as used.
 - Logic lives in `logic/capabilityMatrix.ts` (`buildMatrix`, `cellChange`, `cellState`, `planUserCell`, `matchesRowFilter`, `summarizeMembers`). The component is a thin wrapper.
@@ -88,22 +88,13 @@ Done:
 
 Next (owner: Luke): write the remaining groups, then review them together.
 
-## Open intention: retire `requires`
+## Retired: `requires`
 
-The plan is to try groups first and, **if they work**, remove the `requires` concept. Until then `requires` still exists, is carried through a group (keys renamed), and still drives the editors' warnings.
+The `requires` concept is gone. It let a declaration list other features' capabilities that a screen also needed, so the admin screens could offer them and warn when one was missing. It never granted anything at runtime. Grouping replaces it: assigning a group assigns what belongs together.
 
-What `requires` did: when a capability is assigned, the admin screens offered what it needs, and warned when something it needs was not held. It never granted anything at runtime.
+What went with it: the `requires` field and its checks, `requirementsOf` on the registry, `requirementLogic.ts`, the editors' "also add what this needs" option and the hint notices, and every `*Capabilities.ts` import of another feature. The built-in verb companions stay (ticking write ticks read), but only within one resource.
 
-What replaces it: assigning a group assigns everything that belongs together, so the needs are met by grouping instead of by listing them.
-
-Before removing it, decide:
-
-1. **Warnings.** Does anything still need a warning when a user holds only part of a group (for example through a direct grant)? If yes, the warning should compare against the group's members, not a separate `requires` list.
-2. **Screens with no declaration** (`productivity`, `bizPlan`, `sanity`, `schedPromise`). They own no data, so there is no feature to put in a group. Options: a small singleton `read` feature per screen that a group can include, or leave them as notes. The nav entries still on `roles` (Productivity, Product Forecast) depend on this answer.
-3. **A feature in more than one group.** Today it is rejected, because a capability string can only be listed once. If a feature is needed by several screens, it goes in a group of its own that the others sit beside, or the admin assigns two groups. Decide whether that is acceptable.
-4. **Wide groups.** A group that pulls in the whole hydrated customer (flags, call logs, conditions, call-aheads) is long to assign. Decide whether to keep those as separate groups.
-
-Removal touches: the `requires` field and its checks in `PermissionTypes.ts` and `buildRegistry.ts`, `requirementsOf` on the registry, `requirementLogic.ts`, `bundleDraft.ts`, `userCapabilitiesSelect.ts`, `BundleEditor.tsx`, `UserCapabilityEditor.tsx`, the requirement tests, the `requires` entries in about 30 declaration files, and the deferred rows in `migration/fullyMigratedFolders.md` that say "add the `requires` entries".
+Still open when the groups are written: screens that own no data (`productivity`, `bizPlan`, `sanity`, `schedPromise`) have no declaration to put in a group, and a feature can sit in only one group.
 
 ## Notes
 

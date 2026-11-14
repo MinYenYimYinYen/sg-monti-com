@@ -1,21 +1,19 @@
 import type { Capability } from "@/permission/PermissionTypes";
-import type { CapabilityRegistry } from "@/permission/buildRegistry";
+import type { CapabilityRegistry } from "@/permission/registryTypes";
 
 // Text for the admin screens. Pure, so the grouping and labels can be tested without React.
 
 type Describer = Pick<CapabilityRegistry, "describe">;
 
 /**
- * `resource (source) · verb`. Inside a combined group two features can have a resource with the
- * same name, so the owning feature is put in front when it is not the group itself. A string the
- * registry no longer knows is shown exactly as stored.
+ * `resource name (source) · verb`. A string the registry no longer knows is shown exactly as
+ * stored.
  */
 export function capabilityLabel({ capability, registry }: { capability: string; registry: Describer }): string {
   const description = registry.describe(capability);
   if (!description) return capability;
   const source = description.source ? ` (${description.source})` : "";
-  const owner = description.featureKey === description.groupKey ? "" : `${description.featureKey} › `;
-  return `${owner}${description.resourceKey}${source} · ${description.verb}`;
+  return `${description.resourceName}${source} · ${description.verb}`;
 }
 
 export type GroupedCapabilities = { groupKey: string; groupName: string; capabilities: Capability[] };

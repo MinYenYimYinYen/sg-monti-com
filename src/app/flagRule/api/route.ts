@@ -5,9 +5,7 @@ import { FlagRule } from "@/app/flagRule/FlagRuleTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { flagRuleCapabilities } from "@/app/flagRule/flagRuleCapabilities";
-
-const { can } = flagRuleCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<FlagRuleContract> = {
   getAll: {
     capability: can.flagRules.read,

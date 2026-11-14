@@ -4,9 +4,7 @@ import { TaxCodeContract } from "@/app/realGreen/taxCode/api/TaxCodeContract";
 import { TaxCodeRaw } from "@/app/realGreen/taxCode/TaxCodeTypes";
 import { extendTaxCodes, remapTaxCodes } from "../_lib/taxCodeServerFunc";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
-import { taxCodeCapabilities } from "@/app/realGreen/taxCode/taxCodeCapabilities";
-
-const { can } = taxCodeCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<TaxCodeContract> = {
   getAll: {
     capability: can.taxCodes.read,

@@ -16,15 +16,13 @@ import { ScrollArea } from "@/style/components/scroll-area";
 import { ServCodeCallAheadTab } from "./ServCodeCallAheadTab";
 import { Notice } from "@/app/permission/_components/Notice";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { callAheadCapabilities } from "@/app/realGreen/callAhead/callAheadCapabilities";
-
-const { can } = callAheadCapabilities;
+import { can } from "@/permission/can";
 
 export function CallAheadConfig(props: ModalProps) {
   const { isOpen, onClose } = props;
   const allows = useSelector(userCapabilitiesSelect.allows);
   const canReadCallAheads = allows(can.callAheads.read);
-  const canReadKeywords = allows(can.keywords.read);
+  const canReadKeywords = allows(can.callAheadKeywords.read);
   // Each load is gated by the capability its route needs, so a user holding only one of the two
   // reads never fires a request that would be refused.
   useCallAhead({

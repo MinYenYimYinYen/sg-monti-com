@@ -24,7 +24,7 @@ import { AddSequenceDropdown } from "@/app/pace/setup/employees/_components/AddS
 import { CopyAssignmentDialog } from "@/app/pace/setup/employees/_components/CopyAssignmentDialog";
 import { GroupAssignment } from "@/app/pace/assignmentPlan/AssignmentPlanTypes";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
-import { employeeAvailabilityCapabilities } from "@/app/employeeAvailability/employeeAvailabilityCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type EmployeeAssignmentPanelProps = {
@@ -46,7 +46,7 @@ export function EmployeeAssignmentPanel({
   // (gated in the scenario selector), so they are not gated here. The availability sheet is its own
   // feature and loads and saves through its own capabilities.
   const canOpenAvailability = useSelector(userCapabilitiesSelect.allows)(
-    employeeAvailabilityCapabilities.can.availabilityConstraints.read,
+    can.availabilityConstraints.read,
   );
 
   const [availabilityEmployee, setAvailabilityEmployee] = useState<Employee | null>(null);

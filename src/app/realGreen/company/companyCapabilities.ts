@@ -7,8 +7,7 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 //
 // Read only: the contract has no write, and this app never changes RealGreen's companies. The
 // company list page is its own screen. The prepay letters also read the company (it fills the
-// letter's return address), so they list this read in their own `requires` (deferred, see the
-// record).
+// letter's return address).
 export const companyCapabilities = createFeatureCapabilities({
   key: "company",
   resources: {

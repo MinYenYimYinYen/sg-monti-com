@@ -13,7 +13,7 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 //
 // `javelin.journalEntryPostings.qbo.write` is a different capability: Javelin builds and posts its
 // own entries through the same server code, and its screens are gated by the `javelin` feature.
-// Nothing here requires it, and holding one does not grant the other.
+// Holding one does not grant the other.
 export const qboJournalEntryCapabilities = createFeatureCapabilities({
   key: "qboJournalEntry",
   resources: {

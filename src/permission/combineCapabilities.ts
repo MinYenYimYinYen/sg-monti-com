@@ -1,5 +1,4 @@
 import {
-  Capability,
   FeatureCapabilities,
   isValidKey,
   Resource,
@@ -47,14 +46,6 @@ function withOrigin(declaration: FeatureCapabilities): Record<string, Resource> 
   ) as Record<string, Resource>;
 }
 
-/** `requires` keys are `resource.verb`, and the resource part is re-keyed like the resources. */
-function rekeyRequirement({ featureKey, requirementKey }: { featureKey: string; requirementKey: string }): string {
-  const separator = requirementKey.indexOf(".");
-  const resourceKey = requirementKey.slice(0, separator);
-  const verb = requirementKey.slice(separator + 1);
-  return `${prefixed({ featureKey, key: resourceKey })}.${verb}`;
-}
-
 export function combineCapabilities<const Fs extends readonly CapabilityFeature[]>({
   key,
   name,
@@ -81,14 +72,6 @@ export function combineCapabilities<const Fs extends readonly CapabilityFeature[
     })),
   });
 
-  const requires = mergeRecords<readonly Capability[]>({
-    what: "requirement",
-    parts: features.map(({ declaration }) => ({
-      record: declaration.requires ?? {},
-      rekey: (requirementKey) => rekeyRequirement({ featureKey: declaration.key, requirementKey }),
-    })),
-  });
-
   const publicVerbs = mergeRecords<readonly Verb[]>({
     what: "public verb list",
     parts: features.map(({ declaration }) => ({
@@ -112,7 +95,6 @@ export function combineCapabilities<const Fs extends readonly CapabilityFeature[
     description,
     resources,
     ...(Object.keys(publicVerbs).length > 0 ? { public: publicVerbs } : {}),
-    ...(Object.keys(requires).length > 0 ? { requires } : {}),
   };
 
   // The loops build exactly the shape CombinedCapabilities<Fs> describes, but TS can't prove it

@@ -15,10 +15,8 @@ import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seaso
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { FlagRounding, PriceIncreaseSettingsDoc } from "@/app/priceIncrease/settings/PriceIncreaseSettingsTypes";
 import { InlinePlanEditor } from "@/app/priceIncrease/config/_components/InlinePlanEditor";
-import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = priceIncreaseCapabilities;
 
 const ROUNDING_OPTIONS: { value: FlagRounding; label: string; description: string }[] = [
   { value: "round", label: "Round", description: "Nearest flag — least aggressive on average" },

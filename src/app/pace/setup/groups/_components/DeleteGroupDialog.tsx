@@ -15,7 +15,7 @@ import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentP
 import { usePaceAssignmentGroup } from "@/app/pace/assignmentGroup/useAssignmentGroup";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
-import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type DeleteGroupDialogProps = {
@@ -37,7 +37,7 @@ export function DeleteGroupDialog({
   const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
   const employeeMap = useSelector(employeeSelect.employeeMap);
   const canDelete = useSelector(userCapabilitiesSelect.allows)(
-    assignmentGroupCapabilities.can.assignmentGroups.delete,
+    can.assignmentGroups.delete,
   );
 
   // Find employees who have this group assigned, with their priority rank

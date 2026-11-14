@@ -51,10 +51,7 @@ import {
 } from "@/style/components/popover";
 import { Info } from "lucide-react";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
-
-const { can } = productCapabilities;
+import { can } from "@/permission/can";
 
 interface MasterEditPanelProps {
   master: ProductMaster;
@@ -70,7 +67,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
   const canWritePackages = allows(can.masterEquipmentPackages.write);
   useEquipmentPackage({
     autoLoad: true,
-    canLoad: allows(equipmentCapabilities.can.equipmentPackages.read),
+    canLoad: allows(can.equipmentPackages.read),
   });
   const productSubs = useSelector(productSelect.productSubs);
   const allPackages = useSelector(equipmentPackageSelect.equipmentPackages);

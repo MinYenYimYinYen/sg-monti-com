@@ -5,8 +5,7 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 // rgAccounts.realGreen.read -> realGreen/rgAccount getAll
 //
 // Read only: the contract has no write, and this app never changes RealGreen's accounts. The
-// account mapping screen lists these and links each to a QuickBooks account, so it lists this read
-// in its `requires` (see accountCapabilities).
+// account mapping screen lists these and links each to a QuickBooks account.
 export const rgAccountCapabilities = createFeatureCapabilities({
   key: "rgAccount",
   resources: {

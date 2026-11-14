@@ -7,9 +7,7 @@ import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { WriteError } from "mongodb";
-import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
-
-const { can } = assignmentCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<AssignmentContract> = {
   getByServIds: {

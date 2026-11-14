@@ -5,16 +5,14 @@ import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
 import { judgeUserDeletion } from "@/app/auth/_lib/userDeletion";
 import { capabilityBundleSelect } from "@/app/permission/capabilityBundle/capabilityBundleSelect";
-import { capabilityManagementCapabilities } from "@/app/permission/capabilityManagementCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { useUserCapabilities } from "@/app/permission/userCapabilities/useUserCapabilities";
 import { CapabilityGroups } from "@/app/permission/_components/CapabilityGroups";
 import { DeleteUserDialog } from "@/app/permission/_components/DeleteUserDialog";
 import { Notice } from "@/app/permission/_components/Notice";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
-import type { Capability } from "@/permission/PermissionTypes";
 import { canAssign, canManageCapabilitiesOf } from "@/permission/logic/assignmentGuards";
-import { planDirectAdd } from "@/permission/logic/requirementLogic";
 import { capabilityLabel, groupCapabilitiesByGroup } from "@/permission/logic/capabilityLabels";
 import { isGateOpen } from "@/permission/logic/navGate";
 import {
@@ -22,8 +20,6 @@ import {
   removeBundle as previewRemoveBundle,
 } from "@/permission/logic/userCapabilityLogic";
 import { Button } from "@/style/components/button";
-import { Checkbox } from "@/style/components/checkbox";
-import { Label } from "@/style/components/label";
 import {
   Select,
   SelectContent,
@@ -34,8 +30,6 @@ import {
   SelectValue,
 } from "@/style/components/select";
 
-const { can } = capabilityManagementCapabilities;
-
 /** One user's bundles and direct capabilities. Key it by userName so its pickers reset per user. */
 export function UserCapabilityEditor({ userName }: { userName: string }) {
   const authUser = useSelector(authSelect.user);
@@ -45,7 +39,6 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
   const effectiveByUserName = useSelector(userCapabilitiesSelect.effectiveByUserName);
   const assignableByUserName = useSelector(userCapabilitiesSelect.assignableByUserName);
   const redundantDirectByUserName = useSelector(userCapabilitiesSelect.redundantDirectByUserName);
-  const missingRequirementsByUserName = useSelector(userCapabilitiesSelect.missingRequirementsByUserName);
   const bundles = useSelector(capabilityBundleSelect.docs);
   const bundlesByKey = useSelector(capabilityBundleSelect.byBundleKey);
   const { assignBundle, removeBundle, addDirect, removeDirect } = useUserCapabilities();
@@ -53,7 +46,6 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
   const [bundleToAssign, setBundleToAssign] = useState("");
   const [bundleToRemove, setBundleToRemove] = useState<string | null>(null);
   const [capabilityToAdd, setCapabilityToAdd] = useState("");
-  const [alsoAddRequirements, setAlsoAddRequirements] = useState(true);
 
   const summary = users.find((candidate) => candidate.userName === userName);
   const holdings = holdingsByUserName[userName];
@@ -71,7 +63,6 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
 
   const effective = effectiveByUserName[userName] ?? [];
   const redundant = redundantDirectByUserName[userName] ?? [];
-  const unmetRequirements = missingRequirementsByUserName[userName] ?? [];
 
   // Mirrors the server's no-escalation rule so the pickers only offer what the caller may hand out.
   const bundleOptions = bundles
@@ -104,24 +95,8 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
     setBundleToRemove(null);
   }
 
-  // What picking this capability would add. It stays a preview until Add: the stored grants are
-  // exactly the capabilities sent, with what they need included only when the box is ticked.
-  const addPlan = capabilityToAdd
-    ? planDirectAdd({
-        capability: capabilityToAdd as Capability,
-        effective,
-        actorIsSuperUser,
-        actorCapabilities,
-        registry: capabilityRegistry,
-      })
-    : null;
-  const alsoNeeded = addPlan ? addPlan.capabilities.slice(1) : [];
-
   function handleAddDirect() {
-    addDirect({
-      userName,
-      capabilities: alsoAddRequirements && addPlan ? addPlan.capabilities : [capabilityToAdd],
-    });
+    addDirect({ userName, capabilities: [capabilityToAdd] });
     setCapabilityToAdd("");
   }
 
@@ -273,52 +248,9 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
                 Add
               </Button>
             </div>
-            {addPlan && alsoNeeded.length > 0 && (
-              <div className="space-y-1 rounded-md border border-border bg-accent/10 p-3">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="also-add-requirements"
-                    checked={alsoAddRequirements}
-                    onCheckedChange={(checked) => setAlsoAddRequirements(checked === true)}
-                  />
-                  <Label htmlFor="also-add-requirements" className="text-sm font-normal">
-                    Also add what this needs ({alsoNeeded.length})
-                  </Label>
-                </div>
-                <ul className="list-disc pl-8 text-sm text-muted-foreground">
-                  {alsoNeeded.map((capability) => (
-                    <li key={capability}>{capabilityLabel({ capability, registry: capabilityRegistry })}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {addPlan && addPlan.unassignable.length > 0 && (
-              <Notice tone="warning">
-                This also needs capabilities you do not hold, so you cannot add them:
-                <ul className="mt-1 list-disc pl-5">
-                  {addPlan.unassignable.map((capability) => (
-                    <li key={capability}>{capabilityLabel({ capability, registry: capabilityRegistry })}</li>
-                  ))}
-                </ul>
-              </Notice>
-            )}
           </div>
         )}
       </section>
-
-      {unmetRequirements.length > 0 && (
-        <Notice>
-          Hints only (nothing is blocked or added automatically):
-          <ul className="mt-1 list-disc pl-5">
-            {unmetRequirements.map((unmet) => (
-              <li key={`${unmet.capability}|${unmet.missing}`}>
-                {capabilityLabel({ capability: unmet.capability, registry: capabilityRegistry })} is held without{" "}
-                {capabilityLabel({ capability: unmet.missing, registry: capabilityRegistry })}.
-              </li>
-            ))}
-          </ul>
-        </Notice>
-      )}
 
       <section className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Everything this user can do</h3>

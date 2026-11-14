@@ -1,5 +1,4 @@
 import { createFeatureCapabilities } from "@/permission/PermissionTypes";
-import { quickbooksCapabilities } from "@/app/qbo/quickbooksCapabilities";
 
 // Credit card import: a CSV is imported as rows, each row is mapped to a vendor and an expense
 // account, and the mapped rows are posted to QuickBooks as expenses.
@@ -37,13 +36,6 @@ import { quickbooksCapabilities } from "@/app/qbo/quickbooksCapabilities";
 // mapDecisions.write -> decisions saveDecisions. The Map tab saves merchant mappings, row
 //   accounts, row skips and skip rules in one request. It has its own verb so that holding
 //   `merchantMappings.write` alone never lets someone skip rows or add skip rules through it.
-//
-// requires: the module opens on `importRows.read`, and its layout also loads every mapping list
-// and the QuickBooks reference lists, so reading it needs those reads. Its own entries are written
-// as strings because the constants are not available inside their own declaration (the same as
-// `pace`).
-const { can: quickbooksCan } = quickbooksCapabilities;
-
 export const importCCTxnCapabilities = createFeatureCapabilities({
   key: "importCCTxn",
   resources: {
@@ -54,29 +46,5 @@ export const importCCTxnCapabilities = createFeatureCapabilities({
     skipRules: { shape: "collection", verbs: ["read", "write", "delete"] },
     mapDecisions: { shape: "singleton", verbs: ["write"] },
     expensePostings: { shape: "singleton", source: "qbo", verbs: ["read", "write"] },
-  },
-  requires: {
-    "importRows.read": [
-      "importCCTxn.formatAccounts.read",
-      "importCCTxn.cardAssignments.read",
-      "importCCTxn.merchantMappings.read",
-      "importCCTxn.skipRules.read",
-      quickbooksCan.accounts.read,
-      quickbooksCan.vendors.read,
-      quickbooksCan.customers.read,
-      quickbooksCan.employees.read,
-    ],
-    "formatAccounts.write": [quickbooksCan.accounts.read],
-    "mapDecisions.write": [
-      "importCCTxn.importRows.read",
-      "importCCTxn.merchantMappings.read",
-      "importCCTxn.skipRules.read",
-    ],
-    "expensePostings.read": ["importCCTxn.importRows.read"],
-    "expensePostings.write": [
-      "importCCTxn.expensePostings.qbo.read",
-      "importCCTxn.importRows.read",
-      "importCCTxn.merchantMappings.read",
-    ],
   },
 });

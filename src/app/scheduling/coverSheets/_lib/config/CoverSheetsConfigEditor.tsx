@@ -22,15 +22,12 @@ import { MultiSelectContent } from "@/components/multiselect/MultiSelectContent"
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
-import { flagCapabilities } from "@/app/realGreen/flag/flagCapabilities";
-
-const { can } = globalSettingsCapabilities;
+import { can } from "@/permission/can";
 
 export function CoverSheetsConfigEditor() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const allows = useSelector(userCapabilitiesSelect.allows);
-  const canWriteSettings = allows(can.settings.write);
+  const canWriteSettings = allows(can.globalSettings.write);
   const {
     localCoverSheetsConfig,
     setLocalCoverSheetsConfig,
@@ -39,9 +36,9 @@ export function CoverSheetsConfigEditor() {
     cancelChanges,
   } = useGlobalSettings({
     autoLoad: true,
-    canLoad: allows(can.settings.read),
+    canLoad: allows(can.globalSettings.read),
   });
-  useFlag({ autoLoad: true, canLoad: allows(flagCapabilities.can.flags.read) });
+  useFlag({ autoLoad: true, canLoad: allows(can.flags.read) });
 
   const flagDocs = useSelector(flagSelect.flagDocs);
   const flagDocMap = useSelector(flagSelect.flagDocMap);

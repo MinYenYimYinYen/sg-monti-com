@@ -5,9 +5,7 @@ import { PrepayDoc, PrepayRaw } from "@/app/realGreen/prepay/PrepayTypes";
 import { extendPrepays, remapPrepays } from "@/app/realGreen/prepay/_lib/prepayServerFunc";
 import { DataResponse } from "@/lib/api/types/responses";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
-import { prepayCapabilities } from "@/app/realGreen/prepay/prepayCapabilities";
-
-const { can } = prepayCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<PrepayContract> = {
   getAll: {
     capability: can.prepays.read,

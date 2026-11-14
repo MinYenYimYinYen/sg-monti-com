@@ -16,8 +16,7 @@ import { paceGroupSequenceSelect } from "@/app/pace/groupSequence/groupSequenceS
 import { usePaceAssignmentGroup } from "@/app/pace/assignmentGroup/useAssignmentGroup";
 import { useGroupSequence } from "@/app/pace/groupSequence/useGroupSequence";
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
-import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type SequenceMembership =
@@ -95,8 +94,8 @@ export function GroupDialog({ group, open, onCloseAction, onCreatedGroupIdAction
 
   // Adding the group to an existing sequence also saves that sequence, so it needs both writes.
   const canWrite =
-    allows(assignmentGroupCapabilities.can.assignmentGroups.write) &&
-    (membership.mode === "standalone" || allows(paceCapabilities.can.groupSequences.write));
+    allows(can.assignmentGroups.write) &&
+    (membership.mode === "standalone" || allows(can.groupSequences.write));
   const canSave = canWrite && (isEditMode ? true : selectedIds.size > 0);
   const autoLabel = [...selectedIds].sort().join("+");
 

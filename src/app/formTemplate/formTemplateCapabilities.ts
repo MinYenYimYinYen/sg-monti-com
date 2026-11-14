@@ -10,8 +10,8 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 // touch another user's template (saId is derived server-side, delete checks the owner). Holding
 // `write` or `delete` lets a user change their own templates, never someone else's.
 //
-// No `requires`: the template editor reads only the static form data type registry, which is
-// in-code and has no capability of its own.
+// The template editor reads only the static form data type registry, which is in-code and has no
+// capability of its own.
 export const formTemplateCapabilities = createFeatureCapabilities({
   key: "formTemplate",
   resources: {

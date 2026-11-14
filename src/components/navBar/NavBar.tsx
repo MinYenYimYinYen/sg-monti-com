@@ -11,10 +11,8 @@ import NavMenu from "./NavMenu";
 import { GlobalConfigMenu } from "./GlobalConfigMenu";
 import { UserPopover } from "./UserPopover";
 import { useNavBarDeps } from "./useNavBarDeps";
-import { authCapabilities } from "@/app/auth/authCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = authCapabilities;
 
 export default function NavBar() {
   useNavBarDeps();

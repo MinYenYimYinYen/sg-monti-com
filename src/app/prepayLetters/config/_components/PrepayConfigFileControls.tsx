@@ -8,7 +8,7 @@ import { prepayConfigActions } from "../prepayConfigSlice";
 import { authSelect } from "@/app/auth/authSlice";
 import { usePrepayConfig } from "../usePrepayConfig";
 import { PrepayConfigOpenSheet } from "./PrepayConfigOpenSheet";
-import { prepayLettersCapabilities } from "../../prepayLettersCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { EntityFileControls } from "@/components/EntityFileControls/EntityFileControls";
 import { DropdownMenuItem } from "@/style/components/dropdown-menu";
@@ -22,8 +22,6 @@ import {
 } from "@/style/components/dialog";
 import { Button } from "@/style/components/button";
 import type { PrepayConfig } from "../prepayConfigTypes";
-
-const { can } = prepayLettersCapabilities;
 
 const BLANK_CONFIG: Omit<PrepayConfig, "configId" | "name" | "saId"> = {
   season: new Date().getFullYear(),

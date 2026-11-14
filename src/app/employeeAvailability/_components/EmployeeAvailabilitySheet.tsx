@@ -18,11 +18,9 @@ import { Separator } from "@/style/components/separator";
 import { useEmployeeAvailability } from "@/app/employeeAvailability/useEmployeeAvailability";
 import { employeeAvailabilitySelect } from "@/app/employeeAvailability/employeeAvailabilitySelect";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
-import { employeeAvailabilityCapabilities } from "@/app/employeeAvailability/employeeAvailabilityCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { Notice } from "@/app/permission/_components/Notice";
-
-const { can } = employeeAvailabilityCapabilities;
 
 // ---------------------------------------------------------------------------
 // EmployeeAvailabilitySheet

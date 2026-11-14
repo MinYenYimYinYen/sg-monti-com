@@ -7,13 +7,11 @@ import { useSelector } from "react-redux";
 import { keywordSelect } from "@/app/realGreen/callAhead/selectors/keywordSelect";
 import { useMemo, useState } from "react";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { callAheadCapabilities } from "@/app/realGreen/callAhead/callAheadCapabilities";
-
-const { can } = callAheadCapabilities;
+import { can } from "@/permission/can";
 
 export function KeywordCreate() {
   const { upsertKeyword } = useCallAhead({ autoLoad: false });
-  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.keywords.write);
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.callAheadKeywords.write);
   const keywordMap = useSelector(keywordSelect.keywordMap);
 
   const [keywordId, setKeywordId] = useState("");

@@ -7,17 +7,16 @@ import { EquipmentPackageCRUD } from "@/app/equipment/equipmentPackage/Equipment
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { can } from "@/permission/can";
 
 export function ProductsFooter() {
   const [isAppMethodCRUDOpen, setIsAppMethodCRUDOpen] = useState(false);
   const [isEquipmentCRUDOpen, setIsEquipmentCRUDOpen] = useState(false);
   const [isPackageCRUDOpen, setIsPackageCRUDOpen] = useState(false);
   const allows = useSelector(userCapabilitiesSelect.allows);
-  const canOpenAppMethods = allows(appMethodCapabilities.can.appMethods.read);
-  const canOpenEquipment = allows(equipmentCapabilities.can.equipmentDefinitions.read);
-  const canOpenPackages = allows(equipmentCapabilities.can.equipmentPackages.read);
+  const canOpenAppMethods = allows(can.appMethods.read);
+  const canOpenEquipment = allows(can.equipmentDefinitions.read);
+  const canOpenPackages = allows(can.equipmentPackages.read);
 
   // A badge a user cannot read is hidden, so no one opens a modal that only says they have no access.
   return (

@@ -16,11 +16,10 @@ import { depositFieldMappingSelect } from "@/app/javelin/depositMapping/depositF
 import { useDepositFieldMapping } from "@/app/javelin/depositMapping/useDepositFieldMapping";
 import { DepositFieldLink } from "@/app/javelin/depositMapping/DepositFieldMappingTypes";
 import { LinkStatusBadge } from "@/app/javelin/depositMapping/_components/linkStatusBadge";
-import { depositMappingCapabilities } from "@/app/javelin/depositMapping/depositMappingCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 const noSuggestions = new Set<string>();
-const { can } = depositMappingCapabilities;
 
 /** One deposit link (a WorkWave field or a check deposit account) and its QuickBooks account. Each change saves at once. */
 export function DepositFieldRow({ link }: { link: DepositFieldLink }) {

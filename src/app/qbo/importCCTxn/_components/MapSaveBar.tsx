@@ -3,7 +3,7 @@
 import { useSelector } from "react-redux";
 import { Button } from "@/style/components/button";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { importDecisionSelect } from "@/app/qbo/importCCTxn/decisions/importDecisionSelect";
 import {
   useImportDecision,
@@ -21,7 +21,7 @@ export function MapSaveBar() {
   const hasChanges = useSelector(importDecisionSelect.hasChanges);
   const isDraftSavable = useSelector(importDecisionSelect.canSave);
   const mayWriteDecisions = useSelector(userCapabilitiesSelect.allows)(
-    importCCTxnCapabilities.can.mapDecisions.write,
+    can.ccMapDecisions.write,
   );
   const canSave = isDraftSavable && mayWriteDecisions;
   const saveStatus = useSelector(importDecisionSelect.saveStatus);

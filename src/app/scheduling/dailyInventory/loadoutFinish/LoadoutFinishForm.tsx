@@ -16,9 +16,7 @@ import { AdditionalProductsFinishSection } from "./components/AdditionalProducts
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { cn, md } from "@/style/utils";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
-
-const { can } = schedulingCapabilities;
+import { can } from "@/permission/can";
 
 export function LoadoutFinishForm() {
   const appDispatch = useAppDispatch();

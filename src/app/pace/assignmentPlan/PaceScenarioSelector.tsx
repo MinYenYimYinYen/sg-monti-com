@@ -6,10 +6,8 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { Save, Trash2, ChevronDown } from "lucide-react";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = paceCapabilities;
 
 /**
  * Scenario dropdown + Save / Save As controls for the pace module's assignment plans.

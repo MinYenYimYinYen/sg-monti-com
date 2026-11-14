@@ -14,11 +14,11 @@ import { Container } from "@/components/Containers";
 import { companyFunc } from "../_lib/companyFunc";
 import { clsx } from "clsx";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { companyCapabilities } from "@/app/realGreen/company/companyCapabilities";
+import { can } from "@/permission/can";
 
 export default function CompanyListPage() {
   return (
-    <GatedPanel requirement={companyCapabilities.can.companies.read}>
+    <GatedPanel requirement={can.companies.read}>
       <CompanyList />
     </GatedPanel>
   );

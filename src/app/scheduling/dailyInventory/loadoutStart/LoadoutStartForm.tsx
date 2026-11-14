@@ -13,9 +13,7 @@ import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
 import { cn, md } from "@/style/utils";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
-
-const { can } = schedulingCapabilities;
+import { can } from "@/permission/can";
 
 export function LoadoutStartForm() {
   const dispatch = useDispatch();

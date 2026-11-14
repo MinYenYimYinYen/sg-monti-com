@@ -31,9 +31,7 @@ import {
 } from "@/style/components/accordion";
 import { cn } from "@/style/utils";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { timeCardCapabilities } from "@/app/timeCard/timeCardCapabilities";
-
-const { can } = timeCardCapabilities;
+import { can } from "@/permission/can";
 
 // ---------------------------------------------------------------------------
 // Helpers

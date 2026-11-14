@@ -7,8 +7,7 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 //
 // Read only: the contract has no write, and this app never changes RealGreen's discounts. There is
 // no screen of its own. The discounts hydrate the customer, program and service entities (their
-// price after discount), and the pace and prepay letter screens load them for that. Those screens
-// list this read in their own `requires` (deferred, see the record).
+// price after discount), and the pace and prepay letter screens load them for that.
 export const discountCapabilities = createFeatureCapabilities({
   key: "discount",
   resources: {

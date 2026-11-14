@@ -16,9 +16,7 @@ import {
 import { AppError } from "@/lib/errors/AppError";
 import { CallAheadKeyword } from "@/app/realGreen/callAhead/_lib/ext/CallAheadExtTypes";
 import { CallAheadDocPropsModel } from "@/app/realGreen/callAhead/models/CallAheadDocPropsModel";
-import { callAheadCapabilities } from "@/app/realGreen/callAhead/callAheadCapabilities";
-
-const { can } = callAheadCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<CallAheadContract> = {
   getAll: {
     capability: can.callAheads.read,
@@ -52,7 +50,7 @@ const handlers: HandlerMap<CallAheadContract> = {
   },
 
   getKeywords: {
-    capability: can.keywords.read,
+    capability: can.callAheadKeywords.read,
     handler: async () => {
       await connectToMongoDB();
       const keywordResults = await CallAheadKeywordModel.find().lean();
@@ -62,7 +60,7 @@ const handlers: HandlerMap<CallAheadContract> = {
   },
 
   upsertKeyword: {
-    capability: can.keywords.write,
+    capability: can.callAheadKeywords.write,
     handler: async ({ keyword }) => {
       await connectToMongoDB();
       const upsertResult = await CallAheadKeywordModel.findOneAndUpdate(
@@ -76,7 +74,7 @@ const handlers: HandlerMap<CallAheadContract> = {
   },
 
   deleteKeyword: {
-    capability: can.keywords.delete,
+    capability: can.callAheadKeywords.delete,
     handler: async ({ keywordId }) => {
       await connectToMongoDB();
       const deleteResult = await CallAheadKeywordModel.findOneAndDelete(

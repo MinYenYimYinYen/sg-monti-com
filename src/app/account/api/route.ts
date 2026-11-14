@@ -5,10 +5,8 @@ import { AccountMappingModel } from "@/app/account/AccountMappingModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { AppError } from "@/lib/errors/AppError";
-import { accountCapabilities } from "@/app/account/accountCapabilities";
+import { can } from "@/permission/can";
 
-
-const { can } = accountCapabilities
 const handlers: HandlerMap<AccountMappingContract> = {
   getAll: {
     capability: can.accountMappings.read,

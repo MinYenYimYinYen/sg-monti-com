@@ -6,9 +6,7 @@ import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { EquipmentPackageModel } from "@/app/equipment/equipmentPackage/EquipmentPackageModel";
 import { ProductDocPropsModel } from "@/app/realGreen/product/_lib/models/ProductDocPropsModel";
 import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
-
-const { can } = equipmentCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<EquipmentPackageContract> = {
   getAll: {
     capability: can.equipmentPackages.read,

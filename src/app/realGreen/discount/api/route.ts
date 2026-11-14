@@ -5,9 +5,7 @@ import { DiscountDoc, DiscountRaw } from "@/app/realGreen/discount/DiscountTypes
 import { extendDiscounts, remapDiscounts } from "@/app/realGreen/discount/_lib/discountServerFunc";
 import { DataResponse } from "@/lib/api/types/responses";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
-import { discountCapabilities } from "@/app/realGreen/discount/discountCapabilities";
-
-const { can } = discountCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<DiscountContract> = {
   getAll: {
     capability: can.discounts.read,

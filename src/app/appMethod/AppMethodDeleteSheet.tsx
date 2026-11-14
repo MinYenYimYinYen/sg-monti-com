@@ -28,10 +28,8 @@ import { getAffectedProducts, AffectedProduct } from "../realGreen/product/_lib/
 import { useAppMethod } from "./useAppMethod";
 import { appMethodSelect } from "./appMethodSelect";
 import { AlertTriangle, XCircle } from "lucide-react";
-import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = appMethodCapabilities;
 
 interface AppMethodDeleteSheetProps {
   method: AppMethod;

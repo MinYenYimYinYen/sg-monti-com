@@ -12,10 +12,7 @@ import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { timeCardCapabilities } from "@/app/timeCard/timeCardCapabilities";
-import { employeeCapabilities } from "@/app/realGreen/employee/employeeCapabilities";
-
-const { can } = timeCardCapabilities;
+import { can } from "@/permission/can";
 
 const NAV_LINKS = [
   { label: "Import", href: "/timeCard/import" },
@@ -29,7 +26,7 @@ export default function TimeCardLayout({ children }: { children: ReactNode }) {
   const { fetchLastImportedDate } = useTimeCard({ canLoad: allows(can.punches.read) });
   useEmployee({
     autoLoad: true,
-    canLoad: allows(employeeCapabilities.can.employees.read),
+    canLoad: allows(can.employees.read),
   });
 
   useEffect(() => {

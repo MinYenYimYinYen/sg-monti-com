@@ -8,9 +8,7 @@ import { UpsellPrioritiesFileControls } from "./upsellPriorities/_components/Ups
 import { ListOrdered, Mail, Settings2 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
-import { prepayLettersCapabilities } from "./prepayLettersCapabilities";
-import { formTemplateCapabilities } from "@/app/formTemplate/formTemplateCapabilities";
-import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
@@ -32,8 +30,6 @@ const RENEWAL_HREF = "/prepayLetters/renewalLetters";
 // Layout
 // ---------------------------------------------------------------------------
 
-const { can } = prepayLettersCapabilities;
-
 /**
  * The config read is the gate for the whole module (it is the nav entry's capability). The Upsells
  * tab adds its own read on top (see its page). The renewals tab reads configs, upsell lists and
@@ -53,8 +49,8 @@ function PrepayLettersShell({ children }: { children: React.ReactNode }) {
   usePrepayLettersDeps({
     canLoad: {
       upsellPriorities: allows(can.upsellPriorities.read),
-      formTemplates: allows(formTemplateCapabilities.can.formTemplates.read),
-      globalSettings: allows(globalSettingsCapabilities.can.settings.read),
+      formTemplates: allows(can.formTemplates.read),
+      globalSettings: allows(can.globalSettings.read),
     },
   });
   const pathname = usePathname();

@@ -9,9 +9,7 @@ import { ServCodeListPanel } from "./ServCodeListPanel";
 import { ServCodeEditPanel } from "./ServCodeEditPanel";
 import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
-
-const { can } = progServCapabilities;
+import { can } from "@/permission/can";
 
 export function ServCodeTab() {
   const { saveServCodeChanges } = useProgServ({});

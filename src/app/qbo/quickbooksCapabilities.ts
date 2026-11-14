@@ -1,8 +1,7 @@
 import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 
 // QuickBooks reference data (read from the live books) and the one write this app makes to it.
-// Reference data is shared by several screens, which is why each list has its own capability: the
-// screens that need it list it in their own `requires`.
+// Reference data is shared by several screens, which is why each list has its own capability.
 //
 // accounts.read   -> qbo/account getAll
 // customers.read  -> qbo/customer getAll

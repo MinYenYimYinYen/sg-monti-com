@@ -2,7 +2,6 @@ import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import { capabilityBundleSelect } from "@/app/permission/capabilityBundle/capabilityBundleSelect";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
-import { findMissingRequirements } from "@/permission/logic/requirementLogic";
 import type { UserGrants } from "@/permission/logic/permissionLogicTypes";
 import {
   assignableCapabilities,
@@ -107,18 +106,6 @@ const selectRedundantDirectByUserName = createSelector(
     ),
 );
 
-/** Warn-only hints (a capability held without something it needs). Nothing blocks and nothing is added. */
-const selectMissingRequirementsByUserName = createSelector(
-  [selectEffectiveByUserName],
-  (effectiveByUserName) =>
-    Object.fromEntries(
-      Object.entries(effectiveByUserName).map(([userName, capabilities]) => [
-        userName,
-        findMissingRequirements({ capabilities, registry: capabilityRegistry }),
-      ]),
-    ),
-);
-
 /** Who holds each bundle. A bundle with holders cannot be deleted. */
 const selectHoldersByBundleKey = createSelector([selectDocs], (docs) =>
   holdersByBundleKey({ users: docs }),
@@ -135,6 +122,5 @@ export const userCapabilitiesSelect = {
   effectiveByUserName: selectEffectiveByUserName,
   assignableByUserName: selectAssignableByUserName,
   redundantDirectByUserName: selectRedundantDirectByUserName,
-  missingRequirementsByUserName: selectMissingRequirementsByUserName,
   holdersByBundleKey: selectHoldersByBundleKey,
 };

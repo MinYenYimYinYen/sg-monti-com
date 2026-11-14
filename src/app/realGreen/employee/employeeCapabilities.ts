@@ -7,8 +7,7 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 //
 // Read only: the contract has no write, and this app never changes RealGreen's employees. The
 // "view active employees" page is its own screen. Many other screens load the employees to show a
-// name instead of an id (pace, cover sheets, loadout, time cards, planned time off), so they list
-// this read in their own `requires` (deferred, see the record).
+// name instead of an id (pace, cover sheets, loadout, time cards, planned time off).
 export const employeeCapabilities = createFeatureCapabilities({
   key: "employee",
   resources: {

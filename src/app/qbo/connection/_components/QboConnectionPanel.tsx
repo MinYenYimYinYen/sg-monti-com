@@ -9,20 +9,18 @@ import { AppError } from "@/lib/errors/AppError";
 import { DataResponse } from "@/lib/api/types/responses";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { qboConnectionCapabilities } from "@/app/qbo/connection/qboConnectionCapabilities";
+import { can } from "@/permission/can";
 import { useQboConnection } from "@/app/qbo/connection/useQboConnection";
 import { qboConnectionSelect } from "@/app/qbo/connection/qboConnectionSelect";
 import { QboConnectionNotices } from "@/app/qbo/connection/_components/QboConnectionNotices";
 import { QboConnectionCard } from "@/app/qbo/connection/_components/QboConnectionCard";
 import { QBO_CONNECTION_PAGE_PATH } from "@/app/qbo/_lib/auth/qboOAuthUtils";
 
-const { can } = qboConnectionCapabilities;
-
 // Separate from the workspace so the status load (which fires on mount) only ever runs for a user
 // who holds the read.
 export function QboConnectionPanel() {
   return (
-    <GatedPanel requirement={can.connection.read}>
+    <GatedPanel requirement={can.qboConnection.read}>
       <QboConnectionWorkspace />
     </GatedPanel>
   );
@@ -74,8 +72,8 @@ function QboConnectionWorkspace() {
           status={status}
           testResult={testResult}
           isStarting={isStarting}
-          canConnect={allows(can.connection.write)}
-          canDisconnect={allows(can.connectionRevocation.write)}
+          canConnect={allows(can.qboConnection.write)}
+          canDisconnect={allows(can.qboConnectionRevocation.write)}
           onConnectAction={handleConnect}
           onDisconnectAction={disconnect}
           onTestAction={testConnection}

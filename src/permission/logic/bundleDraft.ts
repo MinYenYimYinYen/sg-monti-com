@@ -1,6 +1,5 @@
 import type { Capability } from "@/permission/PermissionTypes";
-import type { BundleGrants, RequirementRegistry } from "@/permission/logic/permissionLogicTypes";
-import { expandRequirements } from "@/permission/logic/requirementLogic";
+import type { BundleGrants } from "@/permission/logic/permissionLogicTypes";
 
 // The bundle editor's working copy. Pure so the editing rules can be tested without React.
 
@@ -67,28 +66,6 @@ export function applyCellChange({
   const kept = draft.capabilities.filter((capability) => !cleared.has(capability));
   const added = change.add.filter((capability) => !kept.includes(capability));
   return { ...draft, capabilities: [...kept, ...added] };
-}
-
-/**
- * Ticks the capabilities and also the ones they need, so a bundle starts out complete. Only the
- * newly added capabilities are expanded: a requirement the admin already unticked for a
- * capability that was ticked before stays unticked. Each can still be unticked afterwards.
- */
-export function selectWithRequirements({
-  draft,
-  capabilities,
-  registry,
-}: {
-  draft: BundleDraft;
-  capabilities: readonly Capability[];
-  registry: RequirementRegistry;
-}): BundleDraft {
-  const added = capabilities.filter((capability) => !draft.capabilities.includes(capability));
-  const next = setDraftCapabilities({ draft, capabilities, selected: true });
-  const needed = expandRequirements({ capabilities: added, registry }).filter(
-    (required) => !next.capabilities.includes(required),
-  );
-  return needed.length === 0 ? next : { ...next, capabilities: [...next.capabilities, ...needed] };
 }
 
 /** Whether the draft differs from what is stored (a new bundle always counts as changed once it has a key). */

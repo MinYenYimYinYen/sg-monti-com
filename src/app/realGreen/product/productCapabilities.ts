@@ -1,6 +1,4 @@
 import { createFeatureCapabilities } from "@/permission/PermissionTypes";
-import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
 
 // Products: what RealGreen sells (masters, subs and singles), and the settings this app keeps
 // beside them (categories, units, which subs a master mixes, which equipment packages it uses, and
@@ -21,11 +19,6 @@ import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
 // (the same shape as `callAheadDocProps`). They are separate resources because they change
 // different data. Renaming a category or a unit changes every product that uses it, and both can
 // be changed back by saving the old name.
-//
-// requires: the product screens load and show application methods (a sub product's rate), the
-// equipment packages a master points at and the equipment inside them, and the unit conversions.
-// Those are other features' data (or this one's own) with their own capabilities. The own ones are
-// written as strings because a declaration cannot reference its own `can`.
 export const productCapabilities = createFeatureCapabilities({
   key: "product",
   resources: {
@@ -35,21 +28,5 @@ export const productCapabilities = createFeatureCapabilities({
     subProductConfigs: { shape: "collection", verbs: ["write"] },
     masterEquipmentPackages: { shape: "collection", verbs: ["write"] },
     unitConversions: { shape: "collection", verbs: ["read", "write"] },
-  },
-  requires: {
-    "products.read": [
-      appMethodCapabilities.can.appMethods.read,
-      equipmentCapabilities.can.equipmentDefinitions.read,
-      equipmentCapabilities.can.equipmentPackages.read,
-      "product.unitConversions.read",
-    ],
-    "productCategories.write": ["product.products.realGreen.read"],
-    "productUnits.write": ["product.products.realGreen.read"],
-    "subProductConfigs.write": ["product.products.realGreen.read"],
-    "masterEquipmentPackages.write": [
-      "product.products.realGreen.read",
-      equipmentCapabilities.can.equipmentPackages.read,
-    ],
-    "unitConversions.write": ["product.products.realGreen.read"],
   },
 });

@@ -5,9 +5,7 @@ import { Notice } from "@/app/permission/_components/Notice";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { CkDepositMappingSection } from "@/app/javelin/depositMapping/_components/CkDepositMappingSection";
 import { DepositFieldMappingSection } from "@/app/javelin/depositMapping/_components/DepositFieldMappingSection";
-import { depositMappingCapabilities } from "@/app/javelin/depositMapping/depositMappingCapabilities";
-
-const { can } = depositMappingCapabilities;
+import { can } from "@/permission/can";
 
 /**
  * The two deposit link sections shown on the account mapping page. They are separate data from the

@@ -17,7 +17,7 @@ import {
 import { StreamChunkData } from "@/app/realGreen/customer/api/CustomerContract";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
+import { can } from "@/permission/can";
 
 export const custFlagListenerMiddleware = createListenerMiddleware<AppState, AppDispatch>();
 
@@ -53,7 +53,7 @@ custFlagListenerMiddleware.startListening({
     // components use. Without the read, the refresh would be a refused request and a toast after
     // every customer refresh.
     const allows = userCapabilitiesSelect.allows(state);
-    if (!allows(custFlagCapabilities.can.customerFlags.read)) return;
+    if (!allows(can.customerFlags.read)) return;
 
     const flagIdsInState = custFlagSelect.flagIdsInState(state);
 

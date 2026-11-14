@@ -8,9 +8,7 @@ import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { loadVerifiedCaller } from "@/app/permission/_lib/capabilityLoaders";
 import { AppError } from "@/lib/errors/AppError";
 import { headers } from "next/headers";
-import { prepayLettersCapabilities } from "@/app/prepayLetters/prepayLettersCapabilities";
-
-const { can } = prepayLettersCapabilities;
+import { can } from "@/permission/can";
 
 /** Reads the current user's saId from the proxy-injected header. */
 async function getCurrentUserSaId(): Promise<string> {

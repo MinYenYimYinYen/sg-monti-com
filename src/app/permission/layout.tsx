@@ -3,14 +3,12 @@
 import { useSelector } from "react-redux";
 import { Boxes, Users } from "lucide-react";
 import { authSelect } from "@/app/auth/authSlice";
-import { capabilityManagementCapabilities } from "@/app/permission/capabilityManagementCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { usePermissionDeps } from "@/app/permission/usePermissionDeps";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
 import { isGateOpen } from "@/permission/logic/navGate";
-
-const { can } = capabilityManagementCapabilities;
 
 const USERS_TAB: TabNavItem = { label: "Users", href: "/permission/users", icon: Users };
 const BUNDLES_TAB: TabNavItem = { label: "Bundles", href: "/permission/bundles", icon: Boxes };

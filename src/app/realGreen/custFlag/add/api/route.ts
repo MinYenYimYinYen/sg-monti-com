@@ -3,9 +3,7 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { CustFlagAddContract } from "@/app/realGreen/custFlag/add/CustFlagAddContract";
 import { CustFlagAdd } from "@/app/realGreen/custFlag/_lib/CustFlagTypes";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
-import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
-
-const { can } = custFlagCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<CustFlagAddContract> = {
   addCustFlag: {
     capability: can.flagAssignments.write,

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { inventoryCapabilities } from "@/app/inventory/inventoryCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { inventorySelect } from "@/app/inventory/inventorySelect";
 import { inventoryActions } from "@/app/inventory/inventorySlice";
@@ -104,8 +104,6 @@ function ProductListAccordion({
     </Accordion>
   );
 }
-
-const { can } = inventoryCapabilities;
 
 export default function InventoryPage() {
   return (

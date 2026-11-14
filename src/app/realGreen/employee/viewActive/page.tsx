@@ -5,11 +5,11 @@ import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { useSelector } from "react-redux";
 import { Container } from "@/components/Containers";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { employeeCapabilities } from "@/app/realGreen/employee/employeeCapabilities";
+import { can } from "@/permission/can";
 
 export default function ViewActiveEmployees() {
   return (
-    <GatedPanel requirement={employeeCapabilities.can.employees.read}>
+    <GatedPanel requirement={can.employees.read}>
       <ActiveEmployees />
     </GatedPanel>
   );

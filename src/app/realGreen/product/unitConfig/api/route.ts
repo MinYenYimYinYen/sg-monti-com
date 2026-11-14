@@ -12,9 +12,7 @@ import {
   ProductUnitConfigStorage,
 } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { AppError } from "@/lib/errors/AppError";
-import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
-
-const { can } = productCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<UnitConfigContract> = {
   getAll: {
     capability: can.unitConversions.read,

@@ -14,22 +14,11 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 // read of their own and `callAheadDocProps.write` lists the list read it needs. Deleting a keyword
 // removes a message that call-aheads may still point at (they then show no message), which is why
 // `delete` is its own verb.
-//
-// requires: the config screen lists the call-aheads and offers the keywords to pick from, so
-// changing a call-ahead's settings needs both reads. Editing keywords needs the keyword read, which
-// is implied. The service code tab edits the `callAheadTag` of a service code through the
-// `realGreen/progServ` route, which is not declared yet (deferred).
 export const callAheadCapabilities = createFeatureCapabilities({
   key: "callAhead",
   resources: {
     callAheads: { shape: "collection", source: "realGreen", verbs: ["read"] },
     callAheadDocProps: { shape: "collection", verbs: ["write"] },
     keywords: { shape: "collection", verbs: ["read", "write", "delete"] },
-  },
-  requires: {
-    "callAheadDocProps.write": [
-      "callAhead.callAheads.realGreen.read",
-      "callAhead.keywords.read",
-    ],
   },
 });

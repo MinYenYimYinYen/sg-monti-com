@@ -5,7 +5,7 @@ import { Badge } from "@/style/components/badge";
 import { Button } from "@/style/components/button";
 import { AppState } from "@/store";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { importRowSelect } from "@/app/qbo/importCCTxn/rows/importRowSelect";
 import { useImportPost } from "@/app/qbo/importCCTxn/post/useImportPost";
 import { useImportRow } from "@/app/qbo/importCCTxn/rows/useImportRow";
@@ -20,7 +20,6 @@ export function PostRowLine({ rowId }: { rowId: string }) {
     importRowSelect.openRows(state).find((openRow) => openRow.rowId === rowId),
   );
   const allows = useSelector(userCapabilitiesSelect.allows);
-  const { can } = importCCTxnCapabilities;
   const { previewPost, reconcileRow } = useImportPost();
   const { setSkip } = useImportRow({ autoLoad: false });
 
@@ -47,7 +46,7 @@ export function PostRowLine({ rowId }: { rowId: string }) {
           <Button
             variant="primary"
             intensity="soft"
-            disabled={!allows(can.expensePostings.write)}
+            disabled={!allows(can.qboExpensePostings.write)}
             onClick={() => reconcileRow(row.rowId)}
           >
             Look in QuickBooks
@@ -59,7 +58,7 @@ export function PostRowLine({ rowId }: { rowId: string }) {
               <Button
                 variant="destructive"
                 intensity="soft"
-                disabled={!allows(can.importRows.write)}
+                disabled={!allows(can.ccImportRows.write)}
                 onClick={() =>
                   setSkip({ rowId: row.rowId, skipReason: DEFAULT_MANUAL_SKIP_REASON })
                 }

@@ -16,7 +16,7 @@ import { useGroupSequence } from "@/app/pace/groupSequence/useGroupSequence";
 import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes";
 import { GroupSequence } from "@/app/pace/groupSequence/GroupSequenceTypes";
 import { GroupDialog } from "@/app/pace/setup/groups/_components/GroupDialog";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type SequenceDialogProps = {
@@ -45,7 +45,7 @@ export function SequenceDialog({ sequence, open, onCloseAction }: SequenceDialog
   const assignmentGroups = useSelector(paceAssignmentGroupSelect.assignmentGroups);
   const { upsertSequence } = useGroupSequence();
   const canWrite = useSelector(userCapabilitiesSelect.allows)(
-    paceCapabilities.can.groupSequences.write,
+    can.groupSequences.write,
   );
 
   const [label, setLabel] = useState(sequence?.label ?? "");

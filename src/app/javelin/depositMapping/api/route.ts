@@ -6,9 +6,7 @@ import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { DepositFieldMappingContract } from "@/app/javelin/depositMapping/api/DepositFieldMappingContract";
 import { DepositFieldMappingModel } from "@/app/javelin/depositMapping/DepositFieldMappingModel";
 import { DEPOSIT_LINK_KEYS } from "@/app/javelin/_lib/ckDepositFields";
-import { depositMappingCapabilities } from "@/app/javelin/depositMapping/depositMappingCapabilities";
-
-const { can } = depositMappingCapabilities;
+import { can } from "@/permission/can";
 
 function validationError(message: string): AppError {
   return new AppError({ message, type: "VALIDATION_ERROR", statusCode: 400 });

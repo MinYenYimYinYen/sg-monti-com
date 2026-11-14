@@ -6,9 +6,7 @@ import { useCustFlag } from "@/app/realGreen/custFlag/_lib/useCustFlag";
 import { useSelector } from "react-redux";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
-
-const { can } = custFlagCapabilities;
+import { can } from "@/permission/can";
 const ACTIVE_STATUSES = ["9"];
 
 type AssignFlagButtonProps = {

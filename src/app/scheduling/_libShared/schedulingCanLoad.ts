@@ -1,20 +1,5 @@
 import type { CapabilityRequirement } from "@/permission/PermissionTypes";
-import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
-import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
-import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
-import { plannedTimeOffCapabilities } from "@/app/plannedTimeOff/plannedTimeOffCapabilities";
-import { callAheadCapabilities } from "@/app/realGreen/callAhead/callAheadCapabilities";
-import { conditionCodeCapabilities } from "@/app/realGreen/conditionCode/conditionCodeCapabilities";
-import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
-import { customerCapabilities } from "@/app/realGreen/customer/customerCapabilities";
-import { employeeCapabilities } from "@/app/realGreen/employee/employeeCapabilities";
-import { flagCapabilities } from "@/app/realGreen/flag/flagCapabilities";
-import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
-import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
-import { serviceConditionCapabilities } from "@/app/realGreen/serviceCondition/serviceConditionCapabilities";
-import { routeNoteCapabilities } from "@/app/routeNotes/routeNoteCapabilities";
-import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
+import { can } from "@/permission/can";
 
 type Allows = (required: CapabilityRequirement) => boolean;
 
@@ -51,25 +36,25 @@ export type SchedulingCanLoad = {
 /** Pure on purpose: `allows` comes from `useSelector(userCapabilitiesSelect.allows)` in the component. */
 export function schedulingCanLoad(allows: Allows): SchedulingCanLoad {
   return {
-    customers: allows(customerCapabilities.can.customers.read),
-    progCodes: allows(progServCapabilities.can.progCodes.read),
-    servCodes: allows(progServCapabilities.can.servCodes.read),
-    products: allows(productCapabilities.can.products.read),
-    unitConversions: allows(productCapabilities.can.unitConversions.read),
-    appMethods: allows(appMethodCapabilities.can.appMethods.read),
-    equipment: allows(equipmentCapabilities.can.equipmentDefinitions.read),
-    equipmentPackages: allows(equipmentCapabilities.can.equipmentPackages.read),
-    flags: allows(flagCapabilities.can.flags.read),
-    customerFlags: allows(custFlagCapabilities.can.customerFlags.read),
-    employees: allows(employeeCapabilities.can.employees.read),
-    callAheads: allows(callAheadCapabilities.can.callAheads.read),
-    callAheadKeywords: allows(callAheadCapabilities.can.keywords.read),
-    conditionCodes: allows(conditionCodeCapabilities.can.conditionCodes.read),
-    serviceConditions: allows(serviceConditionCapabilities.can.serviceConditions.read),
-    globalSettings: allows(globalSettingsCapabilities.can.settings.read),
-    serviceEtas: allows(schedulingCapabilities.can.serviceEtas.read),
-    assignments: allows(assignmentCapabilities.can.serviceAssignments.read),
-    routeNotes: allows(routeNoteCapabilities.can.routeNotes.read),
-    absences: allows(plannedTimeOffCapabilities.can.absences.read),
+    customers: allows(can.customers.read),
+    progCodes: allows(can.progCodes.read),
+    servCodes: allows(can.servCodes.read),
+    products: allows(can.products.read),
+    unitConversions: allows(can.unitConversions.read),
+    appMethods: allows(can.appMethods.read),
+    equipment: allows(can.equipmentDefinitions.read),
+    equipmentPackages: allows(can.equipmentPackages.read),
+    flags: allows(can.flags.read),
+    customerFlags: allows(can.customerFlags.read),
+    employees: allows(can.employees.read),
+    callAheads: allows(can.callAheads.read),
+    callAheadKeywords: allows(can.callAheadKeywords.read),
+    conditionCodes: allows(can.conditionCodes.read),
+    serviceConditions: allows(can.serviceConditions.read),
+    globalSettings: allows(can.globalSettings.read),
+    serviceEtas: allows(can.serviceEtas.read),
+    assignments: allows(can.serviceAssignments.read),
+    routeNotes: allows(can.routeNotes.read),
+    absences: allows(can.employeeAbsences.read),
   };
 }

@@ -5,9 +5,7 @@ import { HolidayModel } from "@/app/holiday/HolidayModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { Holiday } from "@/app/holiday/holidayTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { holidayCapabilities } from "@/app/holiday/holidayCapabilities";
-
-const { can } = holidayCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<HolidayContract> = {
   getAll: {

@@ -16,13 +16,10 @@ import { PlannedTimeOffSheet } from "@/app/plannedTimeOff/calendar/PlannedTimeOf
 import { UnplannedAbsenceSheet } from "@/app/plannedTimeOff/calendar/UnplannedAbsenceSheet";
 import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
 import { Holiday } from "@/app/holiday/holidayTypes";
-import { holidayCapabilities } from "@/app/holiday/holidayCapabilities";
-import { plannedTimeOffCapabilities } from "@/app/plannedTimeOff/plannedTimeOffCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { cn } from "@/style/utils";
-
-const { can } = plannedTimeOffCapabilities;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -176,7 +173,7 @@ function CalendarCell({
 
 export default function TimeOffCalendarPage() {
   return (
-    <GatedPanel requirement={can.absences.read}>
+    <GatedPanel requirement={can.employeeAbsences.read}>
       <TimeOffCalendarWorkspace />
     </GatedPanel>
   );
@@ -185,10 +182,10 @@ export default function TimeOffCalendarPage() {
 // Split from the page so the mount loads never fire for a user without `read`.
 function TimeOffCalendarWorkspace() {
   const allows = useSelector(userCapabilitiesSelect.allows);
-  const canWrite = allows(can.absences.write);
+  const canWrite = allows(can.employeeAbsences.write);
   usePlannedTimeOff({ autoLoad: true });
   // The calendar draws holidays too, which is a different feature's read (see `requires`).
-  useHoliday({ autoLoad: true, canLoad: allows(holidayCapabilities.can.holidays.read) });
+  useHoliday({ autoLoad: true, canLoad: allows(can.holidays.read) });
   useEmployee({ autoLoad: true });
 
   const allPto = useSelector(plannedTimeOffSelect.all);

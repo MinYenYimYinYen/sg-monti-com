@@ -12,7 +12,7 @@ import { SearchOptimizerModel } from "@/app/realGreen/customer/_lib/models/Searc
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { rgCallMapStorage } from "@/app/realGreen/_lib/api/rgHttp";
 import { logRgApiOperation } from "@/app/realGreen/rgApiLog/rgApiLogFunc";
-import { customerCapabilities } from "@/app/realGreen/customer/customerCapabilities";
+import { can } from "@/permission/can";
 
 // Fixed optimizer values used for single-customer refresh — never read from or written to DB.
 const REFRESH_PAGINATION_OPTIMIZER = { type: "pagination" as const, initialPageCount: 1, scheme: "", step: "", usageHistory: [], createdAt: "", updatedAt: "" };
@@ -23,10 +23,9 @@ const REFRESH_BATCH_OPTIMIZER = { type: "batchSize" as const, batchSize: 500, la
  * Enforces strict typing: You MUST define 'capability' and 'handler'
  * for every operation in CustomerContract.
  */
-const { can } = customerCapabilities;
 const handlers: HandlerMap<CustomerContract> = {
   refreshCustomer: {
-    capability: can.liveCustomers.read,
+    capability: can.customers.read,
     handler: async (params) => {
       await connectToMongoDB();
       const { schemeName, season, custId } = params;
@@ -118,7 +117,7 @@ const handlers: HandlerMap<CustomerContract> = {
     },
   },
   runSearchScheme: {
-    capability: can.liveCustomers.read,
+    capability: can.customers.read,
     handler: async (params) => {
       await connectToMongoDB();
       const encoder = new TextEncoder();

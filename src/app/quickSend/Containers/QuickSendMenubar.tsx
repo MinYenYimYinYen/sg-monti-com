@@ -17,14 +17,12 @@ import {
 import { TooltipProvider } from "@/style/components/tooltip";
 import { authSelect } from "@/app/auth/authSlice";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { quickSendCapabilities } from "../quickSendCapabilities";
+import { can } from "@/permission/can";
 import { quickSendActions } from "../quickSendSlice";
 import { qsSelect } from "../quickSendSelect";
 import { storedTemplatesSelect } from "../storedTemplates/storedTemplatesSelect";
 import { useStoredTemplates } from "../storedTemplates/useStoredTemplates";
 import type { StoredTemplateDoc } from "../storedTemplates/StoredTemplateTypes";
-
-const { can } = quickSendCapabilities;
 
 // ── Inline dialogs ────────────────────────────────────────────────────────────
 
@@ -232,10 +230,10 @@ export function QuickSendMenubar() {
   // A superuser may move or delete any template, as the admin role could before. The server
   // enforces the same rule; this only decides which controls are offered.
   const isSuperUser = allows("superUser");
-  const canWriteTemplates = allows(can.storedTemplates.write);
-  const canDeleteTemplates = allows(can.storedTemplates.delete);
-  const canWriteGroups = allows(can.templateGroups.write);
-  const canDeleteGroups = allows(can.templateGroups.delete);
+  const canWriteTemplates = allows(can.quickSendTemplates.write);
+  const canDeleteTemplates = allows(can.quickSendTemplates.delete);
+  const canWriteGroups = allows(can.quickSendTemplateGroups.write);
+  const canDeleteGroups = allows(can.quickSendTemplateGroups.delete);
   const isOwner = !!currentUserSaId && currentUserSaId === loadedTemplateSaId;
   const canChangeLoadedTemplate = isOwner || isSuperUser;
   const isOtherUsersTemplate =

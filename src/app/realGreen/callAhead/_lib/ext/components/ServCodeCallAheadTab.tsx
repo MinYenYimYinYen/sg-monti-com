@@ -6,9 +6,7 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { ServCodeCallAheadRow } from "./ServCodeCallAheadRow";
 import { Notice } from "@/app/permission/_components/Notice";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
-
-const { can } = progServCapabilities;
+import { can } from "@/permission/can";
 
 export function ServCodeCallAheadTab() {
   const canReadServCodes = useSelector(userCapabilitiesSelect.allows)(can.servCodes.read);

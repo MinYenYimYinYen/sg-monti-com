@@ -6,9 +6,7 @@ import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { EquipmentModel } from "@/app/equipment/EquipmentModel";
 import { EquipmentPackageModel } from "@/app/equipment/equipmentPackage/EquipmentPackageModel";
 import { EquipmentDoc } from "@/app/equipment/EquipmentTypes";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
-
-const { can } = equipmentCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<EquipmentContract> = {
   getAll: {
     capability: can.equipmentDefinitions.read,

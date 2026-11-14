@@ -15,11 +15,9 @@ import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipme
 import { useEquipment } from "@/app/equipment/useEquipment";
 import { EquipmentPackageForm } from "@/app/equipment/equipmentPackage/EquipmentPackageForm";
 import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = equipmentCapabilities;
 
 export function EquipmentPackageCRUD() {
   return (

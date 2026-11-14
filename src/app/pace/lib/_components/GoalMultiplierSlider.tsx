@@ -10,7 +10,7 @@ import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignment
 import { assignmentPlanSelect } from "@/app/pace/assignmentPlan/assignmentPlanSelect";
 import { paceAssignmentPlanActions } from "@/app/pace/assignmentPlan/assignmentPlanSlice";
 import { ChevronDown } from "lucide-react";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 // ---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ export function GoalMultiplierSlider({ assignmentGroupId }: GoalMultiplierSlider
   const assignmentPlans = useSelector(assignmentPlanSelect.assignmentPlans);
   // Apply only changes the local plans. Apply & Save writes the active scenario.
   const canWriteScenario = useSelector(userCapabilitiesSelect.allows)(
-    paceCapabilities.can.assignmentScenarios.write,
+    can.assignmentScenarios.write,
   );
 
   // Resolve the active group IDs: prop takes precedence over Redux selection

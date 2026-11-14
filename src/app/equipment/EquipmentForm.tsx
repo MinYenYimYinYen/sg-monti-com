@@ -28,10 +28,8 @@ import { useEquipment } from "@/app/equipment/useEquipment";
 import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import { EquipmentDeleteSheet } from "@/app/equipment/EquipmentDeleteSheet";
 import { Checkbox } from "@/style/components/checkbox";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = equipmentCapabilities;
 
 interface EquipmentFormProps {
   equipment?: EquipmentDoc;

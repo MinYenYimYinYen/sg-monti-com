@@ -21,10 +21,8 @@ import { seasonIncreasesSelect } from "@/app/priceIncrease/seasonIncreases/seaso
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { FlagRounding } from "@/app/priceIncrease/settings/PriceIncreaseSettingsTypes";
 import { InlinePlanEditor } from "@/app/priceIncrease/config/_components/InlinePlanEditor";
-import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = priceIncreaseCapabilities;
 
 export function SettingsSheet() {
   const dispatch = useAppDispatch();

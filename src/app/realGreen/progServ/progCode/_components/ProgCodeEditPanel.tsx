@@ -26,9 +26,7 @@ import { Switch } from "@/style/components/switch";
 import { PriceTable } from "@/app/realGreen/priceTable/_types/PriceTableTypes";
 import { AppState } from "@/store";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
-
-const { can } = progServCapabilities;
+import { can } from "@/permission/can";
 
 const NONE_VALUE = "__none__";
 

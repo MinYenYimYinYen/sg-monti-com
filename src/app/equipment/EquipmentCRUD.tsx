@@ -15,10 +15,8 @@ import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 import { useEquipment } from "@/app/equipment/useEquipment";
 import { EquipmentForm } from "@/app/equipment/EquipmentForm";
 import { EquipmentDoc } from "@/app/equipment/EquipmentTypes";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-
-const { can } = equipmentCapabilities;
 
 export function EquipmentCRUD() {
   return (

@@ -8,7 +8,7 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 //
 // Read only: the contract has no write, and this app never changes RealGreen's prepay codes.
 // There is no screen of its own. The quick send page loads the codes to price a letter with its
-// prepay percent. That screen lists this read in its own `requires` (deferred, see the record).
+// prepay percent.
 export const prepayCapabilities = createFeatureCapabilities({
   key: "prepay",
   resources: {

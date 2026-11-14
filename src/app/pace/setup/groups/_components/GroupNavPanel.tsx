@@ -13,11 +13,8 @@ import { SequenceDialog } from "@/app/pace/setup/groups/_components/SequenceDial
 import { DeleteSequenceDialog } from "@/app/pace/setup/groups/_components/DeleteSequenceDialog";
 import { useGroupSequence } from "@/app/pace/groupSequence/useGroupSequence";
 import { SequenceWithGroups } from "@/app/pace/setup/setupSelect";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
-import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = paceCapabilities;
 
 type GroupNavPanelProps = {
   selectedGroupId: string | null;
@@ -29,7 +26,7 @@ export function GroupNavPanel({ selectedGroupId, onGroupDeletedAction }: GroupNa
   const sequencesWithGroups = useSelector(setupSelect.sequencesWithGroups);
   const standaloneGroups = useSelector(setupSelect.standaloneGroups);
   const allows = useSelector(userCapabilitiesSelect.allows);
-  const canWriteGroups = allows(assignmentGroupCapabilities.can.assignmentGroups.write);
+  const canWriteGroups = allows(can.assignmentGroups.write);
   const canWriteSequences = allows(can.groupSequences.write);
 
   const [newGroupOpen, setNewGroupOpen] = useState(false);

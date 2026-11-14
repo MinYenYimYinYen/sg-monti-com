@@ -15,7 +15,7 @@ import {
 import { importPostSelect } from "@/app/qbo/importCCTxn/post/importPostSelect";
 import { useImportPost } from "@/app/qbo/importCCTxn/post/useImportPost";
 import { formatCents } from "@/app/qbo/importCCTxn/_lib/importFileUtils";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 function Line({ label, value }: { label: string; value: string }) {
@@ -35,7 +35,7 @@ function Line({ label, value }: { label: string; value: string }) {
 export function BatchConfirmDialog() {
   const batchPreview = useSelector(importPostSelect.batchPreview);
   const mayPost = useSelector(userCapabilitiesSelect.allows)(
-    importCCTxnCapabilities.can.expensePostings.write,
+    can.qboExpensePostings.write,
   );
   const { postRows, closeBatchPreview } = useImportPost();
 

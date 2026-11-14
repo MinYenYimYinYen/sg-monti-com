@@ -5,9 +5,7 @@ import { GroupSequenceModel } from "@/app/pace/groupSequence/GroupSequenceModel"
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
-
-const { can } = paceCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<GroupSequenceContract> = {
   getSequences: {
     capability: can.groupSequences.read,

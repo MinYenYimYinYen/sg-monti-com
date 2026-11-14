@@ -2,19 +2,17 @@
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { javelinCapabilities } from "@/app/javelin/javelinCapabilities";
+import { can } from "@/permission/can";
 import { Button } from "@/style/components/button";
 import { javelinSelect } from "@/app/javelin/javelinSelect";
 import { javelinActions } from "@/app/javelin/javelinSlice";
 import { useJavelin } from "@/app/javelin/useJavelin";
 import { PostConfirmDialog } from "@/app/javelin/_lib/components/PostConfirmDialog";
 
-const { can } = javelinCapabilities;
-
 /** Preview checks the files against stored links and postings. Posting needs its own capability. */
 export function JavelinHeader() {
   const dispatch = useAppDispatch();
-  const canPost = useSelector(userCapabilitiesSelect.allows)(can.journalEntryPostings.write);
+  const canPost = useSelector(userCapabilitiesSelect.allows)(can.qboJournalEntries.write);
   const files = useSelector(javelinSelect.files);
   const confirmedDocNumbers = useSelector(javelinSelect.confirmedDocNumbers);
   const postable = useSelector(javelinSelect.postable);

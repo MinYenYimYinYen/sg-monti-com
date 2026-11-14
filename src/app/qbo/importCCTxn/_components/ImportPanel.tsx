@@ -6,7 +6,7 @@ import { CSVDropzone } from "@/components/dropZone/dropZone";
 import { Button } from "@/style/components/button";
 import { Notice } from "@/app/permission/_components/Notice";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { importRowSelect } from "@/app/qbo/importCCTxn/rows/importRowSelect";
 import { importCCTxnSelect } from "@/app/qbo/importCCTxn/importCCTxnSelect";
 import { useImportRow } from "@/app/qbo/importCCTxn/rows/useImportRow";
@@ -39,7 +39,7 @@ export function ImportPanel() {
   const fileCards = useSelector(importCCTxnSelect.fileCards);
   const unassignedCards = useSelector(importCCTxnSelect.unassignedCards);
   const allows = useSelector(userCapabilitiesSelect.allows);
-  const canImport = allows(importCCTxnCapabilities.can.importRows.write);
+  const canImport = allows(can.ccImportRows.write);
   const canCommit = useSelector(importCCTxnSelect.canCommit) && canImport;
   const confirmedDuplicateRowNumbers = useSelector(importRowSelect.confirmedDuplicateRowNumbers);
   // The layout already loads the data. autoLoad is off here so this only supplies actions.

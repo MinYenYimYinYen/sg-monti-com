@@ -15,11 +15,9 @@ import { UnservDropZone } from "@/app/scheduling/_libShared/UnservDropZone";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
-import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
+import { can } from "@/permission/can";
 
 type ViewState = "countSizeRev" | "servCodes" | "products";
-
-const { can } = schedulingCapabilities;
 
 export default function CoverSheetsPage() {
   const allows = useSelector(userCapabilitiesSelect.allows);

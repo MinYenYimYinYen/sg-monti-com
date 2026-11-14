@@ -28,12 +28,9 @@ import { usePriceTable } from "@/app/realGreen/priceTable/usePriceTable";
 import { usePrepay } from "@/app/realGreen/prepay/usePrepay";
 import { useZipCode } from "@/app/realGreen/zipCode/useZipCode";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
-import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
-import { quickSendCapabilities } from "@/app/quickSend/quickSendCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-
-const { can } = quickSendCapabilities;
 
 /** Converts HTML to plain text while preserving paragraph/line-break structure.
  *  Tables are rendered as tab-separated rows so columns survive a plain-text paste. */
@@ -71,7 +68,7 @@ function htmlToPlainText(html: string): string {
  */
 export function QuickSend() {
   return (
-    <GatedPanel requirement={can.storedTemplates.read}>
+    <GatedPanel requirement={can.quickSendTemplates.read}>
       <QuickSendWorkspace />
     </GatedPanel>
   );
@@ -86,8 +83,8 @@ function QuickSendWorkspace() {
   useStoredTemplates({
     autoLoad: true,
     canLoad: {
-      templates: allows(can.storedTemplates.read),
-      groups: allows(can.templateGroups.read),
+      templates: allows(can.quickSendTemplates.read),
+      groups: allows(can.quickSendTemplateGroups.read),
     },
   });
   useCustomerContext({ contexts: ["single"] });
@@ -97,7 +94,7 @@ function QuickSendWorkspace() {
   useZipCode({ autoLoad: true });
   useGlobalSettings({
     autoLoad: true,
-    canLoad: allows(globalSettingsCapabilities.can.settings.read),
+    canLoad: allows(can.globalSettings.read),
   });
 
   const sections = useSelector(qsSelect.sections);

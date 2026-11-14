@@ -20,10 +20,8 @@ import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentP
 import { useEquipmentPackage } from "@/app/equipment/equipmentPackage/useEquipmentPackage";
 import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 import { EquipmentPackageDeleteSheet } from "@/app/equipment/equipmentPackage/EquipmentPackageDeleteSheet";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = equipmentCapabilities;
 
 interface EquipmentPackageFormProps {
   equipmentPackage?: EquipmentPackageDoc;

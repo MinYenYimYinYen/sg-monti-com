@@ -2,19 +2,17 @@
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { javelinCapabilities } from "@/app/javelin/javelinCapabilities";
+import { can } from "@/permission/can";
 import { Button } from "@/style/components/button";
 import { depositSelect } from "@/app/javelin/depositSelect";
 import { depositActions } from "@/app/javelin/depositSlice";
 import { useJavelin } from "@/app/javelin/useJavelin";
 import { PostConfirmDialog } from "@/app/javelin/_lib/components/PostConfirmDialog";
 
-const { can } = javelinCapabilities;
-
 /** Preview checks the deposits against stored links and postings. Posting needs its own capability. */
 export function DepositHeader() {
   const dispatch = useAppDispatch();
-  const canPost = useSelector(userCapabilitiesSelect.allows)(can.journalEntryPostings.write);
+  const canPost = useSelector(userCapabilitiesSelect.allows)(can.qboJournalEntries.write);
   const rows = useSelector(depositSelect.rows);
   const fileName = useSelector(depositSelect.fileName);
   const confirmedDocNumbers = useSelector(depositSelect.confirmedDocNumbers);

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { inventoryCapabilities } from "@/app/inventory/inventoryCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { inventorySelect } from "@/app/inventory/inventorySelect";
 import { useInventoryDeps } from "@/app/inventory/useInventoryDeps";
@@ -22,8 +22,6 @@ import { ChevronLeft, CalendarDays, ChevronDown } from "lucide-react";
 // Module-level persistence — survives navigation within the same browser session
 // ---------------------------------------------------------------------------
 let savedDisplayMode: "decimal" | "subUnits" = "decimal";
-
-const { can } = inventoryCapabilities;
 
 export default function InventoryHistoryPage() {
   return (

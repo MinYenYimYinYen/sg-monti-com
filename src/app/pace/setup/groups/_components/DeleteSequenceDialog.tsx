@@ -17,7 +17,7 @@ import { useGroupSequence } from "@/app/pace/groupSequence/useGroupSequence";
 import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { paceAssignmentGroupSelect } from "@/app/pace/assignmentGroup/assignmentGroupSelect";
 import { SequenceWithGroups } from "@/app/pace/setup/setupSelect";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type DeleteSequenceDialogProps = {
@@ -39,7 +39,7 @@ export function DeleteSequenceDialog({
   const employeeMap = useSelector(employeeSelect.employeeMap);
   const assignmentGroupMap = useSelector(paceAssignmentGroupSelect.assignmentGroupMap);
   const canDelete = useSelector(userCapabilitiesSelect.allows)(
-    paceCapabilities.can.groupSequences.delete,
+    can.groupSequences.delete,
   );
 
   const [assignmentChoice, setAssignmentChoice] = useState<AssignmentChoice>("keep");

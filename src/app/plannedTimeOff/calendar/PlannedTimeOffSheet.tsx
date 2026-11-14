@@ -26,12 +26,10 @@ import {
 } from "@/style/components/select";
 import { plannedTimeOffActions } from "@/app/plannedTimeOff/plannedTimeOffSlice";
 import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
-import { plannedTimeOffCapabilities } from "@/app/plannedTimeOff/plannedTimeOffCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
-
-const { can } = plannedTimeOffCapabilities;
 
 // ---------------------------------------------------------------------------
 // PlannedTimeOffSheet
@@ -52,8 +50,8 @@ export function PlannedTimeOffSheet({
 }: PlannedTimeOffSheetProps) {
   const dispatch = useAppDispatch();
   const allows = useSelector(userCapabilitiesSelect.allows);
-  const canWrite = allows(can.absences.write);
-  const canDelete = allows(can.absences.delete);
+  const canWrite = allows(can.employeeAbsences.write);
+  const canDelete = allows(can.employeeAbsences.delete);
 
   const [search, setSearch] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(

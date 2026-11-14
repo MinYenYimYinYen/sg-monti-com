@@ -18,9 +18,6 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 // was started, and it is how a stopped run is resumed, so someone who may start one must also be
 // able to finish it. `syncLocks.write` is separate because clearing a lock can free one whose sync
 // is still running, and a second sync can then start over it.
-//
-// requires: every write op is a button on the status screen, so each needs the status read. The
-// declaration is the only place that says so: `syncStatus.read` is the gate of the whole screen.
 export const syncUtilsCapabilities = createFeatureCapabilities({
   key: "syncUtils",
   resources: {
@@ -28,10 +25,5 @@ export const syncUtilsCapabilities = createFeatureCapabilities({
     deltaSync: { shape: "singleton", verbs: ["write"] },
     fullSync: { shape: "singleton", verbs: ["write"] },
     syncLocks: { shape: "collection", verbs: ["write"] },
-  },
-  requires: {
-    "deltaSync.write": ["syncUtils.syncStatus.read"],
-    "fullSync.write": ["syncUtils.syncStatus.read"],
-    "syncLocks.write": ["syncUtils.syncStatus.read"],
   },
 });

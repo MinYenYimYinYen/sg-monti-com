@@ -5,9 +5,7 @@ import { RouteNoteModel } from "@/app/routeNotes/RouteNoteModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { routeNoteCapabilities } from "@/app/routeNotes/routeNoteCapabilities";
-
-const { can } = routeNoteCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<RouteNoteContract> = {
   getByDateRange: {
     capability: can.routeNotes.read,

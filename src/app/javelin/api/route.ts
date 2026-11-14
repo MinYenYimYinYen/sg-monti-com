@@ -9,32 +9,30 @@ import {
   postPlanned,
 } from "@/app/javelin/_lib/javelinPlanServer";
 import { loadJavelinLatest } from "@/app/javelin/_lib/javelinLatestServer";
-import { javelinCapabilities } from "@/app/javelin/javelinCapabilities";
+import { can } from "@/permission/can";
 
 // Same budget as the QBO journal entry route, which this posts through.
 export const maxDuration = 300;
-
-const { can } = javelinCapabilities;
 
 // The previews and getLatest read the books, so they share `entryPlans.read`. The three posts write
 // real journal entries, so they share the separate `journalEntryPostings.qbo.write`.
 const handlers: HandlerMap<JavelinContract> = {
   previewGenLedger: {
-    capability: can.entryPlans.read,
+    capability: can.journalEntryPlans.read,
     handler: async ({ files, confirmedDocNumbers }) => {
       const { plan } = await planGenLedger({ files, confirmedDocNumbers });
       return { success: true, payload: plan };
     },
   },
   previewDeposits: {
-    capability: can.entryPlans.read,
+    capability: can.journalEntryPlans.read,
     handler: async ({ rows, fileName, confirmedDocNumbers }) => {
       const { plan } = await planDeposits({ rows, fileName, confirmedDocNumbers });
       return { success: true, payload: plan };
     },
   },
   postGenLedger: {
-    capability: can.journalEntryPostings.write,
+    capability: can.qboJournalEntries.write,
     handler: async ({ files, confirmedDocNumbers }) => {
       const postedByUserName = await getPostingUserName();
       const planned = await planGenLedger({ files, confirmedDocNumbers });
@@ -42,7 +40,7 @@ const handlers: HandlerMap<JavelinContract> = {
     },
   },
   postDeposits: {
-    capability: can.journalEntryPostings.write,
+    capability: can.qboJournalEntries.write,
     handler: async ({ rows, fileName, confirmedDocNumbers }) => {
       const postedByUserName = await getPostingUserName();
       const planned = await planDeposits({ rows, fileName, confirmedDocNumbers });
@@ -50,14 +48,14 @@ const handlers: HandlerMap<JavelinContract> = {
     },
   },
   previewCkDeposits: {
-    capability: can.entryPlans.read,
+    capability: can.journalEntryPlans.read,
     handler: async ({ rows, confirmedDocNumbers }) => {
       const { plan } = await planCkDeposits({ rows, confirmedDocNumbers });
       return { success: true, payload: plan };
     },
   },
   postCkDeposits: {
-    capability: can.journalEntryPostings.write,
+    capability: can.qboJournalEntries.write,
     handler: async ({ rows, confirmedDocNumbers }) => {
       const postedByUserName = await getPostingUserName();
       const planned = await planCkDeposits({ rows, confirmedDocNumbers });
@@ -65,7 +63,7 @@ const handlers: HandlerMap<JavelinContract> = {
     },
   },
   getLatest: {
-    capability: can.entryPlans.read,
+    capability: can.journalEntryPlans.read,
     handler: async () => ({ success: true, payload: await loadJavelinLatest() }),
   },
 };

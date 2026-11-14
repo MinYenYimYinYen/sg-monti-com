@@ -41,9 +41,7 @@ import { UserCapabilitiesModel } from "@/app/permission/userCapabilities/UserCap
 import { assertCurrentUserPassword } from "@/app/syncUtils/_lib/verifyCurrentUserPassword";
 import { judgeUserDeletion } from "@/app/auth/_lib/userDeletion";
 import { deleteUserReferences } from "@/app/auth/_lib/deleteUserReferences";
-import { authCapabilities } from "@/app/auth/authCapabilities";
-
-const { can } = authCapabilities;
+import { can } from "@/permission/can";
 
 /**
  * 1. DEFINE HANDLERS

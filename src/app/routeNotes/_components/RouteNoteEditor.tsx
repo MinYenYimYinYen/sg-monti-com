@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
-import { routeNoteCapabilities } from "@/app/routeNotes/routeNoteCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { MentionEditor } from "@/components/MentionEditor/MentionEditor";
 import {
@@ -27,8 +27,6 @@ import { MentionEditorUtils } from "@/components/MentionEditor/MentionEditorUtil
 // No parsers needed for an empty var set.
 const EMPTY_VARS = {} as Record<string, never>;
 const EMPTY_PARSERS = {} as Record<string, never>;
-
-const { can } = routeNoteCapabilities;
 
 // ---------------------------------------------------------------------------
 // Props

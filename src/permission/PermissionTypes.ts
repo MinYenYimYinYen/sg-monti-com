@@ -1,9 +1,11 @@
-// Capabilities are stored server-side on the user and gate data access. A feature declares
-// only the resources it owns (data owned by another feature is gated by that feature's own
-// capabilities); every capability string, and the typed `can` constants that RPC handlers
-// and components both use, are derived from that declaration. This file must stay free of
-// server-only imports so client bundles can use it.
+// Capabilities are stored server-side on the user and gate data access. What can be granted is
+// defined once, as a tree of groups, resources and verbs (see groupTypes.ts and src/permission/
+// groups). A capability is `resource.verb`, and the typed `can` constants that RPC handlers and
+// components both use are derived from the tree. This file must stay free of server-only imports
+// so client bundles can use it.
 //
+// LEGACY: createFeatureCapabilities, FeatureCapabilities, Resource and the types around them are
+// the old per-module declarations. They stay only until every consumer has moved to the tree.
 // Every op requires a logged-in user holding the capability, unless its verb is declared
 // `public`. A logged-in user with no capabilities is an "applied" user: there is no marker
 // for that state, an admin approves by assigning capabilities.
@@ -14,9 +16,7 @@ import type { User } from '@/app/auth/_types/User';
 
 // ---------- Verbs ----------
 export type Verb = 'read' | 'write' | 'delete'; // write covers create and update
-export type SingletonVerb = 'read' | 'write';
-export type AnyVerb = 'readAny' | 'writeAny' | 'deleteAny';
-export type UserOwnedVerb = Verb | AnyVerb;
+export type SingletonVerb = 'read' | 'write'; // legacy, see the LEGACY note above
 
 /** Data that lives outside our native app data. Absent on a resource means native. */
 export type DataSource = 'realGreen' | 'qbo';
@@ -46,14 +46,7 @@ export type SingletonResource = {
   origin?: ResourceOrigin;
 };
 
-// Native only: per-user config never lives in RealGreen or QBO.
-export type UserOwnedResource = {
-  shape: 'userOwned';
-  verbs: readonly [UserOwnedVerb, ...UserOwnedVerb[]];
-  origin?: ResourceOrigin;
-};
-
-export type Resource = CollectionResource | SingletonResource | UserOwnedResource;
+export type Resource = CollectionResource | SingletonResource;
 
 export type FeatureCapabilities = {
   key: string;
@@ -64,20 +57,13 @@ export type FeatureCapabilities = {
   description?: string;
   /** Verbs that need no login, by resource key. They resolve to 'public' and grant nothing. */
   public?: Record<string, readonly Verb[]>;
-  /**
-   * What holding a capability also needs, keyed `resource.verb` and listing other capabilities
-   * (use the `can` constants of the feature that owns them, so a rename breaks the build). This
-   * never grants anything at runtime: the admin screens offer these when a capability is
-   * assigned, and the editors warn when one is missing. A verb's own companions (write and
-   * delete need read) are implied and need not be listed.
-   */
-  requires?: Record<string, readonly Capability[]>;
 };
 
-// ---------- Derived capability strings ----------
-// native:   feature.resource.verb            e.g. 'widgetManagement.widgets.write'
-// external: feature.resource.source.verb     e.g. 'customer.customers.realGreen.read'
-export type Capability = `${string}.${string}.${string}`;
+// ---------- Capability strings ----------
+// `resource.verb`, for example 'customers.read'. A resource key has no dot, so the verb is always
+// the last segment. (The legacy declarations also produce 'feature.resource.verb' strings, which
+// this type still accepts until they are gone.)
+export type Capability = `${string}.${Verb}`;
 
 /**
  * What an RPC handler's `capability` (and a component's `<Can>`) requires of the user.
@@ -163,7 +149,7 @@ export function isValidKey(key: string): boolean {
 
 /** Fails fast at module load so a bad declaration never reaches an admin or a handler. */
 function assertValidDeclaration(declaration: FeatureCapabilities): void {
-  const { key, resources, public: publicVerbs = {}, requires = {} } = declaration;
+  const { key, resources, public: publicVerbs = {} } = declaration;
 
   if (!KEY_PATTERN.test(key)) throw new Error(`Invalid feature key '${key}': use letters, digits, _ or - (no dots)`);
   for (const resourceKey of Object.keys(resources)) {
@@ -179,22 +165,6 @@ function assertValidDeclaration(declaration: FeatureCapabilities): void {
       if (!(resource.verbs as readonly string[]).includes(verb)) {
         throw new Error(`${key}: public lists undeclared verb '${resourceKey}.${verb}'`);
       }
-    }
-  }
-
-  for (const [requirementKey, required] of Object.entries(requires)) {
-    const parts = requirementKey.split('.');
-    const resource = parts.length === 2 ? resources[parts[0]] : undefined;
-    if (!resource || !(resource.verbs as readonly string[]).includes(parts[1])) {
-      throw new Error(`${key}: requires lists unknown capability '${requirementKey}' (use resource.verb)`);
-    }
-    // A public verb grants nothing, so there is nothing to attach requirements to.
-    if ((publicVerbs[parts[0]] as readonly string[] | undefined)?.includes(parts[1])) {
-      throw new Error(`${key}: requires lists the public verb '${requirementKey}'`);
-    }
-    // Widened to string: the type forbids an empty entry, but a hand-built declaration can hold one.
-    if (required.some((requiredCapability) => typeof requiredCapability !== 'string' || (requiredCapability as string) === '')) {
-      throw new Error(`${key}: requires '${requirementKey}' lists an empty capability`);
     }
   }
 }

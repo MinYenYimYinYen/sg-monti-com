@@ -8,7 +8,7 @@ import {
   refusal,
   saveHoldings,
 } from "@/app/permission/userCapabilities/api/assignmentHelpers";
-import { capabilityManagementCapabilities } from "@/app/permission/capabilityManagementCapabilities";
+import { can } from "@/permission/can";
 import { loadActor } from "@/app/permission/_lib/capabilityLoaders";
 import { assertText, assertTextList } from "@/app/permission/_lib/assertText";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
@@ -19,8 +19,6 @@ import { capabilityRegistry } from "@/permission/capabilityRegistry";
 import { canAssign } from "@/permission/logic/assignmentGuards";
 import { toUserSummary } from "@/permission/logic/userSummary";
 import { addDirectMany, assignBundle, removeBundle, removeDirect } from "@/permission/logic/userCapabilityLogic";
-
-const { can } = capabilityManagementCapabilities;
 
 function notPermitted(missing: Capability[]): AppError {
   return new AppError({

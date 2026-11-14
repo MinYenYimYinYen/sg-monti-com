@@ -4,9 +4,7 @@ import { CompanyContract } from "@/app/realGreen/company/api/CompanyContract";
 import { CompanyRaw } from "@/app/realGreen/company/_lib/CompanyTypes";
 import { remapCompany } from "@/app/realGreen/company/_lib/serverCompanyFunc";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
-import { companyCapabilities } from "@/app/realGreen/company/companyCapabilities";
-
-const { can } = companyCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<CompanyContract> = {
   getAll: {
     capability: can.companies.read,

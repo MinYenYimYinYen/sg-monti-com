@@ -7,13 +7,11 @@ import { getLastSyncedAt, setLastSyncedAt } from "@/app/realGreen/syncMetadata/s
 import { SYNC_ENTITY_TYPES } from "@/app/realGreen/syncMetadata/syncEntityTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { CustStat } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
-import { customerCapabilities } from "@/app/realGreen/customer/customerCapabilities";
+import { can } from "@/permission/can";
 
 // All possible customer statuses — ensures the sync captures every customer
 // regardless of status. statusArrayToStringRange encodes this as { minValue: "M", maxValue: "9" }.
 const ALL_CUST_STATS: CustStat[] = ["M", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-
-const { can } = customerCapabilities;
 const handlers: HandlerMap<CustomerSyncContract> = {
   syncCustomers: {
     capability: can.customerSync.write,

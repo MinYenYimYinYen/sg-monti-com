@@ -8,7 +8,7 @@ import { upsellPrioritiesSelect } from "../upsellPrioritiesSelect";
 import { upsellPrioritiesActions } from "../upsellPrioritiesSlice";
 import { useUpsellPriorities } from "../useUpsellPriorities";
 import { UpsellPrioritiesOpenSheet } from "./UpsellPrioritiesOpenSheet";
-import { prepayLettersCapabilities } from "../../prepayLettersCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { EntityFileControls } from "@/components/EntityFileControls/EntityFileControls";
 import { DropdownMenuItem } from "@/style/components/dropdown-menu";
@@ -21,8 +21,6 @@ import {
   DialogTitle,
 } from "@/style/components/dialog";
 import { Button } from "@/style/components/button";
-
-const { can } = prepayLettersCapabilities;
 
 export function UpsellPrioritiesFileControls() {
   const dispatch = useAppDispatch();

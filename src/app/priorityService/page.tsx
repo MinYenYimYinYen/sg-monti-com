@@ -21,12 +21,9 @@ import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { usePriorityServiceCustomers } from "@/app/realGreen/customer/hooks/usePriorityServiceCustomers";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { CustomerQueryBuilder } from "@/app/realGreen/customer/mirror/CustomerQueryBuilder";
-import { priorityServiceCapabilities } from "@/app/priorityService/priorityServiceCapabilities";
-import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = priorityServiceCapabilities;
 
 // ---------------------------------------------------------------------------
 // Single-customer lookup plan for the "New Entry" form.
@@ -92,7 +89,7 @@ function PriorityServiceWorkspace() {
 
   // Global settings needed for the single-customer plan (season). A different feature's read (see
   // `requires`).
-  useGlobalSettings({ autoLoad: true, canLoad: allows(globalSettingsCapabilities.can.settings.read) });
+  useGlobalSettings({ autoLoad: true, canLoad: allows(can.globalSettings.read) });
 
   const docs = useSelector(priorityServiceSelect.docs);
   const priorityServiceMap = useSelector(priorityServiceSelect.priorityServiceMap);

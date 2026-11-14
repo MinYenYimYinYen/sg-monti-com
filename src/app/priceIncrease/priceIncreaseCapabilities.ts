@@ -1,5 +1,4 @@
 import { createFeatureCapabilities } from "@/permission/PermissionTypes";
-import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
 
 // The price increase module's own stored data: named increase plans (a percent per season) and
 // named increase settings (which program, the caps, the upsell bonus, the rounding). Exactly one
@@ -16,21 +15,10 @@ import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsC
 //
 // Every write and delete was admin only, and the reads were admin and office. `setActive` stays
 // under `write`: it only flips which stored settings are active and can be flipped back.
-//
-// requires: `increaseSettings.read` is the entry capability for the whole module (the layout
-// gate). The Summary and By Customer tabs also load the increase plans (the active settings point
-// at one) and the global settings (the season and the flag mappings). The RealGreen data it uses
-// (programs, price tables, customers, customer flags) is not declared yet (deferred).
 export const priceIncreaseCapabilities = createFeatureCapabilities({
   key: "priceIncrease",
   resources: {
     increasePlans: { shape: "collection", verbs: ["read", "write", "delete"] },
     increaseSettings: { shape: "collection", verbs: ["read", "write", "delete"] },
-  },
-  requires: {
-    "increaseSettings.read": [
-      "priceIncrease.increasePlans.read",
-      globalSettingsCapabilities.can.settings.read,
-    ],
   },
 });

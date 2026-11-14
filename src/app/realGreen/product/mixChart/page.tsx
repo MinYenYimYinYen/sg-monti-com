@@ -36,9 +36,7 @@ import { solverSelect } from "@/app/appMethod/appMethodCreate/selectors/solverSe
 import { useSelector as useReduxSelector } from "react-redux";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
-import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { can } from "@/permission/can";
 
 const DEFAULT_CONFIG: MixChartConfig = {
   equipment: null,
@@ -49,7 +47,7 @@ const DEFAULT_CONFIG: MixChartConfig = {
 
 export default function MixChartPage() {
   return (
-    <GatedPanel requirement={productCapabilities.can.products.read}>
+    <GatedPanel requirement={can.products.read}>
       <MixChart />
     </GatedPanel>
   );
@@ -60,13 +58,13 @@ function MixChart() {
   useProduct({
     autoLoad: true,
     canLoad: {
-      unitConversions: allows(productCapabilities.can.unitConversions.read),
-      appMethods: allows(appMethodCapabilities.can.appMethods.read),
+      unitConversions: allows(can.unitConversions.read),
+      appMethods: allows(can.appMethods.read),
     },
   });
   useEquipment({
     autoLoad: true,
-    canLoad: allows(equipmentCapabilities.can.equipmentDefinitions.read),
+    canLoad: allows(can.equipmentDefinitions.read),
   });
   const isClient = useIsClient();
 

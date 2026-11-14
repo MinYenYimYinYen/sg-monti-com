@@ -10,9 +10,7 @@ import { productivitySelect } from "@/app/productivity/productivitySelect";
 import { productivityActions } from "@/app/productivity/productivitySlice";
 import { PunchImportWidget } from "@/components/timeCardImport/PunchImportWidget";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { holidayCapabilities } from "@/app/holiday/holidayCapabilities";
-import { plannedTimeOffCapabilities } from "@/app/plannedTimeOff/plannedTimeOffCapabilities";
-import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
+import { can } from "@/permission/can";
 
 const TABS: TabNavItem[] = [
   { label: "By Employee", href: "/productivity/byEmployee" },
@@ -26,9 +24,9 @@ export default function ProductivityLayout({ children }: { children: React.React
   // screen uses never fires a request that would be refused.
   useProductivity({
     canLoad: {
-      holidays: allows(holidayCapabilities.can.holidays.read),
-      absences: allows(plannedTimeOffCapabilities.can.absences.read),
-      assignments: allows(assignmentCapabilities.can.serviceAssignments.read),
+      holidays: allows(can.holidays.read),
+      absences: allows(can.employeeAbsences.read),
+      assignments: allows(can.serviceAssignments.read),
     },
   });
 

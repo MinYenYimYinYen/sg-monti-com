@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import { inventorySelect, sumCountsToAppUnits } from "@/app/inventory/inventorySelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { authSelect } from "@/app/auth/authSlice";
-import { inventoryCapabilities } from "@/app/inventory/inventoryCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { useInventory } from "@/app/inventory/useInventory";
 import { InventoryCheckDoc, InventoryCheckEntry } from "@/app/inventory/InventoryTypes";
@@ -21,8 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/style/components/dialog";
-
-const { can } = inventoryCapabilities;
 
 export function SaveInventoryButton() {
   const canWrite = useSelector(userCapabilitiesSelect.allows)(can.inventoryChecks.write);

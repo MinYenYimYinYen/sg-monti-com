@@ -20,7 +20,7 @@ import {
   formatQboAccountLabel,
   suggestedQboAccountIds,
 } from "@/app/account/_lib/accountMappingView";
-import { accountCapabilities } from "@/app/account/accountCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type StatusDisplay = {
@@ -51,7 +51,6 @@ const statusDisplay: Record<AccountLinkStatus, StatusDisplay> = {
 };
 
 const noSuggestions = new Set<string>();
-const { can } = accountCapabilities;
 
 /** One RealGreen account and the QuickBooks account it is linked to. Each change saves at once. */
 export function AccountMappingRow({ link }: { link: RgAccountLink }) {

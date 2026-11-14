@@ -7,7 +7,7 @@ import { Checkbox } from "@/style/components/checkbox";
 import { Badge } from "@/style/components/badge";
 import { qboAccountSelect } from "@/app/qbo/account/qboAccountSelect";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { importCCTxnMappingSelect } from "@/app/qbo/importCCTxn/importCCTxnMappingSelect";
 import { useImportCCTxnMapping } from "@/app/qbo/importCCTxn/useImportCCTxnMapping";
 import { validateFormatAccount } from "@/app/qbo/importCCTxn/_lib/importMappingUtils";
@@ -27,7 +27,7 @@ export function FormatAccountEditor({
   const creditCardAccounts = useSelector(qboAccountSelect.creditCardAccounts);
   const stored = useSelector(importCCTxnMappingSelect.formatAccountMap).get(formatId);
   const canEdit = useSelector(userCapabilitiesSelect.allows)(
-    importCCTxnCapabilities.can.formatAccounts.write,
+    can.ccFormatAccounts.write,
   );
   const { saveFormatAccount } = useImportCCTxnMapping({ autoLoad: false });
 

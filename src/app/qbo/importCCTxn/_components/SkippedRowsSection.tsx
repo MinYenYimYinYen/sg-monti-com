@@ -7,7 +7,7 @@ import { Badge } from "@/style/components/badge";
 import { Button } from "@/style/components/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/style/components/collapsible";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { importRowSelect } from "@/app/qbo/importCCTxn/rows/importRowSelect";
 import { useImportRow } from "@/app/qbo/importCCTxn/rows/useImportRow";
 import { formatCents, skipReasonLabels } from "@/app/qbo/importCCTxn/_lib/importFileUtils";
@@ -21,7 +21,7 @@ export function SkippedRowsSection() {
   const skippedRows = useSelector(importRowSelect.restorableSkippedRows);
   const autoSkippedCount = useSelector(importRowSelect.autoSkippedCount);
   const canRestore = useSelector(userCapabilitiesSelect.allows)(
-    importCCTxnCapabilities.can.importRows.write,
+    can.ccImportRows.write,
   );
   const { setSkip } = useImportRow({ autoLoad: false });
   const [isOpen, setIsOpen] = useState(false);

@@ -13,13 +13,13 @@ import { globalSettingsActions } from "@/app/globalSettings/_lib/globalSettingsS
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { FlagPicker } from "@/app/priceIncrease/config/_components/FlagPicker";
-import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 export function FlagMappingsSection() {
   const dispatch = useAppDispatch();
   // These three are saved onto the global settings document, so its write is what they need.
-  const canWrite = useSelector(userCapabilitiesSelect.allows)(globalSettingsCapabilities.can.settings.write);
+  const canWrite = useSelector(userCapabilitiesSelect.allows)(can.globalSettings.write);
   const draft = useSelector(priceIncreaseConfigSelect.flagMappingsDraft);
   const isValid = useSelector(priceIncreaseConfigSelect.flagMappingsIsValid);
   const isDirty = useSelector(priceIncreaseConfigSelect.flagMappingsIsDirty);

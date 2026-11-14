@@ -10,14 +10,12 @@ import { FullSyncDialog } from "@/app/syncUtils/_components/FullSyncDialog";
 import { FullSyncChecklist } from "@/app/syncUtils/_components/FullSyncChecklist";
 import { useSelector } from "react-redux";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { syncUtilsCapabilities } from "@/app/syncUtils/syncUtilsCapabilities";
+import { can } from "@/permission/can";
 
 type SyncGroupPanelProps = {
   group: SyncGroup;
   title: string;
 };
-
-const { can } = syncUtilsCapabilities;
 
 /**
  * Sync controls for one group. A lock without an active run (a request that died) is shown

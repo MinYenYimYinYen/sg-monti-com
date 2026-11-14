@@ -3,7 +3,7 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { CustFlagContract } from "@/app/realGreen/custFlag/api/CustFlagContract";
 import { CustFlagRefreshResult, FlagIdCustIds } from "@/app/realGreen/custFlag/_lib/CustFlagTypes";
 import { rgApi } from "@/app/realGreen/_lib/api/rgApi";
-import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
+import { can } from "@/permission/can";
 
 export type CustFlagIdsSearch = {
   flagID: number;
@@ -22,8 +22,6 @@ type RgCustomerFlag = {
     spanishValue: string;
   };
 };
-
-const { can } = custFlagCapabilities;
 const handlers: HandlerMap<CustFlagContract> = {
   loadFlagIdCustIds: {
     capability: can.customerFlags.read,

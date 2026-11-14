@@ -19,12 +19,9 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { priceIncreaseConfigActions } from "@/app/priceIncrease/config/_lib/priceIncreaseConfigSlice";
 import { SlidersHorizontal } from "lucide-react";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
-import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
-import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = priceIncreaseCapabilities;
 
 const TABS: readonly TabNavItem[] = [
   { label: "Config", href: "/priceIncrease/config" },
@@ -55,7 +52,7 @@ function PriceIncreaseShell({ children }: { children: React.ReactNode }) {
   usePriceIncreaseDeps({
     canLoad: {
       increasePlans: allows(can.increasePlans.read),
-      globalSettings: allows(globalSettingsCapabilities.can.settings.read),
+      globalSettings: allows(can.globalSettings.read),
     },
   });
 

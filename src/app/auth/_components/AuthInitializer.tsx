@@ -7,9 +7,7 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { userCapabilitiesActions } from "@/app/permission/userCapabilities/userCapabilitiesSlice";
 import { PERMISSION_STALE_MS } from "@/app/permission/_lib/permissionConst";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { authCapabilities } from "@/app/auth/authCapabilities";
-
-const { can } = authCapabilities;
+import { can } from "@/permission/can";
 
 export default function AuthInitializer({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();

@@ -5,9 +5,7 @@ import { AssignmentPlan, GroupAssignment, Scenario } from "@/app/pace/assignment
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
-
-const { can } = paceCapabilities;
+import { can } from "@/permission/can";
 
 // ---------------------------------------------------------------------------
 // Migration helper — transforms old-format plans to new format.

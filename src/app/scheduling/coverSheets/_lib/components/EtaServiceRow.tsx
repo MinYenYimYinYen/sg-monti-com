@@ -8,13 +8,11 @@ import { SaveButton, SaveStatus } from "@/components/SaveButton";
 import { ServiceTechNotesPopover } from "@/components/ServiceTechNotesPopover";
 import { useSelector } from "react-redux";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
+import { can } from "@/permission/can";
 
 type EtaServiceRowProps = {
   service: Service;
 };
-
-const { can } = schedulingCapabilities;
 
 export function EtaServiceRow({ service }: EtaServiceRowProps) {
   const dispatch = useAppDispatch();

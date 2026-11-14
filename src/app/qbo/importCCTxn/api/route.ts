@@ -27,9 +27,7 @@ import {
 import { skipPendingRowsForMerchant } from "@/app/qbo/importCCTxn/_lib/importRowAccessServer";
 import { validateConfirmation } from "@/app/qbo/importCCTxn/_lib/importConfirmUtils";
 import { storeMerchantMapping } from "@/app/qbo/importCCTxn/_lib/importMappingSaveServer";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
-
-const { can } = importCCTxnCapabilities;
+import { can } from "@/permission/can";
 
 function failIfInvalid(problems: string[]): void {
   if (problems.length > 0) {
@@ -43,7 +41,7 @@ function failIfInvalid(problems: string[]): void {
 
 const handlers: HandlerMap<ImportCCTxnMappingContract> = {
   getFormatAccounts: {
-    capability: can.formatAccounts.read,
+    capability: can.ccFormatAccounts.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await ImportFormatAccountModel.find({}).lean();
@@ -52,7 +50,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
   },
   // Was admin only: it decides which QuickBooks card account every import posts to.
   upsertFormatAccount: {
-    capability: can.formatAccounts.write,
+    capability: can.ccFormatAccounts.write,
     handler: async ({ formatAccount }) => {
       failIfInvalid(validateFormatAccount(formatAccount));
       await connectToMongoDB();
@@ -72,7 +70,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
 
   // Staff names for the responsible-user picker, so it follows the card assignment read.
   getAssignableUsers: {
-    capability: can.cardAssignments.read,
+    capability: can.ccCardAssignments.read,
     handler: async () => {
       await connectToMongoDB();
       // Staff only, and only the name fields: email, saId and role never reach the browser.
@@ -90,7 +88,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
   },
 
   getCardAssignments: {
-    capability: can.cardAssignments.read,
+    capability: can.ccCardAssignments.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await ImportCardAssignmentModel.find({}).lean();
@@ -98,7 +96,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
     },
   },
   upsertCardAssignment: {
-    capability: can.cardAssignments.write,
+    capability: can.ccCardAssignments.write,
     handler: async ({ cardAssignment }) => {
       await connectToMongoDB();
       const formatAccountDoc = await ImportFormatAccountModel.findOne({
@@ -137,7 +135,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
   },
 
   getMerchantMappings: {
-    capability: can.merchantMappings.read,
+    capability: can.ccMerchantMappings.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await ImportMerchantMappingModel.find({}).lean();
@@ -145,7 +143,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
     },
   },
   upsertMerchantMapping: {
-    capability: can.merchantMappings.write,
+    capability: can.ccMerchantMappings.write,
     handler: async ({ merchantMapping }) => {
       failIfInvalid(validateMerchantMapping(merchantMapping));
       // The browser sends the descriptions it is showing. See storeMerchantMapping for how the
@@ -162,7 +160,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
     },
   },
   confirmMerchant: {
-    capability: can.merchantMappings.write,
+    capability: can.ccMerchantMappings.write,
     handler: async ({ merchantKey, description }) => {
       const { confirmedDescription, problem } = validateConfirmation({ merchantKey, description });
       if (problem) failIfInvalid([problem]);
@@ -177,7 +175,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
     },
   },
   deleteMerchantMapping: {
-    capability: can.merchantMappings.delete,
+    capability: can.ccMerchantMappings.delete,
     handler: async ({ merchantKey, ownerUserName }) => {
       await connectToMongoDB();
       await ImportMerchantMappingModel.deleteOne({ merchantKey, ownerUserName });
@@ -186,7 +184,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
   },
 
   getSkipRules: {
-    capability: can.skipRules.read,
+    capability: can.ccSkipRules.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await ImportSkipRuleModel.find({}).lean();
@@ -194,7 +192,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
     },
   },
   upsertSkipRule: {
-    capability: can.skipRules.write,
+    capability: can.ccSkipRules.write,
     handler: async ({ skipRule }) => {
       failIfInvalid(validateSkipRule(skipRule));
       await connectToMongoDB();
@@ -213,7 +211,7 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
     },
   },
   deleteSkipRule: {
-    capability: can.skipRules.delete,
+    capability: can.ccSkipRules.delete,
     handler: async ({ merchantKey }) => {
       await connectToMongoDB();
       await ImportSkipRuleModel.deleteOne({ merchantKey });

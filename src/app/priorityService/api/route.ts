@@ -8,9 +8,7 @@ import {
 } from "@/lib/mongoose/cleanMongoObj";
 import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { priorityServiceCapabilities } from "@/app/priorityService/priorityServiceCapabilities";
-
-const { can } = priorityServiceCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<PriorityServiceContract> = {
   getAll: {

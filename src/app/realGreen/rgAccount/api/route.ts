@@ -4,9 +4,7 @@ import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGr
 import { RgAccountContract } from "@/app/realGreen/rgAccount/api/RgAccountContract";
 import { RgAccountRaw } from "@/app/realGreen/rgAccount/RgAccountTypes";
 import { remapRgAccounts } from "@/app/realGreen/rgAccount/_lib/rgAccountServerFunc";
-import { rgAccountCapabilities } from "@/app/realGreen/rgAccount/rgAccountCapabilities";
-
-const { can } = rgAccountCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<RgAccountContract> = {
   getAll: {
     capability: can.rgAccounts.read,

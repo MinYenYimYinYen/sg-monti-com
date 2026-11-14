@@ -1,6 +1,4 @@
 import { createFeatureCapabilities } from "@/permission/PermissionTypes";
-import { priceTableCapabilities } from "@/app/realGreen/priceTable/priceTableCapabilities";
-import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
 
 // Program codes and service codes: the RealGreen lists of what programs a customer can be on and
 // which services each program runs, with the settings this app keeps beside them (which price
@@ -22,12 +20,6 @@ import { productCapabilities } from "@/app/realGreen/product/productCapabilities
 // The pieces are separate resources because they change different data: a program code's price
 // tables affect every price shown for that program, while a service code's rules and call-ahead tag
 // only affect scheduling and call-aheads.
-//
-// requires: the program code screen offers price tables and shows each program's service codes,
-// and the service code screen offers product masters for its rules. Those are other features' data
-// (or this one's own, written as strings because a declaration cannot reference its own `can`).
-// Both screens also hydrate employees and assignment plans through `progServSelect`, which are not
-// declared as requirements here because neither screen shows them (see the deferred table).
 export const progServCapabilities = createFeatureCapabilities({
   key: "progServ",
   resources: {
@@ -35,14 +27,5 @@ export const progServCapabilities = createFeatureCapabilities({
     servCodes: { shape: "collection", source: "realGreen", verbs: ["read"] },
     progCodeDocProps: { shape: "collection", verbs: ["write"] },
     servCodeDocProps: { shape: "collection", verbs: ["write"] },
-  },
-  requires: {
-    "progCodes.read": [
-      priceTableCapabilities.can.priceTables.read,
-      "progServ.servCodes.realGreen.read",
-    ],
-    "servCodes.read": [productCapabilities.can.products.read],
-    "progCodeDocProps.write": ["progServ.progCodes.realGreen.read"],
-    "servCodeDocProps.write": ["progServ.servCodes.realGreen.read"],
   },
 });

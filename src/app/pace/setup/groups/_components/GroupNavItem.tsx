@@ -6,7 +6,7 @@ import { AssignmentGroup } from "@/app/pace/assignmentGroup/AssignmentGroupTypes
 import { Popover, PopoverContent, PopoverTrigger } from "@/style/components/popover";
 import { DeleteGroupDialog } from "@/app/pace/setup/groups/_components/DeleteGroupDialog";
 import { useSelector } from "react-redux";
-import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 type GroupNavItemProps = {
@@ -19,7 +19,7 @@ type GroupNavItemProps = {
 export function GroupNavItem({ group, isSelected, onSelectAction, onDeletedAction }: GroupNavItemProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const canDelete = useSelector(userCapabilitiesSelect.allows)(
-    assignmentGroupCapabilities.can.assignmentGroups.delete,
+    can.assignmentGroups.delete,
   );
 
   return (

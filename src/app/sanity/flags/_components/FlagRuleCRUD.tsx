@@ -35,12 +35,10 @@ import {
   FLAG_RULE_KIND_DESCRIPTIONS,
 } from "@/app/flagRule/FlagRuleTypes";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
-import { flagRuleCapabilities } from "@/app/flagRule/flagRuleCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { Notice } from "@/app/permission/_components/Notice";
 import { cn } from "@/style/utils";
-
-const { can } = flagRuleCapabilities;
 
 // ---------------------------------------------------------------------------
 // FlagPickerPopover — Popover + Checkbox list for selecting multiple flags

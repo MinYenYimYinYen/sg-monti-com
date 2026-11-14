@@ -6,9 +6,7 @@ import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import React from "react";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
-
-const { can } = schedulingCapabilities;
+import { can } from "@/permission/can";
 
 export default function DailyInventoryLayout({
   children,

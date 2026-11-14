@@ -21,7 +21,7 @@ import { runDeltaSync } from "@/app/realGreen/customer/sync/runDeltaSync";
 import { recordMirrorQuery } from "@/app/realGreen/syncMetadata/syncMetadataFunc";
 import { assertMirrorAvailable } from "@/app/realGreen/syncLock/syncLockFunc";
 import { AppError } from "@/lib/errors/AppError";
-import { customerCapabilities } from "@/app/realGreen/customer/customerCapabilities";
+import { can } from "@/permission/can";
 
 // ---------------------------------------------------------------------------
 // Filter Translation
@@ -186,8 +186,6 @@ async function executePlan(
 // ---------------------------------------------------------------------------
 // Route Handler
 // ---------------------------------------------------------------------------
-
-const { can } = customerCapabilities;
 const handlers: HandlerMap<CustomerMirrorContract> = {
   getMirrorCustomers: {
     capability: can.customers.read,

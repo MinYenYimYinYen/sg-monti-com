@@ -5,10 +5,9 @@ import { AssignmentGroupModel } from "@/app/pace/assignmentGroup/AssignmentGroup
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
+import { can } from "@/permission/can";
 
 // Same stored groups as the top-level assignmentGroup feature, so the same capabilities.
-const { can } = assignmentGroupCapabilities;
 const handlers: HandlerMap<AssignmentGroupContract> = {
   getGroups: {
     capability: can.assignmentGroups.read,

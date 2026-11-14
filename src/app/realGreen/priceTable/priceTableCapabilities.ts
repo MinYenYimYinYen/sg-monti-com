@@ -9,7 +9,7 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 // Mongo cache is refreshed by the read itself, so it is not a write the user chooses. There is no
 // screen of its own. The price tables hydrate the program and service entities (what a service
 // costs), and the prepay letter, price increase, quick send and business plan screens load them
-// for that. Those screens list this read in their own `requires` (deferred, see the record).
+// for that.
 export const priceTableCapabilities = createFeatureCapabilities({
   key: "priceTable",
   resources: {

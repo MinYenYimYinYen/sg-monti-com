@@ -21,9 +21,7 @@ import { authActions, authSelect } from "@/app/auth/authSlice";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { CustFlagAdd } from "@/app/realGreen/custFlag/_lib/CustFlagTypes";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { custFlagCapabilities } from "@/app/realGreen/custFlag/custFlagCapabilities";
-
-const { can } = custFlagCapabilities;
+import { can } from "@/permission/can";
 const ACTIVE_STATUSES = ["9"];
 
 // ---------------------------------------------------------------------------

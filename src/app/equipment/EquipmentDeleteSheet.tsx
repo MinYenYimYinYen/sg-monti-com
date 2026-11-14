@@ -20,10 +20,8 @@ import { api } from "@/lib/api/api";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { DataResponse } from "@/lib/api/types/responses";
 import { EquipmentContract } from "@/app/equipment/api/EquipmentContract";
-import { equipmentCapabilities } from "@/app/equipment/equipmentCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = equipmentCapabilities;
 
 interface EquipmentDeleteSheetProps {
   equipment: EquipmentDoc;

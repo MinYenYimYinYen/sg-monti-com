@@ -8,9 +8,7 @@ import { useSelector } from "react-redux";
 import { keywordSelect } from "@/app/realGreen/callAhead/selectors/keywordSelect";
 import React, { useState } from "react";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { callAheadCapabilities } from "@/app/realGreen/callAhead/callAheadCapabilities";
-
-const { can } = callAheadCapabilities;
+import { can } from "@/permission/can";
 
 interface KeywordEditProps {
   keywordId: string;
@@ -19,8 +17,8 @@ interface KeywordEditProps {
 export function KeywordEdit({ keywordId }: KeywordEditProps) {
   const { upsertKeyword, deleteKeyword } = useCallAhead({ autoLoad: false });
   const allows = useSelector(userCapabilitiesSelect.allows);
-  const canWrite = allows(can.keywords.write);
-  const canDelete = allows(can.keywords.delete);
+  const canWrite = allows(can.callAheadKeywords.write);
+  const canDelete = allows(can.callAheadKeywords.delete);
   const keywordMap = useSelector(keywordSelect.keywordMap);
   const keyword = keywordMap.get(keywordId);
 

@@ -5,9 +5,7 @@ import { DataResponse } from "@/lib/api/types/responses";
 import { ServiceDocPropsModel } from "@/app/realGreen/customer/_lib/models/ServiceDocPropsModel";
 import { AssignmentModel } from "@/app/assignment/AssignmentModel";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
-
-const { can } = assignmentCapabilities;
+import { can } from "@/permission/can";
 
 interface MigrateAssignmentsContract extends ApiContract {
   migrateAssignments: {

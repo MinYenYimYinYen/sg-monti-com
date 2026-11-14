@@ -4,7 +4,7 @@ import { CreditCard, FileSpreadsheet, Landmark, Settings2 } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
 import { useJavelinDeps } from "@/app/javelin/useJavelinDeps";
-import { javelinCapabilities } from "@/app/javelin/javelinCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 
 const ROOT_HREF = "/javelin";
@@ -17,8 +17,6 @@ const TABS: readonly TabNavItem[] = [
   { label: "Settings", href: "/javelin/settings", icon: Settings2 },
 ];
 
-const { can } = javelinCapabilities;
-
 /**
  * Every operation behind these pages reads or writes the live books, so the whole shell needs the
  * preview read. That includes the Settings tab, which is the account mapping panel and also checks
@@ -26,7 +24,7 @@ const { can } = javelinCapabilities;
  */
 export default function JavelinLayout({ children }: { children: React.ReactNode }) {
   return (
-    <GatedPanel requirement={can.entryPlans.read}>
+    <GatedPanel requirement={can.journalEntryPlans.read}>
       <JavelinShell>{children}</JavelinShell>
     </GatedPanel>
   );

@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/style/components/select";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { importCCTxnMappingSelect } from "@/app/qbo/importCCTxn/importCCTxnMappingSelect";
 import { useImportCCTxnMapping } from "@/app/qbo/importCCTxn/useImportCCTxnMapping";
 import { ImportFormatId } from "@/app/qbo/importCCTxn/types/ImportCCTxnTypes";
@@ -32,7 +32,7 @@ export function CardAssignmentRow({
 }) {
   const assignableUsers = useSelector(importCCTxnMappingSelect.assignableUsers);
   const canAssign = useSelector(userCapabilitiesSelect.allows)(
-    importCCTxnCapabilities.can.cardAssignments.write,
+    can.ccCardAssignments.write,
   );
   const { saveCardAssignment } = useImportCCTxnMapping({ autoLoad: false });
 

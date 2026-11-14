@@ -11,10 +11,8 @@ import { priceIncreaseConfigActions } from "@/app/priceIncrease/config/_lib/pric
 import { priceIncreaseSettingsActions } from "@/app/priceIncrease/settings/settingsSlice";
 import { PriceIncreaseSettingsDoc } from "@/app/priceIncrease/settings/PriceIncreaseSettingsTypes";
 import { SettingsSheet } from "@/app/priceIncrease/config/_components/SettingsSheet";
-import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = priceIncreaseCapabilities;
 
 export function SettingsSection() {
   const dispatch = useAppDispatch();

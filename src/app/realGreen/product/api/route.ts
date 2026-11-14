@@ -34,9 +34,7 @@ import { UnitModel } from "@/app/realGreen/product/_lib/models/UnitModel";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { AppMethodModel } from "@/app/appMethod/AppMethodModel";
 import { WATER_PRODUCT_ID } from "@/app/equipment/waterProduct";
-import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
-
-const { can } = productCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescript-eslint/no-explicit-any
   getAll: {
     capability: can.products.read,

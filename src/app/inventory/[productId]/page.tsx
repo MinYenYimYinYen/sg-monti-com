@@ -10,12 +10,10 @@ import { CountForm } from "@/app/inventory/_components/countEntry/CountForm";
 import { CountList } from "@/app/inventory/_components/countEntry/CountList";
 import { Button } from "@/style/components/button";
 import { ChevronLeft } from "lucide-react";
-import { inventoryCapabilities } from "@/app/inventory/inventoryCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 
 type Params = { productId: string };
-
-const { can } = inventoryCapabilities;
 
 export default function CountEntryPage({ params }: { params: Promise<Params> }) {
   return (

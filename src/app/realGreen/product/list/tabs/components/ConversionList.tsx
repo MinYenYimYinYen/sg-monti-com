@@ -19,9 +19,7 @@ import {
 } from "@/style/components/table";
 import { useSelector } from "react-redux";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { productCapabilities } from "@/app/realGreen/product/productCapabilities";
-
-const { can } = productCapabilities;
+import { can } from "@/permission/can";
 
 interface ConversionListProps {
   conversions: UnitConversion[];

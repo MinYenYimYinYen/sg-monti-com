@@ -5,9 +5,7 @@ import { previewBatch, previewPost } from "@/app/qbo/importCCTxn/_lib/importPost
 import { postRows } from "@/app/qbo/importCCTxn/_lib/importPostServer";
 import { reconcileRow } from "@/app/qbo/importCCTxn/_lib/importReconcileServer";
 import { getImportingUserName } from "@/app/qbo/importCCTxn/_lib/importRowAccessServer";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
-
-const { can } = importCCTxnCapabilities;
+import { can } from "@/permission/can";
 
 /**
  * One request posts at most 300 rows (10 batches). A batch that does not fully post stops the
@@ -21,26 +19,26 @@ export const maxDuration = 300;
 // copying what the import or mapping capabilities hold.
 const handlers: HandlerMap<ImportPostContract> = {
   previewPost: {
-    capability: can.expensePostings.read,
+    capability: can.ccExpensePlans.read,
     handler: async ({ rowId }) => {
       return { success: true, payload: await previewPost({ rowId }) };
     },
   },
   previewBatch: {
-    capability: can.expensePostings.read,
+    capability: can.ccExpensePlans.read,
     handler: async ({ startDate, endDate }) => {
       return { success: true, payload: await previewBatch({ startDate, endDate }) };
     },
   },
   postRows: {
-    capability: can.expensePostings.write,
+    capability: can.qboExpensePostings.write,
     handler: async ({ rowIds }) => {
       const postedByUserName = await getImportingUserName();
       return { success: true, payload: await postRows({ rowIds, postedByUserName }) };
     },
   },
   reconcileRow: {
-    capability: can.expensePostings.write,
+    capability: can.qboExpensePostings.write,
     handler: async ({ rowId }) => {
       const postedByUserName = await getImportingUserName();
       return { success: true, payload: await reconcileRow({ rowId, postedByUserName }) };

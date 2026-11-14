@@ -3,13 +3,11 @@ import { createQboRpcHandler } from "@/app/qbo/_lib/api/createQboRpcHandler";
 import { QboVendorContract } from "@/app/qbo/vendor/api/QboVendorContract";
 import { loadQboVendors } from "@/app/qbo/vendor/_lib/qboVendorServer";
 import { createQboVendor } from "@/app/qbo/vendor/_lib/qboVendorCreateServer";
-import { quickbooksCapabilities } from "@/app/qbo/quickbooksCapabilities";
-
-const { can } = quickbooksCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<QboVendorContract> = {
   getAll: {
-    capability: can.vendors.read,
+    capability: can.qboVendors.read,
     handler: async () => {
       return { success: true, payload: await loadQboVendors() };
     },
@@ -18,7 +16,7 @@ const handlers: HandlerMap<QboVendorContract> = {
   // Writing to the real books was admin only (decided with the user), so vendors.write is its own
   // capability. Assign it deliberately, never by copying what a read-only bundle holds.
   createVendor: {
-    capability: can.vendors.write,
+    capability: can.qboVendors.write,
     handler: async ({ displayName }) => {
       return { success: true, payload: await createQboVendor({ displayName }) };
     },

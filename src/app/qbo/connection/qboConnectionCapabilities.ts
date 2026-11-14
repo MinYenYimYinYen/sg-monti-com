@@ -13,15 +13,10 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 //   deletes the stored tokens, which stops every QuickBooks screen until someone with a
 //   QuickBooks admin login connects again. It has its own capability so it can be assigned apart
 //   from connecting, and it is never part of a read-only bundle. Admin only before the migration.
-//
-// requires: revoking is only offered on the connection page, which loads the status first.
 export const qboConnectionCapabilities = createFeatureCapabilities({
   key: "qboConnection",
   resources: {
     connection: { shape: "singleton", verbs: ["read", "write"] },
     connectionRevocation: { shape: "singleton", verbs: ["write"] },
-  },
-  requires: {
-    "connectionRevocation.write": ["qboConnection.connection.read"],
   },
 });

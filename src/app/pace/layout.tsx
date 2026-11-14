@@ -18,11 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
-import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
-import { assignmentGroupCapabilities } from "@/app/assignmentGroup/assignmentGroupCapabilities";
-import { employeeAvailabilityCapabilities } from "@/app/employeeAvailability/employeeAvailabilityCapabilities";
-import { holidayCapabilities } from "@/app/holiday/holidayCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
@@ -46,8 +42,6 @@ const selectMainDate = (state: AppState): string => state.pace.mainDate;
 // Layout
 // ---------------------------------------------------------------------------
 
-const { can } = paceCapabilities;
-
 /**
  * The scenario read is the gate for the whole shell: the header selector, the engine and every
  * tab depend on the scenarios. The Season Plan tab adds its own read on top (see its page).
@@ -67,12 +61,12 @@ function PaceShell({ children }: { children: React.ReactNode }) {
   // engine uses never fires a request that would be refused.
   usePaceDeps({
     canLoad: {
-      assignmentGroups: allows(assignmentGroupCapabilities.can.assignmentGroups.read),
+      assignmentGroups: allows(can.assignmentGroups.read),
       groupSequences: allows(can.groupSequences.read),
       seasonPlans: allows(can.seasonPlans.read),
-      holidays: allows(holidayCapabilities.can.holidays.read),
-      availability: allows(employeeAvailabilityCapabilities.can.availabilityConstraints.read),
-      assignments: allows(assignmentCapabilities.can.serviceAssignments.read),
+      holidays: allows(can.holidays.read),
+      availability: allows(can.availabilityConstraints.read),
+      assignments: allows(can.serviceAssignments.read),
     },
   });
   const dispatch = useAppDispatch();

@@ -38,9 +38,7 @@ import {PDFNumber} from "@/lib/pdf/_components/PDFNumber";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
-import { schedulingCapabilities } from "@/app/scheduling/schedulingCapabilities";
-
-const { can } = schedulingCapabilities;
+import { can } from "@/permission/can";
 
 export type RouteDatePageProps = {
   params: Promise<{

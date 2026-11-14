@@ -7,8 +7,7 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 //
 // Read only: the contract has no write, and this app never changes RealGreen's condition codes.
 // There is no screen of its own. The cover sheets load the codes to explain a service's condition
-// (through `serviceCondition`), so they list this read in their own `requires` (deferred, see the
-// record).
+// (through `serviceCondition`).
 export const conditionCodeCapabilities = createFeatureCapabilities({
   key: "conditionCode",
   resources: {

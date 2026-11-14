@@ -8,9 +8,8 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 // settings.write -> globalSettings updateSettings
 //
 // getSettings was open to admin, office and tech, and nearly every screen loads it for the current
-// season. Reading it is therefore a dependency of most screens' capability sets, and those screens'
-// `requires` entries are added as their folders migrate (see the deferred table). Without `read`
-// the load is refused and the store keeps its empty state, so those screens see no season.
+// season. Without `read` the load is refused and the store keeps its empty state, so those screens
+// see no season.
 export const globalSettingsCapabilities = createFeatureCapabilities({
   key: "globalSettings",
   resources: {

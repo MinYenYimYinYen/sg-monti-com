@@ -2,7 +2,7 @@
 
 import { importFormats } from "@/app/qbo/importCCTxn/_lib/importFormatRegistry";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { FormatAccountEditor } from "@/app/qbo/importCCTxn/_components/FormatAccountEditor";
 import { SkippedMerchantsCard } from "@/app/qbo/importCCTxn/_components/SkippedMerchantsCard";
 
@@ -10,7 +10,7 @@ import { SkippedMerchantsCard } from "@/app/qbo/importCCTxn/_components/SkippedM
 // merchants card below reads the skip rules the layout already loads.
 export function SettingsPanel() {
   return (
-    <GatedPanel requirement={importCCTxnCapabilities.can.formatAccounts.read}>
+    <GatedPanel requirement={can.ccFormatAccounts.read}>
       <SettingsWorkspace />
     </GatedPanel>
   );

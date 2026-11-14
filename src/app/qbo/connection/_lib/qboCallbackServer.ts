@@ -13,7 +13,7 @@ import { exchangeCodeForTokens } from "@/app/qbo/_lib/auth/qboOAuthServer";
 import { evaluateOAuthState, isValidRealmId } from "@/app/qbo/_lib/auth/qboOAuthUtils";
 import { capabilityLoaders } from "@/app/permission/_lib/capabilityLoaders";
 import { evaluateCapability } from "@/permission/evaluateCapability";
-import { qboConnectionCapabilities } from "@/app/qbo/connection/qboConnectionCapabilities";
+import { can } from "@/permission/can";
 
 type CallbackParams = {
   code: string | null;
@@ -68,7 +68,7 @@ export async function handleOAuthCallback(params: CallbackParams): Promise<QboCa
     // Not an RPC, so there is no cookie to verify: the stored state names the user, and the same
     // decision an RPC op makes is evaluated for them (superuser confirmed against the document).
     const decision = await evaluateCapability({
-      required: qboConnectionCapabilities.can.connection.write,
+      required: can.qboConnection.write,
       identity: { userName: user.userName, isSuperUser: user.isSuperUser },
       loaders: capabilityLoaders,
     });

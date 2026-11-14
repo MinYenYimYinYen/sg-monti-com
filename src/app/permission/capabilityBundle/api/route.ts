@@ -4,15 +4,13 @@ import { CapabilityBundleContract } from "@/app/permission/capabilityBundle/api/
 import { CapabilityBundleModel } from "@/app/permission/capabilityBundle/CapabilityBundleModel";
 import { UserCapabilitiesModel } from "@/app/permission/userCapabilities/UserCapabilitiesModel";
 import { UserCapabilitiesDoc } from "@/app/permission/userCapabilities/UserCapabilitiesTypes";
-import { capabilityManagementCapabilities } from "@/app/permission/capabilityManagementCapabilities";
+import { can } from "@/permission/can";
 import { assertText } from "@/app/permission/_lib/assertText";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { AppError } from "@/lib/errors/AppError";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
 import { saveBundle } from "@/permission/logic/bundleLogic";
-
-const { can } = capabilityManagementCapabilities;
 
 function validationError(message: string): AppError {
   return new AppError({ message, type: "VALIDATION_ERROR", statusCode: 400 });

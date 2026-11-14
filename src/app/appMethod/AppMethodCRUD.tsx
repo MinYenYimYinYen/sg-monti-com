@@ -19,10 +19,8 @@ import { appMethodSelect } from "./appMethodSelect";
 import { useAppMethod } from "./useAppMethod";
 import { AppMethodCreate } from "./appMethodCreate/AppMethodCreate";
 import { useFormFieldValues } from "@/app/appMethod/appMethodCreate/useFormFieldValues";
-import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-
-const { can } = appMethodCapabilities;
 
 export function AppMethodCRUD() {
   return (

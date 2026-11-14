@@ -3,10 +3,8 @@ import { useViewport } from "@/lib/hooks/useViewport";
 import { useSelector } from "react-redux";
 import { useCSV } from "@/app/csv/_lib/useCSV";
 import { CSVDropzone } from "@/components/dropZone/dropZone";
-import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = assignmentCapabilities;
 
 export function UnservDropZone() {
   const { isNarrow } = useViewport();

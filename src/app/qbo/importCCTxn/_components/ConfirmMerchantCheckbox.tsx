@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/style/components/checkbox";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
+import { can } from "@/permission/can";
 import { importCCTxnMappingSelect } from "@/app/qbo/importCCTxn/importCCTxnMappingSelect";
 import { importConfirmSelect } from "@/app/qbo/importCCTxn/importConfirmSelect";
 import { useImportCCTxnMapping } from "@/app/qbo/importCCTxn/useImportCCTxnMapping";
@@ -27,7 +27,7 @@ export function ConfirmMerchantCheckbox({
   const mapping = useSelector(importCCTxnMappingSelect.merchantMappingMap).get(merchantKey);
   const confirmedKeys = useSelector(importConfirmSelect.confirmedKeys);
   const canConfirm = useSelector(userCapabilitiesSelect.allows)(
-    importCCTxnCapabilities.can.merchantMappings.write,
+    can.ccMerchantMappings.write,
   );
   const { confirmMerchant } = useImportCCTxnMapping({ autoLoad: false });
 

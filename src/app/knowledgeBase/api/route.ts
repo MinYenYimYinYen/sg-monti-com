@@ -4,12 +4,10 @@ import { TopicContract } from "@/app/knowledgeBase/api/TopicContract";
 import { TopicModel } from "@/app/knowledgeBase/TopicModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { knowledgeBaseCapabilities } from "@/app/knowledgeBase/knowledgeBaseCapabilities";
-
-const { can } = knowledgeBaseCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<TopicContract> = {
   getAll: {
-    capability: can.topics.read,
+    capability: can.callTopics.read,
     handler: async () => {
       await connectToMongoDB();
       const docs = await TopicModel.find().lean();
@@ -18,7 +16,7 @@ const handlers: HandlerMap<TopicContract> = {
   },
 
   upsert: {
-    capability: can.topics.write,
+    capability: can.callTopics.write,
     handler: async (params) => {
       await connectToMongoDB();
       const { topicKey, ...rest } = params;
@@ -32,7 +30,7 @@ const handlers: HandlerMap<TopicContract> = {
   },
 
   remove: {
-    capability: can.topics.delete,
+    capability: can.callTopics.delete,
     handler: async ({ topicKey }) => {
       await connectToMongoDB();
       await TopicModel.deleteOne({ topicKey });

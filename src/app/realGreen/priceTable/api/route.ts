@@ -6,9 +6,7 @@ import {
   fetchRGPriceTableDocs,
 } from "@/app/realGreen/priceTable/_lib/priceTableServerFunc";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { priceTableCapabilities } from "@/app/realGreen/priceTable/priceTableCapabilities";
-
-const { can } = priceTableCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<PriceTableContract> = {
   getPriceTableDocs: {
     capability: can.priceTables.read,

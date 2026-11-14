@@ -14,9 +14,7 @@ import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { MultiSelectValue } from "@/components/multiselect/MultiSelectValue";
 import { Toggle } from "@/style/components/toggle";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { callAheadCapabilities } from "@/app/realGreen/callAhead/callAheadCapabilities";
-
-const { can } = callAheadCapabilities;
+import { can } from "@/permission/can";
 
 const notificationTypeLabels: Record<NotificationType, string> = {
   [NotificationType.Text]: "Text",

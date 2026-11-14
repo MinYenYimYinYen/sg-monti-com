@@ -4,9 +4,7 @@ import { SyncMetadataContract } from "@/app/realGreen/syncMetadata/api/SyncMetad
 import { SyncMetadataModel } from "@/app/realGreen/syncMetadata/SyncMetadataModel";
 import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { syncMetadataCapabilities } from "@/app/realGreen/syncMetadata/syncMetadataCapabilities";
-
-const { can } = syncMetadataCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<SyncMetadataContract> = {
   getAll: {
     capability: can.lastSyncTimes.read,

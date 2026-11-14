@@ -4,13 +4,9 @@ import { useSelector } from "react-redux";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
 import { useImportCCTxnDeps } from "@/app/qbo/importCCTxn/useImportCCTxnDeps";
-import { quickbooksCapabilities } from "@/app/qbo/quickbooksCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { importCCTxnCapabilities } from "@/app/qbo/importCCTxn/importCCTxnCapabilities";
-
-const { can } = quickbooksCapabilities;
-const { can: importCan } = importCCTxnCapabilities;
 
 const TABS: readonly TabNavItem[] = [
   { label: "Import", href: "/qbo/importCCTxn" },
@@ -25,7 +21,7 @@ const TABS: readonly TabNavItem[] = [
  */
 export default function ImportCCTxnLayout({ children }: { children: React.ReactNode }) {
   return (
-    <GatedPanel requirement={importCan.importRows.read}>
+    <GatedPanel requirement={can.ccImportRows.read}>
       <ImportCCTxnShell>{children}</ImportCCTxnShell>
     </GatedPanel>
   );
@@ -36,15 +32,15 @@ function ImportCCTxnShell({ children }: { children: React.ReactNode }) {
   const allows = useSelector(userCapabilitiesSelect.allows);
   useImportCCTxnDeps({
     canLoad: {
-      qboAccounts: allows(can.accounts.read),
-      qboVendors: allows(can.vendors.read),
-      qboCustomers: allows(can.customers.read),
-      qboEmployees: allows(can.employees.read),
-      formatAccounts: allows(importCan.formatAccounts.read),
-      cardAssignments: allows(importCan.cardAssignments.read),
-      merchantMappings: allows(importCan.merchantMappings.read),
-      skipRules: allows(importCan.skipRules.read),
-      importRows: allows(importCan.importRows.read),
+      qboAccounts: allows(can.qboAccounts.read),
+      qboVendors: allows(can.qboVendors.read),
+      qboCustomers: allows(can.qboCustomers.read),
+      qboEmployees: allows(can.qboEmployees.read),
+      formatAccounts: allows(can.ccFormatAccounts.read),
+      cardAssignments: allows(can.ccCardAssignments.read),
+      merchantMappings: allows(can.ccMerchantMappings.read),
+      skipRules: allows(can.ccSkipRules.read),
+      importRows: allows(can.ccImportRows.read),
     },
   });
 

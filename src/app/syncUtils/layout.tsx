@@ -4,9 +4,7 @@ import { Database, Phone } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { syncUtilsCapabilities } from "@/app/syncUtils/syncUtilsCapabilities";
-
-const { can } = syncUtilsCapabilities;
+import { can } from "@/permission/can";
 
 const TABS: readonly TabNavItem[] = [
   { label: "Customers", href: "/syncUtils/customers", icon: Database },

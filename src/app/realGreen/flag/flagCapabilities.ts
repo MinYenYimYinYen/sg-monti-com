@@ -9,8 +9,7 @@ import { createFeatureCapabilities } from "@/permission/PermissionTypes";
 // Read only: the contract has no write, and this app never changes RealGreen's flag definitions
 // (assigning a flag to a customer is `custFlag.flagAssignments`). The flag list page shows the
 // flags, and many other screens load them to show a flag's description instead of its id (the nav
-// bar filter, cover sheets, prepay letters, price increase, sanity, global settings). Those
-// screens list this read in their own `requires` (deferred, see the record).
+// bar filter, cover sheets, prepay letters, price increase, sanity, global settings).
 export const flagCapabilities = createFeatureCapabilities({
   key: "flag",
   resources: {

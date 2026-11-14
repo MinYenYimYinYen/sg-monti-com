@@ -2,19 +2,17 @@
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { javelinCapabilities } from "@/app/javelin/javelinCapabilities";
+import { can } from "@/permission/can";
 import { Button } from "@/style/components/button";
 import { ckDepositSelect } from "@/app/javelin/ckDepositSelect";
 import { ckDepositActions } from "@/app/javelin/ckDepositSlice";
 import { useJavelin } from "@/app/javelin/useJavelin";
 import { PostConfirmDialog } from "@/app/javelin/_lib/components/PostConfirmDialog";
 
-const { can } = javelinCapabilities;
-
 /** Check entries asks the server what each deposit would do. Posting needs its own capability. */
 export function CkDepositHeader() {
   const dispatch = useAppDispatch();
-  const canPost = useSelector(userCapabilitiesSelect.allows)(can.journalEntryPostings.write);
+  const canPost = useSelector(userCapabilitiesSelect.allows)(can.qboJournalEntries.write);
   const summary = useSelector(ckDepositSelect.summary);
   const confirmedDocNumbers = useSelector(ckDepositSelect.confirmedDocNumbers);
   const postable = useSelector(ckDepositSelect.postable);

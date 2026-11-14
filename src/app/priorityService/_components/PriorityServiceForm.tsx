@@ -34,11 +34,8 @@ import { getServiceStatuses } from "@/app/realGreen/_lib/subTypes/serviceStatus"
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { CustomerQueryBuilder } from "@/app/realGreen/customer/mirror/CustomerQueryBuilder";
 import { AppState } from "@/store";
-import { priorityServiceCapabilities } from "@/app/priorityService/priorityServiceCapabilities";
-import { globalSettingsCapabilities } from "@/app/globalSettings/globalSettingsCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = priorityServiceCapabilities;
 
 const ELIGIBLE_STATUSES = getServiceStatuses(["active", "asap", "printed"]);
 
@@ -55,7 +52,7 @@ export function PriorityServiceForm({
   const allows = useSelector(userCapabilitiesSelect.allows);
   const canWrite = allows(can.priorityServices.write);
   const canDelete = allows(can.priorityServices.delete);
-  useGlobalSettings({ autoLoad: true, canLoad: allows(globalSettingsCapabilities.can.settings.read) });
+  useGlobalSettings({ autoLoad: true, canLoad: allows(can.globalSettings.read) });
 
   const season = useSelector(globalSettingsSelect.season);
 

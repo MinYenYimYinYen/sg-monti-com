@@ -4,9 +4,7 @@ import { PriceIncreaseSettingsContract } from "@/app/priceIncrease/settings/api/
 import { PriceIncreaseSettingsModel } from "@/app/priceIncrease/settings/PriceIncreaseSettingsModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
-
-const { can } = priceIncreaseCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<PriceIncreaseSettingsContract> = {
   getAll: {

@@ -1,12 +1,12 @@
 "use client";
 
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { prepayLettersCapabilities } from "../prepayLettersCapabilities";
+import { can } from "@/permission/can";
 import { UpsellPrioritiesPage } from "./_components/UpsellPrioritiesPage";
 
 export default function UpsellPrioritiesRoutePage() {
   return (
-    <GatedPanel requirement={prepayLettersCapabilities.can.upsellPriorities.read}>
+    <GatedPanel requirement={can.upsellPriorities.read}>
       <UpsellPrioritiesPage />
     </GatedPanel>
   );

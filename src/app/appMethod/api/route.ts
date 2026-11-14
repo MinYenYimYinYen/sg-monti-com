@@ -8,9 +8,7 @@ import { AppMethodModel } from "@/app/appMethod/AppMethodModel";
 import { EquipmentModel } from "@/app/equipment/EquipmentModel";
 import { AppMethodDoc } from "@/app/appMethod/AppMethodTypes";
 import { EquipmentDoc } from "@/app/equipment/EquipmentTypes";
-import { appMethodCapabilities } from "@/app/appMethod/appMethodCapabilities";
-
-const { can } = appMethodCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<AppMethodContract> = {
   getAll: {

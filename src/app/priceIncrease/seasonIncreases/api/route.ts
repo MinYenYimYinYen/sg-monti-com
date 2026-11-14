@@ -4,9 +4,7 @@ import { SeasonIncreasesContract } from "@/app/priceIncrease/seasonIncreases/api
 import { SeasonIncreasesModel } from "@/app/priceIncrease/seasonIncreases/SeasonIncreasesModel";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { priceIncreaseCapabilities } from "@/app/priceIncrease/priceIncreaseCapabilities";
-
-const { can } = priceIncreaseCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<SeasonIncreasesContract> = {
   getAll: {

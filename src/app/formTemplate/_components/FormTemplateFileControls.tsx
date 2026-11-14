@@ -8,7 +8,7 @@ import { formTemplateActions } from "../formTemplateSlice";
 import { makeNewTemplate } from "../formTemplateFactory";
 import { useFormTemplate } from "../useFormTemplate";
 import { authSelect } from "@/app/auth/authSlice";
-import { formTemplateCapabilities } from "../formTemplateCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { FormTemplateOpenSheet } from "./FormTemplateOpenSheet";
 import { EntityFileControls } from "@/components/EntityFileControls/EntityFileControls";
@@ -22,8 +22,6 @@ import {
   DialogTitle,
 } from "@/style/components/dialog";
 import { Button } from "@/style/components/button";
-
-const { can } = formTemplateCapabilities;
 
 type FormTemplateFileControlsProps = {
   /** Data type used for New. Injected so this module never imports the registry. */

@@ -6,7 +6,7 @@ import { seasonPlanPageSelect } from "@/app/pace/seasonPlan/seasonPlanPageSelect
 import { usePaceSeasonPlan } from "@/app/pace/seasonPlan/useSeasonPlan";
 import { SeasonPlan } from "@/app/pace/seasonPlan/SeasonPlanTypes";
 import { Plus, Trash2, Check, Copy } from "lucide-react";
-import { paceCapabilities } from "@/app/pace/paceCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { SeasonPlanForm } from "@/app/pace/seasonPlan/_components/SeasonPlanForm";
@@ -17,8 +17,6 @@ import {
   fmtDate,
   nowISO,
 } from "@/app/pace/seasonPlan/_components/seasonPlanHelpers";
-
-const { can } = paceCapabilities;
 
 export function SeasonPlanPage() {
   return (

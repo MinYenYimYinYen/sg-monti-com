@@ -8,9 +8,7 @@ import {
 } from "@/lib/mongoose/cleanMongoObj";
 import { InventoryCheckDoc } from "@/app/inventory/InventoryTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { inventoryCapabilities } from "@/app/inventory/inventoryCapabilities";
-
-const { can } = inventoryCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<InventoryContract> = {
   getInventoryChecks: {

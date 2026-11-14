@@ -7,9 +7,7 @@ import {
   remapFlags,
 } from "@/app/realGreen/flag/_lib/flagServerFunc";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
-import { flagCapabilities } from "@/app/realGreen/flag/flagCapabilities";
-
-const { can } = flagCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<FlagContract> = {
   getAll: {
     capability: can.flags.read,

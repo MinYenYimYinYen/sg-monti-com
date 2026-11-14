@@ -5,9 +5,7 @@ import { EmployeeAvailabilityModel } from "@/app/employeeAvailability/EmployeeAv
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import { EmployeeAvailability } from "@/app/employeeAvailability/EmployeeAvailabilityTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
-import { employeeAvailabilityCapabilities } from "@/app/employeeAvailability/employeeAvailabilityCapabilities";
-
-const { can } = employeeAvailabilityCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<EmployeeAvailabilityContract> = {
   getAll: {
     capability: can.availabilityConstraints.read,

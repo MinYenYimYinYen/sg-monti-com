@@ -6,9 +6,7 @@ import { cleanMongoArray } from "@/lib/mongoose/cleanMongoObj";
 import { Punch } from "@/app/timeCard/TimeCardTypes";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { WriteError } from "mongodb";
-import { timeCardCapabilities } from "@/app/timeCard/timeCardCapabilities";
-
-const { can } = timeCardCapabilities;
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<TimeCardContract> = {
   importPunches: {

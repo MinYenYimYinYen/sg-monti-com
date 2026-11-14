@@ -1,5 +1,5 @@
 import type { Capability } from "@/permission/PermissionTypes";
-import { VERB_COMPANIONS, type CapabilityRegistry } from "@/permission/buildRegistry";
+import { VERB_COMPANIONS, type CapabilityRegistry } from "@/permission/registryTypes";
 import { canAssign } from "@/permission/logic/assignmentGuards";
 
 // The admin screens show capabilities as a table: one row per registry group, one column per verb,
@@ -9,12 +9,12 @@ import { canAssign } from "@/permission/logic/assignmentGuards";
 export type MatrixRegistry = Pick<CapabilityRegistry, "byGroup" | "describe" | "has">;
 
 /** Columns come out in this order. A verb not listed here goes after these, alphabetically. */
-const VERB_ORDER = ["read", "write", "delete", "readAny", "writeAny", "deleteAny"];
+const VERB_ORDER = ["read", "write", "delete"];
 
 export type MatrixMember = {
   capability: Capability;
-  featureKey: string;
   resourceKey: string;
+  resourceName: string;
   source?: string;
   verb: string;
 };
@@ -39,20 +39,19 @@ export function cellKey({ rowKey, verb }: { rowKey: string; verb: string }): str
   return `${rowKey}|${verb}`;
 }
 
-export type MemberSummary = { featureKey: string; resource: string; verbs: string[] };
+export type MemberSummary = { resourceKey: string; resource: string; verbs: string[] };
 
-/**
- * A row's members for the info popover: one line per feature resource with its verbs, so a group
- * with several features shows which feature each part comes from.
- */
+/** A row's members for the info popover: one line per resource with its verbs. */
 export function summarizeMembers({ row }: { row: Pick<MatrixRow, "members"> }): MemberSummary[] {
   const summaries = new Map<string, MemberSummary>();
   for (const member of row.members) {
-    const resource = resourceLabel(member);
-    const key = `${member.featureKey}|${resource}`;
-    const summary = summaries.get(key) ?? { featureKey: member.featureKey, resource, verbs: [] };
+    const summary = summaries.get(member.resourceKey) ?? {
+      resourceKey: member.resourceKey,
+      resource: resourceLabel(member),
+      verbs: [],
+    };
     summary.verbs.push(member.verb);
-    summaries.set(key, summary);
+    summaries.set(member.resourceKey, summary);
   }
   return [...summaries.values()];
 }
@@ -62,8 +61,8 @@ function verbRank(verb: string): number {
   return index === -1 ? VERB_ORDER.length : index;
 }
 
-function resourceLabel(member: Pick<MatrixMember, "resourceKey" | "source">): string {
-  return member.source ? `${member.resourceKey} (${member.source})` : member.resourceKey;
+function resourceLabel(member: Pick<MatrixMember, "resourceName" | "source">): string {
+  return member.source ? `${member.resourceName} (${member.source})` : member.resourceName;
 }
 
 /**
@@ -81,8 +80,8 @@ export function buildMatrix({ registry }: { registry: MatrixRegistry }): Matrix 
       if (!description) continue;
       members.push({
         capability,
-        featureKey: description.featureKey,
         resourceKey: description.resourceKey,
+        resourceName: description.resourceName,
         ...(description.source ? { source: description.source } : {}),
         verb: description.verb,
       });
@@ -116,7 +115,7 @@ export function buildMatrix({ registry }: { registry: MatrixRegistry }): Matrix 
 // ---------- verb companions ----------
 // Holding write is of little use without read, so ticking a cell also takes the companions of
 // each member, and clearing one takes whatever depends on it. Only the built-in verb companions
-// count. A feature's declared `requires` is deliberately not expanded here.
+// count, and only within one resource.
 
 type KnownCapabilities = Pick<CapabilityRegistry, "has">;
 
@@ -266,7 +265,7 @@ export type UsageFilter = "all" | "unused" | "used";
 
 /**
  * Whether a row shows for the text and the used/unused toggle. The text matches the row's name,
- * its description and its members' feature and resource keys, so a search for a feature finds
+ * its description and its members' resource keys and names, so a search for a resource finds
  * the group it sits in. `held` is what the editor shows as held: a bundle's draft, or a user's
  * effective capabilities.
  */
@@ -288,7 +287,7 @@ export function matchesRowFilter({
   const haystack = [
     row.name,
     row.description ?? "",
-    ...row.members.flatMap((member) => [member.featureKey, member.resourceKey]),
+    ...row.members.flatMap((member) => [member.resourceKey, member.resourceName]),
   ]
     .join(" ")
     .toLowerCase();

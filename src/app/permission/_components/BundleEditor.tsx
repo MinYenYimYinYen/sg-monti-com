@@ -20,9 +20,7 @@ import {
   toggleDraftCapability,
 } from "@/permission/logic/bundleDraft";
 import { cellChange } from "@/permission/logic/capabilityMatrix";
-import { findMissingRequirements } from "@/permission/logic/requirementLogic";
 import { bundleRegistryDiff } from "@/permission/logic/capabilitySelectorLogic";
-import { capabilityLabel } from "@/permission/logic/capabilityLabels";
 import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
@@ -60,12 +58,6 @@ export function BundleEditor({ bundleKey, onDoneAction }: BundleEditorProps) {
   const keyTaken = isNew && !!bundlesByKey[draft.bundleKey];
   const holders = holdersByBundleKey[bundleKey] ?? [];
   const diff = stored ? bundleRegistryDiff({ bundle: stored, registry: capabilityRegistry }) : null;
-  // Warn-only: a bundle can deliberately omit something a capability needs, for example when a
-  // user holds the other part separately. Nothing is added or blocked.
-  const unmetRequirements = findMissingRequirements({
-    capabilities: draft.capabilities,
-    registry: capabilityRegistry,
-  });
 
   const canSave = result.ok && draft.name.trim() !== "" && changed && !keyTaken;
 
@@ -145,20 +137,6 @@ export function BundleEditor({ bundleKey, onDoneAction }: BundleEditorProps) {
                   </Button>
                 </li>
               ))}
-          </ul>
-        </Notice>
-      )}
-      {unmetRequirements.length > 0 && (
-        <Notice>
-          Hints only (nothing is blocked or added automatically). Ticking a cell does not add what a capability
-          needs, so these are missing from the bundle now:
-          <ul className="mt-1 list-disc pl-5">
-            {unmetRequirements.map((unmet) => (
-              <li key={`${unmet.capability}|${unmet.missing}`}>
-                {capabilityLabel({ capability: unmet.capability, registry: capabilityRegistry })} needs{" "}
-                {capabilityLabel({ capability: unmet.missing, registry: capabilityRegistry })}.
-              </li>
-            ))}
           </ul>
         </Notice>
       )}

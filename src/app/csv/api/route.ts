@@ -2,7 +2,7 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { CSVContract } from "@/app/csv/api/csvContract";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
-import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities";
+import { can } from "@/permission/can";
 
 // The saveAssignments operation has been moved to assignment/api/route.ts.
 // This file is kept as a placeholder for other CSV operations (deposits, general ledger).
@@ -10,7 +10,6 @@ import { assignmentCapabilities } from "@/app/assignment/assignmentCapabilities"
 
 // This stub stores nothing and no screen calls it. It asks for the capability of the real op it
 // stood in for, so it can never be reached by someone the real op would refuse.
-const { can } = assignmentCapabilities;
 const handlers: HandlerMap<CSVContract> = {
   saveAssignments: {
     capability: can.serviceAssignments.write,

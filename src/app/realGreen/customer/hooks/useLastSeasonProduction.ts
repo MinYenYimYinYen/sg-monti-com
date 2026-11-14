@@ -64,10 +64,8 @@ export function useLastSeasonProduction({
 
     if (PIPELINE.lastSeasonProduction === "mirror") {
       const plan = buildLastSeasonProductionPlan(season);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(lastSeasonProductionGetDocs({ params: { plan } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(lastSeasonProductionGetDocs({ params: { schemeName: "lastSeasonProduction", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     }
   }, [autoLoad, canLoad, dispatch, season]);
@@ -77,10 +75,8 @@ export function useLastSeasonProduction({
 
     if (PIPELINE.lastSeasonProduction === "mirror") {
       const plan = buildLastSeasonProductionPlan(season);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(lastSeasonProductionGetDocs({ params: { plan } as any, config: { force: true } as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(lastSeasonProductionGetDocs({ params: { schemeName: "lastSeasonProduction", season } as any, config: { force: true } as any }));
     }
   };

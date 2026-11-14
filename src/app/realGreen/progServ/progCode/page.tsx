@@ -10,10 +10,7 @@ import { ProgCodeListPanel } from "./_components/ProgCodeListPanel";
 import { ProgCodeEditPanel } from "./_components/ProgCodeEditPanel";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
-import { priceTableCapabilities } from "@/app/realGreen/priceTable/priceTableCapabilities";
-
-const { can } = progServCapabilities;
+import { can } from "@/permission/can";
 
 export default function ProgCodePage() {
   return (
@@ -35,7 +32,7 @@ function ProgCodes() {
   });
   usePriceTable({
     autoLoad: true,
-    canLoad: allows(priceTableCapabilities.can.priceTables.read),
+    canLoad: allows(can.priceTables.read),
   });
 
   const progCodes = useSelector(progServSelect.progCodes);

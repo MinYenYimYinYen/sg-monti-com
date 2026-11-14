@@ -31,9 +31,8 @@ export function MatrixRowHeader({ row }: { row: MatrixRow }) {
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Includes</h4>
             <ul className="mt-1 space-y-0.5">
               {members.map((member) => (
-                <li key={`${member.featureKey}|${member.resource}`} className="text-muted-foreground">
-                  <span className="text-foreground">{member.featureKey}</span> · {member.resource}:{" "}
-                  {member.verbs.join(", ")}
+                <li key={member.resourceKey} className="text-muted-foreground">
+                  <span className="text-foreground">{member.resource}</span>: {member.verbs.join(", ")}
                 </li>
               ))}
             </ul>

@@ -22,11 +22,9 @@ import { Holiday } from "@/app/holiday/holidayTypes";
 import { TRange } from "@/lib/primatives/tRange/TRange";
 import { cn } from "@/style/utils";
 import { format, parseISO } from "date-fns";
-import { holidayCapabilities } from "@/app/holiday/holidayCapabilities";
+import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-
-const { can } = holidayCapabilities;
 
 // ---------------------------------------------------------------------------
 // Helpers

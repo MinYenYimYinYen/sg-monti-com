@@ -6,9 +6,7 @@ import { ServCodeTab } from "./_components/ServCodeTab";
 import { useSelector } from "react-redux";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
-
-const { can } = progServCapabilities;
+import { can } from "@/permission/can";
 
 export default function ServCodePage() {
   return (

@@ -16,9 +16,7 @@ import { syncProgServ } from "@/app/realGreen/progServ/api/syncProgServ";
 import ServCodeDocPropsModel from "@/app/realGreen/progServ/_lib/models/ServCodeDocPropsModel";
 import { ProgCodeDocPropsModel } from "@/app/realGreen/progServ/_lib/models/ProgCodeDocPropsModel";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
-import { progServCapabilities } from "@/app/realGreen/progServ/progServCapabilities";
-
-const { can } = progServCapabilities;
+import { can } from "@/permission/can";
 const handlers: HandlerMap<ProgServContract> = {
   getProgCodes: {
     capability: can.progCodes.read,

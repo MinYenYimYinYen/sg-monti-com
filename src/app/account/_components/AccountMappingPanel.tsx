@@ -17,16 +17,13 @@ import {
 } from "@/style/components/table";
 import { AccountMappingRow } from "@/app/account/_components/AccountMappingRow";
 import { DepositMappingSections } from "@/app/javelin/depositMapping/_components/DepositMappingSections";
-import { depositMappingCapabilities } from "@/app/javelin/depositMapping/depositMappingCapabilities";
-import { quickbooksCapabilities } from "@/app/qbo/quickbooksCapabilities";
-import { rgAccountCapabilities } from "@/app/realGreen/rgAccount/rgAccountCapabilities";
+import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import {
   AccountLinkFilter,
   countLinksByFilter,
   filterRgAccountLinks,
 } from "@/app/account/_lib/accountMappingView";
-import { accountCapabilities } from "@/app/account/accountCapabilities";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 
 const filterLabels: Record<AccountLinkFilter, string> = {
@@ -36,7 +33,6 @@ const filterLabels: Record<AccountLinkFilter, string> = {
 };
 
 const filterOrder: AccountLinkFilter[] = ["all", "unmapped", "attention"];
-const { can } = accountCapabilities;
 export function AccountMappingPanel() {
   return (
     <GatedPanel requirement={can.accountMappings.read}>
@@ -52,11 +48,11 @@ function AccountMappingEditor() {
   useAccount({
     autoLoad: true,
     canLoad: {
-      depositLinks: allows(depositMappingCapabilities.can.depositFieldLinks.read),
-      qboAccounts: allows(quickbooksCapabilities.can.accounts.read),
-      qboCustomers: allows(quickbooksCapabilities.can.customers.read),
-      qboVendors: allows(quickbooksCapabilities.can.vendors.read),
-      rgAccounts: allows(rgAccountCapabilities.can.rgAccounts.read),
+      depositLinks: allows(can.depositFieldLinks.read),
+      qboAccounts: allows(can.qboAccounts.read),
+      qboCustomers: allows(can.qboCustomers.read),
+      qboVendors: allows(can.qboVendors.read),
+      rgAccounts: allows(can.rgAccounts.read),
     },
   });
   const rgAccountLinks = useSelector(accountSelect.rgAccountLinks);

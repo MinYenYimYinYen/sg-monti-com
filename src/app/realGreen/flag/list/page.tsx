@@ -7,11 +7,11 @@ import EntitySelector from "@/components/EntitySelector";
 import { useSelector } from "react-redux";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { flagCapabilities } from "@/app/realGreen/flag/flagCapabilities";
+import { can } from "@/permission/can";
 
 export default function ListFlags() {
   return (
-    <GatedPanel requirement={flagCapabilities.can.flags.read}>
+    <GatedPanel requirement={can.flags.read}>
       <FlagList />
     </GatedPanel>
   );
