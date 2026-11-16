@@ -80,7 +80,7 @@ A CSR answers calls inside sgmonti.com. While the call runs, AI identifies the c
 
 #### Draft topic shape (not final)
 
-**Settled 2026-10-28, and now implemented** in `src/app/knowledgeBase/`. TopicDoc: `topicKey` (natural key), `name`, `description` (when it applies, used to classify), optional `signals` (string array), `guidance`, optional `avoid` (string array), plus `createdAt` and `updatedAt` (ISO strings, from `CreatedUpdated`). `escalateTo` was dropped. Claude gets the list of `topicKey` plus `description` on each request and never writes guidance itself. Open: how often to re-classify, and what to show on low confidence (leaning toward nothing over a wrong topic).
+**Settled 2026-10-28, and now implemented** in `src/app/knowledgeBase/`. TopicDoc: `topicKey` (natural key), `name`, `description` (when it applies, used to classify), optional `signals` (string array), plus `createdAt` and `updatedAt` (ISO strings, from `CreatedUpdated`). `guidance` and `avoid` were later removed from the topic: guidance now lives in separate documents tagged with topics (see `src/app/knowledgeBase/knowledgeBaseClaudePlan.md`). `escalateTo` was dropped. Claude gets the list of `topicKey` plus `description` on each request and never writes guidance itself. Open: how often to re-classify, and what to show on low confidence (leaning toward nothing over a wrong topic).
 
 #### App registration status
 
@@ -107,14 +107,14 @@ A CSR answers calls inside sgmonti.com. While the call runs, AI identifies the c
 
 Built with the `data-module` skill as its own module, separate from the call flow. Files in `src/app/knowledgeBase/`: `TopicTypes.ts`, `TopicModel.ts`, `api/TopicContract.ts`, `api/route.ts`, `topicSlice.ts`, `topicSelect.ts`, `useTopics.ts`. The reducer is registered as `topic` in `src/store/reducers/index.ts`.
 
-- **Operations:** `getAll`, `upsert` and `remove`, each gated by a capability (`callTopics.read`, `.write`, `.delete`), not by role. See `src/permission/permission.readme.md`.
-- **Selectors:** `docs`, `docsByKey`, and `classifierCandidates`, which exposes only `topicKey` and `description` so the classifier input cannot include guidance.
+- **Operations:** `getAll`, `upsert` and `remove`, each gated by a capability (`knowledgeTopics.read`, `.write`, `.delete`, in the `knowledgeBaseTopics` permission group), not by role. See `src/permission/permission.readme.md`.
+- **Selectors:** `docs`, `docsByKey`, and `classifierCandidates`, which exposes only `topicKey` and `description` so the classifier input never includes `signals`.
 - **Not built yet:**
   - Any UI, including the editor for writing topics and the CSR side panel.
   - The classification step (Claude call).
   - Seed topics.
   - Validation of `topicKey` format.
-- **Open:** who should be able to edit topics. That is now a choice of who is assigned `callTopics.write`.
+- **Open:** who should be able to edit topics. That is now a choice of who is assigned `knowledgeTopics.write`.
 - **Not yet verified:** the module has been linted but not run against Mongo or called from the browser.
 
 #### Status of the call-flow work (2026-10-28)

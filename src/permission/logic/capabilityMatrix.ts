@@ -22,12 +22,26 @@ export type MatrixMember = {
 /** The members of a row that have one verb. Ticking the cell grants all of them. */
 export type MatrixCell = { verb: string; capabilities: Capability[] };
 
+/**
+ * One resource inside a group row. Its cells use the same columns as the group's, and each holds
+ * only this resource's capability for the verb, so ticking one overrides that resource alone.
+ */
+export type MatrixResource = {
+  key: string;
+  name: string;
+  description?: string;
+  source?: string;
+  cells: (MatrixCell | null)[];
+};
+
 export type MatrixRow = {
   /** The registry group's key. */
   key: string;
   name: string;
   description?: string;
   members: MatrixMember[];
+  /** The group's resources that have something to grant, in registry order. */
+  resources: MatrixResource[];
   /** One entry per matrix column, null where this row has no capability with that verb. */
   cells: (MatrixCell | null)[];
 };
@@ -39,21 +53,12 @@ export function cellKey({ rowKey, verb }: { rowKey: string; verb: string }): str
   return `${rowKey}|${verb}`;
 }
 
-export type MemberSummary = { resourceKey: string; resource: string; verbs: string[] };
-
-/** A row's members for the info popover: one line per resource with its verbs. */
-export function summarizeMembers({ row }: { row: Pick<MatrixRow, "members"> }): MemberSummary[] {
-  const summaries = new Map<string, MemberSummary>();
-  for (const member of row.members) {
-    const summary = summaries.get(member.resourceKey) ?? {
-      resourceKey: member.resourceKey,
-      resource: resourceLabel(member),
-      verbs: [],
-    };
-    summary.verbs.push(member.verb);
-    summaries.set(member.resourceKey, summary);
-  }
-  return [...summaries.values()];
+/**
+ * The `rowKey` of a resource's cells. Prefixed with the group so it can never collide with a group
+ * row's key, even if a group and a resource were given the same key.
+ */
+export function resourceRowKey({ groupKey, resourceKey }: { groupKey: string; resourceKey: string }): string {
+  return `${groupKey}/${resourceKey}`;
 }
 
 function verbRank(verb: string): number {
@@ -61,8 +66,20 @@ function verbRank(verb: string): number {
   return index === -1 ? VERB_ORDER.length : index;
 }
 
-function resourceLabel(member: Pick<MatrixMember, "resourceName" | "source">): string {
-  return member.source ? `${member.resourceName} (${member.source})` : member.resourceName;
+/** One cell per column: the capabilities that have the column's verb, or null when there are none. */
+function cellsFor({
+  columns,
+  capabilities,
+  registry,
+}: {
+  columns: string[];
+  capabilities: readonly Capability[];
+  registry: MatrixRegistry;
+}): (MatrixCell | null)[] {
+  return columns.map((verb) => {
+    const matching = capabilities.filter((capability) => registry.describe(capability)?.verb === verb);
+    return matching.length > 0 ? { verb, capabilities: matching } : null;
+  });
 }
 
 /**
@@ -70,7 +87,7 @@ function resourceLabel(member: Pick<MatrixMember, "resourceName" | "source">): s
  * capability public) has no row.
  */
 export function buildMatrix({ registry }: { registry: MatrixRegistry }): Matrix {
-  const rowsWithoutCells: Omit<MatrixRow, "cells">[] = [];
+  const rowsWithoutCells: Omit<MatrixRow, "cells" | "resources">[] = [];
 
   for (const group of registry.byGroup) {
     const members: MatrixMember[] = [];
@@ -101,13 +118,26 @@ export function buildMatrix({ registry }: { registry: MatrixRegistry }): Matrix 
     (first, second) => verbRank(first) - verbRank(second) || first.localeCompare(second),
   );
 
-  const rows = rowsWithoutCells.map((row) => ({
-    ...row,
-    cells: columns.map((verb) => {
-      const capabilities = row.members.filter((member) => member.verb === verb).map((member) => member.capability);
-      return capabilities.length > 0 ? { verb, capabilities } : null;
-    }),
-  }));
+  const rows = rowsWithoutCells.map((row): MatrixRow => {
+    const group = registry.byGroup.find((registryGroup) => registryGroup.key === row.key);
+    const resources = (group?.resources ?? [])
+      .filter((resource) => resource.capabilities.length > 0)
+      .map(
+        (resource): MatrixResource => ({
+          key: resource.key,
+          name: resource.name,
+          ...(resource.description ? { description: resource.description } : {}),
+          ...(resource.source ? { source: resource.source } : {}),
+          cells: cellsFor({ columns, capabilities: resource.capabilities, registry }),
+        }),
+      );
+
+    return {
+      ...row,
+      resources,
+      cells: cellsFor({ columns, capabilities: row.members.map((member) => member.capability), registry }),
+    };
+  });
 
   return { columns, rows };
 }

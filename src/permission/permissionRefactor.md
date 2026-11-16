@@ -22,7 +22,7 @@ Replace per-module capability declarations (48 `*Capabilities.ts` files, each ca
 - **Tests:** Luke deleted every permission test after step 5. They are rewritten from the plan below, one file at a time. The old files (and their fixtures) are in git at commit `4cbeeda0` under `src/__tests__/permission/`, useful as a reference for what was covered, but they target the old API (`createFeatureCapabilities`, `requires`, `combineCapabilities`).
 - The orphaned `src/app/assignmentGroup` folder was deleted. Pace's copy, `src/app/pace/assignmentGroup`, is the live one.
 
-## The tree (87 resources, 7 groups)
+## The tree (88 resources, 8 groups)
 
 Files are in `src/permission/groups/`, one per group, listed in `groups/index.ts`. Group names and descriptions are Luke's wording. Luke may still be editing these: **re-read the files before relying on this table.**
 
@@ -34,6 +34,7 @@ Files are in `src/permission/groups/`, one per group, listed in `groups/index.ts
 | `scheduling` (13) | serviceAssignments, legacyAssignmentMigration, assignmentGroups, assignmentScenarios, groupSequences, seasonPlans, availabilityConstraints, holidays, employeeAbsences, priorityServices, routeNotes, loadouts, serviceEtas |
 | `accounting` (24) | qboAccounts, qboCustomers, qboEmployees, qboVendors, qboPurchases, qboConnection, qboConnectionRevocation, accountMappings, depositFieldLinks, qboJournalEntries, journalEntryPlans, journalEntryHistory, ccImportRows, ccFormatAccounts, ccCardAssignments, ccMerchantMappings, ccSkipRules, ccMapDecisions, ccExpensePlans, qboExpensePostings, inventoryChecks, punches, increasePlans, increaseSettings |
 | `customerContact` (7) | callLogs, callTopics, formTemplates, prepayConfigs, upsellPriorities, quickSendTemplates, quickSendTemplateGroups |
+| `knowledgeBaseTopics` (1) | knowledgeTopics (covers knowledge base topics and topic documents; unrelated to `callTopics`) |
 | `siteAdmin` (12) | globalSettings, accessRequests, bundles, userCapabilities, syncStatus, lastSyncTimes, corruptedSyncRecords, deltaSync, fullSync, syncLocks, customerSync, callLogSync |
 
 ## The core (in `src/permission/`)
@@ -88,7 +89,7 @@ The trap that `tsc` cannot catch: the QBO `customers` and `employees` became `qb
 
 ## Still to do
 
-- **Step 6:** nested bundle and user editors. A group row expands into its resources: group controls set every constituent, and a constituent control overrides that one. `buildMatrix`, `cellChange` and `cellState` need a resource-level scope. `registry.byGroup` already carries the tree.
+- **Step 6 (bundle editor done, user editor still open):** the bundle editor's `CapabilityMatrix` is now an accordion: a group's header checkboxes set every constituent, and a constituent's checkbox overrides that one. `buildMatrix` gives each row `resources`, and `cellChange` and `cellState` needed no change because a resource cell is an ordinary `MatrixCell`. The user editor does not use the matrix yet (`planUserCell` is unused), so it still needs a nested version.
 - **Step 7:** the drift tests (test plan, rank 9).
 - **Small follow-ups:** `addDirectMany`, its route and its contract still take a list of capabilities, and the editor now sends one. In `src/app/sandbox/callLog/page.tsx`, `canLoad` and `canRefreshLive` now check the same capability (`customers.read`): decide whether to drop `canRefreshLive`.
 
@@ -109,7 +110,7 @@ Ranked by what a wrong answer costs (access granted or denied by mistake, a bad 
 | 9 | Drift checks on the real tree | new file | Types catch an unknown `can.x.y` but not an orphan. Cases: a group key never equals a resource key, every resource has a name and a verb, every resource is used by at least one `can.<resource>.` reference under `src` (finds dead capabilities), and no capability string literal such as `"customers.read"` appears outside `src/permission` |
 | 10 | `cellChange`, `cellState`, `planUserCell`, `buildMatrix` | `logic/capabilityMatrix.ts` | Companion lookup splits a string at its last dot, and the format changed to `resource.verb`, so this needs a fresh test. Cases: ticking write adds read of the same resource only. Clearing read clears write and delete of that resource. A companion the resource does not declare is skipped. `cellState` all, some and none. `planUserCell`: members held through a bundle are locked, clearing only removes direct grants, a click the actor may not make is blocked and disabled. `buildMatrix`: column order read, write, delete, then other verbs alphabetically. Rows follow registry order, and a null cell where a group has no such verb |
 | 11 | `isGateOpen` | `logic/navGate.ts` | Hides links, and the migration moved every nav entry onto it. Cases: a capability gate is closed until `mine` loads. A confirmed superuser opens it. A roles gate still works for a legacy entry. A signed-out user counts as `public` |
-| 12 | The rest | `logic/*` | Low risk, cheap, and mostly display. `toUserSummary` (explicit field copy, so the password hash cannot leak, worth doing first), `sortUserSummaries`, `matchesUserSearch`, `capabilityLabel`, `groupCapabilitiesByGroup` (a stale string comes back separately), `redundantDirect`, `assignableCapabilities`, `holdersByBundleKey`, `bundleRegistryDiff`, `matchesRowFilter`, `summarizeMembers`, and the `bundleDraft.ts` edits (`toggleDraftCapability`, `setDraftCapabilities`, `applyCellChange`, `isDraftChanged`) |
+| 12 | The rest | `logic/*` | Low risk, cheap, and mostly display. `toUserSummary` (explicit field copy, so the password hash cannot leak, worth doing first), `sortUserSummaries`, `matchesUserSearch`, `capabilityLabel`, `groupCapabilitiesByGroup` (a stale string comes back separately), `redundantDirect`, `assignableCapabilities`, `holdersByBundleKey`, `bundleRegistryDiff`, `matchesRowFilter`, and the `bundleDraft.ts` edits (`toggleDraftCapability`, `setDraftCapabilities`, `applyCellChange`, `isDraftChanged`) |
 
 **Not unit-testable without mocks, left for later:** `assertCapability` (cookie and token handling: an invalid token on a non-public op is a 401, on a public op it continues anonymous, and `forbidden` is a 403), the `capability`-or-`roles` branch in `createRpcHandler` (an op with neither must fail closed), and `capabilityLoaders` (database reads). The first two decide access too, so they are worth a mocked test once ranks 1 to 8 exist.
 

@@ -1,25 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { MatrixRowHeader } from "@/app/permission/_components/MatrixRowHeader";
+import { MatrixInfoButton } from "@/app/permission/_components/MatrixInfoButton";
 import {
   cellKey,
   cellState,
   matchesRowFilter,
+  resourceRowKey,
   type Matrix,
   type MatrixCell,
-  type MatrixRow,
   type UsageFilter,
 } from "@/permission/logic/capabilityMatrix";
 import type { Capability } from "@/permission/PermissionTypes";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/style/components/accordion";
+import { Badge } from "@/style/components/badge";
 import { Button } from "@/style/components/button";
 import { Checkbox } from "@/style/components/checkbox";
 import { Input } from "@/style/components/input";
-import { Label } from "@/style/components/label";
-import { Table, TableBody, TableCell, TableRow } from "@/style/components/table";
 import { ToggleGroup, ToggleGroupItem } from "@/style/components/toggle-group";
 
-export type ToggleCellParams = { row: MatrixRow; cell: MatrixCell; turnOn: boolean };
+/** `rowKey` is the group's key for a group cell, and `resourceRowKey` for a resource cell. */
+export type ToggleCellParams = { rowKey: string; cell: MatrixCell; turnOn: boolean };
 
 type CapabilityMatrixProps = {
   matrix: Matrix;
@@ -41,9 +42,17 @@ const USAGE_OPTIONS: { value: UsageFilter; label: string }[] = [
   { value: "used", label: "Used" },
 ];
 
+// The group header and the resource rows share these widths, so the verb checkboxes line up
+// down the whole list. The info slot is always reserved, so a row without a description still aligns.
+const VERB_COLUMN_CLASS = "flex w-16 justify-center";
+const INFO_SLOT_CLASS = "flex w-8 justify-center";
+
 /**
- * One row per capability group, one checkbox per verb. A checkbox sets every member of the row
- * that has the verb. The filter only chooses which rows are drawn: it never changes what is held.
+ * One accordion item per capability group, one open at a time. The group's header holds a
+ * checkbox per verb that sets every resource of the group having that verb, and it shows a minus
+ * when only some do. Opening the group lists its resources with the same checkboxes, so one
+ * resource can differ from the rest. The filter only chooses which groups are drawn: it never
+ * changes what is held.
  */
 export function CapabilityMatrix({
   matrix,
@@ -99,38 +108,131 @@ export function CapabilityMatrix({
           </Button>
         </div>
       ) : (
-        <Table>
-          <TableBody>
+        <div className="rounded-md border border-border bg-card">
+          <div className="flex items-center border-b border-border px-3 py-1.5 text-xs font-medium text-muted-foreground">
+            <span className="flex-1">Group</span>
+            <span className={INFO_SLOT_CLASS} />
+            {matrix.columns.map((verb) => (
+              <span key={verb} className={VERB_COLUMN_CLASS}>
+                {verb}
+              </span>
+            ))}
+          </div>
+
+          <Accordion type="single" collapsible>
             {visibleRows.map((row) => (
-              <TableRow key={row.key} variant="alternating">
-                <TableCell noTruncate className="w-72">
-                  <MatrixRowHeader row={row} />
-                </TableCell>
-                {row.cells.map((cell, columnIndex) => (
-                  <TableCell noTruncate key={matrix.columns[columnIndex]}>
-                    {cell && (
-                      <MatrixCellBox
-                        row={row}
-                        cell={cell}
+              <AccordionItem key={row.key} value={row.key} className="last:border-b-0">
+                <AccordionTrigger
+                  className="px-3 py-2 hover:no-underline"
+                  trailing={
+                    <div className="flex items-center pr-3">
+                      <span className={INFO_SLOT_CLASS}>
+                        {row.description && <MatrixInfoButton name={row.name} description={row.description} />}
+                      </span>
+                      <VerbCheckboxes
+                        columns={matrix.columns}
+                        cells={row.cells}
+                        rowKey={row.key}
+                        label={row.name}
                         held={held}
-                        disabled={disabled || !!disabledCells?.has(cellKey({ rowKey: row.key, verb: cell.verb }))}
-                        note={cellNotes?.[cellKey({ rowKey: row.key, verb: cell.verb })]}
+                        disabled={disabled}
+                        disabledCells={disabledCells}
+                        cellNotes={cellNotes}
                         onToggleCellAction={onToggleCellAction}
                       />
-                    )}
-                  </TableCell>
-                ))}
-              </TableRow>
+                    </div>
+                  }
+                >
+                  <span className="text-sm font-medium text-foreground">{row.name}</span>
+                </AccordionTrigger>
+                <AccordionContent className="pb-0">
+                  <ul className="divide-y divide-border border-t border-border bg-accent/10">
+                    {row.resources.map((resource) => {
+                      const resourceKey = resourceRowKey({ groupKey: row.key, resourceKey: resource.key });
+                      return (
+                        <li key={resource.key} className="flex items-center py-2 pl-6 pr-3">
+                          <span className="flex flex-1 items-center gap-2 text-sm text-foreground">
+                            {resource.name}
+                            {resource.source && <Badge variant="outline">{resource.source}</Badge>}
+                          </span>
+                          <span className={INFO_SLOT_CLASS}>
+                            {resource.description && (
+                              <MatrixInfoButton name={resource.name} description={resource.description} />
+                            )}
+                          </span>
+                          <VerbCheckboxes
+                            columns={matrix.columns}
+                            cells={resource.cells}
+                            rowKey={resourceKey}
+                            label={`${row.name}: ${resource.name}`}
+                            held={held}
+                            disabled={disabled}
+                            disabledCells={disabledCells}
+                            cellNotes={cellNotes}
+                            onToggleCellAction={onToggleCellAction}
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </TableBody>
-        </Table>
+          </Accordion>
+        </div>
       )}
     </div>
   );
 }
 
-type MatrixCellBoxProps = {
-  row: MatrixRow;
+type VerbCheckboxesProps = {
+  columns: string[];
+  cells: (MatrixCell | null)[];
+  rowKey: string;
+  /** Names the row for assistive tech, since the verb is only written in the header row. */
+  label: string;
+  held: ReadonlySet<Capability>;
+  disabled: boolean;
+  disabledCells?: ReadonlySet<string>;
+  cellNotes?: Readonly<Record<string, string>>;
+  onToggleCellAction: (params: ToggleCellParams) => void;
+};
+
+function VerbCheckboxes({
+  columns,
+  cells,
+  rowKey,
+  label,
+  held,
+  disabled,
+  disabledCells,
+  cellNotes,
+  onToggleCellAction,
+}: VerbCheckboxesProps) {
+  return (
+    <>
+      {cells.map((cell, columnIndex) => (
+        <span key={columns[columnIndex]} className={VERB_COLUMN_CLASS}>
+          {cell && (
+            <VerbCheckbox
+              rowKey={rowKey}
+              label={label}
+              cell={cell}
+              held={held}
+              disabled={disabled || !!disabledCells?.has(cellKey({ rowKey, verb: cell.verb }))}
+              note={cellNotes?.[cellKey({ rowKey, verb: cell.verb })]}
+              onToggleCellAction={onToggleCellAction}
+            />
+          )}
+        </span>
+      ))}
+    </>
+  );
+}
+
+type VerbCheckboxProps = {
+  rowKey: string;
+  label: string;
   cell: MatrixCell;
   held: ReadonlySet<Capability>;
   disabled: boolean;
@@ -138,22 +240,18 @@ type MatrixCellBoxProps = {
   onToggleCellAction: (params: ToggleCellParams) => void;
 };
 
-function MatrixCellBox({ row, cell, held, disabled, note, onToggleCellAction }: MatrixCellBoxProps) {
+function VerbCheckbox({ rowKey, label, cell, held, disabled, note, onToggleCellAction }: VerbCheckboxProps) {
   const state = cellState({ cell, held });
-  const id = `matrix-${cellKey({ rowKey: row.key, verb: cell.verb })}`;
 
   return (
-    <div className="flex flex-col items-center gap-1" title={note}>
+    <span title={note}>
       <Checkbox
-        id={id}
+        aria-label={`${label}: ${cell.verb}`}
         checked={state === "all" ? true : state === "some" ? "indeterminate" : false}
         disabled={disabled}
         // A partly held cell is completed first. Only a fully held cell turns off.
-        onCheckedChange={() => onToggleCellAction({ row, cell, turnOn: state !== "all" })}
+        onCheckedChange={() => onToggleCellAction({ rowKey, cell, turnOn: state !== "all" })}
       />
-      <Label htmlFor={id} className="text-xs font-normal text-muted-foreground">
-        {cell.verb}
-      </Label>
-    </div>
+    </span>
   );
 }

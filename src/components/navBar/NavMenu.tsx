@@ -87,6 +87,11 @@ const customerContactSection: NavSection = {
       href: "/formTemplate",
       capability: can.formTemplates.read,
     },
+    {
+      title: "Knowledge Base",
+      href: "/knowledgeBase",
+      capability: can.knowledgeTopics.read,
+    },
   ],
 };
 

@@ -1,6 +1,6 @@
 import { Schema } from "mongoose";
 import { createModel } from "@/lib/mongoose/createModel";
-import { TopicDoc } from "@/app/knowledgeBase/TopicTypes";
+import { TopicDoc } from "@/app/knowledgeBase/topic/TopicTypes";
 
 const TopicSchema = new Schema<TopicDoc>(
   {
@@ -8,8 +8,6 @@ const TopicSchema = new Schema<TopicDoc>(
     name: { type: String, required: true },
     description: { type: String, required: true },
     signals: { type: [String], default: [] },
-    guidance: { type: String, required: true },
-    avoid: { type: [String], default: [] },
   },
   { timestamps: true },
 );

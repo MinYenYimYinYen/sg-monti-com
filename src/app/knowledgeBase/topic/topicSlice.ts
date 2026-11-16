@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
-import { TopicContract } from "@/app/knowledgeBase/api/TopicContract";
-import { TopicDoc } from "@/app/knowledgeBase/TopicTypes";
+import { TopicContract } from "@/app/knowledgeBase/topic/api/TopicContract";
+import { TopicDoc } from "@/app/knowledgeBase/topic/TopicTypes";
 
 type TopicState = {
   docs: TopicDoc[];
@@ -13,19 +13,19 @@ const initialState: TopicState = {
 
 export const getAllTopics = createStandardThunk<TopicContract, "getAll">({
   typePrefix: "topic/getAll",
-  apiPath: "/knowledgeBase/api",
+  apiPath: "/knowledgeBase/topic/api",
   opName: "getAll",
 });
 
 export const upsertTopic = createStandardThunk<TopicContract, "upsert">({
   typePrefix: "topic/upsert",
-  apiPath: "/knowledgeBase/api",
+  apiPath: "/knowledgeBase/topic/api",
   opName: "upsert",
 });
 
 export const removeTopic = createStandardThunk<TopicContract, "remove">({
   typePrefix: "topic/remove",
-  apiPath: "/knowledgeBase/api",
+  apiPath: "/knowledgeBase/topic/api",
   opName: "remove",
 });
 

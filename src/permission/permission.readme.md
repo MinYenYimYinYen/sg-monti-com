@@ -101,14 +101,17 @@ The client runs the same `hasCapability` against the store's `userCapabilities.m
 
 ## The admin matrix
 
-`CapabilityMatrix` draws the registry as a table: one row per group, one column per verb (read, write, delete). Logic is in `logic/capabilityMatrix.ts` and the component is a thin wrapper.
+`CapabilityMatrix` draws the registry as an accordion: one item per group (one open at a time, all collapsed at first), one column per verb (read, write, delete). Logic is in `logic/capabilityMatrix.ts` and the component is a thin wrapper.
 
-- A cell toggles **every member of the row that has that verb**. A partly held cell shows a minus and a click completes it. Only a fully held cell turns off.
-- Ticking write also ticks read, and clearing read clears what depends on it. This is the built-in verb companion (`VERB_COMPANIONS`), and it works within one resource only.
-- The row header shows the group name and an info popover with the description and the members.
-- The filter is a text box and an All, Unused or Used toggle. It only chooses which rows are drawn.
+- The group's header has one checkbox per verb. It toggles **every resource of the group that has that verb**. A partly held cell shows a minus and a click completes it. Only a fully held cell turns off.
+- Opening a group lists its resources (`MatrixRow.resources`) with the same checkboxes, one capability per cell. Unchecking one resource makes the group's cell partial. Resource cells use the same columns as the group, so a verb the resource lacks is an empty slot.
+- Ticking write also ticks read, and clearing read clears what depends on it. This is the built-in verb companion (`VERB_COMPANIONS`), and it works within one resource only, so the group cell and the resource cell use the same `cellChange`.
+- A group or a resource shows an info popover only when it has a `description`, and the popover shows just that text.
+- Resource cells are keyed with `resourceRowKey` (`group/resource`) in `cellKey`, so they cannot collide with a group row.
+- The checkboxes sit beside the accordion trigger, not inside it (`AccordionTrigger`'s `trailing` prop), because a control nested in the trigger button is invalid.
+- The filter is a text box and an All, Unused or Used toggle. It only chooses which groups are drawn.
 
-**Dangerous capabilities are a grouping decision.** There is no code-level marker for a capability whose op cannot be undone. A group cell grants every member of its verb at once, so keep such a resource out of a group with ordinary access, or say so in the group's description. Nested controls (a group row that expands into its resources) are planned in step 6 of `permissionRefactor.md`.
+**Dangerous capabilities are a grouping decision.** There is no code-level marker for a capability whose op cannot be undone. A group cell grants every member of its verb at once, so keep such a resource out of a group with ordinary access, or say so in the group's description.
 
 ## Retired
 

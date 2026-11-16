@@ -1,0 +1,28 @@
+/**
+ * Trims, lowercases, drops blanks and removes duplicates, keeping the author's order. Lowercasing here
+ * lets a consumer lowercase the transcript once and match every signal without worrying about case.
+ */
+export function normalizeSignals(signals: string[]): string[] {
+  const cleaned = signals.map((signal) => signal.trim().toLowerCase()).filter((signal) => signal.length > 0);
+  return [...new Set(cleaned)];
+}
+
+const MAX_NAMED_DOCUMENTS = 5;
+
+/** The refusal shown when a topic cannot be deleted because documents are still tagged with it. */
+export function buildTopicInUseMessage({
+  topicKey,
+  referencingDetails,
+}: {
+  topicKey: string;
+  referencingDetails: { detailKey: string; title: string }[];
+}): string {
+  const named = referencingDetails
+    .slice(0, MAX_NAMED_DOCUMENTS)
+    .map((detail) => `"${detail.title}" (${detail.detailKey})`)
+    .join(", ");
+  const hiddenCount = referencingDetails.length - MAX_NAMED_DOCUMENTS;
+  const more = hiddenCount > 0 ? `, and ${hiddenCount} more` : "";
+  const noun = referencingDetails.length === 1 ? "document" : "documents";
+  return `Topic '${topicKey}' is still used by ${referencingDetails.length} ${noun}: ${named}${more}. Delete those documents or change their topics first.`;
+}

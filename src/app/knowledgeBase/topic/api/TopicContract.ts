@@ -1,6 +1,6 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { DataResponse } from "@/lib/api/types/responses";
-import { TopicDoc } from "@/app/knowledgeBase/TopicTypes";
+import { TopicDoc } from "@/app/knowledgeBase/topic/TopicTypes";
 
 export interface TopicContract extends ApiContract {
   getAll: {
