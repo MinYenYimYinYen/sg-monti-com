@@ -33,6 +33,11 @@ import {
 
 type Props = {
   editor: Editor | null;
+  /**
+   * Shows the line height and paragraph spacing selects. Only an editor that registers the
+   * `LineHeight` and `ParagraphSpacing` extensions can use them, so it is off by default.
+   */
+  showSpacing?: boolean;
 };
 
 type ToolbarButtonProps = {
@@ -70,7 +75,7 @@ function Divider() {
   return <div className="w-px h-4 bg-border mx-0.5 shrink-0" />;
 }
 
-export function EditorToolbar({ editor }: Props) {
+export function EditorToolbar({ editor, showSpacing = false }: Props) {
   const editorState = useEditorState({
     editor,
     selector: (ctx) => {
@@ -234,51 +239,55 @@ export function EditorToolbar({ editor }: Props) {
 
       <Divider />
 
-      {/* ── Line spacing ── */}
-      <label className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-        <span>Line</span>
-        <select
-          className="h-6 rounded border border-border bg-card px-1 text-xs text-foreground focus:outline-none disabled:opacity-50"
-          value={lineHeight}
-          disabled={disabled}
-          title="Line spacing"
-          onChange={(e) => {
-            if (!editor) return;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (editor.chain().focus() as any).setLineHeight(e.target.value).run();
-          }}
-        >
-          {LINE_HEIGHT_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      </label>
+      {showSpacing && (
+        <>
+          {/* ── Line spacing ── */}
+          <label className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+            <span>Line</span>
+            <select
+              className="h-6 rounded border border-border bg-card px-1 text-xs text-foreground focus:outline-none disabled:opacity-50"
+              value={lineHeight}
+              disabled={disabled}
+              title="Line spacing"
+              onChange={(e) => {
+                if (!editor) return;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (editor.chain().focus() as any).setLineHeight(e.target.value).run();
+              }}
+            >
+              {LINE_HEIGHT_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </label>
 
-      {/* ── Paragraph spacing ── */}
-      <label className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-        <span>¶</span>
-        <select
-          className="h-6 rounded border border-border bg-card px-1 text-xs text-foreground focus:outline-none disabled:opacity-50"
-          value={paragraphSpacing}
-          disabled={disabled}
-          title="Paragraph spacing"
-          onChange={(e) => {
-            if (!editor) return;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (editor.chain().focus() as any).setParagraphSpacing(e.target.value).run();
-          }}
-        >
-          {PARAGRAPH_SPACING_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      </label>
+          {/* ── Paragraph spacing ── */}
+          <label className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+            <span>¶</span>
+            <select
+              className="h-6 rounded border border-border bg-card px-1 text-xs text-foreground focus:outline-none disabled:opacity-50"
+              value={paragraphSpacing}
+              disabled={disabled}
+              title="Paragraph spacing"
+              onChange={(e) => {
+                if (!editor) return;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (editor.chain().focus() as any).setParagraphSpacing(e.target.value).run();
+              }}
+            >
+              {PARAGRAPH_SPACING_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </label>
 
-      <Divider />
+          <Divider />
+        </>
+      )}
 
       {/* ── Table — insert ── */}
       <ToolbarButton

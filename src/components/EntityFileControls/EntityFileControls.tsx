@@ -28,7 +28,8 @@ export type EntityFileControlsProps = {
   onSaveAction: () => void;
   onSaveAsAction?: (params: { name: string }) => void;
   onNewAction: () => void;
-  onOpenAction: () => void;
+  /** Omit when the feature already lists its entities on screen. The Open… item is then not shown. */
+  onOpenAction?: () => void;
   /** Extra File menu entries (e.g. Delete), rendered after a separator. */
   extraMenuItems?: ReactNode;
 };
@@ -60,7 +61,7 @@ export function EntityFileControls({
 
   const run = (action: GuardedAction) => {
     if (action === "new") onNewAction();
-    else onOpenAction();
+    else onOpenAction?.();
   };
 
   const guarded = (action: GuardedAction) => {
@@ -83,7 +84,9 @@ export function EntityFileControls({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-44">
             <DropdownMenuItem onSelect={() => guarded("new")}>New</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => guarded("open")}>Open…</DropdownMenuItem>
+            {onOpenAction && (
+              <DropdownMenuItem onSelect={() => guarded("open")}>Open…</DropdownMenuItem>
+            )}
             {extraMenuItems && (
               <>
                 <DropdownMenuSeparator />

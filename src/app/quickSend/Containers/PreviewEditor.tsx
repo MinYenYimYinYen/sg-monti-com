@@ -2,17 +2,10 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { Table } from "@tiptap/extension-table";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableCell } from "@tiptap/extension-table-cell";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { TextStyle } from "@tiptap/extension-text-style";
-import { Color } from "@tiptap/extension-color";
-import { Highlight } from "@tiptap/extension-highlight";
 import Mention from "@tiptap/extension-mention";
-import { LineHeight } from "./lineHeightExtension";
-import { ParagraphSpacing } from "./paragraphSpacingExtension";
+import { LineHeight } from "@/lib/tiptap/lineHeightExtension";
+import { ParagraphSpacing } from "@/lib/tiptap/paragraphSpacingExtension";
+import { buildRichTextExtensions } from "@/lib/tiptap/richTextExtensions";
 import { useSelector } from "react-redux";
 import { qsSelect } from "../quickSendSelect";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
@@ -89,16 +82,9 @@ export const PreviewEditor = forwardRef<PreviewEditorHandle, Props>(
       immediatelyRender: false,
       editable: true,
       extensions: [
-        StarterKit,
-        Table.configure({ resizable: false }),
-        TableRow,
-        TableHeader,
-        TableCell,
-        TextStyle,
-        Color,
+        ...buildRichTextExtensions(),
         LineHeight,
         ParagraphSpacing,
-        Highlight.configure({ multicolor: true }),
         Mention.configure({
           HTMLAttributes: {},
           renderText({ node }) {

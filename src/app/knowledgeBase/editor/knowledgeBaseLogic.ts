@@ -3,7 +3,7 @@ import type { TopicDetailDoc } from "@/app/knowledgeBase/topicDetail/TopicDetail
 import { compareBySpecificity } from "@/app/knowledgeBase/topicDetail/topicDetailLogic";
 import type { Topic, TopicDetail, TopicDocumentSummary } from "@/app/knowledgeBase/editor/knowledgeBaseTypes";
 
-/** Each topic with the documents tagged with it. A topic with no documents gets an empty list. */
+/** Each topic, ordered by name, with the documents tagged with it. A topic with no documents gets an empty list. */
 export function attachDocumentsToTopics({
   topics,
   details,
@@ -20,7 +20,9 @@ export function attachDocumentsToTopics({
       documentsByTopicKey.set(topicKey, documents);
     }
   }
-  return topics.map((topic) => ({ ...topic, documents: documentsByTopicKey.get(topic.topicKey) ?? [] }));
+  return [...topics]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((topic) => ({ ...topic, documents: documentsByTopicKey.get(topic.topicKey) ?? [] }));
 }
 
 /** Each document with its topics resolved, so the UI never looks a topic up by key. */
@@ -32,7 +34,7 @@ export function attachTopicsToDetails({
   details: TopicDetailDoc[];
 }): TopicDetail[] {
   const topicsByKey = new Map(topics.map((topic) => [topic.topicKey, topic]));
-  return details.map((detail) => {
+  return [...details].sort(compareBySpecificity).map((detail) => {
     const found: TopicDoc[] = [];
     const missingTopicKeys: string[] = [];
     for (const topicKey of detail.topicKeys) {

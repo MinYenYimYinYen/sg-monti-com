@@ -2,14 +2,6 @@
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
-import StarterKit from "@tiptap/starter-kit";
-import { Table } from "@tiptap/extension-table";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableCell } from "@tiptap/extension-table-cell";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { TextStyle } from "@tiptap/extension-text-style";
-import { Color } from "@tiptap/extension-color";
-import { Highlight } from "@tiptap/extension-highlight";
 import Mention from "@tiptap/extension-mention";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/hooks/redux";
@@ -17,9 +9,10 @@ import { quickSendActions } from "../quickSendSlice";
 import { buildMentionSuggestion } from "../mentions/mentionSuggestion";
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { qsSelect } from "../quickSendSelect";
-import { EditorToolbar } from "./EditorToolbar";
-import { LineHeight } from "./lineHeightExtension";
-import { ParagraphSpacing } from "./paragraphSpacingExtension";
+import { EditorToolbar } from "@/lib/tiptap/EditorToolbar";
+import { LineHeight } from "@/lib/tiptap/lineHeightExtension";
+import { ParagraphSpacing } from "@/lib/tiptap/paragraphSpacingExtension";
+import { buildRichTextExtensions } from "@/lib/tiptap/richTextExtensions";
 import {
   Dialog,
   DialogContent,
@@ -68,16 +61,9 @@ export function TemplateEditor({ sectionId }: Props) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit,
-      Table.configure({ resizable: false }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      TextStyle,
-      Color,
+      ...buildRichTextExtensions(),
       LineHeight,
       ParagraphSpacing,
-      Highlight.configure({ multicolor: true }),
       Mention.configure({
         HTMLAttributes: {
           class:
@@ -182,7 +168,7 @@ export function TemplateEditor({ sectionId }: Props) {
   return (
     <>
       <div className="bg-card">
-        <EditorToolbar editor={editor} />
+        <EditorToolbar editor={editor} showSpacing />
         <EditorContent editor={editor} />
       </div>
 

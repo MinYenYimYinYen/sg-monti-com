@@ -3,7 +3,12 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { TopicContract } from "@/app/knowledgeBase/topic/api/TopicContract";
 import { TopicModel } from "@/app/knowledgeBase/topic/TopicModel";
 import { TopicDetailModel } from "@/app/knowledgeBase/topicDetail/TopicDetailModel";
-import { buildTopicInUseMessage, normalizeSignals } from "@/app/knowledgeBase/topic/topicLogic";
+import {
+  buildTopicInUseMessage,
+  isValidTopicKey,
+  normalizeSignals,
+  TOPIC_KEY_RULE,
+} from "@/app/knowledgeBase/topic/topicLogic";
 import { AppError } from "@/lib/errors/AppError";
 import { cleanMongoArray, cleanMongoObject } from "@/lib/mongoose/cleanMongoObj";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
@@ -28,6 +33,9 @@ const handlers: HandlerMap<TopicContract> = {
     handler: async (params) => {
       await connectToMongoDB();
       const { topicKey, signals, ...rest } = params;
+      if (!isValidTopicKey(topicKey)) {
+        throw validationError(`Invalid topic key '${topicKey}'. ${TOPIC_KEY_RULE}`);
+      }
       // An upsert saves the whole topic, so signals left out means no signals, never "keep the old ones".
       const doc = await TopicModel.findOneAndUpdate(
         { topicKey },

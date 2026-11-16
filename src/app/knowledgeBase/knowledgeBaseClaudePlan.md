@@ -111,8 +111,10 @@ This describes the external app's job. It is not behavior of this module.
 
 Documents are authored in TipTap and stored as its HTML output.
 
-- Not decided yet: the final list of enabled extensions. The editor is phase 2. These packages are installed: StarterKit, Table (with row, header, cell), Highlight, Color, TextStyle, Mention. The list here must be updated when the editor is built.
-- Known caveat for the converter: TipTap wraps the contents of table cells in `<p>` elements. A naive HTML to markdown conversion can break table rows because of this. Test tables early.
+- Implemented: the editor enables TipTap's StarterKit, Table (with row, header and cell), TextStyle, Color and Highlight (multicolor). It has no mention, line height or paragraph spacing extensions. The list lives in the web app's `src/lib/tiptap/richTextExtensions.ts`. Update this section if it changes.
+- StarterKit contributes these elements: paragraph, headings (levels 1 to 6), bold, italic, strikethrough, underline, inline code, code blocks, blockquotes, bullet and ordered lists, horizontal rules, hard breaks and links. The toolbar only offers bold, italic, strikethrough, headings 1 to 3, lists, blockquote and tables, but pasted content can carry the others, so a converter should handle all of them. Color and highlight arrive as inline `style` and `<mark>`; markdown has no equivalent, so a converter should drop them.
+- The editor removes pasted `color` styles.
+- Known caveat for the converter: TipTap wraps the contents of table cells in `<p>` elements. A naive HTML to markdown conversion can break table rows because of this. Test tables early. The editor inserts tables without a header row, and markdown tables normally need one, so the converter may have to promote the first row.
 
 ## 7. API
 
@@ -151,8 +153,13 @@ Each module has its own route. Topic is at `/knowledgeBase/topic/api`. TopicDeta
 ## 9. Phases
 
 - **Phase 1 (data layer):** trim Topic; add TopicDetail (types, model, contract, route, slice, selectors, hook); pure helpers `normalizeTopicKeys` and `resolveDetails` (a reference implementation of section 4); the server rules in section 8. No new dependencies.
-- **Phase 2 foundation (Implemented):** `editor/` holds the merged views for the UI: hydrated types (`Topic` with its `documents`, `TopicDetail` with its `topics`), the pure merge helpers, `knowledgeBaseSelect`, and `useKnowledgeBaseDeps`. No components or draft state yet. This is the web app's internal UI code and is not needed by the desktop app.
-- **Phase 2 (UI):** topic list and editor (including signals); TopicDetail editor using TipTap for the body and a multi-select topic picker for `topicKeys`; a backlinks view per topic (every document tagged with it). This is the proof of concept for authoring the knowledge base.
+- **Phase 2 (UI, Implemented, not yet tried in a browser):** the page at `/knowledgeBase` has two tabs, Topics and Documents, with the code in `editor/`. This is the web app's internal UI code and is not needed by the desktop app.
+  - Topics tab: list, form (key, name, description, signals), and a backlinks list of the documents tagged with the topic.
+  - Documents tab: list ordered general to specific, a checkbox topic picker, title, and a TipTap body.
+  - Both tabs use the shared file menu without Open or Save As, and edit a draft held in `topicEditorSlice`.
+  - A document's topics are its identity, so the picker is locked once a document is saved.
+  - Saving a new topic or document whose key already exists is blocked with an "Open it instead" notice.
+  - Topic keys must match lowercase letters, digits, `-` and `_`, starting with a letter or digit (a `+` would break document keys). The server enforces this.
 
 ## 10. Deferred
 
@@ -169,7 +176,6 @@ Do not build or assume any of these.
 ## 11. Not decided yet
 
 - Tie-breaking between equally specific documents.
-- The final enabled TipTap extension list.
 
 ## 12. Files worth reading
 
