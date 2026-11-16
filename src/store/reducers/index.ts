@@ -38,6 +38,7 @@ import prepayReducer from "@/app/realGreen/prepay/prepaySlice";
 import { serviceEtaReducer } from "@/app/scheduling/eta/serviceEtaSlice";
 import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFeedback/report/loadoutReportSlice";
 import { inventoryReducer } from "@/app/inventory/inventorySlice";
+import { salesTaxUIReducer } from "@/app/salesTax/salesTaxUISlice";
 import javelinReducer from "@/app/javelin/javelinSlice";
 import depositReducer from "@/app/javelin/depositSlice";
 import ckDepositReducer from "@/app/javelin/ckDepositSlice";
@@ -103,6 +104,7 @@ const rootReducer = combineReducers({
   employee: employeeReducer,
   flag: flagReducer,
   inventory: inventoryReducer,
+  salesTaxUI: salesTaxUIReducer,
   loadout: loadoutReducer,
   loadoutStart: loadoutStartReducer,
   loadoutFinish: loadoutFinishReducer,

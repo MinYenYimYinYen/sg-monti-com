@@ -223,6 +223,19 @@ export class ServiceUtils {
   }
 
   /**
+   * The current-season price after service and program discounts and the prepay discount
+   * actually recorded on the service (`ppyDiscAmt`), before tax. Unlike `priceAfterPrepay`, it
+   * reads the stored dollar amount instead of recomputing from a percent, so it is safe for
+   * completed services whose prepay terms are no longer known.
+   */
+  public get priceAfterAllDiscounts(): number {
+    const cents = Math.round(
+      (this.getPriceAfterDiscounts("price") - this.service.ppyDiscAmt) * 100,
+    );
+    return Math.max(cents, 0) / 100;
+  }
+
+  /**
    * Returns the net amount due for this service after applying all applicable
    * discounts, an optional prepay discount, and tax.
    *

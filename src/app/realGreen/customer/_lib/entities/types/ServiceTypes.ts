@@ -51,8 +51,9 @@ export type ServiceRaw = {
   nextSize: number | null;
   // postedDate?: string;
   // prepayAmount?: number;
-  // prepayId?: number;
-  // prepaymentDiscountAmount: number;
+  // Optional because we have not yet confirmed RealGreen fills these for every service.
+  prepayId?: number | null;
+  prepaymentDiscountAmount?: number;
   price: number | null;
   // productionValue?: number;
   productsUsed?: AppProductRaw[];
@@ -97,6 +98,9 @@ export type ServiceCore = {
   nextPrice: number;
   nextSize: number;
   price: number;
+  /** Prepay discount in dollars, applied after service and program discounts. */
+  ppyDiscAmt: number;
+  prepayId: number | null;
   size: number;
   progId: number;
   servCodeId: string;

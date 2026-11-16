@@ -345,6 +345,16 @@ export const customerQueryCustomerActions = {
 };
 export const customerQueryCustomerReducer = customerQuerySlice.reducer;
 
+// Sales tax module: completed services in a user-chosen month, with their programs and customers.
+// Mirror-only (no RealGreen search scheme, no refresh thunk), so it is not in PIPELINE.
+export const salesTaxCustomersSlice = createCustomerSlice("salesTaxCustomers");
+export const salesTaxCustomersGetDocs = createGetCustDocsMirrorThunk("salesTaxCustomers", salesTaxCustomersSlice);
+export const salesTaxCustomersActions = {
+  ...salesTaxCustomersSlice.actions,
+  getDocs: salesTaxCustomersGetDocs,
+};
+export const salesTaxCustomersReducer = salesTaxCustomersSlice.reducer;
+
 // ---------------------------------------------------------------------------
 // Slice registry — single source of truth for all customer slice instances.
 // The central slice loops over this to register extraReducers, eliminating
@@ -392,6 +402,7 @@ export type CustomerContextMode =
   | "lastSeasonProduction"
   | "recentProduction"
   | "renewal"
+  | "salesTaxCustomers"
   | "single"
   | "multiSeasonProduction";
 
@@ -481,6 +492,12 @@ export const customerSliceRegistry: CustomerSliceRegistryEntry[] = [
     actions: customerQueryCustomerActions,
     getDocs: customerQueryGetDocs,
     reducer: customerQueryCustomerReducer,
+  },
+  {
+    context: "salesTaxCustomers",
+    actions: salesTaxCustomersActions,
+    getDocs: salesTaxCustomersGetDocs,
+    reducer: salesTaxCustomersReducer,
   },
 ];
 

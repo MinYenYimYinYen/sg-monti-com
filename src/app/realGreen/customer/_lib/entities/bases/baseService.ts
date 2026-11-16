@@ -21,6 +21,8 @@ export const baseServiceCore: ServiceCore = {
   nextPrice: 0,
   nextSize: 0,
   price: 0,
+  ppyDiscAmt: 0,
+  prepayId: null,
   size: 0,
   progId: baseNumId,
   season: 0,

@@ -69,6 +69,8 @@ function remapService(raw: ServiceRaw): ServiceCore {
     nextPrice: raw.nextPrice ?? 0 as number,
     nextSize: raw.nextSize ?? 0 as number,
     price: raw.price ?? 0 as number,
+    ppyDiscAmt: raw.prepaymentDiscountAmount ?? 0,
+    prepayId: raw.prepayId ?? null,
     size: raw.size ?? 0 as number,
     progId: raw.programID,
     season: raw.serviceYear,

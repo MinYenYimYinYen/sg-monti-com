@@ -87,6 +87,10 @@ const serviceSchema = new mongoose.Schema<ServiceCore>(
     nextPrice: { type: Number, default: 0 },
     nextSize: { type: Number, default: 0 },
     price: { type: Number, default: 0 },
+    // No default on ppyDiscAmt: a service synced before this field existed must read as
+    // missing, not as "no prepay discount", until a full sync rewrites it.
+    ppyDiscAmt: { type: Number },
+    prepayId: { type: Number, default: null },
     size: { type: Number, default: 0 },
     progId: { type: Number, required: true },
     servCodeId: { type: String, default: "" },
