@@ -59,6 +59,8 @@ import priceIncreaseConfigReducer from "@/app/priceIncrease/config/_lib/priceInc
 import { topicReducer } from "@/app/knowledgeBase/topic/topicSlice";
 import { topicDetailReducer } from "@/app/knowledgeBase/topicDetail/topicDetailSlice";
 import { topicEditorReducer } from "@/app/knowledgeBase/editor/topicEditorSlice";
+import { claudeSessionReducer } from "@/app/claudeSession/claudeSessionSlice";
+import { askAwayReducer } from "@/app/askAway/askAwaySlice";
 import capabilityBundleReducer from "@/app/permission/capabilityBundle/capabilityBundleSlice";
 import userCapabilitiesReducer from "@/app/permission/userCapabilities/userCapabilitiesSlice";
 import { corruptedSyncRecordReducer } from "@/app/realGreen/customer/sync/corruptedRecords/corruptedSyncRecordSlice";
@@ -171,6 +173,8 @@ const rootReducer = combineReducers({
   topic: topicReducer,
   topicDetail: topicDetailReducer,
   topicEditor: topicEditorReducer,
+  claudeSession: claudeSessionReducer,
+  askAway: askAwayReducer,
   capabilityBundle: capabilityBundleReducer,
   userCapabilities: userCapabilitiesReducer,
 });

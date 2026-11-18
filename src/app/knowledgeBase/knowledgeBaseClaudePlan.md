@@ -6,7 +6,7 @@ This file describes the `knowledgeBase` module of the sg-monti-com web app. It i
 
 **This module owns** authoring and storing the knowledge base (topics and documents) in MongoDB, and serving it over an API.
 
-**This module does not do:** call Claude, classify transcripts, match signals, rank or choose documents, or convert HTML to markdown. Those belong to the external desktop app.
+**This module does not do:** call Claude, classify transcripts, match signals, rank or choose documents, or convert HTML to markdown. Those belong to the external desktop app. The web app has a separate, generic Claude API module at `src/app/anthropic/` (see its `anthropic.readme.md`); it is a sibling of this module, not part of it, and nothing here depends on it yet.
 
 **The external desktop app** logs in per user (username and password), reads this data, and is responsible for everything in section 5.
 

@@ -1,5 +1,6 @@
 import type { GroupDefinition } from "@/permission/groupTypes";
 import { accountingGroup } from "@/permission/groups/accounting";
+import { aiAssistantGroup } from "@/permission/groups/aiAssistant";
 import { customerContactGroup } from "@/permission/groups/customerContact";
 import { knowledgeBaseTopicsGroup } from "@/permission/groups/knowledgeBaseTopics";
 import { realGreenCustomersGroup } from "@/permission/groups/realGreenCustomers";
@@ -19,5 +20,6 @@ export const permissionGroups = [
   accountingGroup,
   customerContactGroup,
   knowledgeBaseTopicsGroup,
+  aiAssistantGroup,
   siteAdminGroup,
 ] as const satisfies readonly GroupDefinition[];
