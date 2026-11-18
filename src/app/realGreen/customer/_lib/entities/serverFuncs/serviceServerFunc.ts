@@ -8,7 +8,9 @@ import {
   ServiceCore,
   ServiceDoc,
   ServiceRaw,
+  ServiceTaxLineCore,
 } from "../types/ServiceTypes";
+import { TaxSlot } from "@/app/realGreen/taxCode/taxSlot";
 // ServiceDoc = ServiceCore — no DocProps extension needed
 
 function remapProduction({
@@ -57,6 +59,18 @@ function remapProduction({
   return production;
 }
 
+/** A slot the API left empty (both amounts absent) is not a tax line. */
+function remapTaxLineCores(raw: ServiceRaw): ServiceTaxLineCore[] {
+  const slots: { slot: TaxSlot; taxableAmt: number | null | undefined; taxAmt: number | null | undefined }[] = [
+    { slot: 1, taxableAmt: raw.taxableAmount1, taxAmt: raw.taxAmount1 },
+    { slot: 2, taxableAmt: raw.taxableAmount2, taxAmt: raw.taxAmount2 },
+    { slot: 3, taxableAmt: raw.taxableAmount3, taxAmt: raw.taxAmount3 },
+  ];
+  return slots.flatMap(({ slot, taxableAmt, taxAmt }) =>
+    taxableAmt == null && taxAmt == null ? [] : [{ slot, taxableAmt: taxableAmt ?? 0, taxAmt: taxAmt ?? 0 }],
+  );
+}
+
 function remapService(raw: ServiceRaw): ServiceCore {
   return {
     servId: raw.id,
@@ -69,8 +83,10 @@ function remapService(raw: ServiceRaw): ServiceCore {
     nextPrice: raw.nextPrice ?? 0 as number,
     nextSize: raw.nextSize ?? 0 as number,
     price: raw.price ?? 0 as number,
-    ppyDiscAmt: raw.prepaymentDiscountAmount ?? 0,
-    prepayId: raw.prepayId ?? null,
+    // raw.prepaymentDiscountAmount is a dead field (always 0); prepayAmount is the real discount.
+    prepayDiscAmt: raw.prepayAmount ?? null,
+    // prepayId: unused, see ServiceTypes.
+    taxLineCores: remapTaxLineCores(raw),
     size: raw.size ?? 0 as number,
     progId: raw.programID,
     season: raw.serviceYear,

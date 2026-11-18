@@ -5,9 +5,9 @@ import { SYNC_ENTITY_TYPES, SyncEntityType } from "@/app/realGreen/syncMetadata/
 import { remapCustSearch } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapCustSearch";
 import { remapProgSearch } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapProgSearch";
 import { remapServSearch } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapServSearch";
-import { fetchCustomers, bulkUpsertCustomers } from "@/app/realGreen/customer/sync/customerSyncFunc";
-import { fetchPrograms, bulkUpsertPrograms } from "@/app/realGreen/customer/sync/programSyncFunc";
-import { fetchServices, bulkUpsertServices } from "@/app/realGreen/customer/sync/serviceSyncFunc";
+import { streamCustomers } from "@/app/realGreen/customer/sync/customerSyncFunc";
+import { streamPrograms } from "@/app/realGreen/customer/sync/programSyncFunc";
+import { streamServices } from "@/app/realGreen/customer/sync/serviceSyncFunc";
 import { CustStat } from "@/app/realGreen/_lib/subTypes/RGSearchRanges";
 import { findSyncEdge, COMFORT_BUFFER_MS } from "@/app/realGreen/customer/sync/findSyncEdge";
 import { remapCallLogSearch } from "@/app/realGreen/callLog/_lib/remapCallLogSearch";
@@ -65,11 +65,9 @@ async function syncCustomers(): Promise<SyncResult> {
     ? { statuses: ALL_CUST_STATS, updated: { min: lastSyncedAt, max: syncStart.toISOString() } }
     : { statuses: ALL_CUST_STATS };
   const rawSearch = remapCustSearch(criteria);
-  const rawCustomers = await fetchCustomers(rawSearch);
+  const { fetchedCount: customerCount } = await streamCustomers({ rawSearch });
 
-  await bulkUpsertCustomers(rawCustomers);
-
-  if (rawCustomers.length === 0) {
+  if (customerCount === 0) {
     console.log("[customer sync] No records fetched — lastSyncedAt unchanged");
     return {
       entityType: SYNC_ENTITY_TYPES.customer,
@@ -86,7 +84,7 @@ async function syncCustomers(): Promise<SyncResult> {
   return {
     entityType: SYNC_ENTITY_TYPES.customer,
     lastSyncedAt: edgeResult.newLastSyncedAt,
-    lastSyncCount: rawCustomers.length,
+    lastSyncCount: customerCount,
     lastSyncEdgeIterations: edgeResult.iterations,
     lastSyncBufferSeconds: Math.round(COMFORT_BUFFER_MS / 1000),
   };
@@ -100,11 +98,9 @@ async function syncPrograms(): Promise<SyncResult> {
     ? { updated: { min: lastSyncedAt, max: syncStart.toISOString() }, season: { min: SEASON_FLOOR, max: SEASON_CEIL } }
     : { season: { min: SEASON_FLOOR, max: SEASON_CEIL } };
   const rawSearch = remapProgSearch(criteria as Parameters<typeof remapProgSearch>[0]);
-  const rawPrograms = await fetchPrograms(rawSearch);
+  const { fetchedCount: programCount } = await streamPrograms({ rawSearch });
 
-  await bulkUpsertPrograms(rawPrograms);
-
-  if (rawPrograms.length === 0) {
+  if (programCount === 0) {
     console.log("[program sync] No records fetched — lastSyncedAt unchanged");
     return {
       entityType: SYNC_ENTITY_TYPES.program,
@@ -121,7 +117,7 @@ async function syncPrograms(): Promise<SyncResult> {
   return {
     entityType: SYNC_ENTITY_TYPES.program,
     lastSyncedAt: edgeResult.newLastSyncedAt,
-    lastSyncCount: rawPrograms.length,
+    lastSyncCount: programCount,
     lastSyncEdgeIterations: edgeResult.iterations,
     lastSyncBufferSeconds: Math.round(COMFORT_BUFFER_MS / 1000),
   };
@@ -175,9 +171,7 @@ async function syncServices(): Promise<SyncResult> {
     ? { updated: { min: lastSyncedAt, max: syncStart.toISOString() }, season: { min: SEASON_FLOOR, max: SEASON_CEIL } }
     : { season: { min: SEASON_FLOOR, max: SEASON_CEIL } };
   const rawSearch = remapServSearch(criteria);
-  const rawServices = await fetchServices(rawSearch);
-
-  await bulkUpsertServices(rawServices);
+  const { fetchedCount: serviceCount } = await streamServices({ rawSearch });
 
   // /Reporting/Service/Updated does not exist. The service lastSyncedAt is set
   // to the program edge in runDeltaSync (hypothesis: editing a service always
@@ -187,7 +181,7 @@ async function syncServices(): Promise<SyncResult> {
   return {
     entityType: SYNC_ENTITY_TYPES.service,
     lastSyncedAt: lastSyncedAt ?? syncStart.toISOString(), // placeholder — overwritten by caller
-    lastSyncCount: rawServices.length,
+    lastSyncCount: serviceCount,
     lastSyncEdgeIterations: 0,
     lastSyncBufferSeconds: 0, // overwritten by caller
   };

@@ -1,4 +1,3 @@
-import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import {
   baseContactPreference,
   remapContactPreference,
@@ -21,6 +20,11 @@ function mapContactPoints(raw: CustomerRaw): ContactPoint[] {
   }));
 
   return [...phoneContacts, ...emailContacts];
+}
+
+/** RealGreen sends an empty or missing string for an unused tax slot. */
+function blankToNull(taxId: string | null | undefined): string | null {
+  return taxId ? taxId : null;
 }
 
 function remapCustomer(raw: CustomerRaw): CustomerCore {
@@ -70,9 +74,7 @@ function remapCustomer(raw: CustomerRaw): CustomerCore {
     holdStart: raw.holdBegin ? raw.holdBegin.split("T")[0] : null,
     holdEnd: raw.holdEnd ? raw.holdEnd.split("T")[0] : null,
     subdivisionId: raw.subdivisionID || baseNumId,
-    taxIds: typeGuard
-      .definedArray([raw.taxID1, raw.taxID2, raw.taxID3])
-      .filter((t) => t.length > 0),
+    taxSlotIds: [blankToNull(raw.taxID1), blankToNull(raw.taxID2), blankToNull(raw.taxID3)],
     techNote: raw.techNote,
     useBilling: raw.useBillingInfo,
     cancelCodeId: raw.cancelCode,

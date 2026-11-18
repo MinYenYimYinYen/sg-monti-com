@@ -230,6 +230,28 @@ same records.
 
 ---
 
+---
+
+## Service Re-sync
+
+Use it when a field is added to the service mapping and existing mirror documents need it, without
+wiping the database. On the Customers tab of `/syncUtils`, **Re-sync Services** re-fetches every
+service for every synced season and upserts it over the mirror. Requires `can.fullSync.write`.
+
+How it differs from a full sync:
+
+- **Nothing is deleted.** There is no wipe, so no password step and no persisted run. Mirror queries
+  keep working throughout.
+- **It holds the `customerGroup` lock** with operation `"resync"`, so delta syncs, the cron and full
+  syncs are refused while it runs (and it is refused while any of them runs). `assertMirrorAvailable`
+  only blocks on `"full"`, which is why mirror queries are unaffected.
+- **No checkpoints are written.** `lastSyncedAt` is untouched, so delta sync keeps its place.
+- **One request per season** (`resyncServicesChunk`, server logic in `customer/sync/runServiceResync.ts`,
+  steps from `buildServiceResyncChunks` in `syncLock/syncLockLogic.ts`). A failed season stops the loop;
+  run it again, since every write is an idempotent upsert.
+- **It cannot remove services deleted in RealGreen.** Only a full sync does that.
+- Fields the sync no longer maps are not removed from existing documents; only a full sync clears them.
+
 ## Setup
 
 ### 1. vercel.json (already configured)
@@ -300,6 +322,7 @@ src/app/realGreen/customer/mirror/
 src/app/realGreen/customer/sync/
   runDeltaSync.ts             ← lock + concurrent entity syncs, returns DeltaSyncResult
   runFullSync.ts              ← startFullSync (wipe) and runFullSyncChunk
+  runServiceResync.ts         ← runServiceResyncChunk (services only, no wipe)
   findSyncEdge.ts             ← Reporting binary search
 
 src/app/syncUtils/            ← admin page, API route + contract, chunk-loop hook

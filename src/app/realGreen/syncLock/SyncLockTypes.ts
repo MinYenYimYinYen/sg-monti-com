@@ -2,16 +2,21 @@ import { CreatedUpdated } from "@/lib/mongoose/mongooseTypes";
 import { SyncGroup } from "@/app/realGreen/syncLock/syncGroups";
 import { SyncEntityType } from "@/app/realGreen/syncMetadata/syncEntityTypes";
 
-export type SyncOperation = "delta" | "full";
+/**
+ * `resync` re-upserts one entity's records without wiping anything. It holds the lock (so delta
+ * and full syncs cannot overlap it) but, unlike `full`, never blocks mirror queries.
+ */
+export type SyncOperation = "delta" | "full" | "resync";
 
 /** `wipe` and `finalize` are the bookends of a full sync; the rest load one entity slice. */
 export type FullSyncChunkKind = SyncEntityType | "wipe" | "finalize";
 
 /**
  * `running` with no live lock means the request was interrupted (timeout or closed tab).
- * Anything that is not `done` is retried on resume.
+ * `partial` means a time-limited part finished and more remains: `resumeOffset` is where the next
+ * request continues. Anything that is not `done` is retried on resume.
  */
-export type FullSyncChunkStatus = "pending" | "running" | "done" | "failed";
+export type FullSyncChunkStatus = "pending" | "running" | "partial" | "done" | "failed";
 
 export type FullSyncChunk = {
   key: string;
@@ -20,6 +25,9 @@ export type FullSyncChunk = {
   seasonMin?: number;
   seasonMax?: number;
   status: FullSyncChunkStatus;
+  /** Only for steps that do not fit one request (customers). The search offset to continue from. */
+  resumeOffset?: number;
+  /** Cumulative across the parts of a resumable step. */
   syncedCount?: number;
   durationMs?: number;
   errorMessage?: string;

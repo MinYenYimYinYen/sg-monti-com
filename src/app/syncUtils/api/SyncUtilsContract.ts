@@ -1,7 +1,7 @@
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { DataResponse } from "@/lib/api/types/responses";
 import { SyncGroup } from "@/app/realGreen/syncLock/syncGroups";
-import { FullSyncRun, SyncGroupStatus, SyncedCount } from "@/app/realGreen/syncLock/SyncLockTypes";
+import { FullSyncChunk, FullSyncRun, SyncGroupStatus, SyncedCount } from "@/app/realGreen/syncLock/SyncLockTypes";
 
 export type DeltaSyncOutcome = {
   skipped: boolean;
@@ -37,6 +37,15 @@ export interface SyncUtilsContract extends ApiContract {
   runFullSyncChunk: {
     params: { group: SyncGroup; chunkKey: string };
     result: DataResponse<FullSyncRun>;
+  };
+
+  /**
+   * Re-fetches one season slice of services and upserts it, without wiping anything. The client
+   * calls it once per step of `buildServiceResyncChunks`. Safe to repeat after a failure.
+   */
+  resyncServicesChunk: {
+    params: { chunkKey: string };
+    result: DataResponse<FullSyncChunk>;
   };
 
   /**

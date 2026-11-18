@@ -39,6 +39,7 @@ import { serviceEtaReducer } from "@/app/scheduling/eta/serviceEtaSlice";
 import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFeedback/report/loadoutReportSlice";
 import { inventoryReducer } from "@/app/inventory/inventorySlice";
 import { salesTaxUIReducer } from "@/app/salesTax/salesTaxUISlice";
+import { salesTaxMappingReducer } from "@/app/salesTax/salesTaxMapping/salesTaxMappingSlice";
 import javelinReducer from "@/app/javelin/javelinSlice";
 import depositReducer from "@/app/javelin/depositSlice";
 import ckDepositReducer from "@/app/javelin/ckDepositSlice";
@@ -107,6 +108,7 @@ const rootReducer = combineReducers({
   flag: flagReducer,
   inventory: inventoryReducer,
   salesTaxUI: salesTaxUIReducer,
+  salesTaxMapping: salesTaxMappingReducer,
   loadout: loadoutReducer,
   loadoutStart: loadoutStartReducer,
   loadoutFinish: loadoutFinishReducer,

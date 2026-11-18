@@ -89,6 +89,7 @@ flip between the mirror pipeline and the live RealGreen API.
 | Sync-before-query | `CustomerMirrorContract.ts` → `syncFirst?: boolean` | Set `syncFirst: true` in hook dispatch params |
 | Cron endpoint | `vercel.json` → `/vercelCron/mirrorSync/api` | Remove or disable the cron entry |
 | Manual delta / full sync | `/syncUtils` page (`syncUtils/api/route.ts`, admin) | Delta on demand; full sync wipes and reloads (see `mirrorSync.readme.md`) |
+| Backfill a service field | `/syncUtils/customers` → Re-sync Services (`fullSync.write`) | Re-upserts every service, all seasons, without a wipe; see `mirrorSync.readme.md` |
 | Unstick a sync | `/syncUtils` → Clear lock / Abandon run | Frees a stuck lease; Abandon discards an unfinished full sync |
 
 **Contexts permanently on mirror (no flag):** `"corruptedRecords"`, `"customerQuery"`

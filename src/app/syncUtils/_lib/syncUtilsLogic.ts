@@ -5,6 +5,17 @@ export function getRemainingChunks(run: FullSyncRun): FullSyncChunk[] {
   return run.chunks.filter((chunk) => chunk.kind !== "wipe" && chunk.status !== "done");
 }
 
+/** The status of one step in `run`, or `undefined` when the run has no such step. */
+export function getChunkStatus({
+  run,
+  chunkKey,
+}: {
+  run: FullSyncRun;
+  chunkKey: string;
+}): FullSyncChunk["status"] | undefined {
+  return run.chunks.find((chunk) => chunk.key === chunkKey)?.status;
+}
+
 export function summarizeRunProgress(run: FullSyncRun): { doneCount: number; totalCount: number } {
   return {
     doneCount: run.chunks.filter((chunk) => chunk.status === "done").length,

@@ -2,7 +2,7 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 import { ServiceSyncContract } from "@/app/realGreen/customer/sync/ServiceSyncContract";
 import { remapServSearch } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapServSearch";
-import { fetchServices, bulkUpsertServices } from "@/app/realGreen/customer/sync/serviceSyncFunc";
+import { streamServices } from "@/app/realGreen/customer/sync/serviceSyncFunc";
 import { getLastSyncedAt, setLastSyncedAt } from "@/app/realGreen/syncMetadata/syncMetadataFunc";
 import { SYNC_ENTITY_TYPES } from "@/app/realGreen/syncMetadata/syncEntityTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
@@ -36,11 +36,9 @@ const handlers: HandlerMap<ServiceSyncContract> = {
       console.log(`[service sync] Search criteria:`, JSON.stringify(rawSearch, null, 2));
 
       // Paginated fetch from RealGreen using capped exponential batch algorithm.
-      const rawServices = await fetchServices(rawSearch);
-
-      // Bulk upsert to MongoDB — single command, keyed by servId.
-      // Corrupted production records are skipped and logged (not thrown).
-      const synced = await bulkUpsertServices(rawServices);
+      // Each round is upserted to MongoDB as it arrives, keyed by servId. Corrupted production
+      // records are skipped and logged (not thrown).
+      const { writtenCount: synced } = await streamServices({ rawSearch });
 
       // Record the sync completion time.
       const newLastSyncedAt = new Date().toISOString();

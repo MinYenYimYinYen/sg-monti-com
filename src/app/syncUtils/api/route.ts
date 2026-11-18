@@ -15,6 +15,7 @@ import { forceClearLock, getSyncLock } from "@/app/realGreen/syncLock/syncLockFu
 import { toLockStatus } from "@/app/realGreen/syncLock/syncLockLogic";
 import { runDeltaSync } from "@/app/realGreen/customer/sync/runDeltaSync";
 import { runFullSyncChunk, startFullSync } from "@/app/realGreen/customer/sync/runFullSync";
+import { runServiceResyncChunk } from "@/app/realGreen/customer/sync/runServiceResync";
 import { assertCurrentUserPassword } from "@/app/syncUtils/_lib/verifyCurrentUserPassword";
 import { can } from "@/permission/can";
 
@@ -106,6 +107,14 @@ const handlers: HandlerMap<SyncUtilsContract> = {
     handler: async ({ group, chunkKey }) => ({
       success: true,
       payload: await runFullSyncChunk({ group, chunkKey }),
+    }),
+  },
+
+  resyncServicesChunk: {
+    capability: can.fullSync.write,
+    handler: async ({ chunkKey }) => ({
+      success: true,
+      payload: await runServiceResyncChunk({ chunkKey }),
     }),
   },
 

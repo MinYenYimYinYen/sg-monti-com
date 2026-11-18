@@ -223,14 +223,14 @@ export class ServiceUtils {
   }
 
   /**
-   * The current-season price after service and program discounts and the prepay discount
-   * actually recorded on the service (`ppyDiscAmt`), before tax. Unlike `priceAfterPrepay`, it
-   * reads the stored dollar amount instead of recomputing from a percent, so it is safe for
-   * completed services whose prepay terms are no longer known.
+   * The current-season price after service and program discounts and the prepay discount the CRM
+   * recorded on the service (`prepayDiscAmt`, dollars; null means no prepay), before tax. Never
+   * negative. For history only: it reads recorded dollars, so it is safe for completed services
+   * whose prepay terms are no longer known. Use `priceAfterPrepay(percent)` to price a proposal.
    */
   public get priceAfterAllDiscounts(): number {
     const cents = Math.round(
-      (this.getPriceAfterDiscounts("price") - this.service.ppyDiscAmt) * 100,
+      (this.getPriceAfterDiscounts("price") - (this.service.prepayDiscAmt ?? 0)) * 100,
     );
     return Math.max(cents, 0) / 100;
   }

@@ -6,6 +6,7 @@ import { Button } from "@/style/components/button";
 import { ENTITY_LABELS, GROUP_LABELS, SyncGroup } from "@/app/realGreen/syncLock/syncGroups";
 import { useSyncGroup } from "@/app/syncUtils/_lib/useSyncGroup";
 import { isWipeComplete, formatDuration } from "@/app/syncUtils/_lib/syncUtilsLogic";
+import { OPERATION_LABELS } from "@/app/realGreen/syncLock/syncLockLogic";
 import { FullSyncDialog } from "@/app/syncUtils/_components/FullSyncDialog";
 import { FullSyncChecklist } from "@/app/syncUtils/_components/FullSyncChecklist";
 import { useSelector } from "react-redux";
@@ -28,8 +29,10 @@ export function SyncGroupPanel({ group, title }: SyncGroupPanelProps) {
     errorMessage,
     deltaOutcome,
     liveRun,
+    resyncRun,
     runDelta,
     startFull,
+    resyncServices,
     resumeFull,
     clearLock,
     refresh,
@@ -104,14 +107,14 @@ export function SyncGroupPanel({ group, title }: SyncGroupPanelProps) {
         {/* Lock notices */}
         {lockedElsewhere && lock && (
           <div className="rounded-md border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm text-foreground/80">
-            A {lock.operation} sync is running (started{" "}
+            A {OPERATION_LABELS[lock.operation]} is running (started{" "}
             <span className="font-mono text-xs">{lock.lockedAt}</span>). Controls are disabled until it finishes.
           </div>
         )}
         {staleLock && lock && (
           <div className="flex items-center justify-between gap-3 rounded-md border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm text-foreground/80">
             <span>
-              A {lock.operation} sync lock expired at <span className="font-mono text-xs">{lock.expiresAt}</span>{" "}
+              A {OPERATION_LABELS[lock.operation]} lock expired at <span className="font-mono text-xs">{lock.expiresAt}</span>{" "}
               without finishing, so the request probably died. New syncs can take over automatically.
             </span>
             <Button
@@ -154,6 +157,28 @@ export function SyncGroupPanel({ group, title }: SyncGroupPanelProps) {
           >
             Full Sync...
           </Button>
+          {group === "customerGroup" && (
+            <Button
+              variant="outline"
+              intensity="solid"
+              onClick={resyncServices}
+              disabled={isBusy || lockedElsewhere || liveRun !== null || !canFullSync}
+              title={
+                canFullSync
+                  ? "Re-fetches every service and upserts it. Deletes nothing."
+                  : "You do not have access to run a full sync"
+              }
+            >
+              {busy === "resync" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Re-syncing services...
+                </>
+              ) : (
+                "Re-sync Services"
+              )}
+            </Button>
+          )}
         </div>
         {liveRun !== null && !isBusy && (
           <p className="text-xs text-foreground/50">
@@ -200,6 +225,7 @@ export function SyncGroupPanel({ group, title }: SyncGroupPanelProps) {
 
         {/* Full sync progress and recovery */}
         {liveRun && <FullSyncChecklist run={liveRun} />}
+        {resyncRun && <FullSyncChecklist run={resyncRun} title="Service re-sync progress" />}
         {unfinishedRun && (
           <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-card px-4 py-3 text-sm">
             <span className="flex-1 text-foreground/80">

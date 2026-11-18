@@ -44,7 +44,9 @@
 
 import type { Customer, CustomerCore, CustomerProps } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import type { Program, ProgramCore, ProgramProps } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
-import type { Service, ServiceCore, ServiceProps } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import type { Service, ServiceCore, ServiceProps, ServiceTaxLineCore } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
+import type { TaxSlotTuple } from "@/app/realGreen/taxCode/taxSlot";
+import { deriveTaxCodes, hydrateTaxLines } from "@/app/realGreen/customer/selectors/hydrateTax";
 import type { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
 import type { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import type { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
@@ -83,7 +85,7 @@ import { ProgCodeUtils } from "@/app/realGreen/progServ/_lib/classes/ProgCodeUti
 // corresponding spec type is updated here.
 
 type CustomerExternalProps = Pick<CustomerProps,
-  | "taxCodes"
+  | "taxSlotCodes"
   | "discount"
   | "callAhead"
   | "flags"
@@ -134,10 +136,18 @@ export type ProgCodeSpec = Partial<Pick<ProgCode,
   | "minForPreferred"
 >>;
 
+/**
+ * Tax a test records on a service: one entry per slot the CRM recorded. The builder attaches the
+ * customer's code for that slot, so a test never builds a `ServiceTaxLine` by hand.
+ */
+export type TaxLineSpec = ServiceTaxLineCore;
+
 /** Spec for generating a single Service. */
 export type MakeServiceSpec = {
   /** Raw Core field overrides — scalar values, no externalities. */
   core?: Partial<ServiceCore>;
+  /** The tax the CRM recorded on this service, by slot. Defaults to none. */
+  taxLines?: TaxLineSpec[];
   /** ServCode overrides — name, productRules, etc. */
   servCode?: ServCodeSpec;
 } & {
@@ -162,6 +172,11 @@ export type MakeCustomerSpec = {
   core?: Partial<CustomerCore>;
   /** Programs on this customer — array length = number of programs. */
   programs?: MakeProgramSpec[];
+  /**
+   * Tax codes placed into slots 1, 2, 3 in order, with no gaps. Use `taxSlotCodes` to build a
+   * customer with a gap (a code in slot 1, none in 2, one in 3). Ignored when `taxSlotCodes` is given.
+   */
+  taxCodes?: TaxCode[];
 } & {
   [K in keyof CustomerExternalProps]?: CustomerExternalProps[K];
 };
@@ -258,7 +273,8 @@ function buildProgCodeFromSpec(
 export function makeCustomer(overrides: MakeCustomerSpec = {}): Customer {
   const {
     core: customerCore = {},
-    taxCodes = [],
+    taxCodes: orderedTaxCodes = [],
+    taxSlotCodes: taxSlotCodesOverride,
     discount: customerDiscount = null,
     callAhead: customerCallAhead = null,
     flags = [],
@@ -268,9 +284,20 @@ export function makeCustomer(overrides: MakeCustomerSpec = {}): Customer {
     programs: programSpecs = [],
   } = overrides;
 
-  // Derive taxRate and taxIds from the provided TaxCode objects
+  // Place the codes into slots, then derive the compact list, the rate and the slot ids from them,
+  // exactly as makeCustomersSelector does.
+  const taxSlotCodes: TaxSlotTuple<TaxCode | null> = taxSlotCodesOverride ?? [
+    orderedTaxCodes[0] ?? null,
+    orderedTaxCodes[1] ?? null,
+    orderedTaxCodes[2] ?? null,
+  ];
+  const taxCodes = deriveTaxCodes(taxSlotCodes);
   const taxRate = taxCodes.reduce((sum, t) => sum + t.taxRate, 0);
-  const taxIds = taxCodes.map((t) => t.taxCodeId);
+  const taxSlotIds: TaxSlotTuple<string | null> = [
+    taxSlotCodes[0]?.taxCodeId ?? null,
+    taxSlotCodes[1]?.taxCodeId ?? null,
+    taxSlotCodes[2]?.taxCodeId ?? null,
+  ];
 
   // Build a discount map from all discounts in the tree (for FK wiring)
   const allDiscounts: (DiscountDoc | null)[] = [
@@ -309,7 +336,8 @@ export function makeCustomer(overrides: MakeCustomerSpec = {}): Customer {
     ...baseCustomerNoX,
     ...customerCore,
     custId,
-    taxIds,
+    taxSlotIds,
+    taxSlotCodes,
     taxCodes,
     taxRate,
     discount: customerDiscount,
@@ -371,6 +399,7 @@ export function makeCustomer(overrides: MakeCustomerSpec = {}): Customer {
         promise: servicePromise = null,
         promiseIssues: servicePromiseIssues = [],
         priorityService = null,
+        taxLines: taxLineSpecs = [],
       } = servSpec;
 
       const servId = serviceCore.servId ?? nextServId();
@@ -396,6 +425,8 @@ export function makeCustomer(overrides: MakeCustomerSpec = {}): Customer {
         assignments: new AssignmentUtils([]),
         loadoutInventory: baseLoadout,
         eta: null,
+        taxLineCores: taxLineSpecs,
+        taxLines: hydrateTaxLines({ taxLineCores: taxLineSpecs, taxSlotCodes }),
       };
 
       // Mutate x in place — same pattern as centralSelectors.ts

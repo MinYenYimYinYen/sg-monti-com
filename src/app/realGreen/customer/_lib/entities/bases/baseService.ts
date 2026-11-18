@@ -21,8 +21,9 @@ export const baseServiceCore: ServiceCore = {
   nextPrice: 0,
   nextSize: 0,
   price: 0,
-  ppyDiscAmt: 0,
-  prepayId: null,
+  prepayDiscAmt: null,
+  // prepayId: unused, see ServiceTypes.
+  taxLineCores: [],
   size: 0,
   progId: baseNumId,
   season: 0,
@@ -51,6 +52,7 @@ export const baseService: Service = {
     loadoutInventory: baseLoadout,
     eta: null,
     priorityService: null,
+    taxLines: [],
   }),
 
   ...baseServiceDoc,
@@ -65,4 +67,5 @@ export const baseService: Service = {
   loadoutInventory: baseLoadout,
   eta: null,
   priorityService: null,
+  taxLines: [],
 };

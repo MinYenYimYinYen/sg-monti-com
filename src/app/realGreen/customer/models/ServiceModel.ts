@@ -75,6 +75,15 @@ const productionCoreSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const taxLineSchema = new mongoose.Schema(
+  {
+    slot: { type: Number, required: true },
+    taxableAmt: { type: Number, required: true },
+    taxAmt: { type: Number, required: true },
+  },
+  { _id: false },
+);
+
 const serviceSchema = new mongoose.Schema<ServiceCore>(
   {
     servId: { type: Number, required: true, unique: true },
@@ -87,10 +96,12 @@ const serviceSchema = new mongoose.Schema<ServiceCore>(
     nextPrice: { type: Number, default: 0 },
     nextSize: { type: Number, default: 0 },
     price: { type: Number, default: 0 },
-    // No default on ppyDiscAmt: a service synced before this field existed must read as
-    // missing, not as "no prepay discount", until a full sync rewrites it.
-    ppyDiscAmt: { type: Number },
-    prepayId: { type: Number, default: null },
+    // No default on prepayDiscAmt or taxLineCores: a service synced before these fields existed
+    // must read as missing, not as "no prepay" or "no tax", until a re-sync rewrites it.
+    // (Mongoose gives arrays an empty default unless it is switched off.)
+    prepayDiscAmt: { type: Number },
+    taxLineCores: { type: [taxLineSchema], default: undefined },
+    // prepayId: unused, see ServiceTypes.
     size: { type: Number, default: 0 },
     progId: { type: Number, required: true },
     servCodeId: { type: String, default: "" },

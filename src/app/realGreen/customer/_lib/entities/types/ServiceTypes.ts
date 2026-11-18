@@ -14,6 +14,8 @@ import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
 import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
 import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
+import { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
+import { TaxSlot } from "@/app/realGreen/taxCode/taxSlot";
 
 export type ServiceRaw = {
   // actualManHours?: number;
@@ -50,10 +52,11 @@ export type ServiceRaw = {
   nextPrice: number | null;
   nextSize: number | null;
   // postedDate?: string;
-  // prepayAmount?: number;
-  // Optional because we have not yet confirmed RealGreen fills these for every service.
-  prepayId?: number | null;
-  prepaymentDiscountAmount?: number;
+  /** Prepay discount in dollars; null or absent when the service has no prepay. Confirmed against the CRM 2026-11-18. */
+  prepayAmount?: number | null;
+  // prepayId?: number | null; // Not a key into the PrepayCodes list (those ids are strings like "P3"), and prepayAmount makes it unnecessary.
+  // prepaymentDiscountAmount?: number; // Dead field: always 0 from RealGreen as of 2026-11-18, even when a prepay applies. Use prepayAmount.
+
   price: number | null;
   // productionValue?: number;
   productsUsed?: AppProductRaw[];
@@ -74,18 +77,33 @@ export type ServiceRaw = {
   // soldDate?: string;
   // startAfter?: TimeSpan;
   // startDate?: string;
-  // taxAmount1?: number;
-  // taxAmount2?: number;
-  // taxAmount3?: number;
-  // taxableAmount1?: number;
-  // taxableAmount2?: number;
-  // taxableAmount3?: number;
+  // Tax the CRM recorded for the service, one slot per tax code. Source of truth for history.
+  taxAmount1?: number | null;
+  taxAmount2?: number | null;
+  taxAmount3?: number | null;
+  taxableAmount1?: number | null;
+  taxableAmount2?: number | null;
+  taxableAmount3?: number | null;
   technicianNote: string;
   // technicianNoteExpiration?: string;
   // timestamp?: number;
   // totalAmount?: number;
   // varianceManHoursFormatted?: string;
 };
+
+/** One tax slot as the CRM recorded it on a service. Slot n belongs to the customer's slot n. */
+export type ServiceTaxLineCore = {
+  slot: TaxSlot;
+  taxableAmt: number;
+  taxAmt: number;
+};
+
+export type ServiceTaxLineProps = {
+  /** The customer's tax code in this line's slot; `baseTaxCode` when it cannot be resolved. */
+  taxCode: TaxCode;
+};
+
+export type ServiceTaxLine = ServiceTaxLineCore & ServiceTaxLineProps;
 
 export type ServiceCore = {
   servId: number;
@@ -98,9 +116,17 @@ export type ServiceCore = {
   nextPrice: number;
   nextSize: number;
   price: number;
-  /** Prepay discount in dollars, applied after service and program discounts. */
-  ppyDiscAmt: number;
-  prepayId: number | null;
+  /**
+   * Prepay discount in dollars, applied after service and program discounts. Null means the
+   * service has no prepay. From RealGreen `prepayAmount`; `prepaymentDiscountAmount` is a dead field.
+   */
+  prepayDiscAmt: number | null;
+  // prepayId: number | null; // Unused: see ServiceRaw.
+  /**
+   * The tax the CRM recorded for a completed service, one line per tax slot. Authoritative for
+   * history; pricing functions are for proposals. Read `ServiceProps.taxLines`, which adds the code.
+   */
+  taxLineCores: ServiceTaxLineCore[];
   size: number;
   progId: number;
   servCodeId: string;
@@ -127,6 +153,8 @@ export type ServiceProps = {
   loadoutInventory: LoadoutBase;
   eta: string | null;
   priorityService: PriorityServiceDoc | null;
+  /** `taxLineCores` with each line's tax code attached. */
+  taxLines: ServiceTaxLine[];
 };
 
 export type Service = ServiceDoc & ServiceProps;

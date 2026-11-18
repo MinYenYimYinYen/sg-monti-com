@@ -2,7 +2,7 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 import { CustomerSyncContract } from "@/app/realGreen/customer/sync/CustomerSyncContract";
 import { remapCustSearch } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapCustSearch";
-import { fetchCustomers, bulkUpsertCustomers } from "@/app/realGreen/customer/sync/customerSyncFunc";
+import { streamCustomers } from "@/app/realGreen/customer/sync/customerSyncFunc";
 import { getLastSyncedAt, setLastSyncedAt } from "@/app/realGreen/syncMetadata/syncMetadataFunc";
 import { SYNC_ENTITY_TYPES } from "@/app/realGreen/syncMetadata/syncEntityTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
@@ -32,10 +32,8 @@ const handlers: HandlerMap<CustomerSyncContract> = {
       console.log(`[customer sync] Search criteria:`, JSON.stringify(rawSearch, null, 2));
 
       // Paginated fetch from RealGreen using capped exponential batch algorithm.
-      const rawCustomers = await fetchCustomers(rawSearch);
-
-      // Bulk upsert to MongoDB — single command, keyed by custId.
-      const synced = await bulkUpsertCustomers(rawCustomers);
+      // Each round is upserted to MongoDB as it arrives, keyed by custId.
+      const { writtenCount: synced } = await streamCustomers({ rawSearch });
 
       // Record the sync completion time.
       const newLastSyncedAt = new Date().toISOString();

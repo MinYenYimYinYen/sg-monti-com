@@ -4,7 +4,13 @@ import { SyncUtilsContract } from "@/app/syncUtils/api/SyncUtilsContract";
 
 export const SYNC_UTILS_API_PATH = "/syncUtils/api";
 
-export type SyncUtilsOp = "getSyncStatus" | "runDeltaSync" | "startFullSync" | "runFullSyncChunk" | "clearSyncLock";
+export type SyncUtilsOp =
+  | "getSyncStatus"
+  | "runDeltaSync"
+  | "startFullSync"
+  | "runFullSyncChunk"
+  | "resyncServicesChunk"
+  | "clearSyncLock";
 
 type OpParams<K extends SyncUtilsOp> = SyncUtilsContract[K]["params"];
 type OpPayload<K extends SyncUtilsOp> =

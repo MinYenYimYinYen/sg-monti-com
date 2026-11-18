@@ -9,6 +9,7 @@ function ChunkIcon({ chunk }: { chunk: FullSyncChunk }) {
     case "done":
       return <CheckCircle2 className="h-4 w-4 shrink-0 text-accent" />;
     case "running":
+    case "partial":
       return <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />;
     case "failed":
       return <XCircle className="h-4 w-4 shrink-0 text-destructive" />;
@@ -17,14 +18,14 @@ function ChunkIcon({ chunk }: { chunk: FullSyncChunk }) {
   }
 }
 
-/** Per-step progress of a full sync, including the error for a failed step. */
-export function FullSyncChecklist({ run }: { run: FullSyncRun }) {
+/** Per-step progress of a full sync (or a re-sync), including the error for a failed step. */
+export function FullSyncChecklist({ run, title = "Full sync progress" }: { run: FullSyncRun; title?: string }) {
   const { doneCount, totalCount } = summarizeRunProgress(run);
 
   return (
     <div className="rounded-md border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-4 py-2 text-sm">
-        <span className="font-semibold text-foreground">Full sync progress</span>
+        <span className="font-semibold text-foreground">{title}</span>
         <span className="text-foreground/60">
           {doneCount} of {totalCount} steps
         </span>
@@ -35,8 +36,10 @@ export function FullSyncChecklist({ run }: { run: FullSyncRun }) {
             <div className="flex items-center gap-2">
               <ChunkIcon chunk={chunk} />
               <span className="flex-1 text-foreground">{chunk.label}</span>
-              {chunk.status === "done" && chunk.kind !== "wipe" && chunk.kind !== "finalize" && (
-                <span className="text-foreground/60">{(chunk.syncedCount ?? 0).toLocaleString()} records</span>
+              {(chunk.status === "done" || chunk.status === "partial") && chunk.kind !== "wipe" && chunk.kind !== "finalize" && (
+                <span className="text-foreground/60">
+                  {(chunk.syncedCount ?? 0).toLocaleString()} records{chunk.status === "partial" ? " so far" : ""}
+                </span>
               )}
               {chunk.durationMs !== undefined && (
                 <span className="w-16 text-right font-mono text-xs text-foreground/50">

@@ -322,6 +322,31 @@ prices it at render time:
 
 ---
 
+## History vs. proposals
+
+Everything above computes prices that have not been charged yet: prepay letters, upsells, sales
+proposals. For a **completed** service the CRM has already recorded what it charged, and that record
+is the source of truth, so history is read rather than recomputed:
+
+- `ServiceCore.prepayDiscAmt` is the prepay discount in dollars (`null` means no prepay). It comes from
+  RealGreen's `prepayAmount`; `prepaymentDiscountAmount` is a dead field that is always 0, and the
+  service's numeric `prepayId` does not key into the PrepayCodes list, so neither is used.
+- `ServiceCore.taxLineCores` is the recorded tax per slot (`taxableAmount1..3`, `taxAmount1..3`).
+  Slot n belongs to the customer's slot n (`CustomerCore.taxSlotIds`, from `taxID1..3`), both typed
+  with `TaxSlot`. A customer with a code in slot 1, none in 2 and one in 3 keeps that gap, so the
+  service's slot 3 is never read as slot 2. `Service.taxLines` is the hydrated version: each line
+  carries the customer's tax code for its slot, so consumers such as the sales tax report
+  (`src/app/salesTax`) just read and sum it. An unresolved code is `baseTaxCode`, a bogus row that
+  usually means `useTaxCode` was not called.
+- Pricing (prepay letters, quick send, proposals) reads `customer.taxCodes`, the filled slots in slot
+  order, because it rounds tax per code and does not care which slot a code sits in.
+- `ServiceUtils.priceAfterAllDiscounts` is the recorded price after discounts and prepay.
+
+Known discrepancy, deliberately not reconciled: on two hand-checked CRM services the CRM rounded tax
+to the nearest cent per code both with a prepay (servId 5969290, tax 5.00) and with no discount at
+all (servId 5953376, tax 14.12). `calculateTax` rounds up when no discount applies (14.14 for the
+second). The rule above stays as is for proposals, which are tested against other CRM values.
+
 ## Deferred / Future Work
 
 The following pricing scenarios are **not yet implemented**:

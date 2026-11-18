@@ -166,6 +166,11 @@ const quickBooksSection: NavSection = {
       href: "/account/mapping",
       capability: can.accountMappings.read,
     },
+    {
+      title: "Sales Tax",
+      href: "/salesTax",
+      capability: can.salesTaxMappings.read,
+    },
   ],
 };
 

@@ -13,9 +13,9 @@ import { remapCustSearch } from "@/app/realGreen/customer/_lib/searchUtil/search
 import { remapProgSearch } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapProgSearch";
 import { remapServSearch } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapServSearch";
 import { remapCallLogSearch } from "@/app/realGreen/callLog/_lib/remapCallLogSearch";
-import { fetchCustomers, bulkUpsertCustomers } from "@/app/realGreen/customer/sync/customerSyncFunc";
-import { fetchPrograms, bulkUpsertPrograms } from "@/app/realGreen/customer/sync/programSyncFunc";
-import { fetchServices, bulkUpsertServices } from "@/app/realGreen/customer/sync/serviceSyncFunc";
+import { streamCustomers } from "@/app/realGreen/customer/sync/customerSyncFunc";
+import { streamPrograms } from "@/app/realGreen/customer/sync/programSyncFunc";
+import { streamServices } from "@/app/realGreen/customer/sync/serviceSyncFunc";
 import { fetchCallLogs, bulkUpsertCallLogs, findCallLogSyncEdge } from "@/app/realGreen/callLog/sync/callLogSyncFunc";
 import { findSyncEdge, COMFORT_BUFFER_MS } from "@/app/realGreen/customer/sync/findSyncEdge";
 import { GROUP_ENTITY_TYPES, GROUP_LABELS, SyncGroup } from "@/app/realGreen/syncLock/syncGroups";
@@ -67,7 +67,18 @@ async function wipeGroup(group: SyncGroup): Promise<void> {
 // Chunk execution
 // ---------------------------------------------------------------------------
 
-type ChunkOutcome = { syncedCount: number };
+/**
+ * `nextOffset` is set only when a resumable step stopped early. `syncedCount` is the step's running
+ * total, so a resumed step reports everything it has loaded across its parts.
+ */
+type ChunkOutcome = { syncedCount: number; nextOffset?: number | null };
+
+/**
+ * How long one customer request keeps fetching before it stops and hands back an offset to resume
+ * from. The route's `maxDuration` is 800 s (a literal in `syncUtils/api/route.ts`); this leaves the
+ * rest for the round in progress, its write and the lock bookkeeping.
+ */
+const CUSTOMER_PART_BUDGET_MS = 600_000;
 
 async function executeChunk({
   group,
@@ -87,23 +98,29 @@ async function executeChunk({
     }
 
     case "customer": {
+      // Customers have no season to split on and there are hundreds of thousands, so this step runs
+      // in time-limited parts. Each part resumes at the offset the last one reached.
       const rawSearch = remapCustSearch({ statuses: ALL_CUST_STATS });
-      const rawCustomers = await fetchCustomers(rawSearch);
-      return { syncedCount: await bulkUpsertCustomers(rawCustomers) };
+      const { writtenCount, nextOffset } = await streamCustomers({
+        rawSearch,
+        startOffset: chunk.resumeOffset ?? 0,
+        timeBudgetMs: CUSTOMER_PART_BUDGET_MS,
+      });
+      return { syncedCount: (chunk.syncedCount ?? 0) + writtenCount, nextOffset };
     }
 
     case "program": {
       if (seasonMin === undefined || seasonMax === undefined) throw new Error(`Step ${chunk.key} has no season range`);
       const rawSearch = remapProgSearch({ season: { min: seasonMin, max: seasonMax } });
-      const rawPrograms = await fetchPrograms(rawSearch);
-      return { syncedCount: await bulkUpsertPrograms(rawPrograms) };
+      const { writtenCount } = await streamPrograms({ rawSearch });
+      return { syncedCount: writtenCount };
     }
 
     case "service": {
       if (seasonMin === undefined || seasonMax === undefined) throw new Error(`Step ${chunk.key} has no season range`);
       const rawSearch = remapServSearch({ season: { min: seasonMin, max: seasonMax } });
-      const rawServices = await fetchServices(rawSearch);
-      return { syncedCount: await bulkUpsertServices(rawServices) };
+      const { writtenCount } = await streamServices({ rawSearch });
+      return { syncedCount: writtenCount };
     }
 
     case "callLog": {
@@ -299,22 +316,32 @@ export async function runFullSyncChunk({
     run = updateChunk({ run, chunkKey, patch: { status: "running", errorMessage: undefined } });
     await saveFullRun({ group, holderRunId, fullRun: run });
 
-    console.log(`${LOG_PREFIX} ${group}: starting "${chunk.label}"`);
-    const { syncedCount } = await executeChunk({ group, chunk, run });
-    const durationMs = Date.now() - start;
-    console.log(`${LOG_PREFIX} ${group}: finished "${chunk.label}" — ${syncedCount} records in ${durationMs}ms`);
+    console.log(`${LOG_PREFIX} ${group}: starting "${chunk.label}"${chunk.resumeOffset ? ` at offset ${chunk.resumeOffset}` : ""}`);
+    const { syncedCount, nextOffset } = await executeChunk({ group, chunk, run });
+    // A resumed step adds to the time its earlier parts took.
+    const durationMs = (chunk.durationMs ?? 0) + (Date.now() - start);
 
-    run = updateChunk({ run, chunkKey, patch: { status: "done", syncedCount, durationMs } });
+    if (typeof nextOffset === "number") {
+      // The step stopped at its time budget. Keep the run open: the page asks for this step again.
+      console.log(`${LOG_PREFIX} ${group}: "${chunk.label}" paused - ${syncedCount} records so far, resume at offset ${nextOffset}`);
+      run = updateChunk({ run, chunkKey, patch: { status: "partial", resumeOffset: nextOffset, syncedCount, durationMs } });
+      await releaseLock({ group, holderRunId, fullRun: run });
+      return run;
+    }
+
+    console.log(`${LOG_PREFIX} ${group}: finished "${chunk.label}" — ${syncedCount} records in ${durationMs}ms`);
+    run = updateChunk({ run, chunkKey, patch: { status: "done", resumeOffset: undefined, syncedCount, durationMs } });
     // Closing the run (null) is what re-opens the mirror to queries and delta syncs.
     await releaseLock({ group, holderRunId, fullRun: isLastChunk({ run, chunkKey }) ? null : run });
     return run;
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error(`${LOG_PREFIX} ${group}: "${chunk.label}" failed after ${Date.now() - start}ms`, e);
+    // resumeOffset is left as it was, so running the step again continues from the last part.
     run = updateChunk({
       run,
       chunkKey,
-      patch: { status: "failed", errorMessage: message, durationMs: Date.now() - start },
+      patch: { status: "failed", errorMessage: message, durationMs: (chunk.durationMs ?? 0) + (Date.now() - start) },
     });
     await releaseLock({ group, holderRunId, fullRun: run });
     throw toOperationalError({ label: chunk.label, cause: e });

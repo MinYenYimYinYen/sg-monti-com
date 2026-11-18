@@ -42,6 +42,8 @@ expect(service.x.priceAfterTax()).toBe(26.09);
 - **`core?: Partial<EntityCore>`** holds scalar overrides with no externalities. A field added to `CustomerCore`, `ProgramCore` or `ServiceCore` is available here without a change.
 - **External props** (`taxCodes`, `discount`, `callAhead`, `flags`, `callLogs`, `promise`, `promiseIssues`, `priorityService`) are resolved objects. You pass the object and the builder sets the foreign key.
 - **`taxRate` cannot be set.** It is derived from `taxCodes`. Pass the tax codes.
+- **`taxCodes` fills slots 1, 2, 3 in order.** For a customer with a gap (a code in slot 1, none in 2, one in 3) pass `taxSlotCodes: [codeA, null, codeB]` instead. The compact `customer.taxCodes` list, `taxRate` and `taxSlotIds` are derived from the slots.
+- **Recorded tax on a service** is `taxLines: [{ slot: 1, taxableAmt: 56.95, taxAmt: 3.92 }]` in the service spec. The builder attaches the customer's code for each slot. Never build a `ServiceTaxLine` by hand.
 - **Discounts are wired by `discountId`.** `makeDiscount` gives each discount its own id unless you pass one, so two discounts in one tree do not replace each other. Give them explicit ids only when the id is part of what the test asserts.
 - **Compile-time coverage checks** at the bottom of `makeCustomer.ts` fail if `CustomerProps`, `ProgramProps` or `ServiceProps` gains an externally sourced field that the spec types do not cover.
 - **IDs come from counters** (`PC1`, `SC1`, program and service ids), so they are unique within a test run but not stable across files. Pass explicit ids when a test asserts on one.

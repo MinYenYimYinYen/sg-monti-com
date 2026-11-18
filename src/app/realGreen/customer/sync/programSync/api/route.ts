@@ -2,7 +2,7 @@ import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGreenRpcHandler";
 import { ProgramSyncContract } from "@/app/realGreen/customer/sync/ProgramSyncContract";
 import { remapProgSearch } from "@/app/realGreen/customer/_lib/searchUtil/searchCriteria/func/remapProgSearch";
-import { fetchPrograms, bulkUpsertPrograms } from "@/app/realGreen/customer/sync/programSyncFunc";
+import { streamPrograms } from "@/app/realGreen/customer/sync/programSyncFunc";
 import { getLastSyncedAt, setLastSyncedAt } from "@/app/realGreen/syncMetadata/syncMetadataFunc";
 import { SYNC_ENTITY_TYPES } from "@/app/realGreen/syncMetadata/syncEntityTypes";
 import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
@@ -36,10 +36,8 @@ const handlers: HandlerMap<ProgramSyncContract> = {
       console.log(`[program sync] Search criteria:`, JSON.stringify(rawSearch, null, 2));
 
       // Paginated fetch from RealGreen using capped exponential batch algorithm.
-      const rawPrograms = await fetchPrograms(rawSearch);
-
-      // Bulk upsert to MongoDB — single command, keyed by progId.
-      const synced = await bulkUpsertPrograms(rawPrograms);
+      // Each round is upserted to MongoDB as it arrives, keyed by progId.
+      const { writtenCount: synced } = await streamPrograms({ rawSearch });
 
       // Record the sync completion time.
       const newLastSyncedAt = new Date().toISOString();

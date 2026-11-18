@@ -7,7 +7,15 @@ import {
   FullSyncRun,
   SyncLockDoc,
   SyncLockStatus,
+  SyncOperation,
 } from "@/app/realGreen/syncLock/SyncLockTypes";
+
+/** Reads naturally after "A": "A delta sync is running", "A service re-sync is running". */
+export const OPERATION_LABELS: Record<SyncOperation, string> = {
+  delta: "delta sync",
+  full: "full sync",
+  resync: "service re-sync",
+};
 
 /**
  * Longer than the route's `maxDuration` (800s) so a live request can never lose its lease,
@@ -35,7 +43,7 @@ export function toLockStatus({ lock, nowMs }: { lock: SyncLockDoc | null; nowMs:
 export function describeLockBlock({ lock, nowMs }: { lock: SyncLockDoc | null; nowMs: number }): string {
   const status = toLockStatus({ lock, nowMs });
   if (status?.isActive) {
-    return `A ${status.operation} sync is already running (started ${status.lockedAt}). Try again when it finishes.`;
+    return `A ${OPERATION_LABELS[status.operation]} is already running (started ${status.lockedAt}). Try again when it finishes.`;
   }
   if (lock?.fullRun) {
     return "A full sync was started and not finished. Resume or abandon it from the Sync Utilities page.";
@@ -119,7 +127,20 @@ export function buildFullSyncChunks({ group, now }: { group: SyncGroup; now?: Da
   ];
 }
 
-/** Returns why `chunkKey` cannot run now, or null when it can. Chunks must run in order. */
+/**
+ * Steps of a services-only re-sync: the same season chunks a full sync uses for services, with no
+ * wipe, customer, program or finalize step. Chunks are independent, so there is no ordering rule.
+ */
+export function buildServiceResyncChunks({ now }: { now?: Date } = {}): FullSyncChunk[] {
+  const { currentYear, floorYear, ceilYear } = getSyncSeasonWindow(now);
+  return buildSeasonChunks({ entityType: "service", currentYear, floorYear, ceilYear });
+}
+
+/**
+ * Returns why `chunkKey` cannot run now, or null when it can. Chunks must run in order. A `partial`
+ * chunk is not finished, so it may be requested again (that is how a resumable step continues) but
+ * nothing after it may run first.
+ */
 export function findChunkBlocker({ run, chunkKey }: { run: FullSyncRun; chunkKey: string }): string | null {
   const index = run.chunks.findIndex((chunk) => chunk.key === chunkKey);
   if (index === -1) return `Unknown step '${chunkKey}'.`;

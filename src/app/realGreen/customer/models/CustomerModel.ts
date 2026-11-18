@@ -101,7 +101,8 @@ const customerSchema = new mongoose.Schema<CustomerCore>(
     holdStart: { type: String, default: null },
     holdEnd: { type: String, default: null },
     subdivisionId: { type: Number, default: 0 },
-    taxIds: { type: [String], default: [] },
+    // Always three entries (slot 1..3); an unused slot is null.
+    taxSlotIds: { type: [String], default: () => [null, null, null] },
     techNote: { type: String, default: "" },
     useBilling: { type: Boolean, default: false },
     cancelCodeId: { type: Number, default: null },

@@ -6,6 +6,7 @@ import {
 import { ContactPoint, PhoneRaw } from "@/app/realGreen/_lib/subTypes/PhoneRaw";
 import { Program } from "./ProgramTypes";
 import { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
+import { TaxSlotTuple } from "@/app/realGreen/taxCode/taxSlot";
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { Flag } from "@/app/realGreen/flag/FlagTypes";
@@ -169,7 +170,8 @@ export type CustomerCore = {
   holdStart: string | null;
   holdEnd: string | null;
   subdivisionId: number;
-  taxIds: string[];
+  /** RealGreen `taxID1..3` in slot order. A blank slot is null, so a gap keeps its position. */
+  taxSlotIds: TaxSlotTuple<string | null>;
   techNote: string;
   useBilling: boolean;
   cancelCodeId: number | null;
@@ -207,6 +209,9 @@ export type CustomerProps = {
   aging: Aging;
   programs: Program[];
   callLogs: CallLog[];
+  /** The tax code in each slot, null where the customer has none. A service's tax line n belongs to slot n. */
+  taxSlotCodes: TaxSlotTuple<TaxCode | null>;
+  /** The filled slots in slot order. What pricing reads, because tax is rounded per code. */
   taxCodes: TaxCode[];
   /** Sum of the tax code rates. Display only: pricing must use `taxCodes`, because SA5 rounds tax per code. */
   taxRate: number;

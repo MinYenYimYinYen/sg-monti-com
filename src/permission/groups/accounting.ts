@@ -67,5 +67,8 @@ export const accountingGroup = defineGroup({
     punches: { name: "Time card punches", verbs: ["read", "write"] },
     increasePlans: { name: "Price increase plans", verbs: ["read", "write", "delete"] },
     increaseSettings: { name: "Price increase settings", verbs: ["read", "write", "delete"] },
+    // Decides which Minnesota tax lines each RealGreen tax code files under, and so what the sales
+    // tax return reports. Assign it deliberately, never through a general accounting bundle.
+    salesTaxMappings: { name: "Sales tax mappings", verbs: ["read", "write", "delete"] },
   },
 });

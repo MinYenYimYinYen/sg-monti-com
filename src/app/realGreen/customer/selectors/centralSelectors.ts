@@ -28,13 +28,17 @@ import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/se
 import { parsePromiseString } from "@/app/schedPromise/parsePromise";
 import { hydratePlannedLoadout } from "@/app/realGreen/customer/selectors/hydratePlannedLoadout";
 import { baseServCode } from "../../progServ/_lib/baseServCode";
-import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { taxCodeSelect } from "../../taxCode/taxCodeSelectors";
 import { serviceEtaSelect } from "@/app/scheduling/eta/serviceEtaSelect";
 import { hydrateEta } from "@/app/realGreen/customer/selectors/hydrateEta";
 import { Aging } from "@/app/realGreen/customer/_lib/classes/Aging";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { callLogSelect } from "@/app/realGreen/callLog/callLogSelect";
+import {
+  deriveTaxCodes,
+  hydrateTaxLines,
+  hydrateTaxSlotCodes,
+} from "@/app/realGreen/customer/selectors/hydrateTax";
 
 const selectActiveContexts = (state: AppState) =>
   state.customer.central.activeContexts;
@@ -162,11 +166,11 @@ export function makeCustomersSelector(
       type ServiceBuilder = Omit<Service, "x">;
 
       const customers: Customer[] = customerDocs.map((custDoc) => {
-        const taxCodesMaybe = custDoc.taxIds.map((taxId) =>
-          basicTaxCodeMap.get(taxId),
-        );
-
-        const taxCodes = typeGuard.definedArray(taxCodesMaybe);
+        const taxSlotCodes = hydrateTaxSlotCodes({
+          taxSlotIds: custDoc.taxSlotIds,
+          taxCodeMap: basicTaxCodeMap,
+        });
+        const taxCodes = deriveTaxCodes(taxSlotCodes);
         const taxRate = taxCodes.reduce(
           (acc, taxCode) => acc + taxCode.taxRate,
           0,
@@ -183,6 +187,7 @@ export function makeCustomersSelector(
           ...custDoc,
           programs: [],
           callLogs: callLogsByCustId.get(custDoc.custId) ?? [],
+          taxSlotCodes,
           taxCodes,
           taxRate,
           callAhead: callAheadDocMap.get(custDoc.callAheadId) ?? null,
@@ -269,12 +274,19 @@ export function makeCustomersSelector(
                 loadoutInventory: { masters: [], singles: [], subProducts: [] },
                 eta: null,
                 priorityService: null,
+                taxLines: [],
               }),
               assignments,
               promise: servPromiseResult.promise,
               promiseIssues: servPromiseResult.issues,
               loadoutInventory: hydratePlannedLoadout({ servDoc, servCodeMap }),
               priorityService: priorityServiceDocMap.get(servDoc.servId) ?? null,
+              // A service that was never re-synced has no taxLineCores. Hydrate it as empty here and
+              // let the one consumer that needs recorded tax (the sales tax report) decide.
+              taxLines: hydrateTaxLines({
+                taxLineCores: servDoc.taxLineCores ?? [],
+                taxSlotCodes,
+              }),
             };
 
             // Add x after all other properties are set - mutate in place to preserve references
