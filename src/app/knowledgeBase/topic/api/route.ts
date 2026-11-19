@@ -2,7 +2,7 @@ import { createRpcHandler } from "@/lib/api/createRpcHandler";
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { TopicContract } from "@/app/knowledgeBase/topic/api/TopicContract";
 import { TopicModel } from "@/app/knowledgeBase/topic/TopicModel";
-import { TopicDetailModel } from "@/app/knowledgeBase/topicDetail/TopicDetailModel";
+import { loadDocumentsReferencingTopic } from "@/app/knowledgeBase/topicDetail/_lib/topicDetailQueries";
 import {
   buildTopicInUseMessage,
   isValidTopicKey,
@@ -51,10 +51,8 @@ const handlers: HandlerMap<TopicContract> = {
     handler: async ({ topicKey }) => {
       await connectToMongoDB();
       // Documents are tagged by topic key, so deleting a referenced topic would leave them pointing at nothing.
-      const referencingDetails = await TopicDetailModel.find({ topicKeys: topicKey })
-        .select("detailKey title")
-        .sort({ detailKey: 1 })
-        .lean();
+      // Each document counts once however many versions it has.
+      const referencingDetails = await loadDocumentsReferencingTopic(topicKey);
       if (referencingDetails.length > 0) {
         throw validationError(buildTopicInUseMessage({ topicKey, referencingDetails }));
       }

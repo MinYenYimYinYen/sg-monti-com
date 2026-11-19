@@ -88,6 +88,32 @@ Types follow a layered suffix pattern that signals their role in the data pipeli
 - **Data sanitization**: API routes **never** return raw Mongoose documents. Use `cleanMongoObject(doc)` / `cleanMongoArray(docs)` from `@/lib/mongoose/cleanMongoObj`, and remove sensitive fields.
 - **Universal handler**: every API route uses `createRpcHandler(handlers)` (RealGreen routes use `createRealGreenRpcHandler`).
 
+## One-Time Data Migrations
+
+There is no script runner (no `scripts/` folder, no `tsx`). A one-time import is a **temporary superuser-only RPC op** that reads an exported JSON file from disk. Reference implementation: `src/app/knowledgeBase/topicDetail/_lib/legacyImport.ts` and the `importLegacy` op beside it (remove them once the import has run).
+
+1. **Export** the old collection from Compass as relaxed JSON, and save it in the feature folder as `migrateTheseThenDelete.json`. Dates arrive as `{ "$date": "..." }` and ids as `{ "$oid": "..." }`.
+2. **Write the transform as a pure function** (`parseLegacyDocs`): JSON in, rows out, plus a list of entries it could not use with the reason. It reads `$date`, ignores `_id` and `__v`, and never drops an entry silently.
+3. **Write the import** (`importLegacyDocs`) in the feature's `_lib/`. It reads the file from disk, validates against live data (for example that referenced keys exist), and inserts with `updateOne(filter, { $setOnInsert }, { upsert: true, timestamps: false })`:
+    - The filter is the natural key, so the import is **idempotent**: running it twice inserts nothing new.
+    - `timestamps: false` keeps the original `createdAt` and `updatedAt`.
+    - It returns `{ imported..., skipped: [{ key, reason }] }`.
+4. **Add the op** to the feature's contract and route with `capability: "superUser"`, marked `TEMPORARY` in a comment on the op, the contract entry, the helper and the result type.
+5. **Write into a new collection** when the shape changes (a new model and name). The old collection stays untouched until the result is verified, and an old unique index (such as one on a key that is no longer unique) cannot block the new data.
+6. **Run it locally** while signed in as a superuser, from the browser console on the dev site (the file is read from disk, so it only works where the file exists):
+
+    ```js
+    fetch("/<feature>/api", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ op: "importLegacy" }),
+    }).then((r) => r.json()).then(console.log);
+    ```
+
+7. **Verify** the returned `skipped` list and the data in the app, then **delete** the JSON file, the op, the contract entry, the helper and the result type. The old collection can be dropped later, once nobody needs it.
+
+The export is real production data: do not commit the JSON file, paste its values into code or tests, or leave it in the repo after the run (see the `mongo-read` skill on production values).
+
 ## Development Rules
 
 - **React Compiler**: code must strictly follow the Rules of React. `eslint-plugin-react-compiler` is set to "error".

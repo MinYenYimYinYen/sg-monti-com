@@ -1,5 +1,5 @@
 import type { TopicDoc } from "@/app/knowledgeBase/topic/TopicTypes";
-import type { TopicDetailDoc } from "@/app/knowledgeBase/topicDetail/TopicDetailTypes";
+import type { SaveTopicDetailVersionParams, TopicDetailDoc } from "@/app/knowledgeBase/topicDetail/TopicDetailTypes";
 import { isValidTopicKey, normalizeSignals } from "@/app/knowledgeBase/topic/topicLogic";
 import { buildDetailKey, normalizeTopicKeys } from "@/app/knowledgeBase/topicDetail/topicDetailLogic";
 import type { TopicDetailDraft, TopicDraft } from "@/app/knowledgeBase/editor/topicEditorTypes";
@@ -68,11 +68,19 @@ function isBlankHtml(html: string): boolean {
 }
 
 export function makeBlankDetailDraft(): TopicDetailDraft {
-  return { topicKeys: [], title: "", contentHtml: "", isNew: true };
+  return { topicKeys: [], title: "", contentHtml: "", isNew: true, baseVersion: null, comment: "" };
 }
 
+/** Opens the head version of a document for editing. Saving builds the next version on top of it. */
 export function makeDetailDraftFromDoc(doc: TopicDetailDoc): TopicDetailDraft {
-  return { topicKeys: doc.topicKeys, title: doc.title, contentHtml: doc.contentHtml, isNew: false };
+  return {
+    topicKeys: doc.topicKeys,
+    title: doc.title,
+    contentHtml: doc.contentHtml,
+    isNew: false,
+    baseVersion: doc.version,
+    comment: "",
+  };
 }
 
 /** The key the server will save this draft under, or null while no topic is chosen. */
@@ -87,11 +95,14 @@ export function toggleTopicKey({ topicKeys, topicKey }: { topicKeys: string[]; t
     : [...topicKeys, topicKey];
 }
 
-export function detailDraftToUpsertParams(draft: TopicDetailDraft): Pick<TopicDetailDoc, "topicKeys" | "title" | "contentHtml"> {
+export function detailDraftToSaveParams(draft: TopicDetailDraft): SaveTopicDetailVersionParams {
+  const comment = draft.comment.trim();
   return {
     topicKeys: normalizeTopicKeys(draft.topicKeys),
     title: draft.title.trim(),
     contentHtml: draft.contentHtml,
+    baseVersion: draft.baseVersion,
+    ...(comment ? { comment } : {}),
   };
 }
 

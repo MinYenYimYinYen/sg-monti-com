@@ -11,6 +11,7 @@ import { askAwaySelect } from "@/app/askAway/askAwaySelect";
 import { askAwayActions } from "@/app/askAway/askAwaySlice";
 import { createAskAwayTools } from "@/app/askAway/askAwayTools";
 import { claudeSessionActions } from "@/app/claudeSession/claudeSessionSlice";
+import { knowledgeBaseSettingsSelect } from "@/app/knowledgeBase/knowledgeBaseSettings/knowledgeBaseSettingsSelect";
 import { topicSelect } from "@/app/knowledgeBase/topic/topicSelect";
 import { AppError } from "@/lib/errors/AppError";
 import { handleError } from "@/lib/errors/errorHandler";
@@ -39,7 +40,13 @@ export const sendAskAwayPrompt =
       handleError(validationError("No topics are loaded yet. Try again in a moment."));
       return;
     }
-    const systemPrompt = buildAskAwaySystemPrompt(topics);
+    // Null until the settings load. Sending then would use a guessed prompt, so it waits instead.
+    const promptTemplate = knowledgeBaseSettingsSelect.askAwayPromptTemplate(startState);
+    if (promptTemplate === null) {
+      handleError(validationError("The prompt settings are not loaded yet. Try again in a moment."));
+      return;
+    }
+    const systemPrompt = buildAskAwaySystemPrompt({ template: promptTemplate, topics });
     if (!systemPrompt.ok) {
       handleError(validationError(systemPrompt.message));
       return;

@@ -36,7 +36,8 @@ export function createAskAwayTools({
         requestedTopicKeys: topicKeys,
         knownTopicKeys: topicSelect.docs(state).map((topic) => topic.topicKey),
         currentTopicKeys: askAwaySelect.currentTopicKeys(state),
-        details: topicDetailSelect.docs(state),
+        // Live versions only, so a draft or an edit nobody has approved is never sent to Claude.
+        details: topicDetailSelect.liveDocs(state),
       });
 
       // An error result goes back to Claude so it can correct the keys, and it is not counted as a marking.

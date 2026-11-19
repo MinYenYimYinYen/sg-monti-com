@@ -17,10 +17,11 @@ const selectCurrentTopicKeySet = createSelector([selectCurrentTopicKeys], (curre
 /**
  * The documents that apply, general to specific. Not grouped by topic: a document tagged
  * `[pricing, sales]` is a backlink of `sales` but only applies once `pricing` is marked as well, and
- * `resolveDetails` is the rule that says so. Each document appears once.
+ * `resolveDetails` is the rule that says so. Each document appears once, as its live (latest approved)
+ * version: an edit that is still waiting for approval is never shown here or sent to Claude.
  */
 const selectCurrentDetails = createSelector(
-  [selectCurrentTopicKeys, knowledgeBaseSelect.details],
+  [selectCurrentTopicKeys, knowledgeBaseSelect.liveDetails],
   (matchedTopicKeys, details) => resolveDetails({ matchedTopicKeys, details }),
 );
 

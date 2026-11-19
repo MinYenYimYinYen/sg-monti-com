@@ -66,15 +66,25 @@ const selectDetailDraftKey = createSelector([selectDetailDraft], (draft) =>
   draft ? deriveDraftDetailKey(draft) : null,
 );
 
+/** The head version the draft was opened from, which is what "unsaved changes" is measured against. */
 const selectSavedDetail = createSelector(
-  [selectDetailDraft, selectDetailDraftKey, topicDetailSelect.docsByKey],
+  [selectDetailDraft, selectDetailDraftKey, topicDetailSelect.headDocsByKey],
   (draft, detailKey, docsByKey) => (draft && !draft.isNew && detailKey ? docsByKey.get(detailKey) : undefined),
 );
 
-/** A new draft whose tag set already has a document. Saving would silently replace it. */
+/** A new draft whose tag set already has a document. Saving would be refused, since it is an edit of that document. */
 const selectDetailKeyConflict = createSelector(
-  [selectDetailDraft, selectDetailDraftKey, topicDetailSelect.docsByKey],
+  [selectDetailDraft, selectDetailDraftKey, topicDetailSelect.headDocsByKey],
   (draft, detailKey, docsByKey) => draft !== null && draft.isNew && detailKey !== null && docsByKey.has(detailKey),
+);
+
+/**
+ * True when the document was saved by someone else after this draft was opened. Saving would then be
+ * refused, so the form says so before the editor has typed anything they would lose.
+ */
+const selectDetailIsOutOfDate = createSelector(
+  [selectDetailDraft, selectSavedDetail],
+  (draft, saved) => draft !== null && !draft.isNew && saved !== undefined && draft.baseVersion !== saved.version,
 );
 
 const selectDetailIsDirty = createSelector([selectDetailDraft, selectSavedDetail], (draft, saved) =>
@@ -99,6 +109,7 @@ export const topicEditorSelect = {
   detailDraftVersion: selectDetailDraftVersion,
   detailDraftKey: selectDetailDraftKey,
   detailKeyConflict: selectDetailKeyConflict,
+  detailIsOutOfDate: selectDetailIsOutOfDate,
   detailIsDirty: selectDetailIsDirty,
   detailCanSave: selectDetailCanSave,
   detailActiveName: selectDetailActiveName,

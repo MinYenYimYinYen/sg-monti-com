@@ -1,4 +1,7 @@
 import { ImportCardAssignmentModel } from "@/app/qbo/importCCTxn/models/ImportCCTxnMappingModels";
+import { KnowledgeBaseSettingModel } from "@/app/knowledgeBase/knowledgeBaseSettings/KnowledgeBaseSettingsModel";
+import { loadApproverUserNames } from "@/app/knowledgeBase/knowledgeBaseSettings/_lib/loadApproverUserNames";
+import { completePendingApprovals } from "@/app/knowledgeBase/topicDetail/_lib/completePendingApprovals";
 
 /**
  * Removes the records that exist only to point at one user, so nothing is left referring to a
@@ -10,6 +13,9 @@ import { ImportCardAssignmentModel } from "@/app/qbo/importCCTxn/models/ImportCC
  * card unassigned again, and the next import asks for a new responsible user. Its account
  * override and typed cardholder name go with it.
  *
+ * The knowledge base approver list names the users who may approve documents. A name nobody can act as
+ * would block unanimous approval for good, so the deleted user is pulled from it.
+ *
  * History that merely records who did something (import rows, journal postings, inventory
  * checks, the QBO connection) is deliberately kept, as is shared content (templates, configs),
  * which stores the author's saId. Add any other per-user data that only works with a login here.
@@ -17,4 +23,10 @@ import { ImportCardAssignmentModel } from "@/app/qbo/importCCTxn/models/ImportCC
  */
 export async function deleteUserReferences({ userName }: { userName: string }): Promise<void> {
   await ImportCardAssignmentModel.deleteMany({ userName });
+  await KnowledgeBaseSettingModel.updateOne(
+    { settingKey: "approvers" },
+    { $pull: { "value.approverUserNames": userName } },
+  );
+  // The deleted user may have been the last approver a version was waiting for.
+  await completePendingApprovals({ approverUserNames: await loadApproverUserNames() });
 }

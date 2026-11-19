@@ -1,5 +1,6 @@
 import type { TopicDoc } from "@/app/knowledgeBase/topic/TopicTypes";
 import type { TopicDetailDoc } from "@/app/knowledgeBase/topicDetail/TopicDetailTypes";
+import type { ApprovalProps } from "@/app/knowledgeBase/topicDetail/topicDetailApprovalLogic";
 
 /** What a topic needs to show about a document tagged with it. The body is left out on purpose. */
 export type TopicDocumentSummary = Pick<TopicDetailDoc, "detailKey" | "title" | "topicKeys">;
@@ -18,4 +19,8 @@ export type TopicDetailProps = {
   missingTopicKeys: string[];
 };
 
+/** A document with its topics resolved. The AI only ever reads these, and only the live version of each. */
 export type TopicDetail = TopicDetailDoc & TopicDetailProps;
+
+/** A document's head version with its approval state worked out against the current approver list. */
+export type ReviewableTopicDetail = TopicDetail & ApprovalProps;

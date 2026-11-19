@@ -60,6 +60,7 @@ import priceIncreaseConfigReducer from "@/app/priceIncrease/config/_lib/priceInc
 import { topicReducer } from "@/app/knowledgeBase/topic/topicSlice";
 import { topicDetailReducer } from "@/app/knowledgeBase/topicDetail/topicDetailSlice";
 import { topicEditorReducer } from "@/app/knowledgeBase/editor/topicEditorSlice";
+import { knowledgeBaseSettingsReducer } from "@/app/knowledgeBase/knowledgeBaseSettings/knowledgeBaseSettingsSlice";
 import { claudeSessionReducer } from "@/app/claudeSession/claudeSessionSlice";
 import { askAwayReducer } from "@/app/askAway/askAwaySlice";
 import capabilityBundleReducer from "@/app/permission/capabilityBundle/capabilityBundleSlice";
@@ -175,6 +176,7 @@ const rootReducer = combineReducers({
   topic: topicReducer,
   topicDetail: topicDetailReducer,
   topicEditor: topicEditorReducer,
+  knowledgeBaseSettings: knowledgeBaseSettingsReducer,
   claudeSession: claudeSessionReducer,
   askAway: askAwayReducer,
   capabilityBundle: capabilityBundleReducer,

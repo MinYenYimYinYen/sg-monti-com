@@ -1,0 +1,73 @@
+[{
+  "_id": {
+    "$oid": "6afa7077848e1c3c25ab177a"
+  },
+  "detailKey": "aeration",
+  "__v": 0,
+  "contentHtml": "<h2><strong>Value Statement</strong></h2><ul><li><p>Relieves soil compaction and breaks up thatch, opening direct pathways for oxygen, water, and nutrients to reach grass roots.</p></li></ul><h2><strong>Timing</strong></h2><ul><li><p><strong>Best Timing (Late Summer / Fall):</strong> Best practice for annual aeration. Root systems naturally expand during this period, and relieving compaction facilitates easier root growth.</p></li><li><p><strong>Secondary Timing (Spring):</strong> Perform once ground firms up post-snowmelt. Recommended when:</p><ul><li><p>Existing soil compaction is severe enough to hinder growth and thin the lawn all season.</p></li><li><p>Combining aeration with overseeding.</p></li></ul></li></ul><h2>Scheduling</h2><ul><li><p>When the service is scheduled, we do a 2 day prenotification for everyone. If the customer does not already have a prenotification requirement, we use text for prenotification. Otherwise we use their preferred channel</p></li></ul><p></p>",
+  "createdAt": {
+    "$date": "2026-11-16T02:54:48.649Z"
+  },
+  "title": "Aeration",
+  "topicKeys": [
+    "aeration"
+  ],
+  "updatedAt": {
+    "$date": "2026-11-18T00:54:54.346Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6afc6f93848e1c3c25f3119a"
+  },
+  "detailKey": "over-seed",
+  "__v": 0,
+  "contentHtml": "<h2><strong>Prerequisite</strong></h2><ul><li><p>Pair with core aeration for optimal results (exceptions permitted, though germination and establishment rates decrease significantly without aeration).</p></li></ul><h2><strong>Value Statement</strong></h2><ul><li><p><strong>Problem:</strong> Heat, foot traffic, insect damage, disease damage, pet damage, and age thin turf, creating gaps for crabgrass and weeds.</p></li><li><p><strong>Solution:</strong> Overseeding introduces younger, resilient grass varieties that crowd out weeds and resist drought/disease.</p></li><li><p><strong>Aeration Synergy:</strong> Core aeration exposes nutrient-rich soil for direct seed-to-soil contact, maximizing germination for thicker, deeper-rooted, greener turf.</p></li></ul><h2><strong>After-Care</strong></h2><ul><li><p><strong>Watering (Days 1–14):</strong> Keep top 0.5\" of soil moist (not saturated) until germination (7–14 days, grass-dependent). Water lightly 1–2x daily (~10–15 min/zone).</p></li><li><p><strong>Watering (Weeks 3–4):</strong> Once turf reaches 1–2\", reduce frequency to every other day with deeper watering to promote root growth.</p></li><li><p><strong>Mowing:</strong> First mow at 3.5–4\" height. Use highest blade setting (remove ≤1/3 blade length) with sharp blades to prevent uprooting seedlings.</p></li><li><p><strong>Traffic:</strong> Restrict heavy foot traffic, pets, and equipment for 3–4 weeks during establishment.</p></li><li><p><strong>Weed Control:</strong> Delay pre-emergent herbicides 60–90 days (or until after 3–4 mows) to avoid inhibiting germination. Apply post-emergent broadleaf treatments only after the 3rd mow.</p></li><li><p><strong>Fertilization:</strong> If not applied at seeding, apply balanced starter fertilizer within 1–2 weeks to support root development.</p></li></ul><h2>Notes</h2><ul><li><p>Whenever seeding happens we want to add tech notes on the customer's lawn care program. The note should indicate when seed was applied or when it is planned.</p></li></ul><p></p>",
+  "createdAt": {
+    "$date": "2026-11-17T15:15:31.244Z"
+  },
+  "title": "Over-Seed",
+  "topicKeys": [
+    "over-seed"
+  ],
+  "updatedAt": {
+    "$date": "2026-11-18T19:52:43.721Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6afc7043848e1c3c25f32072"
+  },
+  "detailKey": "aeration+over-seed",
+  "__v": 0,
+  "contentHtml": "<h2><strong>Timing</strong></h2><ul><li><p><strong>Ideal Window (Late August – Early September):</strong> Allows early-season weed control during the first half of the season while providing sufficient time for seed germination and root establishment in the second half.</p></li></ul><h2>Self Service</h2><ul><li><p>Often customers tell us they plan to seed themselves after we aerate. When this is the case we need to make tech notes on their lawn care program and ASAP the aeration. Best timing for seed is when we first start aerations.</p></li></ul><p></p>",
+  "createdAt": {
+    "$date": "2026-11-17T15:18:27.294Z"
+  },
+  "title": "Aeration With Over-Seed",
+  "topicKeys": [
+    "aeration",
+    "over-seed"
+  ],
+  "updatedAt": {
+    "$date": "2026-11-18T19:56:49.934Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6afe05f39f889d44ebab3cd4"
+  },
+  "detailKey": "insect-damage",
+  "__v": 0,
+  "contentHtml": "<h2>Indicators</h2><ul><li><p>Lawn or parts of the lawn appear yellow, or seem to be dying</p></li><li><p>Lawn pulls up like sod (would indicate grub activity)</p></li><li><p>Some number of lawn damaging insects are present in all lawns.  Damage is noticed when number of insects reaches a point where growth no longer keeps up with insect damage.</p></li></ul><h2>Diagnosis</h2><ul><li><p>Typically we need a technician to assess the lawn to confirm whether the problem is insect damage or disease damage.</p></li></ul><h2>Solution</h2><ul><li><p>Before diagnosis, set up an ANA service call for the customer.</p></li><li><p>After diagnosis, sell the TLI program.  </p></li></ul><h2>Expectations</h2><ul><li><p>Grubs in particular (most common problem) have a 3 year life cycle.  2nd and 3rd year grubs are hard to kill, so running the TLI program for 3 consecutive years is the recommendation for a long-term solution.</p></li><li><p>If animals were digging up the lawn prior to treatment, they'll continue to do so until they realize their food source is gone.</p></li></ul><h2>Scheduling</h2><ul><li><p>TLI is a 2 application program</p></li><li><p>First application is May - June</p></li><li><p>Second is in July.  </p></li><li><p>If budget is an issue, First application only is acceptable, but no guarantees.  </p></li></ul><p></p>",
+  "createdAt": {
+    "$date": "2026-11-18T20:09:22.202Z"
+  },
+  "title": "Insect Damage",
+  "topicKeys": [
+    "insect-damage"
+  ],
+  "updatedAt": {
+    "$date": "2026-11-18T20:09:22.202Z"
+  }
+}]

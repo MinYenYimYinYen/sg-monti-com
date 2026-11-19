@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { UnsavedChangesDialog } from "@/components/EntityFileControls/UnsavedChangesDialog";
+import { Badge } from "@/style/components/badge";
 import { Button } from "@/style/components/button";
 import { cn } from "@/style/utils";
 import { knowledgeBaseSelect } from "@/app/knowledgeBase/editor/knowledgeBaseSelect";
@@ -76,7 +77,14 @@ export function TopicDetailsPanel() {
                     : "border-border bg-card text-foreground hover:bg-accent/10",
                 )}
               >
-                <div className="truncate font-medium">{detail.title}</div>
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1 truncate font-medium">{detail.title}</div>
+                  {detail.status === "pending" && (
+                    <Badge variant="secondary" intensity="soft" className="shrink-0 px-1.5 py-0 font-medium">
+                      Waiting
+                    </Badge>
+                  )}
+                </div>
                 <TopicKeyBadges topicKeys={detail.topicKeys} />
               </button>
             );

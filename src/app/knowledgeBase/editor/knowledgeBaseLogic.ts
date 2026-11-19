@@ -1,7 +1,33 @@
 import type { TopicDoc } from "@/app/knowledgeBase/topic/TopicTypes";
 import type { TopicDetailDoc } from "@/app/knowledgeBase/topicDetail/TopicDetailTypes";
 import { compareBySpecificity } from "@/app/knowledgeBase/topicDetail/topicDetailLogic";
-import type { Topic, TopicDetail, TopicDocumentSummary } from "@/app/knowledgeBase/editor/knowledgeBaseTypes";
+import { deriveApprovalProps } from "@/app/knowledgeBase/topicDetail/topicDetailApprovalLogic";
+import type {
+  ReviewableTopicDetail,
+  Topic,
+  TopicDetail,
+  TopicDocumentSummary,
+} from "@/app/knowledgeBase/editor/knowledgeBaseTypes";
+
+/**
+ * Adds each head's approval state: who has approved, who is still pending, and which version the AI
+ * reads, which is a different row from the head whenever the head is waiting for approval.
+ */
+export function attachApprovalToDetails({
+  details,
+  liveDocs,
+  approverUserNames,
+}: {
+  details: TopicDetail[];
+  liveDocs: TopicDetailDoc[];
+  approverUserNames: string[];
+}): ReviewableTopicDetail[] {
+  const liveByDetailKey = new Map(liveDocs.map((doc) => [doc.detailKey, doc]));
+  return details.map((detail) => ({
+    ...detail,
+    ...deriveApprovalProps({ head: detail, live: liveByDetailKey.get(detail.detailKey) ?? null, approverUserNames }),
+  }));
+}
 
 /** Each topic, ordered by name, with the documents tagged with it. A topic with no documents gets an empty list. */
 export function attachDocumentsToTopics({

@@ -6,7 +6,7 @@ import { topicDetailActions } from "@/app/knowledgeBase/topicDetail/topicDetailS
 import { topicEditorActions } from "@/app/knowledgeBase/editor/topicEditorSlice";
 import type { TopicDetailDraft, TopicDraft } from "@/app/knowledgeBase/editor/topicEditorTypes";
 import {
-  detailDraftToUpsertParams,
+  detailDraftToSaveParams,
   makeBlankDetailDraft,
   makeBlankTopicDraft,
   makeDetailDraftFromDoc,
@@ -50,8 +50,8 @@ export function useTopicEditor() {
 
   const saveTopicDetail = (draft: TopicDetailDraft) =>
     dispatch(
-      topicDetailActions.upsertTopicDetail({
-        params: detailDraftToUpsertParams(draft),
+      topicDetailActions.saveTopicDetailVersion({
+        params: detailDraftToSaveParams(draft),
         config: { loadingMsg: "Saving document...", force: true },
       }),
     );

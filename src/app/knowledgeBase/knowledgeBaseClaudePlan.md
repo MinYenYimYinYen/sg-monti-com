@@ -20,7 +20,9 @@ This file describes the `knowledgeBase` module of the sg-monti-com web app. It i
 ### Current code state
 
 - **Layout:** the two modules live in sibling folders, `topic/` and `topicDetail/`, each with its own `api/` route.
-- **Implemented:** the `TopicDetail` module (in `topicDetail/`): types, model, contract, route, slice, selectors, hook, and the pure helpers in `topicDetailLogic.ts`.
+- **Implemented:** the `TopicDetail` module (in `topicDetail/`): types, model, contract, route, slice, selectors, hooks, and the pure helpers in `topicDetailLogic.ts`, `topicDetailVersionLogic.ts`, `topicDetailApprovalLogic.ts` and `topicDetailChangeLogic.ts`.
+- **Implemented, not yet tried in a browser:** versioned documents with leadership approval (section 3a) and the `knowledgeBaseSettings` module (approver list, Ask Away prompt).
+- **Desktop app impact:** `getAll` now returns only the live (latest approved) version of each document, with the extra fields in section 3. `upsert` no longer exists; only the web app writes. Documents that were never approved are not returned.
 - **Implemented for Topic:** the shape in section 3 (`guidance` and `avoid` are removed from the type and the model), signal normalization, and the blocked delete (section 8). The pure helpers are in `topic/topicLogic.ts`.
 
 ## 1. Goal
@@ -71,6 +73,24 @@ Why one document per tag set: the tag set is the identity, so the relationship b
 Why tags are sorted: `[sales, aeration]` and `[aeration, sales]` must be the same document.
 
 Changing the tags of an existing document changes its `detailKey`, so it is a different document. The old one stays until it is removed separately.
+
+### 3a. Versions and approval (Implemented, not yet tried in a browser)
+
+The collection is `TopicDetailVersion`: one immutable row per version of a document, unique on `detailKey` + `version`. The old `TopicDetail` collection is no longer read or written.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `version` | number | Starts at 1. Every save is a new row with the next number. |
+| `modifiedBy` | string | `userName` of who saved it. |
+| `approval.approvedAt` | string or null | null while pending. Set once, when every approver has approved, and never recomputed against a changed approver list. Only `withdrawApproval` clears it. |
+| `approval.approvedBy` | `{ userName, at }[]` | Who approved this version, including people who have since left the list. |
+| `comments` | `{ userName, at, text }[]` | The discussion about this version. A comment never approves or rejects anything. |
+
+- **Head** is the highest version (what editors and reviewers work on). **Live** is the highest version with `approvedAt` set, and it is the only one the AI and the desktop app read. They are different rows whenever the head is waiting for approval.
+- **The rule:** a pending version becomes approved when every current approver (the `approvers` setting) is in `approvedBy`. An approved version stays approved whatever the list becomes. An empty list never approves anything. The saver approves their own version if they are an approver.
+- **Withdrawing** an approval from a pending version removes only the caller's stamp. Pulling a version that is approved clears every stamp and `approvedAt`, so the previous approved version becomes live again and nobody can re-complete it by leaving the list.
+- Persons are stored as `userName` (not `saId`) on purpose: the approver list is `userName`s. They are history and are kept when a user is deleted; the approver list itself is access and `deleteUserReferences` removes the user from it.
+- Re-checks: removing an approver, or deleting a user, completes any pending head that was only waiting for them (`completePendingApprovals`).
 
 ## 4. Retrieval rule (the contract for consumers)
 
@@ -133,9 +153,11 @@ Each module has its own route. Topic is at `/knowledgeBase/topic/api`. TopicDeta
 
 | Op | Topic | TopicDetail |
 |---|---|---|
-| `getAll` | all topics, including `signals` | all details, including `contentHtml` |
-| `upsert` | one topic, keyed by `topicKey` | one detail, keyed by the server-derived `detailKey` |
-| `remove` | one topic, by `topicKey` | one detail, by `detailKey` |
+| `getAll` | all topics, including `signals` | the live (latest approved) version of every document, including `contentHtml` |
+| `upsert` | one topic, keyed by `topicKey` | not available. Use `saveVersion` |
+| `remove` | one topic, by `topicKey` | a document and every version of it, by `detailKey` |
+
+TopicDetail also has `getCurrent` (every head plus its live row), `getVersionHistory`, `saveVersion`, `approve`, `withdrawApproval`, `comment`, and a temporary superuser-only `importLegacy`. Each write answers with that document's current rows.
 
 - Implemented: both modules share the `knowledgeTopics` capability (`read`, `write`, `delete`), in the `knowledgeBaseTopics` permission group. The desktop app only needs `read`. Authoring needs `write` and `delete`. This is not `callTopics`, which belongs to RealGreen's call log feature and is unrelated.
 - Decided: there is no server-side `resolve`, no fetch-by-keys call, and no markdown endpoint.
@@ -145,8 +167,8 @@ Each module has its own route. Topic is at `/knowledgeBase/topic/api`. TopicDeta
 ## 8. Integrity rules (enforced by the server)
 
 - Implemented, Topic `upsert`: signals are trimmed, lowercased, and deduplicated. An upsert replaces the whole topic, so a request without `signals` saves an empty list.
-- Implemented, TopicDetail `upsert`: a title is required, and `topicKeys` is normalized (deduplicated, sorted, non-empty) and `detailKey` is derived from it. Any key that is not an existing topic is rejected.
-- Implemented, Topic `remove`: blocked with an operational error (HTTP 200, `success: false`) that names the referencing documents, up to five and then a count of the rest. The user must fix or remove those documents first.
+- Implemented, TopicDetail `saveVersion`: a title is required, and `topicKeys` is normalized (deduplicated, sorted, non-empty) and `detailKey` is derived from it. Any key that is not an existing topic is rejected. The save must name the version it started from (`baseVersion`), and is refused if the head has moved on. Saving identical content adds no version.
+- Implemented, Topic `remove`: blocked with an operational error (HTTP 200, `success: false`) that names the referencing documents (each counted once however many versions it has), up to five and then a count of the rest. The user must fix or remove those documents first.
 - Decided, TopicDetail `remove`: no guard needed, nothing references a document.
 - Decided: `topicKey` never changes after creation.
 

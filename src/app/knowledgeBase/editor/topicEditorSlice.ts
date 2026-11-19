@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { topicActions } from "@/app/knowledgeBase/topic/topicSlice";
 import { topicDetailActions } from "@/app/knowledgeBase/topicDetail/topicDetailSlice";
+import { findHeadDoc } from "@/app/knowledgeBase/topicDetail/topicDetailVersionLogic";
 import type { TopicDetailDraft, TopicDraft } from "@/app/knowledgeBase/editor/topicEditorTypes";
 import {
   deriveDraftDetailKey,
@@ -68,11 +69,13 @@ const topicEditorSlice = createSlice({
         state.topicDraft = null;
       }
     });
-    builder.addCase(topicDetailActions.upsertTopicDetail.fulfilled, (state, action) => {
-      const saved = action.payload;
+    // The server answers with the document's current rows. The head is what was just saved (or what is
+    // already there, when nothing changed), so the draft is reopened from it.
+    builder.addCase(topicDetailActions.saveTopicDetailVersion.fulfilled, (state, action) => {
+      const savedHead = findHeadDoc(action.payload);
       const draftKey = state.detailDraft ? deriveDraftDetailKey(state.detailDraft) : null;
-      if (draftKey === saved.detailKey) {
-        state.detailDraft = makeDetailDraftFromDoc(saved);
+      if (savedHead && draftKey === savedHead.detailKey) {
+        state.detailDraft = makeDetailDraftFromDoc(savedHead);
       }
     });
     builder.addCase(topicDetailActions.removeTopicDetail.fulfilled, (state, action) => {

@@ -18,4 +18,14 @@ export type TopicDetailDraft = {
   title: string;
   contentHtml: string;
   isNew: boolean;
+  /**
+   * The head version this draft was opened from, null for a new document. Sent with the save so the
+   * server can refuse it when someone else has saved a newer version in the meantime.
+   */
+  baseVersion: number | null;
+  /**
+   * A note to the reviewers, saved as the first comment on the new version. Not part of "unsaved
+   * changes": on its own it would not make a new version.
+   */
+  comment: string;
 };
