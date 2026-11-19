@@ -22,6 +22,7 @@ Task-specific procedures live in `.claude/skills/` and load on demand. Use the m
 | Create or modify a PDF document | `pdf-document` | `src/lib/pdf/pdf.readme.md` |
 | Form templates (positioned slots on preprinted forms), form data type registry, slot options, batch form printing | `form-template` | `src/app/formTemplate/formDataContract.ts`, `src/app/prepayLetters/template/PrepayLetterTypes.tsx` |
 | Write or modify tests | `write-tests` | `src/__tests__/testing.readme.md` |
+| Gate a new data module, page or trigger with capabilities, pick the permission group, add a NavMenu entry, remind about bundles | `permission` | `src/permission/permission.readme.md` (only when changing the permission system itself) |
 | RealGreen Customer / Program / Service pipeline, search schemes, PIPELINE flag | `realgreen-customer` | `src/app/realGreen/realGreen.readme.md`, `src/app/realGreen/customer/customer.readme.md` |
 | RealGreen Product module (Master / Sub / Single) | `product-module` | `src/app/realGreen/product/_lib/product.readme.md` |
 | RealGreen CallLog module and its sync | `call-log` | `src/app/realGreen/callLog/callLog.readme.md` |
@@ -83,7 +84,7 @@ Types follow a layered suffix pattern that signals their role in the data pipeli
 
 - **Data module** (contract, route, slice, selectors, hook): use the `data-module` skill. File naming: `featureContract.ts`, `featureSlice.ts`, `featureSelect.ts`, `useFeature.ts`.
 - **Auto-deduplication**: `uiSlice.ts` prevents duplicate API calls by param hashing. A slice's `transformParams` filters out already-loaded data before hashing.
-- **API pattern**: Type-Safe RPC with a declarative `capability` per op (see `src/permission/permission.readme.md`). Agents **must** read `src/lib/api/api.readme.md` before creating or modifying any API route or client API call (the `api-route` skill covers this).
+- **API pattern**: Type-Safe RPC with a declarative `capability` per op (see the `permission` skill). Agents **must** read `src/lib/api/api.readme.md` before creating or modifying any API route or client API call (the `api-route` skill covers this).
 - **Data sanitization**: API routes **never** return raw Mongoose documents. Use `cleanMongoObject(doc)` / `cleanMongoArray(docs)` from `@/lib/mongoose/cleanMongoObj`, and remove sensitive fields.
 - **Universal handler**: every API route uses `createRpcHandler(handlers)` (RealGreen routes use `createRealGreenRpcHandler`).
 
@@ -126,7 +127,7 @@ Types follow a layered suffix pattern that signals their role in the data pipeli
 - **PDF**: `@react-pdf/renderer` + `react-pdf-tailwind`. Agents **must** read `src/lib/pdf/pdf.readme.md` before creating or modifying PDF documents. Shared primitives: `src/lib/pdf/tw.ts`, `_components/PDFNumber.tsx`, `_components/pdfIcons.tsx`. Feature PDF documents live beside their feature, not in `src/lib/pdf/`.
 - **RealGreen Customer module**: see `src/app/realGreen/customer/customer.readme.md` and `src/app/realGreen/realGreen.readme.md` (Customers -> Programs -> Services, search schemes, mirror vs RealGreen pipeline). Test builders: `src/_builders/builders.readme.md`.
 - **Testing**: Vitest. Do not write tests unprompted: not everything needs them. When a task adds logic worth testing (pricing, business rules, selector helpers), end by asking whether the user wants tests. Once they say yes, or when modifying existing tests, agents **must** read `src/__tests__/testing.readme.md` first. Entity construction in tests must use the `make*` builders in `src/_builders` (`makeCustomer` for `Customer`/`Program`/`Service`), one verb and one file per entity. Never construct `Service`/`Program`/`Customer` manually, and do not share sample constants between tests.
-- **Auth**: password resets are admin-assisted (no email). New users start with no capabilities and are confined to a pending screen until an administrator assigns some. There are no roles: access is decided by capabilities. read `src/permission/permission.readme.md` before gating an op, a screen or a nav entry. See `src/app/auth/auth.readme.md`.
+- **Auth**: password resets are admin-assisted (no email). New users start with no capabilities and are confined to a pending screen until an administrator assigns some. There are no roles: access is decided by capabilities (use the `permission` skill to gate an op, a screen or a nav entry). See `src/app/auth/auth.readme.md`.
 
 ## Session Learnings (Key Conventions)
 

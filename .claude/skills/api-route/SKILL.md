@@ -17,7 +17,7 @@ One route file per feature at `src/app/<feature>/api/route.ts`, exporting only `
 
 1. **Contract** (`api/<Feature>Contract.ts`): `export interface XContract extends ApiContract { opName: { params: {...}; result: DataResponse<T> } }`.
 2. **Route**: `const handlers: HandlerMap<XContract> = { opName: { capability: can.<resource>.<verb>, handler: async (params) => {...} } }` then `export const POST = createRpcHandler(handlers)`.
-   - `capability` is mandatory per operation. Import `can` from `@/permission/can` and pick the resource for the data the op touches and the verb (`read`, `write`, `delete`). Never write the string by hand. `'public'` needs no login, `'superUser'` passes only a confirmed superuser. A new data entity needs a resource in `src/permission/groups/`: read `src/permission/permission.readme.md` first.
+   - `capability` is mandatory per operation. Import `can` from `@/permission/can` and pick the resource for the data the op touches and the verb (`read`, `write`, `delete`). Never write the string by hand. `'public'` needs no login, `'superUser'` passes only a confirmed superuser. A new data entity needs a resource in a permission group: use the `permission` skill.
    - Imports: `createRpcHandler` from `@/lib/api/createRpcHandler`, `HandlerMap` from `@/lib/api/types/rpcUtils`.
 3. **Client**: a thunk from `createStandardThunk<XContract, "opName">({ typePrefix, apiPath, opName })` (`@/store/reduxUtil/thunkFactories`). `apiPath` is the route folder path without `route.ts`, e.g. `/priceIncrease/seasonIncreases/api`.
 

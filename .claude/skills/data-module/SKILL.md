@@ -35,7 +35,7 @@ Read these (they are the source of truth; this skill only orders the steps):
 2. **Model** - `new Schema<XDoc>({...}, { timestamps: true })`, unique index on the natural key, then `export const XModel = createModel<XDoc>("X", XSchema)` from `@/lib/mongoose/createModel`. Never call `mongoose.model()` directly. Keep the type in the Types file, not the Model file.
 3. **Contract** - `export interface XContract extends ApiContract { opName: { params: {...}; result: DataResponse<...> } }`. Use `Record<string, never>` for no params.
 4. **Route** - `const handlers: HandlerMap<XContract> = { opName: { capability: can.<resource>.<verb>, handler: async (params) => {...} } }`.
-   - The capability is explicit and comes from `can` (`@/permission/can`). A new entity needs a resource added to a group in `src/permission/groups/` (see `src/permission/permission.readme.md`).
+   - The capability is explicit and comes from `can` (`@/permission/can`). A new entity needs a resource added to a permission group: use the `permission` skill.
    - Call `await connectToMongoDB()` first, query with `.lean()`.
    - Return `{ success: true, payload: cleanMongoArray(docs) }` or `cleanMongoObject(doc)` from `@/lib/mongoose/cleanMongoObj`. Never return raw Mongoose documents.
 5. **Slice** - one `createStandardThunk<XContract, "opName">({ typePrefix: "x/opName", apiPath: "/<feature>/api", opName: "opName" })` per operation. State holds data only (`docs`); no loading/error/status fields (`uiSlice` handles those via `addMatcher`). Update state in `extraReducers`.

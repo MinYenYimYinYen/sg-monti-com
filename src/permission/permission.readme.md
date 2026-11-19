@@ -1,6 +1,6 @@
 ﻿# Permissions
 
-What a user may do is decided by **capabilities**. They are defined once, in a central tree, and the same `can` constants gate API handlers, components and nav entries. This is the convention doc. How it got here, and what is still open, is in `permissionRefactor.md`.
+What a user may do is decided by **capabilities**. They are defined once, in a central tree, and the same `can` constants gate API handlers, components and nav entries. This is the convention doc.
 
 ## Where things are
 
@@ -64,12 +64,12 @@ A screen that owns no data gates on the capability of the data it needs. The cov
 3. Use `can.<resourceKey>.<verb>` in the handler and in components.
 4. The key must be unique across the whole tree. The registry throws at load on a repeat.
 
-**Renaming or removing a resource changes its strings.** A stored grant with the old string is dropped by `resolveEffective` and shows as stale in the editors. That is harmless while the data is dev data. Once real grants exist, a rename needs a data migration.
+**Renaming or removing a resource changes its strings.** A stored grant with the old string is dropped by `resolveEffective` and shows as stale in the editors. In effect, the change revokes that access from everyone who held it.
 
 ## Naming and shape conventions
 
 - **A resource is a data entity**, never a feature or screen. A feature is a composition of resources.
-- **Keys are globally unique.** QuickBooks entities are prefixed `qbo` (`qboCustomers`), because they are secondary views of QBO data. RealGreen is the primary system and keeps plain names. Credit card import resources are prefixed `cc`.
+- **Keys are globally unique.** QuickBooks entities are prefixed `qbo` (`qboCustomers`), because they are secondary views of QBO data. RealGreen is the primary system and keeps plain names. The two are different capabilities: `can.customers` is RealGreen and `can.qboCustomers` is QuickBooks. A QBO file that says `can.customers` compiles but gates on the wrong capability, so check the prefix. Credit card import resources are prefixed `cc`.
 - **Verbs are only read, write and delete.** Ownership ("only your own template") is enforced in the handler by `saId`, not by a verb.
 - **Writes to live QBO are separate resources** from the plan that precedes them and the history that follows: `journalEntryPlans` (read), `qboJournalEntries` (write), `journalEntryHistory` (read), and `ccExpensePlans` (read) with `qboExpensePostings` (write).
 - **A manual sync is its own permission**, separate from access to the data it copies. `customerSync` covers the customer, program and service syncs together, because a partial sync breaks the mirror.
@@ -144,12 +144,6 @@ The names are safe to show: the server already returns them in the 403 message a
 - **The actor's own limits:** a cell is disabled when the click would add something the actor does not hold (`canAssign`) or remove something they do not hold (`canRemove`). The server checks the same rules, so this only saves a refused request. A cell is all or nothing: one member the actor lacks disables the whole cell, so they use a resource's own checkbox for the rest.
 - **Not in the matrix:** a stale grant (the registry no longer knows it) has no checkbox, and a direct grant that a held bundle already lists is locked. Both appear in a short "Direct grants to clean up" list with a remove button, shown only when there is something to clean up.
 
-**Dangerous capabilities are a grouping decision.** There is no code-level marker for a capability whose op cannot be undone. A group cell grants every member of its verb at once, so keep such a resource out of a group with ordinary access, or say so in the group's description.
+## Keeping the permission skill current
 
-## Retired
-
-These no longer exist, and a reader of old code or history may still meet them: `createFeatureCapabilities` and the 48 `*Capabilities.ts` files, `combineCapabilities`, the feature and source segments of a capability string, `requires`, `shape`, and the `userOwned` and Any verbs.
-
-## Checks still to write
-
-Drift tests for the real tree: resource keys unique, every resource in exactly one group, a group key never equal to a resource key, and every resource has a name and at least one verb. The test plan is in `permissionRefactor.md`.
+After any maintenance on the permission system, check `.claude/skills/permission/SKILL.md` and update it if anything it teaches has changed: the steps to add a resource, choosing a group, `can` usage, `GatedPanel`, trigger gating, the nav menu entry, and the bundle reminder. The skill is how agents use permissions while building, and it must not drift from how the system works.
