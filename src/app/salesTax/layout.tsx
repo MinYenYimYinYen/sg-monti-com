@@ -1,6 +1,6 @@
 "use client";
 
-import { Link2, Receipt } from "lucide-react";
+import { Equal, Link2, Receipt } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
@@ -10,6 +10,7 @@ import { can } from "@/permission/can";
 const TABS: readonly TabNavItem[] = [
   { label: "Report", href: "/salesTax", icon: Receipt },
   { label: "Mapping", href: "/salesTax/salesTaxMapping", icon: Link2 },
+  { label: "Revenue Groups", href: "/salesTax/stateTaxRevenueGroups", icon: Equal },
 ];
 
 const ROOT_HREF = "/salesTax";

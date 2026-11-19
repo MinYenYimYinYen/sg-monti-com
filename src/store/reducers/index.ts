@@ -40,6 +40,7 @@ import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFee
 import { inventoryReducer } from "@/app/inventory/inventorySlice";
 import { salesTaxUIReducer } from "@/app/salesTax/salesTaxUISlice";
 import { salesTaxMappingReducer } from "@/app/salesTax/salesTaxMapping/salesTaxMappingSlice";
+import { stateTaxRevenueGroupReducer } from "@/app/salesTax/stateTaxRevenueGroups/stateTaxRevenueGroupSlice";
 import javelinReducer from "@/app/javelin/javelinSlice";
 import depositReducer from "@/app/javelin/depositSlice";
 import ckDepositReducer from "@/app/javelin/ckDepositSlice";
@@ -110,6 +111,7 @@ const rootReducer = combineReducers({
   inventory: inventoryReducer,
   salesTaxUI: salesTaxUIReducer,
   salesTaxMapping: salesTaxMappingReducer,
+  stateTaxRevenueGroup: stateTaxRevenueGroupReducer,
   loadout: loadoutReducer,
   loadoutStart: loadoutStartReducer,
   loadoutFinish: loadoutFinishReducer,

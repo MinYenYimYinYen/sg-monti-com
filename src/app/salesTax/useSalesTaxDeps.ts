@@ -5,6 +5,7 @@ import { CustomerContextMode } from "@/app/realGreen/customer/slices/customerSli
 import { useDiscount } from "@/app/realGreen/discount/useDiscount";
 import { useTaxCode } from "@/app/realGreen/taxCode/useTaxCode";
 import { useSalesTaxMapping } from "@/app/salesTax/salesTaxMapping/useSalesTaxMapping";
+import { useStateTaxRevenueGroup } from "@/app/salesTax/stateTaxRevenueGroups/useStateTaxRevenueGroup";
 
 // Module constant so the contexts array keeps one reference across renders.
 const SALES_TAX_CONTEXTS: CustomerContextMode[] = ["salesTaxCustomers"];
@@ -20,4 +21,5 @@ export function useSalesTaxDeps() {
   // A service's discount is hydrated from the loaded discounts; without them every discount reads 0.
   useDiscount({ autoLoad: true });
   useSalesTaxMapping({ autoLoad: true });
+  useStateTaxRevenueGroup({ autoLoad: true });
 }

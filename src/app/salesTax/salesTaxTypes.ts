@@ -64,6 +64,31 @@ export type UnmappedTaxCodeSummary = {
   summary: RealGreenTaxSummary;
 };
 
+/** A customer on some Minnesota lines of a revenue group but not all, which is what splits their revenue. */
+export type RevenueGroupCustomerGap = {
+  custId: number;
+  onMnTaxCodes: string[];
+  missingFromMnTaxCodes: string[];
+};
+
+export type RevenueGroupLineTotal = {
+  mnTaxCode: string;
+  netAfterAllDiscounts: number;
+  customerCount: number;
+};
+
+/**
+ * A revenue group whose lines did not report identical revenue for the loaded month. The usual cause
+ * is a customer with some of the group's RealGreen tax codes but not all, so `customerGaps` names
+ * the customers to check. A member with no line this month has a total of 0 and no customers.
+ */
+export type RevenueGroupProblem = {
+  revenueGroupKey: string;
+  mnTaxCodes: string[];
+  lineTotals: RevenueGroupLineTotal[];
+  customerGaps: RevenueGroupCustomerGap[];
+};
+
 /**
  * The RealGreen report redistributed onto Minnesota tax types through the saved mappings.
  *

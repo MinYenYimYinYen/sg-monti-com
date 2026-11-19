@@ -11,6 +11,7 @@ import {
 import { MnReturnExportPanel } from "@/app/salesTax/_components/MnReturnExportPanel";
 import { MnSalesTaxReportPanel } from "@/app/salesTax/_components/MnSalesTaxReportPanel";
 import { RealGreenTaxReportPanel } from "@/app/salesTax/_components/RealGreenTaxReportPanel";
+import { RevenueGroupProblemNotice } from "@/app/salesTax/_components/RevenueGroupProblemNotice";
 import { formatMoney } from "@/app/salesTax/_components/SalesTaxSummaryTable";
 import { salesTaxUISelect } from "@/app/salesTax/salesTaxUISelect";
 
@@ -36,6 +37,7 @@ export function SalesTaxReportsAccordion() {
   const dateRange = useSelector(salesTaxUISelect.dateRange);
   const unmappedTaxCodeIds = useSelector(salesTaxUISelect.unmappedTaxCodeIds);
   const mismatchedTaxCodeIds = useSelector(salesTaxUISelect.mismatchedTaxCodeIds);
+  const revenueGroupProblems = useSelector(salesTaxUISelect.revenueGroupProblems);
 
   if (!taxReport || !mnTaxReport) {
     return <p className="text-sm text-muted-foreground">Pick a month.</p>;
@@ -65,6 +67,11 @@ export function SalesTaxReportsAccordion() {
           {mismatchedTaxCodeIds.join(", ")}. Tax on those lines differs from what was charged.
         </Warning>
       )}
+      {revenueGroupProblems.map((problem) => (
+        <Warning key={problem.revenueGroupKey}>
+          <RevenueGroupProblemNotice problem={problem} />
+        </Warning>
+      ))}
 
       <Accordion
         type="multiple"

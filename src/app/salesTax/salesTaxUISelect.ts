@@ -10,6 +10,8 @@ import {
 } from "@/app/salesTax/_lib/buildMnSalesTaxReport";
 import { salesTaxMappingSelect } from "@/app/salesTax/salesTaxMapping/salesTaxMappingSelect";
 import { taxCodeSelect } from "@/app/realGreen/taxCode/taxCodeSelectors";
+import { findRevenueGroupProblems } from "@/app/salesTax/_lib/findRevenueGroupProblems";
+import { stateTaxRevenueGroupSelect } from "@/app/salesTax/stateTaxRevenueGroups/stateTaxRevenueGroupSelect";
 
 const selectDateRange = (state: AppState) => state.salesTaxUI.dateRange;
 
@@ -55,6 +57,13 @@ const selectMismatchedTaxCodeIds = createSelector(
     taxReport ? findMismatchedTaxCodeIds({ taxReport, mappingRows }) : [],
 );
 
+/** Revenue groups whose Minnesota lines did not report identical revenue this month. */
+const selectRevenueGroupProblems = createSelector(
+  [selectMnTaxReport, stateTaxRevenueGroupSelect.groups],
+  (mnTaxReport, groups) =>
+    mnTaxReport ? findRevenueGroupProblems({ mnTaxLines: mnTaxReport.mnTaxLines, groups }) : [],
+);
+
 export const salesTaxUISelect = {
   dateRange: selectDateRange,
   canGetCustomers: selectCanGetCustomers,
@@ -62,4 +71,5 @@ export const salesTaxUISelect = {
   mnTaxReport: selectMnTaxReport,
   unmappedTaxCodeIds: selectUnmappedTaxCodeIds,
   mismatchedTaxCodeIds: selectMismatchedTaxCodeIds,
+  revenueGroupProblems: selectRevenueGroupProblems,
 };
