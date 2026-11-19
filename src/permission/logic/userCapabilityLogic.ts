@@ -113,13 +113,15 @@ export function addDirect({
 }
 
 export type AddDirectManyResult =
-  | { ok: true; capabilities: Capability[] }
-  | { ok: false; reason: Extract<AddDirectResult, { ok: false }>["reason"]; capability: string };
+  | { ok: true; capabilities: Capability[]; added: Capability[] }
+  | { ok: false; reason: "unknownCapability"; capability: string };
 
 /**
  * Adds several direct grants in one step, so a capability and what it needs are stored together.
- * Each is checked like a single addDirect; the first refusal refuses the whole list and names
- * the capability, so nothing is half-applied.
+ * A capability the user already holds, directly or through a bundle, is skipped: the screen that
+ * sent the click may be stale, and the outcome it wanted is already true. Only an unknown string
+ * (a typo, never a stale screen) refuses the whole list and names it, so nothing is half-applied.
+ * `added` is what actually changed, which is what an escalation check must look at.
  */
 export function addDirectMany({
   user,
@@ -133,20 +135,37 @@ export function addDirectMany({
   registry: KnownCapabilities;
 }): AddDirectManyResult {
   let current = user;
+  const added: Capability[] = [];
   for (const capability of new Set(capabilities)) {
     const result = addDirect({ user: current, capability, bundles, registry });
-    if (!result.ok) return { ok: false, reason: result.reason, capability };
-    current = { ...current, capabilities: result.capabilities };
+    if (result.ok) {
+      current = { ...current, capabilities: result.capabilities };
+      added.push(capability as Capability);
+    } else if (result.reason === "unknownCapability") {
+      return { ok: false, reason: result.reason, capability };
+    }
   }
-  return { ok: true, capabilities: [...current.capabilities] };
+  return { ok: true, capabilities: [...current.capabilities], added };
 }
 
-export type RemoveDirectResult =
-  | { ok: true; capabilities: Capability[] }
-  | { ok: false; reason: "notDirect" };
+export type RemoveDirectManyResult = { capabilities: Capability[]; removed: Capability[] };
 
-/** Works on any stored string, including a stale one the registry no longer knows, so it can be cleaned up. */
-export function removeDirect({ user, capability }: { user: Holdings; capability: string }): RemoveDirectResult {
-  if (!user.capabilities.some((held) => held === capability)) return { ok: false, reason: "notDirect" };
-  return { ok: true, capabilities: user.capabilities.filter((held) => held !== capability) };
+/**
+ * Removes several direct grants in one step. A string the user does not hold directly is ignored,
+ * for the same stale-screen reason as addDirectMany. It works on any stored string, including a
+ * stale one the registry no longer knows, so it can be cleaned up. `removed` is what actually
+ * changed, which is what an escalation check must look at.
+ */
+export function removeDirectMany({
+  user,
+  capabilities,
+}: {
+  user: Holdings;
+  capabilities: readonly string[];
+}): RemoveDirectManyResult {
+  const requested = new Set(capabilities);
+  return {
+    capabilities: user.capabilities.filter((held) => !requested.has(held)),
+    removed: user.capabilities.filter((held) => requested.has(held)),
+  };
 }

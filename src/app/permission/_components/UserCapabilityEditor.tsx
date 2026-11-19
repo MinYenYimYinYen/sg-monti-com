@@ -9,26 +9,22 @@ import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { useUserCapabilities } from "@/app/permission/userCapabilities/useUserCapabilities";
 import { CapabilityGroups } from "@/app/permission/_components/CapabilityGroups";
+import { CapabilityMatrix, type ToggleCellParams } from "@/app/permission/_components/CapabilityMatrix";
 import { DeleteUserDialog } from "@/app/permission/_components/DeleteUserDialog";
 import { Notice } from "@/app/permission/_components/Notice";
+import { registryMatrix } from "@/app/permission/_lib/registryMatrix";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
-import { canAssign, canManageCapabilitiesOf } from "@/permission/logic/assignmentGuards";
-import { capabilityLabel, groupCapabilitiesByGroup } from "@/permission/logic/capabilityLabels";
+import { canAssign, canManageCapabilitiesOf, canRemove } from "@/permission/logic/assignmentGuards";
+import { capabilityLabel } from "@/permission/logic/capabilityLabels";
+import { cellKey, planUserMatrix } from "@/permission/logic/capabilityMatrix";
 import { isGateOpen } from "@/permission/logic/navGate";
 import {
   assignBundle as previewAssignBundle,
+  bundleCapabilitiesHeld,
   removeBundle as previewRemoveBundle,
 } from "@/permission/logic/userCapabilityLogic";
 import { Button } from "@/style/components/button";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/style/components/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/style/components/select";
 
 /** One user's bundles and direct capabilities. Key it by userName so its pickers reset per user. */
 export function UserCapabilityEditor({ userName }: { userName: string }) {
@@ -37,7 +33,6 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
   const users = useSelector(userCapabilitiesSelect.users);
   const holdingsByUserName = useSelector(userCapabilitiesSelect.holdingsByUserName);
   const effectiveByUserName = useSelector(userCapabilitiesSelect.effectiveByUserName);
-  const assignableByUserName = useSelector(userCapabilitiesSelect.assignableByUserName);
   const redundantDirectByUserName = useSelector(userCapabilitiesSelect.redundantDirectByUserName);
   const bundles = useSelector(capabilityBundleSelect.docs);
   const bundlesByKey = useSelector(capabilityBundleSelect.byBundleKey);
@@ -45,7 +40,6 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
 
   const [bundleToAssign, setBundleToAssign] = useState("");
   const [bundleToRemove, setBundleToRemove] = useState<string | null>(null);
-  const [capabilityToAdd, setCapabilityToAdd] = useState("");
 
   const summary = users.find((candidate) => candidate.userName === userName);
   const holdings = holdingsByUserName[userName];
@@ -71,10 +65,29 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
       bundle,
       allowed: canAssign({ actorIsSuperUser, actorCapabilities, granting: bundle.capabilities }).allowed,
     }));
-  const assignable = assignableByUserName[userName] ?? [];
-  const grantable = actorIsSuperUser ? assignable : assignable.filter((capability) => actorCapabilities.includes(capability));
-  const { groups: grantableByGroup } = groupCapabilitiesByGroup({
-    capabilities: grantable,
+
+  // The matrix cannot clear these: a stale string has no checkbox, and a direct grant a bundle
+  // already lists is locked by the bundle. They get their own short list so they can be removed.
+  const directToCleanUp = [
+    ...new Set([...holdings.capabilities.filter((capability) => !capabilityRegistry.has(capability)), ...redundant]),
+  ];
+
+  // Mirrors the server's rule that a non-superuser can only remove what they hold themselves.
+  const removableCleanUp = new Set(
+    directToCleanUp.filter(
+      (capability) =>
+        canRemove({ actorIsSuperUser, actorCapabilities, removing: [capability], registry: capabilityRegistry })
+          .allowed,
+    ),
+  );
+
+  // A direct grant cannot repeat what a held bundle lists, so those cells are locked.
+  const userMatrixPlan = planUserMatrix({
+    matrix: registryMatrix,
+    effective: new Set(effective),
+    viaBundle: bundleCapabilitiesHeld({ bundleKeys: holdings.bundleKeys, bundles }),
+    actorIsSuperUser,
+    actorCapabilities,
     registry: capabilityRegistry,
   });
 
@@ -83,6 +96,16 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
     : null;
   const removePreview = bundleToRemove
     ? previewRemoveBundle({ user: holdings, bundleKey: bundleToRemove, bundles, registry: capabilityRegistry })
+    : null;
+
+  // Mirrors the server's no-escalation rule for taking access away: only what the actor holds.
+  const removeGuard = removePreview?.ok
+    ? canRemove({
+        actorIsSuperUser,
+        actorCapabilities,
+        removing: removePreview.lost,
+        registry: capabilityRegistry,
+      })
     : null;
 
   function handleAssign() {
@@ -95,9 +118,12 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
     setBundleToRemove(null);
   }
 
-  function handleAddDirect() {
-    addDirect({ userName, capabilities: [capabilityToAdd] });
-    setCapabilityToAdd("");
+  // One click is one write: the plan holds either the capabilities to add or the ones to remove.
+  function handleToggleCell({ rowKey, cell }: ToggleCellParams) {
+    const plan = userMatrixPlan.plans[cellKey({ rowKey, verb: cell.verb })];
+    if (!plan?.enabled) return;
+    if (plan.change.add.length > 0) addDirect({ userName, capabilities: plan.change.add });
+    if (plan.change.remove.length > 0) removeDirect({ userName, capabilities: plan.change.remove });
   }
 
   return (
@@ -161,8 +187,23 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
                         capabilities={removePreview.lost}
                         emptyText="Nothing: the user still holds all of it another way."
                       />
+                      {removeGuard && !removeGuard.allowed && (
+                        <Notice tone="warning">
+                          You can only remove capabilities you hold yourself. You do not hold:
+                          <ul className="mt-1 list-disc pl-5">
+                            {removeGuard.missing.map((capability) => (
+                              <li key={capability}>{capabilityLabel({ capability, registry: capabilityRegistry })}</li>
+                            ))}
+                          </ul>
+                        </Notice>
+                      )}
                       <div className="flex gap-2">
-                        <Button size="sm" variant="destructive" onClick={() => handleConfirmRemove(bundleKey)}>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={!!removeGuard && !removeGuard.allowed}
+                          onClick={() => handleConfirmRemove(bundleKey)}
+                        >
                           Remove bundle
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => setBundleToRemove(null)}>
@@ -216,46 +257,38 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Direct capabilities</h3>
-        <CapabilityGroups
-          capabilities={holdings.capabilities}
-          emptyText="None. Everything this user can do comes from bundles."
-          onRemoveAction={
-            editable ? (capability) => removeDirect({ userName, capability }) : undefined
-          }
+        <h3 className="text-sm font-semibold text-foreground">Capabilities</h3>
+        <p className="text-xs text-muted-foreground">
+          Everything this user holds, through bundles or directly. A checkbox you click adds or removes direct grants
+          only: what a bundle grants stays until the bundle is removed.
+        </p>
+        <CapabilityMatrix
+          matrix={registryMatrix}
+          held={new Set(effective)}
+          disabled={!editable}
+          disabledCells={userMatrixPlan.disabledCells}
+          cellNotes={userMatrixPlan.cellNotes}
+          onToggleCellAction={handleToggleCell}
         />
-        {editable && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Select value={capabilityToAdd} onValueChange={setCapabilityToAdd}>
-                <SelectTrigger>
-                  <SelectValue placeholder={grantable.length === 0 ? "Nothing left to add" : "Add a capability..."} />
-                </SelectTrigger>
-                <SelectContent>
-                  {grantableByGroup.map((group) => (
-                    <SelectGroup key={group.groupKey}>
-                      <SelectLabel>{group.groupName}</SelectLabel>
-                      {group.capabilities.map((capability) => (
-                        <SelectItem key={capability} value={capability}>
-                          {capabilityLabel({ capability, registry: capabilityRegistry })}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button size="sm" disabled={!capabilityToAdd} onClick={handleAddDirect}>
-                Add
-              </Button>
-            </div>
-          </div>
-        )}
       </section>
 
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Everything this user can do</h3>
-        <CapabilityGroups capabilities={effective} emptyText="Nothing. This user can only use public pages." />
-      </section>
+      {directToCleanUp.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">Direct grants to clean up</h3>
+          <p className="text-xs text-muted-foreground">
+            These do not appear as their own checkbox: a bundle already lists them, or the capability no longer
+            exists.
+          </p>
+          <CapabilityGroups
+            capabilities={directToCleanUp}
+            emptyText=""
+            removable={removableCleanUp}
+            onRemoveAction={
+              editable ? (capability) => removeDirect({ userName, capabilities: [capability] }) : undefined
+            }
+          />
+        </section>
+      )}
     </div>
   );
 }

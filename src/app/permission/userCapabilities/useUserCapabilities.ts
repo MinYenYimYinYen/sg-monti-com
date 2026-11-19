@@ -24,7 +24,7 @@ export function useUserCapabilities() {
 
   const removeDirect = (params: Params<"removeDirect">) =>
     dispatch(
-      userCapabilitiesActions.removeDirectCapability({ params, config: { loadingMsg: "Removing capability..." } }),
+      userCapabilitiesActions.removeDirectCapability({ params, config: { loadingMsg: "Removing capabilities..." } }),
     );
 
   return { assignBundle, removeBundle, addDirect, removeDirect };

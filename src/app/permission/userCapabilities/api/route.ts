@@ -16,13 +16,21 @@ import connectToMongoDB from "@/lib/mongoose/connectToMongoDB";
 import { AppError } from "@/lib/errors/AppError";
 import { Capability } from "@/permission/PermissionTypes";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
-import { canAssign } from "@/permission/logic/assignmentGuards";
+import { canAssign, canRemove } from "@/permission/logic/assignmentGuards";
 import { toUserSummary } from "@/permission/logic/userSummary";
-import { addDirectMany, assignBundle, removeBundle, removeDirect } from "@/permission/logic/userCapabilityLogic";
+import { addDirectMany, assignBundle, removeBundle, removeDirectMany } from "@/permission/logic/userCapabilityLogic";
 
 function notPermitted(missing: Capability[]): AppError {
   return new AppError({
     message: `You can only assign capabilities you hold yourself. Missing: ${missing.join(", ")}`,
+    type: "AUTH_ERROR",
+    statusCode: 403,
+  });
+}
+
+function notPermittedToRemove(missing: Capability[]): AppError {
+  return new AppError({
+    message: `You can only remove capabilities you hold yourself. Missing: ${missing.join(", ")}`,
     type: "AUTH_ERROR",
     statusCode: 403,
   });
@@ -90,10 +98,19 @@ const handlers: HandlerMap<UserCapabilitiesContract> = {
     capability: can.userCapabilities.write,
     handler: async (params) => {
       const bundleKey = assertText({ value: params.bundleKey, label: "Bundle key" });
-      const { userName, holdings, bundles } = await loadAssignmentContext({ userName: params.userName });
+      const { actor, userName, holdings, bundles } = await loadAssignmentContext({ userName: params.userName });
 
       const result = removeBundle({ user: holdings, bundleKey, bundles, registry: capabilityRegistry });
       if (!result.ok) throw refusal("The user does not hold this bundle.");
+
+      // `lost` is what the user really stops holding, so what a held-otherwise capability keeps is not counted.
+      const allowed = canRemove({
+        actorIsSuperUser: actor.isSuperUser,
+        actorCapabilities: actor.capabilities,
+        removing: result.lost,
+        registry: capabilityRegistry,
+      });
+      if (!allowed.allowed) throw notPermittedToRemove(allowed.missing);
 
       const doc = await saveHoldings({ userName, bundleKeys: result.bundleKeys, capabilities: holdings.capabilities });
       return { success: true, payload: doc };
@@ -107,19 +124,13 @@ const handlers: HandlerMap<UserCapabilitiesContract> = {
       const { actor, userName, holdings, bundles } = await loadAssignmentContext({ userName: params.userName });
 
       const result = addDirectMany({ user: holdings, capabilities, bundles, registry: capabilityRegistry });
-      if (!result.ok) {
-        const messages = {
-          unknownCapability: "That capability does not exist",
-          alreadyDirect: "The user already holds this capability directly",
-          coveredByBundle: "A bundle the user holds already grants this capability",
-        };
-        throw refusal(`${messages[result.reason]}: ${result.capability}.`);
-      }
+      if (!result.ok) throw refusal(`That capability does not exist: ${result.capability}.`);
 
+      // Only what is newly granted counts: a capability the user already holds gives them nothing new.
       const allowed = canAssign({
         actorIsSuperUser: actor.isSuperUser,
         actorCapabilities: actor.capabilities,
-        granting: capabilities as Capability[],
+        granting: result.added,
       });
       if (!allowed.allowed) throw notPermitted(allowed.missing);
 
@@ -131,11 +142,18 @@ const handlers: HandlerMap<UserCapabilitiesContract> = {
   removeDirect: {
     capability: can.userCapabilities.write,
     handler: async (params) => {
-      const capability = assertText({ value: params.capability, label: "Capability" });
-      const { userName, holdings } = await loadAssignmentContext({ userName: params.userName });
+      const capabilities = assertTextList({ value: params.capabilities, label: "Capabilities" });
+      const { actor, userName, holdings } = await loadAssignmentContext({ userName: params.userName });
 
-      const result = removeDirect({ user: holdings, capability });
-      if (!result.ok) throw refusal("The user does not hold this capability directly.");
+      const result = removeDirectMany({ user: holdings, capabilities });
+
+      const allowed = canRemove({
+        actorIsSuperUser: actor.isSuperUser,
+        actorCapabilities: actor.capabilities,
+        removing: result.removed,
+        registry: capabilityRegistry,
+      });
+      if (!allowed.allowed) throw notPermittedToRemove(allowed.missing);
 
       const doc = await saveHoldings({ userName, bundleKeys: holdings.bundleKeys, capabilities: result.capabilities });
       return { success: true, payload: doc };

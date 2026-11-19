@@ -36,13 +36,21 @@ export interface UserCapabilitiesContract extends ApiContract {
     params: { userName: string; bundleKey: string };
     result: DataResponse<UserCapabilitiesDoc>;
   };
-  /** Adds one or more direct grants in a single write, so a capability and what it needs stay together. */
+  /**
+   * Adds one or more direct grants in a single write, so a capability and what it needs stay
+   * together. A capability the user already holds is skipped, not refused, so a stale screen
+   * still gets the outcome it asked for. An unknown string refuses the whole list.
+   */
   addDirect: {
     params: { userName: string; capabilities: string[] };
     result: DataResponse<UserCapabilitiesDoc>;
   };
+  /**
+   * Removes one or more direct grants in a single write. A capability the user does not hold
+   * directly is skipped. A non-superuser can only remove what they hold themselves.
+   */
   removeDirect: {
-    params: { userName: string; capability: string };
+    params: { userName: string; capabilities: string[] };
     result: DataResponse<UserCapabilitiesDoc>;
   };
 }

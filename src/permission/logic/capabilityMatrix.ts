@@ -1,6 +1,6 @@
 import type { Capability } from "@/permission/PermissionTypes";
 import { VERB_COMPANIONS, type CapabilityRegistry } from "@/permission/registryTypes";
-import { canAssign } from "@/permission/logic/assignmentGuards";
+import { canAssign, canRemove } from "@/permission/logic/assignmentGuards";
 
 // The admin screens show capabilities as a table: one row per registry group, one column per verb,
 // one checkbox per cell. A cell toggles every member of the row that has that verb. Everything
@@ -245,7 +245,10 @@ export type UserCellPlan = {
   change: CellChange;
   /** Members held through a bundle: they stay held whatever the click does. */
   lockedByBundle: Capability[];
-  /** Members the actor may not hand out, so a click that adds them is refused. */
+  /**
+   * What the click would change that the actor may not: capabilities it would add that they do not
+   * hold, or take away that they do not hold. A click is either all adds or all removals.
+   */
   blockedForActor: Capability[];
   /** Whether the checkbox can be clicked. */
   enabled: boolean;
@@ -277,8 +280,12 @@ export function planUserCell({
   const removable = change.remove.filter((capability) => !viaBundle.has(capability));
   const effectiveChange: CellChange = { add: change.add, remove: removable };
 
-  const guard = canAssign({ actorIsSuperUser, actorCapabilities, granting: change.add });
-  const blockedForActor = guard.allowed ? [] : guard.missing;
+  const addGuard = canAssign({ actorIsSuperUser, actorCapabilities, granting: effectiveChange.add });
+  const removeGuard = canRemove({ actorIsSuperUser, actorCapabilities, removing: effectiveChange.remove, registry });
+  const blockedForActor = [
+    ...(addGuard.allowed ? [] : addGuard.missing),
+    ...(removeGuard.allowed ? [] : removeGuard.missing),
+  ];
 
   const nothingToDo = effectiveChange.add.length === 0 && effectiveChange.remove.length === 0;
   return {
@@ -288,6 +295,73 @@ export function planUserCell({
     blockedForActor,
     enabled: !nothingToDo && blockedForActor.length === 0,
   };
+}
+
+function pluralCapabilities(count: number): string {
+  return count === 1 ? "capability" : "capabilities";
+}
+
+/** Why a cell is locked or refused, for its tooltip. Undefined when there is nothing to explain. */
+function userCellNote(plan: UserCellPlan): string | undefined {
+  if (plan.blockedForActor.length > 0) {
+    const verb = plan.change.remove.length > 0 ? "remove" : "grant";
+    return `You do not hold ${plan.blockedForActor.length} of the ${pluralCapabilities(plan.blockedForActor.length)} this would ${verb}, so you cannot change it.`;
+  }
+  if (plan.lockedByBundle.length === 0) return undefined;
+  return plan.enabled
+    ? "Part of this is granted by a bundle and stays either way."
+    : "Granted by a bundle. Change the bundle to change this.";
+}
+
+export type UserMatrixPlan = {
+  /** Every cell's plan, keyed by `cellKey`. A click reads its change from here. */
+  plans: Record<string, UserCellPlan>;
+  /** Keys of the cells that cannot be clicked, for the table's `disabledCells`. */
+  disabledCells: Set<string>;
+  /** Tooltip text by cell key, for the table's `cellNotes`. */
+  cellNotes: Record<string, string>;
+};
+
+/**
+ * Plans every group cell and every resource cell of the matrix for one user, so the editor only
+ * hands the result to the table. Group and resource cells go through the same `planUserCell`.
+ */
+export function planUserMatrix({
+  matrix,
+  effective,
+  viaBundle,
+  actorIsSuperUser,
+  actorCapabilities,
+  registry,
+}: {
+  matrix: Matrix;
+  effective: ReadonlySet<Capability>;
+  viaBundle: ReadonlySet<Capability>;
+  actorIsSuperUser: boolean;
+  actorCapabilities: readonly Capability[];
+  registry: KnownCapabilities;
+}): UserMatrixPlan {
+  const result: UserMatrixPlan = { plans: {}, disabledCells: new Set(), cellNotes: {} };
+
+  function planCells({ rowKey, cells }: { rowKey: string; cells: (MatrixCell | null)[] }) {
+    for (const cell of cells) {
+      if (!cell) continue;
+      const key = cellKey({ rowKey, verb: cell.verb });
+      const plan = planUserCell({ cell, effective, viaBundle, actorIsSuperUser, actorCapabilities, registry });
+      result.plans[key] = plan;
+      if (!plan.enabled) result.disabledCells.add(key);
+      const note = userCellNote(plan);
+      if (note) result.cellNotes[key] = note;
+    }
+  }
+
+  for (const row of matrix.rows) {
+    planCells({ rowKey: row.key, cells: row.cells });
+    for (const resource of row.resources) {
+      planCells({ rowKey: resourceRowKey({ groupKey: row.key, resourceKey: resource.key }), cells: resource.cells });
+    }
+  }
+  return result;
 }
 
 // ---------- the filter ----------

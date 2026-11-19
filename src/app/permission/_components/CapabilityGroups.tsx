@@ -11,10 +11,12 @@ type CapabilityGroupsProps = {
   emptyText: string;
   /** When given, each capability shows a remove button. A generic primitive, so it keeps a callback. */
   onRemoveAction?: (capability: Capability) => void;
+  /** When given, only these capabilities show a remove button (the rest the actor may not take away). */
+  removable?: ReadonlySet<Capability>;
 };
 
 /** Capabilities grouped as the admin screens list them. Stale strings are shown, not hidden. */
-export function CapabilityGroups({ capabilities, emptyText, onRemoveAction }: CapabilityGroupsProps) {
+export function CapabilityGroups({ capabilities, emptyText, onRemoveAction, removable }: CapabilityGroupsProps) {
   if (capabilities.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyText}</p>;
   }
@@ -28,7 +30,11 @@ export function CapabilityGroups({ capabilities, emptyText, onRemoveAction }: Ca
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group.groupName}</h4>
           <ul className="mt-1 space-y-1">
             {group.capabilities.map((capability) => (
-              <CapabilityRow key={capability} capability={capability} onRemoveAction={onRemoveAction} />
+              <CapabilityRow
+                key={capability}
+                capability={capability}
+                onRemoveAction={removable && !removable.has(capability) ? undefined : onRemoveAction}
+              />
             ))}
           </ul>
         </div>
@@ -38,7 +44,11 @@ export function CapabilityGroups({ capabilities, emptyText, onRemoveAction }: Ca
           <h4 className="text-xs font-semibold uppercase tracking-wide text-destructive">No longer exists</h4>
           <ul className="mt-1 space-y-1">
             {unknown.map((capability) => (
-              <CapabilityRow key={capability} capability={capability} onRemoveAction={onRemoveAction} />
+              <CapabilityRow
+                key={capability}
+                capability={capability}
+                onRemoveAction={removable && !removable.has(capability) ? undefined : onRemoveAction}
+              />
             ))}
           </ul>
         </div>

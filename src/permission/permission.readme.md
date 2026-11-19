@@ -116,9 +116,11 @@ The names are safe to show: the server already returns them in the 403 message a
 
 - A user holds bundle keys plus direct capabilities. The effective list is the plain union (`resolveEffective`), de-duplicated, with strings the registry does not know dropped and missing bundles ignored.
 - **No escalation:** `canAssign` lets a non-superuser hand out only what they hold. A superuser may assign anything.
+- **No stripping what you lack:** `canRemove` is the same rule for taking access away, so a delegate cannot lock out people above them. It checks what the change really takes from the user: for `removeDirect` the grants actually removed, for `removeBundle` the `lost` list (what the user stops holding, not what a bundle merely lists). A string the registry no longer knows is exempt, so anyone may clean up a stale grant. `assignBundle` removes direct grants only because the bundle now lists them, so the user's access does not shrink and it is not guarded.
+- **Stale screens are not errors:** `addDirect` and `removeDirect` take lists. A capability the user already holds (for add) or does not hold directly (for remove) is skipped, because the outcome the click wanted is already true. Only an unknown string refuses the whole list. The escalation checks look only at what actually changed.
 - **Protected users:** only a superuser may change the capabilities of a kiosk or a superuser (`canManageCapabilitiesOf`).
 - **No duplicates:** a direct grant never repeats a capability a held bundle lists. `assignBundle` and `saveBundle` strip the overlap, so removing a bundle behaves predictably.
-- **Untrusted input:** `addDirect`, `addDirectMany` and `saveBundle` check every string against the registry, so a typo is rejected, not stored.
+- **Untrusted input:** `addDirect`, `addDirectMany` and `saveBundle` check every string against the registry, so a typo is rejected, not stored. `removeDirect` deliberately does not, so a stale string can be removed.
 - A bundle with holders cannot be deleted.
 
 ## The admin matrix
@@ -132,6 +134,15 @@ The names are safe to show: the server already returns them in the 403 message a
 - Resource cells are keyed with `resourceRowKey` (`group/resource`) in `cellKey`, so they cannot collide with a group row.
 - The checkboxes sit beside the accordion trigger, not inside it (`AccordionTrigger`'s `trailing` prop), because a control nested in the trigger button is invalid.
 - The filter is a text box and an All, Unused or Used toggle. It only chooses which groups are drawn.
+
+### In the user editor
+
+`UserCapabilityEditor` draws the same `CapabilityMatrix`, with `held` set to the user's effective capabilities (bundles plus direct). `planUserMatrix` plans every group and resource cell through `planUserCell`, and the editor passes the result to the table as `disabledCells` and `cellNotes`.
+
+- **A click edits direct grants only.** It is one write: `addDirect` with every capability to add, or `removeDirect` with every one to remove, never both. A cell that is partly held completes first, as in the bundle editor.
+- **Held through a bundle:** shows as held. A cell fully covered by a bundle is disabled with a note, because a direct grant cannot repeat what a bundle lists. In a mixed cell a click adds only the members not yet held, or clears only the direct ones, and the bundle's members stay held.
+- **The actor's own limits:** a cell is disabled when the click would add something the actor does not hold (`canAssign`) or remove something they do not hold (`canRemove`). The server checks the same rules, so this only saves a refused request. A cell is all or nothing: one member the actor lacks disables the whole cell, so they use a resource's own checkbox for the rest.
+- **Not in the matrix:** a stale grant (the registry no longer knows it) has no checkbox, and a direct grant that a held bundle already lists is locked. Both appear in a short "Direct grants to clean up" list with a remove button, shown only when there is something to clean up.
 
 **Dangerous capabilities are a grouping decision.** There is no code-level marker for a capability whose op cannot be undone. A group cell grants every member of its verb at once, so keep such a resource out of a group with ordinary access, or say so in the group's description.
 
