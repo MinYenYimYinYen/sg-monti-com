@@ -4,17 +4,21 @@ This project uses a **Type-Safe RPC (Remote Procedure Call)** pattern. Instead o
 
 ## 1. Core Definitions
 
-### A. Roles (`src/lib/api/types/roles.ts`)
-We use a single source of truth for user roles. "public" is treated as a role for unauthenticated access.
+### A. Capabilities (`src/permission/`)
+Every op declares the **capability** the caller must hold, taken from the typed `can` constants (for example `can.employees.read`). The tree, the verbs and how a check resolves are in `src/permission/permission.readme.md`. Never write a capability string by hand, and never pick one for a screen: pick the one for the data the op touches.
 ```typescript
-export const ROLES = ["admin", "office", "tech", "public"] as const;
-export type Role = (typeof ROLES)[number];
+import { can } from "@/permission/can";
+// ...
+getAll: { capability: can.employees.read, handler: async () => { /* ... */ } },
 ```
+A capability requirement is also `'public'` (no login) or `'superUser'` (a confirmed superuser only, not grantable).
+
+A caller without the capability gets a 403 with `required` set to the missing capability (never set on a 401). The client does not toast it per request: the thunk factories pass it to a collector that shows one combined toast. Because of that, load hooks do not take permission flags to skip a refused load. See `src/permission/permission.readme.md`, "A refused load (403)".
 
 ### B. Standard Responses (`src/lib/api/types/responses.ts`)
 All API endpoints must return data in a standardized "envelope".
 ```typescript
-export type ErrorResponse<T = unknown> = { success: false; message: string; silent?: boolean; ... };
+export type ErrorResponse<T = unknown> = { success: false; message: string; silent?: boolean; code?: number; required?: string; ... };
 export type SuccessResponse = { success: true };
 export type DataResponse<T> = SuccessResponse & { payload: T };
 ```
@@ -24,7 +28,7 @@ A wrapper around `fetch` that integrates with our **Unified Error Architecture**
 * **Auto-Stringify:** Accepts objects in `body` and handles `JSON.stringify`.
 * **Errors as Data:** Returns `Promise<T | ErrorResponse>`. It does **not** throw for operational errors (e.g., Validation, Auth). Instead, it returns a 200 OK response with `success: false`.
 * **Network Errors:** It *does* throw for network failures or unexpected server crashes (500s).
-* **Streaming:** Use `apiStream` for endpoints that return NDJSON streams.
+* **Streaming:** Use `apiStream` for endpoints that return NDJSON streams. A failed stream request (including a 403) throws an `AppError`, because a reader cannot carry a JSON error body. A 403 keeps its `required` capability in `error.data`.
 
 ---
 
@@ -34,7 +38,7 @@ These utility types connect the "Contract" to the Server and Client.
 
 * **`OpMap`**: Generates a Discriminated Union of all valid Request Bodies (e.g., `{ op: 'getAll', ...params } | { op: 'postOne', ... }`). It supports both `type` and `interface` definitions.
 * **`HandlerMap`**: Enforces that every server handler defines **both**:
-    1.  **`roles`**: An explicit array of allowed user roles.
+    1.  **`capability`**: The capability the caller must hold (`OpGate`). It is required, so an op without one does not compile, and `createRpcHandler` refuses an op that somehow lacks one.
     2.  **`handler`**: The async function executing the logic.
 
 ---
@@ -71,10 +75,11 @@ Implement the logic using `HandlerMap` and the universal `createRpcHandler`. Thi
 import { HandlerMap } from "@/lib/api/types/rpcUtils";
 import { EmployeeContract } from "./EmployeeContract";
 import { createRpcHandler } from "@/lib/api/createRpcHandler";
+import { can } from "@/permission/can";
 
 const handlers: HandlerMap<EmployeeContract> = {
   getAll: {
-    roles: ["office", "admin"], 
+    capability: can.employees.read,
     handler: async (params) => {
       // Logic (DB or RealGreen API)
       return { success: true, payload: [] };

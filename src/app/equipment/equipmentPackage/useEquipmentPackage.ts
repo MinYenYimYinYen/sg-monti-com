@@ -3,15 +3,11 @@ import { useEffect } from "react";
 import { equipmentPackageActions } from "@/app/equipment/equipmentPackage/equipmentPackageSlice";
 import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so write-only callers and callers in other folders can omit it.
- */
-export function useEquipmentPackage({ autoLoad, canLoad = true }: { autoLoad?: boolean; canLoad?: boolean }) {
+export function useEquipmentPackage({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         equipmentPackageActions.getAll({
           params: {},
@@ -19,10 +15,9 @@ export function useEquipmentPackage({ autoLoad, canLoad = true }: { autoLoad?: b
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const refresh = () => {
-    if (!canLoad) return;
     dispatch(
       equipmentPackageActions.getAll({
         params: {},

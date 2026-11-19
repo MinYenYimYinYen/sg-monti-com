@@ -23,12 +23,7 @@ export function CallAheadConfig(props: ModalProps) {
   const allows = useSelector(userCapabilitiesSelect.allows);
   const canReadCallAheads = allows(can.callAheads.read);
   const canReadKeywords = allows(can.callAheadKeywords.read);
-  // Each load is gated by the capability its route needs, so a user holding only one of the two
-  // reads never fires a request that would be refused.
-  useCallAhead({
-    autoLoad: true,
-    canLoad: { callAheads: canReadCallAheads, keywords: canReadKeywords },
-  });
+  useCallAhead({ autoLoad: true });
   const keywordMap = useSelector(keywordSelect.keywordMap);
   const callAheadDocs = useSelector(callAheadSelect.callAheadDocs);
 

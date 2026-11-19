@@ -3,18 +3,11 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { holidayActions } from "@/app/holiday/holidaySlice";
 import { Holiday } from "@/app/holiday/holidayTypes";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so callers in other folders can omit it.
- */
-export function useHoliday({
-  autoLoad,
-  canLoad = true,
-}: { autoLoad?: boolean; canLoad?: boolean } = {}) {
+export function useHoliday({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         holidayActions.getAll({
           params: {},
@@ -22,7 +15,7 @@ export function useHoliday({
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const upsert = (doc: Holiday) =>
     dispatch(

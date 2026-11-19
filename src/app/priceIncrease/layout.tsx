@@ -21,7 +21,6 @@ import { SlidersHorizontal } from "lucide-react";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 const TABS: readonly TabNavItem[] = [
   { label: "Config", href: "/priceIncrease/config" },
@@ -47,14 +46,8 @@ function PriceIncreaseShell({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const settingsPanelOpen = useSelector(priceIncreaseConfigSelect.settingsPanelOpen);
-  const allows = useSelector(userCapabilitiesSelect.allows);
 
-  usePriceIncreaseDeps({
-    canLoad: {
-      increasePlans: allows(can.increasePlans.read),
-      globalSettings: allows(can.globalSettings.read),
-    },
-  });
+  usePriceIncreaseDeps();
 
   // Restore season overrides from localStorage on mount (6-month TTL). Dispatching
   // always (even with nulls) opens the gate the customer loader waits on, so it never

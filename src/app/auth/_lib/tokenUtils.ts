@@ -7,31 +7,36 @@ import { isSuperUserEffective } from "@/permission/PermissionTypes";
 
 /** Copies only the claim fields, so jwt's exp/iat never get re-signed into a new token. */
 export function buildTokenPayload({
-  role,
   saId,
   userName,
   mustChangePassword,
   isSuperUser,
+  hasCapabilities,
 }: TokenPayload): TokenPayload {
-  return { role, saId, userName, mustChangePassword, isSuperUser };
+  return { saId, userName, mustChangePassword, isSuperUser, hasCapabilities };
 }
 
 /** A kiosk never carries the superuser hint, even if the flag is set on its document. */
-export function tokenPayloadFromUser(
-  user: Pick<User, "role" | "saId" | "userName" | "mustChangePassword" | "isSuperUser" | "isKiosk">,
-): TokenPayload {
+export function tokenPayloadFromUser({
+  user,
+  hasCapabilities,
+}: {
+  user: Pick<User, "saId" | "userName" | "mustChangePassword" | "isSuperUser" | "isKiosk">;
+  hasCapabilities: boolean;
+}): TokenPayload {
   return buildTokenPayload({
-    role: user.role,
     saId: user.saId,
     userName: user.userName,
     mustChangePassword: user.mustChangePassword,
     isSuperUser: isSuperUserEffective(user),
+    hasCapabilities,
   });
 }
 
-// Tokens issued before userName was added lack it. Refusing them forces one re-login.
+// Tokens issued before userName or hasCapabilities existed lack them. Refusing them forces one
+// re-login, which issues a current token.
 function requireUserName(payload: TokenPayload, statusCode: number): TokenPayload {
-  if (!payload.userName) {
+  if (!payload.userName || typeof payload.hasCapabilities !== "boolean") {
     throw new AppError({
       message: "Session out of date. Please log in again.",
       type: "AUTH_ERROR",

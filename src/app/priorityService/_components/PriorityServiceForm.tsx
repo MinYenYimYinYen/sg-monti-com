@@ -52,7 +52,7 @@ export function PriorityServiceForm({
   const allows = useSelector(userCapabilitiesSelect.allows);
   const canWrite = allows(can.priorityServices.write);
   const canDelete = allows(can.priorityServices.delete);
-  useGlobalSettings({ autoLoad: true, canLoad: allows(can.globalSettings.read) });
+  useGlobalSettings({ autoLoad: true });
 
   const season = useSelector(globalSettingsSelect.season);
 

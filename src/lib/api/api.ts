@@ -260,8 +260,16 @@ export async function apiStream(
 
   if (!res.ok) {
     // For streams, we can't easily return a JSON error object since the return type is a Reader.
-    // So we must throw here.
-    await parseOrThrow(res); // This will throw
+    // So we must throw here. parseOrThrow returns a structured failure as data, so turn it into
+    // an error; otherwise the JSON failure body would be read as a stream chunk.
+    const failure = await parseOrThrow(res);
+    throw new AppError({
+      message: failure?.message ?? (res.statusText || "Request failed"),
+      type: failure?.code === 401 || failure?.code === 403 ? "AUTH_ERROR" : "API_ERROR",
+      statusCode: typeof failure?.code === "number" ? failure.code : res.status,
+      isOperational: true,
+      data: typeof failure?.required === "string" ? { required: failure.required } : undefined,
+    });
   }
 
   if (!res.body) {

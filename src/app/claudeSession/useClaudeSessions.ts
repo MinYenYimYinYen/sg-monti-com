@@ -4,22 +4,18 @@ import { claudeSessionActions } from "@/app/claudeSession/claudeSessionSlice";
 import { CLAUDE_SESSION_STALE_MS } from "@/app/claudeSession/claudeSessionConst";
 import type { AppendTurnParams } from "@/app/claudeSession/ClaudeSessionTypes";
 
-/**
- * Loads the saved session list and exposes the actions that change it. `canLoad` comes from the
- * component, because hooks expose actions only and do not select. Absent means allowed.
- */
-export function useClaudeSessions({ canLoad = true }: { canLoad?: boolean } = {}) {
+/** Loads the saved session list and exposes the actions that change it. */
+export function useClaudeSessions() {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (!canLoad) return;
     dispatch(
       claudeSessionActions.getSessions({
         params: {},
         config: { loadingMsg: "Loading conversations...", staleTime: CLAUDE_SESSION_STALE_MS },
       }),
     );
-  }, [canLoad, dispatch]);
+  }, [dispatch]);
 
   // Recalling a conversation. A session already held in state is not fetched again.
   function loadTurns(sessionId: string) {

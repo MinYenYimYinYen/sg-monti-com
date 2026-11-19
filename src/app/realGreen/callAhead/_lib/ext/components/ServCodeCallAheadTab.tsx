@@ -10,11 +10,7 @@ import { can } from "@/permission/can";
 
 export function ServCodeCallAheadTab() {
   const canReadServCodes = useSelector(userCapabilitiesSelect.allows)(can.servCodes.read);
-  // Only service codes are listed here, so the program code load is skipped.
-  useProgServ({
-    autoLoad: true,
-    canLoad: { progCodes: false, servCodes: canReadServCodes },
-  });
+  useProgServ({ autoLoad: true });
   const servCodes = useSelector(progServSelect.servCodes);
 
   const sorted = [...servCodes].sort((a, b) =>

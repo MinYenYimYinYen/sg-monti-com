@@ -17,7 +17,6 @@ import { EquipmentPackageForm } from "@/app/equipment/equipmentPackage/Equipment
 import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
 import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 export function EquipmentPackageCRUD() {
   return (
@@ -27,13 +26,10 @@ export function EquipmentPackageCRUD() {
   );
 }
 
-// Mounts only once the read gate is open, so its load never fires for a user who may not read.
 function EquipmentPackageEditor() {
-  const allows = useSelector(userCapabilitiesSelect.allows);
   useEquipmentPackage({ autoLoad: true });
-  // Needed for the equipment multiselect in the form. Packages and equipment are separate
-  // capabilities, so a user holding only the first never fires the equipment request.
-  useEquipment({ autoLoad: true, canLoad: allows(can.equipmentDefinitions.read) });
+  // Needed for the equipment multiselect in the form.
+  useEquipment({ autoLoad: true });
   const packages = useSelector(equipmentPackageSelect.equipmentPackages);
 
   return (

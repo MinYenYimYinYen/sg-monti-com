@@ -1,4 +1,3 @@
-import { Role } from "@/lib/api/types/roles";
 import type { CapabilityRequirement } from "@/permission/PermissionTypes";
 
 /**
@@ -12,18 +11,11 @@ export type OpMap<T> = {
 
 /**
  * 2. HandlerMap
- * Enforces that every operation in the contract has a 'handler' and exactly one gate.
+ * Enforces that every operation in the contract has a 'handler' and a gate.
  * Handlers can return the Result type R OR a ReadableStream for streaming responses.
  */
-/**
- * The gate on an op: the old `roles`, or the new `capability`, never both and never neither.
- * Migration: ops move from `roles` to `capability` route by route. When the last one has moved,
- * the `roles` variant is deleted, which makes `capability` required and lets the compiler list
- * any op that was missed.
- */
-export type OpGate =
-  | { roles: Role[]; capability?: never }
-  | { capability: CapabilityRequirement; roles?: never };
+/** The gate on an op, and on a nav entry: the capability the caller must hold. Required. */
+export type OpGate = { capability: CapabilityRequirement };
 
 export type HandlerMap<T> = {
   [K in keyof T]: T[K] extends { params: infer P; result: infer R }

@@ -16,14 +16,11 @@ import { QueryBuilder } from "@/app/realGreen/customer/mirror/QueryBuilder";
  * via `centralSelect.services` / `service.x.customer` once the
  * `corruptedRecords` context is active (set by useCustomerContext).
  */
-export function useCorruptedRecordsCustomers(
-  servIds: number[],
-  { canLoad = true }: { canLoad?: boolean } = {},
-) {
+export function useCorruptedRecordsCustomers(servIds: number[]) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (!canLoad || servIds.length === 0) return;
+    if (servIds.length === 0) return;
 
     const plan = new QueryBuilder()
       .addServiceStep(["entity", "provider"], {
@@ -60,5 +57,5 @@ export function useCorruptedRecordsCustomers(
         },
       }),
     );
-  }, [canLoad, dispatch, servIds]);
+  }, [dispatch, servIds]);
 }

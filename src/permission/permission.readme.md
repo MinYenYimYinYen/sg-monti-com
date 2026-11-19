@@ -77,7 +77,7 @@ A screen that owns no data gates on the capability of the data it needs. The cov
 
 ## How a request is decided
 
-1. `createRpcHandler` reads the op's `capability`. An op with no `capability` falls back to `roles` (legacy), and an op with neither fails closed.
+1. `createRpcHandler` reads the op's `capability`. `capability` is required by the type, and an op that somehow lacks one is refused (403), so a gate cannot be left off.
 2. `assertCapability` verifies the access cookie itself and never trusts identity headers. An invalid token on a non-public op is a 401. On a public op the request continues as anonymous.
 3. `evaluateCapability` decides:
    - `'public'` allows with no database read.
@@ -86,9 +86,31 @@ A screen that owns no data gates on the capability of the data it needs. The cov
    - A confirmed superuser is allowed and skips the capability read. `'superUser'` skips it too.
    - Anyone else gets their effective capabilities loaded, and `hasCapability` checks for the exact string. A miss is `forbidden` (403).
 4. **Matching is exact.** No hierarchy, no wildcards. `x.write` does not imply `x.read` at runtime. The companion ticking in the admin matrix is only a convenience when assigning.
-5. A logged-in user with no capabilities is an "applied" user and passes nothing. A kiosk never acts as a superuser, even if the flag is set (`isSuperUserEffective`).
+5. A logged-in user with no capabilities is a **pending** user and passes nothing. There is no stored role or marker: a new user starts with nothing, and an administrator approves by assigning capabilities in Users and Bundles. A kiosk never acts as a superuser, even if the flag is set (`isSuperUserEffective`).
+
+### The pending screen
+
+The access token carries a `hasCapabilities` claim (`TokenPayload`), set at login from `loadHasCapabilities` (true for an effective superuser, or when `resolveEffective` returns anything). `proxy.ts` confines a user whose claim is `false` to `/auth/applied`. This is a UX gate only: the server decides every op from the database, never from the claim.
+
+The claim is fixed when the token is issued, so it goes stale after an approval. The pending page's "check again" button runs the `recheckAccess` op, which recomputes the claim and re-issues both cookies. A fresh login does the same. A token with no `hasCapabilities` claim is treated as signed out, which forces one re-login.
+
+"Users waiting for access" (the inbox list) is computed by `filterPendingUsers` from `logic/accessLogic.ts`: users who hold nothing, excluding kiosks and superusers. `getAssignableUsers` uses the same rule in reverse: anyone who holds any access.
 
 The client runs the same `hasCapability` against the store's `userCapabilities.mine`. That only hides UI. The server enforces.
+
+## A refused load (403)
+
+**Load hooks do not take permission flags.** A hook that loads data (`useHoliday`, `useFlag`, a layout's deps hook) always fires its load. If the user lacks the read, the server answers 403 and the slice stays empty. Do not add a `canLoad` parameter, and do not build flags from `allows(can.x.read)` in a layout to skip a load. What stays gated is the page (`GatedPanel`, one primary capability per page) and the write and delete controls (`allows(can.x.write)`).
+
+How a 403 is handled, once, centrally:
+
+1. `assertCapability` throws the 403 with `data: { required }`, and `createRpcHandler` returns `required` in the JSON (a 403 only, never a 401). The message text is unchanged.
+2. `createStandardThunk` and `createStreamThunk` (and `handleError`, for components that call `api()` directly) hand a 403 that names a capability to `reportAccessDenied` (`src/lib/errors/reportAccessDenied.ts`) instead of toasting it.
+3. The collector (`accessDeniedCollector.ts`) gathers denials for 400 ms. It then shows **one** toast with a fixed id listing what was missing, using the labels from `capabilityLabel`. A later burst updates that toast instead of stacking a new one.
+4. Every flush logs `console.warn("[access denied]", { missing, ops })`, including when the dispatch set `silentError: true` (a silenced denial is logged and not toasted).
+5. A refused request is remembered in `ui.deniedRequests` (same `typePrefix-paramsHash` id as `lastFetched`) and is not sent again until the user's capabilities reload (`userCapabilities/getMine` or `auth/recheckAccess` fulfilled). `force: true` still bypasses it. So a user without a read sends one refused request per load, not one per visit.
+
+The names are safe to show: the server already returns them in the 403 message and they ship in the client bundle.
 
 ## Assigning capabilities
 

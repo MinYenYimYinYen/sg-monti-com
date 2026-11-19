@@ -65,6 +65,23 @@ export function createRequestId<T>(typePrefix: string, params: T): string {
 }
 
 /**
+ * The request ID uiSlice records for a thunk call: typePrefix plus the hash of the params that
+ * were actually sent (transformed params win), or the bare typePrefix when there are none.
+ */
+export function requestIdOfArg({
+  typePrefix,
+  params,
+  transformedParams,
+}: {
+  typePrefix: string;
+  params: unknown;
+  transformedParams?: unknown;
+}): string {
+  const paramsForHash = transformedParams ?? params;
+  return paramsForHash ? createRequestId(typePrefix, paramsForHash) : typePrefix;
+}
+
+/**
  * Parses a request ID into its typePrefix and hash components.
  *
  * @param requestId - The request ID to parse (e.g., "employee/getAll-1rj8k2a")

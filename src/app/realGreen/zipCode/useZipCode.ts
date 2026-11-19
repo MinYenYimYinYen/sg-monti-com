@@ -4,25 +4,12 @@ import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { useTaxCode } from "@/app/realGreen/taxCode/useTaxCode";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. Each
- * flag defaults to allowed so callers that do not gate can omit it. The tax codes have their own
- * flag because a zip code's tax rate comes from the tax code read, a different capability.
- */
-export function useZipCode({
-  autoLoad,
-  canLoad = true,
-  canLoadTaxCodes = true,
-}: {
-  autoLoad: boolean;
-  canLoad?: boolean;
-  canLoadTaxCodes?: boolean;
-}) {
-  useTaxCode({ autoLoad, canLoad: canLoadTaxCodes });
+export function useZipCode({ autoLoad }: { autoLoad: boolean }) {
+  useTaxCode({ autoLoad });
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         zipCodeActions.getZipCodes({
           params: {},
@@ -33,10 +20,9 @@ export function useZipCode({
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const refresh = () => {
-    if (!canLoad) return;
     dispatch(
       zipCodeActions.getZipCodes({
         params: {},

@@ -8,8 +8,8 @@ import { CapabilityRequirement } from "@/permission/PermissionTypes";
 import { evaluateCapability } from "@/permission/evaluateCapability";
 
 /**
- * Verifies the access cookie itself and never trusts identity headers (x-user-id, x-user-role),
- * which a client can send. Returns the verified token payload, or null for a public op with no
+ * Verifies the access cookie itself and never trusts identity headers (x-user-id), which a
+ * client can send. Returns the verified token payload, or null for a public op with no
  * valid session. The database reads (superuser confirmation, the user's bundles and direct
  * grants) are in capabilityLoaders; the decision is evaluateCapability.
  */
@@ -32,7 +32,12 @@ export async function assertCapability(required: CapabilityRequirement): Promise
     throw new AppError({ message: "Authentication required", type: "AUTH_ERROR", statusCode: 401 });
   }
   if (decision === "forbidden") {
-    throw new AppError({ message: `Access Denied. Required: ${required}`, type: "AUTH_ERROR", statusCode: 403 });
+    throw new AppError({
+      message: `Access Denied. Required: ${required}`,
+      type: "AUTH_ERROR",
+      statusCode: 403,
+      data: { required },
+    });
   }
   return payload;
 }

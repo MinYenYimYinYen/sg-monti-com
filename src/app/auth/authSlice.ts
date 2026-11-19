@@ -5,11 +5,12 @@ import { AppState } from "@/store";
 import { CheckedId } from "@/app/auth/_types/authTypes";
 import { PasswordResetRequest } from "@/app/auth/_types/PasswordResetRequest";
 import { createStandardThunk } from "@/store/reduxUtil/thunkFactories";
+import type { UserSummary } from "@/permission/logic/userSummary";
 
 type RequestStatus = "idle" | "pending" | "success" | "error";
 
 export type PendingAdminActions = {
-  appliedUsers: User[];
+  pendingUsers: UserSummary[];
   pendingResets: PasswordResetRequest[];
 };
 
@@ -41,7 +42,7 @@ const initialState: AuthState = {
   createUserStatus: "idle",
   deleteUserStatus: "idle",
   pendingAdminActions: {
-    appliedUsers: [],
+    pendingUsers: [],
     pendingResets: [],
   },
   registrationEligibility: null,
@@ -112,11 +113,11 @@ const getPendingActions = createStandardThunk<
   opName: "getPendingActions",
 });
 
-// H. Approve User (Admin)
-const approveUser = createStandardThunk<AuthContract, "approveUser">({
-  typePrefix: "auth/approveUser",
+// H. Re-check Access (a pending user picks up an approval)
+const recheckAccess = createStandardThunk<AuthContract, "recheckAccess">({
+  typePrefix: "auth/recheckAccess",
   apiPath: "/auth/api",
-  opName: "approveUser",
+  opName: "recheckAccess",
 });
 
 // I. Resolve Password Reset (Admin)
@@ -220,7 +221,7 @@ const authSlice = createSlice({
     builder.addCase(logout.fulfilled, (state) => {
       state.user = null;
       state.isAuthenticated = false;
-      state.pendingAdminActions.appliedUsers = [];
+      state.pendingAdminActions.pendingUsers = [];
       state.pendingAdminActions.pendingResets = [];
     });
 
@@ -253,17 +254,8 @@ const authSlice = createSlice({
 
     // Get Pending Actions
     builder.addCase(getPendingActions.fulfilled, (state, action) => {
-      // action.payload is { appliedUsers, pendingResets }
+      // action.payload is { pendingUsers, pendingResets }
       state.pendingAdminActions = action.payload;
-    });
-
-    // Approve User
-    builder.addCase(approveUser.fulfilled, (state, action) => {
-      // Optimistic update: Remove the approved user from the list
-      state.pendingAdminActions.appliedUsers =
-        state.pendingAdminActions.appliedUsers.filter(
-          (u) => u.userName !== action.meta.arg.params.userName,
-        );
     });
 
     // Resolve Password Reset
@@ -301,7 +293,7 @@ const authSlice = createSlice({
     builder.addCase(deleteUser.fulfilled, (state, action) => {
       state.deleteUserStatus = "success";
       const { userName } = action.payload;
-      state.pendingAdminActions.appliedUsers = state.pendingAdminActions.appliedUsers.filter(
+      state.pendingAdminActions.pendingUsers = state.pendingAdminActions.pendingUsers.filter(
         (user) => user.userName !== userName,
       );
       state.pendingAdminActions.pendingResets = state.pendingAdminActions.pendingResets.filter(
@@ -314,7 +306,6 @@ const authSlice = createSlice({
   },
   selectors: {
     user: (state) => state.user,
-    role: (state) => state.user?.role,
     isAuthenticated: (state) => state.isAuthenticated,
     isInitialized: (state) => state.isInitialized,
     invalidCredentialsEntered: (state) => state.invalidCredentialsEntered,
@@ -323,7 +314,7 @@ const authSlice = createSlice({
     deleteUserStatus: (state) => state.deleteUserStatus,
     registrationEligibility: (state) => state.registrationEligibility,
     checkedIds: (state) => state.checkedIds,
-    adminPendingUsers: (state) => state.pendingAdminActions.appliedUsers,
+    adminPendingUsers: (state) => state.pendingAdminActions.pendingUsers,
     adminPendingResets: (state) => state.pendingAdminActions.pendingResets,
   },
 });
@@ -337,7 +328,7 @@ export const authActions = {
   checkAuth,
   requestPasswordReset,
   getPendingActions,
-  approveUser,
+  recheckAccess,
   resolvePasswordReset,
   changePassword,
   confirmPassword,

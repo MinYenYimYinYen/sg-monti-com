@@ -10,6 +10,9 @@ import { Capability, isSuperUserEffective } from "@/permission/PermissionTypes";
 import type { CapabilityLoaders } from "@/permission/evaluateCapability";
 import { capabilityRegistry } from "@/permission/capabilityRegistry";
 import { resolveEffective } from "@/permission/logic/resolveEffective";
+import { holdsAnyAccess, userNamesWithAccess } from "@/permission/logic/accessLogic";
+import type { AccessUser } from "@/permission/logic/accessLogic";
+import type { User } from "@/app/auth/_types/User";
 
 // Server-only database reads behind the capability check. The decision logic lives in
 // evaluateCapability and resolveEffective (pure, tested); this file only fetches.
@@ -37,6 +40,29 @@ export async function loadEffectiveCapabilities(userName: string): Promise<Capab
     bundles,
     registry: capabilityRegistry,
   });
+}
+
+/** Whether the user holds any access at all. False means a pending user, who passes nothing. */
+export async function loadHasCapabilities(
+  user: Pick<User, "userName" | "isSuperUser" | "isKiosk">,
+): Promise<boolean> {
+  if (isSuperUserEffective(user)) return true;
+  const capabilities = await loadEffectiveCapabilities(user.userName);
+  return holdsAnyAccess({ user, capabilities });
+}
+
+/**
+ * Of the given users, the names of those who hold any access. One read of every holdings document
+ * and one of the bundles they reference, instead of a read per user.
+ */
+export async function loadUserNamesWithAccess(users: readonly AccessUser[]): Promise<Set<string>> {
+  await connectToMongoDB();
+  const holdings = await UserCapabilitiesModel.find().lean();
+  const bundleKeys = [...new Set(holdings.flatMap((held) => held.bundleKeys))];
+  const bundles = bundleKeys.length
+    ? await CapabilityBundleModel.find({ bundleKey: { $in: bundleKeys } }).lean()
+    : [];
+  return userNamesWithAccess({ users, holdings, bundles, registry: capabilityRegistry });
 }
 
 export const capabilityLoaders: CapabilityLoaders = {

@@ -1,11 +1,9 @@
 "use client";
 
-import { useSelector } from "react-redux";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav } from "@/components/PageLayout/TabNav";
 import { useSanityDeps } from "./useSanityDeps";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { can } from "@/permission/can";
 import { SanityOptionsProvider } from "@/app/sanity/_components/SanityOptionsContext";
 import { SanityOptionsSheet } from "@/app/sanity/_components/SanityOptionsSheet";
@@ -23,20 +21,7 @@ const TABS = [
 ] as const;
 
 export default function SanityLayout({ children }: { children: React.ReactNode }) {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  const { load } = useSanityDeps({
-    canLoad: {
-      customers: allows(can.customers.read),
-      progCodes: allows(can.progCodes.read),
-      servCodes: allows(can.servCodes.read),
-      flags: allows(can.flags.read),
-      flagRules: allows(can.flagRules.read),
-      customerFlags: allows(can.customerFlags.read),
-      callAheads: allows(can.callAheads.read),
-      keywords: allows(can.callAheadKeywords.read),
-      globalSettings: allows(can.globalSettings.read),
-    },
-  });
+  const { load } = useSanityDeps();
   return (
     <SanityOptionsProvider>
       <PageLayout>

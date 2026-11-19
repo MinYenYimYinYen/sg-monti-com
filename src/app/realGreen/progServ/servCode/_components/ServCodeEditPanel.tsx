@@ -34,13 +34,7 @@ type ServCodeEditPanelProps = {
 };
 
 export function ServCodeEditPanel({ servCodeId }: ServCodeEditPanelProps) {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  const productCanLoad = {
-    products: allows(can.products.read),
-    unitConversions: allows(can.unitConversions.read),
-    appMethods: allows(can.appMethods.read),
-  };
-  useProduct({ autoLoad: true, canLoad: productCanLoad });
+  useProduct({ autoLoad: true });
 
   const { updateServCode } = useProgServ({});
   const {
@@ -50,7 +44,7 @@ export function ServCodeEditPanel({ servCodeId }: ServCodeEditPanelProps) {
     updateRuleOperator,
     addProductRuleProductMaster,
     removeProductRuleProductMaster,
-  } = useProductRules({ servCodeId, canLoad: productCanLoad });
+  } = useProductRules({ servCodeId });
 
   const servCodeDoc = useSelector(servCodeLookup.docById(servCodeId));
   const productMasters = useSelector(productSelect.productMasters);

@@ -3,21 +3,11 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { rgAccountActions } from "@/app/realGreen/rgAccount/rgAccountSlice";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so callers that do not gate can omit it.
- */
-export function useRgAccount({
-  autoLoad,
-  canLoad = true,
-}: {
-  autoLoad: boolean;
-  canLoad?: boolean;
-}) {
+export function useRgAccount({ autoLoad }: { autoLoad: boolean }) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         rgAccountActions.getRgAccounts({
           params: {},
@@ -28,10 +18,9 @@ export function useRgAccount({
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const refresh = () => {
-    if (!canLoad) return;
     dispatch(
       rgAccountActions.getRgAccounts({
         params: {},

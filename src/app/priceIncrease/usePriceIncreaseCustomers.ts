@@ -20,12 +20,9 @@ import { buildActiveCustomersPlan } from "@/app/realGreen/customer/hooks/buildAc
  * A change of seasonSource always forces a reload: the slice is cleared on every
  * fetch, so a cached hash from an earlier season must not suppress it.
  */
-export function usePriceIncreaseCustomers({
-  autoLoad = false,
-  canLoadGlobalSettings = true,
-}: { autoLoad?: boolean; canLoadGlobalSettings?: boolean } = {}) {
+export function usePriceIncreaseCustomers({ autoLoad = false }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
-  useGlobalSettings({ autoLoad: true, canLoad: canLoadGlobalSettings });
+  useGlobalSettings({ autoLoad: true });
   const seasonSource = useSelector(priceIncreaseConfigSelect.seasonSource);
   const seasonsRestored = useSelector(priceIncreaseConfigSelect.seasonsRestored);
   const lastRequestedSeason = useRef<number | null>(null);

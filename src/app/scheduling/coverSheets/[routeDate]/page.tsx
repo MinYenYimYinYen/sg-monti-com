@@ -36,8 +36,6 @@ import {
 } from "@/app/scheduling/coverSheets/[routeDate]/seedConditions";
 import {PDFNumber} from "@/lib/pdf/_components/PDFNumber";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 import { can } from "@/permission/can";
 
 export type RouteDatePageProps = {
@@ -48,8 +46,7 @@ export type RouteDatePageProps = {
 
 export default function RouteDatePage({ params }: RouteDatePageProps) {
   const loadingCount = useSelector(uiSelect.loadingCount);
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  useCoverSheetDeps({ canLoad: schedulingCanLoad(allows) });
+  useCoverSheetDeps();
 
   const isClient = useIsClient();
   const { routeDate: encodedRouteDate } = use(params);

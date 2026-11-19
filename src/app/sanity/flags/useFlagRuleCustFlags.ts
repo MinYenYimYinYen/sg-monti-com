@@ -11,12 +11,11 @@ const ACTIVE_STATUSES = ["9"];
  *
  * Uses status "9" (active customers only), consistent with the active customer context.
  */
-export function useFlagRuleCustFlags({ canLoad = true }: { canLoad?: boolean } = {}) {
+export function useFlagRuleCustFlags() {
   const allRuleFlagIds = useSelector(flagRuleSelect.allRuleFlagIds);
   const { reloadFlagIds } = useCustFlag({
     flagIds: allRuleFlagIds,
     custStatuses: ACTIVE_STATUSES,
-    canLoad,
   });
   return { reload: reloadFlagIds };
 }

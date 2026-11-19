@@ -7,10 +7,8 @@ import { PrepayConfigFileControls } from "./config/_components/PrepayConfigFileC
 import { UpsellPrioritiesFileControls } from "./upsellPriorities/_components/UpsellPrioritiesFileControls";
 import { ListOrdered, Mail, Settings2 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useSelector } from "react-redux";
 import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -45,14 +43,7 @@ export default function PrepayLettersLayout({ children }: { children: React.Reac
 
 // Separate from the gate so the deps hook is only ever called for a user who holds the read.
 function PrepayLettersShell({ children }: { children: React.ReactNode }) {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  usePrepayLettersDeps({
-    canLoad: {
-      upsellPriorities: allows(can.upsellPriorities.read),
-      formTemplates: allows(can.formTemplates.read),
-      globalSettings: allows(can.globalSettings.read),
-    },
-  });
+  usePrepayLettersDeps();
   const pathname = usePathname();
   const isUpsellTab = pathname.startsWith(UPSELL_HREF);
   const isRenewalTab = pathname.startsWith(RENEWAL_HREF);

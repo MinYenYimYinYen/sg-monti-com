@@ -1,4 +1,3 @@
-import { Role, ROLES } from "@/lib/api/types/roles";
 import { isValidUserName, USER_NAME_RULE_MESSAGE } from "@/app/auth/_lib/userNameUtils";
 
 // Shared by the create-user op and the user model. No server-only imports.
@@ -19,9 +18,6 @@ export const SA_ID_RULE_MESSAGE =
 export function isValidSaId(saId: string): boolean {
   return SA_ID_PATTERN.test(saId);
 }
-
-/** Roles a user can be created with. Temporary: goes away with roles (plan step 7). */
-export const USER_ROLES: readonly Role[] = ROLES.filter((role) => role !== "public");
 
 const NAME_MAX_LENGTH = 50;
 
@@ -61,7 +57,6 @@ export type NewUser = {
   firstName: string;
   lastName: string;
   saId: string;
-  role: Role;
   isKiosk: boolean;
   /** Plain text, only until the handler hashes it. Never store or log this object. */
   password: string;
@@ -104,11 +99,6 @@ export function validateCreateUser(input: unknown): CreateUserCheck {
   const saId = text(body.saId);
   if (saId === null || !isValidSaId(saId)) return refuse(SA_ID_RULE_MESSAGE);
 
-  const role = body.role;
-  if (typeof role !== "string" || !USER_ROLES.includes(role as Role)) {
-    return refuse(`Role must be one of: ${USER_ROLES.join(", ")}.`);
-  }
-
   if (typeof body.isKiosk !== "boolean") return refuse("isKiosk must be true or false.");
 
   // Not trimmed: spaces are part of a password.
@@ -125,7 +115,6 @@ export function validateCreateUser(input: unknown): CreateUserCheck {
       firstName,
       lastName,
       saId,
-      role: role as Role,
       isKiosk: body.isKiosk,
       password,
       mustChangePassword: body.mustChangePassword,

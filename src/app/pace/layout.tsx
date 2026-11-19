@@ -20,7 +20,6 @@ import {
 import Link from "next/link";
 import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -56,19 +55,7 @@ export default function PaceLayout({ children }: { children: React.ReactNode }) 
 
 // Separate from the gate so the deps hook is only ever called for a user who holds the read.
 function PaceShell({ children }: { children: React.ReactNode }) {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  // Each load is gated by the capability its route needs, so a user holding only part of what the
-  // engine uses never fires a request that would be refused.
-  usePaceDeps({
-    canLoad: {
-      assignmentGroups: allows(can.assignmentGroups.read),
-      groupSequences: allows(can.groupSequences.read),
-      seasonPlans: allows(can.seasonPlans.read),
-      holidays: allows(can.holidays.read),
-      availability: allows(can.availabilityConstraints.read),
-      assignments: allows(can.serviceAssignments.read),
-    },
-  });
+  usePaceDeps();
   const dispatch = useAppDispatch();
   const mainDate = useSelector(selectMainDate);
   const activeSeasonPlan = useSelector(paceSeasonPlanSelect.activeSeasonPlan);

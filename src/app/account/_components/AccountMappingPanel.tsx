@@ -18,7 +18,6 @@ import {
 import { AccountMappingRow } from "@/app/account/_components/AccountMappingRow";
 import { DepositMappingSections } from "@/app/javelin/depositMapping/_components/DepositMappingSections";
 import { can } from "@/permission/can";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import {
   AccountLinkFilter,
   countLinksByFilter,
@@ -42,19 +41,7 @@ export function AccountMappingPanel() {
 }
 
 function AccountMappingEditor() {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  // Each load is gated by the capability its route needs, so a user holding only part of what this
-  // page uses never fires a request that would be refused.
-  useAccount({
-    autoLoad: true,
-    canLoad: {
-      depositLinks: allows(can.depositFieldLinks.read),
-      qboAccounts: allows(can.qboAccounts.read),
-      qboCustomers: allows(can.qboCustomers.read),
-      qboVendors: allows(can.qboVendors.read),
-      rgAccounts: allows(can.rgAccounts.read),
-    },
-  });
+  useAccount({ autoLoad: true });
   const rgAccountLinks = useSelector(accountSelect.rgAccountLinks);
   const qboAccounts = useSelector(qboAccountSelect.accounts);
   const [filter, setFilter] = useState<AccountLinkFilter>("all");

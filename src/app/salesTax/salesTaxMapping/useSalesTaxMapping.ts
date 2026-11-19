@@ -4,21 +4,12 @@ import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { salesTaxMappingActions } from "@/app/salesTax/salesTaxMapping/salesTaxMappingSlice";
 import { MnTaxType } from "@/app/salesTax/salesTaxMapping/SalesTaxMappingTypes";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. The
- * layout loads with `autoLoad`; a child that only saves passes `autoLoad: false`.
- */
-export function useSalesTaxMapping({
-  autoLoad,
-  canLoad = true,
-}: {
-  autoLoad: boolean;
-  canLoad?: boolean;
-}) {
+/** The layout loads with `autoLoad`; a child that only saves passes `autoLoad: false`. */
+export function useSalesTaxMapping({ autoLoad }: { autoLoad: boolean }) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         salesTaxMappingActions.getAllSalesTaxMappings({
           params: {},
@@ -29,7 +20,7 @@ export function useSalesTaxMapping({
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   /** Saving no tax types at all means the tax code is unmapped, so the stored mapping is removed. */
   const saveMapping = ({

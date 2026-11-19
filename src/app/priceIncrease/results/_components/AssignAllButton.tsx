@@ -125,12 +125,10 @@ export function AssignAllButton() {
 
   const allows = useSelector(userCapabilitiesSelect.allows);
   const canAssign = allows(can.flagAssignments.write);
-  const canLoad = allows(can.customerFlags.read);
 
   const { addFlags } = useCustFlag({
     flagIds,
     custStatuses: ACTIVE_STATUSES,
-    canLoad,
   });
   const { confirmPassword } = useAuth();
 

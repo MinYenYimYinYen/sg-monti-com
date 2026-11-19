@@ -8,8 +8,6 @@ import { loadoutSelect } from "@/app/loadout/loadoutSelect";
 import { LoadoutFeedback } from "@/app/scheduling/dailyInventory/loadoutFeedback/LoadoutFeedback";
 import { LoadoutFeedbackDisplay } from "@/app/scheduling/dailyInventory/loadoutFeedback/LoadoutFeedbackDisplay";
 import { buildLoadoutActuals } from "@/app/scheduling/dailyInventory/loadoutFeedback/loadoutFeedbackHelpers";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 
 // dailyInventory/loadoutFeedback/1BT/2026-04-06
 export default function LoadoutFeedbackPage({
@@ -18,12 +16,10 @@ export default function LoadoutFeedbackPage({
   params: Promise<{ employeeId: string; routeDate: string }>;
 }) {
   const { employeeId, routeDate } = use(params);
-  const allows = useSelector(userCapabilitiesSelect.allows);
   useLoadoutFeedbackDeps({
     employeeId,
     routeDate,
     showLoading: true,
-    canLoad: schedulingCanLoad(allows),
   });
 
   const { getLoadout } = useLoadout();

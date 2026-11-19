@@ -3,18 +3,11 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { plannedTimeOffActions } from "@/app/plannedTimeOff/plannedTimeOffSlice";
 import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so callers in other folders can omit it.
- */
-export function usePlannedTimeOff({
-  autoLoad,
-  canLoad = true,
-}: { autoLoad?: boolean; canLoad?: boolean } = {}) {
+export function usePlannedTimeOff({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         plannedTimeOffActions.getAll({
           params: {},
@@ -22,7 +15,7 @@ export function usePlannedTimeOff({
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const upsert = (doc: PlannedTimeOff) =>
     dispatch(

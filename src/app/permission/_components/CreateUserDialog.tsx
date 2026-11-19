@@ -9,13 +9,11 @@ import {
   checkPasswordEntry,
   PASSWORD_RULE_MESSAGE,
   SA_ID_RULE_MESSAGE,
-  USER_ROLES,
   validateCreateUser,
 } from "@/app/auth/_lib/userValidation";
 import { USER_NAME_RULE_MESSAGE } from "@/app/auth/_lib/userNameUtils";
 import { Notice } from "@/app/permission/_components/Notice";
 import { FormGroup } from "@/components/FormGroup";
-import type { Role } from "@/lib/api/types/roles";
 import { Button } from "@/style/components/button";
 import {
   Dialog,
@@ -29,13 +27,6 @@ import {
 } from "@/style/components/dialog";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/style/components/select";
 import { Switch } from "@/style/components/switch";
 
 /**
@@ -75,7 +66,6 @@ type CreateUserFormState = {
   firstName: string;
   lastName: string;
   saId: string;
-  role: Role;
   isKiosk: boolean;
   password: string;
   confirmPassword: string;
@@ -88,7 +78,6 @@ const EMPTY_FORM: CreateUserFormState = {
   firstName: "",
   lastName: "",
   saId: "",
-  role: "office",
   isKiosk: false,
   password: "",
   confirmPassword: "",
@@ -239,32 +228,6 @@ function CreateUserForm() {
             : "The person's RealGreen employee id. It is checked against RealGreen and must not already belong to a user. "}
           {SA_ID_RULE_MESSAGE}
         </p>
-      </FormGroup>
-
-      <FormGroup>
-        <Label>Role</Label>
-        <Select
-          variant="shadcnDefault"
-          value={form.role}
-          onValueChange={(role) =>
-            setForm((previous) => ({ ...previous, role: role as Role }))
-          }
-        >
-          <SelectTrigger variant="shadcnDefault">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {USER_ROLES.map((role) => (
-              <SelectItem key={role} value={role}>
-                {role}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {/*<p className="text-xs text-muted-foreground">*/}
-        {/*  A user who resolves password resets needs the admin role until roles*/}
-        {/*  are retired.*/}
-        {/*</p>*/}
       </FormGroup>
 
       <FormGroup>

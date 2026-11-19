@@ -13,31 +13,16 @@ import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { usePlannedTimeOff } from "@/app/plannedTimeOff/usePlannedTimeOff";
 import { useHoliday } from "@/app/holiday/useHoliday";
 
-/** Which of the loads this hook fires the caller may make. Absent means allowed. */
-type CanLoad = {
-  holidays?: boolean;
-  absences?: boolean;
-  assignments?: boolean;
-};
-
 /**
- * `canLoad` comes from the layout, because hooks expose actions only and do not select. A load the
- * user may not make is skipped, so no refused request and no error toast. Without the holiday or
- * absence read those lists stay empty, so completion percentages treat every day as a working day
- * and every employee as present.
+ * Without the holiday or absence read those lists stay empty, so completion percentages treat
+ * every day as a working day and every employee as present.
  */
-export function useProductivity({ canLoad = {} }: { canLoad?: CanLoad } = {}) {
-  const {
-    holidays: canLoadHolidays = true,
-    absences: canLoadAbsences = true,
-    assignments: canLoadAssignments = true,
-  } = canLoad;
-
+export function useProductivity() {
   useActiveCustomers({ autoLoad: true });
   useCustomerContext({ contexts: ["active"] });
   useProgServ({ autoLoad: true });
-  usePlannedTimeOff({ autoLoad: true, canLoad: canLoadAbsences });
-  useHoliday({ autoLoad: true, canLoad: canLoadHolidays });
+  usePlannedTimeOff({ autoLoad: true });
+  useHoliday({ autoLoad: true });
 
   const dispatch = useAppDispatch();
   const doneDateRange = useSelector(productivitySelect.doneDateRange);
@@ -46,14 +31,14 @@ export function useProductivity({ canLoad = {} }: { canLoad?: CanLoad } = {}) {
   // Load assignments for the date range — covers both completion metrics and assignmentOutcome.
   // Services completed within the date range will have their assignments loaded by this call.
   useEffect(() => {
-    if (!isValidRange || !canLoadAssignments) return;
+    if (!isValidRange) return;
     dispatch(
       assignmentActions.getBySchedDateRange({
         params: { dateRange: doneDateRange },
         config: { loadingMsg: "Loading assignments..." },
       }),
     );
-  }, [dispatch, doneDateRange, isValidRange, canLoadAssignments]);
+  }, [dispatch, doneDateRange, isValidRange]);
 
   const { fetchPunches } = useTimeCard();
 

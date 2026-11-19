@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { flagSelect } from "@/app/realGreen/flag/_selectors/flagSelect";
 import { custFlagSelect } from "@/app/realGreen/custFlag/_lib/custFlagSelect";
-import { authSelect } from "@/app/auth/authSlice";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { can } from "@/permission/can";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,10 +35,11 @@ export function GlobalConfigMenu() {
   const isClient = useIsClient();
   const flagDocs = useSelector(flagSelect.flagDocs);
   const selectedFlagIds = useSelector(custFlagSelect.selectedFlagIds);
-  const role = useSelector(authSelect.role);
+  const allows = useSelector(userCapabilitiesSelect.allows);
   const hasFlagFilters = flagDocs.length > 0;
   const hasActiveFilters = selectedFlagIds.length > 0;
-  const canConfigureRenewalFlags = role === "admin" || role === "office";
+  // The renewal flag ids are stored in the global settings, so writing them is that write.
+  const canConfigureRenewalFlags = allows(can.globalSettings.write);
 
   // Initialize from DOM/localStorage directly — avoids setState-in-effect
   const [isDark, setIsDark] = useState(getInitialDarkMode);

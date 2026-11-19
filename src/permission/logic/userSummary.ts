@@ -3,20 +3,19 @@ import type { User } from "@/app/auth/_types/User";
 // What the permission screens need to know about a user. An explicit field copy (never a spread),
 // so the password hash and anything else on the user document can never leak through it.
 
-export type UserSummary = Pick<User, "userName" | "firstName" | "lastName" | "saId" | "role"> & {
+export type UserSummary = Pick<User, "userName" | "firstName" | "lastName" | "saId"> & {
   isSuperUser: boolean;
   isKiosk: boolean;
 };
 
 export function toUserSummary(
-  user: Pick<User, "userName" | "firstName" | "lastName" | "saId" | "role" | "isSuperUser" | "isKiosk">,
+  user: Pick<User, "userName" | "firstName" | "lastName" | "saId" | "isSuperUser" | "isKiosk">,
 ): UserSummary {
   return {
     userName: user.userName,
     firstName: user.firstName,
     lastName: user.lastName,
     saId: user.saId,
-    role: user.role,
     isSuperUser: !!user.isSuperUser,
     isKiosk: !!user.isKiosk,
   };

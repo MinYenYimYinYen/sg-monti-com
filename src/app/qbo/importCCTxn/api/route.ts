@@ -28,6 +28,7 @@ import { skipPendingRowsForMerchant } from "@/app/qbo/importCCTxn/_lib/importRow
 import { validateConfirmation } from "@/app/qbo/importCCTxn/_lib/importConfirmUtils";
 import { storeMerchantMapping } from "@/app/qbo/importCCTxn/_lib/importMappingSaveServer";
 import { can } from "@/permission/can";
+import { loadUserNamesWithAccess } from "@/app/permission/_lib/capabilityLoaders";
 
 function failIfInvalid(problems: string[]): void {
   if (problems.length > 0) {
@@ -73,16 +74,20 @@ const handlers: HandlerMap<ImportCCTxnMappingContract> = {
     capability: can.ccCardAssignments.read,
     handler: async () => {
       await connectToMongoDB();
-      // Staff only, and only the name fields: email, saId and role never reach the browser.
-      const docs = await UserModel.find({ role: { $in: ["admin", "office", "tech"] } })
-        .select("userName firstName lastName")
+      // Only users who hold some access (a pending user could not act on a card), and only the
+      // name fields: email and saId never reach the browser.
+      const docs = await UserModel.find()
+        .select("userName firstName lastName isSuperUser isKiosk")
         .sort({ lastName: 1, firstName: 1 })
         .lean();
-      const payload: AssignableUser[] = docs.map((doc) => ({
-        userName: doc.userName,
-        firstName: doc.firstName,
-        lastName: doc.lastName,
-      }));
+      const namesWithAccess = await loadUserNamesWithAccess(docs);
+      const payload: AssignableUser[] = docs
+        .filter((doc) => namesWithAccess.has(doc.userName))
+        .map((doc) => ({
+          userName: doc.userName,
+          firstName: doc.firstName,
+          lastName: doc.lastName,
+        }));
       return { success: true, payload };
     },
   },

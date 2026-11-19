@@ -1,7 +1,7 @@
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
 import { AppState } from "@/store";
 import { uiSelect } from "@/store/reduxUtil/uiSlice";
-import { hashParams } from "@/store/reduxUtil/hashParams";
+import { hashParams, requestIdOfArg } from "@/store/reduxUtil/hashParams";
 
 /**
  * Standardizes UI metadata extraction for createAsyncThunk.
@@ -52,6 +52,16 @@ export const smartDispatchCondition = <T>(
   // --- RULE 1: FORCE ---
   // If we really want it, we get it. Bypasses all other checks.
   if (force) return true;
+
+  // --- RULE 1b: ACCESS DENIED ---
+  // The server already refused this exact request with a 403. Sending it again would only
+  // be refused again (and re-raise the toast) until the user's capabilities reload.
+  const deniedRequestId = requestIdOfArg({
+    typePrefix,
+    params: args.params,
+    transformedParams: args.__transformedParams,
+  });
+  if (uiSelect.isDenied(state, deniedRequestId)) return false;
 
   // --- RULE 2: CUSTOM CONDITION ---
   // Allow the caller to inject specific logic (e.g., "Is this ID already checked?")

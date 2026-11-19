@@ -29,7 +29,7 @@ export default function KnowledgeBaseLayout({ children }: { children: React.Reac
 
 // Separate from the gate so the deps hook is only ever called for a user who holds the read.
 function KnowledgeBaseShell({ children }: { children: React.ReactNode }) {
-  useKnowledgeBaseDeps({ canLoad: true });
+  useKnowledgeBaseDeps();
   const pathname = usePathname();
   const isDocumentsTab = pathname.startsWith(DOCUMENTS_HREF);
 

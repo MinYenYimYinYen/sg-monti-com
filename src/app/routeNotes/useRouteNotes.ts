@@ -6,29 +6,20 @@ import { RouteNote } from "@/app/routeNotes/RouteNoteTypes";
 type UseRouteNotesParams = {
   minDate: string;
   maxDate: string;
-  /**
-   * Comes from the component, because hooks expose actions only and do not select. Defaults to
-   * allowed so write-only callers can omit it.
-   */
-  canLoad?: boolean;
 };
 
-export function useRouteNotes({
-  minDate,
-  maxDate,
-  canLoad = true,
-}: UseRouteNotesParams) {
+export function useRouteNotes({ minDate, maxDate }: UseRouteNotesParams) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (!canLoad || !minDate || !maxDate) return;
+    if (!minDate || !maxDate) return;
     dispatch(
       routeNoteActions.getByDateRange({
         params: { minDate, maxDate },
         config: { loadingMsg: "Loading route notes..." },
       }),
     );
-  }, [canLoad, dispatch, minDate, maxDate]);
+  }, [dispatch, minDate, maxDate]);
 
   const upsert = (doc: RouteNote) =>
     dispatch(

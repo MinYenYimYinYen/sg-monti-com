@@ -24,7 +24,7 @@ const CUSTOMER_VALUE_CONTEXTS = ["active", "multiSeasonProduction"] as const;
 function LoadViaApiButton() {
   const [confirming, setConfirming] = useState(false);
   const { refresh: loadActive, canRefresh } = useActiveCustomers();
-  const { load: loadMultiSeason, canLoad } = useMultiSeasonProduction();
+  const { load: loadMultiSeason } = useMultiSeasonProduction();
   const season = useSelector(globalSettingsSelect.season);
 
   const handleClick = () => {
@@ -52,7 +52,7 @@ function LoadViaApiButton() {
           intensity="soft"
           size="sm"
           onClick={handleClick}
-          disabled={!canRefresh || !canLoad}
+          disabled={!canRefresh}
         >
           Confirm
         </Button>

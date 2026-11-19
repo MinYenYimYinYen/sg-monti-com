@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import { UserWithPW } from "@/app/auth/_types/User";
-import { ROLES } from "@/lib/api/types/roles";
 import { isValidEmail } from "@/app/auth/_lib/userValidation";
 
 export interface UserDoc extends UserWithPW, mongoose.Document {
@@ -44,10 +43,6 @@ const UserSchema = new mongoose.Schema(
           return v.length >= 1 && !v.includes("@");
         },
       },
-    },
-    role: {
-      type: String,
-      required: true,
     },
     saId: {
       type: String,

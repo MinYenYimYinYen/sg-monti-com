@@ -12,23 +12,14 @@ import {
 } from "@/app/realGreen/customer/slices/customerSlices";
 import { buildActiveCustomersPlan } from "@/app/realGreen/customer/hooks/buildActiveCustomersPlan";
 
-/**
- * `canLoad` (the mirror read) and `canRefreshLive` (the live single-customer refresh) come from the
- * component, because hooks expose actions only and do not select. Both default to allowed so
- * callers that do not gate can omit them.
- */
-export function useActiveCustomers({
-  autoLoad = false,
-  canLoad = true,
-  canRefreshLive = true,
-}: { autoLoad?: boolean; canLoad?: boolean; canRefreshLive?: boolean } = {}) {
+export function useActiveCustomers({ autoLoad = false }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!autoLoad || !canLoad || !season) return;
+    if (!autoLoad || !season) return;
 
     if (PIPELINE.active === "mirror") {
       const plan = buildActiveCustomersPlan(season);
@@ -38,10 +29,10 @@ export function useActiveCustomers({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(activeCustomersGetDocs({ params: { schemeName: "activeCustomers", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     }
-  }, [autoLoad, canLoad, dispatch, season]);
+  }, [autoLoad, dispatch, season]);
 
   const refresh = () => {
-    if (!season || !canLoad) return;
+    if (!season) return;
 
     if (PIPELINE.active === "mirror") {
       const plan = buildActiveCustomersPlan(season);
@@ -54,7 +45,7 @@ export function useActiveCustomers({
   };
 
   const refreshCustomer = async (custId: number) => {
-    if (!canRefreshLive || !season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
+    if (!season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
     setRefreshingCustIds((prev) => new Set(prev).add(custId));
     try {
       const result = await dispatch(

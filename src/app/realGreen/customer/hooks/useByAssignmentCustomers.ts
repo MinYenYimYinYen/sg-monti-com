@@ -44,18 +44,12 @@ function buildByAssignmentPlan(season: number, servIds: number[]) {
     .build();
 }
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so callers that do not gate can omit it.
- */
-export function useByAssignmentCustomers({
-  canLoad = true,
-}: { canLoad?: boolean } = {}) {
+export function useByAssignmentCustomers() {
   const dispatch = useAppDispatch();
   const season = useSelector(globalSettingsSelect.season);
 
   const loadByServIds = (servIds: number[], config?: LoadConfig) => {
-    if (!canLoad || !season || !servIds.length) return;
+    if (!season || !servIds.length) return;
 
     if (PIPELINE.byAssignment === "mirror") {
       const plan = buildByAssignmentPlan(season, servIds);

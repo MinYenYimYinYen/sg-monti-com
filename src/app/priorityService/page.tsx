@@ -89,7 +89,7 @@ function PriorityServiceWorkspace() {
 
   // Global settings needed for the single-customer plan (season). A different feature's read (see
   // `requires`).
-  useGlobalSettings({ autoLoad: true, canLoad: allows(can.globalSettings.read) });
+  useGlobalSettings({ autoLoad: true });
 
   const docs = useSelector(priorityServiceSelect.docs);
   const priorityServiceMap = useSelector(priorityServiceSelect.priorityServiceMap);

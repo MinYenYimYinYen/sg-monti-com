@@ -7,16 +7,11 @@ import {
   AppMethodDoc,
 } from "@/app/appMethod/AppMethodTypes";
 
-/**
- * `canLoad` comes from the component (hooks expose actions only and do not select). When the user
- * may not read application methods the load is skipped, so no refused request or error toast.
- * Absent means allowed, so write-only callers can omit it.
- */
-export function useAppMethod({ autoLoad, canLoad = true }: { autoLoad?: boolean; canLoad?: boolean }) {
+export function useAppMethod({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         appMethodActions.getAll({
           params: {},
@@ -27,10 +22,9 @@ export function useAppMethod({ autoLoad, canLoad = true }: { autoLoad?: boolean;
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const refresh = () => {
-    if (!canLoad) return;
     dispatch(
       appMethodActions.getAll({
         params: {},

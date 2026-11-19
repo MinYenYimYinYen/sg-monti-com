@@ -73,7 +73,6 @@ export function RenewalSettingsPanel() {
   const allows = useSelector(userCapabilitiesSelect.allows);
   const { refreshCustomers, canRefresh } = useRenewalCustomers({
     seasonOverride: config?.season,
-    canLoadGlobalSettings: allows(can.globalSettings.read),
   });
 
   // Picking replaces the open draft silently, exactly like the Open sheets on the other tabs.

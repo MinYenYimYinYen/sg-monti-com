@@ -31,12 +31,10 @@ export function AssignFlagButton({ result }: AssignFlagButtonProps) {
 
   const allows = useSelector(userCapabilitiesSelect.allows);
   const canAssign = allows(can.flagAssignments.write);
-  const canLoad = allows(can.customerFlags.read);
 
   const { addFlag } = useCustFlag({
     flagIds,
     custStatuses: ACTIVE_STATUSES,
-    canLoad,
   });
 
   const blockReason = getAssignFlagBlockReason(result);

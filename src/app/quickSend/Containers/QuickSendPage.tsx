@@ -29,7 +29,6 @@ import { usePrepay } from "@/app/realGreen/prepay/usePrepay";
 import { useZipCode } from "@/app/realGreen/zipCode/useZipCode";
 import { useGlobalSettings } from "@/app/globalSettings/_lib/useGlobalSettings";
 import { can } from "@/permission/can";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 
 /** Converts HTML to plain text while preserving paragraph/line-break structure.
@@ -76,26 +75,13 @@ export function QuickSend() {
 
 function QuickSendWorkspace() {
   const dispatch = useAppDispatch();
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  // Each load is gated by the capability its route needs, so a user holding only part of what this
-  // screen uses never fires a request that would be refused. The RealGreen loads are not gated yet
-  // (those features are not declared).
-  useStoredTemplates({
-    autoLoad: true,
-    canLoad: {
-      templates: allows(can.quickSendTemplates.read),
-      groups: allows(can.quickSendTemplateGroups.read),
-    },
-  });
+  useStoredTemplates({ autoLoad: true });
   useCustomerContext({ contexts: ["single"] });
   useProgServ({ autoLoad: true });
   usePriceTable({ autoLoad: true });
   usePrepay({ autoLoad: true });
   useZipCode({ autoLoad: true });
-  useGlobalSettings({
-    autoLoad: true,
-    canLoad: allows(can.globalSettings.read),
-  });
+  useGlobalSettings({ autoLoad: true });
 
   const sections = useSelector(qsSelect.sections);
   const activeSectionId = useSelector(qsSelect.activeSectionId);

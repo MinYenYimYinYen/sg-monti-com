@@ -54,24 +54,12 @@ function injectCustId(plan: CustomerQueryPlan, custId: number): CustomerQueryPla
 // so each lookup replaces the previous customer — no accumulation.
 // ---------------------------------------------------------------------------
 
-/**
- * `canLoad` (the mirror read behind `lookup`) and `canRefreshLive` (the live `refreshCustomer`) come
- * from the component, because hooks expose actions only and do not select. Both default to allowed.
- */
-export function useSingleCustomer({
-  queryPlan,
-  canLoad = true,
-  canRefreshLive = true,
-}: {
-  queryPlan: CustomerQueryPlan;
-  canLoad?: boolean;
-  canRefreshLive?: boolean;
-}) {
+export function useSingleCustomer({ queryPlan }: { queryPlan: CustomerQueryPlan }) {
   const dispatch = useAppDispatch();
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   const lookup = (custId: number) => {
-    if (!canLoad || !custId || custId < 0) return;
+    if (!custId || custId < 0) return;
 
     if (PIPELINE.single === "mirror") {
       const plan = injectCustId(queryPlan, custId);
@@ -90,7 +78,7 @@ export function useSingleCustomer({
   };
 
   const refreshCustomer = async (custId: number) => {
-    if (!canRefreshLive || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
+    if (!custId || custId < 0 || refreshingCustIds.has(custId)) return;
     setRefreshingCustIds((prev) => new Set(prev).add(custId));
     try {
       // refreshCustomer still uses the legacy RealGreen scheme path.

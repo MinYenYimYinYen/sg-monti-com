@@ -35,7 +35,13 @@ import {
   judgeRealSaId,
 } from "@/app/auth/_lib/userCreation";
 import { lookupEmployeeOutcome } from "@/app/auth/_lib/lookupEmployeeOutcome";
-import { loadVerifiedCaller } from "@/app/permission/_lib/capabilityLoaders";
+import {
+  loadHasCapabilities,
+  loadUserNamesWithAccess,
+  loadVerifiedCaller,
+} from "@/app/permission/_lib/capabilityLoaders";
+import { filterPendingUsers } from "@/permission/logic/accessLogic";
+import { toUserSummary } from "@/permission/logic/userSummary";
 import { assertText } from "@/app/permission/_lib/assertText";
 import { UserCapabilitiesModel } from "@/app/permission/userCapabilities/UserCapabilitiesModel";
 import { assertCurrentUserPassword } from "@/app/syncUtils/_lib/verifyCurrentUserPassword";
@@ -123,8 +129,8 @@ const handlers: HandlerMap<AuthContract> = {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // 3. Create User
-      // We force the role to "applied", pending manager approval
-      // to prevent someone from POSTing role: 'admin'
+      // A new user holds no capabilities, so nothing passes for them until an administrator
+      // assigns some. No marker is needed for that pending state.
       const newUser = await UserModel.create({
         // Explicit fields, never ...rest: a client must not be able to set isSuperUser or isKiosk.
         email: rest.email,
@@ -133,7 +139,6 @@ const handlers: HandlerMap<AuthContract> = {
         userName: rest.userName,
         saId,
         password: hashedPassword,
-        role: "applied", // Default role
       });
 
       // 4. Return Safe User (No Password)
@@ -200,7 +205,6 @@ const handlers: HandlerMap<AuthContract> = {
           firstName: newUser.firstName,
           lastName: newUser.lastName,
           saId,
-          role: newUser.role,
           // Absent means false, like every user that already exists.
           ...(newUser.isKiosk ? { isKiosk: true } : {}),
           password: hashedPassword,
@@ -278,7 +282,7 @@ const handlers: HandlerMap<AuthContract> = {
       }
 
       // 3. Generate Tokens
-      const payload = tokenPayloadFromUser(user);
+      const payload = tokenPayloadFromUser({ user, hasCapabilities: await loadHasCapabilities(user) });
       const accessToken = signAccessToken(payload);
       const refreshToken = signRefreshToken(payload);
 
@@ -338,7 +342,8 @@ const handlers: HandlerMap<AuthContract> = {
       const payload = verifyRefreshToken(refreshToken.value);
 
       // 2. Issue New Access Token
-      // We reuse the payload from the refresh token (userId, role, saId)
+      // We reuse the payload from the refresh token, hasCapabilities included, so that claim
+      // stays as it was at sign-in until recheckAccess or a new login renews it.
       // Ideally, we should check if the user still exists/is active in DB here
       // but for sec90Feet, we can trust the signed refresh token for now.
       const newPayload = buildTokenPayload(payload);
@@ -479,13 +484,13 @@ const handlers: HandlerMap<AuthContract> = {
     handler: async () => {
       await connectToMongoDB();
 
-      // 1. Get Applied Users
-      const appliedUsersDocs = await UserModel.find({ role: "applied" }).lean();
-      // Remove passwords from the result
-      const appliedUsers = cleanMongoArray(appliedUsersDocs).map((u) => {
-        const { password, ...rest } = u as any;
-        return rest as User;
-      });
+      // 1. Get users waiting for access: they hold nothing. A kiosk is a shared-device account,
+      // so it is not someone waiting to be approved. Only the fields the list shows are read.
+      const allUsers = await UserModel.find()
+        .select("userName firstName lastName saId isSuperUser isKiosk")
+        .lean();
+      const namesWithAccess = await loadUserNamesWithAccess(allUsers);
+      const pendingUsers = filterPendingUsers({ users: allUsers, namesWithAccess }).map(toUserSummary);
 
       // 2. Get Pending Password Resets
       const pendingResetsDocs = await PasswordResetRequestModel.find({
@@ -498,39 +503,48 @@ const handlers: HandlerMap<AuthContract> = {
       return {
         success: true,
         payload: {
-          appliedUsers: appliedUsers,
+          pendingUsers,
           pendingResets,
         },
       };
     },
   },
-  approveUser: {
-    // Sets a role, which still gates every route not yet migrated, so this can make someone an admin.
-    capability: can.accessRequests.write,
-    handler: async ({ userName, role }) => {
+  recheckAccess: {
+    // Any signed-in user, pending ones included: it is how a pending user picks up an approval
+    // without waiting for the token to expire. The handler verifies the cookie itself.
+    capability: "public",
+    handler: async () => {
+      const cookieStore = await cookies();
+      const token = cookieStore.get(AUTH_CONST.COOKIE.ACCESS_TOKEN);
+      if (!token) {
+        throw new AppError({ message: "No token", type: "AUTH_ERROR", statusCode: 401 });
+      }
+      const payload = verifyAccessToken(token.value);
+
       await connectToMongoDB();
-
-      const user = await UserModel.findOne({ userName });
+      const user = await UserModel.findOne({ userName: payload.userName });
       if (!user) {
-        throw new AppError({
-          message: "User not found",
-          type: "VALIDATION_ERROR",
-          statusCode: 404,
-        });
+        throw new AppError({ message: "User not found", type: "AUTH_ERROR", statusCode: 401 });
       }
 
-      if (user.role !== "applied") {
-        throw new AppError({
-          message: "User is not in 'applied' status",
-          type: "VALIDATION_ERROR",
-          statusCode: 400,
-        });
-      }
+      const hasCapabilities = await loadHasCapabilities(user);
+      const newPayload = tokenPayloadFromUser({ user, hasCapabilities });
+      cookieStore.set(AUTH_CONST.COOKIE.ACCESS_TOKEN, signAccessToken(newPayload), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: AUTH_CONST.EXPIRATION.COOKIE.ACCESS,
+      });
+      cookieStore.set(AUTH_CONST.COOKIE.REFRESH_TOKEN, signRefreshToken(newPayload), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: AUTH_CONST.EXPIRATION.COOKIE.REFRESH,
+      });
 
-      user.role = role;
-      await user.save();
-
-      return { success: true, payload: null };
+      return { success: true, payload: { hasCapabilities } };
     },
   },
   confirmPassword: {
@@ -606,7 +620,7 @@ const handlers: HandlerMap<AuthContract> = {
       await user.save();
 
       // 4. Issue New Tokens (without the flag)
-      const newPayload = tokenPayloadFromUser(user);
+      const newPayload = tokenPayloadFromUser({ user, hasCapabilities: await loadHasCapabilities(user) });
       const accessToken = signAccessToken(newPayload);
       const refreshToken = signRefreshToken(newPayload);
 

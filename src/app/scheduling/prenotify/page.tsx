@@ -23,13 +23,10 @@ import { PrenotifyByType } from "@/app/scheduling/prenotify/_lib/PrenotifyByType
 import { PromiseDisplay } from "@/app/scheduling/prenotify/_lib/PromiseDisplay";
 import { MultiSelectItem } from "@/components/multiselect/MultiSelectItem";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 import { can } from "@/permission/can";
 
 export default function Prenotify() {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  usePrenotify({ canLoad: schedulingCanLoad(allows) });
+  usePrenotify();
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const prenotifications = useSelector(prenotifySelect.prenotifications);
   const summaries = useSelector(prenotifySelect.summaries);

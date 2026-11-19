@@ -9,38 +9,17 @@ import { AccountMappingNameType } from "@/app/account/AccountMappingTypes";
 import { accountMappingActions } from "@/app/account/accountMappingSlice";
 import { qboConst } from "@/app/qbo/_lib/qboConst";
 
-/** Which of the loads this hook fires the caller may make. Absent means allowed, so write-only callers can skip it. */
-type CanLoad = {
-  depositLinks?: boolean;
-  qboAccounts?: boolean;
-  qboCustomers?: boolean;
-  qboVendors?: boolean;
-  rgAccounts?: boolean;
-};
-
 /**
  * Loads RealGreen accounts, QuickBooks accounts and the stored links between them, and exposes
  * actions only. Components read merged data from accountSelect.
- *
- * `canLoad` comes from the component, because hooks expose actions only and do not select. A load
- * the user may not make is skipped, so a user holding part of what this page uses gets no refused
- * request and no error toast.
  */
-export function useAccount({ autoLoad, canLoad = {} }: { autoLoad: boolean; canLoad?: CanLoad }) {
-  const {
-    depositLinks: canLoadDepositLinks = true,
-    qboAccounts: canLoadQboAccounts = true,
-    qboCustomers: canLoadQboCustomers = true,
-    qboVendors: canLoadQboVendors = true,
-    rgAccounts: canLoadRgAccounts = true,
-  } = canLoad;
+export function useAccount({ autoLoad }: { autoLoad: boolean }) {
   const dispatch = useAppDispatch();
-  // Every hook is always called, in the same order. A flag only turns its autoLoad off.
-  const { refresh: refreshQboAccounts } = useQboAccount({ autoLoad: autoLoad && canLoadQboAccounts });
+  const { refresh: refreshQboAccounts } = useQboAccount({ autoLoad });
   // Customers and vendors are the choices for an account's default name.
-  const { refresh: refreshQboCustomers } = useQboCustomer({ autoLoad: autoLoad && canLoadQboCustomers });
-  const { refresh: refreshQboVendors } = useQboVendor({ autoLoad: autoLoad && canLoadQboVendors });
-  const { refresh: refreshRgAccounts } = useRgAccount({ autoLoad, canLoad: canLoadRgAccounts });
+  const { refresh: refreshQboCustomers } = useQboCustomer({ autoLoad });
+  const { refresh: refreshQboVendors } = useQboVendor({ autoLoad });
+  const { refresh: refreshRgAccounts } = useRgAccount({ autoLoad });
 
   useEffect(() => {
     if (autoLoad) {
@@ -54,24 +33,22 @@ export function useAccount({ autoLoad, canLoad = {} }: { autoLoad: boolean; canL
         }),
       );
       // The deposit fields are linked on the same page, so their links load with the rest.
-      if (canLoadDepositLinks) {
-        dispatch(
-          depositFieldMappingActions.getDepositFieldMappings({
-            params: {},
-            config: {
-              loadingMsg: "Loading deposit account links...",
-              staleTime: qboConst.referenceCacheTime,
-            },
-          }),
-        );
-      }
+      dispatch(
+        depositFieldMappingActions.getDepositFieldMappings({
+          params: {},
+          config: {
+            loadingMsg: "Loading deposit account links...",
+            staleTime: qboConst.referenceCacheTime,
+          },
+        }),
+      );
     }
-  }, [autoLoad, canLoadDepositLinks, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const refresh = () => {
-    if (canLoadQboAccounts) refreshQboAccounts();
-    if (canLoadQboCustomers) refreshQboCustomers();
-    if (canLoadQboVendors) refreshQboVendors();
+    refreshQboAccounts();
+    refreshQboCustomers();
+    refreshQboVendors();
     refreshRgAccounts();
     dispatch(
       accountMappingActions.getAccountMappings({
@@ -79,14 +56,12 @@ export function useAccount({ autoLoad, canLoad = {} }: { autoLoad: boolean; canL
         config: { loadingMsg: "Loading account mappings...", force: true },
       }),
     );
-    if (canLoadDepositLinks) {
-      dispatch(
-        depositFieldMappingActions.getDepositFieldMappings({
-          params: {},
-          config: { loadingMsg: "Loading deposit account links...", force: true },
-        }),
-      );
-    }
+    dispatch(
+      depositFieldMappingActions.getDepositFieldMappings({
+        params: {},
+        config: { loadingMsg: "Loading deposit account links...", force: true },
+      }),
+    );
   };
 
   /** Leaving the default name out clears any stored one, so relinking never keeps a stale name. */

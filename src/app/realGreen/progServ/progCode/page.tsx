@@ -9,7 +9,6 @@ import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServ
 import { ProgCodeListPanel } from "./_components/ProgCodeListPanel";
 import { ProgCodeEditPanel } from "./_components/ProgCodeEditPanel";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { can } from "@/permission/can";
 
 export default function ProgCodePage() {
@@ -21,19 +20,9 @@ export default function ProgCodePage() {
 }
 
 function ProgCodes() {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  useProgServ({
-    autoLoad: true,
-    canLoad: {
-      progCodes: allows(can.progCodes.read),
-      // The program list shows how many service codes each program has.
-      servCodes: allows(can.servCodes.read),
-    },
-  });
-  usePriceTable({
-    autoLoad: true,
-    canLoad: allows(can.priceTables.read),
-  });
+  // The program list shows how many service codes each program has, so both lists load.
+  useProgServ({ autoLoad: true });
+  usePriceTable({ autoLoad: true });
 
   const progCodes = useSelector(progServSelect.progCodes);
   const [selectedProgCodeId, setSelectedProgCodeId] = useState<string | null>(null);

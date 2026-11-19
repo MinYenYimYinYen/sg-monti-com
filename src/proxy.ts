@@ -16,14 +16,18 @@ const ENCODED_REFRESH_SECRET = new TextEncoder().encode(REFRESH_SECRET);
 
 interface CustomJwtPayload extends JWTPayload, TokenPayload {}
 
+function isCurrentPayload(payload: JWTPayload): boolean {
+  return !!payload.userName && typeof payload.hasCapabilities === "boolean";
+}
+
 async function verifyAccessToken(
   token: string | undefined,
 ): Promise<CustomJwtPayload | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, ENCODED_ACCESS_SECRET);
-    // Tokens without userName predate the permission system: treat as signed out (forces re-login).
-    return payload.userName ? (payload as CustomJwtPayload) : null;
+    // Tokens without userName or hasCapabilities are out of date: treat as signed out (forces re-login).
+    return isCurrentPayload(payload) ? (payload as CustomJwtPayload) : null;
   } catch {
     return null;
   }
@@ -35,8 +39,8 @@ async function verifyRefreshToken(
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, ENCODED_REFRESH_SECRET);
-    // Tokens without userName predate the permission system: treat as signed out (forces re-login).
-    return payload.userName ? (payload as CustomJwtPayload) : null;
+    // Tokens without userName or hasCapabilities are out of date: treat as signed out (forces re-login).
+    return isCurrentPayload(payload) ? (payload as CustomJwtPayload) : null;
   } catch {
     return null;
   }
@@ -68,7 +72,6 @@ function nextWithHeaders(
   const requestHeaders = new Headers(request.headers);
   if (user) {
     if (user.saId) requestHeaders.set("x-user-id", user.saId);
-    if (user.role) requestHeaders.set("x-user-role", user.role);
   }
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
@@ -121,7 +124,9 @@ export async function proxy(request: NextRequest) {
   const isChangePasswordPage = pathname === "/auth/changePassword";
 
   const isAuthenticated = !!user;
-  const isAppliedUser = user?.role === "applied";
+  // A user nobody has given access yet. The claim is fixed when the token is issued, so this is a
+  // UX gate only: the server decides every op from the database.
+  const isAppliedUser = user?.hasCapabilities === false;
   const mustChangePassword = user?.mustChangePassword;
 
   // 2. LOGIC GATES (Order Matters!)

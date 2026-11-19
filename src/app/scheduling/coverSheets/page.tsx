@@ -13,15 +13,12 @@ import { coverSheetsSelect } from "@/app/scheduling/coverSheets/_lib/selectors/c
 import Link from "next/link";
 import { UnservDropZone } from "@/app/scheduling/_libShared/UnservDropZone";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 import { can } from "@/permission/can";
 
 type ViewState = "countSizeRev" | "servCodes" | "products";
 
 export default function CoverSheetsPage() {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  useCoverSheetDeps({ canLoad: schedulingCanLoad(allows) });
+  useCoverSheetDeps();
   const servicesByDateAndEmployee = useSelector(
     coverSheetsSelect.servicesByDateAndEmployee,
   );

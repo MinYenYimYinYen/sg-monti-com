@@ -45,22 +45,14 @@ function buildLastSeasonProductionPlan(season: number) {
     .build();
 }
 
-/**
- * `canLoad` (the mirror read) and `canRefreshLive` (the live single-customer refresh) come from the
- * component, because hooks expose actions only and do not select. Both default to allowed.
- */
-export function useLastSeasonProduction({
-  autoLoad = false,
-  canLoad = true,
-  canRefreshLive = true,
-}: { autoLoad?: boolean; canLoad?: boolean; canRefreshLive?: boolean } = {}) {
+export function useLastSeasonProduction({ autoLoad = false }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
   useGlobalSettings({ autoLoad: true });
   const season = useSelector(globalSettingsSelect.season);
   const [refreshingCustIds, setRefreshingCustIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!autoLoad || !canLoad || !season) return;
+    if (!autoLoad || !season) return;
 
     if (PIPELINE.lastSeasonProduction === "mirror") {
       const plan = buildLastSeasonProductionPlan(season);
@@ -68,10 +60,10 @@ export function useLastSeasonProduction({
     } else {
       (dispatch as any)(lastSeasonProductionGetDocs({ params: { schemeName: "lastSeasonProduction", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     }
-  }, [autoLoad, canLoad, dispatch, season]);
+  }, [autoLoad, dispatch, season]);
 
   const refresh = () => {
-    if (!season || !canLoad) return;
+    if (!season) return;
 
     if (PIPELINE.lastSeasonProduction === "mirror") {
       const plan = buildLastSeasonProductionPlan(season);
@@ -82,7 +74,7 @@ export function useLastSeasonProduction({
   };
 
   const refreshCustomer = async (custId: number) => {
-    if (!canRefreshLive || !season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
+    if (!season || !custId || custId < 0 || refreshingCustIds.has(custId)) return;
     setRefreshingCustIds((prev) => new Set(prev).add(custId));
     try {
       const result = await dispatch(

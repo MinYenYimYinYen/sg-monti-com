@@ -4,26 +4,11 @@ import { storedTemplatesActions } from "./storedTemplatesSlice";
 import type { StoredTemplateDoc } from "./StoredTemplateTypes";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
-/** Which of the loads this hook fires the caller may make. Absent means allowed, so write-only callers can skip it. */
-type CanLoad = {
-  templates?: boolean;
-  groups?: boolean;
-};
-
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. A load
- * the user may not make is skipped, so a user holding only one of the two reads gets no refused
- * request and no error toast.
- */
-export function useStoredTemplates({
-  autoLoad,
-  canLoad = {},
-}: { autoLoad?: boolean; canLoad?: CanLoad } = {}) {
-  const { templates: canLoadTemplates = true, groups: canLoadGroups = true } = canLoad;
+export function useStoredTemplates({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoadTemplates) {
+    if (autoLoad) {
       dispatch(
         storedTemplatesActions.getTemplates({
           params: {},
@@ -33,8 +18,6 @@ export function useStoredTemplates({
           },
         }),
       );
-    }
-    if (autoLoad && canLoadGroups) {
       dispatch(
         storedTemplatesActions.getGroups({
           params: {},
@@ -45,7 +28,7 @@ export function useStoredTemplates({
         }),
       );
     }
-  }, [autoLoad, canLoadTemplates, canLoadGroups, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const saveTemplate = (template: StoredTemplateDoc) =>
     dispatch(

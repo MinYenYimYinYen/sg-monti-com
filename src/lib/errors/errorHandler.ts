@@ -1,5 +1,7 @@
 import { toast } from "react-toastify";
 import { AppError } from "./AppError";
+import { deniedCapabilityOfError } from "./accessDenied";
+import { reportAccessDenied } from "./reportAccessDenied";
 
 export function normalizeError(error: unknown): AppError {
   if (error instanceof AppError) return error;
@@ -35,6 +37,13 @@ export function handleError(error: unknown, options?: HandleErrorOptions) {
   }
 
   const isServer = typeof window === "undefined";
+
+  // A refused capability joins the combined access-denied toast instead of toasting alone.
+  const deniedCapability = deniedCapabilityOfError(appError);
+  if (!isServer && deniedCapability) {
+    reportAccessDenied({ capability: deniedCapability, op: "handleError", silent: appError.silent === true });
+    return appError;
+  }
 
   // LOGGING
   if (isServer) {

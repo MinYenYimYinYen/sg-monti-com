@@ -34,11 +34,8 @@ export function CoverSheetsConfigEditor() {
     canUpdate,
     updateSettings,
     cancelChanges,
-  } = useGlobalSettings({
-    autoLoad: true,
-    canLoad: allows(can.globalSettings.read),
-  });
-  useFlag({ autoLoad: true, canLoad: allows(can.flags.read) });
+  } = useGlobalSettings({ autoLoad: true });
+  useFlag({ autoLoad: true });
 
   const flagDocs = useSelector(flagSelect.flagDocs);
   const flagDocMap = useSelector(flagSelect.flagDocMap);

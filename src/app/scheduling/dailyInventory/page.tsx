@@ -21,18 +21,15 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/style/components/collapsible";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { schedulingCanLoad } from "@/app/scheduling/_libShared/schedulingCanLoad";
 
 export default function DailyInventoryPage() {
-  const allows = useSelector(userCapabilitiesSelect.allows);
   const { setRouteDate } = useLoadoutStartForm();
   const { getLoadouts } = useLoadout();
 
   const routeDate = useSelector(loadoutStartSelect.routeDate);
   const availableDates = useSelector(assignmentSelect.availableDates);
 
-  useLoadoutPageDeps({ routeDate, canLoad: schedulingCanLoad(allows) });
+  useLoadoutPageDeps({ routeDate });
 
   const today = dateStrings.today();
 

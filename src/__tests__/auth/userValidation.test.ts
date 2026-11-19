@@ -14,7 +14,6 @@ const valid = {
   firstName: "Super",
   lastName: "Luke",
   saId: "ZZ-SUPER1",
-  role: "admin",
   isKiosk: false,
   password: "temp-pass-1",
   mustChangePassword: false,
@@ -38,10 +37,6 @@ describe("validateCreateUser: accepts", () => {
       ok: true,
       value: { userName: "superLuke", firstName: "Super", saId: "ZZ-SUPER1" },
     });
-  });
-
-  it.each(["admin", "office", "tech", "applied"])("the %s role", (role) => {
-    expect(validate({ role })).toMatchObject({ ok: true });
   });
 
   it("a temporary password the user must change", () => {
@@ -78,10 +73,6 @@ describe("validateCreateUser: refuses", () => {
 
   it.each(["", "a/b", "../x", "..", ".", "a b", "a?b", "x".repeat(33)])("the saId %j", (saId) => {
     expect(validate({ saId }).ok).toBe(false);
-  });
-
-  it.each(["public", "root", "", "ADMIN"])("the role %j (public is not a user role)", (role) => {
-    expect(validate({ role }).ok).toBe(false);
   });
 
   it.each(["true", 1, null, undefined])("a non-boolean isKiosk %j", (isKiosk) => {

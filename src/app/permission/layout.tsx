@@ -18,11 +18,9 @@ export default function PermissionLayout({ children }: { children: React.ReactNo
   const mine = useSelector(userCapabilitiesSelect.mine);
 
   const canSeeUsers = isGateOpen({ gate: { capability: can.userCapabilities.read }, user, mine });
-  const canReadBundles = isGateOpen({ gate: { capability: can.bundles.read }, user, mine });
   const isSuperUser = isGateOpen({ gate: { capability: "superUser" }, user, mine });
 
-  // Each load runs only when the user may read it, so nobody triggers a refused request.
-  usePermissionDeps({ loadUsers: canSeeUsers, loadBundles: canReadBundles });
+  usePermissionDeps();
 
   const tabs: TabNavItem[] = [];
   if (canSeeUsers) tabs.push(USERS_TAB);

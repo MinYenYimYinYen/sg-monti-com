@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { HandlerMap, OpMap } from "@/lib/api/types/rpcUtils";
 import { normalizeError } from "@/lib/errors/errorHandler";
-import { assertRole } from "@/app/auth/_lib/assertRole";
+import { requiredFromData } from "@/lib/errors/accessDenied";
 import { assertCapability } from "@/app/auth/_lib/assertCapability";
-import { Role } from "@/lib/api/types/roles";
 import type { CapabilityRequirement } from "@/permission/PermissionTypes";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 
@@ -37,13 +36,20 @@ export function createRpcHandler<T extends ApiContract>(
       }
 
       // 3. Security Check
-      // An op declares `capability` (new) or `roles` (legacy). Neither fails closed.
-      const { capability, roles } = config as { capability?: CapabilityRequirement; roles?: Role[] };
-      if (capability !== undefined) {
-        await assertCapability(capability);
-      } else {
-        await assertRole(roles ?? []);
+      // The type requires a capability, but a handler map built with a cast could omit it, and
+      // assertCapability(undefined) must never pass. Missing fails closed.
+      const { capability } = config as { capability?: CapabilityRequirement };
+      if (capability === undefined) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Operation '${opName}' has no permission gate`,
+            op: opName,
+          },
+          { status: 403 },
+        );
       }
+      await assertCapability(capability);
 
       // 4. Execution
       const result = await config.handler(params as any);
@@ -85,6 +91,10 @@ export function createRpcHandler<T extends ApiContract>(
         // Exception: Auth Errors should remain 401/403 for middleware/client handling
         const status = error.type === "AUTH_ERROR" ? error.statusCode : 200;
 
+        // Only a 403 names what was missing. A 401 must never carry it.
+        const required =
+          error.type === "AUTH_ERROR" && error.statusCode === 403 ? requiredFromData(error.data) : null;
+
         return NextResponse.json(
           {
             success: false,
@@ -92,6 +102,7 @@ export function createRpcHandler<T extends ApiContract>(
             silent: error.silent,
             code: error.statusCode,
             op: opName,
+            ...(required ? { required } : {}),
           },
           { status },
         );

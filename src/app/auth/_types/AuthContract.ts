@@ -1,7 +1,6 @@
 import { DataResponse } from "@/lib/api/types/responses";
 import { User, UserWithPW } from "@/app/auth/_types/User";
 import { CheckedId } from "@/app/auth/_types/authTypes";
-import { Role } from "@/lib/api/types/roles";
 import { ApiContract } from "@/lib/api/types/ApiContract";
 import { PendingAdminActions } from "@/app/auth/authSlice";
 
@@ -70,13 +69,12 @@ export interface AuthContract extends ApiContract {
     result: DataResponse<PendingAdminActions>;
   };
 
-  // 10. Approve User (Admin)
-  approveUser: {
-    params: {
-      userName: string;
-      role: Role;
-    };
-    result: DataResponse<null>;
+  // 10. Re-check Access (Authenticated User, pending ones included)
+  // Recomputes the token's hasCapabilities claim from the database and re-issues the cookies, so
+  // a user who was just given access does not have to sign in again.
+  recheckAccess: {
+    params: {};
+    result: DataResponse<{ hasCapabilities: boolean }>;
   };
 
   // 11. Change Password (Authenticated User)
@@ -108,7 +106,6 @@ export interface AuthContract extends ApiContract {
       firstName: string;
       lastName: string;
       saId: string;
-      role: Role;
       isKiosk: boolean;
       password: string;
       mustChangePassword: boolean;

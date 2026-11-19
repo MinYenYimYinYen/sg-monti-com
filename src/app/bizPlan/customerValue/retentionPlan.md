@@ -139,7 +139,7 @@ export function useMultiSeasonProduction() {
     );
   };
 
-  return { load, canLoad: !!season };
+  return { load };
 }
 ```
 

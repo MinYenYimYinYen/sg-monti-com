@@ -6,18 +6,11 @@ import { priorityServiceActions } from "@/app/priorityService/priorityServiceSli
 import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so callers in other folders can omit it.
- */
-export function usePriorityService({
-  autoLoad,
-  canLoad = true,
-}: { autoLoad?: boolean; canLoad?: boolean } = {}) {
+export function usePriorityService({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         priorityServiceActions.getAll({
           params: {},
@@ -25,7 +18,7 @@ export function usePriorityService({
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const upsert = (doc: PriorityServiceDoc) =>
     dispatch(

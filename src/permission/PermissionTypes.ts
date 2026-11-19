@@ -5,7 +5,7 @@
 // so client bundles can use it.
 //
 // Every op requires a logged-in user holding the capability, unless its verb is declared
-// `public`. A logged-in user with no capabilities is an "applied" user: there is no marker
+// `public`. A logged-in user with no capabilities is a pending user: there is no stored marker
 // for that state, an admin approves by assigning capabilities.
 //
 // The check takes the verified token payload (server) or the User from the store (client).
@@ -51,7 +51,7 @@ export function isSuperUserEffective(user: Pick<User, 'isSuperUser' | 'isKiosk'>
 /**
  * The one capability check, shared by the server (RPC handlers) and the client (`<Can>`).
  * Every non-public op needs a logged-in user. A confirmed superuser bypasses the capability
- * list. A logged-in user with no capabilities is an "applied" user and passes nothing.
+ * list. A logged-in user with no capabilities is a pending user and passes nothing.
  * `isSuperUserConfirmed` must come from the database on the server, never from the token claim.
  */
 export function hasCapability({

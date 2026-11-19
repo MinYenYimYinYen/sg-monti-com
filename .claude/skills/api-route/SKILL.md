@@ -1,6 +1,6 @@
 ---
 name: api-route
-description: Create or modify a Next.js API route or client-side API call in this project's type-safe RPC pattern (ApiContract, HandlerMap, createRpcHandler, createStandardThunk, apiStream), including RealGreen routes and error handling with AppError/handleError. Use when adding an API operation, changing roles or params on a route, streaming NDJSON, or deciding how an error should surface to the user.
+description: Create or modify a Next.js API route or client-side API call in this project's type-safe RPC pattern (ApiContract, HandlerMap, createRpcHandler, createStandardThunk, apiStream), including RealGreen routes and error handling with AppError/handleError. Use when adding an API operation, changing the capability or params on a route, streaming NDJSON, or deciding how an error should surface to the user.
 ---
 
 # API Route and Error Handling
@@ -16,8 +16,8 @@ If the data also needs a model, slice, selectors and hook, use the `data-module`
 One route file per feature at `src/app/<feature>/api/route.ts`, exporting only `POST`. There are no REST verbs; every request is `{ op, ...params }`.
 
 1. **Contract** (`api/<Feature>Contract.ts`): `export interface XContract extends ApiContract { opName: { params: {...}; result: DataResponse<T> } }`.
-2. **Route**: `const handlers: HandlerMap<XContract> = { opName: { roles: [...], handler: async (params) => {...} } }` then `export const POST = createRpcHandler(handlers)`.
-   - `roles` is mandatory per operation: `"admin" | "office" | "tech" | "public"` (`src/lib/api/types/roles.ts`). Choose the narrowest set. Write operations are usually `["admin"]`.
+2. **Route**: `const handlers: HandlerMap<XContract> = { opName: { capability: can.<resource>.<verb>, handler: async (params) => {...} } }` then `export const POST = createRpcHandler(handlers)`.
+   - `capability` is mandatory per operation. Import `can` from `@/permission/can` and pick the resource for the data the op touches and the verb (`read`, `write`, `delete`). Never write the string by hand. `'public'` needs no login, `'superUser'` passes only a confirmed superuser. A new data entity needs a resource in `src/permission/groups/`: read `src/permission/permission.readme.md` first.
    - Imports: `createRpcHandler` from `@/lib/api/createRpcHandler`, `HandlerMap` from `@/lib/api/types/rpcUtils`.
 3. **Client**: a thunk from `createStandardThunk<XContract, "opName">({ typePrefix, apiPath, opName })` (`@/store/reduxUtil/thunkFactories`). `apiPath` is the route folder path without `route.ts`, e.g. `/priceIncrease/seasonIncreases/api`.
 
@@ -39,4 +39,5 @@ Reference route: `src/app/priceIncrease/seasonIncreases/api/route.ts`.
 - Client `api()` returns `{ success: false }` as data for operational errors and only throws on network failure or unexpected crashes.
 - Thunks built by `createStandardThunk` toast and reject automatically. Do not add your own `try/catch` + toast around a dispatch.
 - Expected or background failures (auth checks, token refresh): `handleError(e, { silent: true })`, or `config: { silentError: true }` on the dispatch.
+- A 403 for a missing capability is handled once, centrally: the thunk factories collect them and show one combined toast (and log `[access denied]`). Do not add `canLoad`-style permission parameters to load hooks to avoid it, and do not build flags from `allows(can.x.read)` to skip a load. Page gates (`GatedPanel`) and write-button gating (`allows(can.x.write)`) stay. See `src/permission/permission.readme.md`, "A refused load (403)".
 - In components that call `api()` directly: `try { ... } catch (err) { handleError(err) }`.

@@ -16,8 +16,6 @@ import {
 } from "@/app/realGreen/customer/slices/customerSlices";
 import { StreamChunkData } from "@/app/realGreen/customer/api/CustomerContract";
 import { WithConfig } from "@/store/reduxUtil/reduxTypes";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { can } from "@/permission/can";
 
 export const custFlagListenerMiddleware = createListenerMiddleware<AppState, AppDispatch>();
 
@@ -48,12 +46,6 @@ custFlagListenerMiddleware.startListening({
   ),
   effect: (action, listenerApi) => {
     const state = listenerApi.getState();
-
-    // A listener cannot take a `canLoad` flag from a component, so it reads the same selector the
-    // components use. Without the read, the refresh would be a refused request and a toast after
-    // every customer refresh.
-    const allows = userCapabilitiesSelect.allows(state);
-    if (!allows(can.customerFlags.read)) return;
 
     const flagIdsInState = custFlagSelect.flagIdsInState(state);
 

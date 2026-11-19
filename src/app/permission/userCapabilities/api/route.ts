@@ -35,7 +35,7 @@ const handlers: HandlerMap<UserCapabilitiesContract> = {
       await connectToMongoDB();
       // An explicit field list, not the whole document: the password hash and email never leave.
       const users = await UserModel.find()
-        .select("userName firstName lastName saId role isSuperUser isKiosk")
+        .select("userName firstName lastName saId isSuperUser isKiosk")
         .lean();
       return { success: true, payload: users.map(toUserSummary) };
     },

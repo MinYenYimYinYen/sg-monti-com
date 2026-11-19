@@ -5,15 +5,11 @@ import { EquipmentDoc } from "@/app/equipment/EquipmentTypes";
 import { useSelector } from "react-redux";
 import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so write-only callers and callers in other folders can omit it.
- */
-export function useEquipment({ autoLoad, canLoad = true }: { autoLoad?: boolean; canLoad?: boolean }) {
+export function useEquipment({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         equipmentActions.getAll({
           params: {},
@@ -21,10 +17,9 @@ export function useEquipment({ autoLoad, canLoad = true }: { autoLoad?: boolean;
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const refresh = () => {
-    if (!canLoad) return;
     dispatch(
       equipmentActions.getAll({
         params: {},

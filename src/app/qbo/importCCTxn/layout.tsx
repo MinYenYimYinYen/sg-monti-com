@@ -1,11 +1,9 @@
 "use client";
 
-import { useSelector } from "react-redux";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
 import { useImportCCTxnDeps } from "@/app/qbo/importCCTxn/useImportCCTxnDeps";
 import { can } from "@/permission/can";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 
 const TABS: readonly TabNavItem[] = [
@@ -29,20 +27,7 @@ export default function ImportCCTxnLayout({ children }: { children: React.ReactN
 
 // Separate from the gate so the deps hook is only ever called for a user who holds the read.
 function ImportCCTxnShell({ children }: { children: React.ReactNode }) {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  useImportCCTxnDeps({
-    canLoad: {
-      qboAccounts: allows(can.qboAccounts.read),
-      qboVendors: allows(can.qboVendors.read),
-      qboCustomers: allows(can.qboCustomers.read),
-      qboEmployees: allows(can.qboEmployees.read),
-      formatAccounts: allows(can.ccFormatAccounts.read),
-      cardAssignments: allows(can.ccCardAssignments.read),
-      merchantMappings: allows(can.ccMerchantMappings.read),
-      skipRules: allows(can.ccSkipRules.read),
-      importRows: allows(can.ccImportRows.read),
-    },
-  });
+  useImportCCTxnDeps();
 
   return (
     <PageLayout>

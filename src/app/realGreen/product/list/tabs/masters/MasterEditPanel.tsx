@@ -65,10 +65,7 @@ export function MasterEditPanel({ master, productName }: MasterEditPanelProps) {
   const canWriteUnit = allows(can.productUnits.write);
   const canWriteSubs = allows(can.subProductConfigs.write);
   const canWritePackages = allows(can.masterEquipmentPackages.write);
-  useEquipmentPackage({
-    autoLoad: true,
-    canLoad: allows(can.equipmentPackages.read),
-  });
+  useEquipmentPackage({ autoLoad: true });
   const productSubs = useSelector(productSelect.productSubs);
   const allPackages = useSelector(equipmentPackageSelect.equipmentPackages);
 

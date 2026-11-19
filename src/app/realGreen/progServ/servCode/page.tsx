@@ -3,9 +3,7 @@ import React from "react";
 import { Container } from "@/components/Containers";
 import { useProgServ } from "@/app/realGreen/progServ/_lib/hooks/useProgServ";
 import { ServCodeTab } from "./_components/ServCodeTab";
-import { useSelector } from "react-redux";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { can } from "@/permission/can";
 
 export default function ServCodePage() {
@@ -17,13 +15,7 @@ export default function ServCodePage() {
 }
 
 function ServCodes() {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  // Only the service code list is shown here, so the program code load is skipped. The program
-  // list is loaded by the program code page.
-  useProgServ({
-    autoLoad: true,
-    canLoad: { progCodes: false, servCodes: allows(can.servCodes.read) },
-  });
+  useProgServ({ autoLoad: true });
 
   return (
     <Container variant="scroll-shell">

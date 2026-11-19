@@ -4,6 +4,8 @@ export type ErrorResponse<T = unknown> = {
   data?: T;
   silent?: boolean;
   code?: number;
+  /** Set only on a 403: the capability the caller lacked. */
+  required?: string;
 };
 export type SuccessResponse = { success: true; partialError?: string };
 

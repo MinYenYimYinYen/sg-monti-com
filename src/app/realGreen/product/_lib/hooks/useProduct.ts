@@ -8,39 +8,14 @@ import { useUnitConfig } from "@/app/realGreen/product/unitConfig/useUnitConfig"
 import { appMethodActions } from "@/app/appMethod/appMethodSlice";
 import { useAppMethod } from "@/app/appMethod/useAppMethod";
 
-/** Which of the loads this hook fires the caller may make. Absent means allowed, so write-only callers and callers in other folders can skip it. */
-export type ProductCanLoad = {
-  products?: boolean;
-  unitConversions?: boolean;
-  appMethods?: boolean;
-};
-
-/**
- * Loads the products with the unit conversions and application methods they are shown with.
- *
- * `canLoad` comes from the component, because hooks expose actions only and do not select. A load
- * the user may not make is skipped, so a user holding part of what the product screens use gets no
- * refused request and no error toast.
- */
-export function useProduct({
-  autoLoad,
-  canLoad = {},
-}: {
-  autoLoad?: boolean;
-  canLoad?: ProductCanLoad;
-}) {
-  const {
-    products: canLoadProducts = true,
-    unitConversions: canLoadUnitConversions = true,
-    appMethods: canLoadAppMethods = true,
-  } = canLoad;
+/** Loads the products with the unit conversions and application methods they are shown with. */
+export function useProduct({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
-  // Every hook is always called, in the same order. A flag only turns its load off.
-  useUnitConfig({ autoLoad, canLoad: canLoadUnitConversions });
-  useAppMethod({ autoLoad, canLoad: canLoadAppMethods });
+  useUnitConfig({ autoLoad });
+  useAppMethod({ autoLoad });
 
   useEffect(() => {
-    if (autoLoad && canLoadProducts) {
+    if (autoLoad) {
       dispatch(
         productActions.getProducts({
           params: {},
@@ -51,10 +26,9 @@ export function useProduct({
         }),
       );
     }
-  }, [autoLoad, canLoadProducts, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const refresh = () => {
-    if (!canLoadProducts) return;
     dispatch(
       productActions.getProducts({
         params: {},

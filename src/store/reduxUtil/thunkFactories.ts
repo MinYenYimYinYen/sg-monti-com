@@ -8,6 +8,25 @@ import { OpMap } from "@/lib/api/types/rpcUtils";
 import { handleError } from "@/lib/errors/errorHandler";
 import { AppError } from "@/lib/errors/AppError";
 import { readNdjsonStream } from "@/lib/api/streamUtils";
+import { deniedCapabilityOfError, deniedCapabilityOfResponse } from "@/lib/errors/accessDenied";
+import { reportAccessDenied } from "@/lib/errors/reportAccessDenied";
+import { uiActions } from "@/store/reduxUtil/uiSlice";
+import { requestIdOfArg } from "@/store/reduxUtil/hashParams";
+
+// Same id uiSlice records for this call, so the condition can recognise the refused request.
+function deniedRequestId<TParams>({
+  config,
+  arg,
+}: {
+  config: { typePrefix: string };
+  arg: WithConfig<TParams>;
+}): string {
+  return requestIdOfArg({
+    typePrefix: config.typePrefix,
+    params: arg.params,
+    transformedParams: arg.__transformedParams,
+  });
+}
 
 type StandardThunkConfig<TParams> = {
   typePrefix: string;
@@ -39,7 +58,7 @@ export function createStandardThunk<
     { rejectValue: string; state: AppState }
   >(
     config.typePrefix,
-    async (arg, { rejectWithValue }) => {
+    async (arg, { rejectWithValue, dispatch }) => {
       try {
         // Use cached transformed params if available (set by condition), otherwise use original
         const finalParams = arg.__transformedParams ?? arg.params;
@@ -76,6 +95,16 @@ export function createStandardThunk<
 
           // Client Override wins
           const isSilent = arg.config?.silentError ?? error.silent;
+
+          // A refused read is expected when the user lacks a capability. It joins the combined
+          // access-denied toast instead of toasting once per load.
+          const deniedCapability = deniedCapabilityOfResponse(res);
+          if (deniedCapability) {
+            reportAccessDenied({ capability: deniedCapability, op: config.typePrefix, silent: isSilent === true });
+            dispatch(uiActions.accessDenied(deniedRequestId({ config, arg })));
+            return rejectWithValue(res.message);
+          }
+
           handleError(error, { silent: isSilent });
 
           return rejectWithValue(res.message);
@@ -86,6 +115,12 @@ export function createStandardThunk<
       } catch (e) {
         // Path C: Hard Error (Network / Crash)
         const isSilent = arg.config?.silentError;
+        const deniedCapability = deniedCapabilityOfError(e);
+        if (deniedCapability) {
+          reportAccessDenied({ capability: deniedCapability, op: config.typePrefix, silent: isSilent === true });
+          dispatch(uiActions.accessDenied(deniedRequestId({ config, arg })));
+          return rejectWithValue(e instanceof Error ? e.message : "Access Denied");
+        }
         const error = handleError(e, { silent: isSilent });
         return rejectWithValue(error.message);
       }
@@ -142,6 +177,12 @@ export function createStreamThunk<
         return;
       } catch (e) {
         const isSilent = arg.config?.silentError;
+        const deniedCapability = deniedCapabilityOfError(e);
+        if (deniedCapability) {
+          reportAccessDenied({ capability: deniedCapability, op: config.typePrefix, silent: isSilent === true });
+          dispatch(uiActions.accessDenied(deniedRequestId({ config, arg })));
+          return rejectWithValue(e instanceof Error ? e.message : "Access Denied");
+        }
         const error = handleError(e, { silent: isSilent });
         return rejectWithValue(error.message);
       }

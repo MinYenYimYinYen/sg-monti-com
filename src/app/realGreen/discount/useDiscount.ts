@@ -3,21 +3,11 @@ import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so callers that do not gate can omit it.
- */
-export function useDiscount({
-  autoLoad,
-  canLoad = true,
-}: {
-  autoLoad: boolean;
-  canLoad?: boolean;
-}) {
+export function useDiscount({ autoLoad }: { autoLoad: boolean }) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         discountActions.getDiscountDocs({
           params: {},
@@ -28,10 +18,9 @@ export function useDiscount({
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const refresh = () => {
-    if (!canLoad) return;
     dispatch(
       discountActions.getDiscountDocs({
         params: {},

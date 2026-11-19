@@ -228,6 +228,7 @@ useEffect(() => {
 
 * **`params` must be a plain JSON object**, `{}` when empty. Falsy params make the request ID the bare `typePrefix`, which in-flight dedup (it matches `typePrefix-`) never finds. Date, Map and Set values all hash as `{}`; use ISO strings and arrays.
 * **A failed request blocks retries until `staleTime` expires.** `lastFetched` is stamped on `pending` and not cleared on `rejected`. Retry with `force: true`.
+* **A 403'd request is blocked regardless of `staleTime`.** The thunk records its request ID in `ui.deniedRequests`, and `smartDispatchCondition` cancels it (right after the Force rule) until `userCapabilities/getMine` or `auth/recheckAccess` fulfils, which clears the list. `force: true` still runs it.
 * **`lastFetched` is never pruned**, and `resetUI` does not clear it. When you clear cached slice data, the matching `lastFetched` entries still say "fresh".
 * **`customCondition` is bypassed by `force`.**
 * **Do not set `dispatchConditionRejection: true`** on a smart thunk. A cancelled thunk would dispatch `rejected` with no `pending`, which decrements `loadingCount` for a request that never incremented it and removes the original's `activeRequests` entry.

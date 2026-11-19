@@ -83,10 +83,7 @@ export default function RegisterPage() {
       return;
     }
 
-    await register({
-      ...form,
-      role: "applied",
-    });
+    await register(form);
   };
 
   // RENDER: Step 1 (Eligibility Check)

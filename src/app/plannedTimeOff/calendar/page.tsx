@@ -185,7 +185,7 @@ function TimeOffCalendarWorkspace() {
   const canWrite = allows(can.employeeAbsences.write);
   usePlannedTimeOff({ autoLoad: true });
   // The calendar draws holidays too, which is a different feature's read (see `requires`).
-  useHoliday({ autoLoad: true, canLoad: allows(can.holidays.read) });
+  useHoliday({ autoLoad: true });
   useEmployee({ autoLoad: true });
 
   const allPto = useSelector(plannedTimeOffSelect.all);

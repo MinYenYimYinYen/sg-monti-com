@@ -71,11 +71,12 @@ export const useAuth = () => {
     );
   };
 
-  const approveUser = (params: AuthContract["approveUser"]["params"]) => {
+  /** Re-issues the session cookies from the database, so a just-approved user gets in. */
+  const recheckAccess = () => {
     return dispatch(
-      authActions.approveUser({
-        params,
-        config: { loadingMsg: "Approving..." },
+      authActions.recheckAccess({
+        params: {},
+        config: { loadingMsg: "Checking your access...", force: true },
       }),
     );
   };
@@ -163,7 +164,7 @@ export const useAuth = () => {
     checkAuth,
     requestPasswordReset,
     getPendingActions,
-    approveUser,
+    recheckAccess,
     resolvePasswordReset,
     changePassword,
     resetEligibility,

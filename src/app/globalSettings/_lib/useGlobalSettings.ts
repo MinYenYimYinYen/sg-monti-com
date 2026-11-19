@@ -9,17 +9,7 @@ import { deepEqual } from "@/lib/primatives/typeUtils/deepEqual";
 import { CoverSheetsConfig } from "@/app/scheduling/coverSheets/_lib/config/CoverSheetsTypes";
 import { baseCoverSheetsConfig } from "@/app/scheduling/coverSheets/_lib/config/CoverSheetsTypes";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so the many callers in other folders can omit it.
- */
-export function useGlobalSettings({
-  autoLoad,
-  canLoad = true,
-}: {
-  autoLoad: boolean;
-  canLoad?: boolean;
-}) {
+export function useGlobalSettings({ autoLoad }: { autoLoad: boolean }) {
   const dispatch = useAppDispatch();
   const currentSettings = useSelector(globalSettingsSelect.settings);
 
@@ -58,7 +48,7 @@ export function useGlobalSettings({
     }
   };
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         globalSettingsActions.getSettings({
           params: {},
@@ -69,10 +59,9 @@ export function useGlobalSettings({
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const refresh = () => {
-    if (!canLoad) return;
     dispatch(
       globalSettingsActions.getSettings({
         params: {},

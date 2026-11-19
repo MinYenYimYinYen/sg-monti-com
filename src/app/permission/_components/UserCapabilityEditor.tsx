@@ -108,7 +108,7 @@ export function UserCapabilityEditor({ userName }: { userName: string }) {
             {summary.firstName} {summary.lastName}
           </h2>
           <p className="text-sm text-muted-foreground">
-            @{summary.userName} · SA ID {summary.saId} · role {summary.role}
+            @{summary.userName} · SA ID {summary.saId}
           </p>
         </div>
         {canDelete && <DeleteUserDialog userName={summary.userName} />}

@@ -10,17 +10,10 @@ type FetchPunchesParams = {
   employeeIds?: string[];
 };
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so callers in other folders (productivity, the import widget) can omit it.
- * Both fetches skip the request when it is false, so a user without the read gets no refused
- * request and no error toast.
- */
-export function useTimeCard({ canLoad = true }: { canLoad?: boolean } = {}) {
+export function useTimeCard() {
   const dispatch = useAppDispatch();
 
   const fetchPunches = (params: FetchPunchesParams = {}) => {
-    if (!canLoad) return;
     return dispatch(
       timeCardActions.getPunches({
         params,
@@ -30,7 +23,6 @@ export function useTimeCard({ canLoad = true }: { canLoad?: boolean } = {}) {
   };
 
   const fetchLastImportedDate = () => {
-    if (!canLoad) return;
     return dispatch(
       timeCardActions.getLastImportedDate({
         params: {},

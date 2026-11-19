@@ -11,15 +11,12 @@ import { custFlagActions } from "@/app/realGreen/custFlag/_lib/custFlagSlice";
  *
  * Uses custStatuses: ["9"] — active customers only.
  */
-export function useSelectedCustFlags({
-  canLoad = true,
-}: { canLoad?: boolean } = {}) {
+export function useSelectedCustFlags() {
   const dispatch = useAppDispatch();
   const selectedFlagIds = useSelector(custFlagSelect.selectedFlagIds);
   const flagIdsInState = useSelector(custFlagSelect.flagIdsInState);
 
   useEffect(() => {
-    if (!canLoad) return;
     const flagsToLoad = selectedFlagIds.filter(
       (id) => !flagIdsInState.includes(id),
     );
@@ -32,5 +29,5 @@ export function useSelectedCustFlags({
         config: { loadingMsg: "Loading customer flags..." },
       }),
     );
-  }, [canLoad, dispatch, selectedFlagIds, flagIdsInState]);
+  }, [dispatch, selectedFlagIds, flagIdsInState]);
 }

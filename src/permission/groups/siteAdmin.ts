@@ -8,8 +8,9 @@ export const siteAdminGroup = defineGroup({
     // The current season, cover sheet flags, renewal flag ids, phone map and price increase flag
     // mappings. Nearly every screen loads it for the season: without `read` they see none.
     globalSettings: { name: "Global settings", verbs: ["read", "write"] },
-    // `write` approves a user, which sets a role, and roles still gate every route that has not
-    // migrated, so it can make someone an admin until roles are removed. Assign it deliberately.
+    // `read` shows the inbox of users waiting for access and password resets. `write` resolves a
+    // password reset, which sets a temporary password for that person: assign it deliberately.
+    // Giving a pending user access is the separate `userCapabilities.write`.
     accessRequests: { name: "Access requests and password resets", verbs: ["read", "write"] },
     // Editing bundles is gated by 'superUser', which cannot be granted, so there is only `read`.
     bundles: { name: "Capability bundles", verbs: ["read"] },

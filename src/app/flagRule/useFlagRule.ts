@@ -2,18 +2,11 @@ import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { flagRuleActions } from "@/app/flagRule/flagRuleSlice";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so callers in other folders can omit it.
- */
-export function useFlagRule({
-  autoLoad,
-  canLoad = true,
-}: { autoLoad?: boolean; canLoad?: boolean } = {}) {
+export function useFlagRule({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         flagRuleActions.getAll({
           params: {},
@@ -21,5 +14,5 @@ export function useFlagRule({
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 }

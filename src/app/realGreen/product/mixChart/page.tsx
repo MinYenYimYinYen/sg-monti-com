@@ -54,18 +54,8 @@ export default function MixChartPage() {
 }
 
 function MixChart() {
-  const allows = useSelector(userCapabilitiesSelect.allows);
-  useProduct({
-    autoLoad: true,
-    canLoad: {
-      unitConversions: allows(can.unitConversions.read),
-      appMethods: allows(can.appMethods.read),
-    },
-  });
-  useEquipment({
-    autoLoad: true,
-    canLoad: allows(can.equipmentDefinitions.read),
-  });
+  useProduct({ autoLoad: true });
+  useEquipment({ autoLoad: true });
   const isClient = useIsClient();
 
   // Chart config — the full mix definition

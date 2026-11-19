@@ -7,7 +7,7 @@ This project implements a robust, secure, and scalable authentication system usi
 The system follows a **"Defense in Depth"** strategy:
 1.  **Edge Layer (`proxy.ts`)**: Acts as the first line of defense. It performs an "Optimistic Check" on the Access Token and redirects unauthenticated users before they hit the application.
 2.  **Client Layer (`useAuth`, `AuthGuard`)**: Manages UI state (Redux) and handles 401 automatic refreshes transparently.
-3.  **Server Layer (`route.ts`, `assertRole`)**: The "Authoritative Check". Verifies tokens, checks database roles, and manages the Refresh Token rotation.
+3.  **Server Layer (`route.ts`, `assertCapability`)**: The "Authoritative Check". Verifies tokens, checks the user's capabilities, and manages the Refresh Token rotation. What a user may do is decided by capabilities, see `src/permission/permission.readme.md`. There is no stored role: a new user holds no capabilities and is "pending" until an administrator assigns some (see the pending screen section in the permission readme).
 
 ## 2. Key Components
 
@@ -27,16 +27,17 @@ The system follows a **"Defense in Depth"** strategy:
     *   **Access Token**: Short-lived (15m). Used for API access.
     *   **Refresh Token**: Long-lived (7d). Used to get new Access Tokens.
     *   **Storage**: `HttpOnly`, `Secure`, `SameSite` Cookies.
-*   **Role Assertion**: `src/app/auth/_lib/assertRole.ts`
-    *   Used in Server Actions/API Routes to enforce permissions.
-    *   Checks `x-user-role` header (from Proxy) or falls back to verifying the cookie.
+*   **Capability Assertion**: `src/app/auth/_lib/assertCapability.ts`
+    *   Called by `createRpcHandler` for every op, with the op's `capability`.
+    *   Verifies the access token cookie and decides through `evaluateCapability`.
 
 ### C. The Proxy (Edge Middleware)
 *   **File**: `src/proxy.ts` (exported via `src/middleware.ts` if needed, or auto-detected in Next.js 16).
 *   **Function**:
     *   Protects private routes (redirects to `/auth/login`).
     *   Redirects authenticated users away from public routes (e.g., Login -> Home).
-    *   Injects `x-user-id` and `x-user-role` headers for downstream Server Components.
+    *   Injects an `x-user-id` header for downstream Server Components.
+    *   Confines a user whose token says `hasCapabilities: false` to `/auth/applied`.
 
 ### D. Automatic Refresh (Client Interceptor)
 *   **File**: `src/lib/api/api.ts`
@@ -86,12 +87,13 @@ export default function ProtectedPage() {
 ```
 
 ### Protecting a Server Route/Action
-Use `assertRole` at the top of your handler:
+Declare a `capability` on the op in an RPC route (`createRpcHandler` enforces it). Outside an RPC handler, call `assertCapability` directly:
 ```typescript
-import { assertRole } from "@/app/auth/_lib/assertRole";
+import { assertCapability } from "@/app/auth/_lib/assertCapability";
+import { can } from "@/permission/can";
 
 export async function GET() {
-  await assertRole(["admin", "manager"]); // Throws 403 if failed
+  await assertCapability(can.holidays.read); // Throws 401 or 403 if failed
   // ... business logic
 }
 ```

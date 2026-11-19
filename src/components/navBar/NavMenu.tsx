@@ -19,8 +19,7 @@ import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 
-// A nav entry carries the same gate as an RPC op: roles (legacy) or capability. Entries move to
-// capability with their routes, and removing roles from OpGate then flags any left behind.
+// A nav entry carries the same gate as an RPC op: the capability it needs.
 type NavItem = { title: string; href: string } & OpGate;
 
 type NavSection = {
@@ -129,7 +128,13 @@ const realGreenParams: NavSection = {
 const bizPlanSection: NavSection = {
   title: "Biz Plan",
   navItems: [
-    { title: "Product Forecast", href: "/bizPlan/products", roles: ["admin"] },
+    // These three are reports over RealGreen data, not data of their own, so each gates on the
+    // data it is built around. Parts that need other reads load only what the user may read.
+    {
+      title: "Product Forecast",
+      href: "/bizPlan/products",
+      capability: can.customers.read,
+    },
     {
       title: "Monthly Inventory",
       href: "/inventory",
@@ -138,12 +143,12 @@ const bizPlanSection: NavSection = {
     {
       title: "Productivity",
       href: "/productivity",
-      roles: ["admin", "office"],
+      capability: can.customers.read,
     },
     {
       title: "Customer Sanity Checks",
       href: "/sanity",
-      roles: ["admin", "office"],
+      capability: can.customers.read,
     },
   ],
 };

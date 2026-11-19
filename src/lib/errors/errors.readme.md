@@ -85,6 +85,8 @@ const handleSave = async () => {
 The `createStandardThunk` factory automatically handles errors.
 *   If API returns `success: false`, it calls `handleError` (Toasts).
 *   It then `rejects` the thunk, allowing `extraReducers` to handle state changes.
+*   **Exception, a 403 that names a missing capability** (`required` on the response): it is not toasted one by one. It goes to `reportAccessDenied`, which collects denials for 400 ms and shows a single combined toast (fixed toast id, so a later burst updates it). `config.silentError` still wins: a silenced denial shows no toast but is still logged with `console.warn("[access denied]", { missing, ops })`. The refused request id is also stored in `ui.deniedRequests` so it is not re-sent until capabilities reload. `createStreamThunk` and `handleError` apply the same rule. See `src/permission/permission.readme.md`, "A refused load (403)".
+*   The pure parts (`formatAccessDeniedMessage`, `deniedCapabilityOfResponse`, `deniedCapabilityOfError`, `createAccessDeniedCollector`) live in `src/lib/errors/accessDenied.ts` and `accessDeniedCollector.ts`, with no store, toast or React, so they can be tested alone.
 
 ### C. Server-Side Routes (The Two-Hop)
 1.  `rgApi` (Server-only) throws `EXTERNAL_ERROR`.

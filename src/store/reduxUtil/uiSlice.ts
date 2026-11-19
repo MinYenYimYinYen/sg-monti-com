@@ -15,6 +15,11 @@ type UIState = {
   loadingMessage: string | null;
   activeRequests: string[];
   lastFetched: Record<string, number>;
+  /**
+   * Requests the server refused with a 403. They are not sent again until the user's
+   * capabilities reload, so a missing read does not cost a refused request on every visit.
+   */
+  deniedRequests: string[];
 };
 
 const initialState: UIState = {
@@ -22,7 +27,15 @@ const initialState: UIState = {
   loadingMessage: null,
   activeRequests: [],
   lastFetched: {},
+  deniedRequests: [],
 };
+
+// Capabilities can only change when these complete, so a refusal is worth retrying after them.
+// Matched by type string because importing their slices here would be a circular import.
+const CAPABILITY_RELOAD_FULFILLED_TYPES = [
+  "userCapabilities/getMine/fulfilled",
+  "auth/recheckAccess/fulfilled",
+];
 
 import { hashParams } from "@/store/reduxUtil/hashParams";
 
@@ -74,6 +87,9 @@ const uiSlice = createSlice({
     },
     setLoadingMessage: (state, action: PayloadAction<string>) => {
       state.loadingMessage = action.payload;
+    },
+    accessDenied: (state, action: PayloadAction<string>) => {
+      if (!state.deniedRequests.includes(action.payload)) state.deniedRequests.push(action.payload);
     },
   },
   extraReducers: (builder) => {
@@ -133,6 +149,14 @@ const uiSlice = createSlice({
         if (index !== -1) state.activeRequests.splice(index, 1);
       })
 
+      // C2. Capabilities reloaded: a refused request may be allowed now
+      .addMatcher(
+        (action: { type: string }) => CAPABILITY_RELOAD_FULFILLED_TYPES.includes(action.type),
+        (state) => {
+          state.deniedRequests = [];
+        },
+      )
+
       // D. FINALLY (UI Cleanup)
       .addMatcher(isAnyOf(isFulfilled, isRejected), (state, action) => {
         // We need to check the original arg to see if showLoading was disabled.
@@ -185,6 +209,7 @@ const uiSlice = createSlice({
       }
     },
     lastFetched: (state) => state.lastFetched,
+    isDenied: (state, requestId: string) => state.deniedRequests.includes(requestId),
   },
 });
 

@@ -5,18 +5,11 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { paceSeasonPlanActions } from "@/app/pace/seasonPlan/seasonPlanSlice";
 import { SeasonPlan } from "@/app/pace/seasonPlan/SeasonPlanTypes";
 
-/**
- * `canLoad` comes from the component, because hooks expose actions only and do not select. It
- * defaults to allowed so write-only callers can omit it.
- */
-export function usePaceSeasonPlan({
-  autoLoad,
-  canLoad = true,
-}: { autoLoad?: boolean; canLoad?: boolean } = {}) {
+export function usePaceSeasonPlan({ autoLoad }: { autoLoad?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (autoLoad && canLoad) {
+    if (autoLoad) {
       dispatch(
         paceSeasonPlanActions.getSeasonPlans({
           params: {},
@@ -24,7 +17,7 @@ export function usePaceSeasonPlan({
         }),
       );
     }
-  }, [autoLoad, canLoad, dispatch]);
+  }, [autoLoad, dispatch]);
 
   const upsertSeasonPlan = (seasonPlan: SeasonPlan) =>
     dispatch(
