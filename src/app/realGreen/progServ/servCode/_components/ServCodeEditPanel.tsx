@@ -7,7 +7,6 @@ import { useProductRules } from "@/app/realGreen/progServ/_lib/hooks/useProductR
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
 import { servCodeLookup } from "@/app/realGreen/progServ/_lib/selectors/servCodeLookups";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { DateRangePicker } from "@/components/DateRangePicker";
 import { Toggle } from "@/style/components/toggle";
 import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
@@ -26,8 +25,6 @@ import {
 import { ShieldAlert, Trash2 } from "lucide-react";
 import { ProductRuleDoc } from "@/app/realGreen/progServ/_lib/types/ProductRule";
 import { getRuleId } from "@/app/realGreen/progServ/_lib/slice/progServActions";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
-import { can } from "@/permission/can";
 
 type ServCodeEditPanelProps = {
   servCodeId: string;

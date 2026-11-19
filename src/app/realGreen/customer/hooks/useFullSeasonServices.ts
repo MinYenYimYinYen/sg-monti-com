@@ -63,10 +63,8 @@ export function useFullSeasonServices({
 
     if (PIPELINE.fullSeasonServices === "mirror") {
       const plan = buildFullSeasonServicesPlan(season);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(fullSeasonServicesGetDocs({ params: { plan } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(fullSeasonServicesGetDocs({ params: { schemeName: "fullSeasonServices", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     }
   }, [autoLoad, dispatch, season]);
@@ -76,10 +74,8 @@ export function useFullSeasonServices({
 
     if (PIPELINE.fullSeasonServices === "mirror") {
       const plan = buildFullSeasonServicesPlan(season);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(fullSeasonServicesGetDocs({ params: { plan } as any, config: { force: true } as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(fullSeasonServicesGetDocs({ params: { schemeName: "fullSeasonServices", season } as any, config: { force: true } as any }));
     }
   };

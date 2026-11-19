@@ -73,10 +73,8 @@ export function usePrintedCustomers({ autoLoad = false }: { autoLoad?: boolean }
 
     if (PIPELINE.printed === "mirror") {
       const plan = buildPrintedCustomersPlan(season);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(printedCustomersGetDocs({ params: { plan } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(printedCustomersGetDocs({ params: { schemeName: "printedCustomers", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } }));
     }
   }, [autoLoad, dispatch, season]);
@@ -86,10 +84,8 @@ export function usePrintedCustomers({ autoLoad = false }: { autoLoad?: boolean }
 
     if (PIPELINE.printed === "mirror") {
       const plan = buildPrintedCustomersPlan(season);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(printedCustomersGetDocs({ params: { plan } as any, config: { staleTime: realGreenConst.paramTypesCacheTime, force: true } as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(printedCustomersGetDocs({ params: { schemeName: "printedCustomers", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime, force: true } as any }));
     }
   };

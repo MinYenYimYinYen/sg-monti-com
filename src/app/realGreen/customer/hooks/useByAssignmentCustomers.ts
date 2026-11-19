@@ -53,10 +53,8 @@ export function useByAssignmentCustomers() {
 
     if (PIPELINE.byAssignment === "mirror") {
       const plan = buildByAssignmentPlan(season, servIds);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(byAssignmentActions.getDocs({ params: { plan } as any, config: config as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(byAssignmentActions.getDocs({ params: { schemeName: "byServIds", season, schemeParams: { servIds } } as any, config: config as any }));
     }
   };

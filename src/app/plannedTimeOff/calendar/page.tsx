@@ -15,7 +15,6 @@ import { employeeSelect } from "@/app/realGreen/employee/employeeSelect";
 import { PlannedTimeOffSheet } from "@/app/plannedTimeOff/calendar/PlannedTimeOffSheet";
 import { UnplannedAbsenceSheet } from "@/app/plannedTimeOff/calendar/UnplannedAbsenceSheet";
 import { PlannedTimeOff } from "@/app/plannedTimeOff/plannedTimeOffTypes";
-import { Holiday } from "@/app/holiday/holidayTypes";
 import { can } from "@/permission/can";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";

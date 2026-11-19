@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { useSelector } from "react-redux";
 import { Container } from "@/components/Containers";
 import { PDFViewer } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
@@ -35,7 +34,6 @@ import { ProductsFooter } from "@/app/realGreen/product/list/tabs/components/Pro
 import { solverSelect } from "@/app/appMethod/appMethodCreate/selectors/solverSelect";
 import { useSelector as useReduxSelector } from "react-redux";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
-import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
 import { can } from "@/permission/can";
 
 const DEFAULT_CONFIG: MixChartConfig = {

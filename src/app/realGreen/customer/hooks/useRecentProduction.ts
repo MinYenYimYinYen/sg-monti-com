@@ -61,10 +61,8 @@ export function useRecentProduction(dateRange: TRange<string> | null) {
 
     if (PIPELINE.recentProduction === "mirror") {
       const plan = buildRecentProductionPlan(season, dateRange);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(recentProductionGetDocs({ params: { plan } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(recentProductionGetDocs({ params: { schemeName: "recentProduction", season, schemeParams: { dateRange } } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     }
   }, [dateRange, dispatch, isValidDateRange, season]);
@@ -74,10 +72,8 @@ export function useRecentProduction(dateRange: TRange<string> | null) {
 
     if (PIPELINE.recentProduction === "mirror") {
       const plan = buildRecentProductionPlan(season, dateRange);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(recentProductionGetDocs({ params: { plan } as any, config: { force: true } as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(recentProductionGetDocs({ params: { schemeName: "recentProduction", season, schemeParams: { dateRange } } as any, config: { force: true } as any }));
     }
   };

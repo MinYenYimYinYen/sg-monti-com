@@ -2,8 +2,6 @@ import { useAppDispatch } from "@/lib/hooks/redux";
 import { useEffect } from "react";
 import { equipmentActions } from "@/app/equipment/equipmentSlice";
 import { EquipmentDoc } from "@/app/equipment/EquipmentTypes";
-import { useSelector } from "react-redux";
-import { equipmentSelect } from "@/app/equipment/equipmentSelect";
 
 export function useEquipment({ autoLoad }: { autoLoad?: boolean }) {
   const dispatch = useAppDispatch();

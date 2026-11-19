@@ -23,10 +23,8 @@ export function useActiveCustomers({ autoLoad = false }: { autoLoad?: boolean } 
 
     if (PIPELINE.active === "mirror") {
       const plan = buildActiveCustomersPlan(season);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(activeCustomersGetDocs({ params: { plan } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(activeCustomersGetDocs({ params: { schemeName: "activeCustomers", season } as any, config: { staleTime: realGreenConst.paramTypesCacheTime } as any }));
     }
   }, [autoLoad, dispatch, season]);
@@ -36,10 +34,8 @@ export function useActiveCustomers({ autoLoad = false }: { autoLoad?: boolean } 
 
     if (PIPELINE.active === "mirror") {
       const plan = buildActiveCustomersPlan(season);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(activeCustomersGetDocs({ params: { plan } as any, config: { force: true } as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(activeCustomersGetDocs({ params: { schemeName: "activeCustomers", season } as any, config: { force: true } as any }));
     }
   };

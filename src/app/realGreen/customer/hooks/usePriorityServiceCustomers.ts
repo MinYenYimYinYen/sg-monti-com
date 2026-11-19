@@ -53,10 +53,8 @@ export function usePriorityServiceCustomers() {
 
     if (PIPELINE.priorityService === "mirror") {
       const plan = buildPriorityServiceCustomersPlan(season, servIds);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(priorityServiceCustomerActions.getDocs({ params: { plan } as any, config: config as any }));
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(priorityServiceCustomerActions.getDocs({ params: { schemeName: "byServIds", season, schemeParams: { servIds } } as any, config: config as any }));
     }
   };

@@ -1,5 +1,5 @@
-import { DataResponse, ErrorResponse } from "@/lib/api/types/responses";
-import { AppError, ErrorType } from "@/lib/errors/AppError";
+import {  ErrorResponse } from "@/lib/api/types/responses";
+import { AppError } from "@/lib/errors/AppError";
 import { OpMap } from "@/lib/api/types/rpcUtils";
 import { AuthContract } from "@/app/auth/_types/AuthContract";
 

@@ -63,7 +63,6 @@ export function useSingleCustomer({ queryPlan }: { queryPlan: CustomerQueryPlan 
 
     if (PIPELINE.single === "mirror") {
       const plan = injectCustId(queryPlan, custId);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (dispatch as any)(singleCustomerActions.getDocs({ params: { plan } as any, config: { showLoading: false, force: true } as any }));
     } else {
       // RealGreen pipeline callers must include season in their plan context.
