@@ -153,6 +153,25 @@ export type JournalEntrySource =
       sourceHash: string;
       occurrence: number;
       amountCents: number;
+    }
+  | {
+      /**
+       * The payment of a month's Minnesota sales tax. The hash is of the period, so the payment
+       * is identified by its month. monthEndBalanceCents is what the payable account held on the
+       * last day of the period (credit positive), adjustmentCents what the adjustment entry moved.
+       */
+      kind: "salesTaxPayment";
+      sourceHash: string;
+      periodEnd: string;
+      monthEndBalanceCents: number;
+      adjustmentCents: number;
+    }
+  | {
+      /** The entry that brings the payable account to the payment's amount as of the period end. */
+      kind: "salesTaxAdjustment";
+      sourceHash: string;
+      periodEnd: string;
+      paymentDocNumber: string;
     };
 
 export type JournalEntrySourceKind = JournalEntrySource["kind"];

@@ -4,7 +4,7 @@ import { qboAccountSelect } from "@/app/qbo/account/qboAccountSelect";
 import { qboCustomerSelect } from "@/app/qbo/customer/qboCustomerSelect";
 import { resolveDepositFieldLinks } from "@/app/javelin/depositMapping/depositFieldLinks";
 import { DEPOSIT_FIELDS } from "@/app/javelin/_lib/depositFields";
-import { CK_DEPOSIT_LINK_KEYS } from "@/app/javelin/_lib/ckDepositFields";
+import { CK_DEPOSIT_LINK_KEYS, SALES_TAX_LINK_KEYS } from "@/app/javelin/_lib/ckDepositFields";
 
 const selectMappingDocs = (state: AppState) => state.depositFieldMapping.mappingDocs;
 
@@ -27,8 +27,21 @@ const selectCkDepositLinks = createSelector(
     }),
 );
 
+/** The three accounts a sales tax payment moves money between. */
+const selectSalesTaxLinks = createSelector(
+  [selectMappingDocs, qboAccountSelect.accountMap, qboCustomerSelect.customerMap],
+  (mappingDocs, qboAccountMap, customerMap) =>
+    resolveDepositFieldLinks({
+      keys: SALES_TAX_LINK_KEYS,
+      mappingDocs,
+      qboAccountMap,
+      customerMap,
+    }),
+);
+
 export const depositFieldMappingSelect = {
   mappingDocs: selectMappingDocs,
   links: selectDepositFieldLinks,
   ckLinks: selectCkDepositLinks,
+  salesTaxLinks: selectSalesTaxLinks,
 };

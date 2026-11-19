@@ -47,6 +47,12 @@ export const qboConst = {
   // The widest date range a stored-posting load may cover.
   journalEntryMaxRangeDays: 366,
 
+  // Attachment uploads: the two files are small text, but an upload is slower than a read.
+  attachmentUploadTimeoutMs: 40 * 1000,
+  // A sales tax payment is held to this much difference from the month-end balance before the
+  // dialog warns. It only warns, and never blocks.
+  salesTaxAdjustmentWarnCents: 50_000,
+
   requestTimeoutMs: 20 * 1000,
   // A /batch of 30 creates can take far longer than a read. A timeout leaves every row in the
   // request "unknown", so this is generous. A run stops after the first batch that does not

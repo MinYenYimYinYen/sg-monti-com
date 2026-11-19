@@ -11,22 +11,23 @@ import { findMnReturnBlockers } from "@/app/salesTax/_lib/findMnReturnBlockers";
 import { MN_RETURN_LOCATION, MnReturnAmendFlag } from "@/app/salesTax/_lib/mnReturnConst";
 import { salesTaxUISelect } from "@/app/salesTax/salesTaxUISelect";
 import { downloadTextFile } from "@/lib/misc/downloadTextFile";
-
-type FileKind = { extension: "csv" | "txt"; mimeType: string };
-
-const CSV: FileKind = { extension: "csv", mimeType: "text/csv" };
-const TXT: FileKind = { extension: "txt", mimeType: "text/plain" };
+import { PostSalesTaxPaymentDialog } from "@/app/salesTax/salesTaxPosting/_components/PostSalesTaxPaymentDialog";
+import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
+import { can } from "@/permission/can";
 
 /**
- * The upload file for the Minnesota Department of Revenue. The state's examples are comma delimited
- * and come as both .csv and .txt, so the same text is offered under either extension.
+ * The upload file for the Minnesota Department of Revenue, as .txt (the state's import accepts it).
+ * Once the return is filed, Post Sales Tax Payment records the payment in QuickBooks with this file
+ * and the RealGreen tax code report attached. An amended return has no payment to post here.
  */
 export function MnReturnExportPanel() {
   const report = useSelector(salesTaxUISelect.mnTaxReport);
   const dateRange = useSelector(salesTaxUISelect.dateRange);
+  const allows = useSelector(userCapabilitiesSelect.allows);
 
   const [amendFlag, setAmendFlag] = useState<MnReturnAmendFlag>("O");
   const [notice, setNotice] = useState<string | null>(null);
+  const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
 
   const blockers = findMnReturnBlockers({ report, dateRange });
   const periodEnd = dateRange?.max ?? null;
@@ -36,20 +37,34 @@ export function MnReturnExportPanel() {
       : null;
 
   // Read at click time: the current date must not be read while rendering.
-  const handleDownload = ({ extension, mimeType }: FileKind) => {
+  const isMonthOver = () => (periodEnd ? format(new Date(), "yyyy-MM-dd") > periodEnd : false);
+
+  const handleDownload = () => {
     if (!fileText || !periodEnd) return;
-    const today = format(new Date(), "yyyy-MM-dd");
-    if (today <= periodEnd) {
+    if (!isMonthOver()) {
       setNotice(`The period ends ${periodEnd}. The state accepts the return once the month is over.`);
       return;
     }
     setNotice(null);
     downloadTextFile({
       text: fileText,
-      fileName: `mn-sales-tax-${periodEnd.slice(0, 7)}.${extension}`,
-      mimeType,
+      fileName: `mn-sales-tax-${periodEnd.slice(0, 7)}.txt`,
+      mimeType: "text/plain",
     });
   };
+
+  const handleOpenPostDialog = () => {
+    if (!isMonthOver()) {
+      setNotice(`The period ends ${periodEnd}. Post the payment once the month is over.`);
+      return;
+    }
+    setNotice(null);
+    setIsPostDialogOpen(true);
+  };
+
+  // Only an original return has a payment of its own: an amended one reports corrected totals.
+  const canOpenPostDialog =
+    allows(can.qboJournalEntries.write) && amendFlag === "O" && fileText !== null;
 
   return (
     <section className="flex flex-col gap-3 rounded-md border border-border bg-card p-4">
@@ -88,14 +103,27 @@ export function MnReturnExportPanel() {
             {fileText}
           </pre>
           <div className="flex items-center gap-2">
-            <Button type="button" onClick={() => handleDownload(CSV)}>
-              Download .csv
-            </Button>
-            <Button type="button" variant="outline" onClick={() => handleDownload(TXT)}>
+            <Button type="button" onClick={handleDownload}>
               Download .txt
+            </Button>
+            <Button
+              type="button"
+              variant="accent"
+              disabled={!canOpenPostDialog}
+              onClick={handleOpenPostDialog}
+            >
+              Post Sales Tax Payment
             </Button>
           </div>
           {notice && <p className="text-sm text-secondary">{notice}</p>}
+          {periodEnd && (
+            <PostSalesTaxPaymentDialog
+              isOpen={isPostDialogOpen}
+              onOpenChangeAction={setIsPostDialogOpen}
+              periodEnd={periodEnd}
+              returnFileText={fileText}
+            />
+          )}
         </>
       )}
     </section>

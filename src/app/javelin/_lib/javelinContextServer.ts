@@ -13,9 +13,10 @@ import {
   DepositField,
   DepositLinkKey,
   JavelinKind,
+  SalesTaxLinkKey,
 } from "@/app/javelin/JavelinTypes";
 import { DEPOSIT_FIELDS } from "@/app/javelin/_lib/depositFields";
-import { CK_DEPOSIT_LINK_KEYS } from "@/app/javelin/_lib/ckDepositFields";
+import { CK_DEPOSIT_LINK_KEYS, SALES_TAX_LINK_KEYS } from "@/app/javelin/_lib/ckDepositFields";
 import { LineTarget } from "@/app/javelin/_lib/entryBuild";
 import { StoredPostingRef } from "@/app/javelin/_lib/entryPlanUtils";
 
@@ -51,6 +52,16 @@ export async function loadCkDepositLinks(): Promise<Map<DepositLinkKey, LineTarg
   return new Map(
     docs
       .filter((doc) => CK_DEPOSIT_LINK_KEYS.includes(doc.field as CkDepositLinkKey))
+      .map((doc) => [doc.field, doc]),
+  );
+}
+
+/** The three sales tax payment accounts, for whichever of them are linked. */
+export async function loadSalesTaxLinks(): Promise<Map<DepositLinkKey, LineTarget>> {
+  const docs = await loadDepositLinkDocs();
+  return new Map(
+    docs
+      .filter((doc) => SALES_TAX_LINK_KEYS.includes(doc.field as SalesTaxLinkKey))
       .map((doc) => [doc.field, doc]),
   );
 }

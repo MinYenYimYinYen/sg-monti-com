@@ -86,6 +86,8 @@ import { qboCustomerReducer } from "@/app/qbo/customer/qboCustomerSlice";
 import { qboEmployeeReducer } from "@/app/qbo/employee/qboEmployeeSlice";
 import { qboPurchaseReducer } from "@/app/qbo/purchase/qboPurchaseSlice";
 import { qboJournalEntryReducer } from "@/app/qbo/journalEntry/qboJournalEntrySlice";
+import { qboBalanceSheetReducer } from "@/app/qbo/balanceSheet/qboBalanceSheetSlice";
+import { salesTaxPostingReducer } from "@/app/salesTax/salesTaxPosting/salesTaxPostingSlice";
 import { importCCTxnMappingReducer } from "@/app/qbo/importCCTxn/importCCTxnMappingSlice";
 import { importRowReducer } from "@/app/qbo/importCCTxn/rows/importRowSlice";
 import { importPostReducer } from "@/app/qbo/importCCTxn/post/importPostSlice";
@@ -171,6 +173,8 @@ const rootReducer = combineReducers({
   qboEmployee: qboEmployeeReducer,
   qboPurchase: qboPurchaseReducer,
   qboJournalEntry: qboJournalEntryReducer,
+  qboBalanceSheet: qboBalanceSheetReducer,
+  salesTaxPosting: salesTaxPostingReducer,
   importCCTxnMapping: importCCTxnMappingReducer,
   importRow: importRowReducer,
   importPost: importPostReducer,

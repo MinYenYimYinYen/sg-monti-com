@@ -145,8 +145,19 @@ export type DepositState = {
  */
 export type CkDepositLinkKey = "ckDepositAccount" | "ckHoldingAccount";
 
+/**
+ * The three accounts a sales tax payment moves money between. They share the deposit link storage
+ * (src/app/javelin/depositMapping) because a link is the same thing: a key and a QuickBooks account.
+ * The payment debits the payable account and credits the bank account; the adjustment moves the
+ * difference between the payable account and the adjustment account.
+ */
+export type SalesTaxLinkKey =
+  | "salesTaxPayableAccount"
+  | "salesTaxBankAccount"
+  | "salesTaxAdjustmentAccount";
+
 /** Every key a deposit link can be stored under. */
-export type DepositLinkKey = DepositField | CkDepositLinkKey;
+export type DepositLinkKey = DepositField | CkDepositLinkKey | SalesTaxLinkKey;
 
 /** What the browser sends for one checking deposit. */
 export type CkDepositRow = {

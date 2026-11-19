@@ -36,6 +36,7 @@ export async function qboHttp<T>({
   pathTemplate,
   timeoutMs,
 }: QboRequest): Promise<T> {
+  const isFormData = body instanceof FormData;
   let access = await getQboAccess();
   let refreshedAfter401 = false;
   let rateLimitRetries = 0;
@@ -80,9 +81,10 @@ export async function qboHttp<T>({
         headers: {
           Authorization: `Bearer ${access.accessToken}`,
           Accept: "application/json",
-          ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+          // A FormData body must not get a Content-Type here: fetch adds it with the boundary.
+          ...(body === undefined || isFormData ? {} : { "Content-Type": "application/json" }),
         },
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: body === undefined ? undefined : isFormData ? (body as FormData) : JSON.stringify(body),
         cache: "no-store",
         signal: AbortSignal.timeout(timeoutMs ?? qboConst.requestTimeoutMs),
       });

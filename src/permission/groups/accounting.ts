@@ -15,6 +15,9 @@ export const accountingGroup = defineGroup({
     // afterwards. Assign it deliberately and never fold it into a read-only bundle.
     qboVendors: { name: "QuickBooks vendors", source: "qbo", verbs: ["read", "write"] },
     qboPurchases: { name: "QuickBooks purchases", source: "qbo", verbs: ["read"] },
+    // Real balances from the live books (a balance sheet as of a date). Read only, but it shows
+    // company financials, so assign it deliberately.
+    qboBalanceSheet: { name: "QuickBooks balance sheet", source: "qbo", verbs: ["read"] },
     // `write` only begins the OAuth round trip, but the callback then replaces the stored
     // connection, so it changes which company every QuickBooks screen talks to.
     qboConnection: { name: "QuickBooks connection", verbs: ["read", "write"] },

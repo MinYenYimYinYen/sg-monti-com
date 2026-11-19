@@ -3,8 +3,9 @@ import { qboHttp } from "@/app/qbo/_lib/api/qboHttp";
 // Typed registry of the QuickBooks endpoints we call, like rgApi for RealGreen. Paths are
 // relative to /v3/company/<realmId>, which qboHttp adds. Only add an endpoint when a module
 // needs it. The write phase started with the first live write (see planning/qboPlan.md).
-// There are two write endpoints: /batch (only the import posting code and the journal entry
-// posting code, qboJournalEntryServer, call it) and /vendor (only the vendor create code calls it).
+// There are three write endpoints: /batch (only the import posting code and the journal entry
+// posting code, qboJournalEntryServer, call it), /vendor (only the vendor create code calls it)
+// and /upload (only the attachable code calls it, with a multipart body).
 //
 // `{realmId}` in a path is filled in by qboHttp. CompanyInfo and Preferences are single records,
 // so they use their Read endpoints (their Query examples on Intuit's pages show no envelope).
@@ -42,6 +43,24 @@ export type QboApiPath =
       method: "POST";
       body: unknown;
       pathTemplate: "/vendor";
+    }
+  | {
+      // A report. The query string carries the report's parameters (end_date, accounting_method).
+      path: `/reports/BalanceSheet?${string}`;
+      method: "GET";
+      body?: undefined;
+      pathTemplate: "/reports/BalanceSheet";
+    }
+  | {
+      // Uploads attachment files with their Attachable metadata as multipart/form-data. The body
+      // is FormData, so qboHttp leaves Content-Type to fetch, which adds the boundary. qboHttp
+      // never resends a POST, so the attachable code settles an uncertain outcome by listing the
+      // entry's attachments again.
+      path: "/upload";
+      method: "POST";
+      body: FormData;
+      pathTemplate: "/upload";
+      timeoutMs?: number;
     };
 
 // This should only be used from within a local api route.
