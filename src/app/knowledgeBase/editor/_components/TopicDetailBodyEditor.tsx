@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { EditorToolbar } from "@/lib/tiptap/EditorToolbar";
 import { buildRichTextExtensions } from "@/lib/tiptap/richTextExtensions";
@@ -9,9 +9,16 @@ import { useTopicEditor } from "@/app/knowledgeBase/editor/useTopicEditor";
 /**
  * The document body. It takes its content once, when it mounts, and writes every change to the
  * draft. The parent keys it on the draft version so opening another document remounts it.
+ *
+ * TipTap re-serialises the HTML it is given (whitespace, empty paragraphs), so its output is rarely
+ * byte-identical to what is stored, and the unsaved-changes check compares strings. When the editor's
+ * HTML is back to what it produced on load, the draft gets the stored HTML again, so opening a document
+ * or undoing every edit is not reported as a change.
  */
 export function TopicDetailBodyEditor({ initialHtml, disabled }: { initialHtml: string; disabled: boolean }) {
   const { editTopicDetail } = useTopicEditor();
+  /** What the editor serialises right after loading `initialHtml`. Null until the editor exists. */
+  const loadedHtmlRef = useRef<string | null>(null);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -27,13 +34,19 @@ export function TopicDetailBodyEditor({ initialHtml, disabled }: { initialHtml: 
         return html.replace(/color\s*:[^;"]*/gi, "");
       },
     },
+    onCreate({ editor: createdEditor }) {
+      loadedHtmlRef.current = createdEditor.getHTML();
+    },
     onUpdate({ editor: updatedEditor }) {
-      editTopicDetail({ contentHtml: updatedEditor.getHTML() });
+      const html = updatedEditor.getHTML();
+      editTopicDetail({ contentHtml: html === loadedHtmlRef.current ? initialHtml : html });
     },
   });
 
+  // `false`: a change to the editable flag is not a content change, and the update it would emit
+  // makes the draft look edited the moment the document opens.
   useEffect(() => {
-    editor?.setEditable(!disabled);
+    editor?.setEditable(!disabled, false);
   }, [editor, disabled]);
 
   return (

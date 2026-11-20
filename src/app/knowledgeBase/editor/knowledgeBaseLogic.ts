@@ -51,6 +51,18 @@ export function attachDocumentsToTopics({
     .map((topic) => ({ ...topic, documents: documentsByTopicKey.get(topic.topicKey) ?? [] }));
 }
 
+/**
+ * Splits topics into those with documents and those without, each group alphabetical by name, and puts
+ * the covered group first. The uncovered topics are the authoring to-do list, so they sit together at
+ * the bottom instead of being scattered through the alphabet.
+ */
+export function orderTopicsByCoverage(topics: Topic[]): Topic[] {
+  const byName = (a: Topic, b: Topic) => a.name.localeCompare(b.name);
+  const withDocuments = topics.filter((topic) => topic.documents.length > 0).sort(byName);
+  const withoutDocuments = topics.filter((topic) => topic.documents.length === 0).sort(byName);
+  return [...withDocuments, ...withoutDocuments];
+}
+
 /** Each document with its topics resolved, so the UI never looks a topic up by key. */
 export function attachTopicsToDetails({
   topics,

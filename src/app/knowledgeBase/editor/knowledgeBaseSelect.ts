@@ -6,6 +6,7 @@ import {
   attachApprovalToDetails,
   attachDocumentsToTopics,
   attachTopicsToDetails,
+  orderTopicsByCoverage,
 } from "@/app/knowledgeBase/editor/knowledgeBaseLogic";
 
 /** Topics with their backlinks: the documents tagged with each, counted once however many versions they have. */
@@ -13,6 +14,9 @@ const selectTopicsWithDocuments = createSelector(
   [topicSelect.docs, topicDetailSelect.headDocs],
   (topics, details) => attachDocumentsToTopics({ topics, details }),
 );
+
+/** The same topics, documented ones first and undocumented ones last, for the Topics tab only. Pickers stay alphabetical. */
+const selectTopicsByCoverage = createSelector([selectTopicsWithDocuments], (topics) => orderTopicsByCoverage(topics));
 
 const selectHeadDetailsWithTopics = createSelector(
   [topicSelect.docs, topicDetailSelect.headDocs],
@@ -36,6 +40,7 @@ const selectLiveDetailsWithTopics = createSelector(
 
 export const knowledgeBaseSelect = {
   topics: selectTopicsWithDocuments,
+  topicsByCoverage: selectTopicsByCoverage,
   details: selectDetailsWithTopics,
   liveDetails: selectLiveDetailsWithTopics,
 };

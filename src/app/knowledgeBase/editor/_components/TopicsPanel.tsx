@@ -18,7 +18,7 @@ type PendingChange = { kind: "new" } | { kind: "open"; topic: Topic };
 
 /** The Topics tab: the list on the left, the open topic on the right. */
 export function TopicsPanel() {
-  const topics = useSelector(knowledgeBaseSelect.topics);
+  const topics = useSelector(knowledgeBaseSelect.topicsByCoverage);
   const draft = useSelector(topicEditorSelect.topicDraft);
   const activeName = useSelector(topicEditorSelect.topicActiveName);
   const isDirty = useSelector(topicEditorSelect.topicIsDirty);
@@ -63,6 +63,7 @@ export function TopicsPanel() {
           {topics.map((topic) => {
             const isSelected = draft !== null && !draft.isNew && draft.topicKey === topic.topicKey;
             const documentCount = topic.documents.length;
+            const hasNoDocuments = documentCount === 0;
             return (
               <button
                 key={topic.topicKey}
@@ -70,9 +71,10 @@ export function TopicsPanel() {
                 onClick={() => requestChange({ kind: "open", topic })}
                 className={cn(
                   "w-full rounded-md border px-3 py-2 text-left text-sm transition-colors",
-                  isSelected
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-card text-foreground hover:bg-accent/10",
+                  isSelected && "border-primary bg-primary/10 text-primary",
+                  !isSelected && "border-border text-foreground",
+                  !isSelected && hasNoDocuments && "bg-secondary/20 hover:bg-secondary/30",
+                  !isSelected && !hasNoDocuments && "bg-card hover:bg-accent/10",
                 )}
               >
                 <div className="truncate font-medium">{topic.name}</div>
