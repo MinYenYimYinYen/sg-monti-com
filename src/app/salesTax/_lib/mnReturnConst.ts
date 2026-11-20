@@ -10,3 +10,4 @@ export const MN_RETURN_LINE_ENDING = "\r\n";
 // The first row, the third row and the first column of the file are reserved for the filer's own
 // use. The state's example files fill them with these labels, so the export does the same.
 export const MN_RETURN_FILLER = "FILLER";
+
