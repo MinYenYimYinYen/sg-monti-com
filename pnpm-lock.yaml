@@ -248,9 +248,6 @@ importers:
       turndown:
         specifier: ^7.2.5
         version: 7.2.5
-      typescript:
-        specifier: ^5
-        version: 5.9.3
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -270,6 +267,9 @@ importers:
       eslint-config-next:
         specifier: 16.1.1
         version: 16.1.1(@typescript-eslint/parser@8.53.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
       vitest:
         specifier: ^5.0.4
         version: 5.0.4(@opentelemetry/api@1.10.0)(@types/node@25.0.8)(vite@8.3.4(@types/node@25.0.8)(jiti@2.6.1))
