@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { authSelect } from "@/app/auth/authSlice";
-import { useState } from "react";
-import { Inbox } from "lucide-react";
-import AdminActionModal from "@/app/auth/_components/AdminActionModal";
 import { Button } from "@/style/components/button";
 import NavMenu from "./NavMenu";
+import { NotificationsPopover } from "./notifications/NotificationsPopover";
 import { GlobalConfigMenu } from "./GlobalConfigMenu";
 import { UserPopover } from "./UserPopover";
 import { useNavBarDeps } from "./useNavBarDeps";
@@ -19,12 +17,6 @@ export default function NavBar() {
   const isAuthenticated = useSelector(authSelect.isAuthenticated);
   const isInitialized = useSelector(authSelect.isInitialized);
   const allows = useSelector(userCapabilitiesSelect.allows);
-
-  // Admin State
-  const pendingUsers = useSelector(authSelect.adminPendingUsers);
-  const pendingResets = useSelector(authSelect.adminPendingResets);
-  const totalPending = pendingUsers.length + pendingResets.length;
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   return (
     <nav
@@ -50,28 +42,7 @@ export default function NavBar() {
             </Button>
           ) : isAuthenticated ? (
             <>
-              {allows(can.accessRequests.read) && (
-                <>
-                  <Button
-                    variant="accent"
-                    intensity="ghost"
-                    size="icon"
-                    className="relative"
-                    onClick={() => setIsAdminModalOpen(true)}
-                  >
-                    <Inbox className="h-5 w-5" />
-                    {totalPending > 0 && (
-                      <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                        {totalPending}
-                      </span>
-                    )}
-                  </Button>
-                  <AdminActionModal
-                    isOpen={isAdminModalOpen}
-                    onClose={() => setIsAdminModalOpen(false)}
-                  />
-                </>
-              )}
+              {allows(can.accessRequests.read) && <NotificationsPopover />}
 
               <GlobalConfigMenu />
               <UserPopover />

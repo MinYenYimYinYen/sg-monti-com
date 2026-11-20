@@ -1,4 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
+import { authSelect } from "@/app/auth/authSlice";
 import { topicSelect } from "@/app/knowledgeBase/topic/topicSelect";
 import { topicDetailSelect } from "@/app/knowledgeBase/topicDetail/topicDetailSelect";
 import { knowledgeBaseSettingsSelect } from "@/app/knowledgeBase/knowledgeBaseSettings/knowledgeBaseSettingsSelect";
@@ -18,6 +19,11 @@ const selectTopicsWithDocuments = createSelector(
 /** The same topics, documented ones first and undocumented ones last, for the Topics tab only. Pickers stay alphabetical. */
 const selectTopicsByCoverage = createSelector([selectTopicsWithDocuments], (topics) => orderTopicsByCoverage(topics));
 
+/** Topics no document is tagged with: the authoring to-do list. Alphabetical by name. */
+const selectTopicsWithoutDetails = createSelector([selectTopicsWithDocuments], (topics) =>
+  topics.filter((topic) => topic.documents.length === 0),
+);
+
 const selectHeadDetailsWithTopics = createSelector(
   [topicSelect.docs, topicDetailSelect.headDocs],
   (topics, details) => attachTopicsToDetails({ topics, details }),
@@ -28,6 +34,12 @@ const selectDetailsWithTopics = createSelector(
   [selectHeadDetailsWithTopics, topicDetailSelect.liveDocs, knowledgeBaseSettingsSelect.approverUserNames],
   (details, liveDocs, approverUserNames) => attachApprovalToDetails({ details, liveDocs, approverUserNames }),
 );
+
+/** Heads still waiting on the signed-in user: they are a current approver who has not approved yet. */
+const selectDetailsPendingMyApproval = createSelector([selectDetailsWithTopics, authSelect.user], (details, user) => {
+  if (!user) return [];
+  return details.filter((detail) => detail.pendingApproverUserNames.includes(user.userName));
+});
 
 /**
  * Each document's live (latest approved) version with its topics resolved. The AI reads only these,
@@ -41,6 +53,8 @@ const selectLiveDetailsWithTopics = createSelector(
 export const knowledgeBaseSelect = {
   topics: selectTopicsWithDocuments,
   topicsByCoverage: selectTopicsByCoverage,
+  topicsWithoutDetails: selectTopicsWithoutDetails,
   details: selectDetailsWithTopics,
+  detailsPendingMyApproval: selectDetailsPendingMyApproval,
   liveDetails: selectLiveDetailsWithTopics,
 };

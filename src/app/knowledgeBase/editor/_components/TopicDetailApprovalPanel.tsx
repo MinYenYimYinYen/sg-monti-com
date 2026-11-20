@@ -92,7 +92,7 @@ export function TopicDetailApprovalPanel({ detailKey }: { detailKey: string }) {
         )}
         {canWithdrawHead && (
           <Button size="sm" variant="outline" onClick={() => withdrawApproval({ detailKey, version })}>
-            {status === "approved" ? `Pull version ${version} from the AI` : "Withdraw my approval"}
+            {status === "approved" ? `Pull version ${version} approval` : "Withdraw my approval"}
           </Button>
         )}
         {isApprover && olderLiveVersion !== null && (
@@ -102,7 +102,7 @@ export function TopicDetailApprovalPanel({ detailKey }: { detailKey: string }) {
             intensity="soft"
             onClick={() => withdrawApproval({ detailKey, version: olderLiveVersion })}
           >
-            Pull version {olderLiveVersion} from the AI
+            Pull version {olderLiveVersion} approval
           </Button>
         )}
       </div>
