@@ -27,6 +27,9 @@ export type TokenUsage = { inputTokens: number; outputTokens: number };
 
 export type ToolInputSchema = { type: "object"; [key: string]: unknown };
 
+/** `none` keeps the tools in the request, so earlier tool calls stay valid, but the model may not call one. */
+export type ToolChoice = "auto" | "none";
+
 /** What the server needs to know about a tool. The function that runs it never leaves the caller. */
 export type ToolSchema = { name: string; description: string; inputSchema: ToolInputSchema };
 
@@ -38,6 +41,7 @@ export type SendMessageParams = {
   system?: string;
   messages: ChatMessage[];
   tools?: ToolSchema[];
+  toolChoice?: ToolChoice;
   maxTokens?: number;
 };
 

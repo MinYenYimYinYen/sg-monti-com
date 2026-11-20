@@ -125,12 +125,14 @@ export function sumConversationTotals(turns: ChatTurn[]): ConversationTotals {
 export function buildTurnNotice({
   stopReason,
   hitIterationCap,
+  forcedFinalAnswer,
   maxIterations,
   errorMessage,
   hasReply,
 }: {
   stopReason: AnthropicStopReason | null;
   hitIterationCap: boolean;
+  forcedFinalAnswer: boolean;
   maxIterations: number;
   errorMessage: string | null;
   hasReply: boolean;
@@ -142,5 +144,8 @@ export function buildTurnNotice({
   }
   if (stopReason === "refusal") return "The model declined to answer.";
   if (!hasReply) return "The model returned no answer text.";
+  if (forcedFinalAnswer) {
+    return `Reached the limit of ${maxIterations} model calls, so this answer was written without further tool use.`;
+  }
   return null;
 }

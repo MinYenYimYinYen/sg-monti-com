@@ -6,7 +6,6 @@ import { loadDocumentsReferencingTopic } from "@/app/knowledgeBase/topicDetail/_
 import {
   buildTopicInUseMessage,
   isValidTopicKey,
-  normalizeSignals,
   TOPIC_KEY_RULE,
 } from "@/app/knowledgeBase/topic/topicLogic";
 import { AppError } from "@/lib/errors/AppError";
@@ -23,7 +22,8 @@ const handlers: HandlerMap<TopicContract> = {
     capability: can.knowledgeTopics.read,
     handler: async () => {
       await connectToMongoDB();
-      const docs = await TopicModel.find().lean();
+      // `signals` was removed from topics, but old rows still hold it. It is excluded so it never reaches the client.
+      const docs = await TopicModel.find().select("-signals").lean();
       return { success: true, payload: cleanMongoArray(docs) };
     },
   },
@@ -32,16 +32,17 @@ const handlers: HandlerMap<TopicContract> = {
     capability: can.knowledgeTopics.write,
     handler: async (params) => {
       await connectToMongoDB();
-      const { topicKey, signals, ...rest } = params;
+      const { topicKey, ...rest } = params;
       if (!isValidTopicKey(topicKey)) {
         throw validationError(`Invalid topic key '${topicKey}'. ${TOPIC_KEY_RULE}`);
       }
-      // An upsert saves the whole topic, so signals left out means no signals, never "keep the old ones".
       const doc = await TopicModel.findOneAndUpdate(
         { topicKey },
-        { $set: { topicKey, ...rest, signals: normalizeSignals(signals ?? []) } },
+        { $set: { topicKey, ...rest } },
         { upsert: true, new: true },
-      ).lean();
+      )
+        .select("-signals")
+        .lean();
       return { success: true, payload: cleanMongoObject(doc!) };
     },
   },

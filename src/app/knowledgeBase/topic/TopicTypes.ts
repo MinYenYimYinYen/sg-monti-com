@@ -10,6 +10,4 @@ export type TopicDoc = CreatedUpdated & {
   name: string;
   /** When this topic applies. This is the text the classifier reads. */
   description: string;
-  /** Phrases a consumer can match programmatically in a live transcript. Never sent to the classifier. */
-  signals?: string[];
 };

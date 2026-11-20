@@ -38,7 +38,7 @@ export function TopicDetailApprovalPanel({ detailKey }: { detailKey: string }) {
   const olderLiveVersion = liveVersion !== null && liveVersion !== version ? liveVersion : null;
 
   return (
-    <section className="space-y-3 rounded-md border border-border bg-card p-3">
+    <section className="space-y-3 rounded-md border border-border bg-primary/20 p-3">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-semibold text-foreground">Version {version}</h3>
         <Badge variant={status === "approved" ? "accent" : "secondary"} intensity="soft">

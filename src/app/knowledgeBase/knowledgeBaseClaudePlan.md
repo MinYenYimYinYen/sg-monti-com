@@ -6,7 +6,7 @@ This file describes the `knowledgeBase` module of the sg-monti-com web app. It i
 
 **This module owns** authoring and storing the knowledge base (topics and documents) in MongoDB, and serving it over an API.
 
-**This module does not do:** call Claude, classify transcripts, match signals, rank or choose documents, or convert HTML to markdown. Those belong to the external desktop app. The web app has a separate, generic Claude API module at `src/app/anthropic/` (see its `anthropic.readme.md`); it is a sibling of this module, not part of it, and nothing here depends on it yet.
+**This module does not do:** call Claude, classify transcripts, rank or choose documents, or convert HTML to markdown. Those belong to the external desktop app. The web app has a separate, generic Claude API module at `src/app/anthropic/` (see its `anthropic.readme.md`); it is a sibling of this module, not part of it, and nothing here depends on it yet.
 
 **The external desktop app** logs in per user (username and password), reads this data, and is responsible for everything in section 5.
 
@@ -23,7 +23,7 @@ This file describes the `knowledgeBase` module of the sg-monti-com web app. It i
 - **Implemented:** the `TopicDetail` module (in `topicDetail/`): types, model, contract, route, slice, selectors, hooks, and the pure helpers in `topicDetailLogic.ts`, `topicDetailVersionLogic.ts`, `topicDetailApprovalLogic.ts` and `topicDetailChangeLogic.ts`.
 - **Implemented, not yet tried in a browser:** versioned documents with leadership approval (section 3a) and the `knowledgeBaseSettings` module (approver list, Ask Away prompt).
 - **Desktop app impact:** `getAll` now returns only the live (latest approved) version of each document, with the extra fields in section 3. `upsert` no longer exists; only the web app writes. Documents that were never approved are not returned.
-- **Implemented for Topic:** the shape in section 3 (`guidance` and `avoid` are removed from the type and the model), signal normalization, and the blocked delete (section 8). The pure helpers are in `topic/topicLogic.ts`.
+- **Implemented for Topic:** the shape in section 3 (`guidance` and `avoid` are removed from the type and the model), and the blocked delete (section 8). The pure helpers are in `topic/topicLogic.ts`.
 
 ## 1. Goal
 
@@ -50,11 +50,11 @@ Two collections. They stay separate because they have different shapes and diffe
 | `topicKey` | string, unique | Natural key. Never changes after creation. |
 | `name` | string | Display name. |
 | `description` | string | When this topic applies. The only topic text Claude's classifier reads. |
-| `signals` | string[] | Phrases for programmatic matching in the live transcript. Never sent to Claude. |
 | `createdAt`, `updatedAt` | ISO string | Timestamps. |
 
 - A topic holds no guidance text. Guidance is a document tagged with a single topic (for example `[aeration]`). Earlier versions of Topic had `guidance` and `avoid` fields; they no longer exist.
-- Implemented: signals are stored trimmed, lowercased, and deduplicated (the server enforces this), so the desktop app can lowercase transcript text before matching. Internal whitespace is left as written.
+- Implemented: `signals` was removed from Topic. Old rows may still hold the field; `getAll` and `upsert` exclude it, so it never reaches a client.
+- A description says only when the topic applies. It should not mention other topics to reach a document that needs two topics together: Ask Away reads the live documents and tells Claude, on each topic's line, which other topics it has combined documents with.
 
 ### TopicDetail (Implemented)
 
@@ -120,11 +120,11 @@ Example, with matched topics `[sales, aeration]`:
 
 This describes the external app's job. It is not behavior of this module.
 
-1. **Signals (no tokens).** The transcriber matches each topic's `signals` against live text. The matching method (substring, word boundary, fuzzy) is the desktop app's decision. Signals are meant to be exploited so Claude is not called at every step.
-2. **Suggestion.** Matched topics produce suggested documents using the retrieval rule in section 4. Signals only suggest. They never load anything into Claude automatically.
+1. **Matching (no tokens).** How the transcriber decides a topic applies without calling Claude is the desktop app's decision. This module no longer stores phrases for it.
+2. **Suggestion.** Matched topics produce suggested documents using the retrieval rule in section 4. A match only suggests. It never loads anything into Claude automatically.
 3. **User selection.** When the user asks Claude for help, the user picks which suggested documents to include.
 4. **Conversion.** The desktop app converts the chosen documents' `contentHtml` to markdown (or text) before sending to Claude. Raw HTML costs more tokens and its tags carry nothing Claude needs. Conversion is the desktop app's responsibility.
-5. **Classification (optional).** Claude can pick topics when signals are not enough. Its input is the list `{ topicKey, description }[]` for every topic, and nothing else from the topic. In particular, signals are not sent.
+5. **Classification (optional).** Claude can pick topics when matching is not enough. Its input is the list `{ topicKey, description }[]` for every topic, and nothing else from the topic.
 6. **Fresh conversation per prompt:** the transcript or query plus the chosen documents.
 
 ## 6. HTML contract
@@ -153,7 +153,7 @@ Each module has its own route. Topic is at `/knowledgeBase/topic/api`. TopicDeta
 
 | Op | Topic | TopicDetail |
 |---|---|---|
-| `getAll` | all topics, including `signals` | the live (latest approved) version of every document, including `contentHtml` |
+| `getAll` | all topics | the live (latest approved) version of every document, including `contentHtml` |
 | `upsert` | one topic, keyed by `topicKey` | not available. Use `saveVersion` |
 | `remove` | one topic, by `topicKey` | a document and every version of it, by `detailKey` |
 
@@ -166,7 +166,6 @@ TopicDetail also has `getCurrent` (every head plus its live row), `getVersionHis
 
 ## 8. Integrity rules (enforced by the server)
 
-- Implemented, Topic `upsert`: signals are trimmed, lowercased, and deduplicated. An upsert replaces the whole topic, so a request without `signals` saves an empty list.
 - Implemented, TopicDetail `saveVersion`: a title is required, and `topicKeys` is normalized (deduplicated, sorted, non-empty) and `detailKey` is derived from it. Any key that is not an existing topic is rejected. The save must name the version it started from (`baseVersion`), and is refused if the head has moved on. Saving identical content adds no version.
 - Implemented, Topic `remove`: blocked with an operational error (HTTP 200, `success: false`) that names the referencing documents (each counted once however many versions it has), up to five and then a count of the rest. The user must fix or remove those documents first.
 - Decided, TopicDetail `remove`: no guard needed, nothing references a document.
@@ -176,7 +175,7 @@ TopicDetail also has `getCurrent` (every head plus its live row), `getVersionHis
 
 - **Phase 1 (data layer):** trim Topic; add TopicDetail (types, model, contract, route, slice, selectors, hook); pure helpers `normalizeTopicKeys` and `resolveDetails` (a reference implementation of section 4); the server rules in section 8. No new dependencies.
 - **Phase 2 (UI, Implemented, not yet tried in a browser):** the page at `/knowledgeBase` has two tabs, Topics and Documents, with the code in `editor/`. This is the web app's internal UI code and is not needed by the desktop app.
-  - Topics tab: list, form (key, name, description, signals), and a backlinks list of the documents tagged with the topic.
+  - Topics tab: list, form (key, name, description), and a backlinks list of the documents tagged with the topic.
   - Documents tab: list ordered general to specific, a checkbox topic picker, title, and a TipTap body.
   - Both tabs use the shared file menu without Open or Save As, and edit a draft held in `topicEditorSlice`.
   - A document's topics are its identity, so the picker is locked once a document is saved.

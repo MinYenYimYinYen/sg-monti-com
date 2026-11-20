@@ -27,7 +27,7 @@ A generic pass-through to the Claude Messages API, with optional tools. It knows
 
 ## The contract
 
-`POST /anthropic/api` with `{ op: "sendMessage", model?, system?, messages, tools?, maxTokens? }`. Success returns `{ success: true, payload: { content, stopReason, usage: { inputTokens, outputTokens }, model } }`.
+`POST /anthropic/api` with `{ op: "sendMessage", model?, system?, messages, tools?, toolChoice?, maxTokens? }`. Success returns `{ success: true, payload: { content, stopReason, usage: { inputTokens, outputTokens }, model } }`.
 
 - It is **stateless**. Claude remembers nothing between calls, so the caller sends the whole conversation every time. Input tokens therefore grow with every turn.
 - Content blocks keep the API's snake_case names (`tool_use`, `tool_use_id`, `is_error`) because they go back to Anthropic verbatim. Thinking blocks must come back unmodified, so the chat stores and resends them as received.
@@ -52,7 +52,7 @@ const getCurrentTime = defineTool({
 });
 ```
 
-`runToolLoop` calls the API; if the reply asks for tools it validates each input, runs the tool, sends back the result and repeats until Claude answers or `MAX_TOOL_ITERATIONS` (6) is reached. Bad input, an unknown tool or a failing tool goes back to Claude as an error result, so one bad call does not end the run. Tool output is capped at `MAX_TOOL_RESULT_CHARS`. Usage is summed over every call, so a prompt that took three calls shows its real cost.
+`runToolLoop` calls the API; if the reply asks for tools it validates each input, runs the tool, sends back the result and repeats until Claude answers or `MAX_TOOL_ITERATIONS` (6) is reached. The last allowed call is sent with `toolChoice: "none"`, so Claude has to answer in text instead of asking for another tool, and the turn gets a notice saying so (`forcedFinalAnswer`). Bad input, an unknown tool or a failing tool goes back to Claude as an error result, so one bad call does not end the run. Tool output is capped at `MAX_TOOL_RESULT_CHARS`. Usage is summed over every call, so a prompt that took three calls shows its real cost.
 
 ## Cost
 

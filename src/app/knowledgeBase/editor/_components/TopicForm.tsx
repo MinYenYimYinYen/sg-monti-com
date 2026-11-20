@@ -80,23 +80,9 @@ export function TopicForm() {
           onChange={(event) => editTopic({ description: event.target.value })}
         />
         <p className="text-xs text-muted-foreground">
-          Claude reads this, and only this, to decide whether the topic applies to a call. Say when it fits, in a sentence or
-          two.
-        </p>
-      </FormGroup>
-
-      <FormGroup>
-        <Label>Signals</Label>
-        <textarea
-          className={TEXTAREA_CLASS_NAME}
-          value={draft.signalsText}
-          disabled={readOnly}
-          placeholder={"aerat\ncore plug"}
-          onChange={(event) => editTopic({ signalsText: event.target.value })}
-        />
-        <p className="text-xs text-muted-foreground">
-          One phrase per line. The desktop app matches these against the live transcript without calling Claude, and uses a
-          match to suggest this topic&apos;s documents. Saved in lowercase. Claude never sees them.
+          Claude reads this, and only this, to decide whether the topic applies to a call. Say only when it fits, in a
+          sentence or two. A document that needs two topics together is found automatically, so don&apos;t mention
+          other topics here to reach it.
         </p>
       </FormGroup>
 

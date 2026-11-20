@@ -134,3 +134,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*---break---*/
+/*
+ * Rich text (`prose`, @tailwindcss/typography) follows the theme tokens. The plugin's own palette is
+ * fixed light-theme slate, which is dark text on the dark card in dark mode. Deliberately outside
+ * `@layer`: the plugin emits into the components layer, and unlayered rules win over layered ones.
+ * Do not combine with `prose-invert`, which would be overridden by this.
+ */
+.prose {
+  --tw-prose-body: var(--foreground);
+  --tw-prose-headings: var(--foreground);
+  --tw-prose-lead: var(--muted-foreground);
+  --tw-prose-links: var(--foreground);
+  --tw-prose-bold: var(--foreground);
+  --tw-prose-counters: var(--muted-foreground);
+  --tw-prose-bullets: var(--muted-foreground);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--foreground);
+  --tw-prose-quote-borders: var(--border);
+  --tw-prose-captions: var(--muted-foreground);
+  --tw-prose-kbd: var(--foreground);
+  --tw-prose-code: var(--foreground);
+  --tw-prose-pre-code: var(--foreground);
+  --tw-prose-pre-bg: var(--muted);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+}
+

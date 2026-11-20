@@ -1,8 +1,14 @@
+import { z } from "zod";
+import type { AppDispatch, AppState } from "@/store";
 import { findToolUses } from "@/app/anthropic/anthropicLogic";
 import type { ChatTurn } from "@/app/anthropic/AnthropicTypes";
 import { MARK_TOPICS_TOOL_NAME } from "@/app/askAway/askAwayConst";
-import { markTopicsInputSchema } from "@/app/askAway/askAwaySchema";
+import { askAwaySelect } from "@/app/askAway/askAwaySelect";
+import { askAwayActions } from "@/app/askAway/askAwaySlice";
+import { topicSelect } from "@/app/knowledgeBase/topic/topicSelect";
 import { resolveDetails } from "@/app/knowledgeBase/topicDetail/topicDetailLogic";
+import { topicDetailSelect } from "@/app/knowledgeBase/topicDetail/topicDetailSelect";
+import { htmlToMarkdown } from "@/lib/primatives/string/htmlToMarkdown";
 
 type TagSetKeyed = { detailKey: string; topicKeys: string[] };
 
@@ -17,6 +23,13 @@ export type TopicMarkingPlan<T extends TagSetKeyed> = {
 };
 
 export type ClaudeDocument = { title: string; topicKeys: string[]; markdown: string };
+
+/**
+ * Reads the topic keys back out of a saved `tool_use` input. Lenient on purpose, unlike the tool's own
+ * schema: the input was already checked when the tool ran, and a conversation saved under an older
+ * schema must still load.
+ */
+const savedMarkTopicsInputSchema = z.object({ topicKeys: z.array(z.string()) });
 
 /** Trims, drops blanks and deduplicates, keeping the order Claude gave. */
 export function cleanTopicKeys(topicKeys: string[]): string[] {
@@ -128,7 +141,7 @@ export function collectMarkedTopicKeys({
       if (reply.role !== "assistant") continue;
       for (const toolUse of findToolUses(reply.content)) {
         if (toolUse.name !== MARK_TOPICS_TOOL_NAME || failedToolUseIds.has(toolUse.id)) continue;
-        const parsed = markTopicsInputSchema.safeParse(toolUse.input);
+        const parsed = savedMarkTopicsInputSchema.safeParse(toolUse.input);
         if (!parsed.success) continue;
         for (const topicKey of cleanTopicKeys(parsed.data.topicKeys)) {
           if (known.has(topicKey) && !markedTopicKeys.includes(topicKey)) markedTopicKeys.push(topicKey);
@@ -137,4 +150,42 @@ export function collectMarkedTopicKeys({
     }
   }
   return markedTopicKeys;
+}
+
+/**
+ * Runs `markTopicsRelevant`. Reads the store when called, not when the tool was built, because the
+ * marked topics change between model calls. Synchronous on purpose: see the tool definition.
+ */
+export function markTopics({
+  topicKeys,
+  dispatch,
+  getState,
+}: {
+  topicKeys: string[];
+  dispatch: AppDispatch;
+  getState: () => AppState;
+}): string {
+  const state = getState();
+  const plan = planTopicMarking({
+    requestedTopicKeys: topicKeys,
+    knownTopicKeys: topicSelect.docs(state).map((topic) => topic.topicKey),
+    currentTopicKeys: askAwaySelect.currentTopicKeys(state),
+    // Live versions only, so a draft or an edit nobody has approved is never sent to Claude.
+    details: topicDetailSelect.liveDocs(state),
+  });
+
+  // An error result goes back to Claude so it can correct the keys, and it is not counted as a marking.
+  if (plan.validTopicKeys.length === 0) {
+    throw new Error(`None of those keys are in the topic list: ${plan.unknownTopicKeys.join(", ")}.`);
+  }
+  if (plan.newlyMarkedTopicKeys.length > 0) {
+    dispatch(askAwayActions.topicsMarked(plan.newlyMarkedTopicKeys));
+  }
+
+  const documents = plan.newDetails.map((detail) => ({
+    title: detail.title,
+    topicKeys: detail.topicKeys,
+    markdown: htmlToMarkdown(detail.contentHtml),
+  }));
+  return buildMarkTopicsOutput({ plan, documents });
 }

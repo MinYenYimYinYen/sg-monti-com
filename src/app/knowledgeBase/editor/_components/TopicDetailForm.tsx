@@ -8,9 +8,6 @@ import { FormGroup } from "@/components/FormGroup";
 import { Button } from "@/style/components/button";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
-import { cn } from "@/style/utils";
-import { MAX_COMMENT_CHARS } from "@/app/knowledgeBase/knowledgeBaseConst";
-import { TEXTAREA_CLASS_NAME } from "@/app/knowledgeBase/editor/_components/editorFieldStyles";
 import { TopicDetailApprovalPanel } from "@/app/knowledgeBase/editor/_components/TopicDetailApprovalPanel";
 import { topicDetailSelect } from "@/app/knowledgeBase/topicDetail/topicDetailSelect";
 import { knowledgeBaseSelect } from "@/app/knowledgeBase/editor/knowledgeBaseSelect";
@@ -40,13 +37,14 @@ export function TopicDetailForm() {
   return (
     <div className="max-w-3xl space-y-4 pb-6">
       <FormGroup>
-        <Label>Applies to *</Label>
-        <DetailTopicPicker disabled={!draft.isNew || readOnly} />
-        <p className="text-xs text-muted-foreground">
-          {draft.isNew
-            ? "A document loads when all of its topics are matched. Choose one topic for general guidance, or several for guidance that only applies when they come up together."
-            : "The topics are the document's identity and can't be changed. To tag it differently, create a new document and delete this one."}
-        </p>
+        <Label>{draft.isNew ? "Applies to *" : "Applies to"}</Label>
+        <DetailTopicPicker disabled={readOnly} />
+        {draft.isNew && (
+          <p className="text-xs text-muted-foreground">
+            A document loads when all of its topics are matched. Choose one topic for general guidance, or several for
+            guidance that only applies when they come up together.
+          </p>
+        )}
         {detailKey && <p className="text-xs text-muted-foreground">Document key: {detailKey}</p>}
         {missingTopicKeys.length > 0 && (
           <Notice tone="warning">These topics no longer exist: {missingTopicKeys.join(", ")}.</Notice>
@@ -92,27 +90,18 @@ export function TopicDetailForm() {
       </FormGroup>
 
       <FormGroup>
-        <Label>Content</Label>
         <TopicDetailBodyEditor key={draftVersion} initialHtml={draft.contentHtml} disabled={readOnly} />
       </FormGroup>
 
-      <FormGroup>
-        <Label>Note to reviewers</Label>
-        <textarea
-          className={cn(TEXTAREA_CLASS_NAME, "min-h-[60px]")}
-          maxLength={MAX_COMMENT_CHARS}
-          value={draft.comment}
-          disabled={readOnly}
-          placeholder="What changed, or what you are unsure about. Saved with the new version."
-          onChange={(event) => editTopicDetail({ comment: event.target.value })}
-        />
-        <p className="text-xs text-muted-foreground">
-          Every save is a new version. It is approved once every approver has approved it, and you approve it
-          yourself if you are one. Until then the AI keeps using the last approved version.
-        </p>
-      </FormGroup>
-
-      {!draft.isNew && detailKey && <TopicDetailApprovalPanel detailKey={detailKey} />}
+      {!draft.isNew && detailKey && (
+        <>
+          <p className="text-xs text-muted-foreground">
+            Every save is a new version. It is approved once every approver has approved it, and you approve it
+            yourself if you are one. Until then the AI keeps using the last approved version.
+          </p>
+          <TopicDetailApprovalPanel detailKey={detailKey} />
+        </>
+      )}
     </div>
   );
 }

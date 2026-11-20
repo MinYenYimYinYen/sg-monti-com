@@ -1,19 +1,15 @@
 import type { TopicDoc } from "@/app/knowledgeBase/topic/TopicTypes";
 import type { SaveTopicDetailVersionParams, TopicDetailDoc } from "@/app/knowledgeBase/topicDetail/TopicDetailTypes";
-import { isValidTopicKey, normalizeSignals } from "@/app/knowledgeBase/topic/topicLogic";
+import { isValidTopicKey } from "@/app/knowledgeBase/topic/topicLogic";
 import { buildDetailKey, normalizeTopicKeys } from "@/app/knowledgeBase/topicDetail/topicDetailLogic";
 import type { TopicDetailDraft, TopicDraft } from "@/app/knowledgeBase/editor/topicEditorTypes";
-
-function sameList({ a, b }: { a: string[]; b: string[] }): boolean {
-  return a.length === b.length && a.every((value, index) => value === b[index]);
-}
 
 // ---------------------------------------------------------------------------
 // Topic
 // ---------------------------------------------------------------------------
 
 export function makeBlankTopicDraft(): TopicDraft {
-  return { topicKey: "", name: "", description: "", signalsText: "", isNew: true };
+  return { topicKey: "", name: "", description: "", isNew: true };
 }
 
 export function makeTopicDraftFromDoc(doc: TopicDoc): TopicDraft {
@@ -21,13 +17,8 @@ export function makeTopicDraftFromDoc(doc: TopicDoc): TopicDraft {
     topicKey: doc.topicKey,
     name: doc.name,
     description: doc.description,
-    signalsText: (doc.signals ?? []).join("\n"),
     isNew: false,
   };
-}
-
-export function draftSignals(draft: TopicDraft): string[] {
-  return normalizeSignals(draft.signalsText.split("\n"));
 }
 
 export function topicDraftToUpsertParams(draft: TopicDraft): Omit<TopicDoc, "createdAt" | "updatedAt"> {
@@ -35,21 +26,16 @@ export function topicDraftToUpsertParams(draft: TopicDraft): Omit<TopicDoc, "cre
     topicKey: draft.topicKey,
     name: draft.name.trim(),
     description: draft.description.trim(),
-    signals: draftSignals(draft),
   };
 }
 
 /** A new draft is dirty once anything is typed. A saved one is dirty when it differs from the stored topic. */
 export function isTopicDraftDirty({ draft, saved }: { draft: TopicDraft; saved: TopicDoc | undefined }): boolean {
   if (draft.isNew) {
-    return draft.topicKey !== "" || draft.name !== "" || draft.description !== "" || draftSignals(draft).length > 0;
+    return draft.topicKey !== "" || draft.name !== "" || draft.description !== "";
   }
   if (!saved) return true;
-  return (
-    draft.name.trim() !== saved.name ||
-    draft.description.trim() !== saved.description ||
-    !sameList({ a: draftSignals(draft), b: saved.signals ?? [] })
-  );
+  return draft.name.trim() !== saved.name || draft.description.trim() !== saved.description;
 }
 
 export function canSaveTopicDraft({ draft, keyConflict }: { draft: TopicDraft; keyConflict: boolean }): boolean {
@@ -68,7 +54,7 @@ function isBlankHtml(html: string): boolean {
 }
 
 export function makeBlankDetailDraft(): TopicDetailDraft {
-  return { topicKeys: [], title: "", contentHtml: "", isNew: true, baseVersion: null, comment: "" };
+  return { topicKeys: [], title: "", contentHtml: "", isNew: true, baseVersion: null };
 }
 
 /** Opens the head version of a document for editing. Saving builds the next version on top of it. */
@@ -79,7 +65,6 @@ export function makeDetailDraftFromDoc(doc: TopicDetailDoc): TopicDetailDraft {
     contentHtml: doc.contentHtml,
     isNew: false,
     baseVersion: doc.version,
-    comment: "",
   };
 }
 
@@ -96,13 +81,11 @@ export function toggleTopicKey({ topicKeys, topicKey }: { topicKeys: string[]; t
 }
 
 export function detailDraftToSaveParams(draft: TopicDetailDraft): SaveTopicDetailVersionParams {
-  const comment = draft.comment.trim();
   return {
     topicKeys: normalizeTopicKeys(draft.topicKeys),
     title: draft.title.trim(),
     contentHtml: draft.contentHtml,
     baseVersion: draft.baseVersion,
-    ...(comment ? { comment } : {}),
   };
 }
 

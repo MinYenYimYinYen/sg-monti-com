@@ -67,14 +67,11 @@ const handlers: HandlerMap<TopicDetailContract> = {
 
   saveVersion: {
     capability: can.knowledgeTopics.write,
-    handler: async ({ topicKeys, title, contentHtml, baseVersion, comment }) => {
+    handler: async ({ topicKeys, title, contentHtml, baseVersion }) => {
       const normalizedTopicKeys = normalizeTopicKeys(topicKeys);
       if (normalizedTopicKeys.length === 0) throw validationError("Choose at least one topic for this document.");
       const trimmedTitle = title.trim();
       if (!trimmedTitle) throw validationError("A title is required.");
-      if (cleanCommentText(comment).length > MAX_COMMENT_CHARS) {
-        throw validationError(`A comment can be at most ${MAX_COMMENT_CHARS} characters.`);
-      }
 
       const { userName } = await loadVerifiedCaller();
       await connectToMongoDB();
@@ -95,16 +92,8 @@ const handlers: HandlerMap<TopicDetailContract> = {
       const baseProblem = checkBaseVersion({ head, baseVersion });
       if (baseProblem) throw validationError(baseProblem);
 
-      // Saving what is already there would only add a version identical to the last. A note typed with it
-      // is not lost: it becomes a comment on the head.
+      // Saving what is already there would only add a version identical to the last.
       if (head && isSameContent({ head, title: trimmedTitle, contentHtml })) {
-        const noteText = cleanCommentText(comment);
-        if (noteText) {
-          await TopicDetailVersionModel.updateOne(
-            { detailKey, version: head.version },
-            { $push: { comments: { userName, at: new Date().toISOString(), text: noteText } } },
-          );
-        }
         return { success: true, payload: await loadCurrentDocs(detailKey) };
       }
 
@@ -115,7 +104,6 @@ const handlers: HandlerMap<TopicDetailContract> = {
         title: trimmedTitle,
         contentHtml,
         modifiedBy: userName,
-        comment,
         head,
         approverUserNames,
         now: new Date().toISOString(),

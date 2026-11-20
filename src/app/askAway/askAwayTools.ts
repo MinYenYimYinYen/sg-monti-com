@@ -1,19 +1,15 @@
+import { z } from "zod";
 import type { AppDispatch, AppState } from "@/store";
 import { defineTool } from "@/app/anthropic/anthropicTools";
 import type { AnthropicTool } from "@/app/anthropic/AnthropicTypes";
-import { MARK_TOPICS_TOOL_NAME } from "@/app/askAway/askAwayConst";
-import { buildMarkTopicsOutput, planTopicMarking } from "@/app/askAway/askAwayLogic";
-import { markTopicsInputSchema } from "@/app/askAway/askAwaySchema";
-import { askAwaySelect } from "@/app/askAway/askAwaySelect";
-import { askAwayActions } from "@/app/askAway/askAwaySlice";
-import { topicSelect } from "@/app/knowledgeBase/topic/topicSelect";
-import { topicDetailSelect } from "@/app/knowledgeBase/topicDetail/topicDetailSelect";
-import { htmlToMarkdown } from "@/lib/primatives/string/htmlToMarkdown";
+import { MARK_TOPICS_TOOL_NAME, MAX_TOPICS_PER_CALL } from "@/app/askAway/askAwayConst";
+import { formatToday } from "@/app/askAway/_tools/getNowLogic";
+import { markTopics } from "@/app/askAway/_tools/markTopicsLogic";
 
 /**
- * The tools Claude can call, bound to the store. They run in the browser and read state when they are
- * called, not when they are built, because a prompt can take several model calls and the marked topics
- * change between them. Everything they read is already loaded, so no tool call hits the network.
+ * The tools Claude can call: what each one is, with the code that runs it in `_tools/`. They run in
+ * the browser and read state when called, not when built, because a prompt can take several model
+ * calls. Everything they read is already loaded, so no tool call hits the network.
  */
 export function createAskAwayTools({
   dispatch,
@@ -27,35 +23,28 @@ export function createAskAwayTools({
     description:
       "Marks topics from the topic list as relevant to the conversation and returns the documents for them, " +
       "converted to markdown. Documents for a topic that is already marked are not sent again.",
-    input: markTopicsInputSchema,
+    input: z.object({
+      topicKeys: z
+        .array(z.string().min(1))
+        .min(1)
+        .max(MAX_TOPICS_PER_CALL)
+        .describe("The topicKey of every topic from the topic list that the user's message is about."),
+    }),
     // Synchronous on purpose: reading state and dispatching happen in one step, so two calls in the same
     // model reply cannot both decide a topic is new.
-    run: ({ topicKeys }) => {
-      const state = getState();
-      const plan = planTopicMarking({
-        requestedTopicKeys: topicKeys,
-        knownTopicKeys: topicSelect.docs(state).map((topic) => topic.topicKey),
-        currentTopicKeys: askAwaySelect.currentTopicKeys(state),
-        // Live versions only, so a draft or an edit nobody has approved is never sent to Claude.
-        details: topicDetailSelect.liveDocs(state),
-      });
-
-      // An error result goes back to Claude so it can correct the keys, and it is not counted as a marking.
-      if (plan.validTopicKeys.length === 0) {
-        throw new Error(`None of those keys are in the topic list: ${plan.unknownTopicKeys.join(", ")}.`);
-      }
-      if (plan.newlyMarkedTopicKeys.length > 0) {
-        dispatch(askAwayActions.topicsMarked(plan.newlyMarkedTopicKeys));
-      }
-
-      const documents = plan.newDetails.map((detail) => ({
-        title: detail.title,
-        topicKeys: detail.topicKeys,
-        markdown: htmlToMarkdown(detail.contentHtml),
-      }));
-      return buildMarkTopicsOutput({ plan, documents });
-    },
+    run: ({ topicKeys }) => markTopics({ topicKeys, dispatch, getState }),
   });
 
-  return [markTopicsRelevant];
+  const getNow = defineTool({
+    name: "getNow",
+    description:
+      "Returns today's date, to the day, with no time of day. " +
+      "Call it only when the answer depends on today's date, such as a seasonal or timing window in a document, " +
+      "how long until or since a date, or a phrase like 'this week' or 'next month'. " +
+      "Do not call it when the question does not depend on the date.",
+    input: z.object({}),
+    run: () => formatToday({ now: new Date() }),
+  });
+
+  return [markTopicsRelevant, getNow];
 }

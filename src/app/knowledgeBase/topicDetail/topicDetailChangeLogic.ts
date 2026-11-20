@@ -60,7 +60,6 @@ export function buildNextVersion({
   title,
   contentHtml,
   modifiedBy,
-  comment,
   head,
   approverUserNames,
   now,
@@ -70,14 +69,12 @@ export function buildNextVersion({
   title: string;
   contentHtml: string;
   modifiedBy: string;
-  comment: string | undefined;
   head: Pick<TopicDetailDoc, "version"> | null;
   approverUserNames: string[];
   now: string;
 }): NewVersionRow {
   const approvedBy = approverUserNames.includes(modifiedBy) ? [{ userName: modifiedBy, at: now }] : [];
   const approvedAt = resolveApprovedAt({ approval: { approvedAt: null, approvedBy }, approverUserNames, now });
-  const commentText = cleanCommentText(comment);
   return {
     detailKey,
     version: (head?.version ?? 0) + 1,
@@ -86,7 +83,7 @@ export function buildNextVersion({
     contentHtml,
     modifiedBy,
     approval: { approvedAt, approvedBy },
-    comments: commentText ? [{ userName: modifiedBy, at: now, text: commentText }] : [],
+    comments: [],
   };
 }
 

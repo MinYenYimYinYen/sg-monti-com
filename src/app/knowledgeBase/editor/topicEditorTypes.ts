@@ -1,13 +1,7 @@
-/**
- * The topic being edited. `signalsText` is one signal per line exactly as typed, because turning it
- * into a list on every keystroke would eat a trailing newline. It is normalized only when saving
- * and when checking for changes.
- */
 export type TopicDraft = {
   topicKey: string;
   name: string;
   description: string;
-  signalsText: string;
   /** A new draft has an editable key. Saving one whose key already exists is blocked in the UI. */
   isNew: boolean;
 };
@@ -23,9 +17,4 @@ export type TopicDetailDraft = {
    * server can refuse it when someone else has saved a newer version in the meantime.
    */
   baseVersion: number | null;
-  /**
-   * A note to the reviewers, saved as the first comment on the new version. Not part of "unsaved
-   * changes": on its own it would not make a new version.
-   */
-  comment: string;
 };

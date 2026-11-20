@@ -53,8 +53,6 @@ export type SaveTopicDetailVersionParams = Pick<TopicDetailDoc, "topicKeys" | "t
    * save when the head has moved on, so two editors cannot silently overwrite each other.
    */
   baseVersion: number | null;
-  /** Saved as the first comment on the new version. */
-  comment?: string;
 };
 
 // TEMPORARY, with the legacy import (delete with migrateTheseThenDelete.json).

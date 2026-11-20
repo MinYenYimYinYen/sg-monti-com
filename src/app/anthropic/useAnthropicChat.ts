@@ -52,6 +52,7 @@ export function useAnthropicChat() {
         notice: buildTurnNotice({
           stopReason: loop.stopReason,
           hitIterationCap: loop.hitIterationCap,
+          forcedFinalAnswer: loop.forcedFinalAnswer,
           maxIterations: MAX_TOOL_ITERATIONS,
           errorMessage,
           hasReply: loop.replies.length > 0,

@@ -5,7 +5,7 @@ import { buildTurnNotice, buildTurnStats, flattenConversation } from "@/app/anth
 import { runToolLoop } from "@/app/anthropic/anthropicToolLoop";
 import type { ChatMessage, ChatTurn } from "@/app/anthropic/AnthropicTypes";
 import { ASK_AWAY_MODEL, ASK_AWAY_SESSION_KIND } from "@/app/askAway/askAwayConst";
-import { collectMarkedTopicKeys } from "@/app/askAway/askAwayLogic";
+import { collectMarkedTopicKeys } from "@/app/askAway/_tools/markTopicsLogic";
 import { buildAskAwaySystemPrompt } from "@/app/askAway/askAwayPrompt";
 import { askAwaySelect } from "@/app/askAway/askAwaySelect";
 import { askAwayActions } from "@/app/askAway/askAwaySlice";
@@ -13,6 +13,7 @@ import { createAskAwayTools } from "@/app/askAway/askAwayTools";
 import { claudeSessionActions } from "@/app/claudeSession/claudeSessionSlice";
 import { knowledgeBaseSettingsSelect } from "@/app/knowledgeBase/knowledgeBaseSettings/knowledgeBaseSettingsSelect";
 import { topicSelect } from "@/app/knowledgeBase/topic/topicSelect";
+import { topicDetailSelect } from "@/app/knowledgeBase/topicDetail/topicDetailSelect";
 import { AppError } from "@/lib/errors/AppError";
 import { handleError } from "@/lib/errors/errorHandler";
 
@@ -46,7 +47,12 @@ export const sendAskAwayPrompt =
       handleError(validationError("The prompt settings are not loaded yet. Try again in a moment."));
       return;
     }
-    const systemPrompt = buildAskAwaySystemPrompt({ template: promptTemplate, topics });
+    // Live versions only, the same set the tool reads, so the hint never names a document Claude cannot receive.
+    const systemPrompt = buildAskAwaySystemPrompt({
+      template: promptTemplate,
+      topics,
+      details: topicDetailSelect.liveDocs(startState),
+    });
     if (!systemPrompt.ok) {
       handleError(validationError(systemPrompt.message));
       return;
@@ -87,6 +93,7 @@ export const sendAskAwayPrompt =
         notice: buildTurnNotice({
           stopReason: loop.stopReason,
           hitIterationCap: loop.hitIterationCap,
+          forcedFinalAnswer: loop.forcedFinalAnswer,
           maxIterations: MAX_TOOL_ITERATIONS,
           errorMessage,
           hasReply: loop.replies.length > 0,

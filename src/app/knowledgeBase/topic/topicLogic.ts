@@ -1,12 +1,3 @@
-/**
- * Trims, lowercases, drops blanks and removes duplicates, keeping the author's order. Lowercasing here
- * lets a consumer lowercase the transcript once and match every signal without worrying about case.
- */
-export function normalizeSignals(signals: string[]): string[] {
-  const cleaned = signals.map((signal) => signal.trim().toLowerCase()).filter((signal) => signal.length > 0);
-  return [...new Set(cleaned)];
-}
-
 const TOPIC_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 
 export const TOPIC_KEY_RULE = "Use lowercase letters, digits, - and _, starting with a letter or digit.";

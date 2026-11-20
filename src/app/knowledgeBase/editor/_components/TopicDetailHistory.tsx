@@ -19,7 +19,7 @@ export function TopicDetailHistory({ detailKey }: { detailKey: string }) {
   return (
     <ul className="space-y-2">
       {versions.map((version) => (
-        <li key={version.version} className="space-y-1 rounded-md border border-border bg-card p-2 text-xs">
+        <li key={version.version} className="space-y-1 rounded-md border border-border bg-card/60 p-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-foreground">Version {version.version}</span>
             <Badge

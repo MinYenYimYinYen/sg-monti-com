@@ -123,6 +123,7 @@ export async function sendToAnthropic(params: SendMessageParams): Promise<SendMe
               // Our schema type is looser than the SDK's, which declares `required` and `properties`.
               input_schema: inputSchema as Anthropic.Tool["input_schema"],
             })),
+            ...(params.toolChoice ? { tool_choice: { type: params.toolChoice } } : {}),
           }
         : {}),
     });

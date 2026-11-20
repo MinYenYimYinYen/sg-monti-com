@@ -28,6 +28,14 @@ const selectCurrentDetails = createSelector(
 const selectTotals = createSelector([selectTurns], (turns) => sumConversationTotals(turns));
 const selectContextTokens = createSelector([selectTurns], (turns) => latestContextTokens(turns));
 
+/**
+ * Documents whose latest version is still waiting for approval. The panel shows the live version, so
+ * for these the author is working on something newer than what Claude was sent.
+ */
+const selectPendingDetailKeySet = createSelector([knowledgeBaseSelect.details], (details) => {
+  return new Set(details.filter((detail) => detail.status === "pending").map((detail) => detail.detailKey));
+});
+
 export const askAwaySelect = {
   sessionId: selectSessionId,
   turns: selectTurns,
@@ -35,6 +43,7 @@ export const askAwaySelect = {
   currentTopicKeys: selectCurrentTopicKeys,
   currentTopicKeySet: selectCurrentTopicKeySet,
   currentDetails: selectCurrentDetails,
+  pendingDetailKeySet: selectPendingDetailKeySet,
   totals: selectTotals,
   contextTokens: selectContextTokens,
 };

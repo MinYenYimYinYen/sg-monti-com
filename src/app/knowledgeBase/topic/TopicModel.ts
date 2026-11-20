@@ -7,7 +7,6 @@ const TopicSchema = new Schema<TopicDoc>(
     topicKey: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     description: { type: String, required: true },
-    signals: { type: [String], default: [] },
   },
   { timestamps: true },
 );

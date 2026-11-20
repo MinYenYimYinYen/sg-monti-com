@@ -57,5 +57,6 @@ export const sendMessageParamsSchema = z.object({
   system: z.string().max(MAX_SYSTEM_CHARS).optional(),
   messages: z.array(chatMessageSchema).min(1).max(MAX_MESSAGES),
   tools: z.array(toolSchemaSchema).max(MAX_TOOLS).optional(),
+  toolChoice: z.enum(["auto", "none"]).optional(),
   maxTokens: z.number().int().min(1).max(MAX_TOKENS_CAP).optional(),
 });

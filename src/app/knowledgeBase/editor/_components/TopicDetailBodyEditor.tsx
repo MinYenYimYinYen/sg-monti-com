@@ -27,6 +27,7 @@ export function TopicDetailBodyEditor({ initialHtml, disabled }: { initialHtml: 
     editable: !disabled,
     editorProps: {
       attributes: {
+        "aria-label": "Document content",
         class: "prose prose-sm max-w-none min-h-[280px] focus:outline-none p-4 prose-p:my-1 prose-p:leading-snug",
       },
       // Color is lost when the desktop app turns this into text for Claude, so pasted color is dropped.
@@ -51,7 +52,10 @@ export function TopicDetailBodyEditor({ initialHtml, disabled }: { initialHtml: 
 
   return (
     <div className="rounded-md border border-input bg-card">
-      <EditorToolbar editor={editor} />
+      {/* Opaque wrapper: the toolbar's own background is translucent, and scrolled text would show through. */}
+      <div className="sticky top-0 z-10 rounded-t-md bg-card">
+        <EditorToolbar editor={editor} />
+      </div>
       <EditorContent editor={editor} />
     </div>
   );

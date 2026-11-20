@@ -23,6 +23,8 @@ export type ToolLoopResult = {
   usagePerCall: TokenUsage[];
   stopReason: AnthropicStopReason | null;
   hitIterationCap: boolean;
+  /** True when the last allowed call was sent with tools switched off, so the model had to answer. */
+  forcedFinalAnswer: boolean;
   /** A failed model call. It ends the loop and keeps whatever completed before it. */
   error: unknown;
 };
@@ -59,7 +61,8 @@ async function runOneTool({
 
 /**
  * Sends the conversation, runs any tools the model asks for, and repeats until the model answers
- * or the iteration cap is reached. Without tools it is exactly one call.
+ * or the iteration cap is reached. The last allowed call may not use a tool, so a run that would have
+ * been cut off ends with an answer instead. Without tools it is exactly one call.
  */
 export async function runToolLoop({
   send,
@@ -74,14 +77,20 @@ export async function runToolLoop({
   let stopReason: AnthropicStopReason | null = null;
   let error: unknown = null;
   let answered = false;
+  let forcedFinalAnswer = false;
 
   for (let iteration = 0; iteration < maxIterations; iteration += 1) {
+    // Never on the first call: with a cap of 1 that would switch the tools off for the whole run.
+    const isLastCall = tools.length > 0 && iteration > 0 && iteration === maxIterations - 1;
+    if (isLastCall) forcedFinalAnswer = true;
+
     let result: SendMessageResult;
     try {
       result = await send({
         ...params,
         messages: [...params.messages, ...replies],
         tools: toolSchemas.length > 0 ? toolSchemas : undefined,
+        toolChoice: isLastCall ? "none" : undefined,
       });
     } catch (e) {
       error = e;
@@ -107,6 +116,7 @@ export async function runToolLoop({
     usagePerCall,
     stopReason,
     hitIterationCap: error === null && !answered,
+    forcedFinalAnswer,
     error,
   };
 }
