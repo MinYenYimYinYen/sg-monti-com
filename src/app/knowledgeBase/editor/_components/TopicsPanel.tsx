@@ -12,6 +12,7 @@ import { knowledgeBaseSelect } from "@/app/knowledgeBase/editor/knowledgeBaseSel
 import { topicEditorSelect } from "@/app/knowledgeBase/editor/topicEditorSelect";
 import { useTopicEditor } from "@/app/knowledgeBase/editor/useTopicEditor";
 import { TopicForm } from "@/app/knowledgeBase/editor/_components/TopicForm";
+import { UNDOCUMENTED_TOPIC_CLASS_NAME } from "@/app/knowledgeBase/editor/_components/topicCoverageStyles";
 import type { Topic } from "@/app/knowledgeBase/editor/knowledgeBaseTypes";
 
 type PendingChange = { kind: "new" } | { kind: "open"; topic: Topic };
@@ -73,7 +74,7 @@ export function TopicsPanel() {
                   "w-full rounded-md border px-3 py-2 text-left text-sm transition-colors",
                   isSelected && "border-primary bg-primary/10 text-primary",
                   !isSelected && "border-border text-foreground",
-                  !isSelected && hasNoDocuments && "bg-secondary/20 hover:bg-secondary/30",
+                  !isSelected && hasNoDocuments && UNDOCUMENTED_TOPIC_CLASS_NAME,
                   !isSelected && !hasNoDocuments && "bg-card hover:bg-accent/10",
                 )}
               >

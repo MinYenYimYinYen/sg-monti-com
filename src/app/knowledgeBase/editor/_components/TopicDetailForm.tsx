@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { can } from "@/permission/can";
 import { userCapabilitiesSelect } from "@/app/permission/userCapabilities/userCapabilitiesSelect";
@@ -23,16 +24,32 @@ export function TopicDetailForm() {
   const detailKey = useSelector(topicEditorSelect.detailDraftKey);
   const keyConflict = useSelector(topicEditorSelect.detailKeyConflict);
   const isOutOfDate = useSelector(topicEditorSelect.detailIsOutOfDate);
+  const canEditContent = useSelector(topicEditorSelect.detailCanEditContent);
   const headDocsByKey = useSelector(topicDetailSelect.headDocsByKey);
   const detailsWithTopics = useSelector(knowledgeBaseSelect.details);
   const canWrite = useSelector(userCapabilitiesSelect.allows)(can.knowledgeTopics.write);
   const { editTopicDetail, openTopicDetail } = useTopicEditor();
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  const isNewDraft = draft?.isNew ?? false;
+  const shouldFocusTitle = isNewDraft && canEditContent && canWrite && detailKey !== null;
+
+  // A new, valid topic set is what unlocks the title, so the cursor moves there with the suggestion
+  // selected, ready to be typed over. It fires when the topic set changes, not on every keystroke.
+  useEffect(() => {
+    if (!shouldFocusTitle) return;
+    titleRef.current?.focus();
+    titleRef.current?.select();
+  }, [shouldFocusTitle, detailKey]);
 
   if (!draft) return null;
 
   const existingDetail = keyConflict && detailKey ? headDocsByKey.get(detailKey) : undefined;
   const missingTopicKeys = detailsWithTopics.find((detail) => detail.detailKey === detailKey)?.missingTopicKeys ?? [];
   const readOnly = !canWrite;
+  // The topics stay editable while the content is locked, since choosing them is how it gets unlocked.
+  const contentLocked = readOnly || !canEditContent;
+  const needsTopics = draft.isNew && detailKey === null;
 
   return (
     <div className="max-w-3xl space-y-4 pb-6">
@@ -45,7 +62,7 @@ export function TopicDetailForm() {
             guidance that only applies when they come up together.
           </p>
         )}
-        {detailKey && <p className="text-xs text-muted-foreground">Document key: {detailKey}</p>}
+        {detailKey && <p className="text-sm font-bold text-foreground">Document key: {detailKey}</p>}
         {missingTopicKeys.length > 0 && (
           <Notice tone="warning">These topics no longer exist: {missingTopicKeys.join(", ")}.</Notice>
         )}
@@ -82,15 +99,19 @@ export function TopicDetailForm() {
       <FormGroup>
         <Label>Title *</Label>
         <Input
+          ref={titleRef}
           value={draft.title}
-          disabled={readOnly}
+          disabled={contentLocked}
           placeholder="Selling aeration"
           onChange={(event) => editTopicDetail({ title: event.target.value })}
         />
+        {needsTopics && (
+          <p className="text-xs text-muted-foreground">Choose at least one topic above to start writing.</p>
+        )}
       </FormGroup>
 
       <FormGroup>
-        <TopicDetailBodyEditor key={draftVersion} initialHtml={draft.contentHtml} disabled={readOnly} />
+        <TopicDetailBodyEditor key={draftVersion} initialHtml={draft.contentHtml} disabled={contentLocked} />
       </FormGroup>
 
       {!draft.isNew && detailKey && (

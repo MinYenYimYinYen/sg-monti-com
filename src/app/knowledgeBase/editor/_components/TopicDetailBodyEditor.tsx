@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
+import { cn } from "@/style/utils";
 import { EditorToolbar } from "@/lib/tiptap/EditorToolbar";
 import { buildRichTextExtensions } from "@/lib/tiptap/richTextExtensions";
 import { useTopicEditor } from "@/app/knowledgeBase/editor/useTopicEditor";
@@ -51,10 +52,10 @@ export function TopicDetailBodyEditor({ initialHtml, disabled }: { initialHtml: 
   }, [editor, disabled]);
 
   return (
-    <div className="rounded-md border border-input bg-card">
+    <div className={cn("rounded-md border border-input bg-card", disabled && "opacity-60")}>
       {/* Opaque wrapper: the toolbar's own background is translucent, and scrolled text would show through. */}
       <div className="sticky top-0 z-10 rounded-t-md bg-card">
-        <EditorToolbar editor={editor} />
+        <EditorToolbar editor={editor} disabled={disabled} />
       </div>
       <EditorContent editor={editor} />
     </div>

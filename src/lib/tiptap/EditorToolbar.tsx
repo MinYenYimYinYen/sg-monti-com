@@ -38,6 +38,8 @@ type Props = {
    * `LineHeight` and `ParagraphSpacing` extensions can use them, so it is off by default.
    */
   showSpacing?: boolean;
+  /** Disables every control, for an editor the user cannot change right now. */
+  disabled?: boolean;
 };
 
 type ToolbarButtonProps = {
@@ -75,7 +77,7 @@ function Divider() {
   return <div className="w-px h-4 bg-border mx-0.5 shrink-0" />;
 }
 
-export function EditorToolbar({ editor, showSpacing = false }: Props) {
+export function EditorToolbar({ editor, showSpacing = false, disabled: isLocked = false }: Props) {
   const editorState = useEditorState({
     editor,
     selector: (ctx) => {
@@ -118,7 +120,7 @@ export function EditorToolbar({ editor, showSpacing = false }: Props) {
     },
   });
 
-  const disabled = !editor;
+  const disabled = !editor || isLocked;
   const {
     isBold,
     isItalic,

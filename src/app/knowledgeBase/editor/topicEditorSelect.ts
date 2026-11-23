@@ -5,6 +5,7 @@ import { topicDetailSelect } from "@/app/knowledgeBase/topicDetail/topicDetailSe
 import { isValidTopicKey, TOPIC_KEY_RULE } from "@/app/knowledgeBase/topic/topicLogic";
 import { knowledgeBaseSelect } from "@/app/knowledgeBase/editor/knowledgeBaseSelect";
 import {
+  canEditDetailContent,
   canSaveDetailDraft,
   canSaveTopicDraft,
   deriveDraftDetailKey,
@@ -95,6 +96,11 @@ const selectDetailCanSave = createSelector([selectDetailDraft, selectDetailKeyCo
   draft ? canSaveDetailDraft({ draft, keyConflict }) : false,
 );
 
+/** False while a new draft has no topics yet, or has the same topics as an existing document. */
+const selectDetailCanEditContent = createSelector([selectDetailDraft, selectDetailKeyConflict], (draft, keyConflict) =>
+  draft ? canEditDetailContent({ draft, keyConflict }) : false,
+);
+
 const selectDetailActiveName = createSelector([selectDetailDraft], (draft) => (draft ? draft.title : null));
 
 export const topicEditorSelect = {
@@ -112,5 +118,6 @@ export const topicEditorSelect = {
   detailIsOutOfDate: selectDetailIsOutOfDate,
   detailIsDirty: selectDetailIsDirty,
   detailCanSave: selectDetailCanSave,
+  detailCanEditContent: selectDetailCanEditContent,
   detailActiveName: selectDetailActiveName,
 };

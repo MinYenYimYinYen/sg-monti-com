@@ -80,6 +80,40 @@ export function toggleTopicKey({ topicKeys, topicKey }: { topicKeys: string[]; t
     : [...topicKeys, topicKey];
 }
 
+/** `over-seed` becomes `Over Seed`. Topic keys only contain letters, digits, `-` and `_`. */
+function topicKeyToWords(topicKey: string): string {
+  return topicKey
+    .split(/[-_]+/)
+    .filter((word) => word.length > 0)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
+ * A starting title for a new document, built from its topic keys in the same sorted order as the document
+ * key: `[over-seed, aeration]` gives `Aeration + Over Seed`. Empty while no topic is chosen.
+ */
+export function suggestDetailTitle(topicKeys: string[]): string {
+  return normalizeTopicKeys(topicKeys).map(topicKeyToWords).join(" + ");
+}
+
+/**
+ * The title after the topics change. A blank title, or one that is still the suggestion for the previous
+ * topics, follows the new topics. A title the user wrote or changed is left alone.
+ */
+export function retitleForTopicChange({
+  title,
+  previousTopicKeys,
+  nextTopicKeys,
+}: {
+  title: string;
+  previousTopicKeys: string[];
+  nextTopicKeys: string[];
+}): string {
+  const isStillSuggested = title.trim() === "" || title === suggestDetailTitle(previousTopicKeys);
+  return isStillSuggested ? suggestDetailTitle(nextTopicKeys) : title;
+}
+
 export function detailDraftToSaveParams(draft: TopicDetailDraft): SaveTopicDetailVersionParams {
   return {
     topicKeys: normalizeTopicKeys(draft.topicKeys),
@@ -101,6 +135,21 @@ export function isDetailDraftDirty({
   }
   if (!saved) return true;
   return draft.title.trim() !== saved.title || draft.contentHtml !== saved.contentHtml;
+}
+
+/**
+ * A saved document is always editable. A new draft is only editable once its topics are chosen and no
+ * document exists for exactly those topics, because until then there is nothing it could be saved as.
+ */
+export function canEditDetailContent({
+  draft,
+  keyConflict,
+}: {
+  draft: TopicDetailDraft;
+  keyConflict: boolean;
+}): boolean {
+  if (!draft.isNew) return true;
+  return deriveDraftDetailKey(draft) !== null && !keyConflict;
 }
 
 export function canSaveDetailDraft({ draft, keyConflict }: { draft: TopicDetailDraft; keyConflict: boolean }): boolean {

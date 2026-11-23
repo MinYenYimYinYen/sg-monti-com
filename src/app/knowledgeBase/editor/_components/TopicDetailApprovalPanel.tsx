@@ -9,6 +9,7 @@ import { Badge } from "@/style/components/badge";
 import { Button } from "@/style/components/button";
 import { cn } from "@/style/utils";
 import { knowledgeBaseSelect } from "@/app/knowledgeBase/editor/knowledgeBaseSelect";
+import { DiffPopover } from "@/app/knowledgeBase/diff/DiffPopover";
 import { TopicDetailCommentThread } from "@/app/knowledgeBase/editor/_components/TopicDetailCommentThread";
 import { TopicDetailHistory } from "@/app/knowledgeBase/editor/_components/TopicDetailHistory";
 import { knowledgeBaseSettingsSelect } from "@/app/knowledgeBase/knowledgeBaseSettings/knowledgeBaseSettingsSelect";
@@ -47,6 +48,7 @@ export function TopicDetailApprovalPanel({ detailKey }: { detailKey: string }) {
         <span className="text-xs text-muted-foreground">
           saved by {detail.modifiedBy}, {formatVersionTime(detail.createdAt)}
         </span>
+        <DiffPopover detailKey={detailKey} />
       </div>
 
       <p className="text-xs text-muted-foreground">
