@@ -21,7 +21,14 @@ import { formatVersionTime } from "@/app/knowledgeBase/topicDetail/topicDetailVe
  * version the AI is reading, and the conversation about it. The server decides who may do what; the
  * buttons only hide what would be refused.
  */
-export function TopicDetailApprovalPanel({ detailKey }: { detailKey: string }) {
+export function TopicDetailApprovalPanel({
+  detailKey,
+  showCompare = true,
+}: {
+  detailKey: string;
+  /** False where the page already shows the comparison inline, so the button would only repeat it. */
+  showCompare?: boolean;
+}) {
   const detail = useSelector(knowledgeBaseSelect.details).find((candidate) => candidate.detailKey === detailKey);
   const userName = useSelector(authSelect.user)?.userName ?? null;
   const approverUserNames = useSelector(knowledgeBaseSettingsSelect.approverUserNames);
@@ -48,7 +55,7 @@ export function TopicDetailApprovalPanel({ detailKey }: { detailKey: string }) {
         <span className="text-xs text-muted-foreground">
           saved by {detail.modifiedBy}, {formatVersionTime(detail.createdAt)}
         </span>
-        <DiffPopover detailKey={detailKey} />
+        {showCompare && <DiffPopover detailKey={detailKey} />}
       </div>
 
       <p className="text-xs text-muted-foreground">

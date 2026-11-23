@@ -17,8 +17,11 @@ import { useTopicEditor } from "@/app/knowledgeBase/editor/useTopicEditor";
 import { DetailTopicPicker } from "@/app/knowledgeBase/editor/_components/DetailTopicPicker";
 import { TopicDetailBodyEditor } from "@/app/knowledgeBase/editor/_components/TopicDetailBodyEditor";
 
-/** The open document's topics, title and body. Renders nothing while no document is open. */
-export function TopicDetailForm() {
+/**
+ * The open document's topics, title and body. Renders nothing while no document is open.
+ * `showApproval` is false where the approval panel has a place of its own, such as the workspace's tab.
+ */
+export function TopicDetailForm({ showApproval = true }: { showApproval?: boolean }) {
   const draft = useSelector(topicEditorSelect.detailDraft);
   const draftVersion = useSelector(topicEditorSelect.detailDraftVersion);
   const detailKey = useSelector(topicEditorSelect.detailDraftKey);
@@ -114,7 +117,7 @@ export function TopicDetailForm() {
         <TopicDetailBodyEditor key={draftVersion} initialHtml={draft.contentHtml} disabled={contentLocked} />
       </FormGroup>
 
-      {!draft.isNew && detailKey && (
+      {showApproval && !draft.isNew && detailKey && (
         <>
           <p className="text-xs text-muted-foreground">
             Every save is a new version. It is approved once every approver has approved it, and you approve it

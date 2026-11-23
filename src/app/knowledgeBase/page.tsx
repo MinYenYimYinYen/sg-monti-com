@@ -1,6 +1,6 @@
 ﻿import { redirect } from "next/navigation";
 
 export default function KnowledgeBasePage() {
-  redirect("/knowledgeBase/topics");
+  redirect("/knowledgeBase/workspace");
 }
 

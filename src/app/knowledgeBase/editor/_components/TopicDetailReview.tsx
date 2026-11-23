@@ -2,6 +2,7 @@
 
 import { useSelector } from "react-redux";
 import { knowledgeBaseSelect } from "@/app/knowledgeBase/editor/knowledgeBaseSelect";
+import { DiffExpander } from "@/app/knowledgeBase/diff/DiffExpander";
 import { TopicDetailApprovalPanel } from "@/app/knowledgeBase/editor/_components/TopicDetailApprovalPanel";
 import { TopicDetailBodyViewer } from "@/app/knowledgeBase/editor/_components/TopicDetailBodyViewer";
 import { TopicKeyBadges } from "@/app/knowledgeBase/editor/_components/TopicKeyBadges";
@@ -23,7 +24,8 @@ export function TopicDetailReview({ detailKey }: { detailKey: string }) {
         <TopicKeyBadges topicKeys={detail.topicKeys} />
       </div>
       <TopicDetailBodyViewer key={`${detail.detailKey}|${detail.version}`} html={detail.contentHtml} />
-      <TopicDetailApprovalPanel detailKey={detailKey} />
+      <DiffExpander detailKey={detailKey} />
+      <TopicDetailApprovalPanel detailKey={detailKey} showCompare={false} />
     </div>
   );
 }
