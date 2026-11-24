@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
-import { LayoutPanelLeft, Settings } from "lucide-react";
+import { ClipboardCheck, LayoutPanelLeft, Settings } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout/PageLayout";
 import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
@@ -10,10 +10,16 @@ import { can } from "@/permission/can";
 import { useKnowledgeBaseDeps } from "@/app/knowledgeBase/editor/useKnowledgeBaseDeps";
 import { TopicFileControls } from "@/app/knowledgeBase/editor/_components/TopicFileControls";
 import { TopicDetailFileControls } from "@/app/knowledgeBase/editor/_components/TopicDetailFileControls";
+import { knowledgeBaseSelect } from "@/app/knowledgeBase/editor/knowledgeBaseSelect";
 import { knowledgeBaseWorkspaceSelect } from "@/app/knowledgeBase/workspace/knowledgeBaseWorkspaceSelect";
+import {
+  KNOWLEDGE_BASE_APPROVALS_HREF,
+  KNOWLEDGE_BASE_WORKSPACE_HREF,
+} from "@/app/knowledgeBase/knowledgeBaseRoutes";
 
 const ROOT_HREF = "/knowledgeBase";
-const WORKSPACE_HREF = "/knowledgeBase/workspace";
+const WORKSPACE_HREF = KNOWLEDGE_BASE_WORKSPACE_HREF;
+const APPROVALS_HREF = KNOWLEDGE_BASE_APPROVALS_HREF;
 const SETTINGS_HREF = "/knowledgeBase/settings";
 
 // Kept on purpose, with no tab and no link pointing at them. Each shows one entity on its own, which
@@ -23,10 +29,18 @@ const SETTINGS_HREF = "/knowledgeBase/settings";
 const TOPICS_HREF = "/knowledgeBase/topics";
 const DOCUMENTS_HREF = "/knowledgeBase/documents";
 
-const TABS: readonly TabNavItem[] = [
-  { label: "Workspace", href: WORKSPACE_HREF, icon: LayoutPanelLeft },
-  { label: "Settings", href: SETTINGS_HREF, icon: Settings },
-];
+// The count rides in the label because TabNav has no badge, and it is shared by many pages.
+function buildTabs({ waitingCount }: { waitingCount: number }): readonly TabNavItem[] {
+  return [
+    { label: "Workspace", href: WORKSPACE_HREF, icon: LayoutPanelLeft },
+    {
+      label: waitingCount > 0 ? `Approvals (${waitingCount})` : "Approvals",
+      href: APPROVALS_HREF,
+      icon: ClipboardCheck,
+    },
+    { label: "Settings", href: SETTINGS_HREF, icon: Settings },
+  ];
+}
 
 // Two gates because the editor reads the topics and documents, and the approver list in the settings,
 // and a gate takes one capability.
@@ -45,6 +59,7 @@ function KnowledgeBaseShell({ children }: { children: React.ReactNode }) {
   useKnowledgeBaseDeps();
   const pathname = usePathname();
   const editorTab = useSelector(knowledgeBaseWorkspaceSelect.editorTab);
+  const waitingCount = useSelector(knowledgeBaseSelect.detailsPendingMyApproval).length;
   const isSettingsTab = pathname.startsWith(SETTINGS_HREF);
   const isWorkspace = pathname.startsWith(WORKSPACE_HREF);
 
@@ -53,7 +68,7 @@ function KnowledgeBaseShell({ children }: { children: React.ReactNode }) {
   const showsDocumentMenu = isWorkspace ? editorTab !== "topic" : pathname.startsWith(DOCUMENTS_HREF);
   const isUnlinkedTopicsRoute = pathname.startsWith(TOPICS_HREF);
 
-  // The settings tab saves each section on its own, so it has no file menu.
+  // The settings tab saves each section on its own, and the approvals tab edits nothing, so neither has a file menu.
   const headerControls = isSettingsTab ? null : showsDocumentMenu ? (
     <TopicDetailFileControls />
   ) : isWorkspace || isUnlinkedTopicsRoute ? (
@@ -64,7 +79,7 @@ function KnowledgeBaseShell({ children }: { children: React.ReactNode }) {
     <PageLayout>
       <PageLayout.Header
         left={headerControls}
-        right={<TabNav items={TABS} rootHref={ROOT_HREF} />}
+        right={<TabNav items={buildTabs({ waitingCount })} rootHref={ROOT_HREF} />}
       />
       <PageLayout.Body>{children}</PageLayout.Body>
     </PageLayout>

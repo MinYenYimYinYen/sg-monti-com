@@ -15,6 +15,11 @@ export function tabAfterOpeningDetail(currentTab: EditorTab): EditorTab {
   return currentTab === "approval" ? "approval" : "document";
 }
 
+/** Longest-waiting first, so the oldest request is the first one a reviewer sees. ISO dates sort as text. */
+export function sortWaitingLongestFirst<TDetail extends { createdAt: string }>(details: TDetail[]): TDetail[] {
+  return [...details].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
 /** Documents tagged with the topic, in their given order. A null topic key keeps them all. */
 export function filterDetailsByTopic<TDetail extends { topicKeys: string[] }>({
   details,

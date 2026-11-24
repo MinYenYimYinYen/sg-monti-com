@@ -8,11 +8,11 @@ import { VersionComparisonView } from "@/app/knowledgeBase/diff/VersionCompariso
 import { listVersionComparisons } from "@/app/knowledgeBase/diff/versionComparisonLogic";
 
 /**
- * The comparison of a document's head with an older version, inline and collapsed until opened. Renders
- * nothing when there is no older version to compare with. Closed content is unmounted, so the
- * versions are only loaded once the reader expands it.
+ * The comparison of a document's head with an older version, inline. Renders nothing when there is no
+ * older version to compare with. Collapsed until opened unless `defaultOpen`, for a reader who came to
+ * review the changes. Closed content is unmounted, so the versions are only loaded once it is open.
  */
-export function DiffExpander({ detailKey }: { detailKey: string }) {
+export function DiffExpander({ detailKey, defaultOpen = false }: { detailKey: string; defaultOpen?: boolean }) {
   const detail = useSelector(knowledgeBaseSelect.details).find((candidate) => candidate.detailKey === detailKey);
 
   if (!detail) return null;
@@ -21,7 +21,7 @@ export function DiffExpander({ detailKey }: { detailKey: string }) {
   if (comparisons.length === 0) return null;
 
   return (
-    <Accordion type="single" collapsible>
+    <Accordion type="single" collapsible defaultValue={defaultOpen ? "changes" : undefined}>
       <AccordionItem value="changes" className="rounded-md border border-border bg-card px-3">
         <AccordionTrigger className="py-2">
           <span className="flex items-center gap-1">

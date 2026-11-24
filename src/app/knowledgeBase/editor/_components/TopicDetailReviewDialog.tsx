@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { ExternalLink } from "lucide-react";
-import { Button } from "@/style/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/style/components/dialog";
 import { TopicDetailReview } from "@/app/knowledgeBase/editor/_components/TopicDetailReview";
+import { OpenInWorkspaceButton } from "@/app/knowledgeBase/workspace/_components/OpenInWorkspaceButton";
 
-/** Review one document without leaving the page: read it, comment, approve, or jump to the Documents tab. */
+/**
+ * Review one document without leaving the page: read it and what changed, comment, approve, or open it
+ * in the workspace editor.
+ */
 export function TopicDetailReviewDialog({
   detailKey,
   onCloseAction,
@@ -20,19 +21,16 @@ export function TopicDetailReviewDialog({
       <DialogContent className="flex max-h-[85vh] max-w-3xl flex-col">
         <DialogHeader>
           <DialogTitle>Review document</DialogTitle>
-          <DialogDescription>Read the latest version, leave a comment, or approve it.</DialogDescription>
+          <DialogDescription>Read what changed, leave a comment, or approve the latest version.</DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-          {detailKey && <TopicDetailReview detailKey={detailKey} />}
+          {detailKey && <TopicDetailReview detailKey={detailKey} diffDefaultOpen />}
         </div>
-        <div className="flex justify-end">
-          <Button asChild size="sm" variant="primary" intensity="ghost" className="gap-1">
-            <Link href="/knowledgeBase/documents" onClick={onCloseAction}>
-              Open in Documents
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-        </div>
+        {detailKey && (
+          <div className="flex justify-end">
+            <OpenInWorkspaceButton detailKey={detailKey} onOpenedAction={onCloseAction} />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

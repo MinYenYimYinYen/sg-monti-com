@@ -23,6 +23,15 @@ const knowledgeBaseWorkspaceSlice = createSlice({
     setDetailListScope: (state, action: PayloadAction<DetailListScope>) => {
       state.detailListScope = action.payload;
     },
+    /**
+     * Used when a document is sent to the editor from elsewhere (the approvals list, the review dialog).
+     * The list is widened because the open topic may not be one of the document's topics, and the
+     * selected row should be visible when the editor arrives.
+     */
+    showDetailInEditor: (state) => {
+      state.editorTab = "document";
+      state.detailListScope = "all";
+    },
   },
   extraReducers: (builder) => {
     // Every way of opening a draft (a list click, New, "Open it instead") goes through these two

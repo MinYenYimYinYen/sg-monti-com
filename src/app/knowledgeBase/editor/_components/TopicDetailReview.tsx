@@ -12,7 +12,14 @@ import { TopicKeyBadges } from "@/app/knowledgeBase/editor/_components/TopicKeyB
  * read only, then the approval panel, which holds Approve and the comment thread. Read from the store
  * by key, so it follows the document as it is approved or someone saves a newer version.
  */
-export function TopicDetailReview({ detailKey }: { detailKey: string }) {
+export function TopicDetailReview({
+  detailKey,
+  diffDefaultOpen = false,
+}: {
+  detailKey: string;
+  /** True where the reader is there to review, so the changes are open rather than behind the expander. */
+  diffDefaultOpen?: boolean;
+}) {
   const detail = useSelector(knowledgeBaseSelect.details).find((candidate) => candidate.detailKey === detailKey);
 
   if (!detail) return <p className="text-sm text-muted-foreground">This document is no longer available.</p>;
@@ -24,7 +31,7 @@ export function TopicDetailReview({ detailKey }: { detailKey: string }) {
         <TopicKeyBadges topicKeys={detail.topicKeys} />
       </div>
       <TopicDetailBodyViewer key={`${detail.detailKey}|${detail.version}`} html={detail.contentHtml} />
-      <DiffExpander detailKey={detailKey} />
+      <DiffExpander detailKey={detailKey} defaultOpen={diffDefaultOpen} />
       <TopicDetailApprovalPanel detailKey={detailKey} showCompare={false} />
     </div>
   );

@@ -5,15 +5,20 @@ import { Button } from "@/style/components/button";
 import { knowledgeBaseSelect } from "@/app/knowledgeBase/editor/knowledgeBaseSelect";
 import { TopicKeyBadges } from "@/app/knowledgeBase/editor/_components/TopicKeyBadges";
 import { formatVersionTime } from "@/app/knowledgeBase/topicDetail/topicDetailVersionLogic";
+import { sortWaitingLongestFirst } from "@/app/knowledgeBase/workspace/knowledgeBaseWorkspaceLogic";
+import { OpenInWorkspaceButton } from "@/app/knowledgeBase/workspace/_components/OpenInWorkspaceButton";
 
-// Knowledge base documents whose latest version is waiting on the signed-in user. Approving happens
-// in the review dialog, after reading the document, never from this list.
+// Knowledge base documents whose latest version is waiting on the signed-in user, longest-waiting first.
+// Approving happens in the review dialog, after reading the document, never from this list.
 export function PendingApprovalsList({
   onReviewAction,
+  showOpenInEditor = false,
 }: {
   onReviewAction: (detailKey: string) => void;
+  /** Adds a second way in, straight to the workspace editor, for hosts that have room for it. */
+  showOpenInEditor?: boolean;
 }) {
-  const details = useSelector(knowledgeBaseSelect.detailsPendingMyApproval);
+  const details = sortWaitingLongestFirst(useSelector(knowledgeBaseSelect.detailsPendingMyApproval));
 
   if (details.length === 0) {
     return (
@@ -40,15 +45,18 @@ export function PendingApprovalsList({
             </p>
           </div>
           <TopicKeyBadges topicKeys={detail.topicKeys} />
-          <Button
-            size="sm"
-            variant="primary"
-            intensity="soft"
-            className="h-7 text-xs"
-            onClick={() => onReviewAction(detail.detailKey)}
-          >
-            Review
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="primary"
+              intensity="soft"
+              className="h-7 text-xs"
+              onClick={() => onReviewAction(detail.detailKey)}
+            >
+              Review
+            </Button>
+            {showOpenInEditor && <OpenInWorkspaceButton detailKey={detail.detailKey} className="h-7 text-xs" />}
+          </div>
         </li>
       ))}
     </ul>
