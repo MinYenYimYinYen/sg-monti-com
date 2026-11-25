@@ -1,70 +1,49 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
-import { Clock } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { ReactNode } from "react";
+import { BarChart3, Clock, Upload, Wallet } from "lucide-react";
 import { useSelector } from "react-redux";
-import { Button } from "@/style/components/button";
+import { PageLayout } from "@/components/PageLayout/PageLayout";
+import { TabNav, type TabNavItem } from "@/components/PageLayout/TabNav";
 import { timeCardSelect } from "@/app/timeCard/timeCardSelect";
-import { useTimeCard } from "@/app/timeCard/useTimeCard";
+import { useTimeCardDeps } from "@/app/timeCard/useTimeCardDeps";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
-import { useEmployee } from "@/app/realGreen/employee/useEmployee";
 import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { can } from "@/permission/can";
 
-const NAV_LINKS = [
-  { label: "Import", href: "/timeCard/import" },
-  { label: "Payroll", href: "/timeCard/payroll" },
-] as const;
+const TABS: readonly TabNavItem[] = [
+  { label: "Import", href: "/timeCard/import", icon: Upload },
+  { label: "Payroll", href: "/timeCard/payroll", icon: Wallet },
+  { label: "Reports", href: "/timeCard/reports", icon: BarChart3 },
+];
+
+const ROOT_HREF = "/timeCard/import";
 
 export default function TimeCardLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+  useTimeCardDeps();
   const lastImportedDate = useSelector(timeCardSelect.lastImportedDate);
-  const { fetchLastImportedDate } = useTimeCard();
-  useEmployee({ autoLoad: true });
-
-  useEffect(() => {
-    fetchLastImportedDate();
-  }, [fetchLastImportedDate]);
 
   const lastImportedLabel = lastImportedDate
     ? `Last Imported: ${prettyDate(lastImportedDate, "MMM d yyyy")}`
     : null;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Fixed header */}
-      <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <h1 className="text-base font-semibold text-foreground">Time Cards</h1>
-          {lastImportedLabel && (
-            <span className="text-sm text-muted-foreground">{lastImportedLabel}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {NAV_LINKS.map(({ label, href }) => {
-            const isActive = pathname.startsWith(href);
-            return (
-              <Button
-                key={href}
-                variant={isActive ? "primary" : "outline"}
-                intensity={isActive ? "solid" : "soft"}
-                size="sm"
-                asChild
-              >
-                <Link href={href}>{label}</Link>
-              </Button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Page content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+    <PageLayout>
+      <PageLayout.Header
+        left={
+          <>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <h1 className="text-base font-semibold text-foreground">Time Cards</h1>
+            {lastImportedLabel && (
+              <span className="text-sm text-muted-foreground">{lastImportedLabel}</span>
+            )}
+          </>
+        }
+        right={<TabNav items={TABS} rootHref={ROOT_HREF} />}
+      />
+      <PageLayout.Body>
         <GatedPanel requirement={can.punches.read}>{children}</GatedPanel>
-      </div>
-    </div>
+      </PageLayout.Body>
+    </PageLayout>
   );
 }

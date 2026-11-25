@@ -102,6 +102,25 @@ function subDays(date: string, days: number) {
   return format(fnsSubDays(parseISO(date), days), "yyyy-MM-dd");
 }
 
+/** The Sunday that starts the Sunday–Saturday week containing `date`. */
+function weekStartOf(date: string): string {
+  return format(startOfWeek(parseISO(date), { weekStartsOn: 0 }), "yyyy-MM-dd");
+}
+
+/** The Saturday that ends the Sunday–Saturday week containing `date`. */
+function weekEndOf(date: string): string {
+  return format(endOfWeek(parseISO(date), { weekStartsOn: 0 }), "yyyy-MM-dd");
+}
+
+/**
+ * Widens a range so it starts on a Sunday and ends on a Saturday.
+ * An invalid or incomplete range is returned unchanged.
+ */
+function expandToFullWeeks(dateRange: TRange<string>): TRange<string> {
+  if (!isValidDateRange(dateRange)) return dateRange;
+  return { min: weekStartOf(dateRange.min), max: weekEndOf(dateRange.max) };
+}
+
 function isInRange(date: string, dateRange: TRange<string>): boolean {
   const parsedDate = parseISO(date);
   const parsedMin = parseISO(dateRange.min);
@@ -265,6 +284,8 @@ export const dateStrings = {
   yearEnd,
   addDays,
   subDays,
+  weekStartOf,
+  weekEndOf,
   addWeekdays,
   isInRange,
   isWeekDay,
@@ -277,6 +298,7 @@ export const dateStrings = {
 export const dateRanges = {
   isValidDateRange,
   padDateRange,
+  expandToFullWeeks,
   dateRangeFromDate,
   dateRangeToDate,
   countWeekdays,

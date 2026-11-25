@@ -3,8 +3,7 @@ import {
   TimeCardPolicy,
   defaultTimeCardPolicy,
 } from "@/app/timeCard/timeCardPolicy";
-import { getWeekNumber } from "@/lib/primatives/dates/getWeek";
-import { parseISO, getYear } from "date-fns";
+import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 
 /**
  * Pure computation class for time card data.
@@ -128,17 +127,15 @@ export class TimeCard {
   }
 
   /**
-   * Groups punches by employee + ISO year + week number.
-   * Returns a map keyed by "employeeId|year|week" → Punch[].
-   * Used internally for overtime calculation.
+   * Groups punches by employee + Sunday–Saturday week.
+   * Returns a map keyed by "employeeId|weekStartDate" → Punch[].
+   * Keyed by the week's Sunday (not a week number) so a week that spans New Year's
+   * stays one overtime bucket. Used internally for overtime calculation.
    */
   private get byEmployeeWeek(): Map<string, Punch[]> {
     const map = new Map<string, Punch[]>();
     for (const punch of this.punches) {
-      const date = parseISO(punch.punchDate);
-      const week = getWeekNumber(punch.punchDate);
-      const year = getYear(date);
-      const key = `${punch.employeeId}|${year}|${week}`;
+      const key = `${punch.employeeId}|${dateStrings.weekStartOf(punch.punchDate)}`;
       const existing = map.get(key);
       if (existing) {
         existing.push(punch);

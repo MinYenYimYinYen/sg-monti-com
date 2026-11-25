@@ -50,6 +50,7 @@ import { holidayReducer } from "@/app/holiday/holidaySlice";
 import { timeCardReducer } from "@/app/timeCard/timeCardSlice";
 import { timeCardImportReducer } from "@/app/timeCard/import/timeCardImportSlice";
 import { timeCardPayrollReducer } from "@/app/timeCard/payroll/timeCardPayrollSlice";
+import { timeCardReportsReducer } from "@/app/timeCard/reports/timeCardReportsSlice";
 import { customerValueFilterReducer } from "@/app/bizPlan/customerValue/customerValueFilterSlice";
 import { productivityReducer } from "@/app/productivity/productivitySlice";
 import { flagRuleReducer } from "@/app/flagRule/flagRuleSlice";
@@ -146,6 +147,7 @@ const rootReducer = combineReducers({
   timeCard: timeCardReducer,
   timeCardImport: timeCardImportReducer,
   timeCardPayroll: timeCardPayrollReducer,
+  timeCardReports: timeCardReportsReducer,
   customerValueFilter: customerValueFilterReducer,
   productivity: productivityReducer,
   flagRule: flagRuleReducer,

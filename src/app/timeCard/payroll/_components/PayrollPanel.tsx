@@ -271,7 +271,7 @@ export function PayrollPanel() {
   };
 
   return (
-    <div className="px-4 py-6">
+    <div className="h-full overflow-y-auto px-4 py-6">
       <div className="max-w-3xl space-y-6">
         {/* Controls */}
         <div className="flex items-center gap-3 flex-wrap">

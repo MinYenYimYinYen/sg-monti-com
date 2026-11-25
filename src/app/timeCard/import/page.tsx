@@ -4,7 +4,7 @@ import { PunchImportPanel } from "@/app/timeCard/import/_components/PunchImportP
 
 export default function TimeCardImportPage() {
   return (
-    <div className="px-4 py-6">
+    <div className="h-full overflow-y-auto px-4 py-6">
       <PunchImportPanel />
     </div>
   );

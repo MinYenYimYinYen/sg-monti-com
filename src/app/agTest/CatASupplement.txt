@@ -1,0 +1,512 @@
+Category A Supplement
+AS01 - Introduction
+📋 Key Terms and Definitions
+1.	State Lead Agency
+•	Definition: The state agency responsible for implementing and enforcing state and federal pesticide laws (in Minnesota, this is the Minnesota Department of Agriculture - MDA)
+•	Reference: Page 1, 3
+2.	Pesticide Misuse
+•	Definition: Using a pesticide in a manner inconsistent with its labeling or regulations
+•	Reference: Page 1, 3-4
+3.	Integrated Pest Management (IPM)
+•	Definition: A pest management strategy that integrates chemical and nonchemical methods to create the most effective and economical plan while minimizing harmful effects
+•	Reference: Page 1
+🎯 Learning Objectives with Answers
+1.	List examples of the public's interest in how you use, handle and apply pesticides
+•	Answers: 
+•	Protection of public health and the environment
+•	Keeping pesticides secured
+•	Concerns about pesticide misapplication
+•	Preventing harm to applicators, coworkers, family, and customers
+•	Avoiding contamination of water, food, land, and air
+2.	Describe the goal of the pesticide applicator licensing program
+•	Answer: To license qualified applicators who meet recognized health, safety, environmental, security, and pest management standards through certification via testing and education
+3.	List five examples of pesticide misuse
+•	Examples: 
+1.	Not using a pesticide according to label directions
+2.	Using a pesticide not registered for sale or use in Minnesota
+3.	Applying pesticide in a manner that endangers people or animals
+4.	Allowing drift and off-target site movement of pesticides
+5.	Applying a pesticide without holding the required pesticide applicator license
+
+AS02 – Licensing 
+Key Terms 📚
+1.	Restricted Use Pesticides (RUPs)
+•	Definition: Pesticide formulations designated by FIFRA that can only be applied by licensed or certified applicators in Minnesota.
+2.	Non-Restricted Use Pesticides (Non-RUPs)
+•	Definition: All pesticides other than RUPs, including general use, unclassified pesticides, organic pesticides, and EPA's 25(b) minimum risk pesticides.
+3.	Commercial Pesticide Applicator
+•	Definition: Applicators who apply pesticides "for hire" to customer's land or sites for payment or fee.
+4.	Noncommercial Pesticide Applicator
+•	Definition: Employees who apply pesticides to their employer's land or sites.
+5.	Structural Pest Control Applicator (SPCA)
+•	Definition: Applicators who apply pesticides "for hire" in, on, or around customer's buildings and structures.
+6.	Private Pesticide Applicator
+•	Definition: Individuals who apply pesticides on their own land or sites for agricultural commodity production.
+7.	Certification
+•	Definition: The testing process by which the Minnesota Department of Agriculture determines an applicator meets required competency standards.
+8.	Licensing
+•	Definition: The process of issuing credentials that provide individuals access to pesticides registered for use in Minnesota.
+9.	Recertification
+•	Definition: The process of maintaining certification by attending workshops or retesting in specific categories.
+Learning Objectives 🎯
+Objective 1: List the Three Broad Purposes of the Pesticide Licensing System
+Answer:
+1.	Control access to Restricted Use Pesticides (RUPs) through licensing to those who have demonstrated competency.
+2.	Limit category-specific pesticide applications through licensing.
+3.	Ensure licensed individuals receive continuing education on laws, regulations, best practices, and pest management information.
+
+
+Objective 2: List Ways Minnesota's Licensing Requirements Differ from Other States
+Answer:
+1.	Requires all RUPs to be applied by licensed applicators.
+2.	Requires licensing for commercial pesticide applications of both RUPs and non-RUPs.
+3.	Requires licensed applicators for all pesticide applications on golf courses.
+4.	Only allows EPA-designated 25(b) or Minnesota-registered pesticide products.
+5.	Does not allow unlicensed applicators to apply RUPs, even under supervision.
+6.	No minimum age requirement for obtaining a pesticide license.
+7.	Licenses are not transferable between individuals or employers.
+Objective 3: Describe When Commercial or Noncommercial Pesticide Applicator Licenses are Required
+Answer:
+•	Commercial Applicator: Required for any pesticide application done "for hire", including RUPs and non-RUPs.
+•	Noncommercial Applicator: Required to apply RUPs on employer's land, and for all pesticide applications on golf courses.
+Objective 4: Describe When a Structural Pest Control Applicator License is Required
+Answer:
+•	Required for pesticide applications "for hire" in, on, or around buildings and structures.
+•	Must hold either an SPCA Journeyman or SPCA Master license.
+•	Needed to control structural pests and apply any pesticide (RUP or non-RUP).
+Objective 5: List General Steps for Obtaining an Initial Pesticide Applicator License
+Answer:
+1.	Complete the applicator license form.
+2.	Pay the license application fee.
+3.	Verify identity with official photo ID.
+4.	Pass required exams with 70% or higher score.
+5.	Receive license ID card from Minnesota Department of Agriculture.
+Objective 6: List Recertification Requirements
+Answer:
+1.	Recertify within the year following initial certification.
+2.	Two recertification methods: 
+•	Attend MDA-approved category-specific recertification workshops.
+•	Retest by taking category certification exams.
+3.	Recertification frequency varies by category (1-3 years).
+Objective 7: Find License Expiration and Recertification Dates
+Answer:
+•	All licenses expire on December 31st each year.
+•	Recertification date is listed on the license ID card for each category.
+
+AS03 – Records
+Learning Objectives and Answers 🎯
+1.	Objective: Describe which pesticide applications require an applicator to make and keep a record.
+•	Answer: 
+•	Noncommercial applicators must keep records for Restricted Use Pesticide (RUP) applications
+•	Commercial and Structural (SPCA) applicators must keep records for ALL pesticide applications (both RUP and non-RUP)
+2.	Objective: List how the recordkeeping requirements differ for commercial, noncommercial, and structural applicators.
+•	Answer: 
+•	Noncommercial Applicators: 
+•	Record only RUP applications
+•	No requirement to provide customer records
+•	Commercial Applicators: 
+•	Record ALL pesticide applications
+•	Must provide complete records to customers
+•	Structural Applicators: 
+•	Record ALL pesticide applications
+•	Must provide complete records to customers
+3.	Objective: Explain where to find information about required pesticide application records.
+•	Answer: 
+•	Minnesota Department of Agriculture (MDA) website
+•	Navigate to 'Pesticide Application Records (Samples)' section
+4.	Objective: Describe environmental information recording for pesticide applications.
+•	Answer: 
+•	Required for outdoor applications
+•	Must record: 
+•	Actual wind speed
+•	Wind direction
+•	Temperature
+5.	Objective: State who must keep records and how long they must be retained.
+•	Answer: 
+•	Who: 
+•	Applicator
+•	Company
+•	Authorized agent
+•	Retention Period: 5 years after the date of treatment
+6.	Objective: Describe how soon a record must be completed after an application.
+•	Answer: 
+•	Must be completed "as soon as possible" following the application
+•	Ideally immediately after application or by the end of the work day
+Key Terms Glossary 📚
+1.	Licensed Applicator:
+•	A person certified to apply pesticides, with specific recordkeeping requirements
+2.	Restricted Use Pesticide (RUP):
+•	Pesticides that can only be purchased and applied by certified applicators
+3.	Commercial Applicator:
+•	An applicator who applies pesticides for hire
+4.	Noncommercial Applicator:
+•	An applicator who applies pesticides on property they own or control, not for hire
+5.	Structural Pest Control Applicator (SPCA):
+•	An applicator specializing in pest control for structures
+6.	Environmental Conditions:
+•	Factors like wind speed, direction, and temperature that impact pesticide application
+7.	Record Retention:
+•	The requirement to keep pesticide application records for a specified period (5 years in this case)
+8.	Authorized Agent:
+•	A person authorized to maintain records on behalf of the applicator or company
+
+AS04 – Endangered Species
+📘 Key Terms and Definitions
+1. Endangered Species
+•	Definition: A plant or animal species in danger of extinction
+•	Example: Minnesota dwarf trout lily (Erythronium propullans)
+2. Threatened Species
+•	Definition: A plant or animal species likely to become endangered in the foreseeable future
+•	Example: Leedy's roseroot (Sedum integrifolium ssp. leedyi)
+3. Candidate Species
+•	Definition: Plants or animals being considered for designation as threatened or endangered
+•	Example: Sprague's pipit (Anthus spragueii)
+🎯 Learning Objectives
+Objective 1: Describe What is Illegal Regarding Endangered or Threatened Species
+Answers:
+•	Killing or harming an endangered or threatened species
+•	Destroying or modifying critical habitats
+•	Digging up, removing, or harming listed endangered or threatened plants
+•	Importing, transporting, or selling any part of a listed species
+Objective 2: How to Find Out About Endangered, Threatened, or Candidate Species
+Answers:
+1.	Check resources:
+•	Minnesota DNR website (www.dnr.state.mn.us/ets)
+•	US Fish and Wildlife Service (FWS) lists
+•	EPA's Bulletins Live! System (www.epa.gov/espp/bulletins.htm)
+2.	Contact agencies:
+•	Minnesota DNR: (651) 296-6157 or (888) 646-6367
+•	US Fish and Wildlife Service: (612) 725-3548
+3.	Communicate with landowners about protected species presence
+AS05 Water
+📘 Key Terms and Definitions
+1.	Pesticide Management Plan
+•	A state-level strategy to protect groundwater and surface water from pesticide contamination
+•	Focuses on preventing pesticides and their breakdown products from reaching unsafe levels in water resources
+2.	Best Management Practices (BMPs)
+•	Research-based, practical methods to prevent or minimize contamination
+•	Includes activities like storing, transporting, mixing, and loading pesticides
+3.	Application Setbacks
+•	The distance of untreated land between a pesticide-treated area and areas needing protection
+•	Helps prevent pesticide runoff into sensitive areas
+4.	Filter Strips and Vegetative Buffers
+•	Untreated grass strips next to streams, ponds, and sensitive areas
+•	Trap pesticide runoff from treated sites
+5.	Depth to Groundwater
+•	The distance from the soil surface down to the water table
+•	Important for understanding potential pesticide leaching risks
+6.	Backflow
+•	The undesired reversal of water flow, which can contaminate water sources with pesticides
+•	Can occur when water pressure drops unexpectedly
+7.	Air Gap
+•	A physical separation between a water source and a container being filled
+•	Prevents pesticide contamination during equipment filling
+8.	Reduced Pressure Principle Device
+•	A mechanical backflow prevention device with two check valves and a pressure differential valve
+•	Prevents pesticides from backflowing into water sources
+9.	Pressurized Vacuum Breaker
+•	A device that stops backflow when water line pressure is lost
+•	Installed in a vertical position on water supply lines
+10.	Atmospheric Vacuum Breaker
+•	Allows air into the water line to break the backflow siphon
+•	Must be installed at least six inches above the overflow level
+11.	Chemigation
+•	The application of pesticides and fertilizers through irrigation systems
+12.	Chemigation Operator
+•	The legal entity (person or persons) involved in operating a chemigation system
+🎯 Learning Objectives and Answers
+1.	Objective: State which herbicides have voluntary Water Quality Best Management Practices
+•	Answer: 
+•	Acetochlor
+•	Alachlor
+•	Atrazine
+•	Metolachlor
+•	Metribuzin
+2.	Objective: Describe how drinking water sources may be contaminated when filling pesticide application equipment
+•	Answer: 
+•	Backflow can occur if water pressure drops unexpectedly
+•	Electricity shutdown or pump failure can cause siphoning of pesticides back into water sources
+•	This can happen when filling equipment from private wells, city water systems, or surface waters
+3.	Objective: List types of backflow prevention devices approved in Minnesota
+•	Answer: 
+1.	Air Gap
+2.	Reduced Pressure Principle Device (RPP/RPZ)
+3.	Pressurized Vacuum Breaker (PVB)
+4.	Atmospheric Vacuum Breaker (AVB)
+4.	Objective: Calculate air gap distance for water hoses above pesticide containers
+•	Answer: 
+•	Air gap must be at least two times the inside diameter of the water supply line
+•	Example: For a 2-inch water supply line, the air gap must be at least 4 inches above the container rim
+5.	Objective: Identify who should install mechanical backflow prevention devices
+•	Answer: 
+•	A licensed plumber who complies with the Minnesota Plumbing Code
+•	Must contact local health department for specific installation specifications
+6.	Objective: Describe backflow prevention requirements for rinsing pesticide containers
+•	Answer: 
+•	Air gap is NOT an option
+•	Must use either: 
+1.	Hose connection vacuum breaker on the faucet
+2.	Double-check valve with intermediate atmospheric vent on water supply line
+7.	Objective: List legal requirements for chemigation in Minnesota
+•	Answer: 
+•	Only use pesticides registered and labeled for chemigation
+•	Obtain MDA Chemigation Permit
+•	Install safety anti-pollution and backflow safeguard devices
+•	Post chemigated treated areas
+•	Follow setbacks and containment requirements
+•	Keep records of applied pesticides and fertilizers
+8.	Objective: Identify who needs a chemigation permit
+•	Answer: 
+•	All operators applying pesticides through irrigation systems
+•	Includes the legal entity (person or persons) involved in system operation, maintenance, and use
+
+AS06 Disposal
+📚 Key Terms and Definitions
+1. Pesticide Waste
+•	Definition: Pesticides that cannot be used as originally intended, including: 
+•	Old pesticides that may no longer be effective
+•	Pesticides you no longer need or want
+•	Pesticide containers and other contaminated materials
+2. Waste Pesticides
+•	Definition: Pesticides that are no longer usable or wanted due to: 
+•	Government ban
+•	Loss of effectiveness from storage
+•	Leftover or unwanted quantities
+3. Household Hazardous Waste Facility (HHW)
+•	Definition: A designated facility for collecting and properly disposing of household hazardous waste, including certain types of pesticide waste
+🎯 Learning Objectives and Answers
+Objective 1: Reducing Waste Pesticide and Container Usage
+Answer:
+•	Buy only the amount of pesticides needed for one year
+•	Use careful handling during mixing, loading, and application
+•	Protect pesticides through good storage practices
+•	Store leftover pesticides in original containers with labels
+•	Keep all pesticides in a locked, secured area
+Objective 2: Best Time to Rinse Pesticide Containers
+Answer:
+•	Rinse containers immediately when emptied
+•	Prevents hardening of residues
+•	Eliminates small spills and leakage
+•	Ensures no visible pesticide residue remains
+Objective 3: Legal Disposal Options
+Answer: For Empty Containers:
+•	Recycle through specific pesticide container recycling programs
+•	Take to county solid waste offices
+•	Do NOT burn or bury outside sanitary landfills
+For Waste Pesticides:
+•	Use according to label directions
+•	Deliver to Waste Pesticide Collection
+•	Take to participating county HHW facilities
+Objective 4: Storage Requirements for Empty Containers
+Answer:
+•	Unrinsed Containers:
+•	Store like containers with pesticide
+•	Replace cap
+•	Store upright in roofed, secure, locked area
+•	Store on impervious surface
+•	Pressure-Rinsed Containers:
+•	Store indoors
+•	Prevent water/dirt entry
+•	Remove caps for complete drying
+•	Triple-Rinsed Containers:
+•	Can be stored outside
+•	Replace caps
+•	Keep dry and clean
+•	No need for impervious surface
+Objective 5: Preparing Empty Pesticide Containers for Recycling
+Answer:
+•	Remove caps
+•	Peel off labels
+•	Slide off plastic sleeves/wrappers
+•	Discard removed materials as solid waste
+•	Do NOT include in household recycling
+•	Containers must be properly rinsed (triple or pressure rinsed)
+
+AS07 Incident Response
+📚 Key Terms and Definitions
+1.	Incident
+•	Definition: A flood, fire, tornado, transportation accident, storage container rupture, portable container rupture, leak, spill, emission, discharge, escape, disposal, or other event that: 
+•	Releases or immediately threatens to release an agricultural chemical
+•	Accidentally or intentionally occurs
+•	May cause unreasonable adverse effects on the environment
+2.	Incident Response Plan
+•	Definition: A detailed document describing: 
+•	Pesticide and fertilizer storage practices
+•	Handling procedures
+•	Disposal methods
+•	Incident handling practices for a business
+3.	Responsible Party
+•	Definition: A person who, at the time of an incident, has: 
+•	Custody of a pesticide or fertilizer
+•	Control of a pesticide or fertilizer
+•	Responsibility for a pesticide or fertilizer container or rinsate
+4.	Agricultural Chemicals
+•	Definition: Includes both: 
+•	Fertilizers: Substances containing plant nutrients used to promote plant growth
+•	Pesticides: Substances intended to prevent, destroy, repel, or mitigate pests
+5.	STARR
+•	Definition: Five-step incident response protocol: 
+•	Secure
+•	Telephone
+•	Abate
+•	Recover
+•	Remediate
+6.	ACRRA
+•	Definition: Agricultural Chemical Response and Reimbursement Account - A fund providing partial reimbursement for cleanup costs of agricultural chemical incidents
+🎯 Learning Objectives with Answers
+1.	Who must develop and regularly update an incident response plan?
+•	Answer: All businesses in Minnesota that: 
+•	Make commercial, noncommercial, or structural pesticide applications
+•	Store bulk pesticides or fertilizers (including anhydrous ammonia)
+2.	Who should be called to report an agricultural chemical spill?
+•	Answer: 
+•	First, call 911 if there's a threat to public safety
+•	Then, call the Minnesota State Duty Officer: 
+•	1-800-422-0798 (Greater Minnesota)
+•	(651) 649-5451 (Twin Cities Metropolitan area)
+3.	What are seven potential causes of a pesticide incident?
+•	Answer: 
+1.	Improper storage and disposal
+2.	Mixing and loading containment failures
+3.	Transportation spills
+4.	Application spills
+5.	Equipment failure
+6.	Vandalism
+7.	Acts of Nature (floods, tornadoes, earthquakes)
+4.	Who should call the State Duty Officer and when?
+•	Answer: 
+•	The "responsible party" or "owner of real property"
+•	Immediately upon discovering a pesticide or fertilizer incident
+•	Exceptions exist for very small, contained releases
+5.	What are the steps in STARR for handling a pesticide incident?
+•	Answer: 
+1.	Secure: Keep people/animals away, wear PPE
+2.	Telephone: Call 911 and State Duty Officer
+3.	Abate: Control contamination source
+4.	Recover: Collect released chemicals
+5.	Remediate: Dispose of contaminated materials
+6.	What are the key parts of an Incident Response Plan?
+•	Answer: 
+•	Emergency contact list
+•	Product labels and MSDS
+•	First aid information
+•	Pre-fire planning
+•	Facility maps
+•	Handling procedures
+•	Emergency equipment list
+•	Release procedures
+•	Employee training documentation
+7.	Where should an Incident Response Plan be stored?
+•	Answer: 
+•	Prominent location at storage facility
+•	Accessible to all employees
+•	Backup copy at a different location
+•	Copy in each service vehicle
+•	Copies with local fire and police departments
+8.	Who should be familiar with an Incident Response Plan?
+•	Answer: All persons working with pesticides and fertilizers
+9.	Why are pesticide labels and MSDS important in an Incident Response Plan?
+•	Answer: They provide critical information for: 
+•	Identifying chemicals
+•	Understanding health and safety risks
+•	Guiding emergency response actions
+AS “Checklists”
+Key Terms Glossary 🔍
+Licensing Categories
+1.	Commercial Pesticide Applicator
+•	Definition: A professional who applies pesticides for commercial purposes, requiring specific licensing and certification.
+2.	Noncommercial Pesticide Applicator
+•	Definition: An individual who applies pesticides for non-commercial purposes, such as government agencies or private organizations.
+3.	Structural Pest Control Applicator (SPCA)
+•	Definition: A specialized applicator focused on pest control within structures, with specific licensing tiers like Journeyman and Master.
+Licensing Roles
+1.	Journeyman
+•	Definition: An entry-level pest control professional who works under a Master applicator for at least two years.
+2.	Master Applicator
+•	Definition: A senior-level pest control professional who has completed the required experience and can supervise Journeyman applicators.
+Administrative Terms
+1.	MDA
+•	Definition: Minnesota Department of Agriculture, the governing body responsible for pesticide applicator licensing.
+2.	Recertification
+•	Definition: The process of renewing a pesticide applicator license by attending workshops or retesting in specific categories.
+Learning Objectives 🎯
+Objective 1: Understanding Initial Licensing Process
+•	Goal: Learn the steps to obtain a pesticide applicator license
+•	Key Steps: 
+1.	Complete the appropriate application form
+2.	Pay required fees and surcharges
+3.	Verify personal identity
+4.	Pass required examinations
+5.	Receive license ID card
+Objective 2: Comprehend Renewal and Recertification
+•	Goal: Understand how to maintain a valid pesticide applicator license
+•	Key Requirements: 
+1.	Check license expiration date
+2.	Attend recertification workshops OR retest
+3.	Complete renewal form
+4.	Pay renewal fees
+5.	Renew before December 31st
+Objective 3: Recognize Financial and Legal Responsibilities
+•	Goal: Understand the compliance requirements for pesticide applicators
+•	Key Responsibilities: 
+1.	Maintain financial responsibility (insurance/bond)
+2.	Carry license ID card when applying pesticides
+3.	Work under appropriate company licensing
+4.	Meet workers' compensation requirements
+AS Terms Summary
+Pesticide Applicator Certification: Key Terms Outline 🌱🔬
+I. Water Protection and Backflow Prevention
+•	Air Gap: Physical separation preventing water contamination
+•	Atmospheric Vacuum Breaker: Device to break backflow siphon
+•	Backflow: Siphoning of pesticides back into water source
+•	Pressurized Vacuum Breaker: Stops backflow under continuous pressure
+•	Reduced Pressure Principle Device (RPP/RPZ): Advanced backflow prevention
+II. Regulatory Framework and Legal Definitions
+Applicator Types
+•	Commercial Applicator: Applies pesticides on customer's land
+•	Noncommercial Applicator: Applies pesticides on employer's land
+•	Private Pesticide Applicator: Applies pesticides on own/leased/rented land
+•	Structural Pest Control Applicator (SPCA): Manages pests in/around buildings
+Licensing and Certification
+•	Certification: Testing process for competency
+•	License Category: Based on pesticide use type
+•	License Renewal: Continuing applicator license
+•	Licensing: Credentialing process
+•	Recertification: Attending workshops or retesting
+•	Reciprocity: Cross-state license recognition
+Regulatory Concepts
+•	Agricultural Chemical Response and Reimbursement Account (ACRRA): Cleanup cost reimbursement
+•	Agricultural Chemicals: Fertilizers and pesticides
+•	Best Management Practices (BMPs): Voluntary contamination reduction practices
+•	Incident: Unauthorized chemical release
+•	Incident Response Plan: Chemical handling and emergency procedures
+•	Pesticide Management Plan: Water resource protection program
+•	Registered Products: Approved pesticides in Minnesota
+•	Restricted Use Pesticides (RUPs): High-hazard pesticides
+•	State Lead Agency: Implements pesticide laws
+III. Environmental Protection
+•	Application Setbacks: Untreated land buffer zones
+•	Candidate Species: Potential threatened/endangered species
+•	Depth to Groundwater: Distance to water table
+•	Endangered Species: Species in danger of extinction
+•	Filter Strips and Vegetative Buffers: Runoff trapping areas
+•	Threatened Species: Likely to become endangered
+IV. Pesticide Waste Management
+•	Household Hazardous Waste Facility (HHW): Waste collection centers
+•	Pesticide Wastes: Unusable or unwanted pesticides
+•	Waste Pesticides: No longer usable chemicals
+V. Special Application Methods
+•	Chemigation: Pesticide application through irrigation systems
+•	Chemigation Operator: System operation manager
+VI. Incident Response
+•	STARR: 
+1.	Secure the area
+2.	Telephone authorities
+3.	Abate contamination source
+4.	Recover chemicals
+5.	Remediate materials
+VII. Additional Classifications
+•	Non-Restricted Use Pesticides (Non-RUPs): General use pesticides
+•	Pesticide Misuse: Illegal pesticide activities
+
+
