@@ -94,6 +94,8 @@ import { importCCTxnMappingReducer } from "@/app/qbo/importCCTxn/importCCTxnMapp
 import { importRowReducer } from "@/app/qbo/importCCTxn/rows/importRowSlice";
 import { importPostReducer } from "@/app/qbo/importCCTxn/post/importPostSlice";
 import { importDecisionReducer } from "@/app/qbo/importCCTxn/decisions/importDecisionSlice";
+import { studyReducer } from "@/app/study/studySlice";
+import { studyCardReducer } from "@/app/study/studyCardSlice";
 
 const rootReducer = combineReducers({
   globalSettings: globalSettingsReducer,
@@ -188,6 +190,8 @@ const rootReducer = combineReducers({
   knowledgeBaseWorkspace: knowledgeBaseWorkspaceReducer,
   knowledgeBaseSettings: knowledgeBaseSettingsReducer,
   claudeSession: claudeSessionReducer,
+  study: studyReducer,
+  studyCard: studyCardReducer,
   askAway: askAwayReducer,
   capabilityBundle: capabilityBundleReducer,
   userCapabilities: userCapabilitiesReducer,

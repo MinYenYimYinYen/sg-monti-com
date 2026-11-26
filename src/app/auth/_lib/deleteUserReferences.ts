@@ -2,6 +2,7 @@ import { ImportCardAssignmentModel } from "@/app/qbo/importCCTxn/models/ImportCC
 import { KnowledgeBaseSettingModel } from "@/app/knowledgeBase/knowledgeBaseSettings/KnowledgeBaseSettingsModel";
 import { loadApproverUserNames } from "@/app/knowledgeBase/knowledgeBaseSettings/_lib/loadApproverUserNames";
 import { completePendingApprovals } from "@/app/knowledgeBase/topicDetail/_lib/completePendingApprovals";
+import { CardScheduleModel, ReviewLogModel } from "@/app/study/StudyModels";
 
 /**
  * Removes the records that exist only to point at one user, so nothing is left referring to a
@@ -16,6 +17,9 @@ import { completePendingApprovals } from "@/app/knowledgeBase/topicDetail/_lib/c
  * The knowledge base approver list names the users who may approve documents. A name nobody can act as
  * would block unanimous approval for good, so the deleted user is pulled from it.
  *
+ * Study progress (a card schedule and the review log) belongs to the person studying and has no
+ * meaning without them, so both are deleted. The decks and cards they imported stay.
+ *
  * History that merely records who did something (import rows, journal postings, inventory
  * checks, the QBO connection) is deliberately kept, as is shared content (templates, configs),
  * which stores the author's saId. Add any other per-user data that only works with a login here.
@@ -23,6 +27,8 @@ import { completePendingApprovals } from "@/app/knowledgeBase/topicDetail/_lib/c
  */
 export async function deleteUserReferences({ userName }: { userName: string }): Promise<void> {
   await ImportCardAssignmentModel.deleteMany({ userName });
+  await CardScheduleModel.deleteMany({ userName });
+  await ReviewLogModel.deleteMany({ userName });
   await KnowledgeBaseSettingModel.updateOne(
     { settingKey: "approvers" },
     { $pull: { "value.approverUserNames": userName } },

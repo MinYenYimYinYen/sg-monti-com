@@ -110,23 +110,27 @@ export async function sendToAnthropic(params: SendMessageParams): Promise<SendMe
   const model = params.model ?? DEFAULT_MODEL;
 
   try {
-    const response = await client.messages.create({
-      model,
-      max_tokens: params.maxTokens ?? DEFAULT_MAX_TOKENS,
-      messages: params.messages,
-      ...(params.system ? { system: params.system } : {}),
-      ...(params.tools && params.tools.length > 0
-        ? {
-            tools: params.tools.map(({ name, description, inputSchema }) => ({
-              name,
-              description,
-              // Our schema type is looser than the SDK's, which declares `required` and `properties`.
-              input_schema: inputSchema as Anthropic.Tool["input_schema"],
-            })),
-            ...(params.toolChoice ? { tool_choice: { type: params.toolChoice } } : {}),
-          }
-        : {}),
-    });
+    const response = await client.messages.create(
+      {
+        model,
+        max_tokens: params.maxTokens ?? DEFAULT_MAX_TOKENS,
+        messages: params.messages,
+        ...(params.system ? { system: params.system } : {}),
+        ...(params.tools && params.tools.length > 0
+          ? {
+              tools: params.tools.map(({ name, description, inputSchema }) => ({
+                name,
+                description,
+                // Our schema type is looser than the SDK's, which declares `required` and `properties`.
+                input_schema: inputSchema as Anthropic.Tool["input_schema"],
+              })),
+              ...(params.toolChoice ? { tool_choice: { type: params.toolChoice } } : {}),
+            }
+          : {}),
+      },
+      // A caller that sets a timeout owns its whole time budget, so the SDK must not retry after one.
+      params.timeoutMs === undefined ? undefined : { timeout: params.timeoutMs, maxRetries: 0 },
+    );
 
     return {
       content: mapResponseBlocks(response.content),

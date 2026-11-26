@@ -8,6 +8,7 @@ import { realGreenMetadataGroup } from "@/permission/groups/realGreenMetadata";
 import { realGreenProductsGroup } from "@/permission/groups/realGreenProducts";
 import { schedulingGroup } from "@/permission/groups/scheduling";
 import { siteAdminGroup } from "@/permission/groups/siteAdmin";
+import { studyGroup } from "@/permission/groups/study";
 
 // The permission tree: every group, in the order the admin screens list them. Each group lives in
 // its own file in this folder (defineGroup, see ../groupTypes.ts) and is added to this list.
@@ -20,6 +21,7 @@ export const permissionGroups = [
   accountingGroup,
   customerContactGroup,
   knowledgeBaseTopicsGroup,
+  studyGroup,
   aiAssistantGroup,
   siteAdminGroup,
 ] as const satisfies readonly GroupDefinition[];

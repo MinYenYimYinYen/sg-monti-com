@@ -10,7 +10,25 @@ export type RedactedThinkingBlock = { type: "redacted_thinking"; data: string };
 export type ToolUseBlock = { type: "tool_use"; id: string; name: string; input: unknown };
 export type ToolResultBlock = { type: "tool_result"; tool_use_id: string; content: string; is_error?: boolean };
 
-export type ContentBlock = TextBlock | ThinkingBlock | RedactedThinkingBlock | ToolUseBlock | ToolResultBlock;
+/**
+ * A PDF the model reads, text and page images both. Only server code builds one: it is too large to
+ * round-trip through the browser chat or to save with a conversation, so `sendMessageParamsSchema`
+ * and `chatMessageSchema` deliberately do not accept it. Check a request that holds one with
+ * `checkSendMessageParams`.
+ */
+export type DocumentBlock = {
+  type: "document";
+  source: { type: "base64"; media_type: "application/pdf"; data: string };
+  title?: string;
+};
+
+export type ContentBlock =
+  | TextBlock
+  | ThinkingBlock
+  | RedactedThinkingBlock
+  | ToolUseBlock
+  | ToolResultBlock
+  | DocumentBlock;
 
 export type ChatMessage = { role: "user" | "assistant"; content: ContentBlock[] };
 
@@ -43,6 +61,12 @@ export type SendMessageParams = {
   tools?: ToolSchema[];
   toolChoice?: ToolChoice;
   maxTokens?: number;
+  /**
+   * Replaces the client's default timeout for this call. A long answer (many cards from a PDF) can
+   * outlast it. Setting it also turns off the SDK's retry, because the caller owns the time budget.
+   * Server callers only: the browser schema does not accept it, so it is stripped there.
+   */
+  timeoutMs?: number;
 };
 
 export type SendMessageResult = {

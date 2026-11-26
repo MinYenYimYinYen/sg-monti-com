@@ -21,6 +21,16 @@ export const MODEL_OPTIONS: readonly { modelId: AnthropicModelId; label: string 
 export const DEFAULT_MAX_TOKENS = 2048;
 export const MAX_TOKENS_CAP = 8192;
 
+/**
+ * What a feature that builds its own request on the server may ask for, such as one that turns a PDF
+ * into many cards. Only server code can pass it, because the browser schema stops at `MAX_TOKENS_CAP`.
+ * The SDK refuses a non-streaming call it estimates at over 10 minutes (above about 21,000 tokens)
+ * only when the call has no timeout of its own. Every caller that asks for more than the browser
+ * cap must therefore pass `timeoutMs`, as the study import does. Real limits are time, not tokens:
+ * a long answer from a large model can outlast the route's `maxDuration` first.
+ */
+export const MAX_SERVER_TOKENS_CAP = 24_000;
+
 export const MAX_MESSAGES = 100;
 export const MAX_TOOLS = 20;
 export const MAX_SYSTEM_CHARS = 8_000;
@@ -33,6 +43,14 @@ export const TOOL_NAME_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
  * price jumps 5x. It is a rough guard against a runaway conversation, not an exact token count.
  */
 export const MAX_REQUEST_CHARS = 200_000;
+
+/**
+ * A backstop for a document the server builds itself. Decoded PDF bytes, not base64. A feature that
+ * receives the file through a Vercel route is held to a smaller size by the platform's body limit.
+ * The page count (100 a request) is not checked here: Anthropic rejects a PDF over it.
+ */
+export const MAX_DOCUMENT_BYTES = 10_000_000;
+export const MAX_DOCUMENTS_PER_REQUEST = 1;
 
 /** How many model calls one prompt may take when tools are involved. */
 export const MAX_TOOL_ITERATIONS = 6;

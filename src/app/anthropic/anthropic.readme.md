@@ -14,7 +14,7 @@ A generic pass-through to the Claude Messages API, with optional tools. It knows
 
 | File | Role |
 |---|---|
-| `anthropicConst.ts` | Allowed models, default model, token and size limits, tool loop cap, SDK timeout and retries |
+| `anthropicConst.ts` | Allowed models, default model, token and size limits (including the PDF limits), tool loop cap, SDK timeout and retries |
 | `AnthropicTypes.ts` | This module's own types. Client code never imports the SDK |
 | `anthropicSchema.ts`, `anthropicRequest.ts` | Zod validation of the request body and the pre-flight checks (the route trusts nothing) |
 | `anthropicServer.ts` | **The only file that imports the SDK.** Server only: it holds the key. Maps SDK errors to `AppError` |
@@ -58,6 +58,16 @@ const getCurrentTime = defineTool({
 
 Prices are in `anthropicPricing.ts` with the date they were read (`PRICES_READ_ON`). They are **estimates**: the Claude Console usage report is the real bill. Haiku 5.5 charges a higher rate for a request whose prompt is over 100,000 tokens, and each call is priced on its own prompt size. Prompt caching is not used, so it is not priced.
 
+## PDFs (server callers only)
+
+A `DocumentBlock` (`type: "document"`, base64 `application/pdf`) lets the model read a PDF, text and page images both. It is **not** available through `/anthropic/api`: `sendMessageParamsSchema` and `chatMessageSchema` do not list it, so the browser route rejects it, and a saved conversation can never hold one (it would blow `MAX_TURN_CHARS`). Only a feature that builds its own request on the server uses it, and it calls `sendToAnthropic` directly.
+
+- Check the request with `checkSendMessageParams` (`anthropicRequest.ts`), the same checks the route runs after its schema. It caps the PDF at `MAX_DOCUMENT_BYTES` (decoded bytes) and one PDF per request, and measures the text cap without the PDF's base64, since a PDF costs the model pages, not characters. The 100-page limit per request is Anthropic's, and it rejects an over-long PDF itself.
+- A server caller may pass `maxTokens` up to `MAX_SERVER_TOKENS_CAP` (the browser schema stops at `MAX_TOKENS_CAP`) and `timeoutMs` to replace the 50 second default (which also turns off the SDK retry, since the caller owns the budget). Both are ignored by the browser route, which strips unknown fields. The route's `maxDuration` still bounds the whole request, so a caller's own route must set its own.
+- A Vercel request body is limited to about 4.5 MB by default, and base64 adds a third. A feature that receives the PDF through a route must split it into smaller pieces first.
+- `MAX_SERVER_TOKENS_CAP` is 24,000. The SDK refuses a non-streaming call it estimates at over 10 minutes (above about 21,000 tokens) only when no timeout is given, so a caller above that must pass `timeoutMs`. The study import does. A long answer is limited by time (the route's `maxDuration`) before it is limited by tokens.
+- Thinking tokens still count toward `maxTokens`.
+
 ## Not built
 
-Attachments, streaming, prompt caching, any feature tools (knowledge base, customers), server-side tools that run inside the route, and tests.
+Streaming, prompt caching, image attachments, any feature tools (knowledge base, customers), server-side tools that run inside the route, and tests.
