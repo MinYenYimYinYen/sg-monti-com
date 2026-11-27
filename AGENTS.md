@@ -70,9 +70,9 @@ Types follow a layered suffix pattern that signals their role in the data pipeli
 
 | Suffix | Meaning | Example |
 |---|---|---|
-| `Doc` | Storage shape: keys and metadata only, no hydrated data | `EquipmentDoc`, `EquipmentPackageDoc` |
-| `Props` | Hydration additions: data resolved from other sources | `EquipmentProps`, `EquipmentPackageProps` |
-| *(none)* | Final consumable entity: `Doc & Props`, ready for UI | `Equipment`, `EquipmentPackage` |
+| `Doc` | Storage shape: keys and metadata only, no hydrated data | `AssignmentGroupDoc`, `PriorityServiceDoc` |
+| `Props` | Hydration additions: data resolved from other sources | `AssignmentGroupProps`, `PriorityServiceProps` |
+| *(none)* | Final consumable entity: `Doc & Props`, ready for UI | `AssignmentGroup`, `PriorityService` |
 | `DocProps` | Used when extending RealGreen entities with native keys/metadata | `CallAheadDocProps` |
 
 - Native data modules start at the `Doc` level (no `Raw` or `Core` needed).

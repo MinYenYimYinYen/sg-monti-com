@@ -1,4 +1,4 @@
-import { AppProductCore, AppProductRaw, remapAppProducts } from "@/app/realGreen/_lib/subTypes/AppProduct";
+import { ProductionProductCore, ProductionProductRaw, remapProductionProducts } from "@/app/realGreen/_lib/subTypes/ProductionProduct";
 import { remapServiceHistory, ServiceHistory, ServiceHistoryRaw } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import { DoneByCore, DoneByRaw, remapDoneBys } from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
@@ -18,7 +18,7 @@ function remapProduction({
   servId,
   servStatus,
   historyRaw,
-  rawAppProducts,
+  rawProductsUsed,
   doneBysRaw,
   doneDate,
 }: {
@@ -26,12 +26,12 @@ function remapProduction({
   servId: number;
   servStatus: string;
   historyRaw: ServiceHistoryRaw | undefined;
-  rawAppProducts: AppProductRaw[] | undefined;
+  rawProductsUsed: ProductionProductRaw[] | undefined;
   doneBysRaw: DoneByRaw[] | undefined;
   doneDate: string;
 }): ProductionCore | null {
   if (!(servStatus === "S")) return null;
-  if (!historyRaw || !rawAppProducts || !doneBysRaw || !invoice) {
+  if (!historyRaw || !rawProductsUsed || !doneBysRaw || !invoice) {
     throw new AppError({
       message:
         "Completed service has missing data! Please contact your department lead.",
@@ -39,19 +39,19 @@ function remapProduction({
       statusCode: 400,
       data: {
         history: !!historyRaw,
-        usedProducts: !!rawAppProducts,
+        usedProducts: !!rawProductsUsed,
         doneBys: !!doneBysRaw,
         invoice: !!invoice,
       },
     });
   }
   const history: ServiceHistory = remapServiceHistory(historyRaw, doneDate);
-  const usedAppProductCores: AppProductCore[] = remapAppProducts(rawAppProducts);
+  const productsUsedCores: ProductionProductCore[] = remapProductionProducts(rawProductsUsed);
   const doneByCores: DoneByCore[] = remapDoneBys(doneBysRaw);
 
   const production: ProductionCore = {
     ...history,
-    usedAppProductCores,
+    productsUsedCores,
     doneByCores,
     servId,
     invoice,
@@ -98,7 +98,7 @@ function remapService(raw: ServiceRaw): ServiceCore {
       servId: raw.id,
       doneBysRaw: raw.doneByEmployees,
       historyRaw: raw.serviceHistory,
-      rawAppProducts: raw.productsUsed,
+      rawProductsUsed: raw.productsUsed,
       servStatus: raw.serviceStatus,
       doneDate: raw.doneDate,
     }),

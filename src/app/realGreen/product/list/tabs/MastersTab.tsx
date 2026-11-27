@@ -73,16 +73,6 @@ export default function MastersTab() {
                   {/* Line 2: badges */}
                   <div className="flex items-center gap-1.5 mt-1">
                     <Badge
-                      variant="secondary"
-                      intensity="soft"
-                      // className="text-[10px] px-1.5 py-0 h-4 bg-secondary/30 font-normal"
-                      className={cn("text-[10px] px-1.5 py-0 h-4 bg-secondary/30 font-normal",
-                      master.equipmentPackages.length === 0 && "bg-muted/30 text-muted-foreground"
-                      )}
-                    >
-                      Pkg: {master.equipmentPackages.length}
-                    </Badge>
-                    <Badge
                       // className="text-[10px] px-1.5 py-0 h-4 bg-secondary/30 font-normal"
                       variant="secondary"
                       intensity={"soft"}

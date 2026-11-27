@@ -42,7 +42,7 @@ Read these (they are the source of truth; this skill only orders the steps):
    - Export thunks through an `xActions` object.
    - **Deduplication**: if params are ID lists, add `transformParams: (params, getState) => ...` that filters out IDs already in state (the argument order is `(params, getState)`). Add `customCondition: (arg, { getState }) => ...` only when needed; read `arg.__transformedParams ?? arg.params` and return false when there is nothing to fetch.
    - Only add an explicit status field (`'idle' | 'pending' | 'success' | 'error'`) if the UI genuinely needs to track completion; reset it on unmount. Never use `thunk.fulfilled.match(result)` in components.
-6. **Selectors** - `createSelector` from `@reduxjs/toolkit`. Export an object: `export const xSelect = { docs: selectDocs, ... }`. Resolve FK ids to full entities here so components never do lookups (e.g. `mixedByEquipmentId` becomes `mixedByEquipment: Equipment | null`). Use `Grouper` for maps.
+6. **Selectors** - `createSelector` from `@reduxjs/toolkit`. Export an object: `export const xSelect = { docs: selectDocs, ... }`. Resolve FK ids to full entities here so components never do lookups (e.g. a stored `subId` becomes `subProduct: ProductSub`). Use `Grouper` for maps.
 7. **Hook** - `use<Feature>()` calls `useAppDispatch()` (from `@/lib/hooks/redux`) and dispatches in `useEffect` with a complete dependency array and `config: { loadingMsg: "..." }`. The hook exposes actions only. **Never** return selected data from the hook; components call `useSelector(xSelect.docs)` directly.
 
 ## Rules that are easy to break

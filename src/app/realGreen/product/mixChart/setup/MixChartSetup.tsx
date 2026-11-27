@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { equipmentSelect } from "@/app/equipment/equipmentSelect";
+import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
 import {
   Select,
   SelectContent,
@@ -10,6 +10,8 @@ import {
   SelectValue,
 } from "@/style/components/select";
 import { Label } from "@/style/components/label";
+import { Input } from "@/style/components/input";
+import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
 import { Checkbox } from "@/style/components/checkbox";
 import { Button } from "@/style/components/button";
 import { Separator } from "@/style/components/separator";
@@ -22,7 +24,7 @@ import { ProductList } from "./ProductList";
 import { AddProductSheet } from "./AddProductSheet";
 import { AppMethodOverrideSection } from "./AppMethodOverrideSection";
 import { loadSavedAppMethod } from "@/app/appMethod/appMethodCreate/loadSavedAppMethod";
-import { createAppMethodActions } from "@/app/appMethod/appMethodCreate/createAppMethodSlice";
+import { defaultMixChartTitle } from "@/app/realGreen/product/mixChart/_lib/mixChartUtils";
 import { solverSelect } from "@/app/appMethod/appMethodCreate/selectors/solverSelect";
 import { AppDispatch } from "@/store";
 
@@ -36,32 +38,32 @@ export function MixChartSetup({
   onConfigChangeAction: onConfigChange,
 }: MixChartSetupProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const allEquipment = useSelector(equipmentSelect.equipments);
+  const appMethods = useSelector(appMethodSelect.appMethodDocs);
   const solution = useSelector(solverSelect.solution);
 
   const [appMethodExpanded, setAppMethodExpanded] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
 
-  const handleEquipmentChange = (equipmentId: string) => {
-    const equipment =
-      allEquipment.find((e) => e.equipmentId === equipmentId) ?? null;
-    if (equipment) {
-      // Pre-populate the AppMethod editor with this equipment's default method
-      loadSavedAppMethod(equipment.appMethod, dispatch);
-      dispatch(
-        createAppMethodActions.setSolveForField({
-          param: "coverage",
-          field: "volume",
-        }),
-      );
-    }
+  const handleAppMethodChange = (appMethodId: string) => {
+    const appMethod = appMethods.find((m) => m.appMethodId === appMethodId);
+    if (!appMethod) return;
+    // Loads the method into the editor and selects "solve for coverage volume"
+    loadSavedAppMethod(appMethod, dispatch);
     onConfigChange({
       ...config,
-      equipment,
-      appMethodOverride: null,
-      // Default includeWater based on the equipment's appMethod.needsWater
-      includeWater: equipment?.appMethod.needsWater ?? false,
+      appMethod,
+      includeWater: appMethod.needsWater,
+      // Overwrites an edited title: picking a method starts the chart over
+      title: defaultMixChartTitle(appMethod),
     });
+  };
+
+  const handleTitleChange = (title: string) => {
+    onConfigChange({ ...config, title });
+  };
+
+  const handleShowFlOzChange = (showFlOz: boolean) => {
+    onConfigChange({ ...config, showFlOz });
   };
 
   const handleIncludeWaterChange = (checked: boolean) => {
@@ -86,28 +88,42 @@ export function MixChartSetup({
     });
   };
 
-  // Sync the effective AppMethod override from the solver solution
+  // Only drives the "rate derived" hint; the page applies the solver result to the chart
   const effectiveAppMethod = solution?.success ? solution.result : null;
 
   return (
     <div className="space-y-5">
-      {/* Step 1: Equipment */}
+      {/* Title */}
       <div className="space-y-2">
-        <Label className="text-sm font-semibold">Equipment</Label>
+        <Label htmlFor="mix-chart-title" className="text-sm font-semibold">
+          Title
+        </Label>
+        <Input
+          id="mix-chart-title"
+          value={config.title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+        />
+      </div>
+
+      <Separator />
+
+      {/* Step 1: Application method */}
+      <div className="space-y-2">
+        <Label className="text-sm font-semibold">Application Method</Label>
         <Select
-          value={config.equipment?.equipmentId ?? ""}
-          onValueChange={handleEquipmentChange}
+          value={config.appMethod?.appMethodId ?? ""}
+          onValueChange={handleAppMethodChange}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select equipment" />
+            <SelectValue placeholder="Select application method" />
           </SelectTrigger>
           <SelectContent>
-            {allEquipment.map((equipment) => (
+            {appMethods.map((appMethod) => (
               <SelectItem
-                key={equipment.equipmentId}
-                value={equipment.equipmentId}
+                key={appMethod.appMethodId}
+                value={appMethod.appMethodId}
               >
-                {equipment.description}
+                {appMethod.description}
               </SelectItem>
             ))}
           </SelectContent>
@@ -115,7 +131,7 @@ export function MixChartSetup({
       </div>
 
       {/* Step 2: AppMethod Override (collapsible) */}
-      {config.equipment && (
+      {config.appMethod && (
         <>
           <Separator />
           <div className="space-y-2">
@@ -135,34 +151,45 @@ export function MixChartSetup({
             </button>
 
             {appMethodExpanded && (
-              <AppMethodOverrideSection
-                equipment={config.equipment}
-                onSolutionChangeAction={() => {
-                  // The parent reads solverSelect.solution directly via effectiveAppMethod
-                }}
-              />
+              <AppMethodOverrideSection appMethod={config.appMethod} />
             )}
           </div>
         </>
       )}
 
       {/* Step 3: Water */}
-      {config.equipment && (
+      {config.appMethod && (
         <>
           <Separator />
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="include-water"
-              checked={config.includeWater}
-              onCheckedChange={(checked) => handleIncludeWaterChange(!!checked)}
-            />
-            <Label htmlFor="include-water" className="text-sm cursor-pointer">
-              Include Water Column
-            </Label>
-            {config.includeWater && effectiveAppMethod && (
-              <span className="text-xs text-muted-foreground ml-2">
-                (rate derived from AppMethod coverage)
-              </span>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="include-water"
+                checked={config.includeWater}
+                onCheckedChange={(checked) => handleIncludeWaterChange(!!checked)}
+              />
+              <Label htmlFor="include-water" className="text-sm cursor-pointer">
+                Include Water Column
+              </Label>
+              {config.includeWater && effectiveAppMethod && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  (rate derived from AppMethod coverage)
+                </span>
+              )}
+            </div>
+
+            {config.includeWater && (
+              <div className="space-y-2">
+                <Label className="text-sm">Water Unit</Label>
+                <RadioGroup
+                  variant="button-group"
+                  value={config.showFlOz ? "flOz" : "gal"}
+                  onValueChange={(value) => handleShowFlOzChange(value === "flOz")}
+                >
+                  <RadioGroupItem value="gal">Gallons</RadioGroupItem>
+                  <RadioGroupItem value="flOz">Fl Oz</RadioGroupItem>
+                </RadioGroup>
+              </div>
             )}
           </div>
         </>

@@ -57,17 +57,10 @@ const deleteOne = createStandardThunk<AppMethodContract, "deleteOne">({
   apiPath: "/appMethod/api",
 });
 
-const checkDependencies = createStandardThunk<AppMethodContract, "checkDependencies">({
-  opName: "checkDependencies",
-  typePrefix: "appMethod/checkDependencies",
-  apiPath: "/appMethod/api",
-});
-
 export const appMethodReducer = appMethodSlice.reducer;
 export const appMethodActions = {
   ...appMethodSlice.actions,
   getAll,
   upsert,
   deleteOne,
-  checkDependencies,
 };

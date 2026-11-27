@@ -10,41 +10,27 @@ import { Checkbox } from "@/style/components/checkbox";
 import { Label } from "@/style/components/label";
 import { Badge } from "@/style/components/badge";
 import { useFormFieldValues } from "@/app/appMethod/appMethodCreate/useFormFieldValues";
-import { Equipment } from "@/app/equipment/EquipmentTypes";
+import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { loadSavedAppMethod } from "@/app/appMethod/appMethodCreate/loadSavedAppMethod";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { Button } from "@/style/components/button";
-import { createAppMethodActions } from "@/app/appMethod/appMethodCreate/createAppMethodSlice";
 
 type AppMethodOverrideSectionProps = {
-  equipment: Equipment;
-  onSolutionChangeAction: (
-    solution: ReturnType<typeof solverSelect.solution> | null,
-  ) => void;
+  appMethod: AppMethod;
 };
 
 export function AppMethodOverrideSection({
-  equipment,
-  onSolutionChangeAction: onSolutionChange,
+  appMethod,
 }: AppMethodOverrideSectionProps) {
   const dispatch = useDispatch<AppDispatch>();
   const solution = useSelector(solverSelect.solution);
   const { setOverlap } = useFormFieldValues();
-
-  // Notify parent of solution changes
-  // (parent reads this to derive water rate)
   const overlap = useSelector(solverSelect.overlap);
 
+  // Reloads the picked method into the editor. The title and the water unit toggle are not touched.
   const handleReset = () => {
-    loadSavedAppMethod(equipment.appMethod, dispatch);
-    dispatch(
-      createAppMethodActions.setSolveForField({
-        param: "coverage",
-        field: "volume",
-      }),
-    );
-    onSolutionChange(null);
+    loadSavedAppMethod(appMethod, dispatch);
   };
 
   // Derive coverage display from solution

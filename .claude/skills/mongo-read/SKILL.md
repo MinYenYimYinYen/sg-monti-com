@@ -73,7 +73,7 @@ Grouped for orientation (confirm with `list_schema_objects`; this list can go st
 - **RealGreen mirror:** `customers` (large, sensitive), `programs` (large), `services` (large), `progservs` (large), `calllogs` (large), `rgapilogs` (large, sensitive), `corruptedsyncrecords`
 - **RealGreen reference:** `callaheaddocprops`, `conditiondocprops`, `flagdocprops`, `productdocprops`, `progcodedocprops`, `servcodedocprops`, `servicedocprops`, `callaheadkeywords`, `flagrules`, `priorityservices`, `serviceetas`
 - **Scheduling / routes:** `assignments`, `assignmentgroups`, `assignmentscenarios`, `groupsequences`, `routenotes`
-- **Equipment / inventory / products:** `equipment`, `equipmentpackages`, `inventorychecks`, `loadoutdocs`, `productcategories`, `pricetabledocs`
+- **Inventory / products:** `inventorychecks`, `productcategories`, `pricetabledocs`
 - **Price increase:** `seasonplans`, `seasonincreases`
 - **Templates / forms:** `formlettertemplates`, `storedtemplates`, `storedtemplate2`, `templategroups`
 - **Units:** `units`, `unitcrms`

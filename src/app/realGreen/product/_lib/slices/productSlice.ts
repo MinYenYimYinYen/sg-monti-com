@@ -104,22 +104,6 @@ const productSlice = createSlice({
           action.payload.subProductConfigDocs;
       }
     },
-    updateMasterEquipmentPackages: (
-      state,
-      action: PayloadAction<{
-        masterId: number;
-        equipmentPackageIds: string[];
-        defaultPackageId: string | null;
-      }>,
-    ) => {
-      const matchingMaster = state.productMasterDocs.find(
-        (master) => master.productId === action.payload.masterId,
-      );
-      if (matchingMaster) {
-        matchingMaster.equipmentPackageIds = action.payload.equipmentPackageIds;
-        matchingMaster.defaultPackageId = action.payload.defaultPackageId;
-      }
-    },
   },
 
   extraReducers: (builder) => {
@@ -162,21 +146,11 @@ export const saveUnit = createStandardThunk<ProductContract, "saveUnit">({
   opName: "saveUnit",
 });
 
-export const saveMasterEquipmentPackages = createStandardThunk<
-  ProductContract,
-  "saveMasterEquipmentPackages"
->({
-  typePrefix: "product/saveMasterEquipmentPackages",
-  apiPath: "/realGreen/product/api",
-  opName: "saveMasterEquipmentPackages",
-});
-
 export const productActions = {
   ...productSlice.actions,
   getProducts,
   saveCategory,
   saveMasterSubProducts,
   saveUnit,
-  saveMasterEquipmentPackages,
 };
 export default productSlice.reducer;

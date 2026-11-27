@@ -1,7 +1,7 @@
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { DoneBy } from "@/app/realGreen/_lib/subTypes/DoneByCore";
-import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
+import { ProductionProduct } from "@/app/realGreen/_lib/subTypes/ProductionProduct";
 import { Condition } from "@/app/realGreen/conditionCode/_types/ConditionCodeTypes";
 import { typeGuard } from "@/lib/primatives/typeUtils/typeGuard";
 import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
@@ -10,8 +10,6 @@ import { Discount } from "@/app/realGreen/discount/DiscountTypes";
 import { applyDiscounts, calculatePrepayDiscAmt, calculatePrepayServTotal, getPriceChartPrice } from "@/app/realGreen/priceTable/_lib/pricingFuncs";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { AssignmentDoc } from "@/app/assignment/AssignmentTypes";
-
-export type ProductRuleCompliance = "pass" | "fail" | "no-rule" | null;
 
 /**
  * Describes how a completed service relates to its planned assignment.
@@ -66,8 +64,8 @@ export class ServiceUtils {
     return this.service.production?.doneDate ?? null;
   }
 
-  public get productsUsed(): AppProduct[] | null {
-    return this.service.production?.usedAppProducts || null;
+  public get productsUsed(): ProductionProduct[] | null {
+    return this.service.production?.productsUsed || null;
   }
 
   public get conditions(): Condition[] | null {
@@ -164,48 +162,6 @@ export class ServiceUtils {
       this.service.discount,
       this.service.program.discount,
     ]);
-  }
-
-  /**
-   * Checks whether the service used the products required by its servCode's productRules.
-   *
-   * Rule matching: the first rule whose size condition applies to service.size is used.
-   *   "all" → always applies
-   *   "lte" → applies when service.size <= rule.size
-   *   "gt"  → applies when service.size > rule.size
-   *
-   * Compliance: ALL expected sub-product IDs (from the applicable rule's productMasters)
-   * must appear in usedAppProducts (AND logic). Returns "no-rule" when no rule applies
-   * or no expected products are configured.
-   */
-  public get productRuleCompliance(): ProductRuleCompliance {
-    if (this.service.status !== "S") return null;
-    const rules = this.service.servCode.productRules;
-    if (rules.length === 0) return "no-rule";
-
-    const applicableRule = rules.find((rule) => {
-      if (rule.sizeOperator === "all") return true;
-      if (rule.sizeOperator === "lte") return this.service.size <= rule.size;
-      if (rule.sizeOperator === "gt") return this.service.size > rule.size;
-      return false;
-    });
-
-    if (!applicableRule) return "no-rule";
-
-    const expectedSubIds = applicableRule.productMasters.flatMap((pm) =>
-      pm.subProductConfigs.map((c) => c.subId),
-    );
-    if (expectedSubIds.length === 0) return "no-rule";
-
-    const usedProductIds = new Set(
-      this.service.production?.usedAppProducts
-        ?.filter((ap) => ap.productCommon.unit.metric !== "area")
-        .map((ap) => ap.productId) ?? [],
-    );
-
-    return expectedSubIds.every((id) => usedProductIds.has(id))
-      ? "pass"
-      : "fail";
   }
 
   /**

@@ -159,11 +159,8 @@ The following features load service data but don't yet call `useAssignments` to 
 |---------|-----------|--------|
 | Cover Sheets | `useCoverSheetDeps` | ✅ Added |
 | Prenotify | `usePrenotify` | ✅ Added |
-| Daily Inventory (loadout page) | `useLoadoutPageDeps` | ✅ Uses `getBySchedDate` |
-| Daily Inventory (feedback) | `useLoadoutFeedbackDeps` | ✅ Uses `getBySchedDate` |
 | Productivity | `useProductivity` | ✅ Uses `getBySchedDateRange` |
 | PaceCrawler | `usePaceCrawlerDeps` | ✅ Uses `useAssignments({ servIds })` |
-| Loadout Report | `useLoadoutReportDeps` | ❓ Not checked |
 | Customer Value | unknown | ❓ Not checked |
 | BizPlan / Season Plan | unknown | ❓ Not checked |
 | Sanity checks | unknown | ❓ Not checked |
@@ -205,8 +202,6 @@ The readme was written to reflect the final architecture. It should be reviewed 
 | `paceCrawlerSelect.ts` | Uses `service.assignments.mostRecent` |
 | `paceCrawlerLookbackSelect.ts` | Uses `service.assignments.mostRecent` |
 | `employeeCardSelect.ts` | Uses `service.assignments.mostRecent` |
-| `loadoutSelect.ts` | Flattens `ServiceAssignmentDoc[]` for date filter |
-| `loadoutStartSelect.ts` | Canonical logic from `assignmentSelect.docs` |
 | `coverSheetsSelect.ts` | Uses `service.x.schedInfo` |
 | `prenotifySelect.ts` | Uses `service.x.schedInfo` |
 | `PromiseDisplay.tsx` | Uses `service.x.schedInfo` |

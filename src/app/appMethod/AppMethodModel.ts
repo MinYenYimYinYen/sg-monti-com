@@ -40,9 +40,8 @@ const AppMethodSchema = new mongoose.Schema<AppMethodDoc>(
     // Overlap multiplier
     overlap: { type: Number, required: true },
 
-    // Water carrier flags
+    // Defaults the mix chart's "Include Water" box
     needsWater: { type: Boolean, required: true, default: true },
-    tracksTankLevel: { type: Boolean, required: true, default: true },
   },
   { timestamps: true },
 );

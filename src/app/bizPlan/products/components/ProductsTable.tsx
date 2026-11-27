@@ -131,7 +131,7 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
                     </TableCell>
                     <TableCell>{unit}</TableCell>
                     <TableCell className="text-right">
-                      {product.enrichedAppProducts.length}
+                      {product.serviceProductUsages.length}
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="text-xs text-muted-foreground">
@@ -166,7 +166,7 @@ export function ProductsTable({ products, unitContext }: ProductsTableProps) {
                                 {(() => {
                                   // Group by servCodeId
                                   const byServCode =
-                                    product.enrichedAppProducts.reduce(
+                                    product.serviceProductUsages.reduce(
                                       (acc, enriched) => {
                                         const key = enriched.servCodeId;
                                         if (!acc[key]) {

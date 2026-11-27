@@ -1,4 +1,4 @@
-import { AppProductRaw } from "@/app/realGreen/_lib/subTypes/AppProduct";
+import { ProductionProductRaw } from "@/app/realGreen/_lib/subTypes/ProductionProduct";
 import { ServiceHistoryRaw } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import { DoneByRaw } from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import {
@@ -11,7 +11,6 @@ import { CallAhead } from "@/app/realGreen/callAhead/_lib/CallAheadTypes";
 import { DiscountDoc } from "@/app/realGreen/discount/DiscountTypes";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
 import { SchedPromise } from "@/app/schedPromise/SchedPromiseTypes";
-import { LoadoutBase } from "@/app/loadout/LoadoutTypes";
 import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 import { PriorityServiceDoc } from "@/app/priorityService/PriorityServiceTypes";
 import { TaxCode } from "@/app/realGreen/taxCode/TaxCodeTypes";
@@ -59,7 +58,7 @@ export type ServiceRaw = {
 
   price: number | null;
   // productionValue?: number;
-  productsUsed?: AppProductRaw[];
+  productsUsed?: ProductionProductRaw[];
   // programCodeAndDescription?: string;
   programDiscountAmount: number;
   // programDiscountCodeId?: string;
@@ -150,7 +149,6 @@ export type ServiceProps = {
   assignments: AssignmentUtils;
   promise: SchedPromise | null;
   promiseIssues: string[];
-  loadoutInventory: LoadoutBase;
   eta: string | null;
   priorityService: PriorityServiceDoc | null;
   /** `taxLineCores` with each line's tax code attached. */

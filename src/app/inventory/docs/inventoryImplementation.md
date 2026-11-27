@@ -1,5 +1,7 @@
 # Inventory Feature — Phase 2 Implementation
 
+> **Superseded in part (2026-11-23).** The prediction code described here (`predictions`, `productIdsFromServices`, `sessionDateRange`, reading `service.loadoutInventory` and `production.usedAppProducts`) and the `useRecentProduction` change (Y0) were removed. `useRecentProduction.ts` and the `loadoutInventory` field no longer exist. See the note at the top of `inventoryPlan.md`. This file is kept as the record of how the feature was first built.
+
 ## Human Tasks
 
 - [x] Y0: Modify `useRecentProduction` — null-safe signature

@@ -33,7 +33,6 @@ import { createRealGreenRpcHandler } from "@/app/realGreen/_lib/api/createRealGr
 import { UnitModel } from "@/app/realGreen/product/_lib/models/UnitModel";
 import { UnitCRM } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { AppMethodModel } from "@/app/appMethod/AppMethodModel";
-import { WATER_PRODUCT_ID } from "@/app/equipment/waterProduct";
 import { can } from "@/permission/can";
 const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescript-eslint/no-explicit-any
   getAll: {
@@ -119,52 +118,6 @@ const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescri
         productCommonDocs: commonDocs,
       };
 
-      // One time START
-      // Migrate: rename mixedByEquipmentId (string | null) → mixedByEquipmentIds (string[])
-      // Safe to re-run: only touches sub-configs that still have the old field.
-      // {
-      //   const docsToMigrate = await ProductDocPropsModel.find({
-      //     "subProductConfigDocs.mixedByEquipmentId": { $exists: true },
-      //   }).lean();
-      //
-      //   let migratedCount = 0;
-      //
-      //   for (const doc of docsToMigrate) {
-      //     const updatedConfigs = (doc.subProductConfigDocs ?? []).map(
-      //       (config: Record<string, unknown>) => {
-      //         if ("mixedByEquipmentId" in config) {
-      //           const oldValue = config.mixedByEquipmentId as string | null;
-      //           const { mixedByEquipmentId: _removed, ...rest } = config;
-      //           return { ...rest, mixedByEquipmentIds: oldValue ? [oldValue] : [] };
-      //         }
-      //         return config;
-      //       },
-      //     );
-      //
-      //     await ProductDocPropsModel.updateOne(
-      //       { productId: doc.productId },
-      //       { $set: { subProductConfigDocs: updatedConfigs } },
-      //     );
-      //     migratedCount++;
-      //   }
-      //
-      //   if (migratedCount > 0) {
-      //     console.log(`[Migrate] mixedByEquipmentId → mixedByEquipmentIds: ${migratedCount} docs updated`);
-      //   }
-      //
-      //   // Step 2: Initialize mixedByEquipmentIds: [] on any sub-config still missing the field
-      //   const initResult = await ProductDocPropsModel.updateMany(
-      //     { "subProductConfigDocs.mixedByEquipmentIds": { $exists: false } },
-      //     { $set: { "subProductConfigDocs.$[elem].mixedByEquipmentIds": [] } },
-      //     { arrayFilters: [{ "elem.mixedByEquipmentIds": { $exists: false } }] },
-      //   );
-      //   if (initResult.modifiedCount > 0) {
-      //     console.log(`[Migrate] Initialized mixedByEquipmentIds: [] on ${initResult.modifiedCount} docs`);
-      //   }
-      // }
-      // One time END
-
-
       return { success: true, payload: productsResponse };
     },
   },
@@ -245,27 +198,6 @@ const handlers: HandlerMap<ProductContract> = { // eslint-disable-line @typescri
           type: "SERVER_ERROR",
         });
       }
-    },
-  },
-
-  saveMasterEquipmentPackages: {
-    capability: can.masterEquipmentPackages.write,
-    handler: async (params) => {
-      const { masterId, equipmentPackageIds, defaultPackageId } = params;
-      await connectToMongoDB();
-      const result = await ProductDocPropsModel.findOneAndUpdate(
-        { productId: masterId },
-        { equipmentPackageIds, defaultPackageId: defaultPackageId ?? null },
-        { upsert: true, new: true },
-      ).lean();
-      if (!result || !result.productId) {
-        throw new AppError({
-          message: `Failed to save equipment packages for masterId ${masterId}`,
-          type: "SERVER_ERROR",
-          isOperational: true,
-        });
-      }
-      return { success: true };
     },
   },
 };

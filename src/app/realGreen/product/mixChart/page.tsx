@@ -5,7 +5,6 @@ import { PDFViewer } from "@react-pdf/renderer";
 import { useIsClient } from "@/lib/hooks/useIsClient";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useProduct } from "@/app/realGreen/product/_lib/hooks/useProduct";
-import { useEquipment } from "@/app/equipment/useEquipment";
 import { Input } from "@/style/components/input";
 import { Label } from "@/style/components/label";
 import { RadioGroup, RadioGroupItem } from "@/style/components/radio-group";
@@ -37,8 +36,9 @@ import { GatedPanel } from "@/app/permission/_components/GatedPanel";
 import { can } from "@/permission/can";
 
 const DEFAULT_CONFIG: MixChartConfig = {
-  equipment: null,
-  appMethodOverride: null,
+  appMethod: null,
+  showFlOz: false,
+  title: "Mix Chart",
   includeWater: false,
   products: [],
 };
@@ -53,7 +53,6 @@ export default function MixChartPage() {
 
 function MixChart() {
   useProduct({ autoLoad: true });
-  useEquipment({ autoLoad: true });
   const isClient = useIsClient();
 
   // Chart config — the full mix definition
@@ -68,14 +67,19 @@ function MixChart() {
   const debouncedIncrement = useDebounce(increment, 100);
   const debouncedRowCount = useDebounce(rowCount, 100);
 
-  // Read the live solver solution for the AppMethod override
+  // The solver state is shared with the App Methods modal, so a picked method gates its use: the
+  // live solver result (with the user's edits) applies only once a method has been picked.
   const solution = useReduxSelector(solverSelect.solution);
-  const effectiveAppMethod = solution?.success ? solution.result : config.equipment?.appMethod ?? null;
+  const effectiveAppMethod = config.appMethod
+    ? solution?.success
+      ? solution.result
+      : config.appMethod
+    : null;
 
   // Derive water rate from the effective AppMethod
   const waterRatePerKsf =
-    config.equipment && effectiveAppMethod && config.includeWater
-      ? calcWaterRatePerKsf(effectiveAppMethod, config.products, config.equipment.showFlOz)
+    effectiveAppMethod && config.includeWater
+      ? calcWaterRatePerKsf(effectiveAppMethod, config.products, config.showFlOz)
       : null;
 
   // Build columns
@@ -83,7 +87,7 @@ function MixChart() {
     products: config.products,
     waterRatePerKsf,
     includeWater: config.includeWater,
-    showFlOz: config.equipment?.showFlOz ?? false,
+    showFlOz: config.showFlOz,
   });
 
   const maxSize = debouncedIncrement * debouncedRowCount;
@@ -109,10 +113,7 @@ function MixChart() {
   const hasColumns = columns.length > 0;
   const hasKeySelected = keyId !== null && keyColumn !== null;
 
-  // Chart title
-  const chartTitle = config.equipment
-    ? `Mix Chart — ${config.equipment.description}`
-    : "Mix Chart";
+  const chartTitle = config.title;
 
   if (!isClient) return null;
 
@@ -229,7 +230,7 @@ function MixChart() {
               </div>
             ) : (
               <div className="flex items-center justify-center h-64 rounded-lg border border-dashed border-border text-muted-foreground text-sm">
-                Add equipment and products to generate a chart.
+                Add products to generate a chart.
               </div>
             )}
           </div>

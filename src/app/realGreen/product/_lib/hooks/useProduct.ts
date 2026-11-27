@@ -95,36 +95,10 @@ export function useProduct({ autoLoad }: { autoLoad?: boolean } = {}) {
     ).unwrap();
   };
 
-  const updateMasterEquipmentPackages = (params: {
-    masterId: number;
-    equipmentPackageIds: string[];
-    defaultPackageId: string | null;
-  }) => {
-    const { masterId, equipmentPackageIds, defaultPackageId } = params;
-    dispatch(
-      productActions.updateMasterEquipmentPackages({
-        masterId,
-        equipmentPackageIds,
-        defaultPackageId,
-      }),
-    );
-
-    return dispatch(
-      productActions.saveMasterEquipmentPackages({
-        params: { masterId, equipmentPackageIds, defaultPackageId },
-        config: {
-          force: true,
-          showLoading: false,
-        },
-      }),
-    ).unwrap();
-  };
-
   return {
     refresh,
     updateCategory,
     updateMasterSubProducts,
-    updateMasterEquipmentPackages,
     updateUnit,
   };
 }

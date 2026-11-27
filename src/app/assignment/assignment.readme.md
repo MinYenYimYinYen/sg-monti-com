@@ -130,10 +130,10 @@ The Redux slice holds a flat `docs: AssignmentDoc[]` array — all historical en
 |---------|--------------------------|
 | Cover Sheets | `useAssignments({ servIds })` — reactive on printed service servIds |
 | Prenotify | `useAssignments({ servIds })` — reactive on printed service servIds |
-| Daily Inventory (loadout page) | `assignmentActions.getBySchedDate` — for the selected route date |
-| Daily Inventory (feedback) | `assignmentActions.getBySchedDate` — for the selected route date |
 | Productivity | `assignmentActions.getBySchedDateRange` — for the selected date range |
 | PaceCrawler | `useAssignments({ servIds })` — reactive on all active service servIds |
+
+`getBySchedDate` and `getAvailableDates` (and the `availableDates` state, `availableDates`, `techsForDate`, `servIdsForDate` and `servIdsByEmployeeAndSchedDate` selectors) have no caller since the loadout feature was removed (2026-11). They are left in place for now.
 
 ---
 

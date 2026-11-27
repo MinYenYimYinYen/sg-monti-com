@@ -42,27 +42,14 @@ export function useAppMethod({ autoLoad }: { autoLoad?: boolean }) {
     );
   };
 
-  const deleteAppMethod = ({ appMethod, clearReferences }: { appMethod: AppMethod; clearReferences?: boolean }) => {
+  const deleteAppMethod = ({ appMethod }: { appMethod: AppMethod }) => {
     return dispatch(
       appMethodActions.deleteOne({
-        params: { appMethod, clearReferences },
+        params: { appMethod },
         config: { showLoading: false, force: true },
       }),
     );
   };
 
-  const checkAppMethodDependencies = async (appMethodId: string) => {
-    const result = await dispatch(
-      appMethodActions.checkDependencies({
-        params: { appMethodId },
-        config: { showLoading: false, force: true },
-      }),
-    );
-    if (appMethodActions.checkDependencies.fulfilled.match(result)) {
-      return result.payload;
-    }
-    return null;
-  };
-
-  return { refresh, upsertAppMethod, deleteAppMethod, checkAppMethodDependencies };
+  return { refresh, upsertAppMethod, deleteAppMethod };
 }

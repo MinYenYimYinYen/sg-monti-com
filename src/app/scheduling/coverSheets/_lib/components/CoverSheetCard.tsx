@@ -13,11 +13,6 @@ import { Fragment } from "react";
 import { Number } from "@/components/Number";
 import { useServCodes } from "@/app/realGreen/customer/_lib/hooks/useServCodes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { useSelector } from "react-redux";
-import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { loadoutBaseToAppProductCore } from "@/app/realGreen/customer/selectors/loadoutBaseToAppProductCore";
-import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
-import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
 
 type ViewVariant = "countSizeRev" | "servCodes" | "products";
 
@@ -32,27 +27,7 @@ export function CoverSheetCard({
   date,
   employeeMap,
 }: CoverSheetCardProps) {
-  const productCommonMap = useSelector(productSelect.productCommonMap);
   const { getServCodeCounts } = useServCodes();
-
-  const getPlannedAppProductTotal = (services: Service[]): AppProduct[] => {
-    const allCores = services.flatMap((service) =>
-      loadoutBaseToAppProductCore(service.loadoutInventory, service.servId),
-    );
-    const productMap = new Map<number, AppProduct>();
-    allCores.forEach((core) => {
-      const existing = productMap.get(core.productId);
-      if (existing) {
-        productMap.set(core.productId, { ...existing, amount: existing.amount + core.amount });
-      } else {
-        productMap.set(core.productId, {
-          ...core,
-          productCommon: productCommonMap.get(core.productId) ?? baseProductCommon,
-        });
-      }
-    });
-    return Array.from(productMap.values());
-  };
 
   // Aggregate all services for the date header
   const allServices = Array.from(employeeMap.values()).flat();
@@ -80,26 +55,14 @@ export function CoverSheetCard({
     }
 
     if (variant === "products") {
-      const appProducts = getPlannedAppProductTotal(allServices);
       return (
         <CardDescription className={"flex flex-col"}>
-          <div
-            className={"grid grid-cols-3 gap-1 items-center justify-between"}
-          >
-            {appProducts.map((product: AppProduct) => (
-              <Fragment key={product.productId}>
-                <p>{product.productCommon.productCode}</p>
-                <div className={"flex items-center gap-1"}>
-                  <Number>{product.amount}</Number>
-                  <p>{product.productCommon.unit.desc}</p>
-                </div>
-                <div className={"flex items-center"}>
-                  <LandPlot className={"size-4"} />
-                  <Number>{product.treated}</Number>
-                </div>
-              </Fragment>
-            ))}
-          </div>
+          {/*
+            PLACEHOLDER: planned products. Intentionally empty. Planned products were removed
+            from the cover sheet during the product / equipment refactor
+            (src/productEquipmentRefac). We intend to rework this section after the refactor is
+            complete.
+          */}
         </CardDescription>
       );
     }
@@ -164,7 +127,6 @@ export function CoverSheetCard({
       }
 
       if (variant === "products") {
-        const eAppProducts = getPlannedAppProductTotal(eServs);
         return (
           <div
             key={employeeId}
@@ -175,21 +137,12 @@ export function CoverSheetCard({
             <div className={"flex items-center justify-between"}>
               <p className={"font-semibold"}>{employeeId}</p>
             </div>
-            <div className={"grid grid-cols-3 gap-1 items-center text-sm"}>
-              {eAppProducts.map((product: AppProduct) => (
-                <Fragment key={product.productId}>
-                  <p>{product.productCommon.productCode}</p>
-                  <div className={"flex items-center gap-1"}>
-                    <Number>{product.amount}</Number>
-                    <p>{product.productCommon.unit.desc}</p>
-                  </div>
-                  <div className={"flex items-center"}>
-                    <LandPlot className={"size-4"} />
-                    <Number>{product.treated}</Number>
-                  </div>
-                </Fragment>
-              ))}
-            </div>
+            {/*
+              PLACEHOLDER: planned products. Intentionally empty. Planned products were removed
+              from the cover sheet during the product / equipment refactor
+              (src/productEquipmentRefac). We intend to rework this section after the refactor is
+              complete.
+            */}
           </div>
         );
       }

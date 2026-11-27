@@ -213,10 +213,6 @@ export function useFormFieldValues() {
       dispatch(createAppMethodActions.setNeedsWater(value));
     },
 
-    setTracksTankLevel: (value: boolean) => {
-      dispatch(createAppMethodActions.setTracksTankLevel(value));
-    },
-
     // Reset
     resetForm: () => {
       dispatch(createAppMethodActions.resetForm());

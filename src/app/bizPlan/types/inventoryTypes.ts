@@ -1,4 +1,4 @@
-import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
+import { ProductionProduct } from "@/app/realGreen/_lib/subTypes/ProductionProduct";
 import { Customer } from "@/app/realGreen/customer/_lib/entities/types/CustomerTypes";
 import { Program } from "@/app/realGreen/customer/_lib/entities/types/ProgramTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
@@ -9,10 +9,15 @@ import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { Production } from "@/app/realGreen/_lib/subTypes/Production";
 
 /**
- * Enriched AppProduct Type
- * Extends AppProduct with additional context for aggregations
+ * ServiceProductUsage Type
+ * A product row (actual from production, or planned from the product rules) with additional
+ * context for aggregations. It takes only the fields both kinds share: a planned row has no
+ * `method`.
  */
-export type EnrichedAppProduct = AppProduct & {
+export type ServiceProductUsage = Pick<
+  ProductionProduct,
+  "productId" | "amount" | "treated" | "productCommon"
+> & {
   servId: number;
   servCode: ServCode;
   servCodeId: string;
@@ -30,7 +35,7 @@ export type ProductUsagePlanned = {
   productId: number;
   productCommon: ProductCommon;
   totalQuantity: number;
-  enrichedAppProducts: EnrichedAppProduct[];
+  serviceProductUsages: ServiceProductUsage[];
 };
 
 export type ProductUsageActual = {
@@ -55,7 +60,7 @@ export type ProductUsageMixed = {
   totalQuantity: number;
   actual: { quantity: number; services: number };
   planned: { quantity: number; services: number };
-  mixedProducts: EnrichedAppProduct[]; // Tagged with source: 'actual' | 'planned'
+  mixedProducts: ServiceProductUsage[]; // Tagged with source: 'actual' | 'planned'
 };
 
 /**

@@ -25,18 +25,12 @@ import centralDocPropsReducer from "@/app/csv/_lib/centralDocPropsSlice";
 import { conditionReducer } from "@/app/realGreen/conditionCode/conditionSlice";
 import { callLogReducer } from "@/app/realGreen/callLog/callLogSlice";
 import { appMethodReducer } from "@/app/appMethod/appMethodSlice";
-import { equipmentReducer } from "@/app/equipment/equipmentSlice";
-import { equipmentPackageReducer } from "@/app/equipment/equipmentPackage/equipmentPackageSlice";
 import createAppMethodReducer from "@/app/appMethod/appMethodCreate/createAppMethodSlice";
-import { loadoutStartReducer } from "@/app/scheduling/dailyInventory/loadoutStart/loadoutStartSlice";
-import { loadoutFinishReducer } from "@/app/scheduling/dailyInventory/loadoutFinish/loadoutFinishSlice";
-import { loadoutReducer } from "@/app/loadout/loadoutSlice";
 import assignmentReducer from "@/app/assignment/assignmentSlice";
 import quickSendReducer from "@/app/quickSend/quickSendSlice";
 import { storedTemplatesReducer } from "@/app/quickSend/storedTemplates/storedTemplatesSlice";
 import prepayReducer from "@/app/realGreen/prepay/prepaySlice";
 import { serviceEtaReducer } from "@/app/scheduling/eta/serviceEtaSlice";
-import { loadoutReportReducer } from "@/app/scheduling/dailyInventory/loadoutFeedback/report/loadoutReportSlice";
 import { inventoryReducer } from "@/app/inventory/inventorySlice";
 import { salesTaxUIReducer } from "@/app/salesTax/salesTaxUISlice";
 import { salesTaxMappingReducer } from "@/app/salesTax/salesTaxMapping/salesTaxMappingSlice";
@@ -114,9 +108,6 @@ const rootReducer = combineReducers({
   salesTaxUI: salesTaxUIReducer,
   salesTaxMapping: salesTaxMappingReducer,
   stateTaxRevenueGroup: stateTaxRevenueGroupReducer,
-  loadout: loadoutReducer,
-  loadoutStart: loadoutStartReducer,
-  loadoutFinish: loadoutFinishReducer,
   priceTable: priceTableReducer,
   product: productReducer,
   unitConfig: unitConfigReducer,
@@ -128,14 +119,11 @@ const rootReducer = combineReducers({
   rgAccount: rgAccountReducer,
   accountMapping: accountMappingReducer,
   depositFieldMapping: depositFieldMappingReducer,
-  equipment: equipmentReducer,
-  equipmentPackage: equipmentPackageReducer,
   customer: customerReducer,
   centralDocProps: centralDocPropsReducer,
   quickSend: quickSendReducer,
   serviceEta: serviceEtaReducer,
   storedTemplates: storedTemplatesReducer,
-  loadoutReport: loadoutReportReducer,
   javelin: javelinReducer,
   deposit: depositReducer,
   ckDeposit: ckDepositReducer,

@@ -1,6 +1,5 @@
 import { UnitLabel } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { TRange } from "@/lib/primatives/tRange/TRange";
 
 export type ProductCount = {
   qty: number;
@@ -32,7 +31,6 @@ export type InventoryCheck = Omit<InventoryCheckDoc, "entries"> & {
 };
 
 export type InventorySession = {
-  dateRange: TRange<string> | null;
   activeProductIds: number[];
   counts: Record<number, ProductCount[]>; // retained even when product removed from activeProductIds
 };
@@ -41,13 +39,4 @@ export type LastProductCount = {
   totalCount: number;
   unit: UnitLabel;
   date: string; // checkDate of the check it came from
-};
-
-export type InventoryPrediction = {
-  productId: number;
-  product: ProductCommon;
-  plannedUsed: number; // app units — from loadoutInventory, summed across services in range
-  recordedUsed: number; // app units — from production.usedAppProducts, summed in range
-  onHandPrev: number; // app units — from last InventoryCheckDoc entry for this product
-  onHandPredicted: number; // onHandPrev - recordedUsed
 };

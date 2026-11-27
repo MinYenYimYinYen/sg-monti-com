@@ -6,7 +6,6 @@ import {
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { baseProgram } from "./baseProgram";
 import { ServiceUtils } from "@/app/realGreen/customer/_lib/classes/ServiceUtils";
-import { baseLoadout } from "@/app/loadout/LoadoutTypes";
 import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/baseServCode";
 
@@ -49,7 +48,6 @@ export const baseService: Service = {
     assignments: baseAssignmentUtils,
     promise: null,
     promiseIssues: [],
-    loadoutInventory: baseLoadout,
     eta: null,
     priorityService: null,
     taxLines: [],
@@ -64,7 +62,6 @@ export const baseService: Service = {
   assignments: baseAssignmentUtils,
   promise: null,
   promiseIssues: [],
-  loadoutInventory: baseLoadout,
   eta: null,
   priorityService: null,
   taxLines: [],

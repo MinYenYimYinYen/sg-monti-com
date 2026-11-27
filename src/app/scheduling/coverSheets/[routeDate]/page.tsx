@@ -17,10 +17,7 @@ import {
 import { EtaSetupPanel } from "@/app/scheduling/coverSheets/_lib/components/EtaSetupPanel";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
 import { useServCodes } from "@/app/realGreen/customer/_lib/hooks/useServCodes";
-import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
-import { loadoutBaseToAppProductCore } from "@/app/realGreen/customer/selectors/loadoutBaseToAppProductCore";
-import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
-import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
+import { ProductionProduct } from "@/app/realGreen/_lib/subTypes/ProductionProduct";
 import { tw } from "@/lib/pdf/tw";
 import { prettyDate } from "@/lib/primatives/dates/prettyDate";
 import { HashPDFIcon, SproutPDFIcon } from "@/lib/pdf/_components/pdfIcons";
@@ -55,33 +52,9 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
     coverSheetsSelect.servicesByDateAndEmployee,
   );
   const serviceByEmployee = servicesByDateAndEmployee.get(routeDate);
-  const productCommonMap = useSelector(productSelect.productCommonMap);
   const { getServCodeCounts, getServicesByRuleDesc } = useServCodes();
   const notesByDateAndEmployee = useSelector(routeNoteSelect.byDateAndEmployee);
   const notesByEmployee = notesByDateAndEmployee.get(routeDate) ?? new Map<string, RouteNote[]>();
-
-  const getPlannedAppProductTotal = (services: Service[]): AppProduct[] => {
-    const allCores = services.flatMap((service) =>
-      loadoutBaseToAppProductCore(service.loadoutInventory, service.servId),
-    );
-    const productMap = new Map<number, AppProduct>();
-    allCores.forEach((core) => {
-      const existing = productMap.get(core.productId);
-      if (existing) {
-        productMap.set(core.productId, {
-          ...existing,
-          amount: existing.amount + core.amount,
-        });
-      } else {
-        productMap.set(core.productId, {
-          ...core,
-          productCommon:
-            productCommonMap.get(core.productId) ?? baseProductCommon,
-        });
-      }
-    });
-    return Array.from(productMap.values());
-  };
 
   if (!isClient || !serviceByEmployee) return null;
 
@@ -104,10 +77,8 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
           <CoverSheetViewer
             routeDate={routeDate}
             serviceByEmployee={serviceByEmployee}
-            getPlannedAppProductTotal={getPlannedAppProductTotal}
             getServCodeCounts={getServCodeCounts}
             getServicesByRuleDesc={getServicesByRuleDesc}
-            productCommonMap={productCommonMap}
             notesByEmployee={notesByEmployee}
             loadingCount={loadingCount}
           />
@@ -121,7 +92,6 @@ export default function RouteDatePage({ params }: RouteDatePageProps) {
 type CoverSheetsPDFProps = {
   routeDate: string;
   serviceByEmployee: Map<string, Service[]>;
-  getPlannedAppProductTotal: (services: Service[]) => AppProduct[];
   getServCodeCounts: (services: Service[]) => {
     servCodeId: string;
     count: number;
@@ -132,7 +102,6 @@ type CoverSheetsPDFProps = {
     idWithRule: string;
     services: Service[];
   }[];
-  productCommonMap: ReturnType<typeof productSelect.productCommonMap>;
   /** Map<employeeId, RouteNote[]> — notes for this date, keyed by employeeId. */
   notesByEmployee: Map<string, RouteNote[]>;
 };
@@ -144,10 +113,8 @@ type CoverSheetViewerProps = CoverSheetsPDFProps & {
 function CoverSheetViewer({
   routeDate,
   serviceByEmployee,
-  getPlannedAppProductTotal,
   getServCodeCounts,
   getServicesByRuleDesc,
-  productCommonMap,
   notesByEmployee,
   loadingCount,
 }: CoverSheetViewerProps) {
@@ -155,10 +122,8 @@ function CoverSheetViewer({
     <CoverSheetsPDF
       routeDate={routeDate}
       serviceByEmployee={serviceByEmployee}
-      getPlannedAppProductTotal={getPlannedAppProductTotal}
       getServCodeCounts={getServCodeCounts}
       getServicesByRuleDesc={getServicesByRuleDesc}
-      productCommonMap={productCommonMap}
       notesByEmployee={notesByEmployee}
     />
   );
@@ -198,9 +163,7 @@ function CoverSheetsPDF({
   serviceByEmployee,
   routeDate,
   getServCodeCounts,
-  getPlannedAppProductTotal,
   getServicesByRuleDesc,
-  productCommonMap,
   notesByEmployee,
 }: CoverSheetsPDFProps) {
   return (
@@ -250,21 +213,6 @@ function CoverSheetsPDF({
                   const servCodeId = split[0];
                   const ruleDesc = split[1] ?? "";
 
-                  const plannedAppProductTotal =
-                    getPlannedAppProductTotal(groupServices);
-
-                  let filtered: AppProduct[] = plannedAppProductTotal;
-                  if (
-                    plannedAppProductTotal
-                      .map((appProduct) => appProduct.productCommon.description)
-                      .includes("Water")
-                  ) {
-                    filtered = plannedAppProductTotal.filter(
-                      (appProduct) =>
-                        appProduct.productCommon.description === "Water",
-                    );
-                  }
-
                   return (
                     <View
                       id={"SERV_CODE_PRODUCTS"}
@@ -298,25 +246,13 @@ function CoverSheetsPDF({
                       >
                         <PDFNumber isMoney={true}>{price}</PDFNumber>
                       </View>
-                      <View style={tw("flex flex-col")}>
-                        {filtered.map((appProduct, index) => {
-                          const loadDisplay =
-                            appProduct.productCommon.unitConfigDisplay.format({
-                              amount: appProduct.amount,
-                              targetContexts: ["load"],
-                              rounding: "ceil",
-                            }).formattedString;
-
-                          return (
-                            <View key={index} style={tw("flex flex-row gap-1")}>
-                              <Text style={tw("w-[80px] text-left")}>
-                                {appProduct.productCommon.productCode}
-                              </Text>
-                              <Text>{loadDisplay}</Text>
-                            </View>
-                          );
-                        })}
-                      </View>
+                      {/*
+                        PLACEHOLDER: planned products. Intentionally empty. Planned products were
+                        removed from the cover sheet during the product / equipment refactor
+                        (src/productEquipmentRefac). We intend to rework this section after the
+                        refactor is complete.
+                      */}
+                      <View style={tw("flex flex-col")} />
                     </View>
                   );
                 })}
@@ -326,24 +262,6 @@ function CoverSheetsPDF({
               const customer = service.x.customer;
               const address = customer.address;
               const flags = customer.flags;
-              const pcMap = productCommonMap;
-              const products: AppProduct[] = loadoutBaseToAppProductCore(
-                service.loadoutInventory,
-                service.servId,
-              ).map((core) => ({
-                ...core,
-                productCommon: pcMap.get(core.productId) ?? baseProductCommon,
-              }));
-              let filtered: AppProduct[] = products;
-              if (
-                products
-                  .map((ap: AppProduct) => ap.productCommon.description)
-                  .includes("Water")
-              ) {
-                filtered = products.filter(
-                  (ap: AppProduct) => ap.productCommon.description === "Water",
-                );
-              }
 
               // PRIORITIES
               const preNotify = typeGuard
@@ -423,7 +341,7 @@ function CoverSheetsPDF({
               const historyYear = historyServices
                 .map((service) => {
                   const productsUsed = service.x.productsUsed;
-                  let mastersAndOrSingles: AppProduct[] = [];
+                  let mastersAndOrSingles: ProductionProduct[] = [];
                   if (productsUsed) {
                     mastersAndOrSingles = productsUsed.filter(
                       (product) =>
@@ -553,27 +471,13 @@ function CoverSheetsPDF({
                         </PDFNumber>
                       </View>
                     </View>
-                    <View id={"PRODUCTS"} style={tw("flex flex-col w-[100px]")}>
-                      {filtered.map((appProduct) => {
-                        const appDisplay =
-                          appProduct.productCommon.unitConfigDisplay.format({
-                            amount: appProduct.amount,
-                            targetContexts: ["app"],
-                            rounding: "round",
-                          }).formattedString;
-                        return (
-                          <View
-                            key={appProduct.productCommon.productCode}
-                            style={tw("flex flex-row gap-1 text-xs")}
-                          >
-                            <Text style={tw("text-left")}>
-                              {appProduct.productCommon.productCode}
-                            </Text>
-                            <Text>{appDisplay}</Text>
-                          </View>
-                        );
-                      })}
-                    </View>
+                    {/*
+                      PLACEHOLDER: planned products. Intentionally empty. Planned products were
+                      removed from the cover sheet during the product / equipment refactor
+                      (src/productEquipmentRefac). We intend to rework this section after the
+                      refactor is complete. The width keeps the columns beside it in place.
+                    */}
+                    <View id={"PRODUCTS"} style={tw("flex flex-col w-[100px]")} />
                     <View
                       id={"PRIORITY"}
                       style={tw(
@@ -768,15 +672,15 @@ function CoverSheetsPDF({
                                   )}
                                 >
                                   <Text style={tw("w-[65px]")}>Products:</Text>
-                                  {pest.products.map((appProduct) => {
+                                  {pest.products.map((productionProduct) => {
                                     const code =
-                                      appProduct.productCommon.productCode;
-                                    const amt = appProduct.amount;
+                                      productionProduct.productCommon.productCode;
+                                    const amt = productionProduct.amount;
                                     const unit =
-                                      appProduct.productCommon.unit.desc;
+                                      productionProduct.productCommon.unit.desc;
                                     return (
                                       <View
-                                        key={appProduct.productId}
+                                        key={productionProduct.productId}
                                         style={tw(
                                           "flex flex-row gap-1 items-start justify-start border border-gray-200 rounded-lg p-1 flex-wrap",
                                         )}

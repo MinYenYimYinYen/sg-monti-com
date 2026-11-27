@@ -59,7 +59,7 @@ export function AddProductSheet({ open, onOpenChangeAction:onOpenChange, onAddAc
       .map((config) => ({
         id: nanoid(),
         label: config.subProduct.description,
-        rate: config.rate,
+        rate: config.storedRate,
         unitConfigDisplay: config.subProduct.unitConfigDisplay,
         source: { type: "master-sub", masterProductId: selectedMaster.productId, subId: config.subId },
       }));
@@ -178,7 +178,7 @@ export function AddProductSheet({ open, onOpenChangeAction:onOpenChange, onAddAc
                     <Label htmlFor={`sub-${config.subId}`} className="flex-1 cursor-pointer">
                       {config.subProduct.description}
                       <span className="text-muted-foreground ml-2 text-xs">
-                        ({config.rate} {config.subProduct.unitConfig.conversions.app.unitLabel}/1000)
+                        ({config.storedRate} {config.subProduct.unitConfig.conversions.app.unitLabel}/1000)
                       </span>
                     </Label>
                   </div>

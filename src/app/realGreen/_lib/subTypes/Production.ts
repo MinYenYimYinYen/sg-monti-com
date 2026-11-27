@@ -1,7 +1,7 @@
 import {
-  AppProduct,
-  AppProductCore,
-} from "@/app/realGreen/_lib/subTypes/AppProduct";
+  ProductionProduct,
+  ProductionProductCore,
+} from "@/app/realGreen/_lib/subTypes/ProductionProduct";
 import { DoneBy, DoneByCore } from "@/app/realGreen/_lib/subTypes/DoneByCore";
 import { ServiceHistory } from "@/app/realGreen/_lib/subTypes/ServiceHistory";
 import { ServiceDoc } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
@@ -9,13 +9,13 @@ import { ServiceCondition } from "@/app/realGreen/serviceCondition/_lib/ServiceC
 
 export type ProductionCore = ServiceHistory & {
   servId: number;
-  usedAppProductCores: AppProductCore[];
+  productsUsedCores: ProductionProductCore[];
   doneByCores: DoneByCore[];
   invoice: number;
 };
 
 export type ProductionProps = {
-  usedAppProducts: AppProduct[];
+  productsUsed: ProductionProduct[];
   doneBys: DoneBy[];
   serviceDoc: ServiceDoc;
   serviceConditions: ServiceCondition[];

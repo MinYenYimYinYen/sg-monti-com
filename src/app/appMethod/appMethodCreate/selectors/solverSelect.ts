@@ -19,8 +19,6 @@ const selectDescription = (state: AppState) =>
   state.createAppMethod.description;
 const selectNeedsWater = (state: AppState) =>
   state.createAppMethod.needsWater;
-const selectTracksTankLevel = (state: AppState) =>
-  state.createAppMethod.tracksTankLevel;
 // Individual field property selectors for selectParams dependencies
 const selectGroundSpeedDistance = (state: AppState) =>
   state.createAppMethod.groundSpeedDistance;
@@ -184,6 +182,5 @@ export const solverSelect = {
   appMethodId: selectAppMethodId,
   description: selectDescription,
   needsWater: selectNeedsWater,
-  tracksTankLevel: selectTracksTankLevel,
   canSave: selectCanSave,
 };

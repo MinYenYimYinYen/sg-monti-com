@@ -21,7 +21,6 @@ interface CreateAppMethodState {
   description: string;
   productType: "liquid" | "granular";
   needsWater: boolean;
-  tracksTankLevel: boolean;
 
   // Ground Speed - individual properties
   groundSpeedDistance: number | undefined;
@@ -58,7 +57,6 @@ const initialState: CreateAppMethodState = {
   description: "",
   productType: "liquid",
   needsWater: true,
-  tracksTankLevel: true,
 
   // Ground Speed
   groundSpeedDistance: undefined,
@@ -107,10 +105,6 @@ const createAppMethodSlice = createSlice({
 
     setNeedsWater: (state, action: PayloadAction<boolean>) => {
       state.needsWater = action.payload;
-    },
-
-    setTracksTankLevel: (state, action: PayloadAction<boolean>) => {
-      state.tracksTankLevel = action.payload;
     },
 
     // Ground Speed actions
@@ -215,7 +209,6 @@ const createAppMethodSlice = createSlice({
       state.description = "";
       state.productType = "liquid";
       state.needsWater = true;
-      state.tracksTankLevel = true;
       state.groundSpeedDistance = undefined;
       state.groundSpeedDistanceUnit = undefined;
       state.groundSpeedTime = undefined;

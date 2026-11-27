@@ -3,12 +3,12 @@ import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/baseServCode";
 import {
-  EnrichedAppProduct,
+  ServiceProductUsage,
   ProductUsagePlanned,
   ProductsByServCode,
 } from "@/app/bizPlan/types/inventoryTypes";
 import { Service } from "@/app/realGreen/customer/_lib/entities/types/ServiceTypes";
-import { loadoutBaseToAppProductCore } from "@/app/realGreen/customer/selectors/loadoutBaseToAppProductCore";
+import { getPlannedProducts } from "@/app/realGreen/product/_lib/selectors/getPlannedProducts";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
 
@@ -66,12 +66,21 @@ export const createProductUsagePlannedSelector = (
   filteredServicesSelector: ReturnType<typeof createFilteredServicesSelector>,
 ) =>
   createSelector(
-    [filteredServicesSelector, productSelect.productCommonMap],
-    (services, productCommonMap): ProductUsagePlanned[] => {
+    [
+      filteredServicesSelector,
+      productSelect.productCommonMap,
+      productSelect.productMasterDocMap,
+    ],
+    (services, productCommonMap, productMasterDocMap): ProductUsagePlanned[] => {
       // Step 1: Flatten and enrich all planned products from all services
-      const enrichedAppProducts: EnrichedAppProduct[] = services.flatMap(
+      const serviceProductUsages: ServiceProductUsage[] = services.flatMap(
         (service) =>
-          loadoutBaseToAppProductCore(service.loadoutInventory, service.servId).map((core) => ({
+          getPlannedProducts({
+            servId: service.servId,
+            size: service.size,
+            productRuleDocs: service.servCode.productRuleDocs,
+            productMasterDocMap,
+          }).map((core) => ({
             ...core,
             productCommon: productCommonMap.get(core.productId) ?? baseProductCommon,
             servId: service.servId,
@@ -86,7 +95,7 @@ export const createProductUsagePlannedSelector = (
       );
 
       // Step 2: Group by productId and summarize
-      return new Grouper(enrichedAppProducts)
+      return new Grouper(serviceProductUsages)
         .groupBy((ap) => ap.productId)
         .summarize((productId, products) => {
           const firstProduct = products[0];
@@ -97,7 +106,7 @@ export const createProductUsagePlannedSelector = (
             totalQuantity: Math.round(
               products.reduce((sum, p) => sum + p.amount, 0),
             ),
-            enrichedAppProducts: products,
+            serviceProductUsages: products,
           };
         });
     },
@@ -132,7 +141,7 @@ export const createProductsByServCodeSelector = (
       const productsByServCode = new Map<string, ProductUsagePlanned[]>();
 
       productsPlanned.forEach((product) => {
-        product.enrichedAppProducts.forEach((enriched) => {
+        product.serviceProductUsages.forEach((enriched) => {
           if (!productsByServCode.has(enriched.servCodeId)) {
             productsByServCode.set(enriched.servCodeId, []);
           }
@@ -146,11 +155,11 @@ export const createProductsByServCodeSelector = (
             // Add product with only relevant enriched products for this servCode
             existingProducts.push({
               ...product,
-              enrichedAppProducts: product.enrichedAppProducts.filter(
+              serviceProductUsages: product.serviceProductUsages.filter(
                 (e) => e.servCodeId === enriched.servCodeId,
               ),
               totalQuantity: Math.round(
-                product.enrichedAppProducts
+                product.serviceProductUsages
                   .filter((e) => e.servCodeId === enriched.servCodeId)
                   .reduce((sum, e) => sum + e.amount, 0),
               ),

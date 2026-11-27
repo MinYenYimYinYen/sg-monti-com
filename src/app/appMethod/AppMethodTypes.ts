@@ -22,8 +22,7 @@ import { baseAppMethodResult } from "@/app/appMethod/appMethodSolver/AppMethodSo
 export type AppMethod = AppMethodResult & {
   appMethodId: string;   // Unique identifier
   description: string;   // User-friendly name
-  needsWater: boolean;   // Auto-instantiate water carrier row in loadout
-  tracksTankLevel: boolean; // True = filled once/day (tank); False = multi-fill (backpack)
+  needsWater: boolean;   // Defaults the mix chart's "Include Water" box
 };
 
 /**
@@ -37,5 +36,4 @@ export const baseAppMethod: AppMethod = {
   appMethodId: baseStrId,
   description: baseStrId,
   needsWater: true,
-  tracksTankLevel: true,
 }

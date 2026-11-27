@@ -5,12 +5,10 @@ import { useSelector } from "react-redux";
 import { inventorySelect } from "@/app/inventory/inventorySelect";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { useInventory } from "@/app/inventory/useInventory";
-import { dateStrings } from "@/lib/primatives/dates/dateStrings";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 import { Button } from "@/style/components/button";
 import { Checkbox } from "@/style/components/checkbox";
 import { Input } from "@/style/components/input";
-import { DateRangePicker } from "@/components/DateRangePicker";
 import {
   Sheet,
   SheetContent,
@@ -20,10 +18,7 @@ import {
   SheetFooter,
 } from "@/style/components/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/style/components/tabs";
-import { TRange } from "@/lib/primatives/tRange/TRange";
-import { Loader2, PackageSearch, Search } from "lucide-react";
-import { uiSelect } from "@/store/reduxUtil/uiSlice";
-import { AppState } from "@/store";
+import { PackageSearch } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Select All / None control
@@ -117,97 +112,6 @@ function ProductCheckList({
           </label>
         );
       })}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// By Production Date tab
-// ---------------------------------------------------------------------------
-
-type ByProductionDateTabProps = {
-  activeProductIds: number[];
-  selectedIds: Set<number>;
-  onToggle: (productId: number) => void;
-  onBulkSelect: (ids: number[], selected: boolean) => void;
-};
-
-function ByProductionDateTab({
-  activeProductIds,
-  selectedIds,
-  onToggle,
-  onBulkSelect,
-}: ByProductionDateTabProps) {
-  const lastCheck = useSelector(inventorySelect.lastCheck);
-  const { setDateRange } = useInventory();
-  const productIdsFromServices = useSelector(inventorySelect.productIdsFromServices);
-  const allProductsMap = useSelector(productSelect.allProductsMap);
-  const sessionDateRange = useSelector(inventorySelect.sessionDateRange);
-  const isLoading = useSelector((state: AppState) =>
-    uiSelect.isLoadingType(state, "recentProduction/getCustDocs"),
-  );
-
-  const [localRange, setLocalRange] = useState<TRange<string>>(() => ({
-    min: lastCheck?.checkDate ?? "",
-    max: dateStrings.today(),
-  }));
-
-  const handleSearch = () => {
-    if (!localRange.min || !localRange.max) return;
-    setDateRange(localRange);
-  };
-
-  const products = productIdsFromServices.flatMap((id) => {
-    const product = allProductsMap.get(id);
-    return product ? [product] : [];
-  }).sort((a, b) => a.description.localeCompare(b.description));
-
-  return (
-    <div className="flex flex-col gap-3 flex-1 min-h-0">
-      {/* Date range picker */}
-      <div className="flex items-center gap-2 flex-wrap shrink-0">
-        <DateRangePicker value={localRange} onChange={setLocalRange} size="sm" />
-        <Button
-          variant="primary"
-          intensity="solid"
-          size="sm"
-          onClick={handleSearch}
-          disabled={!localRange.min || !localRange.max}
-        >
-          <Search />
-          Search
-        </Button>
-      </div>
-
-      {/* Product list */}
-      {!sessionDateRange ? (
-        <p className="text-sm text-muted-foreground text-center py-3">
-          Search a date range to see products from completed services.
-        </p>
-      ) : isLoading ? (
-        <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading products...
-        </div>
-      ) : (
-        <div className="flex flex-col flex-1 min-h-0">
-          <SelectAllNone
-            products={products}
-            activeProductIds={activeProductIds}
-            selectedIds={selectedIds}
-            onBulkSelect={onBulkSelect}
-          />
-          <div className="flex-1 overflow-y-auto">
-            <ProductCheckList
-              products={products}
-              activeProductIds={activeProductIds}
-              selectedIds={selectedIds}
-              onToggle={onToggle}
-              emptyMessage="No products found in the selected date range."
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -454,15 +358,14 @@ export function SelectProductsSheet() {
           <SheetTitle>Select Products to Count</SheetTitle>
         </SheetHeader>
 
-        <Tabs defaultValue="byDate" className="flex-1 min-h-0 flex flex-col">
-          {/* Tab triggers — grid layout so all 5 fit on a phone with wrapped text */}
+        <Tabs defaultValue="lastCount" className="flex-1 min-h-0 flex flex-col">
+          {/* Tab triggers — grid layout so all 4 fit on a phone with wrapped text */}
           <TabsList
             variant="primary"
-            className="grid grid-cols-5 h-auto w-full self-stretch p-1 gap-0.5"
+            className="grid grid-cols-4 h-auto w-full self-stretch p-1 gap-0.5"
           >
             {(
               [
-                { value: "byDate", label: "By Date" },
                 { value: "lastCount", label: "Last Check" },
                 { value: "nonZero", label: "Non-Zero" },
                 { value: "zero", label: "Zero" },
@@ -479,15 +382,6 @@ export function SelectProductsSheet() {
               </TabsTrigger>
             ))}
           </TabsList>
-
-          <TabsContent value="byDate" className="flex-1 min-h-0 mt-2">
-            <ByProductionDateTab
-              activeProductIds={session.activeProductIds}
-              selectedIds={selectedIds}
-              onToggle={toggleId}
-              onBulkSelect={bulkSelect}
-            />
-          </TabsContent>
 
           <TabsContent value="lastCount" className="flex-1 min-h-0 mt-2">
             <FromLastCountTab

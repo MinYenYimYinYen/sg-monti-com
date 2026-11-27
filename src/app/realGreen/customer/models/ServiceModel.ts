@@ -25,7 +25,7 @@ const serviceHistoryCoreSchema = new mongoose.Schema(
   { _id: false },
 );
 
-const appProductCoreSchema = new mongoose.Schema(
+const productionProductCoreSchema = new mongoose.Schema(
   {
     method: { type: String, default: "" },
     productId: { type: Number, required: true },
@@ -69,7 +69,7 @@ const productionCoreSchema = new mongoose.Schema(
     // ProductionCore-specific fields
     servId: { type: Number, required: true },
     invoice: { type: Number, required: true },
-    usedAppProductCores: { type: [appProductCoreSchema], default: [] },
+    productsUsedCores: { type: [productionProductCoreSchema], default: [] },
     doneByCores: { type: [doneByCoreSchema], default: [] },
   },
   { _id: false },

@@ -139,7 +139,8 @@ For contexts dispatched inline from feature code with a dynamic list of `servIds
 dedicated hook that exposes `loadByServIds(servIds, config?)`:
 
 ```typescript
-// useByAssignmentCustomers.ts
+// Shape of useByAssignmentCustomers.ts (deleted with the loadout feature, 2026-11).
+// A live example is usePriorityServiceCustomers.ts.
 export function useByAssignmentCustomers() {
   const dispatch = useAppDispatch();
   const season = useSelector(globalSettingsSelect.season);
@@ -158,8 +159,8 @@ export function useByAssignmentCustomers() {
 }
 ```
 
-Callers replace their inline `dispatch(byAssignmentActions.getDocs(...))` with
-`const { loadByServIds } = useByAssignmentCustomers()` and call `loadByServIds(servIds, config)`.
+Callers replace their inline `dispatch(<context>Actions.getDocs(...))` with
+`const { loadByServIds } = use<Context>Customers()` and call `loadByServIds(servIds, config)`.
 
 ### Step 4 — Verify
 

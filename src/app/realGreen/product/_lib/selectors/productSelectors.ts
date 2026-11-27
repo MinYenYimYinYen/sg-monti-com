@@ -1,7 +1,6 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
 import {
-  EquipmentPackage,
   ProductMaster,
   SubProductConfig,
 } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
@@ -18,15 +17,6 @@ import {
 } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
 import { baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
-import { appMethodSelect } from "@/app/appMethod/appMethodSelect";
-import { hydrateRate } from "@/app/realGreen/product/_lib/selectors/hydrateRate";
-import { Equipment, EquipmentDoc } from "@/app/equipment/EquipmentTypes";
-import { EquipmentPackageDoc } from "@/app/equipment/equipmentPackage/EquipmentPackageTypes";
-import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
-import { AreaUnit, UnitLabel } from "@/app/realGreen/product/unitConfig/UnitTypes";
-import { AppMethod } from "@/app/appMethod/AppMethodTypes";
-import { equipmentSelect } from "@/app/equipment/equipmentSelect";
-import { equipmentPackageSelect } from "@/app/equipment/equipmentPackage/equipmentPackageSelect";
 
 const selectProductMasterDocs = (state: AppState) =>
   state.product.productMasterDocs;
@@ -50,8 +40,8 @@ const selectProductSingleDocMap = createSelector(
 const selectProductSubDocs = (state: AppState) => state.product.productSubDocs;
 
 const selectProductSubs = createSelector(
-  [selectProductSubDocs, unitConfigSelect.unitConfigMap, appMethodSelect.appMethodMap],
-  (subDocs, unitConfigMap, _appMethodMap) => {
+  [selectProductSubDocs, unitConfigSelect.unitConfigMap],
+  (subDocs, unitConfigMap) => {
     const productSubs: ProductSub[] = subDocs.map((doc) => {
       const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
         doc,
@@ -74,60 +64,32 @@ const selectProductSubsMap = createSelector([selectProductSubs], (subs) => {
 });
 
 const selectProductMasters = createSelector(
-  [
-    selectProductMasterDocs,
-    selectProductSubsMap,
-    unitConfigSelect.unitConfigMap,
-    appMethodSelect.appMethodMap,
-    equipmentSelect.equipmentMap,
-    equipmentPackageSelect.equipmentPackageMap,
-  ],
-  (masterDocs, subsMap, unitConfigMap, appMethodMap, equipmentMap, equipmentPackageMap) => {
+  [selectProductMasterDocs, selectProductSubsMap, unitConfigSelect.unitConfigMap],
+  (masterDocs, subsMap, unitConfigMap) => {
     const masters: ProductMaster[] = masterDocs.map((doc) => {
       const { unitConfig, unitConfigDisplay } = hydrateUnitConfig(
         doc,
         unitConfigMap,
       );
 
-        const equipmentPackages = hydrateEquipmentPackages(
-          doc.equipmentPackageIds ?? [],
-          equipmentPackageMap,
-          equipmentMap,
-          appMethodMap,
-        );
-
-        const defaultPackage: EquipmentPackage | null = doc.defaultPackageId
-          ? (equipmentPackages.find((p) => p.packageId === doc.defaultPackageId) ?? null)
-          : null;
-
-        return {
-          ...doc,
-          productType: "master" as const,
-          unitConfig,
-          unitConfigDisplay,
-          equipmentPackages,
-          defaultPackage,
-          subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
-            const subProduct = subsMap.get(configDoc.subId);
-            const rate = hydrateRate({ subProductConfigDoc: configDoc, appMethodMap });
-            const mixedByEquipmentIds = configDoc.mixedByEquipmentIds ?? [];
-
-            const config: SubProductConfig = {
-              subId: configDoc.subId,
-              storedRate: configDoc.storedRate,
-              mixedByEquipmentIds,
-              rate,
-              subProduct: subProduct || {
-                ...baseProductSub,
-                productId: configDoc.subId,
-              },
-              mixedByEquipments: mixedByEquipmentIds
-                .map((id) => equipmentMap.get(id))
-                .filter((e): e is Equipment => e !== undefined),
-            };
-            return config;
-          }),
-        };
+      return {
+        ...doc,
+        productType: "master" as const,
+        unitConfig,
+        unitConfigDisplay,
+        subProductConfigs: doc.subProductConfigDocs.map((configDoc) => {
+          const subProduct = subsMap.get(configDoc.subId);
+          const config: SubProductConfig = {
+            subId: configDoc.subId,
+            storedRate: configDoc.storedRate,
+            subProduct: subProduct || {
+              ...baseProductSub,
+              productId: configDoc.subId,
+            },
+          };
+          return config;
+        }),
+      };
     });
     return masters;
   },
@@ -278,52 +240,6 @@ const selectAllProductsMap = createSelector(
     return new Grouper(allProducts).toUniqueMap((p) => p.productId);
   },
 );
-
-function hydrateEquipmentPackages(
-  packageIds: string[],
-  equipmentPackageMap: Map<string, EquipmentPackageDoc>,
-  equipmentMap: Map<string, EquipmentDoc>,
-  appMethodMap: Map<string, AppMethod>,
-): EquipmentPackage[] {
-  return packageIds.flatMap((packageId) => {
-    const packageDoc = equipmentPackageMap.get(packageId);
-    if (!packageDoc) return [];
-
-    const hydratedEquipments: Equipment[] = packageDoc.equipmentIds.flatMap(
-      (equipmentId) => {
-        const equipmentDoc = equipmentMap.get(equipmentId);
-        if (!equipmentDoc) return [];
-
-        const appMethod = appMethodMap.get(equipmentDoc.defaultAppMethodId);
-        if (!appMethod) return [];
-
-        // TODO: remove after testing — waterRate was computed here but never stored on Equipment
-        // const areaInKsf = UnitUtils.area(
-        //   appMethod.coverage.area,
-        //   appMethod.coverage.areaUnit as AreaUnit["desc"],
-        // ).to(UnitLabel.ksf);
-        // const waterRate = areaInKsf > 0 ? appMethod.coverage.volume / areaInKsf : 0;
-
-        const equipment: Equipment = {
-          equipmentId: equipmentDoc.equipmentId,
-          description: equipmentDoc.description,
-          defaultAppMethodId: equipmentDoc.defaultAppMethodId,
-          appMethodIds: equipmentDoc.appMethodIds,
-          mixedProductIds: equipmentDoc.mixedProductIds,
-          showFlOz: equipmentDoc.showFlOz ?? false,
-          appMethod,
-        };
-        return [equipment];
-      },
-    );
-
-    const pkg: EquipmentPackage = {
-      ...packageDoc,
-      equipments: hydratedEquipments,
-    };
-    return [pkg];
-  });
-}
 
 export const productSelect = {
   productMasterDocs: selectProductMasterDocs,

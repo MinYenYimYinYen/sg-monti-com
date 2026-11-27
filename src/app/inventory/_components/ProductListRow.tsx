@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { InventoryPrediction } from "@/app/inventory/InventoryTypes";
 import { inventorySelect, sumCountsToAppUnits } from "@/app/inventory/inventorySelect";
 import { useInventory } from "@/app/inventory/useInventory";
 import { Button } from "@/style/components/button";
@@ -20,10 +19,9 @@ import { Trash2, ChevronRight } from "lucide-react";
 
 type ProductListRowProps = {
   product: ProductCommon;
-  prediction: InventoryPrediction | undefined;
 };
 
-export function ProductListRow({ product, prediction }: ProductListRowProps) {
+export function ProductListRow({ product }: ProductListRowProps) {
   const router = useRouter();
   const { removeProduct } = useInventory();
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -40,20 +38,6 @@ export function ProductListRow({ product, prediction }: ProductListRowProps) {
     targetContexts: ["load", "app"],
   });
 
-  const plannedDisplay = prediction
-    ? product.unitConfigDisplay.format({
-        amount: prediction.plannedUsed,
-        targetContexts: ["load", "app"],
-      })
-    : null;
-
-  const recordedDisplay = prediction
-    ? product.unitConfigDisplay.format({
-        amount: prediction.recordedUsed,
-        targetContexts: ["load", "app"],
-      })
-    : null;
-
   return (
     <>
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-card active:bg-accent/10">
@@ -65,16 +49,6 @@ export function ProductListRow({ product, prediction }: ProductListRowProps) {
           <span className="text-sm font-semibold truncate w-full">
             {product.description}
           </span>
-          {prediction && (
-            <div className="flex flex-col mt-0.5">
-              <span className="text-xs text-muted-foreground">
-                Planned: {plannedDisplay?.formattedString ?? "—"}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Recorded: {recordedDisplay?.formattedString ?? "—"}
-              </span>
-            </div>
-          )}
           {counts.length > 0 ? (
             <span className="text-sm font-medium text-accent mt-1">
               On hand: {totalDisplay.formattedString}

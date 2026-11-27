@@ -1,16 +1,10 @@
 import { ProductRule, ProductRuleDoc } from "../types/ProductRule";
-import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
 import { AppError } from "@/lib/errors/AppError";
 
 export function hydrateProductRules(
   productRuleDocs: ProductRuleDoc[],
-  productMasterMap: Map<number, ProductMaster>,
 ): ProductRule[] {
   return productRuleDocs.map((rule) => {
-    const productMasters = rule.productMasterIds
-      .map((id) => productMasterMap.get(id))
-      .filter((m): m is ProductMaster => m !== undefined);
-
     let desc: string;
     switch (rule.sizeOperator) {
       case "all": {
@@ -33,6 +27,6 @@ export function hydrateProductRules(
       }
     }
 
-    return { ...rule, productMasters, desc };
+    return { ...rule, desc };
   });
 }

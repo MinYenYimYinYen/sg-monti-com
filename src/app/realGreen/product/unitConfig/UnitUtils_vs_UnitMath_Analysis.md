@@ -1,5 +1,7 @@
 # Analysis: UnitUtils vs UnitMath - DRY Violation?
 
+> **Note (2026-11):** `hydrateRate.ts`, used below as the worked example, was deleted in the product / equipment refactor. It only returned `storedRate`, so the comparison of its two implementations is historical. The verdict about `UnitUtils` and `UnitMath` is unaffected.
+
 ## Executive Summary
 **Verdict: NOT a DRY violation** ✅
 

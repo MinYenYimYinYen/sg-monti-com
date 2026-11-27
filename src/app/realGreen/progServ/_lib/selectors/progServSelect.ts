@@ -3,7 +3,6 @@ import { createSelector } from "@reduxjs/toolkit";
 import { Grouper } from "@/lib/primatives/typeUtils/Grouper";
 import { ProgCode } from "../types/ProgCodeTypes";
 import { ServCode } from "../types/ServCodeTypes";
-import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { hydrateProductRules } from "./hydrateProductRules";
 import { hydrateAssignedTo } from "./hydrateAssignedTo";
 import { priceTableSelect } from "@/app/realGreen/priceTable/priceTableSelect";
@@ -31,7 +30,6 @@ const selectProgCodes = createSelector(
     selectProgCodeDocs,
     selectProgServMap,
     selectServCodeDocMap,
-    productSelect.productMastersMap,
     priceTableSelect.priceTableMap,
     assignmentPlanSelect.assignmentsByServCodeId,
     employeeSelect.employeeMap,
@@ -40,7 +38,6 @@ const selectProgCodes = createSelector(
     progCodeDocs,
     progServMap,
     servCodeDocMap,
-    productMasterMap,
     priceTableMap,
     assignmentsByServCodeId,
     employeeMap,
@@ -80,10 +77,7 @@ const selectProgCodes = createSelector(
             ...servDoc,
             progCodeId: progDoc.progCodeId,
             isSpecial: progDoc.progCodeId === link.servCodeId,
-            productRules: hydrateProductRules(
-              servDoc.productRuleDocs,
-              productMasterMap,
-            ),
+            productRules: hydrateProductRules(servDoc.productRuleDocs),
             assignedTo,
           };
 

@@ -19,7 +19,7 @@ import {
   AccordionTrigger,
 } from "@/style/components/accordion";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { InventoryPrediction, ProductCount } from "@/app/inventory/InventoryTypes";
+import { ProductCount } from "@/app/inventory/InventoryTypes";
 import Link from "next/link";
 import { ClipboardList, History } from "lucide-react";
 import { dateStrings } from "@/lib/primatives/dates/dateStrings";
@@ -36,7 +36,6 @@ let savedOpenCategories: string[] | null = null;
 
 type ProductListAccordionProps = {
   activeProducts: ProductCommon[];
-  predictionMap: Map<number, InventoryPrediction>;
   counts: Record<number, ProductCount[]>;
   openCategories: string[];
   onOpenChange: (categories: string[]) => void;
@@ -44,7 +43,6 @@ type ProductListAccordionProps = {
 
 function ProductListAccordion({
   activeProducts,
-  predictionMap,
   counts,
   openCategories,
   onOpenChange,
@@ -90,10 +88,7 @@ function ProductListAccordion({
               <ul>
                 {products.map((product) => (
                   <li key={product.productId}>
-                    <ProductListRow
-                      product={product}
-                      prediction={predictionMap.get(product.productId)}
-                    />
+                    <ProductListRow product={product} />
                   </li>
                 ))}
               </ul>
@@ -120,12 +115,8 @@ function InventoryWorkspace() {
   const dispatch = useAppDispatch();
 
   const activeProducts = useSelector(inventorySelect.activeProducts);
-  const predictions = useSelector(inventorySelect.predictions);
   const session = useSelector(inventorySelect.session);
   const { loadCheckIntoSession } = useInventory();
-
-  // Build a prediction map for O(1) lookup in ProductListRow
-  const predictionMap = new Map(predictions.map((p) => [p.productId, p]));
 
   // When checks load in, auto-restore today's check into the session — but only
   // if it hasn't already been loaded (guarded by todayCheckLoaded flag in Redux).
@@ -224,7 +215,6 @@ function InventoryWorkspace() {
         ) : (
           <ProductListAccordion
             activeProducts={activeProducts}
-            predictionMap={predictionMap}
             counts={session.counts}
             openCategories={openCategories}
             onOpenChange={handleOpenChange}

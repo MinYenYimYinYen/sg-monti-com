@@ -4,11 +4,11 @@ import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelecto
 import { progServSelect } from "@/app/realGreen/progServ/_lib/selectors/progServSelect";
 import { globalSettingsSelect } from "@/app/globalSettings/_lib/globalSettingsSelect";
 import { baseServCode } from "@/app/realGreen/progServ/_lib/baseServCode";
-import { loadoutBaseToAppProductCore } from "@/app/realGreen/customer/selectors/loadoutBaseToAppProductCore";
+import { getPlannedProducts } from "@/app/realGreen/product/_lib/selectors/getPlannedProducts";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
 import {
-  EnrichedAppProduct,
+  ServiceProductUsage,
   ProductUsagePlanned,
   ProductUsageActual,
   ProductUsageMixed,
@@ -27,12 +27,21 @@ import { baseGlobalSettings } from "@/app/globalSettings/_lib/baseGlobalSettings
  * Aggregates all planned product usage across services using Grouper.summarize()
  */
 const selectProductUsagePlanned = createSelector(
-  [centralSelect.services, productSelect.productCommonMap],
-  (services, productCommonMap): ProductUsagePlanned[] => {
+  [
+    centralSelect.services,
+    productSelect.productCommonMap,
+    productSelect.productMasterDocMap,
+  ],
+  (services, productCommonMap, productMasterDocMap): ProductUsagePlanned[] => {
     // Step 1: Flatten and enrich all planned products from all services
-    const enrichedAppProducts: EnrichedAppProduct[] = services.flatMap(
+    const serviceProductUsages: ServiceProductUsage[] = services.flatMap(
       (service) =>
-        loadoutBaseToAppProductCore(service.loadoutInventory, service.servId).map((core) => ({
+        getPlannedProducts({
+          servId: service.servId,
+          size: service.size,
+          productRuleDocs: service.servCode.productRuleDocs,
+          productMasterDocMap,
+        }).map((core) => ({
           ...core,
           productCommon: productCommonMap.get(core.productId) ?? baseProductCommon,
           servId: service.servId,
@@ -47,7 +56,7 @@ const selectProductUsagePlanned = createSelector(
     );
 
     // Step 2: Group by productId and summarize
-    return new Grouper(enrichedAppProducts)
+    return new Grouper(serviceProductUsages)
       .groupBy((ap) => ap.productId)
       .summarize((productId, products) => {
         // All products in this group share the same productId, so they have the same productCommon
@@ -60,7 +69,7 @@ const selectProductUsagePlanned = createSelector(
           totalQuantity: Math.round(
             products.reduce((sum, p) => sum + p.amount, 0),
           ),
-          enrichedAppProducts: products,
+          serviceProductUsages: products,
         };
       });
   },
@@ -74,12 +83,12 @@ const selectProductUsagePlanned = createSelector(
 const selectProductUsageActual = createSelector(
   [centralSelect.services],
   (services): ProductUsageActual[] => {
-    // Step 1: Flatten all usedAppProducts from productions
+    // Step 1: Flatten all productsUsed from productions
     const allUsedProducts = services
       .filter((service) => service.production !== null)
       .flatMap((service) =>
-        service.production!.usedAppProducts.map((appProduct) => ({
-          ...appProduct,
+        service.production!.productsUsed.map((productionProduct) => ({
+          ...productionProduct,
           servId: service.servId,
           custId: service.program.customer.custId,
           progId: service.program.progId,
@@ -141,7 +150,7 @@ const selectProductsByServCode = (servStats: string[]) =>
       const productsByServCode = new Map<string, ProductUsagePlanned[]>();
 
       productsPlanned.forEach((product) => {
-        product.enrichedAppProducts.forEach((enriched) => {
+        product.serviceProductUsages.forEach((enriched) => {
           if (!productsByServCode.has(enriched.servCodeId)) {
             productsByServCode.set(enriched.servCodeId, []);
           }
@@ -155,11 +164,11 @@ const selectProductsByServCode = (servStats: string[]) =>
             // Add product with only relevant enriched products for this servCode
             existingProducts.push({
               ...product,
-              enrichedAppProducts: product.enrichedAppProducts.filter(
+              serviceProductUsages: product.serviceProductUsages.filter(
                 (e) => e.servCodeId === enriched.servCodeId,
               ),
               totalQuantity: Math.round(
-                product.enrichedAppProducts
+                product.serviceProductUsages
                   .filter((e) => e.servCodeId === enriched.servCodeId)
                   .reduce((sum, e) => sum + e.amount, 0),
               ),
@@ -201,7 +210,7 @@ const selectProductsByCustomer = createSelector(
     const productsByCustomer = new Map<number, ProductUsagePlanned[]>();
 
     productsPlanned.forEach((product) => {
-      product.enrichedAppProducts.forEach((enriched) => {
+      product.serviceProductUsages.forEach((enriched) => {
         const custId = enriched.customer.custId;
 
         if (!productsByCustomer.has(custId)) {
@@ -216,11 +225,11 @@ const selectProductsByCustomer = createSelector(
         if (!existingProduct) {
           existingProducts.push({
             ...product,
-            enrichedAppProducts: product.enrichedAppProducts.filter(
+            serviceProductUsages: product.serviceProductUsages.filter(
               (e) => e.customer.custId === custId,
             ),
             totalQuantity: Math.round(
-              product.enrichedAppProducts
+              product.serviceProductUsages
                 .filter((e) => e.customer.custId === custId)
                 .reduce((sum, e) => sum + e.amount, 0),
             ),
@@ -234,7 +243,7 @@ const selectProductsByCustomer = createSelector(
       ([custId, products]) => {
         const customer = customerMap.get(custId);
         const allEnrichedProducts = products.flatMap(
-          (p) => p.enrichedAppProducts,
+          (p) => p.serviceProductUsages,
         );
         const totalArea = Math.round(
           allEnrichedProducts.reduce((sum, e) => sum + e.treated, 0),
@@ -247,7 +256,7 @@ const selectProductsByCustomer = createSelector(
             productId: p.productId,
             productCommon: p.productCommon,
             totalQuantity: p.totalQuantity,
-            services: p.enrichedAppProducts.map((e) => ({
+            services: p.serviceProductUsages.map((e) => ({
               servId: e.servId,
               amount: Math.round(e.amount),
               size: Math.round(e.treated),
@@ -277,7 +286,7 @@ const selectProductsByProgCode = createSelector(
     const productsByProgCode = new Map<string, ProductUsagePlanned[]>();
 
     productsPlanned.forEach((product) => {
-      product.enrichedAppProducts.forEach((enriched) => {
+      product.serviceProductUsages.forEach((enriched) => {
         const progCodeId = enriched.program.progCode.progCodeId;
 
         if (!productsByProgCode.has(progCodeId)) {
@@ -292,11 +301,11 @@ const selectProductsByProgCode = createSelector(
         if (!existingProduct) {
           existingProducts.push({
             ...product,
-            enrichedAppProducts: product.enrichedAppProducts.filter(
+            serviceProductUsages: product.serviceProductUsages.filter(
               (e) => e.program.progCode.progCodeId === progCodeId,
             ),
             totalQuantity: Math.round(
-              product.enrichedAppProducts
+              product.serviceProductUsages
                 .filter((e) => e.program.progCode.progCodeId === progCodeId)
                 .reduce((sum, e) => sum + e.amount, 0),
             ),
@@ -310,7 +319,7 @@ const selectProductsByProgCode = createSelector(
       ([progCodeId, products]) => {
         const progCode = progCodeMap.get(progCodeId);
         const allEnrichedProducts = products.flatMap(
-          (p) => p.enrichedAppProducts,
+          (p) => p.serviceProductUsages,
         );
         const totalArea = Math.round(
           allEnrichedProducts.reduce((sum, e) => sum + e.treated, 0),
@@ -449,13 +458,17 @@ const selectSummaryStats = createSelector(
  * Uses actual production data for completed services (status === "S"), planned for remaining
  */
 const selectProductsMixedActualPlanned = createSelector(
-  [centralSelect.services, productSelect.productCommonMap],
-  (services, productCommonMap): ProductUsageMixed[] => {
+  [
+    centralSelect.services,
+    productSelect.productCommonMap,
+    productSelect.productMasterDocMap,
+  ],
+  (services, productCommonMap, productMasterDocMap): ProductUsageMixed[] => {
     // Step 1: Flatten all products, choosing actual or planned based on status
-    const mixedProducts: EnrichedAppProduct[] = services.flatMap((service): EnrichedAppProduct[] => {
+    const mixedProducts: ServiceProductUsage[] = services.flatMap((service): ServiceProductUsage[] => {
       const isComplete = service.status === "S";
       if (isComplete) {
-        const products = service.production?.usedAppProducts || [];
+        const products = service.production?.productsUsed || [];
         return products.map((p) => ({
           ...p,
           servId: service.servId,
@@ -468,7 +481,12 @@ const selectProductsMixedActualPlanned = createSelector(
           source: "actual" as const,
         }));
       } else {
-        return loadoutBaseToAppProductCore(service.loadoutInventory, service.servId).map((core) => ({
+        return getPlannedProducts({
+          servId: service.servId,
+          size: service.size,
+          productRuleDocs: service.servCode.productRuleDocs,
+          productMasterDocMap,
+        }).map((core) => ({
           ...core,
           productCommon: productCommonMap.get(core.productId) ?? baseProductCommon,
           servId: service.servId,
@@ -524,22 +542,33 @@ const selectProductsMixedActualPlanned = createSelector(
  * Works with whatever seasons are loaded into state, comparing based on globalSettings.season
  */
 const selectProductComparison = createSelector(
-  [centralSelect.services, globalSettingsSelect.season, productSelect.productCommonMap],
+  [
+    centralSelect.services,
+    globalSettingsSelect.season,
+    productSelect.productCommonMap,
+    productSelect.productMasterDocMap,
+  ],
   (
     allServices,
     currentSeason = baseGlobalSettings.season,
     productCommonMap,
+    productMasterDocMap,
   ): ProductComparison[] => {
     const lyServices = allServices.filter(
       (s) => s.season === currentSeason - 1,
     );
     const tyServices = allServices.filter((s) => s.season === currentSeason);
 
-    // Build usage maps for LY and TY using loadoutBaseToAppProductCore
+    // Build usage maps for LY and TY from the planned products of each service
     const buildUsageMap = (services: typeof allServices) => {
       const map = new Map<number, { quantity: number; serviceCount: number }>();
       services.forEach((service) => {
-        loadoutBaseToAppProductCore(service.loadoutInventory, service.servId).forEach((core) => {
+        getPlannedProducts({
+          servId: service.servId,
+          size: service.size,
+          productRuleDocs: service.servCode.productRuleDocs,
+          productMasterDocMap,
+        }).forEach((core) => {
           const existing = map.get(core.productId) || {
             quantity: 0,
             serviceCount: 0,

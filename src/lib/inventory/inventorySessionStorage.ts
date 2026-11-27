@@ -25,12 +25,17 @@ export function saveInventorySession(session: InventorySession): void {
  * - Nothing is stored
  * - The stored date is not today (session expired)
  * - The stored data is malformed
+ *
+ * Only the fields of InventorySession are returned. A session saved earlier the same day by an
+ * older build also holds a `dateRange`, which nothing reads any more.
  */
 export function loadInventorySession(): InventorySession | null {
   const parsed = readLocalStorage<PersistedSession | null>(STORAGE_KEY, null);
   if (!parsed) return null;
   if (parsed.date !== dateStrings.today()) return null;
-  return parsed.session ?? null;
+  if (!parsed.session) return null;
+  const { activeProductIds, counts } = parsed.session;
+  return { activeProductIds, counts };
 }
 
 /**

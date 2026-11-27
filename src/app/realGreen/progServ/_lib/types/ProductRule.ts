@@ -1,5 +1,3 @@
-import { ProductMaster } from "@/app/realGreen/product/_lib/types/ProductMasterTypes";
-
 export type ProductRuleDoc = {
   size: number;
   sizeOperator: "lte" | "gt" | "all";
@@ -7,7 +5,6 @@ export type ProductRuleDoc = {
 };
 
 export type ProductRule = ProductRuleDoc & {
-  productMasters: ProductMaster[];
   desc: string;
 };
 
@@ -19,6 +16,5 @@ export const baseProductRuleDoc: ProductRuleDoc = {
 
 export const baseProductRule: ProductRule = {
   ...baseProductRuleDoc,
-  productMasters: [],
   desc: "",
 };

@@ -1,13 +1,11 @@
 import { AppState } from "@/store";
 import { createSelector } from "@reduxjs/toolkit";
-import { centralSelect } from "@/app/realGreen/customer/selectors/centralSelectors";
 import { productSelect } from "@/app/realGreen/product/_lib/selectors/productSelectors";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 import { VolumeUnit, WeightUnit, LengthUnit, TimeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
 import {
   InventoryCheck,
   InventoryCheckEntryHydrated,
-  InventoryPrediction,
   LastProductCount,
   ProductCount,
 } from "@/app/inventory/InventoryTypes";
@@ -19,18 +17,12 @@ import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
 
 const selectChecks = (state: AppState) => state.inventory.checks;
 const selectSession = (state: AppState) => state.inventory.session;
-const selectSessionDateRange = (state: AppState) => state.inventory.session.dateRange;
 const selectPrevSessionChecked = (state: AppState) => state.inventory.prevSessionChecked;
 const selectTodayCheckLoaded = (state: AppState) => state.inventory.todayCheckLoaded;
 
 // ---------------------------------------------------------------------------
 // Derived selectors
 // ---------------------------------------------------------------------------
-
-const selectLastCheck = createSelector(
-  [selectChecks],
-  (checks) => checks[0] ?? null,
-);
 
 const selectHydratedChecks = createSelector(
   [selectChecks, productSelect.allProductsMap],
@@ -52,112 +44,6 @@ const selectActiveProducts = createSelector(
       const product = allProductsMap.get(id);
       return product ? [product] : [];
     }),
-);
-
-/**
- * Extracts unique non-master productIds from services within the session dateRange.
- * Used by the page to auto-populate activeProductIds — independent of activeProductIds
- * to avoid the chicken-and-egg problem where predictions require active products.
- *
- * Sources: production.usedAppProducts (filtered to non-masters) +
- *          loadoutInventory sub-products and constituents (already non-master by definition).
- */
-const selectProductIdsFromServices = createSelector(
-  [selectSession, centralSelect.services, productSelect.allProductsMap],
-  (session, services, allProductsMap): number[] => {
-    const { dateRange } = session;
-    if (!dateRange) return [];
-
-    const inRange = services.filter((service) => {
-      const doneDate = service.production?.doneDate;
-      return doneDate && doneDate >= dateRange.min && doneDate <= dateRange.max;
-    });
-
-    const ids = new Set<number>();
-    for (const service of inRange) {
-      // production.usedAppProducts may include master products — filter them out
-      for (const ap of service.production?.usedAppProducts ?? []) {
-        const product = allProductsMap.get(ap.productId);
-        if (product && !product.isMaster) ids.add(ap.productId);
-      }
-      // loadoutInventory sub-products and constituents are never masters
-      for (const master of service.loadoutInventory.masters) {
-        for (const sub of master.subProducts) ids.add(sub.productId);
-        for (const equipment of master.equipments) {
-          for (const constituent of equipment.constituents) {
-            if (constituent.ratePerKsf > 0) ids.add(constituent.product.productId);
-          }
-        }
-      }
-    }
-
-    return Array.from(ids);
-  },
-);
-
-/**
- * Computes InventoryPrediction[] for all active products.
- *
- * - Filters centralSelect.services to those with a doneDate within session.dateRange.
- * - Recorded: sums AppProductCore.amount from production.usedAppProducts.
- * - Planned: walks the LoadoutBase tree (masters → subProducts, equipments → constituents).
- *   Skips the water carrier constituent (ratePerKsf === 0).
- * - Returns [] when dateRange is null or no active products.
- */
-const selectPredictions = createSelector(
-  [selectSession, selectLastCheck, centralSelect.services, productSelect.allProductsMap],
-  (session, lastCheck, services, allProductsMap): InventoryPrediction[] => {
-    const { dateRange, activeProductIds } = session;
-    if (!dateRange || activeProductIds.length === 0) return [];
-
-    const inRange = services.filter((service) => {
-      const doneDate = service.production?.doneDate;
-      return doneDate && doneDate >= dateRange.min && doneDate <= dateRange.max;
-    });
-
-    return activeProductIds.flatMap((productId) => {
-      const product = allProductsMap.get(productId);
-      if (!product) return [];
-
-      let recordedUsed = 0;
-      let plannedUsed = 0;
-
-      for (const service of inRange) {
-        // Recorded — from CRM production data
-        const usedProducts = service.production?.usedAppProducts ?? [];
-        for (const ap of usedProducts) {
-          if (ap.productId === productId) recordedUsed += ap.amount;
-        }
-
-        // Planned — from loadoutInventory tree.
-        // Masters are conceptual containers (job area), not physical products — skip master.productId.
-        // Top-level singles and subProducts are ad-hoc tech additions with no plannedAmount — skip.
-        const loadout = service.loadoutInventory;
-        for (const master of loadout.masters) {
-          for (const sub of master.subProducts) {
-            if (sub.productId === productId) plannedUsed += sub.plannedAmount;
-          }
-          for (const equipment of master.equipments) {
-            for (const constituent of equipment.constituents) {
-              // Skip water carrier (ratePerKsf === 0)
-              if (
-                constituent.product.productId === productId &&
-                constituent.ratePerKsf > 0
-              ) {
-                plannedUsed += constituent.plannedAmount;
-              }
-            }
-          }
-        }
-      }
-
-      const lastEntry = lastCheck?.entries.find((e) => e.productId === productId);
-      const onHandPrev = lastEntry?.totalCount ?? 0;
-      const onHandPredicted = onHandPrev - recordedUsed;
-
-      return [{ productId, product, plannedUsed, recordedUsed, onHandPrev, onHandPredicted }];
-    });
-  },
 );
 
 /**
@@ -241,15 +127,11 @@ const selectProductsWithZeroLastCount = createSelector(
 
 export const inventorySelect = {
   checks: selectChecks,
-  lastCheck: selectLastCheck,
   hydratedChecks: selectHydratedChecks,
   session: selectSession,
-  sessionDateRange: selectSessionDateRange,
   prevSessionChecked: selectPrevSessionChecked,
   todayCheckLoaded: selectTodayCheckLoaded,
   activeProducts: selectActiveProducts,
-  predictions: selectPredictions,
-  productIdsFromServices: selectProductIdsFromServices,
   makeCountsForProduct: makeSelectCountsForProduct,
   makeLastCountForProduct: makeSelectLastCountForProduct,
   productsWithNonZeroLastCount: selectProductsWithNonZeroLastCount,

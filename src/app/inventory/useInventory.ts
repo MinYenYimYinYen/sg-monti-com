@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/hooks/redux";
 import { inventoryActions } from "@/app/inventory/inventorySlice";
 import { InventoryCheckDoc, ProductCount } from "@/app/inventory/InventoryTypes";
-import { TRange } from "@/lib/primatives/tRange/TRange";
 import { realGreenConst } from "@/app/realGreen/_lib/realGreenConst";
 import { clearInventorySession } from "@/lib/inventory/inventorySessionStorage";
 
@@ -42,11 +41,6 @@ export function useInventory({ autoLoad }: { autoLoad?: boolean } = {}) {
     dispatch(inventoryActions.persistSession());
   };
 
-  const setDateRange = (range: TRange<string> | null) => {
-    dispatch(inventoryActions.setDateRange(range));
-    dispatch(inventoryActions.persistSession());
-  };
-
   const loadCheckIntoSession = (date: string) =>
     dispatch(inventoryActions.loadCheckIntoSession(date));
 
@@ -61,5 +55,5 @@ export function useInventory({ autoLoad }: { autoLoad?: boolean } = {}) {
     clearInventorySession();
   };
 
-  return { addProduct, removeProduct, addCount, removeCount, setDateRange, loadCheckIntoSession, save };
+  return { addProduct, removeProduct, addCount, removeCount, loadCheckIntoSession, save };
 }

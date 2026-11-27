@@ -54,7 +54,6 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
     setDescription,
     setOverlap,
     setNeedsWater,
-    setTracksTankLevel,
     resetForm,
   } = useFormFieldValues();
 
@@ -70,7 +69,6 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
   const description = useSelector(solverSelect.description);
   const canSave = useSelector(solverSelect.canSave);
   const needsWater = useSelector(solverSelect.needsWater);
-  const tracksTankLevel = useSelector(solverSelect.tracksTankLevel);
 
   const overlap = useSelector(solverSelect.overlap);
   const solution = useSelector(solverSelect.solution);
@@ -82,7 +80,6 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
       appMethodId,
       description,
       needsWater,
-      tracksTankLevel,
       ...solution.result,
     });
     setSaveStatus("success");
@@ -166,23 +163,14 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
             <Label htmlFor="doubleOverlap-create">Double Overlap</Label>
           </div>
 
-          {/* Water carrier flags */}
+          {/* Water flag */}
           <div className="flex items-center space-x-2">
             <Checkbox
               id="needsWater-create"
               checked={needsWater}
               onCheckedChange={(checked) => setNeedsWater(!!checked)}
             />
-            <Label htmlFor="needsWater-create">Needs Water (auto-add carrier row)</Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="tracksTankLevel-create"
-              checked={tracksTankLevel}
-              onCheckedChange={(checked) => setTracksTankLevel(!!checked)}
-            />
-            <Label htmlFor="tracksTankLevel-create">Tracks Tank Level (filled once/day)</Label>
+            <Label htmlFor="needsWater-create">Needs Water (mix chart includes water by default)</Label>
           </div>
 
           {/* Save Actions */}
@@ -226,8 +214,8 @@ export function AppMethodCreate({ method }: AppMethodCreateProps) {
         <AppMethodDeleteSheet
           method={method}
           open={deleteSheetOpen}
-          onOpenChange={setDeleteSheetOpen}
-          onDeleteComplete={handleDeleteComplete}
+          onOpenChangeAction={setDeleteSheetOpen}
+          onDeleteCompleteAction={handleDeleteComplete}
         />
       )}
     </CardStackBody>

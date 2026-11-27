@@ -74,7 +74,7 @@ function getProductionOrFallback({
 - If `service.production !== null`, returns it unchanged.
 - If `service.status === "S"` and `service.production === null`, synthesizes a base `Production`:
   - Single `DoneBy` with `baseEmployee` (percent: 1.0)
-  - Empty `usedAppProducts`, zero numeric fields
+  - Empty `productsUsed`, zero numeric fields
   - `doneDate: ""` (signals unattributed in UI)
 - Otherwise (non-completed service with no production), returns `null` — no change to existing behavior.
 

@@ -3,7 +3,7 @@ import {
   ProductionCore,
 } from "@/app/realGreen/_lib/subTypes/Production";
 import { ProductCommon } from "@/app/realGreen/product/_lib/types/ProductTypes";
-import { AppProduct } from "@/app/realGreen/_lib/subTypes/AppProduct";
+import { ProductionProduct } from "@/app/realGreen/_lib/subTypes/ProductionProduct";
 import { baseProductCommon } from "@/app/realGreen/product/_lib/baseProduct";
 import { Employee } from "@/app/realGreen/employee/types/EmployeeTypes";
 import { DoneBy } from "@/app/realGreen/_lib/subTypes/DoneByCore";
@@ -25,14 +25,14 @@ function hydrateProduction({
   serviceConditions: ServiceCondition[];
 }): Production | null {
   if (!productionCore) return null;
-  const usedAppProducts: AppProduct[] = productionCore.usedAppProductCores.map(
-    (appProductCore) => {
-      const appProduct: AppProduct = {
-        ...appProductCore,
+  const productsUsed: ProductionProduct[] = productionCore.productsUsedCores.map(
+    (productionProductCore) => {
+      const productionProduct: ProductionProduct = {
+        ...productionProductCore,
         productCommon:
-          allProductsMap.get(appProductCore.productId) || baseProductCommon,
+          allProductsMap.get(productionProductCore.productId) || baseProductCommon,
       };
-      return appProduct;
+      return productionProduct;
     },
   );
 
@@ -47,7 +47,7 @@ function hydrateProduction({
 
   const production: Production = {
     ...productionCore,
-    usedAppProducts,
+    productsUsed,
     doneBys,
     serviceDoc,
     serviceConditions,

@@ -62,7 +62,6 @@ import { baseProgramNoX } from "@/app/realGreen/customer/_lib/entities/bases/bas
 import { baseServiceCore } from "@/app/realGreen/customer/_lib/entities/bases/baseService";
 import { baseProgCode, baseProgCodeDocProps } from "@/app/realGreen/progServ/_lib/baseProgCode";
 import { baseServCode, baseServCodeCore, baseServCodeDocProps } from "@/app/realGreen/progServ/_lib/baseServCode";
-import { baseLoadout } from "@/app/loadout/LoadoutTypes";
 import { baseNumId, baseStrId } from "@/app/realGreen/_lib/realGreenConst";
 import { Aging } from "@/app/realGreen/customer/_lib/classes/Aging";
 import { AssignmentUtils } from "@/app/assignment/AssignmentUtils";
@@ -78,7 +77,7 @@ import { ProgCodeUtils } from "@/app/realGreen/progServ/_lib/classes/ProgCodeUti
 // These are the CustomerProps/ProgramProps/ServiceProps fields that require
 // external data (FK wiring). Computed props (taxRate, aging, x, programs,
 // services, customer, progCode, servCode, production, assignments,
-// loadoutInventory, eta) are excluded — the generator derives them.
+// eta) are excluded — the generator derives them.
 //
 // If a new externally-sourced field is added to CustomerProps/ProgramProps/
 // ServiceProps, the compile-time checks below will error until the
@@ -423,7 +422,6 @@ export function makeCustomer(overrides: MakeCustomerSpec = {}): Customer {
         priorityService,
         production: null,
         assignments: new AssignmentUtils([]),
-        loadoutInventory: baseLoadout,
         eta: null,
         taxLineCores: taxLineSpecs,
         taxLines: hydrateTaxLines({ taxLineCores: taxLineSpecs, taxSlotCodes }),

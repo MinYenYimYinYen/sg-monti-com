@@ -1,13 +1,18 @@
 import { CompoundUnitDisplay, UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
 import { UnitContext } from "@/app/realGreen/product/unitConfig/ProductUnitConfigTypes";
-import { Equipment } from "@/app/equipment/EquipmentTypes";
+import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 import { AppMethodResult } from "@/app/appMethod/appMethodSolver/AppMethodSolverTypes";
 import { MixChartProductRow } from "@/app/realGreen/product/mixChart/_lib/MixChartTypes";
 import { UnitUtils } from "@/app/realGreen/product/unitConfig/UnitUtils";
 import { UnitLabel, VolumeUnit } from "@/app/realGreen/product/unitConfig/UnitTypes";
-import { buildWaterUnitConfig } from "@/app/equipment/waterProduct";
+import { buildWaterUnitConfig } from "@/app/realGreen/product/mixChart/_lib/waterUnitConfig";
 
 export type MixChartAmount = CompoundUnitDisplay;
+
+/** Default chart title for a picked app method. */
+export function defaultMixChartTitle(appMethod: AppMethod): string {
+  return `Mix Chart — ${appMethod.description}`;
+}
 
 // ---------------------------------------------------------------------------
 // Water rate derivation
@@ -59,7 +64,7 @@ export function calcWaterRatePerKsf(
 }
 
 /**
- * Returns the UnitConfigDisplay for the water carrier based on equipment.showFlOz.
+ * Returns the UnitConfigDisplay for the water carrier based on the chart's showFlOz.
  */
 export function buildWaterUnitConfigDisplay(showFlOz: boolean): UnitConfigDisplay {
   return new UnitConfigDisplay(buildWaterUnitConfig(showFlOz));

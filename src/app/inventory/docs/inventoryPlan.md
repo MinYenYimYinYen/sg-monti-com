@@ -1,5 +1,7 @@
 # Inventory Feature — Phase 1 Plan
 
+> **Superseded in part (2026-11-23).** Monthly Inventory no longer reads services. The "By Date" tab, the date range search, the `Planned:` and `Recorded:` lines, the `predictions` selector and the `InventorySession.dateRange` described below were removed, along with the `loadoutInventory` data they used. Products are chosen from the Last Check, Non-Zero, Zero and Manual tabs. Counting, saving and history are unchanged. Monthly Inventory will be rebuilt later on QuickBooks data. Read the sections below as the original design, not the current behaviour.
+
 ## Overview
 
 A mobile-first inventory tracking tool. The user walks around the warehouse/storage area with a

@@ -51,11 +51,6 @@ const schedulingSection: NavSection = {
       capability: can.serviceEtas.read,
     },
     {
-      title: "Loadout",
-      href: "/scheduling/dailyInventory",
-      capability: can.loadouts.read,
-    },
-    {
       title: "Time Off Calendar",
       href: "/plannedTimeOff/calendar",
       capability: can.employeeAbsences.read,

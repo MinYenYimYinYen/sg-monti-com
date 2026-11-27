@@ -29,9 +29,6 @@ export const schedulingGroup = defineGroup({
     employeeAbsences: { name: "Employee absences", verbs: ["read", "write", "delete"] },
     priorityServices: { name: "Priority services", verbs: ["read", "write", "delete"] },
     routeNotes: { name: "Route notes", verbs: ["read", "write", "delete"] },
-    // Start and finish loadout both go through one op that replaces the stored document whole,
-    // including a finished one, with no check. No delete: a loadout is only replaced.
-    loadouts: { name: "Daily loadouts", verbs: ["read", "write"] },
     serviceEtas: { name: "Service ETAs", verbs: ["read", "write"] },
   },
 });

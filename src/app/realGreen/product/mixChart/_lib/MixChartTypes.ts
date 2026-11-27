@@ -1,12 +1,11 @@
 import { UnitConfigDisplay } from "@/app/realGreen/product/unitConfig/UnitConfigDisplay";
-import { Equipment } from "@/app/equipment/EquipmentTypes";
-import { AppMethodResult } from "@/app/appMethod/appMethodSolver/AppMethodSolverTypes";
+import { AppMethod } from "@/app/appMethod/AppMethodTypes";
 
 /**
  * A single product row in the mix chart.
  *
- * The chart is built from an arbitrary list of these rows — independent of
- * how products are tagged to equipment in the database (mixedByEquipmentIds is ignored).
+ * The chart is built from an arbitrary list of these rows, independent of how products are
+ * grouped in the database.
  *
  * rate is in the product's app unit per ksf.
  */
@@ -32,14 +31,12 @@ export type MixChartProductRow = {
  * Held in local React state in page.tsx.
  */
 export type MixChartConfig = {
-  /** The selected piece of equipment (determines water rate and showFlOz). */
-  equipment: Equipment | null;
-  /**
-   * Local override of the equipment's AppMethod parameters.
-   * When non-null, this is used instead of equipment.appMethod to derive the water rate.
-   * Populated from the createAppMethod Redux slice's solver solution.
-   */
-  appMethodOverride: AppMethodResult | null;
+  /** The picked saved app method. Null until one is picked; the water column needs it. */
+  appMethod: AppMethod | null;
+  /** True shows the water column in fl oz, false in gallons. */
+  showFlOz: boolean;
+  /** Chart title shown on the PDF. */
+  title: string;
   /** Whether to include a water column in the chart. */
   includeWater: boolean;
   /** The product rows to chart. */

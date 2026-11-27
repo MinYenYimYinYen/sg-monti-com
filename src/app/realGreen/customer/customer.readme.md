@@ -366,7 +366,7 @@ export const PIPELINE: Partial<Record<CustomerContextMode, "mirror" | "realGreen
 
 **Pattern A — `autoLoad` hooks** (most contexts): The hook has `useEffect` + `refresh()` that branch on `PIPELINE[context]`. See `useActiveCustomers.ts` as the canonical example.
 
-**Pattern B — `loadByServIds` hooks** (`byAssignment`, `priorityService`): These contexts are loaded with a dynamic list of `servIds` from feature code. The hook exposes `loadByServIds(servIds, config?)` instead of `autoLoad`. See `useByAssignmentCustomers.ts` and `usePriorityServiceCustomers.ts`.
+**Pattern B — `loadByServIds` hooks** (`priorityService`; `byAssignment` is the same shape but has had no loader since the loadout feature and `useByAssignmentCustomers.ts` were removed): These contexts are loaded with a dynamic list of `servIds` from feature code. The hook exposes `loadByServIds(servIds, config?)` instead of `autoLoad`. See `usePriorityServiceCustomers.ts`.
 
 ### Migrating a Context
 

@@ -1,6 +1,6 @@
 ---
 name: product-module
-description: Work on the RealGreen Product module - Master, Sub and Single product types, the ProductDoc discriminated union, subProductIds relationships, productSlice and productSelectors, product API operations (saveCategory, saveUnit, saveMasterSubProducts, saveMasterEquipmentPackages), mix charts, and unit config. Use when touching src/app/realGreen/product or anything that classifies or hydrates products.
+description: Work on the RealGreen Product module - Master, Sub and Single product types, the ProductDoc discriminated union, subProductIds relationships, productSlice and productSelectors, product API operations (saveCategory, saveUnit, saveMasterSubProducts), mix charts, and unit config. Use when touching src/app/realGreen/product or anything that classifies or hydrates products.
 ---
 
 # Product Module
@@ -10,7 +10,7 @@ Reference: `src/app/realGreen/product/_lib/product.readme.md` (about 600 lines).
 Code layout under `src/app/realGreen/product/`:
 - `_lib/types/`, `_lib/models/`, `_lib/slices/productSlice.ts`, `_lib/selectors/`, `_lib/hooks/`
 - `api/ProductContract.ts` and `api/route.ts`
-- `list/`, `mixChart/`, `unitConfig/` are feature UIs. `bkp/` is a backup folder; do not extend it.
+- `list/`, `mixChart/`, `unitConfig/` are feature UIs.
 
 ## Core model
 
@@ -19,7 +19,7 @@ Code layout under `src/app/realGreen/product/`:
 - Type chain: `ProductRaw` -> `ProductCore` -> `ProductDoc` (discriminated union of `ProductMasterDoc | ProductSingleDoc | ProductSubDoc`, discriminant `productType`) -> hydrated `Product`.
 - **Relationships are stored once**, as `subProductIds` on the master only. Never add a `masterProductId` to subs. Find a sub's master with a selector over the masters.
 - Redux state is normalized: `productMasterDocs`, `productSingleDocs`, `productCores`. Subs are *derived* in selectors from masters + cores. Do not store subs or hydrated products in state.
-- Hydration happens in selectors, and FKs resolve to full entities (e.g. `mixedByEquipmentId` -> `mixedByEquipment`). UI receives hydrated no-suffix types, never Docs.
+- Hydration happens in selectors, and FKs resolve to full entities (e.g. a master's stored `subId` -> `subProduct`). UI receives hydrated no-suffix types, never Docs.
 
 ## Working rules
 

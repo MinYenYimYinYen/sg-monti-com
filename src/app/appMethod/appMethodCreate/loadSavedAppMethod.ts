@@ -40,7 +40,6 @@ export function loadSavedAppMethod(method: AppMethod, dispatch: AppDispatch) {
 
   // Flags
   dispatch(createAppMethodActions.setNeedsWater(method.needsWater));
-  dispatch(createAppMethodActions.setTracksTankLevel(method.tracksTankLevel));
 
   // When editing existing method, default to solving for coverage.volume
   // This prevents validation mode and allows recalculation when editing parameters

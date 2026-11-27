@@ -26,7 +26,6 @@ import { ProgramUtils } from "@/app/realGreen/customer/_lib/classes/ProgramUtils
 import { CustomerUtils } from "@/app/realGreen/customer/_lib/classes/CustomerUtils";
 import { serviceConditionSelect } from "@/app/realGreen/serviceCondition/_lib/selectors/serviceConditionSelect";
 import { parsePromiseString } from "@/app/schedPromise/parsePromise";
-import { hydratePlannedLoadout } from "@/app/realGreen/customer/selectors/hydratePlannedLoadout";
 import { baseServCode } from "../../progServ/_lib/baseServCode";
 import { taxCodeSelect } from "../../taxCode/taxCodeSelectors";
 import { serviceEtaSelect } from "@/app/scheduling/eta/serviceEtaSelect";
@@ -271,7 +270,6 @@ export function makeCustomersSelector(
                 assignments,
                 promise: null,
                 promiseIssues: [],
-                loadoutInventory: { masters: [], singles: [], subProducts: [] },
                 eta: null,
                 priorityService: null,
                 taxLines: [],
@@ -279,7 +277,6 @@ export function makeCustomersSelector(
               assignments,
               promise: servPromiseResult.promise,
               promiseIssues: servPromiseResult.issues,
-              loadoutInventory: hydratePlannedLoadout({ servDoc, servCodeMap }),
               priorityService: priorityServiceDocMap.get(servDoc.servId) ?? null,
               // A service that was never re-synced has no taxLineCores. Hydrate it as empty here and
               // let the one consumer that needs recorded tax (the sales tax report) decide.

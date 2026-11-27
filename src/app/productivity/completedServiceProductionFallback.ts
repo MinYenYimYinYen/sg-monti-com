@@ -49,11 +49,11 @@ export function getProductionOrFallback(
     crewSize: 0,
     // ProductionCore fields
     servId: service.servId,
-    usedAppProductCores: [],
+    productsUsedCores: [],
     doneByCores: [baseDoneByCore],
     invoice: service.invoice ?? 0,
     // ProductionProps fields
-    usedAppProducts: [],
+    productsUsed: [],
     doneBys: [baseDoneBy],
     serviceDoc: service as Service,
     serviceConditions: [],

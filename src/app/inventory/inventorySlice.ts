@@ -6,7 +6,6 @@ import {
   InventorySession,
   ProductCount,
 } from "@/app/inventory/InventoryTypes";
-import { TRange } from "@/lib/primatives/tRange/TRange";
 import { AppState, AppThunk } from "@/store";
 import { saveInventorySession } from "@/lib/inventory/inventorySessionStorage";
 
@@ -20,7 +19,6 @@ type InventoryState = {
 };
 
 const initialSession: InventorySession = {
-  dateRange: null,
   activeProductIds: [],
   counts: {},
 };
@@ -36,10 +34,6 @@ const inventorySlice = createSlice({
   name: "inventory",
   initialState,
   reducers: {
-    setDateRange(state, action: PayloadAction<TRange<string> | null>) {
-      state.session.dateRange = action.payload;
-    },
-
     addProductToSession(state, action: PayloadAction<number>) {
       const productId = action.payload;
       if (!state.session.activeProductIds.includes(productId)) {
@@ -79,7 +73,7 @@ const inventorySlice = createSlice({
     },
 
     clearSession(state) {
-      state.session = { dateRange: null, activeProductIds: [], counts: {} };
+      state.session = { activeProductIds: [], counts: {} };
       state.todayCheckLoaded = false;
     },
 
